@@ -10,7 +10,7 @@ use main::{
 // The rendering system update loop
 fn run(context: &mut Context, query: ComponentQuery) {
     // For each renderer, we must update it's pipeline transform and other values
-    let read = context.read();
+    let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
     let storage = main::threads::SharedVec::<Option<PipelineTask>>::new(query.get_entity_count());
@@ -39,7 +39,7 @@ fn added_entities(context: &mut Context, query: ComponentQuery) {
     // For each renderer, we must create it's pipeline renderer construction task
     query.update_all(move |components| {
         // Get the pipeline first
-        let read = context.read();
+        let read = context.read().unwrap();
         let pipeline = read.pipeline.read();
 
         // Get the CPU renderer that we must construct
@@ -55,7 +55,7 @@ fn removed_entities(context: &mut Context, query: ComponentQuery) {
     // For each renderer, we must dispose of it's GPU renderer
     query.update_all(move |components| {
         // Get the pipeline first
-        let read = context.read();
+        let read = context.read().unwrap();
         let pipeline = read.pipeline.read();
 
         // Then get the ID of the GPU renderer

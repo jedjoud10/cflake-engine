@@ -8,7 +8,7 @@ pub use defaults;
 use glfw::WindowHint;
 use main::core::{Context, World, WriteContext};
 pub use main::*;
-use std::sync::{Arc, RwLock};
+use std::{sync::{Arc, RwLock}, cell::RefCell, rc::Rc};
 
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -44,7 +44,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     rendering::pipeline::init_coms();
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
-    let world = Arc::new(RwLock::new(World::new(author_name, app_name, pipeline_data)));
+    let world = Rc::new(RefCell::new(World::new(author_name, app_name, pipeline_data)));
 
     // Init the world
     // Calling the callback
@@ -53,12 +53,12 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         {
             let mut context = Context::convert(&world);
             // Load the default systems first
-            defaults::preload_system(context.write());
-            init_world(context.write());
+            defaults::preload_system(context.write().unwrap());
+            init_world(context.write().unwrap());
             // Flush everything and execute all the tasks
         }
         {
-            let mut world = world.write().unwrap();
+            let mut world = world.try_borrow_mut().unwrap();
             task_receiver.flush(&mut world);
         }
     }
@@ -68,13 +68,13 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
             // Update the delta_time
             let new_time = glfw.get_time();
             // Update the de
-            let mut world = world.write().unwrap();
+            let mut world = world.try_borrow_mut().unwrap();
             world.time.update(new_time);
         }
         // Get the GLFW events first
         glfw.poll_events();
         {
-            let mut world = world.write().unwrap();
+            let mut world = world.try_borrow_mut().unwrap();
             for (_, event) in glfw::flush_messages(&events) {
                 match event {
                     glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
@@ -104,9 +104,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         World::update_end(&world, &mut task_receiver);
     }
     // When the window closes and we exit from the game
-    if let Ok(rwlock) = Arc::try_unwrap(world) {
+    if let Ok(refcell) = Rc::try_unwrap(world) {
         println!("Exiting the engine...");
-        let world = rwlock.into_inner().unwrap();
+        let world = refcell.into_inner();
         world.destroy();
     } else {
         panic!("Nah bro you mad goofy");

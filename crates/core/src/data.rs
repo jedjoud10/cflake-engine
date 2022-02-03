@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard}, cell::{RefCell, Ref, RefMut}, rc::Rc};
 
 use ecs::ECSManager;
 use input::InputManager;
@@ -22,34 +22,31 @@ pub struct World {
 
 // A context that can mutate the world if self is mut
 pub struct Context {
-    world: Arc<RwLock<World>>,
+    world: Rc<RefCell<World>>,
 }
-
-impl !Send for Context {}
-impl !Sync for Context {}
 
 impl Context {
     // Convert a world into a context, so we can share it around multiple threads
     // We call this whenever we execute the systems
-    pub fn convert(world: &Arc<RwLock<World>>) -> Self {
+    pub fn convert(world: &Rc<RefCell<World>>) -> Self {
         Self { world: world.clone() }
     }
     // Read
-    pub fn read<'a>(&'a self) -> ReadContext<'a> {
-        ReadContext {
-            world: self.world.read().unwrap(),
-        }
+    pub fn read<'a>(&'a self) -> Option<ReadContext<'a>> {
+        Some(ReadContext {
+            world: self.world.try_borrow().ok()?,
+        })
     }
     // Write
-    pub fn write<'a>(&'a mut self) -> WriteContext<'a> {
-        WriteContext {
-            world: self.world.write().unwrap(),
-        }
+    pub fn write<'a>(&'a mut self) -> Option<WriteContext<'a>> {
+        Some(WriteContext {
+            world: self.world.try_borrow_mut().ok()?,
+        })
     }
 }
 // A readable world context
 pub struct ReadContext<'a> {
-    world: RwLockReadGuard<'a, World>,
+    world: Ref<'a, World>,
 }
 
 impl<'a> ReadContext<'a> {
@@ -69,7 +66,7 @@ impl<'a> std::ops::Deref for ReadContext<'a> {
 
 // A writable world context
 pub struct WriteContext<'a> {
-    world: RwLockWriteGuard<'a, World>,
+    world: RefMut<'a, World>,
 }
 
 impl<'a> std::ops::Deref for WriteContext<'a> {

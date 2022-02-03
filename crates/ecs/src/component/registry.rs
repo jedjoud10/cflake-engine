@@ -63,7 +63,7 @@ pub fn get_component_names_cbitfield(cbitfield: Bitfield<u32>) -> Vec<String> {
 // Cast a boxed component to a reference of that component
 pub(crate) fn cast_component<'a, T>(linked_component: &'a dyn Component) -> Result<&T, ComponentError>
 where
-    T: Component + Send + Sync + 'static,
+    T: Component + 'static,
 {
     let component_any: &dyn Any = linked_component.as_any();
     let reference = component_any
@@ -74,7 +74,7 @@ where
 // Cast a boxed component to a mutable reference of that component
 pub(crate) fn cast_component_mut<'a, T>(linked_component: &'a mut dyn Component) -> Result<&mut T, ComponentError>
 where
-    T: Component + Send + Sync + 'static,
+    T: Component + 'static,
 {
     let component_any: &mut dyn Any = linked_component.as_any_mut();
     let reference_mut = component_any

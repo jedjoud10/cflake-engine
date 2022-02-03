@@ -34,9 +34,6 @@ pub struct ECSManager<Context> {
     pub(crate) event_handler: EventHandler<Context>,
 }
 
-unsafe impl<Context> Sync for ECSManager<Context> {}
-unsafe impl<Context> Send for ECSManager<Context> {}
-
 // Global code for the Entities, Components, and Systems
 impl<Context> ECSManager<Context> {
     // Create a new ECS manager
@@ -210,7 +207,7 @@ impl<Context> ECSManager<Context> {
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'b, T: Component + Send + Sync + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
+    pub fn get_global<'b, T: Component + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
         let id = registry::get_component_bitfield::<T>();
         // Kill me
         let hashmap = self.globals.lock().unwrap();
@@ -224,7 +221,7 @@ impl<Context> ECSManager<Context> {
         Ok(guard)
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'b, T: Component + Send + Sync + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
+    pub fn get_global_mut<'b, T: Component + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
         let id = registry::get_component_bitfield::<T>();
         let hashmap = self.globals.lock().unwrap();
         let ptr = hashmap

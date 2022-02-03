@@ -42,7 +42,7 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
 // The chunk systems' update loop
 fn run(context: &mut Context, _query: ComponentQuery) {
     // Get the global terrain component
-    let mut write = context.write();
+    let mut write = context.write().unwrap();
     // Get the camera position
     let (camera_pos, camera_dir) = {
         let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap();

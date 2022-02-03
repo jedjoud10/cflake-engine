@@ -100,7 +100,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
 
 // The voxel systems' update loop
 fn run(context: &mut Context, query: ComponentQuery) {
-    let mut write = context.write();
+    let mut write = context.write().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();

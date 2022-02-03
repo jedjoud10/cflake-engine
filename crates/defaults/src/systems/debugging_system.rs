@@ -7,7 +7,7 @@ use main::{
 // The debugging system's update loop
 fn run(context: &mut Context, _query: ComponentQuery) {
     // Check if we need to debug
-    let read = context.read();
+    let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     if read.input.map_pressed("debug") {
         // Debug some data

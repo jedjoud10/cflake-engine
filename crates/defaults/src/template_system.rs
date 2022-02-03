@@ -5,16 +5,15 @@ use main::core::{Context, WriteContext};
 use main::ecs;
 
 // A simple system that we can use as template
-fn run(_context: &mut Context, _query: ComponentQuery) {
-    /*
-    let read = context.read();
+fn run(context: &mut Context, query: ComponentQuery) {
+    let read = context.read().unwrap();
+    let time = read.time.elapsed;
+    let obj = read.ecs.get_global::<crate::globals::Terrain>().unwrap();
     query.update_all_threaded(|_, components| {
-        let name = components.component::<Name>().unwrap();
+        let name = components.get_component::<Name>().unwrap();
         dbg!(&name.name);
-        let time = read.time.elapsed;
         dbg!(time);
     });
-    */
 }
 
 // Create the system

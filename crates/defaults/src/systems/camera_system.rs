@@ -5,7 +5,7 @@ use main::input::Keys;
 
 // The camera system update loop
 fn run(context: &mut Context, components: ComponentQuery) {
-    let mut write = context.write();
+    let mut write = context.write().unwrap();
     // Rotate the camera around
     let mouse_pos = write.input.get_mouse_position();
     const SENSIVITY: f32 = 0.001;

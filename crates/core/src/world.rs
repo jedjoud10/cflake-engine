@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::{sync::{Arc, RwLock}, rc::Rc, cell::RefCell};
 
 use rendering::pipeline::PipelineContext;
 
@@ -46,10 +46,10 @@ impl World {
         rendering::pipeline::pipec::task(rendering::object::PipelineTask::SetWindowDimension(new_dimensions), &pipeline);
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_start(world: &Rc<RefCell<World>>, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
         {
-            let world = world.write().unwrap();
+            let world = world.try_borrow().unwrap();
             let handler = &world.pipeline.handler.lock().unwrap();
 
             // Update the timings then we can start rendering
@@ -62,13 +62,13 @@ impl World {
         }
         {
             let system_count = {
-                let world = world.read().unwrap();
+                let world = world.try_borrow().unwrap();
                 world.ecs.count_systems()
             };
             // Loop for every system and update it
             for system_index in 0..system_count {
                 let execution_data = {
-                    let world = world.read().unwrap();
+                    let world = world.try_borrow().unwrap();
                     let system = &world.ecs.get_systems()[system_index];
                     system.run_system(&world.ecs)
                 };
@@ -76,23 +76,23 @@ impl World {
                 let mut context = Context::convert(world);
                 execution_data.run(&mut context);
                 {
-                    // Run the callback after executing a single system
-                    let mut world = world.write().unwrap();
+                    // Flush all the commends that we have dispatched during the system's frame execution
+                    let mut world = world.try_borrow_mut().unwrap();
                     _task_receiver.flush(&mut world);
                 }
             }
         }
         {
             // Finish update
-            let mut world = world.write().unwrap();
+            let mut world = world.try_borrow_mut().unwrap();
             world.ecs.finish_update();
         }
     }
     // End frame update
-    pub fn update_end(world: &Arc<RwLock<Self>>, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_end(world: &Rc<RefCell<Self>>, _task_receiver: &mut WorldTaskReceiver) {
         // End the frame
         {
-            let mut world = world.write().unwrap();
+            let mut world = world.try_borrow_mut().unwrap();
             let delta = world.time.delta as f32;
             world.input.late_update(delta);
             let handler = &world.pipeline.handler.lock().unwrap();
