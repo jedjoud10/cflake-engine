@@ -5,6 +5,7 @@
 #![feature(negative_impls)]
 pub mod component;
 pub mod entity;
+pub mod event;
 pub mod global;
 mod manager;
 pub mod system;

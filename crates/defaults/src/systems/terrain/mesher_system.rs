@@ -1,18 +1,19 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, entity::ComponentLinkingGroup},
+    ecs::{component::ComponentQuery, entity::ComponentLinkingGroup, event::EventKey},
     rendering::{basics::model::Model, pipeline::pipec},
     terrain::mesher::{Mesher, MesherSettings},
 };
 
 // The mesher systems' update loop
-fn run(context: &mut Context, query: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
+    let (query, mut global_fetcher) = data.decompose().unwrap();
     let mut write = context.write().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
 
-    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
+    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>(&mut global_fetcher);
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
         query.update_all(|components| {

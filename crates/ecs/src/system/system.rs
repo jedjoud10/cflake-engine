@@ -7,6 +7,7 @@ use super::SystemExecutionData;
 use crate::{
     component::{ComponentQuery, ComponentQueryIterType, LinkedComponents},
     entity::EntityID,
+    event::EventKey,
     ECSManager,
 };
 
@@ -92,18 +93,18 @@ impl System {
             evn_added_entity: ecs_manager.event_handler.get_added_entity_event(self.evn_added_entity).cloned(),
             evn_removed_entity: ecs_manager.event_handler.get_removed_entity_event(self.evn_removed_entity).cloned(),
             // Queries
-            evn_run_query: ComponentQuery {
+            evn_run_ekey: EventKey::new(ComponentQuery {
                 linked_components: all_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-            },
-            evn_added_entity_query: ComponentQuery {
+            }),
+            evn_added_entity_ekey: EventKey::new(ComponentQuery {
                 linked_components: added_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-            },
-            evn_removed_entity_query: ComponentQuery {
+            }),
+            evn_removed_entity_ekey: EventKey::new(ComponentQuery {
                 linked_components: removed_components,
                 thread_pool: ecs_manager.thread_pool.clone(),
-            },
+            }),
         }
     }
 }

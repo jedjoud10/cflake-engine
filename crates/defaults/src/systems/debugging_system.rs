@@ -1,11 +1,11 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::component::ComponentQuery,
+    ecs::{component::ComponentQuery, event::EventKey},
     input::Keys,
 };
 
 // The debugging system's update loop
-fn run(context: &mut Context, _query: ComponentQuery) {
+fn run(context: &mut Context, _data: EventKey) {
     // Check if we need to debug
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();

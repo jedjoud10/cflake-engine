@@ -1,11 +1,13 @@
-use ahash::AHashMap;
-use bitfield::Bitfield;
-use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
     any::TypeId,
     cell::{RefCell, UnsafeCell},
+    rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
+
+use ahash::AHashMap;
+use bitfield::Bitfield;
+use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use threads::ThreadPool;
 
 use crate::{
@@ -14,7 +16,7 @@ use crate::{
         Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-    global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
+    global::{EnclosedGlobalComponent, Global, GlobalFetchKey, GlobalReadGuard, GlobalWriteGuard},
     system::{EventHandler, System, SystemBuilder},
     utils::{ComponentError, EntityError, GlobalError},
 };
@@ -23,9 +25,9 @@ use crate::{
 pub struct ECSManager<Context> {
     // A vector full of entitie
     pub(crate) entities: ShareableOrderedVec<Entity>,
-    pub entities_to_remove: Mutex<OrderedVec<(Entity, u64, usize)>>,
+    pub(crate) entities_to_remove: Mutex<OrderedVec<(Entity, u64, usize)>>,
     // Each system, stored in the order they were created
-    systems: Vec<System>,
+    pub(crate) systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
     // Some global components
@@ -200,14 +202,15 @@ impl<Context> ECSManager<Context> {
     // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB
 
     // Add a global component to the ECS manager
-    pub fn add_global<U: Global + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
+    pub fn add_global<U: Global + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
         // UnsafeCell moment
         let boxed = Box::new(sc);
         self.globals.insert(TypeId::of::<U>(), UnsafeCell::new(boxed));
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'a, U: Global + 'static>(&self) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
+    pub fn get_global<'a, U: Global + 'static>(&self, key: &'a GlobalFetchKey) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
+        // First, we gotta check if this component was mutably borrowed
         // Kill me
         let hashmap = &self.globals;
         let boxed = hashmap
@@ -219,7 +222,7 @@ impl<Context> ECSManager<Context> {
         Ok(GlobalReadGuard::new(global))
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'a, U: Global + 'static>(&mut self) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
+    pub fn get_global_mut<'a, U: Global + 'static>(&mut self, key: &'a mut GlobalFetchKey) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
         let hashmap = &mut self.globals;
         let boxed = hashmap
             .get_mut(&TypeId::of::<U>())

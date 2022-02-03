@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::component::ComponentQuery,
+    ecs::{component::ComponentQuery, event::EventKey},
     rendering::{
         self,
         object::{ObjectID, PipelineTask},
@@ -8,8 +8,9 @@ use main::{
 };
 
 // The rendering system update loop
-fn run(context: &mut Context, query: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
     // For each renderer, we must update it's pipeline transform and other values
+    let (query, _) = data.decompose().unwrap();
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
@@ -35,8 +36,9 @@ fn run(context: &mut Context, query: ComponentQuery) {
 }
 
 // An event fired whenever we add multiple new renderer entities
-fn added_entities(context: &mut Context, query: ComponentQuery) {
+fn added_entities(context: &mut Context, data: EventKey) {
     // For each renderer, we must create it's pipeline renderer construction task
+    let (query, _) = data.decompose().unwrap();
     query.update_all(move |components| {
         // Get the pipeline first
         let read = context.read().unwrap();
@@ -51,8 +53,9 @@ fn added_entities(context: &mut Context, query: ComponentQuery) {
 }
 
 // An event fired whenever we remove multiple renderer entities
-fn removed_entities(context: &mut Context, query: ComponentQuery) {
+fn removed_entities(context: &mut Context, data: EventKey) {
     // For each renderer, we must dispose of it's GPU renderer
+    let (query, _) = data.decompose().unwrap();
     query.update_all(move |components| {
         // Get the pipeline first
         let read = context.read().unwrap();

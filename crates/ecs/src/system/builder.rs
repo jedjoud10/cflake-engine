@@ -1,5 +1,6 @@
 use crate::{
-    component::{registry, Component, ComponentQuery},
+    component::{registry, Component},
+    event::EventKey,
     ECSManager,
 };
 
@@ -26,17 +27,17 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         self
     }
     // Set the "Run System" event of this system
-    pub fn with_run_event(mut self, evn: fn(&mut Context, ComponentQuery)) -> Self {
+    pub fn with_run_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
         self.system.evn_run = Some(self.ecs_manager.event_handler.add_run_event(evn));
         self
     }
     // Set the "Added Entity" event of this system
-    pub fn with_added_entities_event(mut self, evn: fn(&mut Context, ComponentQuery)) -> Self {
+    pub fn with_added_entities_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
         self.system.evn_added_entity = Some(self.ecs_manager.event_handler.add_added_entity_event(evn));
         self
     }
     // Set the "Removed Entity" event of this system
-    pub fn with_removed_entities_event(mut self, evn: fn(&mut Context, ComponentQuery)) -> Self {
+    pub fn with_removed_entities_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
         self.system.evn_removed_entity = Some(self.ecs_manager.event_handler.add_removed_entity_event(evn));
         self
     }

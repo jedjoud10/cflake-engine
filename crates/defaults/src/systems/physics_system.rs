@@ -1,11 +1,12 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::component::ComponentQuery,
+    ecs::{component::ComponentQuery, event::EventKey},
 };
 
 // The physics system update loop
-fn run(context: &mut Context, query: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
     let read = context.read().unwrap();
+    let (query, _) = data.decompose().unwrap();
     // Get the world's delta time
     let delta = read.time.delta as f32;
 

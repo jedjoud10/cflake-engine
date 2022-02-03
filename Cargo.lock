@@ -77,8 +77,8 @@ dependencies = [
 
 [[package]]
 name = "bitfield"
-version = "0.2.4"
-source = "git+https://github.com/jedjoud10/bitfield#a71980d9a06bf578a59d29416b20bc8ee1527c37"
+version = "0.2.5"
+source = "git+https://github.com/jedjoud10/bitfield#36734649829aa97ad98935901847608188fb6f5b"
 
 [[package]]
 name = "bitflags"
@@ -536,9 +536,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.116"
+version = "0.2.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "565dbd88872dbe4cc8a46e527f26483c1d1f7afa6b884a3bd6cd893d4f98da74"
+checksum = "e74d72e0f9b65b5b4ca49a346af3976df0f9c61d550727f349ecd559f251a26c"
 
 [[package]]
 name = "log"
@@ -730,7 +730,7 @@ checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
 [[package]]
 name = "ordered_vec"
 version = "0.3.2"
-source = "git+https://github.com/jedjoud10/ordered_vec#ecf4af79eb985bc4e4121b7b1e94618c3cff2abd"
+source = "git+https://github.com/jedjoud10/ordered_vec#a6830ed8926a4a51ca07e46c19ba31efaeff07c8"
 
 [[package]]
 name = "others"

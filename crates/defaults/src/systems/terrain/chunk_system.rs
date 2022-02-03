@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use main::{
     core::{Context, WriteContext},
-    ecs::{self, component::ComponentQuery, entity::EntityID, event::EventKey},
+    ecs::{self, entity::EntityID, event::EventKey},
     input::Keys,
     terrain::ChunkCoords,
 };

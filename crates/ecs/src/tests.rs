@@ -6,7 +6,8 @@ pub mod test {
             registry, Component, ComponentQuery,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-        global::Global,
+        event::EventKey,
+        global::{Global, GlobalFetchKey},
         ECSManager,
     };
     use bitfield::Bitfield;
@@ -14,9 +15,9 @@ pub mod test {
     // A test context
     #[derive(Clone, Copy)]
     pub struct WorldContext;
-    fn run_system(_context: &mut WorldContext, components: ComponentQuery) {
-        // Transform the _context to RefContext using some magic fuckery
-        components.update_all(|components| {
+    fn run_system(_context: &mut WorldContext, data: EventKey) {
+        let (components, global_fetcher) = data.decompose();
+        components.unwrap().update_all(|components| {
             let mut name = components.get_component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         });
@@ -69,7 +70,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.create_system_builder();
-        fn internal_run(_context: &mut WorldContext, _components: ComponentQuery) {
+        fn internal_run(_context: &mut WorldContext, _data: EventKey) {
             /*
             // Transform the _context to RefContext using some magic fuckery
             components.update_all_threaded(|components| {
@@ -132,23 +133,26 @@ pub mod test {
         let context = WorldContext;
 
         // Make a simple system
-        fn internal_run(_context: &mut WorldContext, components: ComponentQuery) {
-            components.update_all(|components| {
+        fn internal_run(_context: &mut WorldContext, data: EventKey) {
+            let (components, _) = data.decompose();
+            components.unwrap().update_all(|components| {
                 let mut name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
                 *name = Name::new("Bob");
             });
         }
-        fn internal_remove_entity(_context: &mut WorldContext, components: ComponentQuery) {
-            components.update_all(|components| {
+        fn internal_remove_entity(_context: &mut WorldContext, data: EventKey) {
+            let (components, _) = data.decompose();
+            components.unwrap().update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
             });
         }
-        fn internal_add_entity(_context: &mut WorldContext, components: ComponentQuery) {
-            components.update_all(|components| {
+        fn internal_add_entity(_context: &mut WorldContext, data: EventKey) {
+            let (components, _) = data.decompose();
+            components.unwrap().update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
@@ -197,10 +201,13 @@ pub mod test {
         let mut ecs = ECSManager::<WorldContext>::new(|| {});
         ecs.add_global(GlobalComponentTest { _test_value: 10 }).unwrap();
         // Make a simple system
-        fn internal_run(_context: &mut WorldContext, _query: ComponentQuery) {}
+        fn internal_run(_context: &mut WorldContext, _data: EventKey) {}
+        let mut fetch = GlobalFetchKey(());
+        assert!(ecs.get_global::<GlobalComponentTest>(&fetch).is_ok());
+        assert!(ecs.get_global::<GlobalComponentTest2>(&fetch).is_err());
 
-        assert!(ecs.get_global::<GlobalComponentTest>().is_ok());
-        assert!(ecs.get_global::<GlobalComponentTest2>().is_err());
+        let global2 = ecs.get_global_mut::<GlobalComponentTest>(&mut fetch).unwrap();
+        let global = ecs.get_global::<GlobalComponentTest>(&fetch).unwrap();
         let builder = ecs.create_system_builder();
         builder.link::<Name>().with_run_event(internal_run).build();
         ecs.run_systems(context);

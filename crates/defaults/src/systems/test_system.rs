@@ -1,14 +1,9 @@
-use ecs::component::*;
 use main::core::{Context, WriteContext};
 use main::ecs;
+use main::ecs::event::EventKey;
 
 // A simple system that we can use for testing
-fn run(context: &mut Context, _query: ComponentQuery) {
-    let mut write = context.write().unwrap();
-    let global1 = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
-    let global2 = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
-    dbg!(global1.camera_dir);
-}
+fn run(_context: &mut Context, _data: EventKey) {}
 
 // Create the system
 pub fn system(write: &mut WriteContext) {

@@ -1,10 +1,12 @@
 use ecs::component::*;
 use main::core::{Context, WriteContext};
 use main::ecs;
+use main::ecs::event::EventKey;
 use main::input::Keys;
 
 // The camera system update loop
-fn run(context: &mut Context, components: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
+    let (query, mut global_fetcher) = data.decompose().unwrap();
     let mut write = context.write().unwrap();
     // Rotate the camera around
     let mouse_pos = write.input.get_mouse_position();
@@ -52,7 +54,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         velocity += -up * speed;
     }
     // Update the camera values now
-    components.update_all(move |linked_components| {
+    query.update_all(move |linked_components| {
         let mut transform = linked_components.get_component_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
@@ -78,7 +80,7 @@ fn run(context: &mut Context, components: ComponentQuery) {
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global
-        let mut global = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
+        let mut global = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>(&mut global_fetcher).unwrap();
         global.camera_pos = position;
         global.camera_dir = rotation.mul_point(veclib::Vector3::Z);
     })

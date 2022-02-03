@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, entity::EntityID},
+    ecs::{component::ComponentQuery, entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
         basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::ShaderUniformsGroup},
@@ -99,13 +99,14 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
 }
 
 // The voxel systems' update loop
-fn run(context: &mut Context, query: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
+    let (query, mut global_fetcher) = data.decompose().unwrap();
     let mut write = context.write().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
     let pipeline = pipeline_.read();
 
-    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>();
+    let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>(&mut global_fetcher);
     if let Ok(mut terrain) = terrain {
         // For each chunk in the terrain, we must create it's respective voxel data, if possible
         if terrain.cpu_data.is_none() {
