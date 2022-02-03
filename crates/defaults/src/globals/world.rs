@@ -1,4 +1,4 @@
-use main::ecs::{global::Global};
+use main::ecs::global::Global;
 
 // Some global world data
 #[derive(Default, Global)]

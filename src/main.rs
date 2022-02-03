@@ -1,4 +1,4 @@
-use cflake_engine::{*};
+use cflake_engine::*;
 fn main() {
     // Load up the engine
     start("DevJed", "DevGame", preload_assets, init);

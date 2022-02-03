@@ -20,7 +20,6 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-
 #[proc_macro_derive(Global)]
 pub fn derive_global(input: TokenStream) -> TokenStream {
     let DeriveInput { ident, generics, .. } = parse_macro_input!(input);

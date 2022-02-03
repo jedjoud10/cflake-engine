@@ -18,9 +18,12 @@ use main::{
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
-    terrain::{ChunkCoords, CHUNK_SIZE, PackedVoxelData, PackedVoxel, StoredVoxelData, mesher::Mesher},
+    terrain::{mesher::Mesher, ChunkCoords, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
-use std::{collections::{HashMap, HashSet}, mem::size_of};
+use std::{
+    collections::{HashMap, HashSet},
+    mem::size_of,
+};
 
 #[derive(Global)]
 // The global terrain component that can be added at the start of the game
@@ -29,7 +32,7 @@ pub struct Terrain {
     pub octree: DiffOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub chunks_generating: HashSet<ChunkCoords>,
-    pub sorted_chunks_generating: Vec<(EntityID, f32)>, 
+    pub sorted_chunks_generating: Vec<(EntityID, f32)>,
     pub chunks_to_remove: Vec<EntityID>,
     pub material: ObjectID<Material>,
 

@@ -1300,7 +1300,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            let debug; 
+            let debug;
             {
                 // At the start of each frame we must sync up with the main thread
                 waiting_clone.store(true, Ordering::Relaxed);

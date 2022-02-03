@@ -1,6 +1,6 @@
+use super::HeuristicSettings;
 use ordered_vec::simple::UnversionnedOrderedVec;
 use std::hash::Hash;
-use super::HeuristicSettings;
 
 // Simple node in the octree
 #[derive(Clone, Debug)]

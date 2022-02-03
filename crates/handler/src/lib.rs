@@ -8,7 +8,11 @@ pub use defaults;
 use glfw::WindowHint;
 use main::core::{Context, World, WriteContext};
 pub use main::*;
-use std::{sync::{Arc, RwLock}, cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {

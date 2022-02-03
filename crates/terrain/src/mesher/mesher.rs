@@ -1,8 +1,8 @@
 use rendering::basics::model::Model;
 
-use crate::{StoredVoxelData, ChunkCoords};
 use super::builder::*;
 use super::settings::MesherSettings;
+use crate::{ChunkCoords, StoredVoxelData};
 
 // A struct for organization
 // We do not store this mesher, we create it on the spot
@@ -21,7 +21,7 @@ impl<'a> Mesher<'a> {
             valid_data,
             coords,
             settings,
-            builder: MarchingCubes::new(settings)
+            builder: MarchingCubes::new(settings),
         }
     }
     // Generate the model from the voxel data

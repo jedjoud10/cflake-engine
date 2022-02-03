@@ -3,7 +3,11 @@ use main::core::{Context, WriteContext};
 use main::ecs;
 
 // A simple system that we can use for testing
-fn run(_context: &mut Context, _query: ComponentQuery) {
+fn run(context: &mut Context, _query: ComponentQuery) {
+    let mut write = context.write().unwrap();
+    let global1 = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
+    let global2 = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
+    dbg!(global1.camera_dir);
 }
 
 // Create the system

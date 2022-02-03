@@ -1,4 +1,8 @@
-use std::{sync::{Arc, RwLock}, rc::Rc, cell::RefCell};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 use rendering::pipeline::PipelineContext;
 

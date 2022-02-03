@@ -43,8 +43,10 @@ impl ReadBytes {
         let dst_ptr = arr.as_mut_ptr() as *mut u8;
         let new_len = bytes.len() / size_of::<U>();
         // Check if the byte count is legal
-        if byte_count != bytes.len() || bytes.is_empty() { return None }
-        unsafe { 
+        if byte_count != bytes.len() || bytes.is_empty() {
+            return None;
+        }
+        unsafe {
             // Write
             // Does this cause a memory leak? I have no fucking clue.
             std::ptr::copy_nonoverlapping(src_ptr, dst_ptr, byte_count);

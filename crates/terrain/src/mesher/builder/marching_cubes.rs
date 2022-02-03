@@ -1,16 +1,25 @@
-use std::collections::hash_map::Entry;
+use crate::{
+    flatten, flatten_vec3,
+    mesher::{
+        settings::MesherSettings,
+        tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE, VERTEX_TABLE_USIZE},
+    },
+    ChunkCoords, StoredVoxelData, CHUNK_SIZE,
+};
 use ahash::AHashMap;
-use rendering::basics::model::{Model, CustomVertexDataBuffer};
-use crate::{mesher::{settings::MesherSettings, tables::{DATA_OFFSET_TABLE, TRI_TABLE, VERTEX_TABLE, EDGE_TABLE, VERTEX_TABLE_USIZE}}, StoredVoxelData, ChunkCoords, CHUNK_SIZE, flatten, flatten_vec3};
+use rendering::basics::model::{CustomVertexDataBuffer, Model};
+use std::collections::hash_map::Entry;
 
 // Struct that contains everything related to the marching cubes mesh generation
 pub(crate) struct MarchingCubes {
     settings: MesherSettings,
 }
 
-impl MarchingCubes { 
+impl MarchingCubes {
     // Create a new marching cubes builder
-    pub fn new(settings: MesherSettings) -> Self { Self { settings } }   
+    pub fn new(settings: MesherSettings) -> Self {
+        Self { settings }
+    }
     // Calculate the interpolation value using two densities
     pub fn calc_interpolation(&self, d1: f32, d2: f32) -> f32 {
         if self.settings.interpolation {
@@ -26,19 +35,19 @@ impl MarchingCubes {
         // Pre-allocate so we don't allocate more than needed
         let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(64);
         let mut model: Model = Model::with_capacity(64);
-        let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(64, rendering::utils::DataType::U32);  
+        let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(64, rendering::utils::DataType::U32);
         // Loop over every voxel
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    // Convert our 32x32x32 position into the 33x33x33 index, since they are different 
+                    // Convert our 32x32x32 position into the 33x33x33 index, since they are different
                     let i = flatten((x, y, z));
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
                     for l in 0..8 {
                         let density = *voxels.density(i + DATA_OFFSET_TABLE[l]);
                         case_index |= (density.is_sign_positive() as u8) << l;
-                    }          
+                    }
                     // Skip the completely empty and completely filled cases
                     if case_index == 0 || case_index == 255 {
                         continue;
@@ -50,7 +59,7 @@ impl MarchingCubes {
                             // Get the vertex in local space
                             let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
                             let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
-                            // The edge tuple used to identify this vertex                            
+                            // The edge tuple used to identify this vertex
                             let edge_tuple: (u8, u8, u8) = (
                                 2 * x as u8 + vert1.x as u8 + vert2.x as u8,
                                 2 * y as u8 + vert1.y as u8 + vert2.y as u8,
@@ -65,7 +74,8 @@ impl MarchingCubes {
                                 // Do inverse linear interpolation to find the factor value
                                 let value = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
                                 // Create the vertex
-                                let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]], value);
+                                let mut vertex =
+                                    veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]], value);
                                 // Offset the vertex
                                 vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
                                 // Get the normal
@@ -87,11 +97,13 @@ impl MarchingCubes {
                                 // The vertex already exists
                                 model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
                             }
-                        } else { continue 'edge; }
+                        } else {
+                            continue 'edge;
+                        }
                     }
                 }
             }
-        }    
+        }
         let mut skirts_model_combined = (Model::default(), CustomVertexDataBuffer::<u32, u32>::with_capacity(32, rendering::utils::DataType::U32));
         /*
         // Create a completely separate model for skirts

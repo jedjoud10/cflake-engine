@@ -2,8 +2,9 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
-    cell::{UnsafeCell, RefCell},
-    sync::{Arc, Mutex, RwLock}, any::TypeId,
+    any::TypeId,
+    cell::{RefCell, UnsafeCell},
+    sync::{Arc, Mutex, RwLock},
 };
 use threads::ThreadPool;
 
@@ -13,8 +14,9 @@ use crate::{
         Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+    global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
     system::{EventHandler, System, SystemBuilder},
-    utils::{ComponentError, EntityError, GlobalError}, global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
+    utils::{ComponentError, EntityError, GlobalError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -212,7 +214,7 @@ impl<Context> ECSManager<Context> {
             .get(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = unsafe { &*boxed.get() }.as_ref(); 
+        let ptr = unsafe { &*boxed.get() }.as_ref();
         let global = crate::global::registry::cast_global::<U>(ptr)?;
         Ok(GlobalReadGuard::new(global))
     }
@@ -223,7 +225,7 @@ impl<Context> ECSManager<Context> {
             .get_mut(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = unsafe { &mut *boxed.get() }.as_mut(); 
+        let ptr = unsafe { &mut *boxed.get() }.as_mut();
         let global = crate::global::registry::cast_global_mut::<U>(ptr)?;
         Ok(GlobalWriteGuard::new(global))
     }

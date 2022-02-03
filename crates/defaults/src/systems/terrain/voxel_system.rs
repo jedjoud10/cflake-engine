@@ -7,7 +7,7 @@ use main::{
         object::PipelineTrackedTask,
         pipeline::{pipec, Pipeline},
     },
-    terrain::{CHUNK_SIZE, PackedVoxel, StoredVoxelData, PackedVoxelData},
+    terrain::{PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
 
 // Start generating the voxel data for a specific chunk
@@ -34,7 +34,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader
-    let mut group = ShaderUniformsGroup::new();    
+    let mut group = ShaderUniformsGroup::new();
     // Set the atomic counters
     group.set_atomic_group("_", terrain.atomics, 0);
     // Chunk specific uniforms
@@ -83,12 +83,12 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     // Get the valid counters
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
-    if positive == 0 || negative == 0 { 
+    if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.chunks_generating.remove(&chunk.coords);
         return;
     }
-    
+
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut terrain.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
@@ -109,16 +109,19 @@ fn run(context: &mut Context, query: ComponentQuery) {
     if let Ok(mut terrain) = terrain {
         // For each chunk in the terrain, we must create it's respective voxel data, if possible
         if terrain.cpu_data.is_none() {
-            if terrain.mesh_gen_chunk_id.is_some() { return; }
+            if terrain.mesh_gen_chunk_id.is_some() {
+                return;
+            }
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((chunk, _)) = terrain.sorted_chunks_generating.pop() {
                 query.update(chunk, |components| {
                     // We break out at the first chunk if we start generating it's voxel data
+                    let entity_id = components.get_entity_id().unwrap();
                     let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                     // We can set our state as not generating if none of the chunks want to generate voxel data
                     if !chunk.pending_model && chunk.pending_voxels {
                         // We must start generating the voxel data for this chunk
-                        start_generation(&mut *terrain, &pipeline, &mut *chunk, components.get_entity_id().unwrap());
+                        start_generation(&mut *terrain, &pipeline, &mut *chunk, entity_id);
                     }
                 });
             }

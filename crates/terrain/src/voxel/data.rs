@@ -1,6 +1,6 @@
 use std::{alloc::Layout, ptr::NonNull};
 
-use crate::{CHUNK_SIZE, PackedVoxelData};
+use crate::{PackedVoxelData, CHUNK_SIZE};
 
 use super::packed::PackedVoxel;
 
@@ -15,7 +15,7 @@ pub struct StoredVoxelData {
 impl StoredVoxelData {
     // Allocate enough space to store all the voxels voxels
     pub fn new() -> Self {
-        const LEN: usize = (CHUNK_SIZE+1).pow(3);
+        const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
         let normals = vec![veclib::Vector3::ZERO; LEN];
         let colors = vec![veclib::Vector3::ZERO; LEN];
@@ -41,8 +41,16 @@ impl StoredVoxelData {
     }
 
     // Getters
-    pub fn density(&self, idx: usize) -> &f32 { self.densities.get(idx).unwrap() }
-    pub fn normal(&self, idx: usize) -> &veclib::Vector3<i8> { self.normals.get(idx).unwrap() }
-    pub fn color(&self, idx: usize) -> &veclib::Vector3<u8> { self.colors.get(idx).unwrap() }
-    pub fn material_type(&self, idx: usize) -> &u8 { self.material_types.get(idx).unwrap() }
+    pub fn density(&self, idx: usize) -> &f32 {
+        self.densities.get(idx).unwrap()
+    }
+    pub fn normal(&self, idx: usize) -> &veclib::Vector3<i8> {
+        self.normals.get(idx).unwrap()
+    }
+    pub fn color(&self, idx: usize) -> &veclib::Vector3<u8> {
+        self.colors.get(idx).unwrap()
+    }
+    pub fn material_type(&self, idx: usize) -> &u8 {
+        self.material_types.get(idx).unwrap()
+    }
 }

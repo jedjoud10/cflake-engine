@@ -1,17 +1,15 @@
 #[cfg(test)]
 pub mod test {
-    use bitfield::Bitfield;
     use crate::{
         component::{
             defaults::{Name, Tagged},
             registry, Component, ComponentQuery,
         },
-        global::{
-            Global
-        },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+        global::Global,
         ECSManager,
     };
+    use bitfield::Bitfield;
 
     // A test context
     #[derive(Clone, Copy)]
@@ -189,7 +187,10 @@ pub mod test {
         struct GlobalComponentTest2 {}
 
         #[derive(Component)]
-        struct Test<T: 'static> where T: Sync + Send {
+        struct Test<T: 'static>
+        where
+            T: Sync + Send,
+        {
             pub _data: T,
         }
         // Create the main ECS manager

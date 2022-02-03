@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use crate::{ElementID, InstancedBatch, InstancedBatchIdentifier, Root};
 use rendering::{
     basics::uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     pipeline::Pipeline,
 };
+use std::collections::HashMap;
 
 // The renderer that will render our UI
 pub struct Renderer {

@@ -48,9 +48,13 @@ fn run(context: &mut Context, _query: ComponentQuery) {
         let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap();
         (cam.camera_pos, cam.camera_dir)
     };
-    if write.input.map_toggled("update_terrain") { return; }
+    if write.input.map_toggled("update_terrain") {
+        return;
+    }
     let terrain_ = write.ecs.get_global_mut::<crate::globals::Terrain>();
-    if terrain_.is_err() { return; }
+    if terrain_.is_err() {
+        return;
+    }
     let mut terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
     if terrain.chunks_generating.is_empty() && terrain.chunks_to_remove.is_empty() {

@@ -26,8 +26,11 @@ fn run(context: &mut Context, components: ComponentQuery) {
     let fov_delta = if write.input.map_held("camera_zoom") {
         1.0
     } else if write.input.map_held("camera_unzoom") {
-        -1.0 
-    } else { 0.0 } * write.time.delta as f32 * 10.0;
+        -1.0
+    } else {
+        0.0
+    } * write.time.delta as f32
+        * 10.0;
 
     // Actually update the velocity
     // Forward and backward
