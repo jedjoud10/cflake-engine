@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use main::{
     core::{Context, WriteContext},
-    ecs::{self, component::ComponentQuery, entity::EntityID},
+    ecs::{self, component::ComponentQuery, entity::EntityID, event::EventKey},
     input::Keys,
     terrain::ChunkCoords,
 };
@@ -40,18 +40,19 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
 }
 
 // The chunk systems' update loop
-fn run(context: &mut Context, _query: ComponentQuery) {
+fn run(context: &mut Context, data: EventKey) {
+    let (_, mut global_fetcher) = data.decompose().unwrap();
     // Get the global terrain component
     let mut write = context.write().unwrap();
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>().unwrap();
+        let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>(&global_fetcher).unwrap();
         (cam.camera_pos, cam.camera_dir)
     };
     if write.input.map_toggled("update_terrain") {
         return;
     }
-    let terrain_ = write.ecs.get_global_mut::<crate::globals::Terrain>();
+    let terrain_ = write.ecs.get_global_mut::<crate::globals::Terrain>(&mut global_fetcher);
     if terrain_.is_err() {
         return;
     }
