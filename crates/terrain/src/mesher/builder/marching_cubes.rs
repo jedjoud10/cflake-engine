@@ -24,9 +24,9 @@ impl MarchingCubes {
     pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Pre-allocate so we don't allocate more than needed
-        let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(128);
-        let mut model: Model = Model::with_capacity(128);
-        let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(128, rendering::utils::DataType::U32);  
+        let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(64);
+        let mut model: Model = Model::with_capacity(64);
+        let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(64, rendering::utils::DataType::U32);  
         // Loop over every voxel
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -35,47 +35,21 @@ impl MarchingCubes {
                     let i = flatten((x, y, z));
                     // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
                     let mut case_index = 0u8;
-                    let mut arr = [0.0_f32; 8];
                     for l in 0..8 {
                         let density = *voxels.density(i + DATA_OFFSET_TABLE[l]);
-                        arr[l] = density;
+                        case_index |= (density.is_sign_positive() as u8) << l;
                     }          
-                    f32x8.is_sign_positive().to_int().
                     // Skip the completely empty and completely filled cases
                     if case_index == 0 || case_index == 255 {
                         continue;
                     }
-                    // Get triangles
-                    let edges: [i8; 16] = TRI_TABLE[case_index as usize];
-
                     // The vertex indices that are gonna be used for the skirts
-                    for edge in edges {
-                        // Make sure the tria
-                        ngle is valid
+                    'edge: for edge in TRI_TABLE[case_index as usize] {
+                        // Make sure the triangle is valid
                         if edge != -1 {
                             // Get the vertex in local space
                             let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
                             let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
-
-                            // In global space here
-                            let vert1_usize = veclib::vec3(x, y, z) + vert1;
-                            let vert2_usize = veclib::vec3(x, y, z) + vert2;
-                            let index1 = flatten_vec3(vert1_usize);
-                            let index2 = flatten_vec3(vert2_usize);
-                            // Do inverse linear interpolation to find the factor value
-                            let value = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
-                            // Create the vertex
-                            let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], value);
-                            // Offset the vertex
-                            vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
-                            // Get the normal
-                            let n1: veclib::Vector3<f32> = (*voxels.normal(index1)).into();
-                            let n2: veclib::Vector3<f32> = (*voxels.normal(index2)).into();
-                            let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-                            // Get the color
-                            let c1: veclib::Vector3<f32> = (*voxels.color(index1)).into();
-                            let c2: veclib::Vector3<f32> = (*voxels.color(index1)).into();
-                            let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
                             // The edge tuple used to identify this vertex                            
                             let edge_tuple: (u8, u8, u8) = (
                                 2 * x as u8 + vert1.x as u8 + vert2.x as u8,
@@ -85,6 +59,23 @@ impl MarchingCubes {
 
                             // Check if this vertex was already added
                             if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
+                                // In global space here
+                                let index1 = flatten_vec3(veclib::vec3(x, y, z) + vert1);
+                                let index2 = flatten_vec3(veclib::vec3(x, y, z) + vert2);
+                                // Do inverse linear interpolation to find the factor value
+                                let value = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
+                                // Create the vertex
+                                let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]], value);
+                                // Offset the vertex
+                                vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
+                                // Get the normal
+                                let n1: veclib::Vector3<f32> = (*voxels.normal(index1)).into();
+                                let n2: veclib::Vector3<f32> = (*voxels.normal(index2)).into();
+                                let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+                                // Get the color
+                                let c1: veclib::Vector3<f32> = (*voxels.color(index1)).into();
+                                let c2: veclib::Vector3<f32> = (*voxels.color(index1)).into();
+                                let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
                                 // Add this vertex
                                 e.insert(model.vertices.len() as u16);
                                 model.triangles.push(model.vertices.len() as u32);
@@ -96,7 +87,7 @@ impl MarchingCubes {
                                 // The vertex already exists
                                 model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
                             }
-                        }
+                        } else { continue 'edge; }
                     }
                 }
             }
