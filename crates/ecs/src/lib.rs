@@ -4,6 +4,7 @@
 #![feature(hash_drain_filter)]
 #![feature(negative_impls)]
 pub mod component;
+pub mod global;
 pub mod entity;
 mod manager;
 pub mod system;

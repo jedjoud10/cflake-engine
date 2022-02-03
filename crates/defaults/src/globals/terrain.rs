@@ -1,5 +1,5 @@
 use main::{
-    ecs::{component::Component, entity::EntityID},
+    ecs::{component::Component, entity::EntityID, global::Global},
     math::octrees::{DiffOctree, HeuristicSettings},
     rendering::{
         advanced::{
@@ -22,7 +22,7 @@ use main::{
 };
 use std::{collections::{HashMap, HashSet}, mem::size_of};
 
-#[derive(Component)]
+#[derive(Global)]
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
     // Chunk generation

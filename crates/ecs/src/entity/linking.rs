@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use ahash::AHashMap;
 use bitfield::Bitfield;
 
@@ -34,8 +36,8 @@ impl ComponentLinkingGroup {
         } else {
             // The component was already linked
             return Err(ComponentLinkingError::new(format!(
-                "Cannot link component '{}' to ComponentLinkingGroup because it is already linked!",
-                T::get_component_name(),
+                "Cannot link component '{:?}' to ComponentLinkingGroup because it is already linked!",
+                TypeId::of::<T>(),
             )));
         }
         // Add the component's bitfield to the entity's bitfield

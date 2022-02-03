@@ -1,1 +1,0 @@
-// A raw array that contains a type (probably going to be a component or a )

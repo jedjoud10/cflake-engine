@@ -1,11 +1,13 @@
 #[cfg(test)]
 pub mod test {
     use bitfield::Bitfield;
-
     use crate::{
         component::{
             defaults::{Name, Tagged},
             registry, Component, ComponentQuery,
+        },
+        global::{
+            Global
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
         ECSManager,
@@ -179,15 +181,15 @@ pub mod test {
     pub fn test_global_component() {
         // Also create the context
         let context = WorldContext;
-        #[derive(Component)]
+        #[derive(Global)]
         struct GlobalComponentTest {
             pub _test_value: i32,
         }
-        #[derive(Component)]
+        #[derive(Global)]
         struct GlobalComponentTest2 {}
 
         #[derive(Component)]
-        struct Test<T: 'static> {
+        struct Test<T: 'static> where T: Sync + Send {
             pub _data: T,
         }
         // Create the main ECS manager

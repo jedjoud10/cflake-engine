@@ -20,7 +20,7 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         }
     }
     // Link a component to this system
-    pub fn link<U: Component>(mut self) -> Self {
+    pub fn link<U: Component + 'static>(mut self) -> Self {
         let c = registry::get_component_bitfield::<U>();
         self.system.cbitfield = self.system.cbitfield.add(&c);
         self

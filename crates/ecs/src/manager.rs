@@ -2,19 +2,19 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use std::{
-    cell::UnsafeCell,
-    sync::{Arc, Mutex, RwLock},
+    cell::{UnsafeCell, RefCell},
+    sync::{Arc, Mutex, RwLock}, any::TypeId,
 };
 use threads::ThreadPool;
 
 use crate::{
     component::{
         registry::{self},
-        Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, EnclosedGlobalComponent, LinkedComponents,
+        Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     system::{EventHandler, System, SystemBuilder},
-    utils::{ComponentError, EntityError, GlobalComponentError},
+    utils::{ComponentError, EntityError, GlobalError}, global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -27,7 +27,7 @@ pub struct ECSManager<Context> {
     // The components that are valid in the world
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
     // Some global components
-    pub(crate) globals: Arc<Mutex<AHashMap<Bitfield<u32>, UnsafeCell<EnclosedGlobalComponent>>>>,
+    pub(crate) globals: AHashMap<TypeId, UnsafeCell<EnclosedGlobalComponent>>,
     // The internal ECS thread pool
     pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
     // Our internal event handler
@@ -198,40 +198,34 @@ impl<Context> ECSManager<Context> {
     // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB
 
     // Add a global component to the ECS manager
-    pub fn add_global<U: Component + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalComponentError> {
+    pub fn add_global<U: Global + Send + Sync + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
         // UnsafeCell moment
         let boxed = Box::new(sc);
-        let bitfield = registry::get_component_bitfield::<U>();
-        let mut lock = self.globals.lock().unwrap();
-        lock.insert(bitfield, UnsafeCell::new(boxed));
+        self.globals.insert(TypeId::of::<U>(), UnsafeCell::new(boxed));
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'b, T: Component + 'static>(&self) -> Result<ComponentReadGuard<'b, T>, ComponentError> {
-        let id = registry::get_component_bitfield::<T>();
+    pub fn get_global<'a, U: Global + 'static>(&self) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
         // Kill me
-        let hashmap = self.globals.lock().unwrap();
-        let ptr = hashmap
-            .get(&id)
-            .ok_or_else(|| ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+        let hashmap = &self.globals;
+        let boxed = hashmap
+            .get(&TypeId::of::<U>())
+            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let component = unsafe { &*ptr.get() }.as_ref();
-        let component = registry::cast_component::<T>(component)?;
-        let guard = ComponentReadGuard::new(component);
-        Ok(guard)
+        let ptr = unsafe { &*boxed.get() }.as_ref(); 
+        let global = crate::global::registry::cast_global::<U>(ptr)?;
+        Ok(GlobalReadGuard::new(global))
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'b, T: Component + 'static>(&mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError> {
-        let id = registry::get_component_bitfield::<T>();
-        let hashmap = self.globals.lock().unwrap();
-        let ptr = hashmap
-            .get(&id)
-            .ok_or_else(|| ComponentError::new_without_id("Global component could not be fetched!".to_string()))?;
+    pub fn get_global_mut<'a, U: Global + 'static>(&mut self) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
+        let hashmap = &mut self.globals;
+        let boxed = hashmap
+            .get_mut(&TypeId::of::<U>())
+            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let component = unsafe { &mut *ptr.get() }.as_mut();
-        let component = registry::cast_component_mut::<T>(component)?;
-        let guard = ComponentWriteGuard::new(component);
-        Ok(guard)
+        let ptr = unsafe { &mut *boxed.get() }.as_mut(); 
+        let global = crate::global::registry::cast_global_mut::<U>(ptr)?;
+        Ok(GlobalWriteGuard::new(global))
     }
 
     /* #endregion */
