@@ -11,8 +11,8 @@ impl Default for HeuristicSettings {
         Self {
             function: |node, target| {
                 // AABB intersection, return true if point in on the min edge though
-                let aabb = (node.get_aabb().min.elem_lte(target) & node.get_aabb().max.elem_gt(target)).all();
-                aabb
+                
+                (node.get_aabb().min.elem_lte(target) & node.get_aabb().max.elem_gt(target)).all()
             },
         }
     }

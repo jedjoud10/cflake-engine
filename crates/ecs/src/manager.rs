@@ -1,7 +1,6 @@
 use std::{
     any::TypeId,
-    cell::{RefCell, UnsafeCell},
-    rc::Rc,
+    cell::{UnsafeCell},
     sync::{Arc, Mutex, RwLock},
 };
 
@@ -12,8 +11,7 @@ use threads::ThreadPool;
 
 use crate::{
     component::{
-        registry::{self},
-        Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent, LinkedComponents,
+        ComponentID, EnclosedComponent, LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     global::{EnclosedGlobalComponent, Global, GlobalFetchKey, GlobalReadGuard, GlobalWriteGuard},
@@ -209,7 +207,7 @@ impl<Context> ECSManager<Context> {
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'a, U: Global + 'static>(&self, key: &'a GlobalFetchKey) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
+    pub fn get_global<'a, U: Global + 'static>(&self, _key: &'a GlobalFetchKey) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
         // First, we gotta check if this component was mutably borrowed
         // Kill me
         let hashmap = &self.globals;
@@ -222,7 +220,7 @@ impl<Context> ECSManager<Context> {
         Ok(GlobalReadGuard::new(global))
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'a, U: Global + 'static>(&mut self, key: &'a mut GlobalFetchKey) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
+    pub fn get_global_mut<'a, U: Global + 'static>(&mut self, _key: &'a mut GlobalFetchKey) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
         let hashmap = &mut self.globals;
         let boxed = hashmap
             .get_mut(&TypeId::of::<U>())

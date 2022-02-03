@@ -32,7 +32,7 @@ pub(crate) fn set_global_sender(sender: Sender<PipelineTaskCombination>) {
 pub fn init_coms() {
     // Get the global sender and copy it to the local sender
     let lock = SENDER.lock().unwrap();
-    let sender = (&*lock).as_ref().unwrap();
+    let sender = (*lock).as_ref().unwrap();
     LOCAL_SENDER.with(|cell| {
         let mut cell = cell.borrow_mut();
         *cell = Some(sender.clone());
@@ -48,7 +48,7 @@ pub(crate) fn send_task(task: PipelineTaskCombination, pipeline: &Pipeline) -> R
     } else {
         LOCAL_SENDER.with(|cell| {
             let cell = cell.borrow();
-            let sender = (&*cell).as_ref().unwrap();
+            let sender = (*cell).as_ref().unwrap();
             sender.send(task)
         })
     }

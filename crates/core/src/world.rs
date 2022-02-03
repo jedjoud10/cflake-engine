@@ -1,7 +1,7 @@
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 use rendering::pipeline::PipelineContext;

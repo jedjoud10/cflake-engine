@@ -1,12 +1,9 @@
-use ecs::component::*;
-
 use main::core::{Context, WriteContext};
-use main::ecs;
 use main::ecs::event::EventKey;
 use main::input::Keys;
 
 // The window system's update loop
-fn run(context: &mut Context, data: EventKey) {
+fn run(context: &mut Context, _data: EventKey) {
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     if read.input.map_changed("toggle_fullscreen") {

@@ -4,7 +4,6 @@ use bitfield::Bitfield;
 use lazy_static::lazy_static;
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
     sync::{
         atomic::{AtomicU32, Ordering},
         RwLock,

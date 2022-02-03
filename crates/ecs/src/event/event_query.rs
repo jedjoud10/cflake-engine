@@ -16,4 +16,8 @@ impl EventKey {
     pub fn decompose(self) -> Option<(ComponentQuery, GlobalFetchKey)> {
         Some((self.cquery?, GlobalFetchKey(())))
     }
+    // Get the global fetch key only
+    pub fn get_global_fetcher(self) -> Option<GlobalFetchKey> {
+        Some(GlobalFetchKey(()))
+    }
 }

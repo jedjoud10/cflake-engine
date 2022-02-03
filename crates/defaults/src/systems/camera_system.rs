@@ -1,6 +1,4 @@
-use ecs::component::*;
 use main::core::{Context, WriteContext};
-use main::ecs;
 use main::ecs::event::EventKey;
 use main::input::Keys;
 

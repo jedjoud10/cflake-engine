@@ -3,7 +3,7 @@ pub mod test {
     use crate::{
         component::{
             defaults::{Name, Tagged},
-            registry, Component, ComponentQuery,
+            registry, Component,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
         event::EventKey,
@@ -16,8 +16,8 @@ pub mod test {
     #[derive(Clone, Copy)]
     pub struct WorldContext;
     fn run_system(_context: &mut WorldContext, data: EventKey) {
-        let (components, global_fetcher) = data.decompose();
-        components.unwrap().update_all(|components| {
+        let (components, _) = data.decompose().unwrap();
+        components.update_all(|components| {
             let mut name = components.get_component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         });
@@ -135,7 +135,7 @@ pub mod test {
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, data: EventKey) {
             let (components, _) = data.decompose().unwrap();
-            components.unwrap().update_all(|components| {
+            components.update_all(|components| {
                 let mut name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
@@ -144,7 +144,7 @@ pub mod test {
         }
         fn internal_remove_entity(_context: &mut WorldContext, data: EventKey) {
             let (components, _) = data.decompose().unwrap();
-            components.unwrap().update_all(|components| {
+            components.update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
@@ -152,7 +152,7 @@ pub mod test {
         }
         fn internal_add_entity(_context: &mut WorldContext, data: EventKey) {
             let (components, _) = data.decompose().unwrap();
-            components.unwrap().update_all(|components| {
+            components.update_all(|components| {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
@@ -206,8 +206,8 @@ pub mod test {
         assert!(ecs.get_global::<GlobalComponentTest>(&fetch).is_ok());
         assert!(ecs.get_global::<GlobalComponentTest2>(&fetch).is_err());
 
-        let global2 = ecs.get_global_mut::<GlobalComponentTest>(&mut fetch).unwrap();
-        let global = ecs.get_global::<GlobalComponentTest>(&fetch).unwrap();
+        let _global2 = ecs.get_global_mut::<GlobalComponentTest>(&mut fetch).unwrap();
+        let _global = ecs.get_global::<GlobalComponentTest>(&fetch).unwrap();
         let builder = ecs.create_system_builder();
         builder.link::<Name>().with_run_event(internal_run).build();
         ecs.run_systems(context);

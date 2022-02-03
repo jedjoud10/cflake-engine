@@ -14,7 +14,7 @@ pub fn new<F: Fn() + 'static + Sync + Send, T: 'static>(
     shared_data: Arc<RwLock<SharedData<T>>>,
 ) {
     std::thread::spawn(move || {
-        let init_function = (&*init_function_arc).as_ref();
+        let init_function = (*init_function_arc).as_ref();
         init_function();
         let (barrier, end_barrier, shutdown_barrier) = barriers.as_ref();
         let ptr = shared_data.as_ref();

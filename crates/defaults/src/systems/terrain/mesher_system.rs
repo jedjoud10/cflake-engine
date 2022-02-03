@@ -1,7 +1,7 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, entity::ComponentLinkingGroup, event::EventKey},
-    rendering::{basics::model::Model, pipeline::pipec},
+    ecs::{entity::ComponentLinkingGroup, event::EventKey},
+    rendering::{pipeline::pipec},
     terrain::mesher::{Mesher, MesherSettings},
 };
 

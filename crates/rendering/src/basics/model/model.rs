@@ -6,7 +6,6 @@ use crate::{
     basics::Buildable,
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
     pipeline::Pipeline,
-    utils::UsageType,
 };
 
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
@@ -96,10 +95,8 @@ impl Model {
         if self.custom.is_some() != other.custom.is_some() {
             panic!()
         };
-        if self.custom.is_some() {
-            if self.custom.as_ref().unwrap().size_per_component != other.custom.as_ref().unwrap().size_per_component {
-                panic!()
-            }
+        if self.custom.is_some() && self.custom.as_ref().unwrap().size_per_component != other.custom.as_ref().unwrap().size_per_component {
+            panic!()
         }
 
         let max_triangle_index: u32 = self.vertices.len() as u32;

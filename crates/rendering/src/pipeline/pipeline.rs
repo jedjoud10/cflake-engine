@@ -117,9 +117,7 @@ impl Pipeline {
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
             PipelineTask::UpdateRendererUniforms(id, uniforms) => {
-                self.get_renderer_mut(id).map(|x| {
-                    x.update_uniforms(uniforms);
-                });
+                if let Some(x) = self.get_renderer_mut(id) { x.update_uniforms(uniforms); }
             }
 
             PipelineTask::DisposeRenderer(id) => self.renderer_dispose(id),
@@ -567,7 +565,7 @@ impl Pipeline {
     }
     // Create a model
     fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
-        let mut model = task.0;
+        let model = task.0;
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = model.triangles.len();
         unsafe {

@@ -1,5 +1,4 @@
 use main::core::{Context, WriteContext};
-use main::ecs;
 use main::ecs::event::EventKey;
 
 // A simple system that we can use for testing

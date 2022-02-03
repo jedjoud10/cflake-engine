@@ -11,7 +11,6 @@ pub use main::*;
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, RwLock},
 };
 
 // Initialize GLFW and the Window

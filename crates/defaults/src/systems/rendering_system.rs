@@ -1,6 +1,6 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, event::EventKey},
+    ecs::event::EventKey,
     rendering::{
         self,
         object::{ObjectID, PipelineTask},

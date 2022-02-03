@@ -1,5 +1,5 @@
 use main::{
-    ecs::{component::Component, entity::EntityID, global::Global},
+    ecs::{entity::EntityID, global::Global},
     math::octrees::{DiffOctree, HeuristicSettings},
     rendering::{
         advanced::{
@@ -18,7 +18,7 @@ use main::{
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
-    terrain::{mesher::Mesher, ChunkCoords, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
+    terrain::{ChunkCoords, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
 use std::{
     collections::{HashMap, HashSet},

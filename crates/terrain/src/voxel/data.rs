@@ -1,8 +1,4 @@
-use std::{alloc::Layout, ptr::NonNull};
-
 use crate::{PackedVoxelData, CHUNK_SIZE};
-
-use super::packed::PackedVoxel;
 
 // Some stored voxel data, in SoA form
 pub struct StoredVoxelData {

@@ -41,7 +41,7 @@ impl ReadBytes {
         let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
         let src_ptr = bytes.as_ptr();
         let dst_ptr = arr.as_mut_ptr() as *mut u8;
-        let new_len = bytes.len() / size_of::<U>();
+        let _new_len = bytes.len() / size_of::<U>();
         // Check if the byte count is legal
         if byte_count != bytes.len() || bytes.is_empty() {
             return None;

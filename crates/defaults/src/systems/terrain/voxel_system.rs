@@ -1,13 +1,13 @@
 use main::{
     core::{Context, WriteContext},
-    ecs::{component::ComponentQuery, entity::EntityID, event::EventKey},
+    ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
         basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::ShaderUniformsGroup},
         object::PipelineTrackedTask,
         pipeline::{pipec, Pipeline},
     },
-    terrain::{PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
+    terrain::{PackedVoxel, CHUNK_SIZE},
 };
 
 // Start generating the voxel data for a specific chunk

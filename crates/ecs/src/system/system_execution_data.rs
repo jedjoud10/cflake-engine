@@ -1,4 +1,4 @@
-use crate::{component::ComponentQuery, event::EventKey};
+use crate::{event::EventKey};
 
 // Some data that is created and returned whenever we want to execute a system
 pub struct SystemExecutionData<Context> {
