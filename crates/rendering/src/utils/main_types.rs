@@ -30,14 +30,14 @@ impl DataType {
 }
 
 // How we will access a buffer object
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum AccessType {
     Write,
     Read,
     Pass,
 }
 // How frequently we will update the data of a buffer object
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum UpdateFrequency {
     Static,
     Dynamic,
@@ -45,7 +45,7 @@ pub enum UpdateFrequency {
 }
 
 // How we will use a buffer
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct UsageType {
     pub access: AccessType,
     pub frequency: UpdateFrequency,

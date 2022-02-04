@@ -10,7 +10,17 @@ pub struct DynamicRawBuffer<T> {
 
     // Other data
     usage: UsageType,
-    vec: Vec<T>,
+    pub vec: Vec<T>,
+}
+
+impl<T> std::fmt::Debug for DynamicRawBuffer<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DynamicRawBuffer")
+            .field("buffer", &self.buffer)
+            .field("_type", &self._type)
+            .field("usage", &self.usage)
+            .field("vec", &self.vec.len()).finish()
+    }
 }
 
 impl<T> DynamicRawBuffer<T> {
@@ -26,7 +36,9 @@ impl<T> DynamicRawBuffer<T> {
             let mut oid = 0;
             gl::GenBuffers(1, &mut oid);
             gl::BindBuffer(_type, oid);
-            gl::BufferData(_type, (size_of::<T>() * capacity) as isize, null(), usage.convert());
+            if capacity != 0 {
+                gl::BufferData(_type, (size_of::<T>() * capacity) as isize, null(), usage.convert());
+            }
             gl::BindBuffer(_type, 0);
             oid
         };
@@ -57,6 +69,7 @@ impl<T> DynamicRawBuffer<T> {
                 let data = self.vec.last().unwrap();
                 gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
             }
+            gl::BindBuffer(self._type, 0);
         }
     }
     // Update a value at a specific index
@@ -69,10 +82,11 @@ impl<T> DynamicRawBuffer<T> {
         let old = self.vec.get_mut(index).unwrap();
         function(old);
         // Also update the OpenGL buffer
-        let offset = index * size_of::<T>();
-        let data = self.vec.get(index).unwrap();
         unsafe {
-            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+            gl::BindBuffer(self._type, self.buffer);
+            //gl::BufferSubData(self._type, (index * size_of::<T>()) as isize, size_of::<T>() as isize, self.vec.as_ptr() as *const T as *const c_void);
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
+            gl::BindBuffer(self._type, 0);
         }
     }
     // Replace a value at a specific index
@@ -86,9 +100,10 @@ impl<T> DynamicRawBuffer<T> {
         let old = std::mem::replace(self.vec.get_mut(index).unwrap(), val);
         // Also update the OpenGL buffer
         let offset = index * size_of::<T>();
-        let data = self.vec.get(index).unwrap();
         unsafe {
-            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
+            gl::BindBuffer(self._type, self.buffer);
+            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, self.vec.as_ptr() as *const T as *const c_void);
+            gl::BindBuffer(self._type, 0);
         }
         old
     }
@@ -101,9 +116,10 @@ impl<T> DynamicRawBuffer<T> {
         // Simple swap remove
         let old = self.vec.swap_remove(index);
         // Also update the whole OpenGL buffer
-        let data = self.vec.as_ptr();
         unsafe {
-            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+            gl::BindBuffer(self._type, self.buffer);
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
+            gl::BindBuffer(self._type, 0);
         }
         old
     }
@@ -112,9 +128,10 @@ impl<T> DynamicRawBuffer<T> {
         // Simple pop
         let old = self.vec.pop();
         // Also update the whole OpenGL buffer
-        let data = self.vec.as_ptr();
         unsafe {
-            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+            gl::BindBuffer(self._type, self.buffer);
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
+            gl::BindBuffer(self._type, 0);
         }
         old
     }

@@ -233,6 +233,7 @@ impl Pipeline {
             let mut group = ShaderUniformsGroup::new();
             group.set_f32("_time", time as f32);
             group.set_f32("_delta", delta as f32);
+            group.set_vec2i32("_resolution", self.window.dimensions.into());
             let id = ShaderUniformsSettings::new(ObjectID::new(id));
             group.execute(self, id).unwrap();
         }
@@ -701,6 +702,7 @@ impl Pipeline {
             // Unbind
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Add the model normally and also add it's corresponding buffers
         self.models.insert(task.1.id.unwrap(), (model, buffers));
@@ -1332,8 +1334,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 renderer.pre_render();
                 renderer.render_frame(&*pipeline);
                 renderer.post_render(&*pipeline);
-                // Do not forget to switch buffers at the end of the frame
-                window.swap_buffers();
 
                 // Debug if needed
                 if debug {
@@ -1348,6 +1348,10 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
                 let i = std::time::Instant::now();
                 pipeline.execute_end_of_frame_callbacks();
+
+                // Do not forget to switch buffers at the end of the frame
+                window.swap_buffers();
+
                 // Debug if needed
                 if debug {
                     println!("Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);

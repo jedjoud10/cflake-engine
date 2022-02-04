@@ -35,8 +35,7 @@ impl World {
 
         // Create an empty default UI
         let mut root = ui::Root::default();
-        root.add_element(ui::Element::default());
-        self.ui.add_root("default", ui::Root::default());
+        self.ui.add_root("default", root);
 
         // Load the config file (create it if it doesn't exist already)
         self.io.create_default("config\\game_config.json", &crate::GameConfig::default());
