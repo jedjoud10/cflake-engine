@@ -14,7 +14,7 @@ FinalVoxel get_final_voxel(vec3 pos, vec3 normal, Voxel voxel) {
 // A packed voxel that is also stored in an array, but we will read it back eventually on the CPU
 struct PackedVoxel {
     float density;
-    // Normal { X, Y, Z } in a single uints
+    // Normal { X, Y, Z } in a single uint
     uint x_y_z_padding;     
     // Color { X, Y, Z } and Material stored in a single uint
     uint x_y_z_material;

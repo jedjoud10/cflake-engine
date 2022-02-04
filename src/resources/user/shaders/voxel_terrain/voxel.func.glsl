@@ -23,12 +23,14 @@ Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
 void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
     vec3 color = vec3(0.0);
     // Some colors
+    voxel.material = 1;
     if (dot(normal, vec3(0, 1, 0)) > 0.9) {
         color = vec3(94, 128, 25) / 255;
     } else if (dot(normal, vec3(0, 1, 0)) > 0.7) {
         color = vec3(43, 27, 5) / 255;
     } else {
         color = vec3(0.2);
+        voxel.material = 0;
     }
     voxel.color = color;
     voxel.color *= mix(snoise(pos * 0.03 + 502.0), 1.0, 0.95);

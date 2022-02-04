@@ -19,7 +19,7 @@ in vec3 m_color;
 in vec2 m_uv;
 in flat uint m_material_type;
 void main() {
-	frag_diffuse = vec3(1, 1, 1) * m_color;
+	frag_diffuse = vec3(1, 1, 1) * m_color * m_material_type;
 	frag_normal = m_normal;
 	frag_pos = m_position;
 	frag_emissive = vec3(0, 0, 0);

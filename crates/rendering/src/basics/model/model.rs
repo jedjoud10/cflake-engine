@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, mem::ManuallyDrop};
 
 use veclib::{Vector, VectorElemCount};
 
@@ -95,9 +95,6 @@ impl Model {
         if self.custom.is_some() != other.custom.is_some() {
             panic!()
         };
-        if self.custom.is_some() && self.custom.as_ref().unwrap().size_per_component != other.custom.as_ref().unwrap().size_per_component {
-            panic!()
-        }
 
         let max_triangle_index: u32 = self.vertices.len() as u32;
         // Get the max triangle inde
@@ -119,6 +116,11 @@ impl Model {
     // Combine a model with this one
     // NOTE: This assumes that the second model uses vertices from the first model
     pub fn combine_smart(mut self, other: Self) -> Self {
+        // We must have matching custom vertex buffers
+        if self.custom.is_some() != other.custom.is_some() {
+            panic!()
+        };
+
         self.triangles.extend(other.triangles.into_iter());
         self.vertices.extend(other.vertices.into_iter());
         self.normals.extend(other.normals.into_iter());
@@ -161,18 +163,20 @@ impl Model {
         self.normals = vertex_normals;
     }
     // Add some custom vertex data
-    pub fn with_custom<T, U: Vector<T> + VectorElemCount>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T, U>) -> Self {
+    pub fn with_custom<T>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T>) -> Self {
         // We gotta serialize the data now, in native endian
-        let ptr = custom_vertex_buffer.inner.as_ptr();
-        let byte_size = std::mem::size_of::<U>();
-        let total_len = byte_size * custom_vertex_buffer.inner.len();
-        let slice: &[u8] = unsafe { std::slice::from_raw_parts(ptr as *const u8, total_len) };
-        let vec = slice.to_vec();
+        let mut vec = ManuallyDrop::new(custom_vertex_buffer.inner);
+        let ptr = vec.as_ptr();
+        let byte_size = std::mem::size_of::<T>();
+        let total_len = byte_size * vec.len();
+        dbg!(byte_size);
+        dbg!(total_len);
+        let inner = unsafe { std::slice::from_raw_parts(ptr as *const u8, total_len) }.to_vec();
         self.custom = Some(StoredCustomVertexDataBuffer {
-            inner: vec,
-            size_per_component: U::ELEM_COUNT,
-            _type: custom_vertex_buffer._type,
+            components_per_vertex: custom_vertex_buffer.components_per_vertex,
+            inner,
         });
+        unsafe { ManuallyDrop::drop(&mut vec) }
         self
     }
 }

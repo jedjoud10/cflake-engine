@@ -89,7 +89,7 @@ impl MarchingCubes {
                 model.model.vertices.push(interpolated.vertex);
                 model.model.normals.push(interpolated.normal);
                 model.model.colors.push(interpolated.color);
-                model.vdata.push(data.material as u32);
+                model.vdata.push::<u32>(5);
             } else {
                 // The vertex already exists
                 model.model.triangles.push(merger.duplicates[&edge_tuple] as u32);
@@ -127,7 +127,7 @@ impl MarchingCubes {
         // Create the model data
         let mut model = BuilderModelData {
             model: Model::with_capacity(64),
-            vdata: CustomVertexDataBuffer::<u32, u32>::with_capacity(64, U32),
+            vdata: CustomVertexDataBuffer::<u32>::with_capacity(64),
         };        
         // Then generate the model
         self.generate_model(voxels, &mut model);
@@ -135,7 +135,8 @@ impl MarchingCubes {
         let extracted_model = model.model;
         let custom_vdata = model.vdata;
         println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, extracted_model.vertices.len());
-        extracted_model.with_custom(custom_vdata)
+        //extracted_model
+        extracted_model.with_custom::<u32>(custom_vdata)
     }
 }
 // Info about the current iteration

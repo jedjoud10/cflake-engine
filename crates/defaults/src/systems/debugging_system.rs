@@ -11,15 +11,27 @@ fn run(context: &mut Context, data: EventKey) {
     let pipeline = read.pipeline.read();
     if read.input.map_pressed("debug") {
         // Debug some data
-        println!("Component count: '{}'", read.ecs.count_components());
-        println!("Entity count: '{}'", read.ecs.count_entities());
-        println!("System count: '{}'", read.ecs.count_systems());
+
         println!("Time: '{}', Delta Time: '{}', FPS: '{}'", read.time.elapsed, read.time.delta, 1.0 / read.time.delta);
+        println!("ECS: ");
+        println!("  #Component: '{}'", read.ecs.count_components());
+        println!("  #Entities: '{}'", read.ecs.count_entities());
+        println!("  #Systems: '{}'", read.ecs.count_systems());
         // Debug some global info
         let global_fetcher = data.get_global_fetcher().unwrap();
         let core_global = read.ecs.get_global::<crate::globals::GlobalWorldData>(&global_fetcher).unwrap();
-        println!("Main Camera Position: '{:?}'", core_global.camera_pos);
+        println!("Global: ");
+        println!("  #Camera Position: '{}'", core_global.camera_pos);
         main::rendering::pipeline::pipec::set_debugging(true, &*pipeline);
+        // Also debug the terrain if needed
+        let terrain = read.ecs.get_global::<crate::globals::Terrain>(&global_fetcher);
+        if let Ok(terrain) = terrain {
+            println!("Terrain: ");
+            println!("  #Chunk Size: [{a}x{a}x{a}]", a =main::terrain::CHUNK_SIZE);
+            println!("  #Chunks: '{}'", terrain.chunks.len());
+            println!("  #Pending Generation: '{}'", terrain.chunks_generating.len());
+            println!("  #Pending Deletion: '{}'", terrain.chunks_to_remove.len());
+        }
     } else {
         main::rendering::pipeline::pipec::set_debugging(false, &*pipeline);
     }

@@ -662,8 +662,7 @@ impl Pipeline {
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
                 let vec = &model.custom.as_ref().unwrap().inner;
                 let byte_len = vec.len() as isize;
-                let ptr = vec.as_ptr() as *const c_void;
-                gl::BufferData(gl::ARRAY_BUFFER, byte_len, ptr, gl::STATIC_DRAW);
+                gl::BufferData(gl::ARRAY_BUFFER, byte_len, vec.as_ptr() as *const c_void, gl::STATIC_DRAW);
             }
 
             // Create the vertex attrib arrays
@@ -699,7 +698,7 @@ impl Pipeline {
                 let custom = model.custom.as_ref().unwrap();
                 gl::EnableVertexAttribArray(5);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                gl::VertexAttribPointer(5, custom.size_per_component as i32, custom._type.convert(), gl::FALSE, 0, null());
+                gl::VertexAttribPointer(5, custom.components_per_vertex as i32, gl::UNSIGNED_BYTE, gl::FALSE, 0, null());
             }
             // Unbind
             gl::BindVertexArray(0);
@@ -1316,66 +1315,63 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
         // We must render every frame
         loop {
             let debug;
-            {
-                // At the start of each frame we must sync up with the main thread
-                waiting_clone.store(true, Ordering::Relaxed);
-                sbarrier_clone.wait();
-                waiting_clone.store(false, Ordering::Relaxed);
-            }
+            // At the start of each frame we must sync up with the main thread
+            waiting_clone.store(true, Ordering::Relaxed);
+            sbarrier_clone.wait();
+            waiting_clone.store(false, Ordering::Relaxed);
             // This is a single frame
-            {
-                let mut pipeline = pipeline.write().unwrap();
-                let time = time_clone.lock().unwrap();
-                pipeline.update_global_shader_uniforms(time.0, time.1);
-                debug = pipeline.debugging.load(Ordering::Relaxed);
-            }
-            {
-                let i = std::time::Instant::now();
-                // We render the world here
-                let pipeline = pipeline.read().unwrap();
-                renderer.pre_render();
-                renderer.render_frame(&*pipeline);
-                renderer.post_render(&*pipeline);
+            let mut pipeline_ = pipeline.write().unwrap();
+            let time = time_clone.lock().unwrap();
+            pipeline_.update_global_shader_uniforms(time.0, time.1);
+            debug = pipeline_.debugging.load(Ordering::Relaxed);
+            if debug { println!("Pipeline: "); }
+            drop(pipeline_);
 
-                // Debug if needed
-                if debug {
-                    println!("Pipeline Render Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-                }
+            let i = std::time::Instant::now();
+            // We render the entities here
+            let pipeline_ = pipeline.read().unwrap();
+            renderer.pre_render();
+            renderer.render_frame(&*pipeline_);
+            renderer.post_render(&*pipeline_);
 
-                // And we also sync at the end of each frame
-                ebarrier_clone.wait();
+            // Debug if needed
+            if debug {
+                println!("  #Pipeline Render Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
             }
+
+            // And we also sync at the end of each frame
+            ebarrier_clone.wait();
+            drop(pipeline_);
+
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
-            {
-                let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
-                let i = std::time::Instant::now();
-                pipeline.execute_end_of_frame_callbacks();
+            let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
+            let i = std::time::Instant::now();
+            pipeline.execute_end_of_frame_callbacks();
 
-                // Do not forget to switch buffers at the end of the frame
-                window.swap_buffers();
+            // Do not forget to switch buffers at the end of the frame
+            window.swap_buffers();
 
-                // Debug if needed
-                if debug {
-                    println!("Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-                }
+            // Debug if needed
+            if debug {
+                println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+            }
 
-                let i = std::time::Instant::now();
-                let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
-                // Set the buffer
-                pipeline.add_tasks(messages);
+            let i = std::time::Instant::now();
+            let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
+            // Set the buffer
+            pipeline.add_tasks(messages);
 
-                // Execute the tasks
-                pipeline.update(&mut internal, &mut renderer);
+            // Execute the tasks
+            pipeline.update(&mut internal, &mut renderer);
 
-                // Debug if needed
-                if debug {
-                    println!("Pipeline Update Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-                }
+            // Debug if needed
+            if debug {
+                println!("  #Pipeline Update Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+            }
 
-                // Check if we must exit from the render thread
-                if eatomic_clone.load(Ordering::Relaxed) {
-                    break;
-                }
+            // Check if we must exit from the render thread
+            if eatomic_clone.load(Ordering::Relaxed) {
+                break;
             }
         }
         println!("Stopped the render thread!");

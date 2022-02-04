@@ -8,29 +8,26 @@ use crate::utils::DataType;
 pub(crate) struct StoredCustomVertexDataBuffer {
     // The vector that stores all the bytes
     pub(crate) inner: Vec<u8>,
-    pub(crate) size_per_component: usize,
-    pub(crate) _type: DataType,
+    pub(crate) components_per_vertex: usize,
 }
 
 // Some custom vertex data that we can store
-pub struct CustomVertexDataBuffer<T, U: Vector<T> + VectorElemCount> {
-    pub(crate) inner: Vec<U>,
-    pub(crate) _type: DataType,
-    _phantom: PhantomData<T>,
+pub struct CustomVertexDataBuffer<T> {
+    pub(crate) inner: Vec<T>,
+    pub(crate) components_per_vertex: usize,
 }
 
-impl<T, U: Vector<T> + VectorElemCount> CustomVertexDataBuffer<T, U> {
+impl<T> CustomVertexDataBuffer<T> {
     // Allocate enough size so we can add multiple Ts without the need to reallocate our inner buffer
     // This also clears the vector
-    pub fn with_capacity(capacity: usize, _type: DataType) -> Self {
+    pub fn with_capacity<U>(capacity: usize) -> Self where T: Vector<U> + VectorElemCount {
         Self {
-            inner: Vec::with_capacity(capacity * size_of::<U>()),
-            _phantom: PhantomData::default(),
-            _type,
+            inner: Vec::with_capacity(capacity),
+            components_per_vertex: T::ELEM_COUNT,
         }
     }
     // Add a single custom vertex data, but check if the types match first
-    pub fn push(&mut self, vertex_data: U) {
+    pub fn push<U>(&mut self, vertex_data: T)  {
         self.inner.push(vertex_data);
     }
 }
