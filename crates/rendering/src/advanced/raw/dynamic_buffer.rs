@@ -99,7 +99,18 @@ impl<T> DynamicRawBuffer<T> {
             panic!()
         }
         // Simple swap remove
-        let old = self.swap_remove(index);
+        let old = self.vec.swap_remove(index);
+        // Also update the whole OpenGL buffer
+        let data = self.vec.as_ptr();
+        unsafe {
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, data as *const c_void);
+        }
+        old
+    }
+    // Remove the last element from the buffer. Useful when we know that we will update the buffer with new data later on
+    pub fn pop(&mut self) -> Option<T> {
+        // Simple pop
+        let old = self.vec.pop();
         // Also update the whole OpenGL buffer
         let data = self.vec.as_ptr();
         unsafe {

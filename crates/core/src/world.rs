@@ -34,6 +34,8 @@ impl World {
         // Load the default stuff
 
         // Create an empty default UI
+        let mut root = ui::Root::default();
+        root.add_element(ui::Element::default());
         self.ui.add_root("default", ui::Root::default());
 
         // Load the config file (create it if it doesn't exist already)

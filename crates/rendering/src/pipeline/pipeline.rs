@@ -84,6 +84,9 @@ pub struct Pipeline {
     pub window: Window,
     // Atomic used to debug some data
     pub(crate) debugging: AtomicBool,
+
+    // End Of Frame callbacks
+    pub(crate) eof_callbacks: Arc<Mutex<Vec<Box<dyn Fn(&mut Pipeline) + Sync + Send>>>>,
 }
 
 impl Pipeline {
@@ -234,6 +237,16 @@ impl Pipeline {
             group.execute(self, id).unwrap();
         }
     }
+    // Run the End Of Frame callbacks
+    pub(crate) fn execute_end_of_frame_callbacks(&mut self) {
+        let lock_ = self.eof_callbacks.clone();
+        let lock = lock_.lock().unwrap();
+        for callback in &*lock {
+            // Execute the callback
+            (callback)(self)
+        } 
+    }
+    
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
         if let Some(id) = id.id {
@@ -1332,8 +1345,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             }
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             {
-                let i = std::time::Instant::now();
                 let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
+                let i = std::time::Instant::now();
+                pipeline.execute_end_of_frame_callbacks();
+                // Debug if needed
+                if debug {
+                    println!("Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                }
+
+                let i = std::time::Instant::now();                
                 let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);

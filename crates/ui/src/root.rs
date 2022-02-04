@@ -14,7 +14,6 @@ pub struct Root {
     pub visible: bool,
     // The elements that we have added, replaced, and removed from the root this frame
     pub added: HashSet<ElementID>,
-    pub mutated: HashSet<ElementID>,
     pub removed: HashMap<ElementID, InstancedBatchIdentifier>,
 }
 
@@ -25,7 +24,6 @@ impl Default for Root {
             elements: OrderedVec::<Element>::default(),
             visible: true,
             added: HashSet::with_capacity(8),
-            mutated: HashSet::with_capacity(8),
             removed: HashMap::with_capacity(8),
         };
         // And add the root element to it
@@ -81,7 +79,6 @@ impl Root {
         // Update diffs
         self.removed.insert(id, batch_id);
         self.added.remove(&id);
-        self.mutated.remove(&id);
         Some(())
     }
     // Attach some child elements to an element
@@ -109,8 +106,6 @@ impl Root {
     }
     // Get a mutable element from the root using it's id
     pub fn get_element_mut(&mut self, id: ElementID) -> Option<&mut Element> {
-        // Update diffs
-        self.mutated.remove(&id);
         self.elements.get_mut(id.0)
     }
 }

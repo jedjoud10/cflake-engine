@@ -69,4 +69,11 @@ pub mod pipec {
     pub fn tracked_task_requirement(task: PipelineTrackedTask, tracked_id: ReservedTrackedTaskID, req: ReservedTrackedTaskID, pipeline: &Pipeline) {
         sender::send_task(PipelineTaskCombination::SingleTracked(task, tracked_id, Some(req)), pipeline).unwrap();
     }
+    // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
+    // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
+    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline) + Sync + Send + 'static>(function: F, pipeline: &Pipeline) -> Option<()> {
+        let mut lock = pipeline.eof_callbacks.lock().ok()?;
+        lock.push(Box::new(function));
+        Some(())
+    }
 }

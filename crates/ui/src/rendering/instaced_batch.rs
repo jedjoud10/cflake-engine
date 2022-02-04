@@ -31,7 +31,6 @@ pub struct InstancedBatch {
     pub depth_buf: DynamicRawBuffer<f32>,
 
     // Per instance settings
-    pub instances: HashMap<ElementID, usize>,
     pub instance_count: usize,
 }
 
@@ -110,7 +109,6 @@ impl InstancedBatch {
             depth_buf,
             colors_buf,
             instance_count: 0,
-            instances: HashMap::new(),
         }
     }
 }

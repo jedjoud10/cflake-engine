@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 use main::assets::preload_asset;
 use main::core::WriteContext;
-use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system};
+use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system, ui_system};
 // Default components
 pub mod components;
 // Default globals
@@ -33,10 +33,10 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\general.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
     // UI
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_elem.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_panel.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\ui_font.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\panel.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\panel.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\font.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\ui\\font.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\fonts\\default_font.font");
     // Models
     preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d");
@@ -68,6 +68,7 @@ pub fn preload_system(mut write: WriteContext) {
     rendering_system::system(&mut write);
     debugging_system::system(&mut write);
     window_system::system(&mut write);
+    ui_system::system(&mut write);
     //test_system::system(&mut write);
     // Terrain
     terrain::chunk_system::system(&mut write);
