@@ -66,7 +66,6 @@ impl Terrain {
     pub fn new(voxel_src_path: &str, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Create a new octree
         let octree = DiffOctree::new(octree_depth, (CHUNK_SIZE) as u64, HeuristicSettings::default());
-
         // Load the first pass compute shader
         let pipeline = pipeline_context.read();
         let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path));

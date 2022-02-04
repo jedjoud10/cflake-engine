@@ -37,7 +37,7 @@ impl MarchingCubes {
         let mut case_index = 0u8;
         for l in 0..8 {
             let density = *voxels.density(info.i + DATA_OFFSET_TABLE[l]);
-            case_index |= (density.is_sign_positive() as u8) << l;
+            case_index |= ((density > 0.0) as u8) << l;
         }
         case_index
     }
@@ -134,7 +134,7 @@ impl MarchingCubes {
         // Combine the model's custom vertex data with the model itself
         let extracted_model = model.model;
         let custom_vdata = model.vdata;
-        println!("Main: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+        println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, extracted_model.vertices.len());
         extracted_model.with_custom(custom_vdata)
     }
 }

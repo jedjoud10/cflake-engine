@@ -51,7 +51,6 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\second.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\shared.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain_shader.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl");
     // Textures

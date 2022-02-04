@@ -14,7 +14,7 @@ fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 6.0, 8000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 6.0, 512000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -98,7 +98,7 @@ fn init(mut write: core::WriteContext) {
     uniforms.set_texture("tex", tex, 0);
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 5, &pipeline_)
+    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8, &pipeline_)
         .set_heuristic(heuristic)
         .set_material(material)
         .set_uniforms(uniforms);
