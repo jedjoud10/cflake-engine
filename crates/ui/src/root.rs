@@ -9,12 +9,12 @@ use ordered_vec::simple::OrderedVec;
 // The root UI element on the screen, contains all the elements in a binary tree fashion
 pub struct Root {
     // All of the UI elements that will be drawn
-    pub elements: OrderedVec<Element>,
+    pub(crate) elements: OrderedVec<Element>,
     // Is the root even visible?
-    pub visible: bool,
+    pub(crate) visible: bool,
     // The elements that we have added, replaced, and removed from the root this frame
-    pub added: HashSet<ElementID>,
-    pub removed: HashMap<ElementID, InstancedBatchIdentifier>,
+    pub(crate) added: HashSet<ElementID>,
+    pub(crate) removed: HashMap<ElementID, InstancedBatchIdentifier>,
 }
 
 impl Default for Root {
@@ -33,16 +33,15 @@ impl Root {
     pub fn root(&self) -> ElementID {
         ElementID(0)
     }
-    // Add an element to the tree
+    // Add an element to the tree (attach it to the inexistent root element)
     pub fn add_element(&mut self, mut element: Element) -> ElementID {
         // Get the ID of the element
         let id = ElementID(self.elements.get_next_id());
         element.id = Some(id);
-        element.depth += 1;
+        element.depth = 1;
+        element.parent = Some(self.root());
         // Add the element
         self.elements.push_shove(element);
-        // And also add the element to our root
-        self.attach(self.root(), &[id]);
         // Update diffs
         self.added.insert(id);
         id
@@ -53,7 +52,6 @@ impl Root {
         if id == self.root() {
             return None;
         }
-
         // Recursively get the children if we need to
         let element = self.get_element(id)?;
         let shader = element.shader;

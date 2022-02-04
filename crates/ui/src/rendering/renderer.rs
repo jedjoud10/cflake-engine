@@ -54,9 +54,10 @@ impl Renderer {
             // We will all the default values for these, since we're going to be updating them in a later step anyways
             batch.depth_buf.push(0.0);
             batch.colors_buf.push(element.color);
+            batch.screen_verts_center_and_size_buf.push(Default::default());
+            batch.screen_verts_center_and_size_buf.push(Default::default());
             for _ in 0..4 {
                 batch.texture_uvs_buf.push(Default::default());
-                batch.screen_uvs_buf.push(Default::default());
             }
             batch.instance_count += 1;
         }
@@ -69,44 +70,36 @@ impl Renderer {
             // Since we will be updating the buffers every time, we don't care that we remove a wrong element, as long as we just remove an element
             batch.depth_buf.pop();
             batch.colors_buf.pop();
+            batch.screen_verts_center_and_size_buf.pop();
+            batch.screen_verts_center_and_size_buf.pop();
             for _ in 0..4 {
-                batch.screen_uvs_buf.pop();
                 batch.texture_uvs_buf.pop();
             }
             batch.instance_count -= 1;
         }
         // We gotta update the depth and screen_uvs values for every element, even if we didn't mutate it
+        let resolution: veclib::Vector2<f32> = pipeline.window.dimensions.into();
         for (index, (_, element)) in root.elements.iter().enumerate() {
             let identifier = InstancedBatchIdentifier {
                 shader: element.shader,
                 texture: element.texture,
             };
             let batch = self.batches.get_mut(&identifier).unwrap();
-
-            // Calculate the screen UVs (min, max) using the center position and size
-            let center = element.center;
-            let size = element.size;
-            // Calculate min and max now
-            let min: veclib::Vector2<f32> = veclib::vec2(center.x as f32 - size.x as f32 / 2.0, center.y as f32 - size.y as f32 / 2.0);
-            let max: veclib::Vector2<f32> = veclib::vec2(center.x as f32 + size.x as f32 / 2.0, center.y as f32 + size.y as f32 / 2.0);
-            // Convert from pixel coordinates to UV coordinates
-            let min = min / window_size;
-            let max = max / window_size;
-
+            let center: veclib::Vector2<f32> = element.center.into();
+            let size: veclib::Vector2<f32> = element.size.into();
             // I am a masochist
-            batch.screen_uvs_buf.update(index * 4 + 0, |x| *x = min);
-            batch.screen_uvs_buf.update(index * 4 + 1, |x| *x = veclib::vec2(min.x, max.y));
-            batch.screen_uvs_buf.update(index * 4 + 2, |x| *x = veclib::vec2(min.y, max.x));
-            batch.screen_uvs_buf.update(index * 4 + 3, |x| *x = max);
+            batch.screen_verts_center_and_size_buf.update(index * 4 + 0, |x| *x = center / resolution);
+            batch.screen_verts_center_and_size_buf.update(index * 4 + 1, |x| *x = size / resolution);
+            /*
             batch.texture_uvs_buf.update(index * 4 + 0, |x| *x = element.texture_uvs.get2([0, 1]));
             batch.texture_uvs_buf.update(index * 4 + 1, |x| *x = element.texture_uvs.get2([0, 3]));
             batch.texture_uvs_buf.update(index * 4 + 2, |x| *x = element.texture_uvs.get2([2, 1]));
             batch.texture_uvs_buf.update(index * 4 + 3, |x| *x = element.texture_uvs.get2([2, 3]));
-
-            batch.depth_buf.update(index, |x| *x = element.depth as f32 / max_depth as f32);
+            */
+            batch.depth_buf.update(index, |x| *x = (element.depth as f32 * 0.995) / max_depth as f32);
 
             // Update some values if needed
-            batch.colors_buf.update(index, |x| *x = veclib::vec4(1.0, 0.0, 0.0, 1.0));
+            batch.colors_buf.update(index, |x| *x = element.color);
         }
 
         // Now we can actually draw the elements as multiple instanced batches

@@ -26,7 +26,7 @@ pub struct InstancedBatch {
     pub vbo: u32,
     pub ebo: u32,
     // Arrays
-    pub screen_uvs_buf: DynamicRawBuffer<veclib::Vector2<f32>>,
+    pub screen_verts_center_and_size_buf: DynamicRawBuffer<veclib::Vector2<f32>>,
     pub texture_uvs_buf: DynamicRawBuffer<veclib::Vector2<f32>>,
     pub colors_buf: DynamicRawBuffer<veclib::Vector4<f32>>,
     pub depth_buf: DynamicRawBuffer<f32>,
@@ -89,10 +89,11 @@ impl InstancedBatch {
         }
 
         // Create the instanced arrays
-        // These two will be updated on a vertex to vertex basis
-        let screen_uvs_buf = DynamicRawBuffer::<veclib::Vector2<f32>>::with_capacity(gl::ARRAY_BUFFER, STARTING_ALLOCATED_CAPACITY_PER_VERT_ATTRIBUTE, DYNAMIC_USAGE);
+        // This one will be updated on a vertex to vertex basis
         let texture_uvs_buf = DynamicRawBuffer::<veclib::Vector2<f32>>::with_capacity(gl::ARRAY_BUFFER, STARTING_ALLOCATED_CAPACITY_PER_VERT_ATTRIBUTE, DYNAMIC_USAGE);
-        // These other two will be updated on an instance to instance basis
+        // These other 3 will be updated on an instance to instance basis
+        let screen_verts_center_and_size_buf =
+            DynamicRawBuffer::<veclib::Vector2<f32>>::with_capacity(gl::ARRAY_BUFFER, STARTING_ALLOCATED_CAPACITY_PER_VERT_ATTRIBUTE, DYNAMIC_USAGE);
         let depth_buf = DynamicRawBuffer::<f32>::with_capacity(gl::ARRAY_BUFFER, STARTING_ALLOCATED_CAPACITY_PER_INST_ATTRIBUTE, DYNAMIC_USAGE);
         let colors_buf = DynamicRawBuffer::<veclib::Vector4<f32>>::with_capacity(gl::ARRAY_BUFFER, STARTING_ALLOCATED_CAPACITY_PER_INST_ATTRIBUTE, DYNAMIC_USAGE);
 
@@ -106,22 +107,28 @@ impl InstancedBatch {
         // Instanced arrays
         unsafe {
             gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, screen_uvs_buf.buffer);
-            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 0, null());
+            gl::BindBuffer(gl::ARRAY_BUFFER, screen_verts_center_and_size_buf.buffer);
+            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, 4 * size_of::<f32>() as i32, null());
+            gl::VertexAttribDivisor(1, 1);
 
             gl::EnableVertexAttribArray(2);
-            gl::BindBuffer(gl::ARRAY_BUFFER, texture_uvs_buf.buffer);
-            gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, 0, null());
+            gl::BindBuffer(gl::ARRAY_BUFFER, screen_verts_center_and_size_buf.buffer);
+            gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, 4 * size_of::<f32>() as i32, (2 * size_of::<f32>()) as *const c_void);
+            gl::VertexAttribDivisor(2, 1);
 
             gl::EnableVertexAttribArray(3);
-            gl::BindBuffer(gl::ARRAY_BUFFER, depth_buf.buffer);
-            gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE, 0, null());
-            gl::VertexAttribDivisor(3, 1);
+            gl::BindBuffer(gl::ARRAY_BUFFER, texture_uvs_buf.buffer);
+            gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
 
             gl::EnableVertexAttribArray(4);
-            gl::BindBuffer(gl::ARRAY_BUFFER, colors_buf.buffer);
-            gl::VertexAttribPointer(4, 4, gl::FLOAT, gl::FALSE, 0, null());
+            gl::BindBuffer(gl::ARRAY_BUFFER, depth_buf.buffer);
+            gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE, 0, null());
             gl::VertexAttribDivisor(4, 1);
+
+            gl::EnableVertexAttribArray(5);
+            gl::BindBuffer(gl::ARRAY_BUFFER, colors_buf.buffer);
+            gl::VertexAttribPointer(5, 4, gl::FLOAT, gl::FALSE, 0, null());
+            gl::VertexAttribDivisor(5, 1);
 
             // Unbind
             gl::BindVertexArray(0);
@@ -132,7 +139,7 @@ impl InstancedBatch {
             vao,
             vbo,
             ebo,
-            screen_uvs_buf,
+            screen_verts_center_and_size_buf,
             texture_uvs_buf,
             depth_buf,
             colors_buf,

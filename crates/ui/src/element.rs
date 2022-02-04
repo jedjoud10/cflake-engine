@@ -21,8 +21,6 @@ pub struct Element {
     pub visible: bool,
     pub depth: i32,
     pub texture: ObjectID<Texture>,
-    // [X, Y] for min, [Z, W] for max
-    pub texture_uvs: veclib::Vector4<f32>,
     pub shader: ObjectID<Shader>,
 
     // Others
@@ -43,7 +41,6 @@ impl Default for Element {
             visible: true,
             depth: 0,
             texture: Default::default(),
-            texture_uvs: veclib::vec4(0.0, 0.0, 1.0, 1.0),
             shader: Default::default(),
 
             _type: ElementType::Panel,
