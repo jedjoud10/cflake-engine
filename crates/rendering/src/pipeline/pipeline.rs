@@ -19,7 +19,7 @@ use crate::{
     },
     object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
-    utils::{RenderWrapper, Window},
+    utils::{RenderWrapper, Window, DataType},
 };
 use ahash::AHashMap;
 use glfw::Context;
@@ -660,9 +660,8 @@ impl Pipeline {
                 // Custom data moment
                 gl::GenBuffers(1, &mut buffers.custom_vertex_data);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                let vec = &model.custom.as_ref().unwrap().inner;
-                let byte_len = vec.len() as isize;
-                gl::BufferData(gl::ARRAY_BUFFER, byte_len, vec.as_ptr() as *const c_void, gl::STATIC_DRAW);
+                let stored = model.custom.as_ref().unwrap();
+                gl::BufferData(gl::ARRAY_BUFFER, stored.inner.len() as isize, stored.inner.as_ptr() as *const c_void, gl::STATIC_DRAW);
             }
 
             // Create the vertex attrib arrays
@@ -698,7 +697,16 @@ impl Pipeline {
                 let custom = model.custom.as_ref().unwrap();
                 gl::EnableVertexAttribArray(5);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                gl::VertexAttribPointer(5, custom.components_per_vertex as i32, gl::UNSIGNED_BYTE, gl::FALSE, 0, null());
+                match custom._type {
+                    DataType::F32 => {
+                        // Float point
+                        gl::VertexAttribPointer(5, custom.components_per_vertex as i32, custom._type.convert(), gl::FALSE, 0, null());
+                    },
+                    x => {
+                        // Integer
+                        gl::VertexAttribIPointer(5, custom.components_per_vertex as i32, x.convert(), 0, null());
+                    }
+                }
             }
             // Unbind
             gl::BindVertexArray(0);

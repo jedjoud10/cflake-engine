@@ -5,7 +5,7 @@ use veclib::{Vector, VectorElemCount};
 use crate::{
     basics::Buildable,
     object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    pipeline::Pipeline,
+    pipeline::Pipeline, utils::DataType,
 };
 
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
@@ -163,20 +163,8 @@ impl Model {
         self.normals = vertex_normals;
     }
     // Add some custom vertex data
-    pub fn with_custom<T>(mut self, custom_vertex_buffer: CustomVertexDataBuffer<T>) -> Self {
-        // We gotta serialize the data now, in native endian
-        let mut vec = ManuallyDrop::new(custom_vertex_buffer.inner);
-        let ptr = vec.as_ptr();
-        let byte_size = std::mem::size_of::<T>();
-        let total_len = byte_size * vec.len();
-        dbg!(byte_size);
-        dbg!(total_len);
-        let inner = unsafe { std::slice::from_raw_parts(ptr as *const u8, total_len) }.to_vec();
-        self.custom = Some(StoredCustomVertexDataBuffer {
-            components_per_vertex: custom_vertex_buffer.components_per_vertex,
-            inner,
-        });
-        unsafe { ManuallyDrop::drop(&mut vec) }
+    pub fn with_custom<T>(mut self, custom: CustomVertexDataBuffer<T>, _type: DataType) -> Self {
+        self.custom = Some(StoredCustomVertexDataBuffer::new(custom, _type));
         self
     }
 }

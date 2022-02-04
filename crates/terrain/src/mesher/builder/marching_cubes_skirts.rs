@@ -39,7 +39,7 @@ impl MarchingCubesSkirts {
         // Model builder data that stores the model along with it's custom vdata
         let mut model = BuilderModelData {
             model: Model::default(),
-            vdata: CustomVertexDataBuffer::<u32>::with_capacity(200),
+            vdata: CustomVertexDataBuffer::<u32>::with_capacity(200, 1),
         };
         // Create the skirts in all 3 directions        
         for direction in 0..3 {
@@ -72,7 +72,7 @@ impl MarchingCubesSkirts {
         let extracted_model = model.model;
         let custom_vdata = model.vdata;
         println!("Skirts: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-        extracted_model.with_custom::<u32>(custom_vdata)
+        extracted_model.with_custom::<u32>(custom_vdata, U32)
     }
     // Generate a whole skirt
     fn generate_skirt(
@@ -216,7 +216,7 @@ impl MarchingCubesSkirts {
             model.model.vertices.push(vertex);
             model.model.normals.push(data.normal.normalized());
             model.model.colors.push(data.color);
-            model.vdata.push::<u32>(data.material_type as u32);
+            model.vdata.push(data.material_type as u32);
         }
     }
     // Create a marching squares triangle between 3 skirt voxels

@@ -28,8 +28,7 @@ impl<'a> Mesher<'a> {
     pub fn build(self) -> Model {
         // Gotta combine the main model and the skirts one
         let main = self.builder.build(self.valid_data, self.coords);
-        main
-        //let skirts = self.skirts_builder.build(self.valid_data, self.coords);
-        //Model::combine(main, skirts)
+        let skirts = self.skirts_builder.build(self.valid_data, self.coords);
+        Model::combine(main, skirts)
     }
 }
