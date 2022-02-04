@@ -2,6 +2,7 @@
 mod chunk_coords;
 pub mod mesher;
 mod params;
+mod test;
 pub mod utils;
 mod voxel;
 

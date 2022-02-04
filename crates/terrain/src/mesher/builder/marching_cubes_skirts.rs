@@ -6,10 +6,12 @@ use rendering::{
 use crate::{
     mesher::{
         tables::{INDEX_OFFSET_X, MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
-        MesherSettings,
+        MesherSettings, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_TRANSFORM_FN,
     },
     utils, ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
+
+use super::BuilderModelData;
 
 // A skirts builder, useful since we can keep track of the current iteration as a field, which organizes somestuff
 pub(crate) struct MarchingCubesSkirts {
@@ -33,25 +35,43 @@ impl MarchingCubesSkirts {
     }
     // Generate the marching cubes skirts
     pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
-        let mut builder_model_data = BuilderModelData {
+        let i = std::time::Instant::now();
+        // Model builder data that stores the model along with it's custom vdata
+        let mut model = BuilderModelData {
             model: Model::default(),
-            custom_vdata: CustomVertexDataBuffer::<u32, u32>::with_capacity(200, U32),
+            vdata: CustomVertexDataBuffer::<u32, u32>::with_capacity(200, U32),
         };
-        // Create the skirts in all 3 directions
-        self.generate_skirt(
-            voxels,
-            &mut builder_model_data,
-            false,
-            &INDEX_OFFSET_X,
-            |slice, x, y| crate::flatten((slice * (CHUNK_SIZE), y, x)),
-            Self::transform_x_local,
-        );
+        // Create the skirts in all 3 directions        
+        for direction in 0..3 {
+            // Lookup table for axii directions
+            let index_offsets = &SKIRTS_DIR_INDEX_OFFSET[direction];
+            let flip = SKIRTS_DIR_FLIP[direction];
+            let indexing_function = SKIRTS_DIR_INDEXING_FN[direction];
+            let transform_function = SKIRTS_DIR_TRANSFORM_FN[direction];
+            // Create the two skirts for this direction
+            self.generate_skirt(
+                voxels,
+                &mut model,
+                flip,
+                &index_offsets,
+                indexing_function,
+                transform_function,
+            );
+            self.generate_skirt(
+                voxels,
+                &mut model,
+                !flip,
+                &index_offsets,
+                indexing_function,
+                transform_function,
+            );
+        }         
         // Combine the model's custom vertex data with the model itself
-        let model = builder_model_data.model;
-        let custom_vdata = builder_model_data.custom_vdata;
-        model.with_custom(custom_vdata)
+        let extracted_model = model.model;
+        let custom_vdata = model.vdata;
+        println!("Skirts: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+        extracted_model.with_custom(custom_vdata)
     }
-
     // Generate a whole skirt
     fn generate_skirt(
         &self,
@@ -97,7 +117,7 @@ impl MarchingCubesSkirts {
             case_index |= ((*density <= 0.0) as u8) << i;
         }
         // Exit if this case is invalid
-        if case_index == 0 || case_index == 15 || case_index != 3 {
+        if case_index == 0 || case_index == 15 {
             return None;
         }
 
@@ -114,16 +134,17 @@ impl MarchingCubesSkirts {
         let mut shared_normal = veclib::Vector3::<f32>::ZERO;
         let mut shared_color = veclib::Vector3::<f32>::ZERO;
         let mut count: usize = 0;
-        //dbg!(case_index);
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
-            if edge.is_negative() { break; }
-            //dbg!(edge);
+            // Exit early
+            if edge.is_negative() {
+                break;
+            }
+
             // Get the two voxel indices
             let two_voxels = MS_EDGE_TO_VERTICES[edge as usize];
             let index1 = info.i + info.index_offsets[two_voxels[0] as usize];
             let index2 = info.i + info.index_offsets[two_voxels[1] as usize];
             let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
-            dbg!(value);
             // Now interpolate the voxel attributes
             let normal = veclib::Vector3::<f32>::lerp(
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
@@ -147,7 +168,7 @@ impl MarchingCubesSkirts {
         }
         Some(SquareData {
             normal: shared_normal / count as f32,
-            color: shared_color / count as f32,
+            color: shared_color / (count as f32 * 255.0),
             material_type: *voxels.material_type(info.i),
             position: p,
             case: case_index,
@@ -192,7 +213,7 @@ impl MarchingCubesSkirts {
             model.model.vertices.push(vertex);
             model.model.normals.push(data.normal.normalized());
             model.model.colors.push(data.color);
-            model.custom_vdata.push(data.material_type as u32);
+            model.vdata.push(data.material_type as u32);
         }
     }
     // Create a marching squares triangle between 3 skirt voxels
@@ -207,36 +228,24 @@ impl MarchingCubesSkirts {
                 v
             } else {
                 // Interpolated
-                dbg!(vertex_index);
-                let transformed_index = ((*vertex_index as usize) - 1) / 2 + 1;
-                dbg!(transformed_index);
-                dbg!(&data.vertices);
-                let inner = if let &SkirtVert::Interpolated(x) = &data.vertices[transformed_index] { x } else { panic!() };
+                let transformed_index = ((*vertex_index as usize) - 1) / 2;
+                //dbg!(&data.vertices);
+                let inner = if let &SkirtVert::Interpolated(x) = &data.vertices[transformed_index] {
+                    x
+                } else {
+                    panic!()
+                };
                 let v = (info.transform_function)(info.slice, &inner, &data.position);
                 v
             };
         }
         vertices
     }
-    // Tansform the 2D points into their 3D counterpart
-    fn transform_x_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-        veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x)
-    }
-    fn transform_y_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-        veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
-    }
-    fn transform_z_local(slice: usize, vertex: &veclib::Vector2<f32>, offset: &veclib::Vector2<f32>) -> veclib::Vector3<f32> {
-        veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
-    }
 }
-#[derive(Debug)]
-enum SkirtVert {
+// A single skirt vertex
+pub enum SkirtVert {
     Default(veclib::Vector2<f32>),
     Interpolated(veclib::Vector2<f32>),
-} 
-struct BuilderModelData {
-    model: Model,
-    custom_vdata: CustomVertexDataBuffer<u32, u32>,
 }
 // Skirt vertex group
 struct SquareData {
@@ -250,12 +259,9 @@ struct SquareData {
     case: u8,
     vertices: [SkirtVert; 4],
 }
-struct InterInfo {
+// Some information about the current iteration
+pub struct InterInfo {
     index_offsets: &'static [usize; 4],
     transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
-    slice: usize,
-    flip: bool,
-    i: usize,
-    x: usize,
-    y: usize,
+    slice: usize, flip: bool, i: usize, x: usize, y: usize,
 }

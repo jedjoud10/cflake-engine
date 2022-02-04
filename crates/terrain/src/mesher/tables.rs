@@ -304,58 +304,80 @@ pub const VERTEX_TABLE_USIZE: [veclib::Vector3<usize>; 8] = [
 
 // Marching squares case to triangle combination
 // Note for future self: If you see any trianlges that have their ordered reveresed, that's totally fine, so don't worry about it
+// Another note for future self: I tested all of these cases, and fixed anything, so don't change anything pls
 pub const MS_CASE_TO_TRIS: [[i8; 12]; 16] = [
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], // 0
-    [0, 7, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1], // Corner 1
-    [7, 6, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1], // Corner 2
-    [1, 0, 6, 5, 1, 6, -1, -1, -1, -1, -1, -1], // Flat 3
-    [3, 5, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1], // Corner 4
-    [0, 7, 1, 5, 4, 3, 7, 5, 3, 3, 1, 7], // Tunnel 5
-    [7, 6, 3, 3, 6, 4, -1, -1, -1, -1, -1, -1], // Flat 6
-    [2, 0, 7, 2, 5, 4, 2, 7, 5, -1, -1, -1], // Minor Corner 7
-    [1, 3, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1], // Corner 8
-    [0, 7, 2, 2, 7, 3, -1, -1, -1, -1, -1, -1], // Flat 9
-    [7, 6, 5, 2, 1, 3, 1, 7, 3, 3, 7, 5], // Tunnel 10
-    [0, 6, 5, 0, 3, 2, 0, 5, 3, -1, -1, -1], // Minor Corner 11
-    [2, 1, 5, 2, 5, 4, -1, -1, -1, -1, -1, -1],// Flat 12
-    [2, 7, 0, 5, 2, 4, 5, 7, 2, -1, -1, -1], // Minor Corner 13
-    [4, 7, 6, 4, 2, 1, 4, 1, 7, -1, -1, -1], // Minor Corner 14
+    [0, 7, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1],    // Corner 1
+    [1, 3, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1],    // Corner 2
+    [0, 7, 2, 2, 7, 3, -1, -1, -1, -1, -1, -1],       // Flat 3
+    [3, 5, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1],    // Corner 4
+    [0, 7, 1, 5, 4, 3, 7, 5, 3, 3, 1, 7],             // Tunnel 5
+    [2, 1, 5, 2, 5, 4, -1, -1, -1, -1, -1, -1],       // Flat 6
+    [2, 0, 7, 2, 5, 4, 2, 7, 5, -1, -1, -1],          // Minor Corner 7
+    [7, 6, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1],    // Corner 8
+    [1, 0, 6, 6, 5, 1, -1, -1, -1, -1, -1, -1],       // Flat 9
+    [7, 6, 5, 1, 3, 2, 7, 5, 3, 3, 1, 7],             // Tunnel 10
+    [0, 6, 5, 0, 3, 2, 0, 5, 3, -1, -1, -1],          // Minor Corner 11
+    [7, 6, 3, 3, 6, 4, -1, -1, -1, -1, -1, -1],       // Flat 12
+    [6, 4, 3, 6, 1, 0, 6, 3, 1, -1, -1, -1],          // Minor Corner 13
+    [4, 7, 6, 4, 2, 1, 4, 1, 7, -1, -1, -1],          // Minor Corner 14
     [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], // 15
-    //[0, 6, 2, 6, 4, 2, -1, -1, -1, -1, -1, -1],
 ];
 
 // Marching squares cases to corresponding edges
 pub const MS_CASE_TO_EDGES: [[i8; 4]; 16] = [
     [-1, -1, -1, -1],
-    [0, 3, -1, -1],
-    [3, 2, -1, -1],
-    [1, 3, -1, -1],
-    [2, 1, -1, -1],
-    [0, 1, 2, 3],
-    [1, 3, -1, -1],
-    [0, 1, -1, -1],
-    [0, 1, -1, -1],
-    [1, 3, -1, -1],
-    [0, 1, 2, 3],
-    [1, 2, -1, -1],
-    [0, 2, -1, -1],
-    [2, 3, -1, -1],
-    [0, 3, -1, -1],
+    [0, 3, -1, -1], // 1
+    [0, 1, -1, -1], // 2
+    [1, 3, -1, -1], // 3
+    [2, 1, -1, -1], // 4
+    [0, 1, 2, 3],   // 5
+    [0, 2, -1, -1], // 6
+    [2, 3, -1, -1], // 7
+    [2, 3, -1, -1], // 8
+    [0, 2, -1, -1], // 9
+    [0, 1, 2, 3],   // 10
+    [1, 2, -1, -1], // 11
+    [1, 3, -1, -1], // 12
+    [0, 1, -1, -1], // 13
+    [0, 3, -1, -1], // 14
     [-1, -1, -1, -1],
 ];
 
-// The marching squares table that indiquates what vertices are part of which edges
+// Marching squares table that indiquates what vertices are part of which edges
 pub const MS_EDGE_TO_VERTICES: [[u8; 2]; 4] = [[0, 1], [1, 2], [2, 3], [3, 0]];
 
-// Density offset for the X axis
+// Index offset for the X axis
 pub const INDEX_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[1]];
 
-// Density offset for the Y axis
-pub const DENSITY_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
+// Index offset for the Y axis
+pub const INDEX_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
 
-// Density offset for the Z axis
-pub const DENSITY_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
+// Index offset for the Z axis
+pub const INDEX_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
 
+// All combined index offsets
+pub const SKIRTS_DIR_INDEX_OFFSET: [[usize; 4]; 3] = [
+    INDEX_OFFSET_X, INDEX_OFFSET_Y, INDEX_OFFSET_Z
+];
+
+// Should we flip the triangles whenever we generate a single skirt
+pub const SKIRTS_DIR_FLIP: [bool; 3] = [
+    false, true, true
+];
+// The indexing functions for each direction
+pub const SKIRTS_DIR_INDEXING_FN: [fn(usize, usize, usize) -> usize; 3] = [
+    |slice, x, y| crate::flatten((slice * (CHUNK_SIZE), y, x)),
+    |slice, x, y| crate::flatten((x, slice * (CHUNK_SIZE), y)),
+    |slice, x, y| crate::flatten((x, y, slice * (CHUNK_SIZE))),
+];
+// The transform functions for each direction
+pub const SKIRTS_DIR_TRANSFORM_FN: [fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>; 3] = [
+    |slice, vertex, offset| veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x),
+    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y),
+    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32),
+];
+    
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [
     veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
     veclib::Vector2::<f32> { x: 1.0, y: 0.0 },

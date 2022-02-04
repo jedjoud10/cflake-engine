@@ -1,4 +1,4 @@
-use rendering::basics::model::Model;
+use rendering::basics::model::{Model, CustomVertexDataBuffer};
 
 use super::builder::*;
 use super::settings::MesherSettings;
@@ -32,5 +32,6 @@ impl<'a> Mesher<'a> {
         let main = self.builder.build(self.valid_data, self.coords);
         let skirts = self.skirts_builder.build(self.valid_data, self.coords);
         Model::combine(main, skirts)
+        //skirts
     }
 }

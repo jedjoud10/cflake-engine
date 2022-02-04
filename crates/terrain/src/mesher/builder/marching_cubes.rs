@@ -7,8 +7,10 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::basics::model::{CustomVertexDataBuffer, Model};
+use rendering::{basics::model::{CustomVertexDataBuffer, Model}, utils::DataType::U32};
 use std::collections::hash_map::Entry;
+
+use super::BuilderModelData;
 
 // Struct that contains everything related to the marching cubes mesh generation
 pub(crate) struct MarchingCubes {
@@ -29,123 +31,137 @@ impl MarchingCubes {
             0.5
         }
     }
-    // Generate the Marching Cubes model
-    pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
-        let i = std::time::Instant::now();
-        // Pre-allocate so we don't allocate more than needed
-        let mut duplicate_vertices: AHashMap<(u8, u8, u8), u16> = AHashMap::with_capacity(64);
-        let mut model: Model = Model::with_capacity(64);
-        let mut materials: CustomVertexDataBuffer<u32, u32> = CustomVertexDataBuffer::<u32, u32>::with_capacity(64, rendering::utils::DataType::U32);
-        // Loop over every voxel
+    // Generate the marching cubes case
+    fn generate_marching_cubes_case(voxels: &StoredVoxelData, info: &IterInfo) -> u8 {
+        // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
+        let mut case_index = 0u8;
+        for l in 0..8 {
+            let density = *voxels.density(info.i + DATA_OFFSET_TABLE[l]);
+            case_index |= (density.is_sign_positive() as u8) << l;
+        }
+        case_index
+    }
+    // Calculate the interpolated vertex data
+    fn get_interpolated_vertex(&self, voxels: &StoredVoxelData, info: &IterInfo, edge: EdgeInfo) -> InterpolatedVertexData {
+        // Do inverse linear interpolation to find the factor value
+        let value = self.calc_interpolation(*voxels.density(edge.index1), *voxels.density(edge.index2));
+        // Create the vertex
+        let vedge1 = EDGE_TABLE[(edge.index as usize) * 2];
+        let vedge2 = EDGE_TABLE[(edge.index as usize) * 2 + 1];
+        let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
+        // Offset the vertex
+        vertex += veclib::Vector3::<f32>::from(info.pos);
+        // Get the normal
+        let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
+        let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
+        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
+        // Get the color
+        let c1: veclib::Vector3<f32> = (*voxels.color(edge.index1)).into();
+        let c2: veclib::Vector3<f32> = (*voxels.color(edge.index2)).into();
+        let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
+        InterpolatedVertexData { vertex, normal, color }
+    }
+    // Solve the marching cubes case and add the vertices to the model
+    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
+        // The vertex indices that are gonna be used for the skirts
+        'edge: for edge in TRI_TABLE[data.case as usize] {
+            // Make sure the triangle is valid
+            if edge.is_negative() { break 'edge; }
+            // Get the vertex in local space
+            let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
+            let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
+            // The edge tuple used to identify this vertex
+            let edge_tuple: (u8, u8, u8) = (
+                2 * info.pos.x as u8 + vert1.x as u8 + vert2.x as u8,
+                2 * info.pos.y as u8 + vert1.y as u8 + vert2.y as u8,
+                2 * info.pos.z as u8 + vert1.z as u8 + vert2.z as u8,
+            );
+
+            // Check if this vertex was already added
+            if let Entry::Vacant(e) = merger.duplicates.entry(edge_tuple) {
+                // Get the interpolated data
+                let index1 = flatten_vec3(info.pos + vert1);
+                let index2 = flatten_vec3(info.pos + vert2);
+                let interpolated = self.get_interpolated_vertex(&voxels, &info, EdgeInfo { index1, index2, index: edge as usize });
+                // Then add it to the model
+                e.insert(model.model.vertices.len() as u16);
+                model.model.triangles.push(model.model.vertices.len() as u32);
+                model.model.vertices.push(interpolated.vertex);
+                model.model.normals.push(interpolated.normal);
+                model.model.colors.push(interpolated.color);
+                model.vdata.push(data.material as u32);
+            } else {
+                // The vertex already exists
+                model.model.triangles.push(merger.duplicates[&edge_tuple] as u32);
+            }
+        }
+    }
+    // Generate the model
+    fn generate_model(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData) {
+        // Use vertex merging
+        let mut merger = VertexMerger { duplicates: AHashMap::with_capacity(64) };
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     // Convert our 32x32x32 position into the 33x33x33 index, since they are different
                     let i = flatten((x, y, z));
-                    // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
-                    let mut case_index = 0u8;
-                    for l in 0..8 {
-                        let density = *voxels.density(i + DATA_OFFSET_TABLE[l]);
-                        case_index |= (density.is_sign_positive() as u8) << l;
-                    }
-                    // Skip the completely empty and completely filled cases
-                    if case_index == 0 || case_index == 255 {
-                        continue;
-                    }
-                    // The vertex indices that are gonna be used for the skirts
-                    'edge: for edge in TRI_TABLE[case_index as usize] {
-                        // Make sure the triangle is valid
-                        if edge != -1 {
-                            // Get the vertex in local space
-                            let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
-                            let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
-                            // The edge tuple used to identify this vertex
-                            let edge_tuple: (u8, u8, u8) = (
-                                2 * x as u8 + vert1.x as u8 + vert2.x as u8,
-                                2 * y as u8 + vert1.y as u8 + vert2.y as u8,
-                                2 * z as u8 + vert1.z as u8 + vert2.z as u8,
-                            );
+                    let info = IterInfo { i, pos: veclib::vec3(x, y, z) };
 
-                            // Check if this vertex was already added
-                            if let Entry::Vacant(e) = duplicate_vertices.entry(edge_tuple) {
-                                // In global space here
-                                let index1 = flatten_vec3(veclib::vec3(x, y, z) + vert1);
-                                let index2 = flatten_vec3(veclib::vec3(x, y, z) + vert2);
-                                // Do inverse linear interpolation to find the factor value
-                                let value = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
-                                // Create the vertex
-                                let mut vertex =
-                                    veclib::Vector3::<f32>::lerp(VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2]], VERTEX_TABLE[EDGE_TABLE[(edge as usize) * 2 + 1]], value);
-                                // Offset the vertex
-                                vertex += veclib::Vector3::<f32>::new(x as f32, y as f32, z as f32);
-                                // Get the normal
-                                let n1: veclib::Vector3<f32> = (*voxels.normal(index1)).into();
-                                let n2: veclib::Vector3<f32> = (*voxels.normal(index2)).into();
-                                let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-                                // Get the color
-                                let c1: veclib::Vector3<f32> = (*voxels.color(index1)).into();
-                                let c2: veclib::Vector3<f32> = (*voxels.color(index1)).into();
-                                let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
-                                // Add this vertex
-                                e.insert(model.vertices.len() as u16);
-                                model.triangles.push(model.vertices.len() as u32);
-                                model.vertices.push(vertex);
-                                model.normals.push(normal);
-                                model.colors.push(color);
-                                materials.push(*voxels.material_type(index1) as u32);
-                            } else {
-                                // The vertex already exists
-                                model.triangles.push(duplicate_vertices[&edge_tuple] as u32);
-                            }
-                        } else {
-                            continue 'edge;
-                        }
-                    }
+                    // Generate the case index
+                    let case = Self::generate_marching_cubes_case(&voxels, &info);     
+                    if case == 0 || case == 15 { continue; }               
+
+                    // Then solve it
+                    let data = CubeData {
+                        material: *voxels.material_type(i),
+                        case,
+                    };
+                    self.solve_marching_cubes_case(voxels, model, &mut merger, &info, data)
                 }
             }
-        }
-        let mut skirts_model_combined = (Model::default(), CustomVertexDataBuffer::<u32, u32>::with_capacity(32, rendering::utils::DataType::U32));
-        /*
-        // Create a completely separate model for skirts
-        let chunk_size_factor = (coords.size / MAIN_CHUNK_SIZE as u64) as f32;
-        if skirts {
-            // Create the X skirt
-            calculate_skirt(
-                voxels,
-                interpolation,
-                false,
-                chunk_size_factor,
-                DENSITY_OFFSET_X,
-                &mut skirts_model_combined,
-                |slice, x, y| super::flatten((slice * (MAIN_CHUNK_SIZE), y, x)),
-                transform_x_local,
-            );
-            // Create the Z skirt
-            calculate_skirt(
-                voxels,
-                interpolation,
-                true,
-                chunk_size_factor,
-                DENSITY_OFFSET_Z,
-                &mut skirts_model_combined,
-                |slice, x, y| super::flatten((x, y, slice * (MAIN_CHUNK_SIZE))),
-                transform_z_local,
-            );
-            // Create the Y skirt
-            calculate_skirt(
-                voxels,
-                interpolation,
-                true,
-                chunk_size_factor,
-                DENSITY_OFFSET_Y,
-                &mut skirts_model_combined,
-                |slice, x, y| super::flatten((x, slice * (MAIN_CHUNK_SIZE), y)),
-                transform_y_local,
-            );
-        }
-        */
-        println!("{:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-        let (skirts_model, skirts_model_custom_data) = skirts_model_combined;
-        Model::combine(model.with_custom(materials), skirts_model.with_custom(skirts_model_custom_data))
+        }        
     }
+    // Generate the Marching Cubes model
+    pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
+        let i = std::time::Instant::now();
+        // Create the model data
+        let mut model = BuilderModelData {
+            model: Model::with_capacity(64),
+            vdata: CustomVertexDataBuffer::<u32, u32>::with_capacity(64, U32),
+        };        
+        // Then generate the model
+        self.generate_model(voxels, &mut model);
+        // Combine the model's custom vertex data with the model itself
+        let extracted_model = model.model;
+        let custom_vdata = model.vdata;
+        println!("Main: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+        extracted_model.with_custom(custom_vdata)
+    }
+}
+// Info about the current iteration
+struct IterInfo {
+    i: usize, pos: veclib::Vector3<usize>,
+}
+// A vertex merger used to tell us when we should merge vertices or not
+struct VertexMerger {
+    duplicates: AHashMap<(u8, u8, u8), u16>,
+}
+// Some interpolated vertex data that we calculate for each interesting edge in the marching cube
+struct InterpolatedVertexData {
+    vertex: veclib::Vector3<f32>,
+    normal: veclib::Vector3<f32>,
+    color: veclib::Vector3<f32>,
+}
+// Edge intersection info
+struct EdgeInfo {
+    index1: usize, index2: usize,
+    index: usize,
+}
+// Info about the marching cube
+struct CubeData {
+    // Shared voxel data
+    material: u8,
+
+    // Meshing data
+    case: u8,
 }
