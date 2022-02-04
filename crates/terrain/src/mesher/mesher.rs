@@ -12,6 +12,7 @@ pub struct Mesher<'a> {
     pub(crate) coords: ChunkCoords,
     pub(crate) settings: MesherSettings,
     pub(crate) builder: MarchingCubes,
+    pub(crate) skirts_builder: MarchingCubesSkirts,
 }
 
 impl<'a> Mesher<'a> {
@@ -22,11 +23,14 @@ impl<'a> Mesher<'a> {
             coords,
             settings,
             builder: MarchingCubes::new(settings),
+            skirts_builder: MarchingCubesSkirts::new(settings),
         }
     }
     // Generate the model from the voxel data
     pub fn build(self) -> Model {
-        // We use the marching cubes algorithm as default
-        self.builder.build(self.valid_data, self.coords)
+        // Gotta combine the main model and the skirts one
+        let main = self.builder.build(self.valid_data, self.coords);
+        let skirts = self.skirts_builder.build(self.valid_data, self.coords);
+        Model::combine(main, skirts)
     }
 }
