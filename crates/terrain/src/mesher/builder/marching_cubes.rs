@@ -109,7 +109,7 @@ impl MarchingCubes {
 
                     // Generate the case index
                     let case = Self::generate_marching_cubes_case(&voxels, &info);     
-                    if case == 0 || case == 15 { continue; }               
+                    if case == 0 || case == 255 { continue; }               
 
                     // Then solve it
                     let data = CubeData {

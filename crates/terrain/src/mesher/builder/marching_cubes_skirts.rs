@@ -52,6 +52,7 @@ impl MarchingCubesSkirts {
             self.generate_skirt(
                 voxels,
                 &mut model,
+                false,
                 flip,
                 &index_offsets,
                 indexing_function,
@@ -60,6 +61,7 @@ impl MarchingCubesSkirts {
             self.generate_skirt(
                 voxels,
                 &mut model,
+                true,
                 !flip,
                 &index_offsets,
                 indexing_function,
@@ -77,16 +79,17 @@ impl MarchingCubesSkirts {
         &self,
         voxels: &StoredVoxelData,
         model: &mut BuilderModelData,
+        slice_part: bool,
         flip: bool,
         index_offsets: &'static [usize; 4],
         indexing_function: fn(usize, usize, usize) -> usize,
         transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
     ) {
-        let slice = (flip as usize) * CHUNK_SIZE;
+        let slice = (slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 // Solve each marching squares case
-                let i = (indexing_function)(flip as usize, x, y);
+                let i = (indexing_function)(slice_part as usize, x, y);
                 // Create some iteration info
                 let info = InterInfo {
                     index_offsets,

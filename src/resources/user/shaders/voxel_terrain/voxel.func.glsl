@@ -15,7 +15,7 @@ struct Voxel {
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
-    float density = pos.y + (1-voronoi(pos * 0.001 * vec3(1, 1, 1)).x) * 400 - 400;
+    float density = (1-voronoi(pos * 0.001 * vec3(1, 1, 1)).x) * 400 - 600 + pos.y;
     return Voxel(density, vec3(1.0), 0);
 }
 
@@ -33,6 +33,6 @@ void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inou
     voxel.color = color;
     voxel.color *= mix(snoise(pos * 0.03 + 502.0), 1.0, 0.95);
     if (any(lessThan(local_pos.xz, uvec2(2, 2)))) {
-        //voxel.color = vec3(0);
+        voxel.color = vec3(0);
     }
 }

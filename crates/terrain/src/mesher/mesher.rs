@@ -10,7 +10,6 @@ pub struct Mesher<'a> {
     // Settings
     pub(crate) valid_data: &'a StoredVoxelData,
     pub(crate) coords: ChunkCoords,
-    pub(crate) settings: MesherSettings,
     pub(crate) builder: MarchingCubes,
     pub(crate) skirts_builder: MarchingCubesSkirts,
 }
@@ -21,7 +20,6 @@ impl<'a> Mesher<'a> {
         Self {
             valid_data,
             coords,
-            settings,
             builder: MarchingCubes::new(settings),
             skirts_builder: MarchingCubesSkirts::new(settings),
         }
@@ -32,6 +30,5 @@ impl<'a> Mesher<'a> {
         let main = self.builder.build(self.valid_data, self.coords);
         let skirts = self.skirts_builder.build(self.valid_data, self.coords);
         Model::combine(main, skirts)
-        //skirts
     }
 }
