@@ -1,8 +1,4 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::Arc,
-};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use rendering::pipeline::PipelineContext;
 
@@ -35,6 +31,12 @@ impl World {
 
         // Create an empty default UI
         let mut root = ui::Root::default();
+        root.add_element(
+            ui::Element::default()
+                .with_size(veclib::vec2(100, 100))
+                .with_center(veclib::vec2(0, 0))
+                .with_color(veclib::vec4(1.0, 0.0, 1.0, 1.0)),
+        );
         self.ui.add_root("default", root);
 
         // Load the config file (create it if it doesn't exist already)

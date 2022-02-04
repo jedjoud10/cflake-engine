@@ -1,10 +1,14 @@
 use crate::{InstancedBatch, InstancedBatchIdentifier, Root};
 use rendering::{
-    basics::{uniforms::{ShaderUniformsGroup, ShaderUniformsSettings}, shader::{Shader, ShaderSettings}},
-    pipeline::{Pipeline, pipec}, object::ObjectID,
+    basics::{
+        shader::{Shader, ShaderSettings},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+    },
+    object::ObjectID,
+    pipeline::{pipec, Pipeline},
 };
-use veclib::Swizzable;
 use std::{collections::HashMap, ptr::null};
+use veclib::Swizzable;
 
 // The two default UI shaders that we will use as fallback
 pub const DEFAULT_UI_SHADER_VERT: &str = "defaults\\shaders\\ui\\panel.vrsh.glsl";
@@ -23,9 +27,7 @@ impl Renderer {
     // Create a new UI renderer
     pub fn new(pipeline: &Pipeline) -> Self {
         // Load the default UI shader
-        let settings = ShaderSettings::default()
-            .source(DEFAULT_UI_SHADER_VERT)
-            .source(DEFAULT_UI_SHADER_FRAG);
+        let settings = ShaderSettings::default().source(DEFAULT_UI_SHADER_VERT).source(DEFAULT_UI_SHADER_FRAG);
         let shader = Shader::new(settings).unwrap();
         let shader = pipec::construct(shader, pipeline);
         Self {
@@ -52,10 +54,10 @@ impl Renderer {
             // We will all the default values for these, since we're going to be updating them in a later step anyways
             batch.depth_buf.push(0.0);
             batch.colors_buf.push(element.color);
-            for i in 0..4 {
+            for _ in 0..4 {
                 batch.texture_uvs_buf.push(Default::default());
                 batch.screen_uvs_buf.push(Default::default());
-            }            
+            }
             batch.instance_count += 1;
         }
         // Remove
@@ -67,7 +69,7 @@ impl Renderer {
             // Since we will be updating the buffers every time, we don't care that we remove a wrong element, as long as we just remove an element
             batch.depth_buf.pop();
             batch.colors_buf.pop();
-            for i in 0..4 {
+            for _ in 0..4 {
                 batch.screen_uvs_buf.pop();
                 batch.texture_uvs_buf.pop();
             }
@@ -79,40 +81,30 @@ impl Renderer {
                 shader: element.shader,
                 texture: element.texture,
             };
-            let batch = self.batches.get_mut(&identifier);
-            if batch.is_none() { continue; }
-            let batch = batch.unwrap();
+            let batch = self.batches.get_mut(&identifier).unwrap();
 
-            let new_screen_uvs = {
-                // Calculate the screen UVs (min, max) using the center position and size
-                let center = element.center;
-                let size = element.size;
-                // Calculate min and max now
-                let min: veclib::Vector2<f32> = veclib::vec2(center.x - size.x / 2, center.y - size.y / 2).into();
-                let max: veclib::Vector2<f32> = veclib::vec2(center.x + size.x / 2, center.y + size.y / 2).into();
-                // Convert from pixel coordinates to UV coordinates
-                let min = min / window_size;
-                let max = max / window_size;
-                veclib::vec4(min.x, min.y, max.x, max.y)
-            };
-            // Bruh
-            /*
-            new_screen_uvs.get2([0, 1])
-new_screen_uvs.get2([0, 3])
-new_screen_uvs.get2([2, 1])
-new_screen_uvs.get2([2, 3])
-            */
-            batch.screen_uvs_buf.update(index * 4 + 0, |x| *x = veclib::Vector2::ZERO);
-            batch.screen_uvs_buf.update(index * 4 + 1, |x| *x = veclib::Vector2::X);
-            batch.screen_uvs_buf.update(index * 4 + 2, |x| *x = veclib::Vector2::Y);      
-            batch.screen_uvs_buf.update(index * 4 + 3, |x| *x = veclib::Vector2::ONE);     
-            //batch.texture_uvs_buf.update(index * 4 + 0, |x| *x = element.texture_uvs.get2([0, 1]));
-            //batch.texture_uvs_buf.update(index * 4 + 1, |x| *x = element.texture_uvs.get2([0, 3]));
-            //batch.texture_uvs_buf.update(index * 4 + 2, |x| *x = element.texture_uvs.get2([2, 1]));
-            //batch.texture_uvs_buf.update(index * 4 + 3, |x| *x = element.texture_uvs.get2([2, 3])); 
+            // Calculate the screen UVs (min, max) using the center position and size
+            let center = element.center;
+            let size = element.size;
+            // Calculate min and max now
+            let min: veclib::Vector2<f32> = veclib::vec2(center.x as f32 - size.x as f32 / 2.0, center.y as f32 - size.y as f32 / 2.0);
+            let max: veclib::Vector2<f32> = veclib::vec2(center.x as f32 + size.x as f32 / 2.0, center.y as f32 + size.y as f32 / 2.0);
+            // Convert from pixel coordinates to UV coordinates
+            let min = min / window_size;
+            let max = max / window_size;
+
+            // I am a masochist
+            batch.screen_uvs_buf.update(index * 4 + 0, |x| *x = min);
+            batch.screen_uvs_buf.update(index * 4 + 1, |x| *x = veclib::vec2(min.x, max.y));
+            batch.screen_uvs_buf.update(index * 4 + 2, |x| *x = veclib::vec2(min.y, max.x));
+            batch.screen_uvs_buf.update(index * 4 + 3, |x| *x = max);
+            batch.texture_uvs_buf.update(index * 4 + 0, |x| *x = element.texture_uvs.get2([0, 1]));
+            batch.texture_uvs_buf.update(index * 4 + 1, |x| *x = element.texture_uvs.get2([0, 3]));
+            batch.texture_uvs_buf.update(index * 4 + 2, |x| *x = element.texture_uvs.get2([2, 1]));
+            batch.texture_uvs_buf.update(index * 4 + 3, |x| *x = element.texture_uvs.get2([2, 3]));
 
             batch.depth_buf.update(index, |x| *x = element.depth as f32 / max_depth as f32);
-                      
+
             // Update some values if needed
             batch.colors_buf.update(index, |x| *x = veclib::vec4(1.0, 0.0, 0.0, 1.0));
         }
@@ -134,7 +126,7 @@ new_screen_uvs.get2([2, 3])
             if pipeline.get_shader(id_shader).is_some() {
                 let settings = ShaderUniformsSettings::new(id_shader);
                 group.execute(pipeline, settings).expect("Forgot to set shader or main texture!");
-                
+
                 unsafe {
                     //println!("{:?}", batch);
                     gl::BindVertexArray(batch.vao);

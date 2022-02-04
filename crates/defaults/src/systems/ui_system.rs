@@ -15,12 +15,15 @@ pub fn system(write: &mut WriteContext) {
     let pipeline = write.pipeline.read();
     // We must create the UI renderer on the main thread, but we later send it to the render thread for rendering
     let renderer = Arc::new(Mutex::new(main::ui::Renderer::new(&pipeline)));
-    pipec::add_end_of_frame_callback(move |pipeline| {
-        let mut roots = arc_roots_clone.lock().unwrap();
-        let mut renderer = renderer.lock().unwrap();
-        // We gotta draw each visible root now
-        for (_, root) in &mut *roots {
-            renderer.draw(pipeline, root, pipeline.window.dimensions);  
-        }        
-    }, &pipeline);
+    pipec::add_end_of_frame_callback(
+        move |pipeline| {
+            let mut roots = arc_roots_clone.lock().unwrap();
+            let mut renderer = renderer.lock().unwrap();
+            // We gotta draw each visible root now
+            for (_, root) in &mut *roots {
+                renderer.draw(pipeline, root, pipeline.window.dimensions);
+            }
+        },
+        &pipeline,
+    );
 }

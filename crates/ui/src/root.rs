@@ -3,7 +3,6 @@ use std::collections::HashSet;
 
 use crate::Element;
 use crate::ElementID;
-use crate::ElementType;
 use crate::InstancedBatchIdentifier;
 use ordered_vec::simple::OrderedVec;
 
@@ -20,21 +19,12 @@ pub struct Root {
 
 impl Default for Root {
     fn default() -> Self {
-        // Create the root
-        let mut root = Self {
+        Self {
             elements: OrderedVec::<Element>::default(),
             visible: true,
             added: HashSet::with_capacity(8),
             removed: HashMap::with_capacity(8),
-        };
-        // And add the root element to it
-        root.add_element(Element {
-            id: Some(root.root()),
-            _type: ElementType::Root,
-            parent: None,
-            ..Default::default()
-        });
-        root
+        }
     }
 }
 
@@ -50,12 +40,11 @@ impl Root {
         element.id = Some(id);
         element.depth += 1;
         // Add the element
-        if let ElementType::Root = element._type { }
-        else { self.added.insert(id); }
         self.elements.push_shove(element);
         // And also add the element to our root
         self.attach(self.root(), &[id]);
         // Update diffs
+        self.added.insert(id);
         id
     }
     // Remove an element from the three, and recursively remove it's children

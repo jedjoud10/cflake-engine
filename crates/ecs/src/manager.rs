@@ -1,6 +1,6 @@
 use std::{
     any::TypeId,
-    cell::{UnsafeCell},
+    cell::UnsafeCell,
     sync::{Arc, Mutex, RwLock},
 };
 
@@ -10,9 +10,7 @@ use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use threads::ThreadPool;
 
 use crate::{
-    component::{
-        ComponentID, EnclosedComponent, LinkedComponents,
-    },
+    component::{ComponentID, EnclosedComponent, LinkedComponents},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     global::{EnclosedGlobalComponent, Global, GlobalFetchKey, GlobalReadGuard, GlobalWriteGuard},
     system::{EventHandler, System, SystemBuilder},

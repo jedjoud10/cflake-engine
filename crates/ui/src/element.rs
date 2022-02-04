@@ -87,7 +87,6 @@ impl Element {
 // The type of element
 #[derive(Debug, Clone)]
 pub enum ElementType {
-    Root,
     Panel,
     Text(String),
 }

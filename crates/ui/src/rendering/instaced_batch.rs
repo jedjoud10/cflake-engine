@@ -1,4 +1,3 @@
-use crate::ElementID;
 use rendering::{
     advanced::raw::dynamic_buffer::DynamicRawBuffer,
     basics::{shader::Shader, texture::Texture},
@@ -6,9 +5,9 @@ use rendering::{
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 use std::{
-    collections::HashMap,
     ffi::c_void,
-    mem::{size_of, ManuallyDrop}, ptr::null,
+    mem::{size_of, ManuallyDrop},
+    ptr::null,
 };
 
 // A unique identifier for each instanced batch
@@ -84,8 +83,8 @@ impl InstancedBatch {
                 gl::ELEMENT_ARRAY_BUFFER,
                 (elements.len() * size_of::<u32>()) as isize,
                 elements.as_ptr() as *const c_void,
-                STATIC_USAGE.convert()
-            );            
+                STATIC_USAGE.convert(),
+            );
             ManuallyDrop::drop(&mut elements);
         }
 

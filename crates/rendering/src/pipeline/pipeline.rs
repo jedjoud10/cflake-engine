@@ -120,7 +120,9 @@ impl Pipeline {
             PipelineTask::UpdateCamera(camera) => self.camera = camera,
             PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
             PipelineTask::UpdateRendererUniforms(id, uniforms) => {
-                if let Some(x) = self.get_renderer_mut(id) { x.update_uniforms(uniforms); }
+                if let Some(x) = self.get_renderer_mut(id) {
+                    x.update_uniforms(uniforms);
+                }
             }
 
             PipelineTask::DisposeRenderer(id) => self.renderer_dispose(id),
@@ -245,9 +247,9 @@ impl Pipeline {
         for callback in &*lock {
             // Execute the callback
             (callback)(self)
-        } 
+        }
     }
-    
+
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
         if let Some(id) = id.id {
@@ -1357,7 +1359,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
                     println!("Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
                 }
 
-                let i = std::time::Instant::now();                
+                let i = std::time::Instant::now();
                 let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
                 // Set the buffer
                 pipeline.add_tasks(messages);

@@ -19,7 +19,8 @@ impl<T> std::fmt::Debug for DynamicRawBuffer<T> {
             .field("buffer", &self.buffer)
             .field("_type", &self._type)
             .field("usage", &self.usage)
-            .field("vec", &self.vec.len()).finish()
+            .field("vec", &self.vec.len())
+            .finish()
     }
 }
 
@@ -74,10 +75,6 @@ impl<T> DynamicRawBuffer<T> {
     }
     // Update a value at a specific index
     pub fn update(&mut self, index: usize, mut function: impl FnMut(&mut T)) {
-        // Check first
-        if index > self.vec.len() {
-            panic!()
-        }
         // Simple replace
         let old = self.vec.get_mut(index).unwrap();
         function(old);

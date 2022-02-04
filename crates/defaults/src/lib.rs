@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 use main::assets::preload_asset;
 use main::core::WriteContext;
-use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, window_system, ui_system};
+use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, ui_system, window_system};
 // Default components
 pub mod components;
 // Default globals
