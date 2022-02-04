@@ -98,7 +98,7 @@ fn init(mut write: core::WriteContext) {
     uniforms.set_texture("tex", tex, 0);
     // Add the terrain
     drop(pipeline);
-    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8, &pipeline_)
+    let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 4, &pipeline_)
         .set_heuristic(heuristic)
         .set_material(material)
         .set_uniforms(uniforms);

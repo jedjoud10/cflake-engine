@@ -23,6 +23,7 @@ impl MarchingCubesSkirts {
     }
     // Calculate the interpolation value using two densities
     pub fn calc_interpolation(&self, d1: f32, d2: f32) -> f32 {
+        //return 0.9;
         if self.settings.interpolation {
             // Inverse of lerp
             -d1 / (d2 - d1)
@@ -65,7 +66,7 @@ impl MarchingCubesSkirts {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 // Solve each marching squares case
-                let i = (indexing_function)(slice, x, y);
+                let i = (indexing_function)(flip as usize, x, y);
                 // Create some iteration info
                 let info = InterInfo {
                     index_offsets,
@@ -77,7 +78,7 @@ impl MarchingCubesSkirts {
                     y,
                 };
                 // Generate the case
-                if let Some(data) = self.generate_marching_squares_case(model, voxels, &info) {
+                if let Some(data) = self.generate_marching_squares_case(voxels, &info) {
                     // And solve the case
                     Self::solve_marching_squares(model, &info, &data)
                 }
@@ -85,39 +86,44 @@ impl MarchingCubesSkirts {
         }
     }
     // Calculate a marching square case and it's local voxels
-    fn generate_marching_squares_case(&self, model: &mut BuilderModelData, voxels: &StoredVoxelData, info: &InterInfo) -> Option<SquareData> {
+    fn generate_marching_squares_case(&self, voxels: &StoredVoxelData, info: &InterInfo) -> Option<SquareData> {
         // Get the position
         let p = veclib::Vector2::new(info.x as f32, info.y as f32);
         // Get the marching cube case
         let mut case_index = 0_u8;
-        let mut min = f32::MAX;
         for i in 0..4 {
             let density = voxels.density(info.i + info.index_offsets[i]);
             // Increase the case index if we have some voxels that are below the 0.0
             case_index |= ((*density <= 0.0) as u8) << i;
-            min = min.min(*density);
         }
         // Exit if this case is invalid
-        if case_index == 0 || case_index == 15 {
+        if case_index == 0 || case_index == 15 || case_index != 3 {
             return None;
         }
 
         // Get the interpolated voxels
-        let mut ivertices: [Option<veclib::Vector2<f32>>; 4] = [None; 4];
+        // Default half-distance interpolated vertices
+        let mut ivertices: [SkirtVert; 4] = [
+            SkirtVert::Default(veclib::vec2(0.0, 0.5)),
+            SkirtVert::Default(veclib::vec2(0.5, 1.0)),
+            SkirtVert::Default(veclib::vec2(1.0, 0.5)),
+            SkirtVert::Default(veclib::vec2(0.5, 0.0)),
+        ];
 
         // This is some shared data for this whole
         let mut shared_normal = veclib::Vector3::<f32>::ZERO;
         let mut shared_color = veclib::Vector3::<f32>::ZERO;
         let mut count: usize = 0;
-        dbg!(case_index);
+        //dbg!(case_index);
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             if edge.is_negative() { break; }
-            dbg!(edge);
+            //dbg!(edge);
             // Get the two voxel indices
             let two_voxels = MS_EDGE_TO_VERTICES[edge as usize];
             let index1 = info.i + info.index_offsets[two_voxels[0] as usize];
             let index2 = info.i + info.index_offsets[two_voxels[1] as usize];
             let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
+            dbg!(value);
             // Now interpolate the voxel attributes
             let normal = veclib::Vector3::<f32>::lerp(
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
@@ -137,7 +143,7 @@ impl MarchingCubesSkirts {
             let voxel2_local_position = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
             let position = veclib::Vector2::<f32>::lerp(voxel1_local_position, voxel2_local_position, value);
             count += 1;
-            ivertices[edge as usize] = Some(position)
+            ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
         Some(SquareData {
             normal: shared_normal / count as f32,
@@ -161,6 +167,7 @@ impl MarchingCubesSkirts {
             }
 
             // Add the triangle's vertices
+            //dbg!(triangle);
             let new_verts = Self::create_triangle(triangle, info, data);
             vertices[i * 3] = new_verts[0];
             vertices[i * 3 + 1] = new_verts[1];
@@ -201,10 +208,11 @@ impl MarchingCubesSkirts {
             } else {
                 // Interpolated
                 dbg!(vertex_index);
-                let transformed_index = ((*vertex_index as usize) - 1) / 2;
+                let transformed_index = ((*vertex_index as usize) - 1) / 2 + 1;
                 dbg!(transformed_index);
                 dbg!(&data.vertices);
-                let v = (info.transform_function)(info.slice, &data.vertices[transformed_index].as_ref().unwrap(), &data.position);
+                let inner = if let &SkirtVert::Interpolated(x) = &data.vertices[transformed_index] { x } else { panic!() };
+                let v = (info.transform_function)(info.slice, &inner, &data.position);
                 v
             };
         }
@@ -221,7 +229,11 @@ impl MarchingCubesSkirts {
         veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
     }
 }
-
+#[derive(Debug)]
+enum SkirtVert {
+    Default(veclib::Vector2<f32>),
+    Interpolated(veclib::Vector2<f32>),
+} 
 struct BuilderModelData {
     model: Model,
     custom_vdata: CustomVertexDataBuffer<u32, u32>,
@@ -236,7 +248,7 @@ struct SquareData {
     // Meshing data
     position: veclib::Vector2<f32>,
     case: u8,
-    vertices: [Option<veclib::Vector2<f32>>; 4],
+    vertices: [SkirtVert; 4],
 }
 struct InterInfo {
     index_offsets: &'static [usize; 4],

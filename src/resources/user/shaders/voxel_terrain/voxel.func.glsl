@@ -15,7 +15,7 @@ struct Voxel {
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
-    float density = pos.y + snoise(pos * 0.001 * vec3(1, 3, 1)) * 300;
+    float density = pos.y + snoise(pos * 0.003 * vec3(1, 1, 1)) * 200;
     return Voxel(density, vec3(1.0), 0);
 }
 
