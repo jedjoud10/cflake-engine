@@ -17,11 +17,11 @@ impl PipelineObject for Material {
         Some((self, ObjectID::new(pipeline.materials.get_next_id_increment())))
     }
     // Send this material to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Material(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Material(Deconstruct::<Self>(id))
     }
     // Add the material to our ordered vec

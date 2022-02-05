@@ -91,11 +91,11 @@ impl PipelineObject for Shader {
         Some((self, ObjectID::new(pipeline.shaders.get_next_id_increment())))
     }
     // Send this shader to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Shader(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Shader(Deconstruct::<Self>(id))
     }
     // Add the shader to our ordered vec

@@ -43,15 +43,15 @@ impl PipelineObject for Model {
         Some((self, ObjectID::new(pipeline.models.get_next_id_increment())))
     }
     // Send this model to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Model(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Model(Deconstruct::<Self>(id))
     }
     // Add the model to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the model
         let mut buffers = ModelBuffers::default();
         buffers.triangle_count = self.triangles.len();
@@ -190,7 +190,7 @@ impl PipelineObject for Model {
     }
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let (mut model, mut buffers) = pipeline.models.remove(id.get()?)?;
+        let (model, mut buffers) = pipeline.models.remove(id.get()?)?;
         // Dispose of the OpenGL buffers
         unsafe {
             // Delete the VBOs

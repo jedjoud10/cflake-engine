@@ -25,11 +25,11 @@ impl PipelineObject for ComputeShader {
         Some((self, ObjectID::new(pipeline.compute_shaders.get_next_id_increment())))
     }
     // Send this compute shader to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::ComputeShader(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::ComputeShader(Deconstruct::<Self>(id))
     }
     // Add the compute shader to our ordered vec

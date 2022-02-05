@@ -1,34 +1,28 @@
 use crate::{
     advanced::{
-        atomic::{AtomicGroup, AtomicGroupRead},
-        compute::{ComputeShader, ComputeShaderExecutionSettings},
+        atomic::{AtomicGroup},
+        compute::{ComputeShader},
         shader_storage::ShaderStorage,
     },
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
-        readwrite::ReadBytes,
         renderer::Renderer,
         shader::{
-            info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
-            query_shader_info, Shader, ShaderSettings, ShaderSource, ShaderSourceType,
+            query_shader_info, Shader, ShaderSettings,
         },
-        texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
-        transfer::Transfer,
+        texture::{Texture, TextureFilter, TextureType},
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
-    utils::{DataType, RenderWrapper, Window},
+    utils::{RenderWrapper, Window},
 };
 use ahash::AHashMap;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    collections::HashMap,
-    ffi::{c_void, CString},
-    mem::size_of,
-    ptr::{null, null_mut},
+    ptr::{null_mut},
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
@@ -207,7 +201,7 @@ impl Pipeline {
     }
     // Set the global shader uniforms
     pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
-        for (id, shader) in self.shaders.iter() {
+        for (_id, shader) in self.shaders.iter() {
             // Set the uniforms
             let mut group = ShaderUniformsGroup::new();
             group.set_f32("_time", time as f32);
@@ -220,7 +214,7 @@ impl Pipeline {
     // Run the End Of Frame callbacks
     pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
         let lock_ = self.callbacks.clone();
-        let mut lock = lock_.lock().unwrap();
+        let lock = lock_.lock().unwrap();
         // Execute the callbacks
         for callback in &*lock {
             let callback = &**callback;
@@ -477,7 +471,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            let debug;
+            
             // At the start of each frame we must sync up with the main thread
             waiting_clone.store(true, Ordering::Relaxed);
             sbarrier_clone.wait();
@@ -486,7 +480,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline_ = pipeline.write().unwrap();
             let time = time_clone.lock().unwrap();
             pipeline_.update_global_shader_uniforms(time.0, time.1);
-            debug = pipeline_.debugging.load(Ordering::Relaxed);
+            let debug = pipeline_.debugging.load(Ordering::Relaxed);
             if debug {
                 println!("Pipeline: ");
             }

@@ -37,11 +37,11 @@ impl PipelineObject for Renderer {
         Some((self, ObjectID::new(pipeline.renderers.get_next_id_increment())))
     }
     // Send this rendererer to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Renderer(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Renderer(Deconstruct::<Self>(id))
     }
     // Add the renderer to our ordered vec
@@ -64,7 +64,7 @@ impl PipelineObject for Renderer {
         let me = pipeline.renderers.remove(id.get()?)?;
         // Also remove the model if we want to
         if me.delete_model {
-            let removed_model = Model::delete(pipeline, me.model)?;
+            let _removed_model = Model::delete(pipeline, me.model)?;
         }
         Some(me)
     }

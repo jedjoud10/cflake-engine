@@ -7,7 +7,7 @@ use crate::{
         texture::{Texture, TextureFormat, TextureType},
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{ObjectID, PipelineTask},
+    object::{ObjectID},
     pipeline::pipec,
     utils::DataType,
 };

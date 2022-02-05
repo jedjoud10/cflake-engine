@@ -20,7 +20,7 @@ pub struct Deconstruct<T: PipelineObject>(pub(crate) ObjectID<T>);
 
 impl DeconstructionTask {
     // Execute the deconstruction task, running the "delete()" method on our inner value
-    pub(crate) fn execute(mut self, pipeline: &mut Pipeline) {
+    pub(crate) fn execute(self, pipeline: &mut Pipeline) {
         match self {
             DeconstructionTask::Texture(x) => {
                 Texture::delete(pipeline, x.0).unwrap();

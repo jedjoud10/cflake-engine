@@ -72,7 +72,7 @@ where
     }
     // Try to get the internal ID
     pub fn get(&self) -> Option<u64> {
-        self.id.clone()
+        self.id
     }
 }
 

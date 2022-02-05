@@ -24,11 +24,11 @@ impl PipelineObject for ShaderStorage {
         Some((self, ObjectID::new(pipeline.shader_storages.get_next_id_increment())))
     }
     // Send this shader storage to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::ShaderStorage(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::ShaderStorage(Deconstruct::<Self>(id))
     }
     // Add the shader storage to our ordered vec
@@ -79,7 +79,7 @@ impl ShaderStorage {
     // Read some bytes from the SSBO
     pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
         GlTracker::new(
-            move |pipeline| unsafe {
+            move |_pipeline| unsafe {
                 // Bind the buffer before reading
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);

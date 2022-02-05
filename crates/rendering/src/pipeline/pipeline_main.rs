@@ -1,9 +1,9 @@
 // Some pipeline commands
 pub mod pipec {
-    use std::sync::{atomic::Ordering, mpsc::SendError};
+    use std::sync::{atomic::Ordering};
 
     use crate::{
-        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, UpdateTask},
+        object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, UpdateTask},
         pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
     };
     // Debug some pipeline data

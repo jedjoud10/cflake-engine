@@ -73,11 +73,11 @@ impl PipelineObject for Texture {
         Some((self, ObjectID::new(pipeline.textures.get_next_id_increment())))
     }
     // Send this texture to the pipeline for construction
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Texture(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Texture(Deconstruct::<Self>(id))
     }
     // Add the texture to our ordered vec
@@ -376,17 +376,17 @@ impl Texture {
     // Read the bytes from this texture
     pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
         // Actually read the pixels
-        let read_pbo = self.read_pbo.clone();
+        let read_pbo = self.read_pbo;
         let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
         GlTracker::new(
-            |pipeline| unsafe {
+            |_pipeline| unsafe {
                 // Bind the buffer before reading
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
                 gl::BindTexture(self.target, self.oid);
                 let (_internal_format, format, data_type) = self.ifd;
                 gl::GetTexImage(self.target, 0, format, data_type, null_mut());
             },
-            move |pipeline| unsafe {
+            move |_pipeline| unsafe {
                 // Gotta read back the data
                 let mut vec = vec![0_u8; byte_count];
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
