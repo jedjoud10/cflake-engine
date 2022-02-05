@@ -101,6 +101,8 @@ fn init(mut write: core::WriteContext) {
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(diffuse)
         .set_normals_texture(normals)
+        .set_normals_strength(10.0)
+        .set_uv_scale(veclib::Vector2::ONE * 0.05)
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 

@@ -10,4 +10,3 @@ pub use context::*;
 pub use handler::*;
 pub use pipeline::*;
 pub use pipeline_main::*;
-pub use sender::*;

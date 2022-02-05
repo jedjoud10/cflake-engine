@@ -43,7 +43,7 @@ impl PipelineObject for Material {
             group.set_texture("normals_tex", pipeline.defaults.as_ref()?.normals_tex, 2);
         }
         // Combine the default uniforms and the new uniforms that we just made
-        self.uniforms = ShaderUniformsGroup::combine(self.uniforms, group);
+        self.uniforms = ShaderUniformsGroup::combine(group, self.uniforms);
 
         // Make sure we have a valid shader
         if !self.shader.is_some() {

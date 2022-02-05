@@ -26,13 +26,15 @@ impl World {
         // Load the default stuff
 
         // Create an empty default UI
-        let mut root = ui::Root::default();
+        let root = ui::Root::default();
+        /*
         root.add_element(
             ui::Element::default()
                 .with_size(veclib::vec2(200, 200))
                 .with_center(veclib::vec2(100, 100))
                 .with_color(veclib::vec4(1.0, 0.0, 1.0, 1.0)),
         );
+        */
         self.ui.add_root("default", root);
 
         // Load the config file (create it if it doesn't exist already)

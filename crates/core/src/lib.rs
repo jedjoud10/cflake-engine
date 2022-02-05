@@ -12,6 +12,6 @@ pub use data::*;
 pub use game_file::*;
 pub use global::*;
 pub use receiver::*;
-pub use sender::*;
+pub(crate) use sender::*;
 pub use task::*;
 pub use world::*;
