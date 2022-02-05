@@ -6,29 +6,29 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#handler = { path = "crates\\handler" }
+handler = { path = "crates\\handler" }
 
 [workspace]
 members = [
-    #"crates\\assets",
-    #"crates\\core",
-    #"crates\\debug",
-    #"crates\\defaults",
-    #"crates\\ecs",
-    #"crates\\handler",
-    #"crates\\font_generator",
-    #"crates\\fonts",
-    #"crates\\input",
-    #"crates\\io",
-    #"crates\\main",
-    #"crates\\math",
-    #"crates\\network",
-    #"crates\\others",
-    #"crates\\physics",
+    "crates\\assets",
+    "crates\\core",
+    "crates\\debug",
+    "crates\\defaults",
+    "crates\\ecs",
+    "crates\\handler",
+    "crates\\font_generator",
+    "crates\\fonts",
+    "crates\\input",
+    "crates\\io",
+    "crates\\main",
+    "crates\\math",
+    "crates\\network",
+    "crates\\others",
+    "crates\\physics",
     "crates\\rendering",
-    #"crates\\terrain",
-    #"crates\\ui",
-    #"crates\\threads"
+    "crates\\terrain",
+    "crates\\ui",
+    "crates\\threads"
 ]
 
 [profile.dev]

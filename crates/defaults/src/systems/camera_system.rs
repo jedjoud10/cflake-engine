@@ -74,7 +74,7 @@ fn run(context: &mut Context, data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::task(object::PipelineTask::UpdateCamera(pipeline_camera), &*pipeline);
+        pipeline::pipec::(object::PipelineTask::UpdateCamera(pipeline_camera), &*pipeline);
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global

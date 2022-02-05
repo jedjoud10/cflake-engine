@@ -54,13 +54,14 @@ impl Font {
     pub fn create_texture(&mut self, pipeline: &Pipeline) {
         // Create the texture and set it's parameters
         self.texture = pipec::construct(
+            pipeline,
             Texture::default()
                 .set_dimensions(TextureType::Texture2D(self.atlas_dimensions.x, self.atlas_dimensions.y))
                 .set_filter(TextureFilter::Linear)
                 .set_format(TextureFormat::R16R)
                 .set_bytes(self.texture_pixels.clone()),
-            pipeline,
-        );
+        )
+        .unwrap();
     }
     // Turn some text into an array of font chars
     pub fn convert_text_to_font_chars(&self, text: &str) -> Vec<&FontChar> {

@@ -7,7 +7,10 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::{basics::model::{CustomVertexDataBuffer, Model}, utils::DataType::U32};
+use rendering::{
+    basics::model::{CustomVertexDataBuffer, Model},
+    utils::DataType::U32,
+};
 use std::collections::hash_map::Entry;
 
 use super::BuilderModelData;
@@ -66,7 +69,9 @@ impl MarchingCubes {
         // The vertex indices that are gonna be used for the skirts
         'edge: for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
-            if edge.is_negative() { break 'edge; }
+            if edge.is_negative() {
+                break 'edge;
+            }
             // Get the vertex in local space
             let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
             let vert2 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2 + 1]];
@@ -82,7 +87,15 @@ impl MarchingCubes {
                 // Get the interpolated data
                 let index1 = flatten_vec3(info.pos + vert1);
                 let index2 = flatten_vec3(info.pos + vert2);
-                let interpolated = self.get_interpolated_vertex(&voxels, &info, EdgeInfo { index1, index2, index: edge as usize });
+                let interpolated = self.get_interpolated_vertex(
+                    &voxels,
+                    &info,
+                    EdgeInfo {
+                        index1,
+                        index2,
+                        index: edge as usize,
+                    },
+                );
                 // Then add it to the model
                 e.insert(model.model.vertices.len() as u16);
                 model.model.triangles.push(model.model.vertices.len() as u32);
@@ -99,7 +112,9 @@ impl MarchingCubes {
     // Generate the model
     fn generate_model(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData) {
         // Use vertex merging
-        let mut merger = VertexMerger { duplicates: AHashMap::with_capacity(64) };
+        let mut merger = VertexMerger {
+            duplicates: AHashMap::with_capacity(64),
+        };
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
@@ -108,8 +123,10 @@ impl MarchingCubes {
                     let info = IterInfo { i, pos: veclib::vec3(x, y, z) };
 
                     // Generate the case index
-                    let case = Self::generate_marching_cubes_case(&voxels, &info);     
-                    if case == 0 || case == 255 { continue; }               
+                    let case = Self::generate_marching_cubes_case(&voxels, &info);
+                    if case == 0 || case == 255 {
+                        continue;
+                    }
 
                     // Then solve it
                     let data = CubeData {
@@ -119,7 +136,7 @@ impl MarchingCubes {
                     self.solve_marching_cubes_case(voxels, model, &mut merger, &info, data)
                 }
             }
-        }        
+        }
     }
     // Generate the Marching Cubes model
     pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
@@ -128,7 +145,7 @@ impl MarchingCubes {
         let mut model = BuilderModelData {
             model: Model::with_capacity(64),
             vdata: CustomVertexDataBuffer::<u32>::with_capacity(64, 1),
-        };        
+        };
         // Then generate the model
         self.generate_model(voxels, &mut model);
         // Combine the model's custom vertex data with the model itself
@@ -141,7 +158,8 @@ impl MarchingCubes {
 }
 // Info about the current iteration
 struct IterInfo {
-    i: usize, pos: veclib::Vector3<usize>,
+    i: usize,
+    pos: veclib::Vector3<usize>,
 }
 // A vertex merger used to tell us when we should merge vertices or not
 struct VertexMerger {
@@ -155,7 +173,8 @@ struct InterpolatedVertexData {
 }
 // Edge intersection info
 struct EdgeInfo {
-    index1: usize, index2: usize,
+    index1: usize,
+    index2: usize,
     index: usize,
 }
 // Info about the marching cube

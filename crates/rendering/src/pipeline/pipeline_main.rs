@@ -3,8 +3,8 @@ pub mod pipec {
     use std::sync::{atomic::Ordering, mpsc::SendError};
 
     use crate::{
-        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, Callback},
-        pipeline::{sender, Pipeline, PipelineContext},
+        object::{Callback, Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
+        pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
     };
     // Debug some pipeline data
     pub fn set_debugging(pipeline: &Pipeline, debugging: bool) {
@@ -70,14 +70,14 @@ pub mod pipec {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req)))
     }
     // Add a callback to the pipeline that we will execute at the end of the frame, but only one time
-    pub fn add_end_of_frame_callback_once<F: FnOnce(&mut Pipeline) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
+    pub fn add_end_of_frame_callback_once<F: FnOnce(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
         let mut lock = pipeline.callbacks.lock().ok()?;
         lock.push(Callback::EndOfFrameOnce(Box::new(function)));
         Some(())
     }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
-    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
+    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
         let mut lock = pipeline.callbacks.lock().ok()?;
         lock.push(Callback::EndOfFrame(Box::new(function)));
         Some(())

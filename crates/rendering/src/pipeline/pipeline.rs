@@ -11,13 +11,13 @@ use crate::{
         renderer::Renderer,
         shader::{
             info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
-            Shader, ShaderSettings, ShaderSource, ShaderSourceType, query_shader_info,
+            query_shader_info, Shader, ShaderSettings, ShaderSource, ShaderSourceType,
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask, Callback},
+    object::{Callback, GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{DataType, RenderWrapper, Window},
 };
@@ -217,22 +217,22 @@ impl Pipeline {
         }
     }
     // Run the End Of Frame callbacks
-    pub(crate) fn execute_end_of_frame_callbacks(&mut self) {
+    pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
         let lock_ = self.callbacks.clone();
-        let mut lock = lock_.lock().unwrap();        
+        let mut lock = lock_.lock().unwrap();
         // Execute the callbacks
         for callback in &*lock {
             match callback {
-                Callback::EndOfFrame(x) => (&*x)(self),
-                Callback::EndOfFrameOnce(_) => { /* We shouldn't have any here */ },
+                Callback::EndOfFrame(x) => (&*x)(self, renderer),
+                Callback::EndOfFrameOnce(_) => { /* We shouldn't have any here */ }
             }
         }
         let onces = lock.drain_filter(|x| if let Callback::EndOfFrameOnce(_) = x { true } else { false });
         // Execute the callbacks that must be executed once
         for callback_once in onces {
             match callback_once {
-                Callback::EndOfFrame(_) => { /* We shouldn't have any here */ },
-                Callback::EndOfFrameOnce(x) => x(self),
+                Callback::EndOfFrame(_) => { /* We shouldn't have any here */ }
+                Callback::EndOfFrameOnce(x) => x(self, renderer),
             }
         }
     }
@@ -513,7 +513,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
             let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
             let i = std::time::Instant::now();
-            pipeline.execute_end_of_frame_callbacks();
+            pipeline.execute_end_of_frame_callbacks(&mut renderer);
 
             // Do not forget to switch buffers at the end of the frame
             window.swap_buffers();

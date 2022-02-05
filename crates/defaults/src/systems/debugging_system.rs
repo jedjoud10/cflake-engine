@@ -27,7 +27,7 @@ fn run(context: &mut Context, data: EventKey) {
         let terrain = read.ecs.get_global::<crate::globals::Terrain>(&global_fetcher);
         if let Ok(terrain) = terrain {
             println!("Terrain: ");
-            println!("  #Chunk Size: [{a}x{a}x{a}]", a =main::terrain::CHUNK_SIZE);
+            println!("  #Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE);
             println!("  #Chunks: '{}'", terrain.chunks.len());
             println!("  #Pending Generation: '{}'", terrain.chunks_generating.len());
             println!("  #Pending Deletion: '{}'", terrain.chunks_to_remove.len());

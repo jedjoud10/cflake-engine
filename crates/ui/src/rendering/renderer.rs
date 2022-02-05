@@ -2,7 +2,7 @@ use crate::{InstancedBatch, InstancedBatchIdentifier, Root};
 use rendering::{
     basics::{
         shader::{Shader, ShaderSettings},
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings, ShaderIdentifier},
     },
     object::ObjectID,
     pipeline::{pipec, Pipeline},
@@ -29,7 +29,7 @@ impl Renderer {
         // Load the default UI shader
         let settings = ShaderSettings::default().source(DEFAULT_UI_SHADER_VERT).source(DEFAULT_UI_SHADER_FRAG);
         let shader = Shader::new(settings).unwrap();
-        let shader = pipec::construct(shader, pipeline);
+        let shader = pipec::construct(pipeline, shader).unwrap();
         Self {
             batches: HashMap::with_capacity(1),
             default_shader: shader,
@@ -117,7 +117,7 @@ impl Renderer {
             // If the shader ID is the default one, that means that we have to use the default UI shader
             group.set_texture("main_texture", id_texture, 0);
             if pipeline.get_shader(id_shader).is_some() {
-                let settings = ShaderUniformsSettings::new(id_shader);
+                let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(id_shader));
                 group.execute(pipeline, settings).expect("Forgot to set shader or main texture!");
 
                 unsafe {

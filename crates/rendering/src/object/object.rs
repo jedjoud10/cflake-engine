@@ -2,9 +2,10 @@ use super::{ConstructionTask, DeconstructionTask, ObjectID};
 use crate::pipeline::Pipeline;
 
 // Trait that is implemented on PipelineObjects that can be created and deleted
-pub trait PipelineObject 
+pub trait PipelineObject
 where
-    Self: Sized {
+    Self: Sized,
+{
     // Reserve this object's ID, returning it's ID and itself
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)>;
 

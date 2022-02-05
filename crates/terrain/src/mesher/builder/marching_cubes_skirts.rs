@@ -6,7 +6,7 @@ use rendering::{
 use crate::{
     mesher::{
         tables::{INDEX_OFFSET_X, MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
-        MesherSettings, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_TRANSFORM_FN,
+        MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
     },
     utils, ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
@@ -41,7 +41,7 @@ impl MarchingCubesSkirts {
             model: Model::default(),
             vdata: CustomVertexDataBuffer::<u32>::with_capacity(200, 1),
         };
-        // Create the skirts in all 3 directions        
+        // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
             let index_offsets = &SKIRTS_DIR_INDEX_OFFSET[direction];
@@ -49,25 +49,9 @@ impl MarchingCubesSkirts {
             let indexing_function = SKIRTS_DIR_INDEXING_FN[direction];
             let transform_function = SKIRTS_DIR_TRANSFORM_FN[direction];
             // Create the two skirts for this direction
-            self.generate_skirt(
-                voxels,
-                &mut model,
-                false,
-                flip,
-                &index_offsets,
-                indexing_function,
-                transform_function,
-            );
-            self.generate_skirt(
-                voxels,
-                &mut model,
-                true,
-                !flip,
-                &index_offsets,
-                indexing_function,
-                transform_function,
-            );
-        }         
+            self.generate_skirt(voxels, &mut model, false, flip, &index_offsets, indexing_function, transform_function);
+            self.generate_skirt(voxels, &mut model, true, !flip, &index_offsets, indexing_function, transform_function);
+        }
         // Combine the model's custom vertex data with the model itself
         let extracted_model = model.model;
         let custom_vdata = model.vdata;
@@ -266,5 +250,9 @@ struct SquareData {
 pub struct InterInfo {
     index_offsets: &'static [usize; 4],
     transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
-    slice: usize, flip: bool, i: usize, x: usize, y: usize,
+    slice: usize,
+    flip: bool,
+    i: usize,
+    x: usize,
+    y: usize,
 }

@@ -52,7 +52,9 @@ impl World {
     // Resize window event
     pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
         let pipeline = self.pipeline.read();
-        rendering::pipeline::pipec::task(rendering::object::PipelineTask::SetWindowDimension(new_dimensions), &pipeline);
+        rendering::pipeline::pipec::add_end_of_frame_callback_once(&pipeline, move |pipeline, pipeline_renderer| {
+            pipeline.update_window(pipeline_renderer, true, new_dimensions);
+        }).unwrap();
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(world: &Rc<RefCell<World>>, _task_receiver: &mut WorldTaskReceiver) {

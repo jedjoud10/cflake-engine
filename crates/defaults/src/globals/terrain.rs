@@ -14,7 +14,7 @@ use main::{
             transfer::Transferable,
             uniforms::ShaderUniformsGroup,
         },
-        object::{ObjectID, PipelineTrackedTask, ReservedTrackedID},
+        object::{ObjectID, ReservedTrackedID, TrackedTask},
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
@@ -75,7 +75,7 @@ impl Terrain {
             .shader_constant("chunk_size", CHUNK_SIZE);
 
         let base_compute = ComputeShader::new(settings).unwrap();
-        let base_compute = pipec::construct(base_compute, &pipeline);
+        let base_compute = pipec::construct(&pipeline, base_compute).unwrap();
 
         // Load the second pass compute shader
         let settings = ShaderSettings::default()
@@ -83,7 +83,7 @@ impl Terrain {
             .external_code("voxel_include_path", voxel_src_path)
             .shader_constant("chunk_size", CHUNK_SIZE);
         let second_compute = ComputeShader::new(settings).unwrap();
-        let second_compute = pipec::construct(second_compute, &pipeline);
+        let second_compute = pipec::construct(&pipeline, second_compute).unwrap();
 
         // We must read the size of the buffer_data Shader Storage Block in the second shader, so we will need to do a pipeline flush
         let resource = shader::info::Resource {
@@ -100,16 +100,15 @@ impl Terrain {
         let reserved_id = ReservedTrackedID::default();
         let info = shader::info::ShaderInfo::default();
         let transfer = info.transfer();
-        pipec::tracked_task(PipelineTrackedTask::QueryComputeShaderInfo(second_compute, settings, transfer), reserved_id, &pipeline);
+        pipec::tracked_task(&pipeline, TrackedTask::QueryComputeShaderInfo(second_compute, settings, transfer), reserved_id);
         drop(pipeline);
 
         // Force a pipeline flush and wait till we get the results back
         pipec::flush_and_execute(pipeline_context).unwrap();
-        //pipec::flush_and_execute(pipeline_context).unwrap();
 
         // Now we wait...
         let pipeline = pipeline_context.read();
-        while !pipec::did_tasks_execute(&[reserved_id], &pipeline) {}
+        while !pipec::did_tasks_execute(&pipeline, &[reserved_id]) {}
 
         // We got our shader info back!
         let params = info.get(&resource).unwrap();
@@ -134,15 +133,15 @@ impl Terrain {
         }
 
         // Also construct the atomics
-        let atomics = pipec::construct(AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution), &pipeline);
+        let atomics = pipec::construct(&pipeline, AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution)).unwrap();
 
         // Load the shader storage
         let pipeline = pipeline_context.read();
         let shader_storage_arbitrary_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Pass, arb_voxels_size);
-        let shader_storage_arbitrary_voxels = pipec::construct(shader_storage_arbitrary_voxels, &pipeline);
+        let shader_storage_arbitrary_voxels = pipec::construct(&pipeline, shader_storage_arbitrary_voxels).unwrap();
 
         let shader_storage_final_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, final_voxels_size);
-        let shader_storage_final_voxels = pipec::construct(shader_storage_final_voxels, &pipeline);
+        let shader_storage_final_voxels = pipec::construct(&pipeline, shader_storage_final_voxels).unwrap();
 
         println!("Terrain component init done!");
         Self {

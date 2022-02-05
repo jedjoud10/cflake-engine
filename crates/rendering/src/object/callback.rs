@@ -1,7 +1,7 @@
-use crate::pipeline::Pipeline;
+use crate::pipeline::{Pipeline, PipelineRenderer};
 
 // Some callback types
 pub enum Callback {
-    EndOfFrame(Box<dyn Fn(&mut Pipeline) + Sync + Send>),
-    EndOfFrameOnce(Box<dyn FnOnce(&mut Pipeline) + Sync + Send>),
+    EndOfFrame(Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send>),
+    EndOfFrameOnce(Box<dyn FnOnce(&mut Pipeline, &mut PipelineRenderer) + Sync + Send>),
 }

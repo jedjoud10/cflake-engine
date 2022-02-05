@@ -39,7 +39,7 @@ fn run(context: &mut Context, data: EventKey) {
                 let model = mesher.build();
 
                 // Construct the model and add it to the chunk entity
-                let model_id = pipec::construct(model, &*pipeline);
+                let model_id = pipec::construct(&pipeline, model).unwrap();
                 chunk.buffered_model = Some(model_id);
 
                 // Create a linking group that contains the renderer

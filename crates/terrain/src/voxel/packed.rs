@@ -5,13 +5,13 @@ use crate::CHUNK_SIZE;
 #[repr(C, align(16))]
 #[derive(Default, Clone, Copy)]
 pub struct PackedVoxel {
-    pub density: f32, // 4bytes
+    pub density: f32,                // 4bytes
     pub normal: veclib::Vector3<i8>, // 3
-    _padding: u8, // 1
-    
+    _padding: u8,                    // 1
+
     pub color: veclib::Vector3<u8>, // 3
-    pub material_type: u8, // 1
-    _nothing: u32, // 4
+    pub material_type: u8,          // 1
+    _nothing: u32,                  // 4
 }
 
 // A vector full of packed voxels

@@ -4,8 +4,7 @@ use main::{
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
         basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::ShaderUniformsGroup},
-        object::PipelineTrackedTask,
-        pipeline::{pipec, Pipeline},
+        pipeline::{pipec, Pipeline}, object::TrackedTask,
     },
     terrain::{PackedVoxel, CHUNK_SIZE},
 };
@@ -27,9 +26,9 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new((AXIS + 1, AXIS + 1, AXIS + 1)).set_uniforms(group);
     pipec::tracked_task(
-        PipelineTrackedTask::RunComputeShader(terrain.compute_shader, execution_settings),
-        terrain.compute_id,
         pipeline,
+        TrackedTask::RunComputeShader(terrain.compute_shader, execution_settings),
+        terrain.compute_id,
     );
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
@@ -47,29 +46,29 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // And execute the shader
     let execution_settings2 = ComputeShaderExecutionSettings::new((AXIS, AXIS, AXIS)).set_uniforms(group);
     pipec::tracked_task_requirement(
-        PipelineTrackedTask::RunComputeShader(terrain.second_compute_shader, execution_settings2),
+        pipeline,
+        TrackedTask::RunComputeShader(terrain.second_compute_shader, execution_settings2),
         terrain.compute_id2,
         terrain.compute_id,
-        pipeline,
     );
     // And also read from the atomic counters
     let read_counters = AtomicGroupRead::default();
     let read_counters_transfer = read_counters.transfer();
     pipec::tracked_task_requirement(
-        PipelineTrackedTask::AtomicGroupRead(terrain.atomics, read_counters_transfer),
+        pipeline,
+        TrackedTask::AtomicGroupRead(terrain.atomics, read_counters_transfer),
         terrain.read_counters,
         terrain.compute_id2,
-        pipeline,
     );
 
     // Send a task to read the final voxel shader values
     let read_bytes = ReadBytes::default();
     let read_bytes_transfer = read_bytes.transfer();
     pipec::tracked_task_requirement(
-        PipelineTrackedTask::ShaderStorageReadBytes(terrain.shader_storage_final_voxels, read_bytes_transfer),
+        pipeline,
+        TrackedTask::ShaderStorageReadBytes(terrain.shader_storage_final_voxels, read_bytes_transfer),
         terrain.read_final_voxels,
         terrain.compute_id2,
-        pipeline,
     );
 
     // Store the CPU side readers
@@ -128,7 +127,7 @@ fn run(context: &mut Context, data: EventKey) {
             }
         } else {
             // We must check if we have finished generating or not
-            if pipec::did_tasks_execute(&[terrain.compute_id, terrain.compute_id2, terrain.read_counters, terrain.read_final_voxels], &pipeline) {
+            if pipec::did_tasks_execute(&pipeline, &[terrain.compute_id, terrain.compute_id2, terrain.read_counters, terrain.read_final_voxels]) {
                 // We will now update the chunk data to store our new voxel data
                 let id = terrain.chunk_id.unwrap();
                 query.update(id, |components| {

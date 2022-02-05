@@ -5,7 +5,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings, ShaderIdentifier},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{ObjectID, PipelineTask},
     pipeline::pipec,
@@ -128,7 +128,8 @@ impl PipelineRenderer {
                     .set_dimensions(dims)
                     .set_format(TextureFormat::DepthComponent32)
                     .set_data_type(DataType::F32),
-            ).unwrap();
+            )
+            .unwrap();
 
             // Now bind the attachememnts
             fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
@@ -167,7 +168,8 @@ impl PipelineRenderer {
             assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
                 .unwrap()
                 .set_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
-        ).unwrap();
+        )
+        .unwrap();
         /* #endregion */
 
         // We must always flush to make sure we execute the tasks internally
@@ -186,7 +188,7 @@ impl PipelineRenderer {
         let _i = std::time::Instant::now();
         for (_id, renderer) in pipeline.renderers.iter() {
             let _result = self.render(pipeline, renderer);
-            // The renderer might've failed rendering 
+            // The renderer might've failed rendering
         }
     }
     // Post-render event

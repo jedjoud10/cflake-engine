@@ -357,14 +357,10 @@ pub const INDEX_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[
 pub const INDEX_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
 
 // All combined index offsets
-pub const SKIRTS_DIR_INDEX_OFFSET: [[usize; 4]; 3] = [
-    INDEX_OFFSET_X, INDEX_OFFSET_Y, INDEX_OFFSET_Z
-];
+pub const SKIRTS_DIR_INDEX_OFFSET: [[usize; 4]; 3] = [INDEX_OFFSET_X, INDEX_OFFSET_Y, INDEX_OFFSET_Z];
 
 // Should we flip the triangles whenever we generate a single skirt
-pub const SKIRTS_DIR_FLIP: [bool; 3] = [
-    false, true, true
-];
+pub const SKIRTS_DIR_FLIP: [bool; 3] = [false, true, true];
 // The indexing functions for each direction
 pub const SKIRTS_DIR_INDEXING_FN: [fn(usize, usize, usize) -> usize; 3] = [
     |slice, x, y| crate::flatten((slice * (CHUNK_SIZE), y, x)),
@@ -377,7 +373,7 @@ pub const SKIRTS_DIR_TRANSFORM_FN: [fn(usize, &veclib::Vector2<f32>, &veclib::Ve
     |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y),
     |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32),
 ];
-    
+
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [
     veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
     veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
