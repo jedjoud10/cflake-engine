@@ -1,6 +1,6 @@
-use super::{ObjectID};
+use super::ObjectID;
 use crate::{
-    basics::{renderer::Renderer},
+    basics::renderer::Renderer,
     pipeline::{camera::Camera, Pipeline, PipelineRenderer},
 };
 

@@ -3,6 +3,7 @@ pub mod defaults;
 mod linked_components;
 mod macros;
 mod query;
+mod query_guard;
 pub mod registry;
 pub use component::Component;
 pub use component::*;

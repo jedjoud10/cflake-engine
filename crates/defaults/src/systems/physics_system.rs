@@ -6,12 +6,12 @@ use main::{
 // The physics system update loop
 fn run(context: &mut Context, data: EventKey) {
     let read = context.read().unwrap();
-    let (query, _) = data.decompose().unwrap();
+    let (mut query, _) = data.decompose().unwrap();
     // Get the world's delta time
     let delta = read.time.delta as f32;
 
     // For each physics object, we must update the internal physics values and apply them to our transform
-    query.update_all_threaded(move |_, components| {
+    for (_, components) in query.lock().iter_mut() {
         // For each physics object, we want to take the transform's position as as a starting point
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let (position, rotation) = (transform.position, transform.rotation);
@@ -25,7 +25,7 @@ fn run(context: &mut Context, data: EventKey) {
         let mut transform = components.get_component_mut::<crate::components::Transform>().unwrap();
         transform.position = position;
         transform.rotation = rotation;
-    })
+    }
 }
 
 // Create the physics system

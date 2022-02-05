@@ -39,7 +39,13 @@ impl<Context> ECSManager<Context> {
     // Create a new ECS manager
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
         // Start the rayon thread pool
-        let pool = ThreadPoolBuilder::new().num_threads(4).start_handler(move |_| { start_function(); }).build().unwrap();
+        let pool = ThreadPoolBuilder::new()
+            .num_threads(4)
+            .start_handler(move |_| {
+                start_function();
+            })
+            .build()
+            .unwrap();
         Self {
             entities: Default::default(),
             entities_to_remove: Default::default(),
@@ -257,6 +263,7 @@ impl<Context> ECSManager<Context> {
         for system in self.systems.iter() {
             let execution_data = system.run_system(self);
             execution_data.run(&mut context.clone());
+            system.clear::<Context>();
         }
     }
     /* #endregion */

@@ -10,11 +10,11 @@ use main::{
 // The rendering system update loop
 fn run(context: &mut Context, data: EventKey) {
     // For each renderer, we must update it's pipeline transform and other values
-    let (query, _) = data.decompose().unwrap();
+    let (mut query, _) = data.decompose().unwrap();
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
-    query.update_all_threaded(|_, components| {
+    for (_, components) in query.lock().iter() {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
@@ -22,14 +22,14 @@ fn run(context: &mut Context, data: EventKey) {
             // Update the values if our renderer is valid
             pipec::update_task(&pipeline, UpdateTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix())).unwrap();
         }
-    });
+    }
 }
 
 // An event fired whenever we add multiple new renderer entities
 fn added_entities(context: &mut Context, data: EventKey) {
     // For each renderer, we must create it's pipeline renderer construction task
-    let (query, _) = data.decompose().unwrap();
-    query.update_all(move |components| {
+    let (mut query, _) = data.decompose().unwrap();
+    for (_, components) in query.lock().iter_mut() {
         // Get the pipeline first
         let read = context.read().unwrap();
         let pipeline = read.pipeline.read();
@@ -39,14 +39,14 @@ fn added_entities(context: &mut Context, data: EventKey) {
         let cpu_renderer = renderer.renderer.take().unwrap();
         let object_id = pipec::construct(&pipeline, cpu_renderer).unwrap();
         renderer.object_id = object_id;
-    })
+    }
 }
 
 // An event fired whenever we remove multiple renderer entities
 fn removed_entities(context: &mut Context, data: EventKey) {
     // For each renderer, we must dispose of it's GPU renderer
-    let (query, _) = data.decompose().unwrap();
-    query.update_all(move |components| {
+    let (mut query, _) = data.decompose().unwrap();
+    for (_, components) in query.lock().iter_mut() {
         // Get the pipeline first
         let read = context.read().unwrap();
         let pipeline = read.pipeline.read();
@@ -58,7 +58,7 @@ fn removed_entities(context: &mut Context, data: EventKey) {
 
         // And create the task to dispose of it
         pipec::deconstruct(&pipeline, id);
-    })
+    }
 }
 
 // Create the rendering system

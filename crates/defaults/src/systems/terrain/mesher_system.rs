@@ -7,7 +7,7 @@ use main::{
 
 // The mesher systems' update loop
 fn run(context: &mut Context, data: EventKey) {
-    let (query, mut global_fetcher) = data.decompose().unwrap();
+    let (mut query, mut global_fetcher) = data.decompose().unwrap();
     let mut write = context.write().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline_ = write.pipeline.clone();
@@ -16,11 +16,10 @@ fn run(context: &mut Context, data: EventKey) {
     let terrain = write.ecs.get_global_mut::<crate::globals::Terrain>(&mut global_fetcher);
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
-        query.update_all(|components| {
-            let id = components.get_entity_id().unwrap();
+        for (id, components) in query.lock().iter_mut() {
             let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
-            if !terrain.mesh_gen_chunk_id.map_or(false, |x| x == id) {
-                return;
+            if !terrain.mesh_gen_chunk_id.map_or(false, |x| x == *id) {
+                continue;
             }
             // We have created voxel data for this chunk, and it is valid
             if chunk.pending_model && chunk.buffered_model.is_none() && !chunk.added_renderer {
@@ -47,10 +46,10 @@ fn run(context: &mut Context, data: EventKey) {
                 let mut group = ComponentLinkingGroup::default();
                 let renderer = main::rendering::basics::renderer::Renderer::new(true).set_model(model_id).set_material(terrain.material);
                 group.link(crate::components::Renderer::new(renderer)).unwrap();
-                write.ecs.link_components(id, group).unwrap();
+                write.ecs.link_components(*id, group).unwrap();
                 terrain.chunks_generating.remove(&coords);
             }
-        })
+        }
     }
 }
 // Create a mesher system

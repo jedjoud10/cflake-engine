@@ -1,16 +1,10 @@
 use crate::{
-    advanced::{
-        atomic::{AtomicGroup},
-        compute::{ComputeShader},
-        shader_storage::ShaderStorage,
-    },
+    advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
     basics::{
         material::Material,
         model::{Model, ModelBuffers},
         renderer::Renderer,
-        shader::{
-            query_shader_info, Shader, ShaderSettings,
-        },
+        shader::{query_shader_info, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
@@ -22,7 +16,7 @@ use ahash::AHashMap;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
-    ptr::{null_mut},
+    ptr::null_mut,
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
@@ -471,7 +465,6 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
 
         // We must render every frame
         loop {
-            
             // At the start of each frame we must sync up with the main thread
             waiting_clone.store(true, Ordering::Relaxed);
             sbarrier_clone.wait();

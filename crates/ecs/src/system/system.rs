@@ -5,7 +5,7 @@ use bitfield::Bitfield;
 
 use super::SystemExecutionData;
 use crate::{
-    component::{ComponentQuery, ComponentQueryIterType, LinkedComponents},
+    component::{ComponentQuery, LinkedComponents},
     entity::EntityID,
     event::EventKey,
     ECSManager,
@@ -21,8 +21,8 @@ pub struct System {
 
     linked_components: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
     // Added, Removed
-    added: Mutex<AHashMap<EntityID, LinkedComponents>>,
-    removed: Mutex<AHashMap<EntityID, LinkedComponents>>,
+    added: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
+    removed: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
 }
 
 impl Default for System {
@@ -64,28 +64,21 @@ impl System {
     // Create a SystemExecutionData that we can actually run at a later time
     pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
         // Create the component queries
-        let all_components = self.evn_run.map(|_| ComponentQueryIterType::ArcHashMap(self.linked_components.clone()));
+        let all_components = self.evn_run.map(|_| self.linked_components.clone());
 
         // Get the added components
-        let added_components = {
-            // We must ALWAYS take it
-            let mut added = self.added.lock().unwrap();
-            let added = std::mem::take(&mut *added);
-            self.evn_added_entity.map(|_| ComponentQueryIterType::HashMap(added))
-        };
+        let added_components = self.evn_added_entity.map(|_| self.added.clone());
 
         // Do a bit of decrementing
         let removed_components = {
-            let mut removed = self.removed.lock().unwrap();
+            let removed = self.removed.lock().unwrap();
             let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
             for (_, component) in removed.iter() {
                 // Decrement the counter
                 let (_entity, _removed_id, counter) = lock.get_mut(component.id.0).unwrap();
                 *counter -= 1;
             }
-            // Clear the "removed" vector and return it's elements
-            let removed = std::mem::take(&mut *removed);
-            self.evn_removed_entity.map(|_| ComponentQueryIterType::HashMap(removed))
+            self.evn_removed_entity.map(|_| self.removed.clone())
         };
         SystemExecutionData {
             // Events
@@ -106,5 +99,13 @@ impl System {
                 rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
         }
+    }
+    // Clear the system for the next execution
+    pub fn clear<Context>(&self) {
+        // Clear the stored entity differences
+        let mut added = self.added.lock().unwrap();
+        added.clear();
+        let mut removed = self.removed.lock().unwrap();
+        removed.clear();
     }
 }

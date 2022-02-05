@@ -16,12 +16,11 @@ pub mod test {
     #[derive(Clone, Copy)]
     pub struct WorldContext;
     fn run_system(_context: &mut WorldContext, data: EventKey) {
-        let (components, _) = data.decompose().unwrap();
-        components.execute(|iterator| {
-            for x
+        let (mut query, _) = data.decompose().unwrap();
+        for (_, components) in query.lock().iter_mut() {
             let mut name = components.get_component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
-        });
+        }
     }
 
     #[test]
@@ -135,29 +134,29 @@ pub mod test {
 
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose().unwrap();
-            components.update_all(|components| {
+            let (mut query, _) = data.decompose().unwrap();
+            for (_, components) in query.lock().iter_mut() {
                 let mut name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
                 *name = Name::new("Bob");
-            });
+            }
         }
         fn internal_remove_entity(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose().unwrap();
-            components.update_all(|components| {
+            let (mut query, _) = data.decompose().unwrap();
+            for (_, components) in query.lock().iter_mut() {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
-            });
+            }
         }
         fn internal_add_entity(_context: &mut WorldContext, data: EventKey) {
-            let (components, _) = data.decompose().unwrap();
-            components.update_all(|components| {
+            let (mut query, _) = data.decompose().unwrap();
+            for (_, components) in query.lock().iter_mut() {
                 let name = components.get_component_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
-            });
+            }
         }
         let builder = ecs.create_system_builder();
         builder

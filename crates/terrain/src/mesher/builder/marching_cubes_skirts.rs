@@ -7,7 +7,8 @@ use crate::{
     mesher::{
         tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
         MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
-    }, ChunkCoords, StoredVoxelData, CHUNK_SIZE,
+    },
+    ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 
 use super::BuilderModelData;
@@ -210,7 +211,7 @@ impl MarchingCubesSkirts {
             vertices[triangle_index] = if *vertex_index % 2 == 0 {
                 // Not interpolated
                 let transformed_index = (*vertex_index as usize) / 2;
-                
+
                 (info.transform_function)(info.slice, &SQUARES_VERTEX_TABLE[transformed_index], &data.position)
             } else {
                 // Interpolated
@@ -221,7 +222,7 @@ impl MarchingCubesSkirts {
                 } else {
                     panic!()
                 };
-                
+
                 (info.transform_function)(info.slice, &inner, &data.position)
             };
         }

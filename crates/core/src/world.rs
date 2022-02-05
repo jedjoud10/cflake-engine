@@ -86,6 +86,8 @@ impl World {
                     // Flush all the commends that we have dispatched during the system's frame execution
                     let mut world = world.try_borrow_mut().unwrap();
                     _task_receiver.flush(&mut world);
+                    let system = &world.ecs.get_systems()[system_index];
+                    system.clear::<Context>();
                 }
             }
         }
