@@ -3,7 +3,7 @@ use main::{
     ecs::event::EventKey,
     rendering::{
         self,
-        object::{ObjectID, PipelineTask},
+        object::{ObjectID, UpdateTask}, pipeline::pipec,
     },
 };
 
@@ -14,25 +14,15 @@ fn run(context: &mut Context, data: EventKey) {
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
     let _i = std::time::Instant::now();
-    let storage = main::threads::SharedVec::<Option<PipelineTask>>::new(query.get_entity_count());
-    query.update_all_threaded(|execution_id, components| {
+    query.update_all_threaded(|_, components| {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let renderer_object_id = &renderer.object_id;
-        let task = if renderer_object_id.is_some() {
+        if renderer_object_id.is_some() {
             // Update the values if our renderer is valid
-            Some(rendering::object::PipelineTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix()))
-        } else {
-            None
-        };
-        // Write the task
-        let option = storage.write(execution_id).unwrap();
-        *option = task;
+            pipec::update_task(&pipeline, UpdateTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix())).unwrap();
+        }
     });
-
-    // Since we have all the tasks, we can send them as a batch
-    let vec = storage.into_inner().into_iter().flatten().collect::<Vec<_>>();
-    rendering::pipeline::pipec::task_batch(vec, &pipeline);
 }
 
 // An event fired whenever we add multiple new renderer entities
@@ -47,7 +37,7 @@ fn added_entities(context: &mut Context, data: EventKey) {
         // Get the CPU renderer that we must construct
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
         let cpu_renderer = renderer.renderer.take().unwrap();
-        let object_id = rendering::pipeline::pipec::construct(cpu_renderer, &pipeline);
+        let object_id = pipec::construct(&pipeline, cpu_renderer).unwrap();
         renderer.object_id = object_id;
     })
 }
@@ -67,7 +57,7 @@ fn removed_entities(context: &mut Context, data: EventKey) {
         renderer.object_id = ObjectID::default();
 
         // And create the task to dispose of it
-        rendering::pipeline::pipec::task(PipelineTask::DisposeRenderer(id), &pipeline);
+        pipec::deconstruct(&pipeline, id);
     })
 }
 

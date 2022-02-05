@@ -29,25 +29,25 @@ fn init(mut write: core::WriteContext) {
     let pipeline = pipeline_.read();
     // Create it's model
     let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
-    let model_id = rendering::pipeline::pipec::construct(model, &pipeline);
+    let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
 
     // Create it's material
     let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png")
         .unwrap()
         .set_mipmaps(true);
-    let texture = rendering::pipeline::pipec::construct(texture, &pipeline);
+    let texture = rendering::pipeline::pipec::construct(&pipeline, texture).unwrap();
 
     let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_normal.png")
         .unwrap()
         .set_mipmaps(true);
-    let texture2 = rendering::pipeline::pipec::construct(texture2, &pipeline);
+    let texture2 = rendering::pipeline::pipec::construct(&pipeline, texture2).unwrap();
 
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(texture)
         .set_normals_texture(texture2)
         .set_normals_strength(0.3)
         .set_uv_scale(veclib::Vector2::ONE * 3.0);
-    let material = rendering::pipeline::pipec::construct(material, &pipeline);
+    let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Create a simple cube
     for x in 0..2 {
@@ -78,7 +78,7 @@ fn init(mut write: core::WriteContext) {
     let settings = rendering::basics::shader::ShaderSettings::default()
         .source("defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl")
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
-    let shader = rendering::pipeline::pipec::construct(rendering::basics::shader::Shader::new(settings).unwrap(), &pipeline);
+    let shader = rendering::pipeline::pipec::construct(&pipeline, rendering::basics::shader::Shader::new(settings).unwrap()).unwrap();
     // Then the textures
     let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
     let normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
@@ -95,21 +95,21 @@ fn init(mut write: core::WriteContext) {
         .unwrap()
         .set_mipmaps(true);
 
-    let diffuse = rendering::pipeline::pipec::construct(diffuse, &pipeline);
-    let normals = rendering::pipeline::pipec::construct(normals, &pipeline);
+    let diffuse = rendering::pipeline::pipec::construct(&pipeline, diffuse).unwrap();
+    let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();
 
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(diffuse)
         .set_normals_texture(normals)
         .set_shader(shader);
-    let material = rendering::pipeline::pipec::construct(material, &pipeline);
+    let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
         dist < 1.2
     });
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
-    let tex = rendering::pipeline::pipec::construct(tex, &pipeline);
+    let tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
     uniforms.set_texture("diffuse_tex", diffuse, 0);
     // Add the terrain

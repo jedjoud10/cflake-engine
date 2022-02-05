@@ -3,7 +3,7 @@ pub mod pipec {
     use std::sync::{atomic::Ordering, mpsc::SendError};
 
     use crate::{
-        object::{Callback, Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
+        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, UpdateTask},
         pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
     };
     // Debug some pipeline data
@@ -32,6 +32,12 @@ pub mod pipec {
         // Send a deconstruction task to destroy the object
         let task = T::pull(pipeline, id);
         send(pipeline, PipelineTask::Deconstruction(task))?;
+        Some(())
+    }
+    // Update task
+    pub fn update_task(pipeline: &Pipeline, task: UpdateTask) -> Option<()> {
+        // Send a update task to destroy the object
+        send(pipeline, PipelineTask::Update(task))?;
         Some(())
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
@@ -69,17 +75,11 @@ pub mod pipec {
     pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) -> Option<()> {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req)))
     }
-    // Add a callback to the pipeline that we will execute at the end of the frame, but only one time
-    pub fn add_end_of_frame_callback_once<F: FnOnce(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
-        let mut lock = pipeline.callbacks.lock().ok()?;
-        lock.push(Callback::EndOfFrameOnce(Box::new(function)));
-        Some(())
-    }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
     pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
         let mut lock = pipeline.callbacks.lock().ok()?;
-        lock.push(Callback::EndOfFrame(Box::new(function)));
+        lock.push(Box::new(function));
         Some(())
     }
 }

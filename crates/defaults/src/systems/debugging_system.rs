@@ -22,7 +22,7 @@ fn run(context: &mut Context, data: EventKey) {
         let core_global = read.ecs.get_global::<crate::globals::GlobalWorldData>(&global_fetcher).unwrap();
         println!("Global: ");
         println!("  #Camera Position: '{}'", core_global.camera_pos);
-        main::rendering::pipeline::pipec::set_debugging(true, &*pipeline);
+        main::rendering::pipeline::pipec::set_debugging(&pipeline, true);
         // Also debug the terrain if needed
         let terrain = read.ecs.get_global::<crate::globals::Terrain>(&global_fetcher);
         if let Ok(terrain) = terrain {
@@ -33,7 +33,7 @@ fn run(context: &mut Context, data: EventKey) {
             println!("  #Pending Deletion: '{}'", terrain.chunks_to_remove.len());
         }
     } else {
-        main::rendering::pipeline::pipec::set_debugging(false, &*pipeline);
+        main::rendering::pipeline::pipec::set_debugging(&pipeline, false);
     }
 }
 // Create the debugging system

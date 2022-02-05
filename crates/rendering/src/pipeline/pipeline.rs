@@ -17,7 +17,7 @@ use crate::{
         transfer::Transfer,
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{Callback, GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
+    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{DataType, RenderWrapper, Window},
 };
@@ -87,7 +87,7 @@ pub struct Pipeline {
     pub(crate) debugging: AtomicBool,
 
     // End Of Frame callbacks
-    pub(crate) callbacks: Arc<Mutex<Vec<Callback>>>,
+    pub(crate) callbacks: Arc<Mutex<Vec<Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>>>>,
 }
 
 impl Pipeline {
@@ -145,16 +145,17 @@ impl Pipeline {
         }
     }
     // Execute a single task
-    fn execute_task(&mut self, internal: &mut InternalPipeline, task: PipelineTask) {
+    fn execute_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTask) {
         // Now we must execute these tasks
         match task {
             PipelineTask::Construction(construction) => construction.execute(self),
             PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
+            PipelineTask::Update(update) => update.execute(self, renderer),
             PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
         }
     }
     // Called each frame during the "free-zone"
-    pub(crate) fn update(&mut self, internal: &mut InternalPipeline) {
+    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // Also check each GlTracker and check if it finished executing
         let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
 
@@ -164,11 +165,11 @@ impl Pipeline {
         }
 
         // Always flush during the update
-        self.flush(internal);
+        self.flush(internal, renderer);
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline) {
+    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
@@ -189,7 +190,7 @@ impl Pipeline {
 
         // Execute the tasks now
         for task in tasks {
-            self.execute_task(internal, task);
+            self.execute_task(internal, renderer, task);
         }
 
         // Update the window if needed
@@ -222,21 +223,10 @@ impl Pipeline {
         let mut lock = lock_.lock().unwrap();
         // Execute the callbacks
         for callback in &*lock {
-            match callback {
-                Callback::EndOfFrame(x) => (&*x)(self, renderer),
-                Callback::EndOfFrameOnce(_) => { /* We shouldn't have any here */ }
-            }
-        }
-        let onces = lock.drain_filter(|x| if let Callback::EndOfFrameOnce(_) = x { true } else { false });
-        // Execute the callbacks that must be executed once
-        for callback_once in onces {
-            match callback_once {
-                Callback::EndOfFrame(_) => { /* We shouldn't have any here */ }
-                Callback::EndOfFrameOnce(x) => x(self, renderer),
-            }
+            let callback = &**callback;
+            callback(self, renderer);
         }
     }
-
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
         self.materials.get(id.get()?)
@@ -303,12 +293,20 @@ impl Pipeline {
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
         self.shader_storages.get_mut(id.get()?)
     }
-    // Update the window settings
-    // This will cause the internal renderer to update the frame buffer size
-    pub fn update_window(&mut self, renderer: &mut PipelineRenderer, focused: bool, dimensions: veclib::Vector2<u16>) {
+    
+    // Update methods
+    // Update the window dimensions
+    pub(crate) fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
+        self.window.dimensions = new_dimensions;
+        renderer.update_window_dimensions(new_dimensions, self);
+    }
+    // Update the focus state for our window
+    pub(crate) fn update_window_focus_state(&mut self, focused: bool) {
         self.window.focused = focused;
-        self.window.dimensions = dimensions;
-        renderer.update_window_dimensions(dimensions, self);
+    }   
+    // Set our internal camera to a new one
+    pub(crate) fn set_internal_camera(&mut self, camera: Camera) {
+        self.camera = camera;
     }
 }
 
@@ -462,13 +460,13 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap();
             pipeline.window = window_wrapper;
             pipeline.defaults = Some(load_defaults(&*pipeline));
-            pipeline.flush(&mut internal)
         }
 
         // Setup the pipeline renderer
         let mut renderer = {
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
+            pipeline.flush(&mut internal, &mut renderer);
             renderer.initialize(&mut internal, &mut *pipeline);
             renderer
         };
@@ -529,7 +527,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             pipeline.add_tasks(messages);
 
             // Execute the tasks
-            pipeline.update(&mut internal);
+            pipeline.update(&mut internal, &mut renderer);
 
             // Debug if needed
             if debug {

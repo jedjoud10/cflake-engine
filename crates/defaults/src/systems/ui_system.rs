@@ -15,8 +15,7 @@ pub fn system(write: &mut WriteContext) {
     let pipeline = write.pipeline.read();
     // We must create the UI renderer on the main thread, but we later send it to the render thread for rendering
     let renderer = Arc::new(Mutex::new(main::ui::Renderer::new(&pipeline)));
-    pipec::add_end_of_frame_callback(
-        move |pipeline| {
+    pipec::add_end_of_frame_callback(&pipeline, move |pipeline, _| {
             let mut roots = arc_roots_clone.lock().unwrap();
             let mut renderer = renderer.lock().unwrap();
             // We gotta draw each visible root now
@@ -24,6 +23,5 @@ pub fn system(write: &mut WriteContext) {
                 renderer.draw(pipeline, root, pipeline.window.dimensions);
             }
         },
-        &pipeline,
-    );
+    ).unwrap();
 }

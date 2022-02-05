@@ -1,6 +1,7 @@
 use main::core::{Context, WriteContext};
 use main::ecs::event::EventKey;
 use main::input::Keys;
+use main::rendering::object::UpdateTask;
 
 // The camera system update loop
 fn run(context: &mut Context, data: EventKey) {
@@ -65,7 +66,6 @@ fn run(context: &mut Context, data: EventKey) {
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
 
-        use main::rendering::object;
         use main::rendering::pipeline;
         let pipeline_camera = main::rendering::pipeline::camera::Camera {
             position,
@@ -74,7 +74,7 @@ fn run(context: &mut Context, data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::(object::PipelineTask::UpdateCamera(pipeline_camera), &*pipeline);
+        pipeline::pipec::update_task(&pipeline, UpdateTask::UpdateCamera(pipeline_camera)).unwrap();
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global
