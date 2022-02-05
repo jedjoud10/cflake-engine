@@ -37,13 +37,10 @@ pub struct ECSManager<Context> {
 // Global code for the Entities, Components, and Systems
 impl<Context> ECSManager<Context> {
     // Create a new ECS manager
-    pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
+    pub fn new() -> Self {
         // Start the rayon thread pool
         let pool = ThreadPoolBuilder::new()
             .num_threads(4)
-            .start_handler(move |_| {
-                start_function();
-            })
             .build()
             .unwrap();
         Self {

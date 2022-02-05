@@ -29,7 +29,7 @@ pub mod test {
         // Also create the context
         let context = WorldContext;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        let mut ecs = ECSManager::<WorldContext>::new();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -66,7 +66,7 @@ pub mod test {
         // Also create the context
         let context = WorldContext;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        let mut ecs = ECSManager::<WorldContext>::new();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -102,7 +102,7 @@ pub mod test {
         // Also create the context
         let context = WorldContext;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        let mut ecs = ECSManager::<WorldContext>::new();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -128,7 +128,7 @@ pub mod test {
     #[test]
     pub fn test_events() {
         // Create the main ECS manager
-        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        let mut ecs = ECSManager::<WorldContext>::new();
         // Also create the context
         let context = WorldContext;
 
@@ -198,7 +198,7 @@ pub mod test {
             pub _data: T,
         }
         // Create the main ECS manager
-        let mut ecs = ECSManager::<WorldContext>::new(|| {});
+        let mut ecs = ECSManager::<WorldContext>::new();
         ecs.add_global(GlobalComponentTest { _test_value: 10 }).unwrap();
         // Make a simple system
         fn internal_run(_context: &mut WorldContext, _data: EventKey) {}

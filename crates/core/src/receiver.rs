@@ -1,18 +1,18 @@
-use crate::{task::WorldTask, World, WorldTaskBatch, INTERNAL_TASKS};
+use crate::{task::WorldTask, World, INTERNAL_TASKS};
 
 // A receiver that we can use to receive tasks from other threads
 pub struct WorldTaskReceiver {
     // An internal receiver
-    rx: std::sync::mpsc::Receiver<WorldTaskBatch>,
+    rx: std::sync::mpsc::Receiver<WorldTask>,
     // Buffered tasks that we can run at a later time
-    batch_tasks: Vec<WorldTaskBatch>,
+    batch_tasks: Vec<WorldTask>,
 }
 
 impl WorldTaskReceiver {
     // Create a new world task receiver
     // Also setup the global channel
     pub fn new() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel::<WorldTaskBatch>();
+        let (tx, rx) = std::sync::mpsc::channel::<WorldTask>();
         crate::sender::set_global_sender(tx);
         Self { rx, batch_tasks: Vec::new() }
     }
@@ -45,15 +45,8 @@ impl WorldTaskReceiver {
         // Also poll the tasks that we have stored internally
         let internal_tasks = INTERNAL_TASKS.with(|x| std::mem::take(&mut *x.borrow_mut()));
         taken.extend(internal_tasks);
-        for batch in taken {
-            match batch.combination {
-                crate::WorldTaskCombination::Batch(tasks) => {
-                    for task in tasks {
-                        self.execute(world, task)
-                    }
-                }
-                crate::WorldTaskCombination::Single(task) => self.execute(world, task),
-            }
+        for task in taken {
+            self.execute(world, task);
         }
     }
 }

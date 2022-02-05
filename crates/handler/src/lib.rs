@@ -41,7 +41,6 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     preload_assets();
     // Hehe multithreaded renering goes BRRRRRRRR
     let pipeline_data = rendering::pipeline::init_pipeline(&mut glfw, &mut window);
-    rendering::pipeline::init_coms();
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let world = Rc::new(RefCell::new(World::new(author_name, app_name, pipeline_data)));

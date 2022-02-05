@@ -27,19 +27,18 @@ pub(crate) fn set_global_sender(sender: Sender<PipelineTask>) {
     RENDER_THREAD.with(|cell| cell.set(true));
 }
 
-// Initialize the thread local sender. We must do this after the render pipeline has been fully initialized
-pub fn init_coms() {
-    // Get the global sender and copy it to the local sender
-    let lock = SENDER.lock().unwrap();
-    let sender = (*lock).as_ref().unwrap();
-    LOCAL_SENDER.with(|cell| {
-        let mut cell = cell.borrow_mut();
-        *cell = Some(sender.clone());
-    })
-}
-
 // Send a task using the thread local sender
 pub(crate) fn send_task(task: PipelineTask, pipeline: &Pipeline) -> Result<(), SendError<PipelineTask>> {
+    // Set the local sender if it is still not valid 
+    if LOCAL_SENDER.with(|cell| cell.borrow().is_none()) {
+        // Get the global sender and copy it to the local sender
+        let lock = SENDER.lock().unwrap();
+        let sender = (*lock).as_ref().unwrap();
+        LOCAL_SENDER.with(|cell| {
+            let mut cell = cell.borrow_mut();
+            *cell = Some(sender.clone());
+        })
+    } 
     // If we are on the render thread, add the task directly
     if RENDER_THREAD.with(|cell| cell.get()) {
         pipeline.add_task_internally(task);

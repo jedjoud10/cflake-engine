@@ -27,4 +27,8 @@ impl ComponentQuery {
         let locked = self.linked_components.as_ref().unwrap().lock().unwrap();
         ComponentQueryGuard { inner: locked }
     }
+    // Get the rayon thread pool
+    pub fn get_thread_pool(&self) -> &ThreadPool {
+        self.rayon_pool.as_ref()
+    }
 }

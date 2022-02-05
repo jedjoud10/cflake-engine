@@ -7,16 +7,7 @@ pub struct TaskSenderContext(pub(crate) ());
 impl TaskSenderContext {
     // Send a task to the main thread
     pub(crate) fn send(&self, task: WorldTask) -> Option<()> {
-        crate::sender::send_task(WorldTaskBatch {
-            combination: WorldTaskCombination::Single(task),
-        })
-    }
-    // Send a batch of tasks to the main thread
-    #[allow(dead_code)]
-    pub(crate) fn send_batch(&self, tasks: Vec<WorldTask>) -> Option<()> {
-        crate::sender::send_task(WorldTaskBatch {
-            combination: WorldTaskCombination::Batch(tasks),
-        })
+        crate::sender::send_task(task)
     }
 }
 
@@ -29,14 +20,4 @@ pub enum WorldTask {
     // Component linking tasks
     DirectLinkComponents(EntityID, ComponentLinkingGroup),
     DirectRemoveComponents(EntityID, ComponentUnlinkGroup),
-}
-
-pub(crate) enum WorldTaskCombination {
-    Batch(Vec<WorldTask>),
-    Single(WorldTask),
-}
-
-// A batch of tasks
-pub struct WorldTaskBatch {
-    pub(crate) combination: WorldTaskCombination,
 }

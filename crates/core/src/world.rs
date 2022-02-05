@@ -12,11 +12,7 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: ecs::ECSManager::new(|| {
-                // This is ran on every thread in the ECS thread pool
-                rendering::pipeline::init_coms();
-                crate::sender::init_coms();
-            }),
+            ecs: ecs::ECSManager::new(),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline,
