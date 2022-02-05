@@ -3,7 +3,8 @@ use main::{
     ecs::event::EventKey,
     rendering::{
         self,
-        object::{ObjectID, UpdateTask}, pipeline::pipec,
+        object::{ObjectID, UpdateTask},
+        pipeline::pipec,
     },
 };
 

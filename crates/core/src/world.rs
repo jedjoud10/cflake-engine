@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use rendering::{pipeline::PipelineContext, object::UpdateTask};
+use rendering::{object::UpdateTask, pipeline::PipelineContext};
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 

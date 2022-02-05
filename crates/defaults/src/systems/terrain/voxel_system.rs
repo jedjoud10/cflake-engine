@@ -4,7 +4,8 @@ use main::{
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
         basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::ShaderUniformsGroup},
-        pipeline::{pipec, Pipeline}, object::TrackedTask,
+        object::TrackedTask,
+        pipeline::{pipec, Pipeline},
     },
     terrain::{PackedVoxel, CHUNK_SIZE},
 };
@@ -25,11 +26,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new((AXIS + 1, AXIS + 1, AXIS + 1)).set_uniforms(group);
-    pipec::tracked_task(
-        pipeline,
-        TrackedTask::RunComputeShader(terrain.compute_shader, execution_settings),
-        terrain.compute_id,
-    );
+    pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(terrain.compute_shader, execution_settings), terrain.compute_id);
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader

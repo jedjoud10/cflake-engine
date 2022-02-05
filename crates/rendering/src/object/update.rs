@@ -2,7 +2,7 @@ use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
     basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
-    pipeline::{Pipeline, camera::Camera, PipelineRenderer},
+    pipeline::{camera::Camera, Pipeline, PipelineRenderer},
 };
 
 // Task that we will send to the pipeline whenever we want to update a specific pipeline object
@@ -20,7 +20,7 @@ impl UpdateTask {
             UpdateTask::UpdateRendererMatrix(id, matrix) => {
                 let renderer = pipeline.get_renderer_mut(id).unwrap();
                 renderer.update_matrix(matrix);
-            },
+            }
             UpdateTask::UpdateCamera(x) => pipeline.set_internal_camera(x),
             UpdateTask::UpdateWindowDimensions(x) => pipeline.update_window_dimensions(renderer, x),
             UpdateTask::UpdateWindowFocus(x) => pipeline.update_window_focus_state(x),

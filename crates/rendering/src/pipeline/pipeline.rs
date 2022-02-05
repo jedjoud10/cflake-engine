@@ -293,7 +293,7 @@ impl Pipeline {
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
         self.shader_storages.get_mut(id.get()?)
     }
-    
+
     // Update methods
     // Update the window dimensions
     pub(crate) fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
@@ -303,7 +303,7 @@ impl Pipeline {
     // Update the focus state for our window
     pub(crate) fn update_window_focus_state(&mut self, focused: bool) {
         self.window.focused = focused;
-    }   
+    }
     // Set our internal camera to a new one
     pub(crate) fn set_internal_camera(&mut self, camera: Camera) {
         self.camera = camera;
