@@ -7,6 +7,12 @@ fn preload_assets() {
     // -----Pre-load the game assets here-----
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
+    assets::preload_asset!(".\\resources\\user\\textures\\forrest_ground_01_diff_2k.jpg");
+    assets::preload_asset!(".\\resources\\user\\textures\\forrest_ground_01_nor_gl_2k.jpg");
+    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_06_diff_2k.jpg");
+    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_06_nor_gl_2k.jpg");
+    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_08_diff_2k.jpg");
+    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_08_nor_gl_2k.jpg");
     assets::preload_asset!(".\\resources\\user\\textures\\saber.png");
     assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
@@ -14,7 +20,7 @@ fn init(mut write: core::WriteContext) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 6.0, 512000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 2.0, 20000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut write.ecs);
@@ -76,8 +82,20 @@ fn init(mut write: core::WriteContext) {
     // Then the textures
     let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
     let normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
-    let diffuse = rendering::basics::texture::Texture::convert_3d(vec![white]).unwrap();
-    let normals = rendering::basics::texture::Texture::convert_3d(vec![normal_map]).unwrap();
+    let texture_diff_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_diff_2k.jpg")
+        .unwrap();
+    let texture_norm_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_nor_gl_2k.jpg")
+        .unwrap();
+    let texture_diff_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_diff_2k.jpg")
+        .unwrap();
+    let texture_norm_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_nor_gl_2k.jpg")
+        .unwrap();
+    let texture_diff_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_diff_2k.jpg")
+        .unwrap();
+    let texture_norm_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_nor_gl_2k.jpg")
+        .unwrap();
+    let diffuse = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3]).unwrap().set_mipmaps(true);
+    let normals = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3]).unwrap().set_mipmaps(true);
 
     let diffuse = rendering::pipeline::pipec::construct(diffuse, &pipeline);
     let normals = rendering::pipeline::pipec::construct(normals, &pipeline);
@@ -95,7 +113,7 @@ fn init(mut write: core::WriteContext) {
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let tex = rendering::pipeline::pipec::construct(tex, &pipeline);
     let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
-    uniforms.set_texture("tex", tex, 0);
+    uniforms.set_texture("diffuse_tex", diffuse, 0);
     // Add the terrain
     drop(pipeline);
     let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 8, &pipeline_)
