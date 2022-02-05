@@ -1,4 +1,4 @@
-use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
+use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct};
 use crate::pipeline::*;
 
 use super::shader::Shader;
@@ -20,6 +20,10 @@ impl PipelineObject for Material {
     // Send this material to the pipeline for construction
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Material(Construct::<Self>(self, id))
+    }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::Material(Deconstruct::<Self>(id))
     }
     // Add the material to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {

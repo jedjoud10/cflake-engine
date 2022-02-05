@@ -1,6 +1,10 @@
+use std::{mem::size_of, ptr::null, ffi::c_void};
+
 use arrayvec::ArrayVec;
 
-use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct}, pipeline::Pipeline};
+use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct, GlTracker}, pipeline::Pipeline, basics::transfer::Transfer};
+
+use super::AtomicGroupRead;
 
 // The clear condition telling us when we should clear the atomic counter
 #[derive(Clone)]
@@ -43,9 +47,35 @@ impl PipelineObject for AtomicGroup {
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::AtomicGroup(Construct::<Self>(self, id))
     }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::AtomicGroup(Deconstruct::<Self>(id))
+    }
     // Add the atomic group to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the atomic group
+        // Create the OpenGL atomic buffer
+        let mut buffer = 0_u32;
+        unsafe {
+            gl::GenBuffers(1, &mut buffer);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
+            gl::BufferData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                size_of::<u32>() as isize * self.defaults.len() as isize,
+                null(),
+                gl::DYNAMIC_DRAW,
+            );
+            let reset = self.defaults.as_ptr();
+            gl::BufferSubData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                0,
+                size_of::<u32>() as isize * self.defaults.len() as isize,
+                reset as *const c_void,
+            );
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+        }
+        self.oid = buffer;
+        // Add the atomic;
         pipeline.atomics.insert(id.get()?, self);
         Some(())
     }
@@ -70,5 +100,44 @@ impl AtomicGroup {
     pub fn set_clear_condition(mut self, condition: ClearCondition) -> Self {
         self.condition = condition;
         self
+    }    
+    // Read the value of an atomic group by reading it's buffer data and update the transfer
+    pub fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
+        GlTracker::new(
+            move |_pipeline| unsafe {
+                // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
+                let oid = self.oid;
+                let mut counts: [u32; 4] = [0, 0, 0, 0];
+                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
+                gl::GetBufferSubData(
+                    gl::ATOMIC_COUNTER_BUFFER,
+                    0,
+                    size_of::<u32>() as isize * self.defaults.len() as isize,
+                    counts.as_mut_ptr() as *mut c_void,
+                );
+                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+                // Now store the atomic counters' values
+                let mut cpu_counters_lock = read.0.inner.lock().unwrap();
+                let cpu_counters = &mut *cpu_counters_lock;
+                cpu_counters.clear();
+                cpu_counters.try_extend_from_slice(&counts).unwrap();
+            },
+            |_| {},
+            pipeline,
+        )
+    }
+    // Clear the atomic group counters
+    pub fn clear_counters(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.oid);
+            let reset = self.defaults.as_ptr();
+            gl::BufferSubData(
+                gl::ATOMIC_COUNTER_BUFFER,
+                0,
+                size_of::<u32>() as isize * self.defaults.len() as isize,
+                reset as *const c_void,
+            );
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+        }
     }
 }

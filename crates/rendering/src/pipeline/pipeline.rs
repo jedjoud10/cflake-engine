@@ -15,9 +15,9 @@ use crate::{
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings, ShaderIdentifier},
     },
-    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID},
+    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{RenderWrapper, Window, DataType},
 };
@@ -31,7 +31,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    },
+    }, collections::HashMap,
 };
 
 use super::PipelineContext;
@@ -59,7 +59,7 @@ pub(crate) struct InternalPipeline {
 #[derive(Default)]
 pub struct Pipeline {
     // We will buffer the tasks, so that way whenever we receive a task internally from the Render Thread itself we can just wait until we manually flush the tasks to execute all at once
-    tasks: RwLock<Vec<PipelineTaskCombination>>,
+    tasks: RwLock<Vec<PipelineTask>>,
 
     // Tracked tasks
     pub(crate) completed_tasks: bitfield::AtomicSparseBitfield,
@@ -91,64 +91,38 @@ pub struct Pipeline {
 
 impl Pipeline {
     // Set the buffered tasks from RX messages
-    pub(crate) fn add_tasks(&mut self, messages: Vec<PipelineTaskCombination>) {
+    pub(crate) fn add_tasks(&mut self, messages: Vec<PipelineTask>) {
         let mut write = self.tasks.write().unwrap();
         for task in messages {
             write.push(task);
         }
     }
     // Add a task interally, through the render thread itself
-    pub(crate) fn add_task_internally(&self, task: PipelineTaskCombination) {
+    pub(crate) fn add_task_internally(&self, task: PipelineTask) {
         let mut write = self.tasks.write().unwrap();
         write.push(task);
     }
-    // Execute a single task
-    fn execute_task(&mut self, renderer: &mut PipelineRenderer, task: PipelineTask) {
-        // Now we must execute these tasks
-        match task {
-            // Creation tasks
-            PipelineTask::CreateTexture(id) => self.texture_create(id),
-            PipelineTask::CreateMaterial(id) => self.material_create(id),
-            PipelineTask::CreateShader(id) => self.shader_create(id),
-            PipelineTask::CreateModel(id) => self.model_create(id),
-            PipelineTask::CreateRenderer(id) => self.renderer_create(id),
-            PipelineTask::CreateComputeShader(id) => self.compute_create(id),
-            PipelineTask::CreateAtomicGroup(id) => self.atomic_group_create(id),
-            PipelineTask::CreateShaderStorage(id) => self.shader_storage_create(id),
-
-            PipelineTask::UpdateRendererMatrix(id, matrix) => self.renderer_update_matrix(id, matrix),
-            PipelineTask::UpdateCamera(camera) => self.camera = camera,
-            PipelineTask::UpdateTextureDimensions(id, tt) => self.texture_update_size(id, tt),
-            PipelineTask::UpdateRendererUniforms(id, uniforms) => {
-                if let Some(x) = self.get_renderer_mut(id) {
-                    x.update_uniforms(uniforms);
-                }
-            }
-
-            PipelineTask::DisposeRenderer(id) => self.renderer_dispose(id),
-
-            // Window tasks
-            PipelineTask::SetWindowDimension(new_dimensions) => self.set_window_dimension(renderer, new_dimensions),
-            PipelineTask::SetWindowFocusState(focused) => self.set_window_focus_state(focused),
-        }
-    }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, _renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedID) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, task: TrackedTask, tracking_id: ReservedTrackedID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
-            PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),
-            PipelineTrackedTask::TextureReadBytes(id, read) => self.fill_texture(id, read),
-            PipelineTrackedTask::ShaderStorageReadBytes(id, read) => self.shader_storage_read(id, read),
-            PipelineTrackedTask::AtomicGroupRead(id, read) => self.atomic_group_read(id, read),
-            PipelineTrackedTask::QueryShaderInfo(id, settings, read) => {
-                // Get the shader OID
-                let oid = self.get_shader(id).unwrap().program;
-                self.query_shader_info(oid, settings, read)
+            TrackedTask::RunComputeShader(id, settings) => {
+                todo!()
+            },
+            TrackedTask::TextureReadBytes(id, read) => { 
+                todo!()
+            },
+            TrackedTask::ShaderStorageReadBytes(id, read) => {
+                todo!()
+            },
+            TrackedTask::AtomicGroupRead(id, read) => {
+                todo!()
+            },
+            TrackedTask::QueryShaderInfo(id, settings, read) => {
+                todo!()
             }
-            PipelineTrackedTask::QueryComputeShaderInfo(id, settings, read) => {
-                // Get the shader OID
-                let oid = self.get_compute_shader(id).unwrap().program;
-                self.query_shader_info(oid, settings, read)
+            TrackedTask::QueryComputeShaderInfo(id, settings, read) => {
+                todo!()
             }
         };
 
@@ -163,8 +137,17 @@ impl Pipeline {
             self.completed_tasks.set(completed.0, true);
         }
     }
+    // Execute a single task
+    fn execute_task(&mut self, internal: &mut InternalPipeline, task: PipelineTask) {
+        // Now we must execute these tasks
+        match task {
+            PipelineTask::Construction(construction) => construction.execute(self),
+            PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
+            PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
+        }
+    }    
     // Called each frame during the "free-zone"
-    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
+    pub(crate) fn update(&mut self, internal: &mut InternalPipeline) {
         // Also check each GlTracker and check if it finished executing
         let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
 
@@ -174,11 +157,11 @@ impl Pipeline {
         }
 
         // Always flush during the update
-        self.flush(internal, renderer);
+        self.flush(internal);
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
+    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline) {
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write().unwrap();
@@ -186,34 +169,20 @@ impl Pipeline {
             // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
             let tasks = tasks
                 .drain_filter(|task| match task {
-                    PipelineTaskCombination::SingleReqTracked(_, require) => {
-                        // Only let this task through if the required tracked task completed first
-                        self.completed_tasks.get(require.0)
-                    }
-                    PipelineTaskCombination::SingleTracked(_, _, require) => {
+                    PipelineTask::Tracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
                         let valid = require.and_then(|x| if self.completed_tasks.get(x.0) { None } else { Some(()) });
                         valid.is_none()
-                    }
+                    },
                     _ => true,
                 })
                 .collect::<Vec<_>>();
             tasks
         };
 
+        // Execute the tasks now
         for task in tasks {
-            match task {
-                PipelineTaskCombination::Single(task) => self.execute_task(renderer, task),
-                PipelineTaskCombination::SingleReqTracked(task, _) => self.execute_task(renderer, task),
-                PipelineTaskCombination::Batch(batch) => {
-                    // Execute all the tasks
-                    for task in batch {
-                        self.execute_task(renderer, task);
-                    }
-                }
-
-                PipelineTaskCombination::SingleTracked(task, tracking_id, _) => self.execute_tracked_task(internal, renderer, task, tracking_id),
-            }
+            self.execute_task(internal, task);
         }
 
         // Update the window if needed
@@ -230,13 +199,13 @@ impl Pipeline {
     }
     // Set the global shader uniforms
     pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
-        for (id, _shader) in self.shaders.iter() {
+        for (id, shader) in self.shaders.iter() {
             // Set the uniforms
             let mut group = ShaderUniformsGroup::new();
             group.set_f32("_time", time as f32);
             group.set_f32("_delta", delta as f32);
             group.set_vec2i32("_resolution", self.window.dimensions.into());
-            let id = ShaderUniformsSettings::new(ObjectID::new(id));
+            let id = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
             group.execute(self, id).unwrap();
         }
     }
@@ -252,882 +221,69 @@ impl Pipeline {
 
     // Get a material using it's respective ID
     pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
-        if let Some(id) = id.id {
-            self.materials.get(id)
-        } else {
-            None
-        }
+        self.materials.get(id.get()?)
     }
     // Get a model using it's respective ID
     pub fn get_model(&self, id: ObjectID<Model>) -> Option<&(Model, ModelBuffers)> {
-        if let Some(id) = id.id {
-            self.models.get(id)
-        } else {
-            None
-        }
+        self.models.get(id.get()?)
     }
     // Get a renderer using it's respective ID
     pub fn get_renderer(&self, id: ObjectID<Renderer>) -> Option<&Renderer> {
-        if let Some(id) = id.id {
-            self.renderers.get(id)
-        } else {
-            None
-        }
+        self.renderers.get(id.get()?)
     }
     // Get a shader using it's respective ID
     pub fn get_shader(&self, id: ObjectID<Shader>) -> Option<&Shader> {
-        if let Some(id) = id.id {
-            self.shaders.get(id)
-        } else {
-            None
-        }
+        self.shaders.get(id.get()?)
     }
     // Get a compute shader using it's respective ID
     pub fn get_compute_shader(&self, id: ObjectID<ComputeShader>) -> Option<&ComputeShader> {
-        if let Some(id) = id.id {
-            self.compute_shaders.get(id)
-        } else {
-            None
-        }
+        self.compute_shaders.get(id.get()?)
     }
     // Get a texture using it's respective ID
     pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
-        if let Some(id) = id.id {
-            self.textures.get(id)
-        } else {
-            None
-        }
+        self.textures.get(id.get()?)
     }
     // Get an atomic group using it's respective ID
     pub fn get_atomic_group(&self, id: ObjectID<AtomicGroup>) -> Option<&AtomicGroup> {
-        if let Some(id) = id.id {
-            self.atomics.get(id)
-        } else {
-            None
-        }
+        self.atomics.get(id.get()?)
     }
     // Get a shader storage using it's respective ID
     pub fn get_shader_storage(&self, id: ObjectID<ShaderStorage>) -> Option<&ShaderStorage> {
-        if let Some(id) = id.id {
-            self.shader_storages.get(id)
-        } else {
-            None
-        }
+        self.shader_storages.get(id.get()?)
     }
 
     // Mutable
     // Get a mutable material using it's respective ID
     pub fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
-        if let Some(id) = id.id {
-            self.materials.get_mut(id)
-        } else {
-            None
-        }
+        self.materials.get_mut(id.get()?)
     }
     // Get a mutable model using it's respective ID
     pub fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut (Model, ModelBuffers)> {
-        if let Some(id) = id.id {
-            self.models.get_mut(id)
-        } else {
-            None
-        }
+        self.models.get_mut(id.get()?)
     }
     // Get a mutable renderer using it's respective ID
     pub fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
-        if let Some(id) = id.id {
-            self.renderers.get_mut(id)
-        } else {
-            None
-        }
+        self.renderers.get_mut(id.get()?)
     }
     // Get a mutable shader using it's respective ID
     pub fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
-        if let Some(id) = id.id {
-            self.shaders.get_mut(id)
-        } else {
-            None
-        }
+        self.shaders.get_mut(id.get()?)
     }
     // Get a mutable compute shader using it's respective ID
     pub fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
-        if let Some(id) = id.id {
-            self.compute_shaders.get_mut(id)
-        } else {
-            None
-        }
+        self.compute_shaders.get_mut(id.get()?)
     }
     // Get a mutable texture using it's respective ID
     pub fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
-        if let Some(id) = id.id {
-            self.textures.get_mut(id)
-        } else {
-            None
-        }
+        self.textures.get_mut(id.get()?)
     }
     // Get a mutable atomic group using it's respective ID
     pub fn get_atomic_group_mut(&mut self, id: ObjectID<AtomicGroup>) -> Option<&mut AtomicGroup> {
-        if let Some(id) = id.id {
-            self.atomics.get_mut(id)
-        } else {
-            None
-        }
+        self.atomics.get_mut(id.get()?)
     }
     // Get a mutable shader storage using it's respective ID
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
-        if let Some(id) = id.id {
-            self.shader_storages.get_mut(id)
-        } else {
-            None
-        }
-    }
-    // Actually update our data
-    
-    // Update a renderer's matrix
-    fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
-        let renderer = self.renderers.get_mut(id.id.unwrap()).unwrap();
-        renderer.matrix = matrix;
-    }
-    // Create a shader and cache it. We do not cache the "subshader" though
-    fn shader_create(&mut self, task: ObjectBuildingTask<Shader>) {
-        // Compile a single shader source
-        fn compile_single_source(source_data: ShaderSource) -> u32 {
-            let shader_type: u32;
-            println!("\x1b[33mCompiling & Creating Shader Source {}...\x1b[0m", source_data.path);
-            match source_data._type {
-                ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
-                ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
-                ShaderSourceType::Compute => {
-                    panic!()
-                } // We are not allowed to create compute shaders using the normal create_shader function
-            }
-            unsafe {
-                let program = gl::CreateShader(shader_type);
-                // Compile the shader
-                let cstring = CString::new(source_data.text.clone()).unwrap();
-                let shader_source: *const i8 = cstring.as_ptr();
-                gl::ShaderSource(program, 1, &shader_source, null());
-                gl::CompileShader(program);
-                // Check for any errors
-                let mut info_log_length: i32 = 0;
-                let info_log_length_ptr: *mut i32 = &mut info_log_length;
-                gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-                // Print any errors that might've happened while compiling this shader source
-                if info_log_length > 0 {
-                    let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                    gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                    println!("Error while compiling shader source {}!:", source_data.path);
-                    let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                    let string = String::from_utf8(printable_log).unwrap();
-
-                    // Put the line count
-                    let error_source_lines = source_data.text.lines().enumerate();
-                    let error_source = error_source_lines
-                        .into_iter()
-                        .map(|(count, line)| format!("({}): {}", count + 1, line))
-                        .collect::<Vec<String>>()
-                        .join("\n");
-                    println!("{}", error_source);
-
-                    println!("Error: \n\x1b[31m{}", string);
-                    println!("\x1b[0m");
-                    panic!();
-                }
-
-                println!("\x1b[32mShader Source {} compiled succsessfully!\x1b[0m", source_data.path);
-                program
-            }
-        }
-        // Extract the shader
-        let mut shader = task.0;
-        let shader_name = shader.sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
-
-        // Actually compile the shader now
-        println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader_name);
-        let program = unsafe {
-            let program = gl::CreateProgram();
-
-            // Create & compile the shader sources and link them
-            let taken = std::mem::take(&mut shader.sources);
-            let programs: Vec<u32> = taken.into_iter().map(|(_path, data)| compile_single_source(data)).collect::<Vec<_>>();
-            // Link
-            for shader in programs.iter() {
-                gl::AttachShader(program, *shader)
-            }
-
-            // Finalize the shader and stuff
-            gl::LinkProgram(program);
-
-            // Check for any errors
-            let mut info_log_length: i32 = 0;
-            let info_log_length_ptr: *mut i32 = &mut info_log_length;
-            let mut result: i32 = 0;
-            let result_ptr: *mut i32 = &mut result;
-            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
-            // Print any errors that might've happened while finalizing this shader
-            if info_log_length > 0 {
-                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while finalizing shader {}!:", shader_name);
-                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();
-                println!("Error: \n\x1b[31m{}", string);
-                println!("\x1b[0m");
-                panic!();
-            }
-            // Detach shaders
-            for shader in programs.iter() {
-                gl::DetachShader(program, *shader);
-            }
-            println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader_name);
-            program
-        };
-        // Add the shader at the end
-        shader.program = program;
-        self.shaders.insert(task.1.id.unwrap(), shader);
-    }
-    // Create a compute shader and cache it
-    fn compute_create(&mut self, task: ObjectBuildingTask<ComputeShader>) {
-        // Extract the shader
-        let mut shader = task.0;
-
-        // Actually compile the shader now
-        println!("\x1b[33mCompiling & Creating Compute Shader {}...\x1b[0m", shader.source.path);
-        println!("\x1b[33mCompiling & Creating Compute Shader Source {}...\x1b[0m", shader.source.path);
-        let shader_source_program = unsafe {
-            // Compiling the source
-            let program = gl::CreateShader(gl::COMPUTE_SHADER);
-            // Compile the shader
-            let cstring = CString::new(shader.source.text.clone()).unwrap();
-            let shader_source: *const i8 = cstring.as_ptr();
-            gl::ShaderSource(program, 1, &shader_source, null());
-            gl::CompileShader(program);
-            // Check for any errors
-            let mut info_log_length: i32 = 0;
-            let info_log_length_ptr: *mut i32 = &mut info_log_length;
-            gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            // Print any errors that might've happened while compiling this shader source
-            if info_log_length > 0 {
-                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while compiling shader source {}!:", shader.source.path);
-                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();
-                // Put the line count
-                let error_source_lines = shader.source.text.lines().enumerate();
-                let error_source = error_source_lines
-                    .into_iter()
-                    .map(|(count, line)| format!("({}): {}", count + 1, line))
-                    .collect::<Vec<String>>()
-                    .join("\n");
-                println!("{}", error_source);
-                println!("Error: \n\x1b[31m{}", string);
-                println!("\x1b[0m");
-                panic!();
-            }
-
-            println!("\x1b[32mSubshader {} compiled succsessfully!\x1b[0m", shader.source.path);
-            program
-        };
-        let program = unsafe {
-            let program = gl::CreateProgram();
-            gl::AttachShader(program, shader_source_program);
-            // Finalize the shader and stuff
-            gl::LinkProgram(program);
-
-            // Check for any errors
-            let mut info_log_length: i32 = 0;
-            let info_log_length_ptr: *mut i32 = &mut info_log_length;
-            let mut result: i32 = 0;
-            let result_ptr: *mut i32 = &mut result;
-            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-            gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
-            // Print any errors that might've happened while finalizing this shader
-            if info_log_length > 0 {
-                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
-                println!("Error while finalizing shader {}!:", shader.source.path);
-                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
-                let string = String::from_utf8(printable_log).unwrap();
-                println!("Error: \n\x1b[31m{}", string);
-                println!("\x1b[0m");
-                panic!();
-            }
-            // Detach shader source
-            gl::DetachShader(program, shader_source_program);
-            println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader.source.path);
-            program
-        };
-        // Add the shader at the end
-        shader.program = program;
-        self.compute_shaders.insert(task.1.id.unwrap(), shader);
-    }
-    // Create a model
-    fn model_create(&mut self, task: ObjectBuildingTask<Model>) {
-        let model = task.0;
-        let mut buffers = ModelBuffers::default();
-        buffers.triangle_count = model.triangles.len();
-        unsafe {
-            // Create the VAO
-            gl::GenVertexArrays(1, &mut buffers.vertex_array_object);
-            gl::BindVertexArray(buffers.vertex_array_object);
-
-            // Create the EBO
-            gl::GenBuffers(1, &mut buffers.element_buffer_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (model.triangles.len() * size_of::<u32>()) as isize,
-                model.triangles.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // Create the vertex buffer and populate it
-            gl::GenBuffers(1, &mut buffers.vertex_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (model.vertices.len() * size_of::<f32>() * 3) as isize,
-                model.vertices.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // Create the normals buffer
-            gl::GenBuffers(1, &mut buffers.normal_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (model.normals.len() * size_of::<f32>() * 3) as isize,
-                model.normals.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            if !model.tangents.is_empty() {
-                // And it's brother, the tangent buffer
-                gl::GenBuffers(1, &mut buffers.tangent_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (model.tangents.len() * size_of::<f32>() * 4) as isize,
-                    model.tangents.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-
-            if !model.uvs.is_empty() {
-                // The texture coordinates buffer
-                gl::GenBuffers(1, &mut buffers.uv_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (model.uvs.len() * size_of::<f32>() * 2) as isize,
-                    model.uvs.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-
-            if !model.colors.is_empty() {
-                // Finally, the vertex colors buffer
-                gl::GenBuffers(1, &mut buffers.color_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (model.colors.len() * size_of::<f32>() * 3) as isize,
-                    model.colors.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
-
-            // Add some custom data if we want to
-            if model.custom.is_some() {
-                // Custom data moment
-                gl::GenBuffers(1, &mut buffers.custom_vertex_data);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                let stored = model.custom.as_ref().unwrap();
-                gl::BufferData(gl::ARRAY_BUFFER, stored.inner.len() as isize, stored.inner.as_ptr() as *const c_void, gl::STATIC_DRAW);
-            }
-
-            // Create the vertex attrib arrays
-            gl::EnableVertexAttribArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-            // Normal attribute
-            gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
-            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-            if !model.tangents.is_empty() {
-                // Tangent attribute
-                gl::EnableVertexAttribArray(2);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
-                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !model.uvs.is_empty() {
-                // UV attribute
-                gl::EnableVertexAttribArray(3);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
-                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !model.colors.is_empty() {
-                // Vertex color attribute
-                gl::EnableVertexAttribArray(4);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
-                gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if model.custom.is_some() {
-                // Vertex custom attribute
-                let custom = model.custom.as_ref().unwrap();
-                gl::EnableVertexAttribArray(5);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                match custom._type {
-                    DataType::F32 => {
-                        // Float point
-                        gl::VertexAttribPointer(5, custom.components_per_vertex as i32, custom._type.convert(), gl::FALSE, 0, null());
-                    },
-                    x => {
-                        // Integer
-                        gl::VertexAttribIPointer(5, custom.components_per_vertex as i32, x.convert(), 0, null());
-                    }
-                }
-            }
-            // Unbind
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        }
-        // Add the model normally and also add it's corresponding buffers
-        self.models.insert(task.1.id.unwrap(), (model, buffers));
-    }
-    // Dispose of a model, also remove it from the pipeline
-    fn model_dispose(&mut self, id: ObjectID<Model>) {
-        // Remove the model and it's buffers
-        let (_model, mut buffers) = self.models.remove(id.id.unwrap()).unwrap();
-        unsafe {
-            // Delete the VBOs
-            gl::DeleteBuffers(1, &mut buffers.vertex_buf);
-            gl::DeleteBuffers(1, &mut buffers.normal_buf);
-            gl::DeleteBuffers(1, &mut buffers.uv_buf);
-            gl::DeleteBuffers(1, &mut buffers.tangent_buf);
-            gl::DeleteBuffers(1, &mut buffers.color_buf);
-            gl::DeleteBuffers(1, &mut buffers.element_buffer_object);
-            gl::DeleteBuffers(1, &mut buffers.custom_vertex_data);
-
-            // Delete the vertex array
-            gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
-        }
-    }
-    // Create a texture
-    fn texture_create(&mut self, task: ObjectBuildingTask<Texture>) {
-        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
-        fn guess_mipmap_levels(i: usize) -> usize {
-            let mut x: f32 = i as f32;
-            let mut num: usize = 0;
-            while x > 1.0 {
-                // Repeatedly divide by 2
-                x /= 2.0;
-                num += 1;
-            }
-            num
-        }
-
-        let mut texture = task.0;
-        let mut pointer: *const c_void = null();
-        if !texture.bytes.is_empty() {
-            pointer = texture.bytes.as_ptr() as *const c_void;
-        }
-        let ifd = get_ifd(texture._format, texture._type);
-        let bytes_count = calculate_size_bytes(&texture._format, texture.count_pixels());
-
-        // Get the tex_type based on the TextureDimensionType
-        let tex_type = match texture.ttype {
-            TextureType::Texture1D(_) => gl::TEXTURE_1D,
-            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
-        };
-
-        let mut id: u32 = 0;
-        unsafe {
-            gl::GenTextures(1, &mut id as *mut u32);
-            gl::BindTexture(tex_type, id);
-            match texture.ttype {
-                TextureType::Texture1D(width) => {
-                    gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a 2D texture
-                TextureType::Texture2D(width, height) => {
-                    gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a 3D texture
-                TextureType::Texture3D(width, height, depth) => {
-                    gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a texture array
-                TextureType::Texture2DArray(width, height, depth) => {
-                    gl::TexStorage3D(
-                        tex_type,
-                        guess_mipmap_levels(width.max(height) as usize) as i32,
-                        ifd.0 as u32,
-                        width as i32,
-                        height as i32,
-                        depth as i32,
-                    );
-                    // We might want to do mipmap
-                    for i in 0..depth {
-                        let localized_bytes = texture.bytes[(i as usize * height as usize * 4 * width as usize)..texture.bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
-                    }
-                }
-            }
-            // Set the texture parameters for a normal texture
-            match texture.filter {
-                TextureFilter::Linear => {
-                    // 'Linear' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                }
-                TextureFilter::Nearest => {
-                    // 'Nearest' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-                }
-            }
-        }
-
-        // The texture is already bound to the TEXTURE_2D
-        if texture.mipmaps {
-            // Create the mipmaps
-            unsafe {
-                gl::GenerateMipmap(tex_type);
-                // Set the texture parameters for a mipmapped texture
-                match texture.filter {
-                    TextureFilter::Linear => {
-                        // 'Linear' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                    }
-                    TextureFilter::Nearest => {
-                        // 'Nearest' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-                    }
-                }
-            }
-        }
-
-        // Create the Upload / Download PBOs if needed
-        if texture.cpu_access.contains(TextureAccessType::READ) {
-            // Create a download PBO
-            let mut pbo = 0_u32;
-            unsafe {
-                gl::GenBuffers(1, &mut pbo);
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
-            }
-            texture.read_pbo = Some(pbo);
-        } else if texture.cpu_access.contains(TextureAccessType::WRITE) {
-            // Create an upload PBO
-            let mut pbo = 0_u32;
-            unsafe {
-                gl::GenBuffers(1, &mut pbo);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-            }
-            texture.write_pbo = Some(pbo);
-        }
-
-        // Set the wrap mode for the texture (Mipmapped or not)
-        let wrapping_mode: u32;
-        match texture.wrap_mode {
-            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE,
-            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER,
-            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT,
-            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT,
-        }
-        unsafe {
-            // Now set the actual wrapping mode in the opengl texture
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
-        }
-        // Add the texture
-        texture.oid = id;
-        self.textures.insert(task.1.id.unwrap(), texture);
-    }
-    // Update the size of a texture
-    // PS: This also clears the texture
-    fn texture_update_size(&mut self, id: ObjectID<Texture>, tt: TextureType) {
-        // Get the GPU texture object
-        let texture = self.get_texture_mut(id).unwrap();
-        // Check if the current dimension type matches up with the new one
-        texture.ttype = tt;
-        let ifd = texture.ifd;
-        // This is a normal texture getting resized
-        unsafe {
-            match tt {
-                TextureType::Texture1D(width) => {
-                    gl::BindTexture(gl::TEXTURE_1D, texture.oid);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureType::Texture2D(width, height) => {
-                    gl::BindTexture(gl::TEXTURE_2D, texture.oid);
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureType::Texture3D(width, height, depth) => {
-                    gl::BindTexture(gl::TEXTURE_3D, texture.oid);
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureType::Texture2DArray(_, _, _) => todo!(),
-            }
-        }
-    }
-    // Run a compute shader, and return it's GlTracker
-    fn compute_run(&mut self, id: ObjectID<ComputeShader>, settings: ComputeShaderExecutionSettings) -> GlTracker {
-        // Execute some shader uniforms if we want to
-        let group = settings.uniforms;
-        if let Some(group) = group {
-            // Create some shader uniforms settings that we can use
-            let settings = ShaderUniformsSettings::new_compute(id);
-            group.execute(self, settings).unwrap();
-        }
-        // Dispatch the compute shader for execution
-        let axii = settings.axii;
-
-        // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(
-            |_| unsafe {
-                gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            },
-            |_| {},
-            self,
-        )
-    }
-    // Read the bytes from a texture
-    fn fill_texture(&mut self, id: ObjectID<Texture>, read: Transfer<ReadBytes>) -> GlTracker {
-        // Actually read the pixels
-        GlTracker::new(
-            |pipeline| unsafe {
-                // Bind the buffer before reading
-                let texture = pipeline.get_texture(id).unwrap();
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
-                gl::BindTexture(texture.target, texture.oid);
-                let (_internal_format, format, data_type) = texture.ifd;
-                gl::GetTexImage(texture.target, 0, format, data_type, null_mut());
-            },
-            move |pipeline| unsafe {
-                // Gotta create a mapped buffer
-                let texture = pipeline.get_texture(id).unwrap();
-                let byte_count = calculate_size_bytes(&texture._format, texture.count_pixels());
-                let mut vec = vec![0_u8; byte_count];
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, texture.read_pbo.unwrap());
-                gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
-                let read = read.0;
-                let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
-                *cpu_bytes = vec;
-            },
-            self,
-        )
-    }
-    // Create a materail
-    fn material_create(&mut self, task: ObjectBuildingTask<Material>) {
-        // Just add the material internally
-        self.materials.insert(task.1.id.unwrap(), task.0);
-    }
-    // Create an atomic counter buffer that we can use inside fragment and compute shaders
-    fn atomic_group_create(&mut self, task: ObjectBuildingTask<AtomicGroup>) {
-        let mut atomic = task.0;
-        // Create the OpenGL atomic buffer
-        let mut buffer = 0_u32;
-        unsafe {
-            gl::GenBuffers(1, &mut buffer);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
-            gl::BufferData(
-                gl::ATOMIC_COUNTER_BUFFER,
-                size_of::<u32>() as isize * atomic.defaults.len() as isize,
-                null(),
-                gl::DYNAMIC_DRAW,
-            );
-            let reset = atomic.defaults.as_ptr();
-            gl::BufferSubData(
-                gl::ATOMIC_COUNTER_BUFFER,
-                0,
-                size_of::<u32>() as isize * atomic.defaults.len() as isize,
-                reset as *const c_void,
-            );
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-        }
-        atomic.oid = buffer;
-        // Add the atomic
-        self.atomics.insert(task.1.id.unwrap(), atomic);
-    }
-    // Clear an atomic group
-    pub(crate) fn clear_atomic_group(&self, atomic: &AtomicGroup) {
-        unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.oid);
-            let reset = atomic.defaults.as_ptr();
-            gl::BufferSubData(
-                gl::ATOMIC_COUNTER_BUFFER,
-                0,
-                size_of::<u32>() as isize * atomic.defaults.len() as isize,
-                reset as *const c_void,
-            );
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-        }
-    }
-    // Read the value of an atomic group by reading it's buffer data and update the transfer
-    fn atomic_group_read(&self, id: ObjectID<AtomicGroup>, read: Transfer<AtomicGroupRead>) -> GlTracker {
-        GlTracker::new(
-            move |_pipeline| unsafe {
-                // Get the atomic group object first
-                let atomic = self.get_atomic_group(id).unwrap();
-                // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
-                let oid = atomic.oid;
-                let mut counts: [u32; 4] = [0, 0, 0, 0];
-                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-                gl::GetBufferSubData(
-                    gl::ATOMIC_COUNTER_BUFFER,
-                    0,
-                    size_of::<u32>() as isize * atomic.defaults.len() as isize,
-                    counts.as_mut_ptr() as *mut c_void,
-                );
-                gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-                // Now store the atomic counters' values
-                let mut cpu_counters_lock = read.0.inner.lock().unwrap();
-                let cpu_counters = &mut *cpu_counters_lock;
-                cpu_counters.clear();
-                cpu_counters.try_extend_from_slice(&counts).unwrap();
-            },
-            |_| {},
-            self,
-        )
-    }
-    // Create a new SSBO
-    fn shader_storage_create(&mut self, task: ObjectBuildingTask<ShaderStorage>) {
-        // Create the SSBO
-        let mut shader_storage = task.0;
-        unsafe {
-            gl::GenBuffers(1, &mut shader_storage.oid);
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
-            // Get the default data if we need to
-            let data_ptr = if !shader_storage.bytes.is_empty() {
-                shader_storage.bytes.as_ptr() as *const c_void
-            } else {
-                null() as *const c_void
-            };
-            gl::BufferData(gl::SHADER_STORAGE_BUFFER, shader_storage.byte_size as isize, data_ptr, shader_storage.usage.convert());
-        }
-
-        self.shader_storages.insert(task.1.id.unwrap(), shader_storage);
-    }
-    // Read some bytes from an SSBO
-    fn shader_storage_read(&self, id: ObjectID<ShaderStorage>, read: Transfer<ReadBytes>) -> GlTracker {
-        GlTracker::new(
-            move |pipeline| unsafe {
-                // Bind the buffer before reading
-                let shader_storage = pipeline.get_shader_storage(id).unwrap();
-                gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
-                gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
-                // If we have a range, we can use it
-                let range = read.0.range;
-                let bytes = if let Some(range) = range {
-                    // Read using specific range
-                    let offset = range.start;
-                    let size = range.end - range.start;
-                    // Since we use a range, make a vector that can only hold that range
-                    let mut vec = vec![0; size as usize];
-                    gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, offset as isize, size as isize, vec.as_mut_ptr() as *mut c_void);
-                    vec
-                } else {
-                    // Read the whole buffer
-                    let mut vec = vec![0; shader_storage.byte_size as usize];
-                    gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, shader_storage.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
-                    vec
-                };
-                // Now store the shader storage's bytes
-                let mut output_bytes = read.0.bytes.lock().unwrap();
-                *output_bytes = bytes;
-            },
-            |_| {},
-            self,
-        )
-    }
-    // Query some information about a shader
-    fn query_shader_info(&mut self, oid: u32, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
-        GlTracker::fake(
-            move |_pipeline| unsafe {
-                // Get the query info
-
-                // Gotta count the number of unique resource types
-                let mut unique_count = AHashMap::<QueryResource, usize>::new();
-                let mut indexed_resources = AHashMap::<Resource, (Vec<QueryParameter>, usize)>::new();
-                for (x, parameters) in settings.res.iter() {
-                    let count = unique_count.entry(x.res.clone()).or_default();
-                    indexed_resources.insert(x.clone(), (parameters.clone(), *count));
-                    *count += 1;
-                }
-
-                // First we gotta get how many resources of a single type we have, and their respective max name len
-                let _types_and_counts = unique_count
-                    .iter()
-                    .map(|(res, _)| {
-                        let mut max_resources = 0_i32;
-                        let mut max_name_len = 0_i32;
-                        gl::GetProgramInterfaceiv(oid, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
-                        gl::GetProgramInterfaceiv(oid, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
-                        (res.clone(), (max_resources, max_name_len as usize))
-                    })
-                    .collect::<AHashMap<_, _>>();
-
-                // Now we can actually query the parameters
-                let mut output_queried_resources = AHashMap::<Resource, Vec<UpdatedParameter>>::new();
-                for (res, (parameters, _i)) in indexed_resources {
-                    let cstring = CString::new(res.name.clone()).unwrap();
-                    // Get the resource's index
-                    let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), cstring.as_ptr());
-                    if resource_index == gl::INVALID_INDEX {
-                        panic!()
-                    }
-
-                    // Now we can finally access the resource's parameters
-                    let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
-                    let max_len = converted_params.len();
-                    let mut output = vec![-1; max_len];
-                    gl::GetProgramResourceiv(
-                        oid,
-                        res.convert(),
-                        resource_index,
-                        max_len as i32,
-                        converted_params.as_ptr(),
-                        output.len() as i32,
-                        null_mut(),
-                        output.as_mut_ptr(),
-                    );
-
-                    // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
-                    for maybe in output.iter() {
-                        if *maybe == -1 {
-                            panic!()
-                        }
-                    }
-
-                    let converted_outputs = parameters
-                        .iter()
-                        .zip(output)
-                        .map(|(x, opengl_val)| x.convert_output(opengl_val))
-                        .collect::<Vec<UpdatedParameter>>();
-
-                    // After reading everything, we can add convert the output values into their respective Rust enums and store them
-                    output_queried_resources.insert(res, converted_outputs);
-                }
-
-                // Finally update the mutex that holds the queried resources
-                let mut lock = read.0.res.lock().unwrap();
-                *lock = output_queried_resources;
-            },
-            self,
-        )
+        self.shader_storages.get_mut(id.get()?)
     }
     // Update the window dimensions
     fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
@@ -1145,51 +301,49 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     use assets::assetc::load;
 
     // Create the default missing texture
-    let missing = pipec::construct(load("defaults\\textures\\missing_texture.png", Texture::default().set_mipmaps(true)).unwrap(), pipeline);
+    let missing = pipec::construct::<Texture>(pipeline, load("defaults\\textures\\missing_texture.png", Texture::default().set_mipmaps(true)).unwrap()).unwrap();
 
     // Create the default white texture
     let white = pipec::construct(
+        pipeline,
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![255, 255, 255, 255])
             .set_mipmaps(true),
-        pipeline,
-    );
+    ).unwrap();
 
     // Create the default black texture
     let black = pipec::construct(
+        pipeline,
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![0, 0, 0, 255])
             .set_mipmaps(true),
-        pipeline,
-    );
+    ).unwrap();
 
     // Create the default normal map texture
     let normals = pipec::construct(
+        pipeline,
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![127, 128, 255, 255])
             .set_mipmaps(true),
-        pipeline,
-    );
+    ).unwrap();
 
     // Create the default rendering shader
     let settings = ShaderSettings::default()
         .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
         .source("defaults\\shaders\\rendering\\default.frsh.glsl");
-    let shader = pipec::construct(Shader::new(settings).unwrap(), pipeline);
+    let shader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
 
     // Create the default material
-    let mut material = Material::default().set_shader(shader);
-    material.set_pre_construct_settings(missing, black, normals);
-    let material = pipec::construct_only(material, pipeline);
+    let material = pipec::construct(pipeline, Material::default()).unwrap();
 
     // Create the default model
-    let model = pipec::construct(Model::default(), pipeline);
+    let model = pipec::construct(pipeline, Model::default()).unwrap();
 
     DefaultPipelineObjects {
         missing_tex: missing,
@@ -1213,7 +367,7 @@ unsafe fn init_opengl() {
 pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
-    let (tx, rx) = std::sync::mpsc::channel::<PipelineTaskCombination>(); // Main to render
+    let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
 
     // Barrier so we can sync with the main thread at the start of each frame
     let sbarrier = Arc::new(Barrier::new(2));
@@ -1289,6 +443,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap();
             pipeline.window = window_wrapper;
             pipeline.defaults = Some(load_defaults(&*pipeline));
+            pipeline.flush(&mut internal)
         }
 
         // Setup the pipeline renderer
@@ -1348,12 +503,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             }
 
             let i = std::time::Instant::now();
-            let messages = rx.try_iter().collect::<Vec<PipelineTaskCombination>>();
+            let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
             // Set the buffer
             pipeline.add_tasks(messages);
 
             // Execute the tasks
-            pipeline.update(&mut internal, &mut renderer);
+            pipeline.update(&mut internal);
 
             // Debug if needed
             if debug {

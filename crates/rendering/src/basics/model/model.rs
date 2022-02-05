@@ -1,5 +1,5 @@
-use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct}, utils::DataType, pipeline::Pipeline};
-use std::fmt::Debug;
+use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct}, utils::DataType, pipeline::Pipeline};
+use std::{fmt::Debug, ffi::c_void, mem::size_of, ptr::null};
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
 
 // Some OpenGL data for a model
@@ -43,16 +43,165 @@ impl PipelineObject for Model {
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Model(Construct::<Self>(self, id))
     }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::Model(Deconstruct::<Self>(id))
+    }
     // Add the model to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the model
-        //pipeline.models.insert(id.get()?, (self));
+        let mut buffers = ModelBuffers::default();
+        buffers.triangle_count = self.triangles.len();
+        unsafe {
+            // Create the VAO
+            gl::GenVertexArrays(1, &mut buffers.vertex_array_object);
+            gl::BindVertexArray(buffers.vertex_array_object);
+
+            // Create the EBO
+            gl::GenBuffers(1, &mut buffers.element_buffer_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (self.triangles.len() * size_of::<u32>()) as isize,
+                self.triangles.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            // Create the vertex buffer and populate it
+            gl::GenBuffers(1, &mut buffers.vertex_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (self.vertices.len() * size_of::<f32>() * 3) as isize,
+                self.vertices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            // Create the normals buffer
+            gl::GenBuffers(1, &mut buffers.normal_buf);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (self.normals.len() * size_of::<f32>() * 3) as isize,
+                self.normals.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            if !self.tangents.is_empty() {
+                // And it's brother, the tangent buffer
+                gl::GenBuffers(1, &mut buffers.tangent_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.tangents.len() * size_of::<f32>() * 4) as isize,
+                    self.tangents.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+
+            if !self.uvs.is_empty() {
+                // The texture coordinates buffer
+                gl::GenBuffers(1, &mut buffers.uv_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.uvs.len() * size_of::<f32>() * 2) as isize,
+                    self.uvs.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+
+            if !self.colors.is_empty() {
+                // Finally, the vertex colors buffer
+                gl::GenBuffers(1, &mut buffers.color_buf);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.colors.len() * size_of::<f32>() * 3) as isize,
+                    self.colors.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
+            }
+
+            // Add some custom data if we want to
+            if self.custom.is_some() {
+                // Custom data moment
+                gl::GenBuffers(1, &mut buffers.custom_vertex_data);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
+                let stored = self.custom.as_ref().unwrap();
+                gl::BufferData(gl::ARRAY_BUFFER, stored.inner.len() as isize, stored.inner.as_ptr() as *const c_void, gl::STATIC_DRAW);
+            }
+
+            // Create the vertex attrib arrays
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            // Normal attribute
+            gl::EnableVertexAttribArray(1);
+            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
+            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+            if !self.tangents.is_empty() {
+                // Tangent attribute
+                gl::EnableVertexAttribArray(2);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
+                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if !self.uvs.is_empty() {
+                // UV attribute
+                gl::EnableVertexAttribArray(3);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
+                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if !self.colors.is_empty() {
+                // Vertex color attribute
+                gl::EnableVertexAttribArray(4);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
+                gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
+            }
+            if self.custom.is_some() {
+                // Vertex custom attribute
+                let custom = self.custom.as_ref().unwrap();
+                gl::EnableVertexAttribArray(5);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
+                match custom._type {
+                    DataType::F32 => {
+                        // Float point
+                        gl::VertexAttribPointer(5, custom.components_per_vertex as i32, custom._type.convert(), gl::FALSE, 0, null());
+                    },
+                    x => {
+                        // Integer
+                        gl::VertexAttribIPointer(5, custom.components_per_vertex as i32, x.convert(), 0, null());
+                    }
+                }
+            }
+            // Unbind
+            gl::BindVertexArray(0);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        }
+        // Add the model
+        pipeline.models.insert(id.get()?, (self, buffers));
         Some(())
     }
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let (model, buffers) = pipeline.models.remove(id.get()?)?;
         // Dispose of the OpenGL buffers 
+        unsafe {
+            // Delete the VBOs
+            gl::DeleteBuffers(1, &mut buffers.vertex_buf);
+            gl::DeleteBuffers(1, &mut buffers.normal_buf);
+            gl::DeleteBuffers(1, &mut buffers.uv_buf);
+            gl::DeleteBuffers(1, &mut buffers.tangent_buf);
+            gl::DeleteBuffers(1, &mut buffers.color_buf);
+            gl::DeleteBuffers(1, &mut buffers.element_buffer_object);
+            gl::DeleteBuffers(1, &mut buffers.custom_vertex_data);
+
+            // Delete the vertex array
+            gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
+        }
         Some(model)
     }
 }

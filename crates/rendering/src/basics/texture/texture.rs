@@ -1,7 +1,9 @@
+use std::{ffi::c_void, ptr::{null, null_mut}};
+
 use crate::{
-    object::{ObjectID, PipelineObject, ConstructionTask, Construct},
+    object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct, GlTracker},
     pipeline::Pipeline,
-    utils::*,
+    utils::*, basics::{texture::calculate_size_bytes, transfer::Transfer, readwrite::ReadBytes},
 };
 
 use gl;
@@ -71,6 +73,10 @@ impl PipelineObject for Texture {
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Texture(Construct::<Self>(self, id))
     }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::Texture(Deconstruct::<Self>(id))
+    }
     // Add the texture to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the shader
@@ -81,12 +87,154 @@ impl PipelineObject for Texture {
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
             TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
+        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+        fn guess_mipmap_levels(i: usize) -> usize {
+            let mut x: f32 = i as f32;
+            let mut num: usize = 0;
+            while x > 1.0 {
+                // Repeatedly divide by 2
+                x /= 2.0;
+                num += 1;
+            }
+            num
+        }
+
+        let mut pointer: *const c_void = null();
+        if !self.bytes.is_empty() {
+            pointer = self.bytes.as_ptr() as *const c_void;
+        }
+        let ifd = get_ifd(self._format, self._type);
+        let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
+
+        // Get the tex_type based on the TextureDimensionType
+        let tex_type = match self.ttype {
+            TextureType::Texture1D(_) => gl::TEXTURE_1D,
+            TextureType::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+
+        let mut oid: u32 = 0;
+        unsafe {
+            gl::GenTextures(1, &mut oid as *mut u32);
+            gl::BindTexture(tex_type, oid);
+            match self.ttype {
+                TextureType::Texture1D(width) => {
+                    gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+                }
+                // This is a 2D texture
+                TextureType::Texture2D(width, height) => {
+                    gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                }
+                // This is a 3D texture
+                TextureType::Texture3D(width, height, depth) => {
+                    gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                }
+                // This is a texture array
+                TextureType::Texture2DArray(width, height, depth) => {
+                    gl::TexStorage3D(
+                        tex_type,
+                        guess_mipmap_levels(width.max(height) as usize) as i32,
+                        ifd.0 as u32,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                    );
+                    // We might want to do mipmap
+                    for i in 0..depth {
+                        let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
+                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+                    }
+                }
+            }
+            // Set the texture parameters for a normal texture
+            match self.filter {
+                TextureFilter::Linear => {
+                    // 'Linear' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                }
+                TextureFilter::Nearest => {
+                    // 'Nearest' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                }
+            }
+        }
+
+        // The texture is already bound to the TEXTURE_2D
+        if self.mipmaps {
+            // Create the mipmaps
+            unsafe {
+                gl::GenerateMipmap(tex_type);
+                // Set the texture parameters for a mipmapped texture
+                match self.filter {
+                    TextureFilter::Linear => {
+                        // 'Linear' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                    }
+                    TextureFilter::Nearest => {
+                        // 'Nearest' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                    }
+                }
+            }
+        }
+
+        // Create the Upload / Download PBOs if needed
+        if self.cpu_access.contains(TextureAccessType::READ) {
+            // Create a download PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
+            }
+            self.read_pbo = Some(pbo);
+        } else if self.cpu_access.contains(TextureAccessType::WRITE) {
+            // Create an upload PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+            }
+            self.write_pbo = Some(pbo);
+        }
+
+        // Set the wrap mode for the texture (Mipmapped or not)
+        let wrapping_mode: u32;
+        match self.wrap_mode {
+            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER,
+            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT,
+            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT,
+        }
+        unsafe {
+            // Now set the actual wrapping mode in the opengl texture
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
+        }
+        
+        // Add the texture
+        self.oid = oid;
         pipeline.textures.insert(id.get()?, self);
         Some(())
     }
     // Remove the texture from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.textures.remove(id.get()?)
+        let texture = pipeline.textures.remove(id.get()?)?;
+        // Dispose of the OpenGL buffers
+        unsafe {
+            gl::DeleteTextures(1, &texture.oid);
+            if let Some(x) = texture.read_pbo { gl::DeleteBuffers(1, &x)  }
+            if let Some(x) = texture.write_pbo { gl::DeleteBuffers(1, &x)  }
+        }
+        Some(texture)
     }
 }
 
@@ -186,5 +334,59 @@ impl Texture {
             TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
             TextureType::Texture2DArray(x, y, z) => (x as usize * y as usize * z as usize),
         }
+    }    
+    // Update the size of this texture
+    // PS: This also clears the texture
+    // Todo: create PipelineObjectNotFound error
+    pub fn update_size(&mut self, tt: TextureType) -> Option<()> {
+        if self.oid == 0 { return None; }
+        
+        // Check if the current dimension type matches up with the new one
+        self.ttype = tt;
+        let ifd = self.ifd;
+        // This is a normal texture getting resized
+        unsafe {
+            match tt {
+                TextureType::Texture1D(width) => {
+                    gl::BindTexture(gl::TEXTURE_1D, self.oid);
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::Texture2D(width, height) => {
+                    gl::BindTexture(gl::TEXTURE_2D, self.oid);
+                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::Texture3D(width, height, depth) => {
+                    gl::BindTexture(gl::TEXTURE_3D, self.oid);
+                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
+                }
+                TextureType::Texture2DArray(_, _, _) => todo!(),
+            }
+        }
+        Some(())
+    }
+    // Read the bytes from this texture
+    pub fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
+        // Actually read the pixels
+        let read_pbo = self.read_pbo.clone();
+        let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
+        GlTracker::new(
+            |pipeline| unsafe {
+                // Bind the buffer before reading
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
+                gl::BindTexture(self.target, self.oid);
+                let (_internal_format, format, data_type) = self.ifd;
+                gl::GetTexImage(self.target, 0, format, data_type, null_mut());
+            },
+            move |pipeline| unsafe {
+                // Gotta read back the data
+                let mut vec = vec![0_u8; byte_count];
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
+                gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                let read = read.0;
+                let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
+                *cpu_bytes = vec;
+            },
+            pipeline,
+        )
     }
 }

@@ -1,8 +1,12 @@
-use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
+use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
 
 use std::collections::{HashMap, HashSet};
+use std::ffi::CString;
+use std::ptr::null;
+
+use super::load_includes;
 
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -91,8 +95,107 @@ impl PipelineObject for Shader {
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Shader(Construct::<Self>(self, id))
     }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::Shader(Deconstruct::<Self>(id))
+    }
     // Add the shader to our ordered vec
     fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+        // Compile the shader first
+        // Compile a single shader source
+        fn compile_single_source(source_data: ShaderSource) -> u32 {
+            let shader_type: u32;
+            println!("\x1b[33mCompiling & Creating Shader Source {}...\x1b[0m", source_data.path);
+            match source_data._type {
+                ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
+                ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
+                ShaderSourceType::Compute => {
+                    panic!()
+                } // We are not allowed to create compute shaders using the normal create_shader function
+            }
+            unsafe {
+                let program = gl::CreateShader(shader_type);
+                // Compile the shader
+                let cstring = CString::new(source_data.text.clone()).unwrap();
+                let shader_source: *const i8 = cstring.as_ptr();
+                gl::ShaderSource(program, 1, &shader_source, null());
+                gl::CompileShader(program);
+                // Check for any errors
+                let mut info_log_length: i32 = 0;
+                let info_log_length_ptr: *mut i32 = &mut info_log_length;
+                gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+                // Print any errors that might've happened while compiling this shader source
+                if info_log_length > 0 {
+                    let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+                    gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+                    println!("Error while compiling shader source {}!:", source_data.path);
+                    let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+                    let string = String::from_utf8(printable_log).unwrap();
+
+                    // Put the line count
+                    let error_source_lines = source_data.text.lines().enumerate();
+                    let error_source = error_source_lines
+                        .into_iter()
+                        .map(|(count, line)| format!("({}): {}", count + 1, line))
+                        .collect::<Vec<String>>()
+                        .join("\n");
+                    println!("{}", error_source);
+
+                    println!("Error: \n\x1b[31m{}", string);
+                    println!("\x1b[0m");
+                    panic!();
+                }
+
+                println!("\x1b[32mShader Source {} compiled succsessfully!\x1b[0m", source_data.path);
+                program
+            }
+        }
+        // Extract the shader
+        let shader_name = self.sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
+
+        // Actually compile the shader now
+        println!("\x1b[33mCompiling & Creating Shader {}...\x1b[0m", shader_name);
+        let program = unsafe {
+            let program = gl::CreateProgram();
+
+            // Create & compile the shader sources and link them
+            let taken = std::mem::take(&mut self.sources);
+            let programs: Vec<u32> = taken.into_iter().map(|(_path, data)| compile_single_source(data)).collect::<Vec<_>>();
+            // Link
+            for shader in programs.iter() {
+                gl::AttachShader(program, *shader)
+            }
+
+            // Finalize the shader and stuff
+            gl::LinkProgram(program);
+
+            // Check for any errors
+            let mut info_log_length: i32 = 0;
+            let info_log_length_ptr: *mut i32 = &mut info_log_length;
+            let mut result: i32 = 0;
+            let result_ptr: *mut i32 = &mut result;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+            gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
+            // Print any errors that might've happened while finalizing this shader
+            if info_log_length > 0 {
+                let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+                println!("Error while finalizing shader {}!:", shader_name);
+                let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+                let string = String::from_utf8(printable_log).unwrap();
+                println!("Error: \n\x1b[31m{}", string);
+                println!("\x1b[0m");
+                panic!();
+            }
+            // Detach shaders
+            for shader in programs.iter() {
+                gl::DetachShader(program, *shader);
+            }
+            println!("\x1b[32mShader {} compiled and created succsessfully!\x1b[0m", shader_name);
+            program
+        };
+        // Add the shader at the end
+        self.program = program;
         // Add the shader
         pipeline.shaders.insert(id.get()?, self);
         Some(())
@@ -101,87 +204,6 @@ impl PipelineObject for Shader {
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         pipeline.shaders.remove(id.get()?)
     }
-}
-
-// Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
-    // Turn the string into lines
-    let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
-    for (_i, line) in lines.iter_mut().enumerate() {
-        // Check if this is an include statement
-        if line.starts_with("#include ") {
-            // Get the local path of the include file
-            let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
-            let local_path = local_path.trim_start();
-
-            // Load the include function text
-            let text = if !included_paths.contains(&local_path.to_string()) {
-                // Load the function shader text
-                included_paths.insert(local_path.to_string());
-                assets::assetc::load_text(local_path).map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
-            } else {
-                String::new()
-            };
-
-            // Update the original line
-            *line = text;
-            break;
-        }
-        // External shader code
-        if line.trim().starts_with("#include_custom ") {
-            // Get the source
-            let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
-            let source_name = &c[2..(c.len() - 2)].to_string();
-            let source = settings
-                .external_code
-                .get(source_name)
-                .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
-            *line = source.clone();
-            break;
-        }
-        // Impl default types
-        if line.trim().starts_with("#load") {
-            let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
-                // Refactor this
-                "renderer" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
-                    Ok(())
-                }
-                "general" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
-                    Ok(())
-                }
-                x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
-            };
-            x?;
-            break;
-        }
-        // Constants
-        if line.trim().contains("#constant ") {
-            fn format(line: &String, val: &String) -> String {
-                format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
-            }
-            let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let x = settings.consts.get(const_name);
-            if let Some(x) = x {
-                *line = format(line, x);
-                Ok(())
-            } else {
-                Err(RenderingError::new(format!(
-                    "Tried to expand #constant, but the given const name '{}' is not valid!",
-                    const_name
-                )))
-            }?;
-            break;
-        }
-    }
-    // Update the source
-    *source = lines.join("\n");
-    // Check if we need to continue expanding the includes
-    let need_to_continue = lines
-        .iter()
-        .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
-    Ok(need_to_continue)
 }
 
 impl Shader {

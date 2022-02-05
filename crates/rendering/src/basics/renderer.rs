@@ -1,4 +1,4 @@
-use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
+use crate::{object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct}, pipeline::Pipeline};
 
 use super::{model::Model, material::Material, uniforms::ShaderUniformsGroup};
 
@@ -31,15 +31,19 @@ impl Renderer {
 
 impl PipelineObject for Renderer {
     // Reserve an ID for this renderer
-    fn reserve(self, pipeline: &crate::pipeline::Pipeline) -> Option<(Self, ObjectID<Self>)> {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.renderers.get_next_id_increment())))
     }
     // Send this rendererer to the pipeline for construction
-    fn send(self, pipeline: &crate::pipeline::Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Renderer(Construct::<Self>(self, id))
     }
+    // Create a deconstruction task
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+        DeconstructionTask::Renderer(Deconstruct::<Self>(id))
+    }
     // Add the renderer to our ordered vec
-    fn add(self, pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Get the renderer data, if it does not exist then use the default renderer data
         let defaults = pipeline.defaults.as_ref()?;
         let _material_id = pipeline.get_material(defaults.material)?;
@@ -52,7 +56,7 @@ impl PipelineObject for Renderer {
         Some(())
     }
     // Delete the renderer from the pipeline
-    fn delete(pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<Self> {
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let me = pipeline.renderers.remove(id.get()?)?;
         // Also remove the model if we want to
         if me.delete_model {
@@ -82,5 +86,9 @@ impl Renderer {
     // Update our uniforms
     pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
         self.uniforms = Some(uniforms);
+    }    
+    // Update a renderer's matrix
+    pub fn update_matrix(&mut self, matrix: veclib::Matrix4x4<f32>) {
+        self.matrix = matrix;
     }
 }

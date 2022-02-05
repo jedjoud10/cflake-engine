@@ -3,7 +3,7 @@ pub mod pipec {
     use std::sync::{atomic::Ordering, mpsc::SendError};
 
     use crate::{
-        object::{ObjectID, PipelineObject, ReservedTrackedID, PipelineTask, TrackedTask},
+        object::{ObjectID, PipelineObject, ReservedTrackedID, PipelineTask, TrackedTask, Deconstruct, DeconstructionTask},
         pipeline::{sender, Pipeline, PipelineContext},
     };
     // Debug some pipeline data
@@ -31,7 +31,7 @@ pub mod pipec {
         if !id.is_some() { return None; }
 
         // Send a deconstruction task to destroy the object
-        let task = PipelineTask::Deconstruction(id);
+        let task = T::pull(pipeline, id);
         send(pipeline, PipelineTask::Deconstruction(task)).ok()?;
         Some(())
     }
@@ -69,7 +69,7 @@ pub mod pipec {
     }
     // Create a tracked task with a requirement
     pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) {
-        send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req))).ok()?;
+        send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req))).ok().unwrap();
     }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this

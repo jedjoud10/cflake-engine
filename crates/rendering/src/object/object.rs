@@ -1,5 +1,5 @@
-use crate::{pipeline::Pipeline, basics::{texture::Texture, material::Material, shader::Shader, model::Model, renderer::Renderer}, advanced::{compute::ComputeShader, atomic::AtomicGroup, shader_storage::ShaderStorage}};
-use super::{ObjectID, ConstructionTask};
+use crate::{pipeline::Pipeline};
+use super::{ObjectID, ConstructionTask, DeconstructionTask};
 
 // Trait that is implemented on PipelineObjects that can be created and deleted
 pub(crate) trait PipelineObject where Self: Sized  {
@@ -8,6 +8,9 @@ pub(crate) trait PipelineObject where Self: Sized  {
 
     // Send this object to the pipeline so it can be constructed using the add() function
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask;
+
+    // Create a deconstruction task so we can remove this object from the pipeline
+    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask;
 
     // Create this pipeline object using it's reserved object ID
     // This automatically adds it to the pipeline

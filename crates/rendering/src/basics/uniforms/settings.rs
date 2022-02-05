@@ -1,36 +1,33 @@
 use crate::{advanced::compute::ComputeShader, basics::shader::Shader, object::ObjectID, pipeline::Pipeline};
 
+// Some type of shader identifier we can use to execute a shader
+pub enum ShaderIdentifier {
+    // The ID of a specific shader, if available
+    ObjectID(ObjectID<Shader>),
+    // The ID of a specific compute shader, if available
+    ComputeObjectID(ObjectID<ComputeShader>),
+    // The ID of a specific OpenGL program, if available
+    OpenGLID(u32),
+}
+
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 pub struct ShaderUniformsSettings {
-    // The ID of a specific shader, if available
-    pub(crate) shader_id: Option<ObjectID<Shader>>,
-    // The ID of a specific compute shader, if available
-    pub(crate) compute_shader_id: Option<ObjectID<ComputeShader>>,
+    pub(crate) identifier: ShaderIdentifier,
 }
 
 impl ShaderUniformsSettings {
-    // Create some new uniform settings using a shader ID
-    pub fn new(id: ObjectID<Shader>) -> Self {
+    // Create some new uniform settings using a shader identifier
+    pub fn new(identifier: ShaderIdentifier) -> Self {
         Self {
-            shader_id: Some(id),
-            compute_shader_id: None,
+            identifier
         }
     }
-    // Create some new uniform settings using a compute shader ID
-    pub fn new_compute(id: ObjectID<ComputeShader>) -> Self {
-        Self {
-            shader_id: None,
-            compute_shader_id: Some(id),
-        }
-    }
-    // Get the program ID of the shader
+    // Get the program OID of the shader
     pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {
-        if let Some(x) = self.shader_id {
-            return pipeline.get_shader(x).unwrap().program;
-        } else if let Some(y) = self.compute_shader_id {
-            return pipeline.get_compute_shader(y).unwrap().program;
-        } else {
-            panic!()
+        match self.identifier {
+            ShaderIdentifier::ObjectID(x) => pipeline.get_shader(x).unwrap().program,
+            ShaderIdentifier::ComputeObjectID(x) => pipeline.get_compute_shader(x).unwrap().program,
+            ShaderIdentifier::OpenGLID(x) => x,
         }
     }
 }

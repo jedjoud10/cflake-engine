@@ -1,7 +1,6 @@
 use super::{InternalPipeline, Pipeline};
 use crate::{
     basics::{
-        material::MaterialFlags,
         model::Model,
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
@@ -34,37 +33,6 @@ pub struct PipelineRenderer {
     // Others
     sky_texture: ObjectID<Texture>,
 }
-/*
-// Render a renderer using wireframe
-fn render_wireframe(buf: &PipelineBuffer, renderer: &RendererGPUObject, camera: &CameraDataGPUObject, ws: &GPUObjectID) {
-    let model = buf.as_model(&renderer.model_id).unwrap();
-    let model_matrix = &renderer.matrix;
-    // Get the wireframe shader
-    let ws = buf.as_shader(ws).unwrap();
-    let mut group = ShaderUniformsGroup::new();
-    let settings = ShaderUniformsSettings::new_program_id(ws);
-    // Calculate the mvp matrix
-    let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
-    group.set_mat44("mvp_matrix", mvp_matrix);
-    group.set_mat44("model_matrix", *model_matrix);
-    group.set_mat44("view_matrix", camera.viewm);
-    group.execute(buf, settings).unwrap();
-    unsafe {
-        // Set the wireframe rendering
-        gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-        gl::Enable(gl::LINE_SMOOTH);
-
-        gl::BindVertexArray(model.vertex_array_object);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.element_buffer_object);
-        gl::DrawElements(gl::TRIANGLES, model.element_count as i32, gl::UNSIGNED_INT, null());
-
-        // Reset the wireframe settings
-        gl::BindTexture(gl::TEXTURE_2D, 0);
-        gl::Disable(gl::LINE_SMOOTH);
-        gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-    }
-}
-*/
 impl PipelineRenderer {
     // Render a single renderere
     fn render(&self, pipeline: &Pipeline, renderer: &Renderer) -> Option<()> {
