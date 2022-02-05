@@ -2,7 +2,6 @@ use main::{
     core::{Context, WriteContext},
     ecs::event::EventKey,
     rendering::{
-        self,
         object::{ObjectID, UpdateTask},
         pipeline::pipec,
     },

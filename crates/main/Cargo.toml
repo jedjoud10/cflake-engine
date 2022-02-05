@@ -26,4 +26,3 @@ debug = { path = "../debug" }
 math = { path = "../math" }
 ui = { path = "../ui" }
 terrain = { path = "../terrain" }
-threads = { path = "../threads" }

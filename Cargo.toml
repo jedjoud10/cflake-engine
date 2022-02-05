@@ -28,7 +28,6 @@ members = [
     "crates\\rendering",
     "crates\\terrain",
     "crates\\ui",
-    "crates\\threads"
 ]
 
 [profile.dev]

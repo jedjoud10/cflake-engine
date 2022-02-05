@@ -88,7 +88,7 @@ impl Root {
     // Calculate the max depth
     pub fn calculate_max_depth(&self) -> i32 {
         let element = self.elements.iter().max_by_key(|(_, element)| element.depth);
-        element.map(|(_, element)| Some(element.depth)).flatten().unwrap_or_default()
+        element.map(|(_, element)| element.depth).unwrap_or_default()
     }
     // Get an element from the root using it's id
     pub fn get_element(&self, id: ElementID) -> Option<&Element> {

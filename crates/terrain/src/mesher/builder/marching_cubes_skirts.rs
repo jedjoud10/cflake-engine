@@ -5,10 +5,9 @@ use rendering::{
 
 use crate::{
     mesher::{
-        tables::{INDEX_OFFSET_X, MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
+        tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
         MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
-    },
-    utils, ChunkCoords, StoredVoxelData, CHUNK_SIZE,
+    }, ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 
 use super::BuilderModelData;
@@ -34,7 +33,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Generate the marching cubes skirts
-    pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
+    pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
         let mut model = BuilderModelData {
@@ -49,8 +48,8 @@ impl MarchingCubesSkirts {
             let indexing_function = SKIRTS_DIR_INDEXING_FN[direction];
             let transform_function = SKIRTS_DIR_TRANSFORM_FN[direction];
             // Create the two skirts for this direction
-            self.generate_skirt(voxels, &mut model, false, flip, &index_offsets, indexing_function, transform_function);
-            self.generate_skirt(voxels, &mut model, true, !flip, &index_offsets, indexing_function, transform_function);
+            self.generate_skirt(voxels, &mut model, false, flip, index_offsets, indexing_function, transform_function);
+            self.generate_skirt(voxels, &mut model, true, !flip, index_offsets, indexing_function, transform_function);
         }
         // Combine the model's custom vertex data with the model itself
         let extracted_model = model.model;
@@ -211,8 +210,8 @@ impl MarchingCubesSkirts {
             vertices[triangle_index] = if *vertex_index % 2 == 0 {
                 // Not interpolated
                 let transformed_index = (*vertex_index as usize) / 2;
-                let v = (info.transform_function)(info.slice, &SQUARES_VERTEX_TABLE[transformed_index], &data.position);
-                v
+                
+                (info.transform_function)(info.slice, &SQUARES_VERTEX_TABLE[transformed_index], &data.position)
             } else {
                 // Interpolated
                 let transformed_index = ((*vertex_index as usize) - 1) / 2;
@@ -222,8 +221,8 @@ impl MarchingCubesSkirts {
                 } else {
                     panic!()
                 };
-                let v = (info.transform_function)(info.slice, &inner, &data.position);
-                v
+                
+                (info.transform_function)(info.slice, &inner, &data.position)
             };
         }
         vertices

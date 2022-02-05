@@ -80,8 +80,8 @@ fn init(mut write: core::WriteContext) {
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
     let shader = rendering::pipeline::pipec::construct(&pipeline, rendering::basics::shader::Shader::new(settings).unwrap()).unwrap();
     // Then the textures
-    let white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
-    let normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
+    let _white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
+    let _normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
     let texture_diff_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_diff_2k.jpg").unwrap();
     let texture_norm_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_nor_gl_2k.jpg").unwrap();
     let texture_diff_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_diff_2k.jpg").unwrap();
@@ -109,7 +109,7 @@ fn init(mut write: core::WriteContext) {
         dist < 1.2
     });
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
-    let tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
+    let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
     uniforms.set_texture("diffuse_tex", diffuse, 0);
     // Add the terrain

@@ -8,7 +8,7 @@ use rendering::{
     pipeline::{pipec, Pipeline},
 };
 use std::{collections::HashMap, ptr::null};
-use veclib::Swizzable;
+
 
 // The two default UI shaders that we will use as fallback
 pub const DEFAULT_UI_SHADER_VERT: &str = "defaults\\shaders\\ui\\panel.vrsh.glsl";
@@ -38,7 +38,9 @@ impl Renderer {
     // Draw all the elements that are part of the root
     // We must run this one the render thread
     pub fn draw(&mut self, pipeline: &mut Pipeline, root: &mut Root, window_size: veclib::Vector2<u16>) {
-        let window_size: veclib::Vector2<f32> = window_size.into();
+        // Don't do anything with the root if we won't render it ¯\_(ツ)_/¯
+        if !root.visible { return }
+        let _window_size: veclib::Vector2<f32> = window_size.into();
         // Get the elements that we have added and add them
         let added = std::mem::take(&mut root.added);
         let max_depth = root.calculate_max_depth();

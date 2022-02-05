@@ -17,7 +17,8 @@ pub mod test {
     pub struct WorldContext;
     fn run_system(_context: &mut WorldContext, data: EventKey) {
         let (components, _) = data.decompose().unwrap();
-        components.update_all(|components| {
+        components.execute(|iterator| {
+            for x
             let mut name = components.get_component_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         });

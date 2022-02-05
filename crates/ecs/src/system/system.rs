@@ -95,15 +95,15 @@ impl System {
             // Queries
             evn_run_ekey: EventKey::new(ComponentQuery {
                 linked_components: all_components,
-                thread_pool: ecs_manager.thread_pool.clone(),
+                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
             evn_added_entity_ekey: EventKey::new(ComponentQuery {
                 linked_components: added_components,
-                thread_pool: ecs_manager.thread_pool.clone(),
+                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
             evn_removed_entity_ekey: EventKey::new(ComponentQuery {
                 linked_components: removed_components,
-                thread_pool: ecs_manager.thread_pool.clone(),
+                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
         }
     }

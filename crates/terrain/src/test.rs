@@ -14,7 +14,7 @@ pub mod test {
     // Calculate a marching square case and it's local voxels
     fn generate_marching_squares_case(voxels: &[f32]) {
         // Get the position
-        let p = veclib::Vector2::new(0.0, 1.0);
+        let _p = veclib::Vector2::new(0.0, 1.0);
         // Get the marching cube case
         let mut case_index = 0_u8;
         for i in 0..4 {

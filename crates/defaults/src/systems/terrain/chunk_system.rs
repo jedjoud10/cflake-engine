@@ -82,7 +82,7 @@ fn run(context: &mut Context, data: EventKey) {
                 }
             }
             terrain.sorted_chunks_generating.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
-            return;
+            
         }
     } else {
         // Mass deletion when we have no more chunks

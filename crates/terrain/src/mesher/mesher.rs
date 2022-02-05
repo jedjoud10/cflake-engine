@@ -1,4 +1,4 @@
-use rendering::basics::model::{CustomVertexDataBuffer, Model};
+use rendering::basics::model::{Model};
 
 use super::builder::*;
 use super::settings::MesherSettings;

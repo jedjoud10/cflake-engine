@@ -310,7 +310,7 @@ dependencies = [
  "lazy_static",
  "ordered_vec",
  "others",
- "threads",
+ "rayon",
 ]
 
 [[package]]
@@ -570,7 +570,6 @@ dependencies = [
  "rendering",
  "spin_sleep",
  "terrain",
- "threads",
  "ui",
  "veclib",
 ]
@@ -1024,10 +1023,6 @@ dependencies = [
  "rendering",
  "veclib",
 ]
-
-[[package]]
-name = "threads"
-version = "0.1.0"
 
 [[package]]
 name = "tiff"

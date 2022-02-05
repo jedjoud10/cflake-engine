@@ -88,8 +88,8 @@ impl MarchingCubes {
                 let index1 = flatten_vec3(info.pos + vert1);
                 let index2 = flatten_vec3(info.pos + vert2);
                 let interpolated = self.get_interpolated_vertex(
-                    &voxels,
-                    &info,
+                    voxels,
+                    info,
                     EdgeInfo {
                         index1,
                         index2,
@@ -123,7 +123,7 @@ impl MarchingCubes {
                     let info = IterInfo { i, pos: veclib::vec3(x, y, z) };
 
                     // Generate the case index
-                    let case = Self::generate_marching_cubes_case(&voxels, &info);
+                    let case = Self::generate_marching_cubes_case(voxels, &info);
                     if case == 0 || case == 255 {
                         continue;
                     }
@@ -139,7 +139,7 @@ impl MarchingCubes {
         }
     }
     // Generate the Marching Cubes model
-    pub fn build(&self, voxels: &StoredVoxelData, coords: ChunkCoords) -> Model {
+    pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Create the model data
         let mut model = BuilderModelData {

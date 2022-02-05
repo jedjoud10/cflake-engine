@@ -7,7 +7,7 @@ use std::{
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
-use threads::ThreadPool;
+use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::{
     component::{ComponentID, EnclosedComponent, LinkedComponents},
@@ -29,7 +29,7 @@ pub struct ECSManager<Context> {
     // Some global components
     pub(crate) globals: AHashMap<TypeId, UnsafeCell<EnclosedGlobalComponent>>,
     // The internal ECS thread pool
-    pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
+    pub(crate) rayon_pool: Arc<ThreadPool>,
     // Our internal event handler
     pub(crate) event_handler: EventHandler<Context>,
 }
@@ -38,15 +38,15 @@ pub struct ECSManager<Context> {
 impl<Context> ECSManager<Context> {
     // Create a new ECS manager
     pub fn new<F: Fn() + Sync + Send + 'static>(start_function: F) -> Self {
-        // Start the thread pool
-        let thread_pool = Arc::new(Mutex::new(ThreadPool::new(8, start_function)));
+        // Start the rayon thread pool
+        let pool = ThreadPoolBuilder::new().num_threads(4).start_handler(move |_| { start_function(); }).build().unwrap();
         Self {
             entities: Default::default(),
             entities_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
             globals: Default::default(),
-            thread_pool,
+            rayon_pool: Arc::new(pool),
             event_handler: Default::default(),
         }
     }
