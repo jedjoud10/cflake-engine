@@ -3,8 +3,7 @@ use crate::entity::EntityID;
 use ahash::AHashMap;
 use rayon::ThreadPool;
 use std::{
-    collections::hash_map::IterMut,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex},
 };
 
 // A struct full of LinkedComponents that we send off to update in parallel
