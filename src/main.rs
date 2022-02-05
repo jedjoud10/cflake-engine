@@ -1,4 +1,3 @@
-/*
 use cflake_engine::*;
 fn main() {
     // Load up the engine
@@ -123,4 +122,3 @@ fn init(mut write: core::WriteContext) {
         .set_uniforms(uniforms);
     write.ecs.add_global(terrain).unwrap();
 }
-*/

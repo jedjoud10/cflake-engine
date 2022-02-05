@@ -11,13 +11,13 @@ use crate::{
         renderer::Renderer,
         shader::{
             info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
-            Shader, ShaderSettings, ShaderSource, ShaderSourceType,
+            Shader, ShaderSettings, ShaderSource, ShaderSourceType, query_shader_info,
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
         uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
+    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask, Callback},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{DataType, RenderWrapper, Window},
 };
@@ -87,7 +87,7 @@ pub struct Pipeline {
     pub(crate) debugging: AtomicBool,
 
     // End Of Frame callbacks
-    pub(crate) eof_callbacks: Arc<Mutex<Vec<Box<dyn Fn(&mut Pipeline) + Sync + Send>>>>,
+    pub(crate) callbacks: Arc<Mutex<Vec<Callback>>>,
 }
 
 impl Pipeline {
@@ -108,22 +108,28 @@ impl Pipeline {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             TrackedTask::RunComputeShader(id, settings) => {
-                todo!()
+                let compute = self.get_compute_shader(id).unwrap();
+                compute.compute_run(self, settings)
             }
             TrackedTask::TextureReadBytes(id, read) => {
-                todo!()
+                let texture = self.get_texture(id).unwrap();
+                texture.read_bytes(self, read)
             }
             TrackedTask::ShaderStorageReadBytes(id, read) => {
-                todo!()
+                let shader_storage = self.get_shader_storage(id).unwrap();
+                shader_storage.read_bytes(self, read)
             }
             TrackedTask::AtomicGroupRead(id, read) => {
-                todo!()
+                let atomic_group = self.get_atomic_group(id).unwrap();
+                atomic_group.read_counters(self, read)
             }
             TrackedTask::QueryShaderInfo(id, settings, read) => {
-                todo!()
+                let shader = self.get_shader(id).unwrap();
+                query_shader_info(self, shader.program, settings, read)
             }
             TrackedTask::QueryComputeShaderInfo(id, settings, read) => {
-                todo!()
+                let compute = self.get_compute_shader(id).unwrap();
+                query_shader_info(self, compute.program, settings, read)
             }
         };
 
@@ -212,11 +218,22 @@ impl Pipeline {
     }
     // Run the End Of Frame callbacks
     pub(crate) fn execute_end_of_frame_callbacks(&mut self) {
-        let lock_ = self.eof_callbacks.clone();
-        let lock = lock_.lock().unwrap();
+        let lock_ = self.callbacks.clone();
+        let mut lock = lock_.lock().unwrap();        
+        // Execute the callbacks
         for callback in &*lock {
-            // Execute the callback
-            (callback)(self)
+            match callback {
+                Callback::EndOfFrame(x) => (&*x)(self),
+                Callback::EndOfFrameOnce(_) => { /* We shouldn't have any here */ },
+            }
+        }
+        let onces = lock.drain_filter(|x| if let Callback::EndOfFrameOnce(_) = x { true } else { false });
+        // Execute the callbacks that must be executed once
+        for callback_once in onces {
+            match callback_once {
+                Callback::EndOfFrame(_) => { /* We shouldn't have any here */ },
+                Callback::EndOfFrameOnce(x) => x(self),
+            }
         }
     }
 
@@ -286,14 +303,12 @@ impl Pipeline {
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
         self.shader_storages.get_mut(id.get()?)
     }
-    // Update the window dimensions
-    fn set_window_dimension(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
-        self.window.dimensions = new_dimensions;
-        renderer.update_window_dimensions(new_dimensions, self);
-    }
-    // Set the focus state for our window
-    fn set_window_focus_state(&mut self, focused: bool) {
+    // Update the window settings
+    // This will cause the internal renderer to update the frame buffer size
+    pub fn update_window(&mut self, renderer: &mut PipelineRenderer, focused: bool, dimensions: veclib::Vector2<u16>) {
         self.window.focused = focused;
+        self.window.dimensions = dimensions;
+        renderer.update_window_dimensions(dimensions, self);
     }
 }
 

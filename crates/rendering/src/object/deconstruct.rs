@@ -6,7 +6,7 @@ use crate::{
 };
 
 // Task that we will send to the pipeline whenever we want to deconstruct a specific pipeline object
-pub(crate) enum DeconstructionTask {
+pub enum DeconstructionTask {
     Texture(Deconstruct<Texture>),
     Material(Deconstruct<Material>),
     Shader(Deconstruct<Shader>),
@@ -16,7 +16,7 @@ pub(crate) enum DeconstructionTask {
     AtomicGroup(Deconstruct<AtomicGroup>),
     ShaderStorage(Deconstruct<ShaderStorage>),
 }
-pub(crate) struct Deconstruct<T: PipelineObject>(pub(crate) ObjectID<T>);
+pub struct Deconstruct<T: PipelineObject>(pub(crate) ObjectID<T>);
 
 impl DeconstructionTask {
     // Execute the deconstruction task, running the "delete()" method on our inner value

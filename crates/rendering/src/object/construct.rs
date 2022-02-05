@@ -6,7 +6,7 @@ use crate::{
 };
 
 // Task that we will send to the pipeline whenever we want to construct a specific pipeline object
-pub(crate) enum ConstructionTask {
+pub enum ConstructionTask {
     Texture(Construct<Texture>),
     Material(Construct<Material>),
     Shader(Construct<Shader>),
@@ -16,11 +16,11 @@ pub(crate) enum ConstructionTask {
     AtomicGroup(Construct<AtomicGroup>),
     ShaderStorage(Construct<ShaderStorage>),
 }
-pub(crate) struct Construct<T: PipelineObject>(pub(crate) T, pub(crate) ObjectID<T>);
+pub struct Construct<T: PipelineObject>(pub(crate) T, pub(crate) ObjectID<T>);
 
 impl ConstructionTask {
     // Execute the construction task, running the "add()" method on our inner value
-    pub(crate) fn execute(mut self, pipeline: &mut Pipeline) {
+    pub(crate) fn execute(self, pipeline: &mut Pipeline) {
         match self {
             ConstructionTask::Texture(x) => Texture::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::Material(x) => Material::add(x.0, pipeline, x.1).unwrap(),

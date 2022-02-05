@@ -41,7 +41,6 @@ impl Default for AtomicGroup {
         }
     }
 }
-
 impl PipelineObject for AtomicGroup {
     // Reserve an ID for this atomic group
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -106,7 +105,7 @@ impl AtomicGroup {
         self
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
-    pub fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
+    pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(
             move |_pipeline| unsafe {
                 // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value

@@ -85,7 +85,6 @@ pub struct Shader {
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
 }
-
 impl PipelineObject for Shader {
     // Reserve an ID for this shader
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -100,7 +99,7 @@ impl PipelineObject for Shader {
         DeconstructionTask::Shader(Deconstruct::<Self>(id))
     }
     // Add the shader to our ordered vec
-    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Compile the shader first
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {

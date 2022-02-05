@@ -37,7 +37,6 @@ pub struct Model {
     // Triangles
     pub triangles: Vec<u32>,
 }
-
 impl PipelineObject for Model {
     // Reserve an ID for this model
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -191,7 +190,7 @@ impl PipelineObject for Model {
     }
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let (model, buffers) = pipeline.models.remove(id.get()?)?;
+        let (mut model, mut buffers) = pipeline.models.remove(id.get()?)?;
         // Dispose of the OpenGL buffers
         unsafe {
             // Delete the VBOs

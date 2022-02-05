@@ -18,7 +18,6 @@ pub struct ShaderStorage {
     // The size in bytes of the underlying data
     pub(crate) byte_size: usize,
 }
-
 impl PipelineObject for ShaderStorage {
     // Reserve an ID for this shader storage
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -78,7 +77,7 @@ impl ShaderStorage {
         }
     }
     // Read some bytes from the SSBO
-    pub fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
+    pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
         GlTracker::new(
             move |pipeline| unsafe {
                 // Bind the buffer before reading

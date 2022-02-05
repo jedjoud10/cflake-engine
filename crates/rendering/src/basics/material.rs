@@ -11,7 +11,6 @@ pub struct Material {
     pub double_sided: bool,
     pub uniforms: ShaderUniformsGroup,
 }
-
 impl PipelineObject for Material {
     // Reserve an ID for this material
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -35,20 +34,20 @@ impl PipelineObject for Material {
         group.set_f32("emissive_strength", 1.0);
         // Make sure we have valid textures in case we don't
         if !self.uniforms.contains_uniform("diffuse_tex") {
-            group.set_texture("diffuse_tex", pipeline.defaults?.missing_tex, 0);
+            group.set_texture("diffuse_tex", pipeline.defaults.as_ref()?.missing_tex, 0);
         }
         if !self.uniforms.contains_uniform("emissive_tex") {
-            group.set_texture("emissive_tex", pipeline.defaults?.black, 1);
+            group.set_texture("emissive_tex", pipeline.defaults.as_ref()?.black, 1);
         }
         if !self.uniforms.contains_uniform("normals_tex") {
-            group.set_texture("normals_tex", pipeline.defaults?.normals_tex, 2);
+            group.set_texture("normals_tex", pipeline.defaults.as_ref()?.normals_tex, 2);
         }
         // Combine the default uniforms and the new uniforms that we just made
         self.uniforms = ShaderUniformsGroup::combine(self.uniforms, group);
 
         // Make sure we have a valid shader
         if !self.shader.is_some() {
-            self.shader = pipeline.defaults?.shader;
+            self.shader = pipeline.defaults.as_ref()?.shader;
         }
 
         // Add the material

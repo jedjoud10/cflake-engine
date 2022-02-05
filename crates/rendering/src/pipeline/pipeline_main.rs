@@ -3,7 +3,7 @@ pub mod pipec {
     use std::sync::{atomic::Ordering, mpsc::SendError};
 
     use crate::{
-        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
+        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, Callback},
         pipeline::{sender, Pipeline, PipelineContext},
     };
     // Debug some pipeline data
@@ -11,8 +11,8 @@ pub mod pipec {
         pipeline.debugging.store(debugging, Ordering::Relaxed);
     }
     // Send a task to the pipeline
-    pub fn send(pipeline: &Pipeline, task: PipelineTask) -> Result<(), SendError<PipelineTask>> {
-        sender::send_task(task, pipeline)
+    fn send(pipeline: &Pipeline, task: PipelineTask) -> Option<()> {
+        sender::send_task(task, pipeline).ok()
     }
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject>(pipeline: &Pipeline, object: T) -> Option<ObjectID<T>> {
@@ -21,20 +21,17 @@ pub mod pipec {
 
         // Get the PipelineConstructionTask so we can send it to the pipeline
         let task = object.send(pipeline, id);
-        send(pipeline, PipelineTask::Construction(task)).ok()?;
+        send(pipeline, PipelineTask::Construction(task))?;
 
         // We can now return the object ID
         Some(id)
     }
     // Deconstruct a Pipeline Object, deleting it
     pub fn deconstruct<T: PipelineObject>(pipeline: &Pipeline, id: ObjectID<T>) -> Option<()> {
-        if !id.is_some() {
-            return None;
-        }
-
+        id.get()?;
         // Send a deconstruction task to destroy the object
         let task = T::pull(pipeline, id);
-        send(pipeline, PipelineTask::Deconstruction(task)).ok()?;
+        send(pipeline, PipelineTask::Deconstruction(task))?;
         Some(())
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
@@ -66,18 +63,23 @@ pub mod pipec {
     }
     // Create a tracked task
     pub fn tracked_task(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID) -> Option<()> {
-        send(pipeline, PipelineTask::Tracked(task, tracked_id, None)).ok()?;
-        Some(())
+        send(pipeline, PipelineTask::Tracked(task, tracked_id, None))
     }
     // Create a tracked task with a requirement
-    pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) {
-        send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req))).ok().unwrap();
+    pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) -> Option<()> {
+        send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req)))
+    }
+    // Add a callback to the pipeline that we will execute at the end of the frame, but only one time
+    pub fn add_end_of_frame_callback_once<F: FnOnce(&mut Pipeline) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
+        let mut lock = pipeline.callbacks.lock().ok()?;
+        lock.push(Callback::EndOfFrameOnce(Box::new(function)));
+        Some(())
     }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
     pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
-        let mut lock = pipeline.eof_callbacks.lock().ok()?;
-        lock.push(Box::new(function));
+        let mut lock = pipeline.callbacks.lock().ok()?;
+        lock.push(Callback::EndOfFrame(Box::new(function)));
         Some(())
     }
 }

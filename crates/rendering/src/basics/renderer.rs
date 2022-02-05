@@ -31,7 +31,6 @@ impl Renderer {
         }
     }
 }
-
 impl PipelineObject for Renderer {
     // Reserve an ID for this renderer
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -46,11 +45,9 @@ impl PipelineObject for Renderer {
         DeconstructionTask::Renderer(Deconstruct::<Self>(id))
     }
     // Add the renderer to our ordered vec
-    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Get the renderer data, if it does not exist then use the default renderer data
         let defaults = pipeline.defaults.as_ref()?;
-        let _material_id = pipeline.get_material(defaults.material)?;
-        let _model_id = pipeline.get_model(defaults.model)?;
         // Make sure we have valid fields
         if !self.model.is_some() {
             self.model = defaults.model;

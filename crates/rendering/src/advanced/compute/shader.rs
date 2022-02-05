@@ -19,7 +19,6 @@ pub struct ComputeShader {
     // We only have one shader source since we are a compute shader
     pub(crate) source: ShaderSource,
 }
-
 impl PipelineObject for ComputeShader {
     // Reserve an ID for this compute shader
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -131,7 +130,7 @@ impl ComputeShader {
         Ok(Self { program: 0, source: source_data })
     }
     // Run a compute shader, and return it's GlTracker
-    pub fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
+    pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Execute some shader uniforms if we want to
         let group = settings.uniforms;
         if let Some(group) = group {

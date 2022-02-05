@@ -67,7 +67,6 @@ impl Default for Texture {
         }
     }
 }
-
 impl PipelineObject for Texture {
     // Reserve an ID for this texture
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -375,7 +374,7 @@ impl Texture {
         Some(())
     }
     // Read the bytes from this texture
-    pub fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
+    pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
         // Actually read the pixels
         let read_pbo = self.read_pbo.clone();
         let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
