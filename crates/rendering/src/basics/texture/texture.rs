@@ -1,6 +1,5 @@
-use crate::basics::Buildable;
 use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
+    object::{ObjectID, PipelineObject, ConstructionTask, Construct},
     pipeline::Pipeline,
     utils::*,
 };
@@ -63,11 +62,18 @@ impl Default for Texture {
     }
 }
 
-impl PipelineObject for Texture {}
-
-impl Buildable for Texture {
-    fn construct_task(mut self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
-        // Before we send off the texture to the render thread, we want to make sure that our internal values are updated
+impl PipelineObject for Texture {
+    // Reserve an ID for this texture
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.textures.get_next_id_increment())))
+    }
+    // Send this texture to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::Texture(Construct::<Self>(self, id))
+    }
+    // Add the texture to our ordered vec
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Add the shader
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.ttype {
             TextureType::Texture1D(_) => gl::TEXTURE_1D,
@@ -75,11 +81,12 @@ impl Buildable for Texture {
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
             TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
-        // Create the ID
-        let id = pipeline.textures.get_next_id_increment();
-        let id = ObjectID::new(id);
-        // Create a task and send it
-        (PipelineTask::CreateTexture(ObjectBuildingTask::<Self>(self, id)), id)
+        pipeline.textures.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the texture from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.textures.remove(id)
     }
 }
 

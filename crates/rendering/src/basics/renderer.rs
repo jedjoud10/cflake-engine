@@ -1,9 +1,6 @@
-use crate::{
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    pipeline::Pipeline,
-};
+use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
 
-use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup, Buildable};
+use super::{model::Model, material::Material, uniforms::ShaderUniformsGroup};
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
@@ -32,25 +29,35 @@ impl Renderer {
     }
 }
 
-impl PipelineObject for Renderer {}
-
-impl Buildable for Renderer {
-    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.renderers.get_next_id_increment();
-        let id = ObjectID::new(id);
-        (PipelineTask::CreateRenderer(ObjectBuildingTask::<Self>(self, id)), id)
+impl PipelineObject for Renderer {
+    // Reserve an ID for this renderer
+    fn reserve(self, pipeline: &crate::pipeline::Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.renderers.get_next_id_increment())))
     }
-    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
-        // We must fill out our model and material if they are empty
-        let defaults = pipeline.defaults.as_ref().unwrap();
-        if !self.model.is_some() {
-            self.model = defaults.model;
+    // Send this rendererer to the pipeline for construction
+    fn send(self, pipeline: &crate::pipeline::Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::Renderer(Construct::<Self>(self, id))
+    }
+    // Add the renderer to our ordered vec
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Get the renderer data, if it does not exist then use the default renderer data
+        let defaults = pipeline.defaults.as_ref()?;
+        let _material_id = pipeline.get_material(defaults.material)?;
+        let _model_id = pipeline.get_model(defaults.model)?;
+        // Make sure we have valid fields
+        if !self.model.is_some() { self.model = defaults.model; }
+        if !self.material.is_some() { self.material = defaults.material; }
+        // Add the renderer
+        pipeline.renderers.insert(id.get()?, self);
+    }
+    // Delete the renderer from the pipeline
+    fn delete(pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        let me = pipeline.renderers.remove(id.get()?)?;
+        // Also remove the model if we want to
+        if me.delete_model {
+            let removed_model = Model::delete(pipeline, me.model)?;
         }
-        if !self.material.is_some() {
-            self.material = defaults.material;
-        }
-        self
+        Some(me)
     }
 }
 
@@ -75,5 +82,4 @@ impl Renderer {
     pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
         self.uniforms = Some(uniforms);
     }
-    // Set
 }

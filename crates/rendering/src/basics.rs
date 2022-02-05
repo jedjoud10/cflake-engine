@@ -1,6 +1,3 @@
-mod buildable;
-pub use buildable::*;
-
 pub mod material;
 pub mod model;
 pub mod readwrite;

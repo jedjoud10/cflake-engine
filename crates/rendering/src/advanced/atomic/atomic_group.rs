@@ -1,8 +1,6 @@
-use crate::{
-    basics::Buildable,
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-};
 use arrayvec::ArrayVec;
+
+use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct}, pipeline::Pipeline};
 
 // The clear condition telling us when we should clear the atomic counter
 #[derive(Clone)]
@@ -36,15 +34,24 @@ impl Default for AtomicGroup {
     }
 }
 
-impl PipelineObject for AtomicGroup {}
-
-impl Buildable for AtomicGroup {
-    fn construct_task(self, pipeline: &crate::pipeline::Pipeline) -> (crate::object::PipelineTask, crate::object::ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.atomics.get_next_id_increment();
-        let id = ObjectID::new(id);
-        // Create a task and send it
-        (PipelineTask::CreateAtomicGroup(ObjectBuildingTask::<Self>(self, id)), id)
+impl PipelineObject for AtomicGroup {
+    // Reserve an ID for this atomic group
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.atomics.get_next_id_increment())))
+    }
+    // Send this atomic group to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::AtomicGroup(Construct::<Self>(self, id))
+    }
+    // Add the atomic group to our ordered vec
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Add the atomic group
+        pipeline.atomics.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the atomic group from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.atomics.remove(id)
     }
 }
 

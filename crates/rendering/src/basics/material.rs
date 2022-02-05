@@ -1,66 +1,57 @@
-use crate::basics::*;
-use crate::object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask};
+use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
 use crate::pipeline::*;
-use bitflags::bitflags;
 
 use super::shader::Shader;
 use super::texture::Texture;
 use super::uniforms::ShaderUniformsGroup;
-
-bitflags! {
-    pub struct MaterialFlags: u8 {
-        const DOUBLE_SIDED = 0b00000001;
-    }
-}
-impl Default for MaterialFlags {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
-
 // A material that can have multiple parameters and such
+#[derive(Default)]
 pub struct Material {
     pub shader: ObjectID<Shader>,
-    pub flags: MaterialFlags,
+    pub double_sided: bool,
     pub uniforms: ShaderUniformsGroup,
 }
 
-impl Default for Material {
-    fn default() -> Self {
-        let mut me = Self {
-            shader: Default::default(),
-            flags: Default::default(),
-            uniforms: Default::default(),
-        };
-        // Create some default uniforms
-        let group = &mut me.uniforms;
+impl PipelineObject for Material {
+    // Reserve an ID for this material
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.materials.get_next_id_increment())))
+    }
+    // Send this material to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::Material(Construct::<Self>(self, id))
+    }
+    // Add the material to our ordered vec
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Some default uniforms
+        let mut group = ShaderUniformsGroup::default();
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
         group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
         group.set_f32("normals_strength", 1.0);
         group.set_f32("emissive_strength", 1.0);
-        me
-    }
-}
-
-impl PipelineObject for Material {}
-
-impl Buildable for Material {
-    fn pre_construct(mut self, pipeline: &Pipeline) -> Self {
-        let defaults = pipeline.defaults.as_ref().unwrap();
-        self.set_pre_construct_settings(defaults.missing_tex, defaults.black, defaults.normals_tex);
-        // Set the default rendering shader if no shader was specified
-        if !self.shader.is_some() {
-            self.shader = defaults.shader;
+        // Make sure we have valid textures in case we don't
+        if !self.uniforms.contains_uniform("diffuse_tex") {
+            group.set_texture("diffuse_tex", pipeline.defaults?.missing_tex, 0);
         }
-        self
-    }
+        if !self.uniforms.contains_uniform("emissive_tex") {
+            group.set_texture("emissive_tex", pipeline.defaults?.black, 1);
+        }
+        if !self.uniforms.contains_uniform("normals_tex") {
+            group.set_texture("normals_tex", pipeline.defaults?.normals_tex, 2);
+        }
+        // Combine the default uniforms and the new uniforms that we just made
+        self.uniforms = ShaderUniformsGroup::combine(self.uniforms, group);
 
-    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.materials.get_next_id_increment();
-        let id = ObjectID::new(id);
-        // Create the task and send it
-        (PipelineTask::CreateMaterial(ObjectBuildingTask::<Self>(self, id)), id)
+        // Make sure we have a valid shader
+        if !self.shader.is_some() { self.shader = pipeline.defaults?.shader; }
+
+        // Add the material
+        pipeline.materials.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the material from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.materials.remove(id)
     }
 }
 
@@ -69,16 +60,6 @@ impl Material {
     // Set the main shader
     pub fn set_shader(mut self, shader: ObjectID<Shader>) -> Self {
         self.shader = shader;
-        self
-    }
-    // Add a flag to our flags
-    pub fn add_flag(mut self, flag: MaterialFlags) -> Self {
-        self.flags.insert(flag);
-        self
-    }
-    // Remove a flag from our flags
-    pub fn remove_flag(mut self, flag: MaterialFlags) -> Self {
-        self.flags.remove(flag);
         self
     }
     // Set the uniforms group
@@ -120,18 +101,5 @@ impl Material {
     pub fn set_emissive_strength(mut self, strength: f32) -> Self {
         self.uniforms.set_f32("emissive_strength", strength);
         self
-    }
-
-    pub fn set_pre_construct_settings(&mut self, diffuse_tex: ObjectID<Texture>, emissive_tex: ObjectID<Texture>, normals_tex: ObjectID<Texture>) {
-        let group = &mut self.uniforms;
-        if !group.contains_uniform("diffuse_tex") {
-            group.set_texture("diffuse_tex", diffuse_tex, 0);
-        }
-        if !group.contains_uniform("emissive_tex") {
-            group.set_texture("emissive_tex", emissive_tex, 1);
-        }
-        if !group.contains_uniform("normals_tex") {
-            group.set_texture("normals_tex", normals_tex, 2);
-        }
     }
 }

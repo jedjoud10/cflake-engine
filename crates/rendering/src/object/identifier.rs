@@ -11,7 +11,7 @@ pub struct ObjectID<T>
 where
     T: PipelineObject,
 {
-    pub(crate) id: Option<u64>,
+    id: Option<u64>,
     _phantom: PhantomData<fn() -> T>,
 }
 
@@ -69,6 +69,10 @@ where
     // Check if this ID is even valid LOCALLY
     pub fn is_some(&self) -> bool {
         self.id.is_some()
+    }
+    // Try to get the internal ID
+    pub fn get(&self) -> Option<u64> {
+        self.id.clone()
     }
 }
 

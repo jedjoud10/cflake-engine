@@ -17,53 +17,22 @@ use crate::{
         texture::Texture,
         transfer::Transfer,
         uniforms::ShaderUniformsGroup,
-        Buildable,
     },
     pipeline::camera::Camera,
 };
 
-// A task to create an object
-pub struct ObjectBuildingTask<T: PipelineObject + Buildable>(pub T, pub ObjectID<T>);
-// A pipeline task that will be sent to the render thread
-pub enum PipelineTask {
-    // Creation tasks
-    CreateTexture(ObjectBuildingTask<Texture>),
-    CreateMaterial(ObjectBuildingTask<Material>),
-    CreateShader(ObjectBuildingTask<Shader>),
-    CreateComputeShader(ObjectBuildingTask<ComputeShader>),
-    CreateModel(ObjectBuildingTask<Model>),
-    CreateRenderer(ObjectBuildingTask<Renderer>),
-    CreateAtomicGroup(ObjectBuildingTask<AtomicGroup>),
-    CreateShaderStorage(ObjectBuildingTask<ShaderStorage>),
-    // Update tasks
-    UpdateRendererMatrix(ObjectID<Renderer>, veclib::Matrix4x4<f32>),
-    UpdateTextureDimensions(ObjectID<Texture>, crate::basics::texture::TextureType),
-    UpdateRendererUniforms(ObjectID<Renderer>, ShaderUniformsGroup),
-    UpdateCamera(Camera),
-    // Disposal tasks
-    DisposeRenderer(ObjectID<Renderer>),
-    // Specific pipeline tasks
-    SetWindowDimension(veclib::Vector2<u16>),
-    SetWindowFocusState(bool),
+
+// Task that we will send to the pipeline whenever we want to construct a specific pipeline object
+pub(crate) enum ConstructionTask {
+    Texture(Construct<Texture>),
+    Material(Construct<Material>),
+    Shader(Construct<Shader>),
+    ComputeShader(Construct<ComputeShader>),
+    Model(Construct<Model>),
+    Renderer(Construct<Renderer>),
+    AtomicGroup(Construct<AtomicGroup>),
+    ShaderStorage(Construct<ShaderStorage>),
 }
 
-// A task that can be sent to the render thread, but we can also check if it has finished executing
-pub enum PipelineTrackedTask {
-    RunComputeShader(ObjectID<ComputeShader>, ComputeShaderExecutionSettings),
-    TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
-    ShaderStorageReadBytes(ObjectID<ShaderStorage>, Transfer<ReadBytes>),
-    AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
-    QueryShaderInfo(ObjectID<Shader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
-    QueryComputeShaderInfo(ObjectID<ComputeShader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
-}
-
-// Bruh
-pub enum PipelineTaskCombination {
-    // Normal tasks
-    Single(PipelineTask),
-    SingleReqTracked(PipelineTask, ReservedTrackedTaskID),
-    Batch(Vec<PipelineTask>),
-
-    // Tracking task
-    SingleTracked(PipelineTrackedTask, ReservedTrackedTaskID, Option<ReservedTrackedTaskID>),
-}
+// Pipeline object creation task
+pub(crate) struct Construct<T: PipelineObject>(pub(crate) T, pub(crate) ObjectID<T>);

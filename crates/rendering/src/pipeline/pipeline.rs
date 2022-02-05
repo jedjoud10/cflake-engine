@@ -73,7 +73,7 @@ pub struct Pipeline {
     pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
     pub(crate) textures: ShareableOrderedVec<Texture>,
     pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
-    pub(crate) shader_storage: ShareableOrderedVec<ShaderStorage>,
+    pub(crate) shader_storages: ShareableOrderedVec<ShaderStorage>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub defaults: Option<DefaultPipelineObjects>,
@@ -309,7 +309,7 @@ impl Pipeline {
     // Get a shader storage using it's respective ID
     pub fn get_shader_storage(&self, id: ObjectID<ShaderStorage>) -> Option<&ShaderStorage> {
         if let Some(id) = id.id {
-            self.shader_storage.get(id)
+            self.shader_storages.get(id)
         } else {
             None
         }
@@ -375,30 +375,13 @@ impl Pipeline {
     // Get a mutable shader storage using it's respective ID
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
         if let Some(id) = id.id {
-            self.shader_storage.get_mut(id)
+            self.shader_storages.get_mut(id)
         } else {
             None
         }
     }
     // Actually update our data
-    // Add the renderer
-    fn renderer_create(&mut self, task: ObjectBuildingTask<Renderer>) {
-        // Get the renderer data, if it does not exist then use the default renderer data
-        let renderer = task.0;
-        let defaults = self.defaults.as_ref().unwrap();
-        let _material_id = self.get_material(defaults.material);
-        let _model_id = self.get_model(defaults.model);
-
-        self.renderers.insert(task.1.id.unwrap(), renderer);
-    }
-    // Remove the renderer using it's renderer ID
-    fn renderer_dispose(&mut self, id: ObjectID<Renderer>) {
-        let renderer = self.renderers.remove(id.id.unwrap()).unwrap();
-        // Also remove the model if we want to
-        if renderer.delete_model {
-            self.model_dispose(renderer.model);
-        }
-    }
+    
     // Update a renderer's matrix
     fn renderer_update_matrix(&mut self, id: ObjectID<Renderer>, matrix: veclib::Matrix4x4<f32>) {
         let renderer = self.renderers.get_mut(id.id.unwrap()).unwrap();
@@ -1036,7 +1019,7 @@ impl Pipeline {
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, shader_storage.byte_size as isize, data_ptr, shader_storage.usage.convert());
         }
 
-        self.shader_storage.insert(task.1.id.unwrap(), shader_storage);
+        self.shader_storages.insert(task.1.id.unwrap(), shader_storage);
     }
     // Read some bytes from an SSBO
     fn shader_storage_read(&self, id: ObjectID<ShaderStorage>, read: Transfer<ReadBytes>) -> GlTracker {

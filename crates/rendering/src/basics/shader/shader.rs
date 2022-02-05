@@ -1,6 +1,4 @@
-use crate::basics::Buildable;
-use crate::object::ObjectID;
-use crate::object::{ObjectBuildingTask, PipelineObject, PipelineTask};
+use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
 
@@ -83,14 +81,25 @@ pub struct Shader {
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
 }
-impl PipelineObject for Shader {}
 
-impl Buildable for Shader {
-    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.shaders.get_next_id_increment();
-        let id = ObjectID::new(id);
-        (PipelineTask::CreateShader(ObjectBuildingTask::<Self>(self, id)), id)
+impl PipelineObject for Shader {
+    // Reserve an ID for this shader
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.shaders.get_next_id_increment())))
+    }
+    // Send this shader to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::Shader(Construct::<Self>(self, id))
+    }
+    // Add the shader to our ordered vec
+    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Add the shader
+        pipeline.models.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the shader from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.shaders.remove(id)
     }
 }
 

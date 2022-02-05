@@ -1,13 +1,5 @@
-use std::{fmt::Debug, mem::ManuallyDrop};
-
-use veclib::{Vector, VectorElemCount};
-
-use crate::{
-    basics::Buildable,
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    pipeline::Pipeline, utils::DataType,
-};
-
+use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct}, utils::DataType, pipeline::Pipeline};
+use std::fmt::Debug;
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
 
 // Some OpenGL data for a model
@@ -27,8 +19,6 @@ pub struct ModelBuffers {
     pub triangle_count: usize,
 }
 
-impl PipelineObject for ModelBuffers {}
-
 // A simple model that holds vertex, normal, and color data
 #[derive(Default)]
 pub struct Model {
@@ -44,17 +34,27 @@ pub struct Model {
     pub triangles: Vec<u32>,
 }
 
-impl PipelineObject for Model {}
-
-impl Buildable for Model {
-    fn construct_task(self, pipeline: &Pipeline) -> (PipelineTask, ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.materials.get_next_id_increment();
-        let id = ObjectID::new(id);
-        // Create the task and send it
-        (PipelineTask::CreateModel(ObjectBuildingTask::<Self>(self, id)), id)
+impl PipelineObject for Model {
+    // Reserve an ID for this model
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.models.get_next_id_increment())))
+    }
+    // Send this model to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::Material(Construct::<Self>(self, id))
+    }
+    // Add the model to our ordered vec
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Add the model
+        pipeline.models.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the model from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.models.remove(id)
     }
 }
+
 
 impl Debug for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

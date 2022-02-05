@@ -1,8 +1,4 @@
-use crate::{
-    basics::Buildable,
-    object::{ObjectBuildingTask, ObjectID, PipelineObject, PipelineTask},
-    utils::{AccessType, UpdateFrequency, UsageType},
-};
+use crate::{utils::{UsageType, UpdateFrequency, AccessType}, object::{PipelineObject, ObjectID, ConstructionTask, Construct}, pipeline::Pipeline};
 
 // An OpenGL SSBO
 pub struct ShaderStorage {
@@ -16,18 +12,26 @@ pub struct ShaderStorage {
     pub(crate) byte_size: usize,
 }
 
-impl PipelineObject for ShaderStorage {}
-
-impl Buildable for ShaderStorage {
-    fn construct_task(self, pipeline: &crate::pipeline::Pipeline) -> (crate::object::PipelineTask, crate::object::ObjectID<Self>) {
-        // Create the ID
-        let id = pipeline.atomics.get_next_id_increment();
-        let id = ObjectID::new(id);
-        // Create a task and send it
-        (PipelineTask::CreateShaderStorage(ObjectBuildingTask::<Self>(self, id)), id)
+impl PipelineObject for ShaderStorage {
+    // Reserve an ID for this shader storage
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+        Some((self, ObjectID::new(pipeline.shader_storages.get_next_id_increment())))
+    }
+    // Send this shader storage to the pipeline for construction
+    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+        ConstructionTask::ShaderStorage(Construct::<Self>(self, id))
+    }
+    // Add the shader storage to our ordered vec
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+        // Add the shader storage
+        pipeline.shader_storages.insert(id.get()?, self);
+        Some(())
+    }
+    // Remove the compute shader from the pipeline
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+        pipeline.shader_storages.remove(id)
     }
 }
-
 impl ShaderStorage {
     // Create a new empty shader storage
     pub fn new(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
