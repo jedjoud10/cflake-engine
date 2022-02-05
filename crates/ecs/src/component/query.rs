@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
-
+use std::{sync::{Arc, Mutex, MutexGuard}, collections::hash_map::IterMut};
 use ahash::AHashMap;
-use threads::{IterExecutionID, ThreadPool};
+use owning_ref::MutexGuardRefMut;
+use rayon::ThreadPool;
 
 use crate::entity::EntityID;
 
 use super::LinkedComponents;
 
 // An enum that stores either a reference to a hashmap or an owned vector. We will use this to iterate through every LinkedComponents
-pub enum ComponentQueryIterType {
+pub(crate) enum ComponentQueryIterType {
     ArcHashMap(Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>),
     HashMap(AHashMap<EntityID, LinkedComponents>),
 }
@@ -19,8 +19,8 @@ pub enum ComponentQueryIterType {
 pub struct ComponentQuery {
     // The actual components
     pub(crate) linked_components: Option<ComponentQueryIterType>,
-    // Thread pool because I am insane
-    pub(crate) thread_pool: Arc<Mutex<ThreadPool<LinkedComponents>>>,
+    // The rayon thread pool available if we want to use it
+    pub(crate) rayon_pool: Arc<ThreadPool>,
 }
 
 impl ComponentQuery {
@@ -32,85 +32,20 @@ impl ComponentQuery {
         });
         len.unwrap_or_default()
     }
-    // Update a single linked component from this query using it's respective entity ID
-    pub fn update<F: FnMut(&mut LinkedComponents)>(self, id: EntityID, mut function: F) {
-        if let Some(_type) = self.linked_components {
-            match _type {
-                ComponentQueryIterType::ArcHashMap(arc) => {
-                    let mut lock = arc.lock().unwrap();
-                    let linked = lock.get_mut(&id);
-                    if let Some(linked) = linked {
-                        function(linked);
-                    }
-                }
-                ComponentQueryIterType::HashMap(mut hashmap) => {
-                    let linked = hashmap.get_mut(&id);
-                    if let Some(linked) = linked {
-                        function(linked);
-                    }
-                }
-            }
-        }
-    }
-    // Update all the components consecutively, on the main thread
-    pub fn update_all<F: FnMut(&mut LinkedComponents)>(self, mut function: F) {
-        // Run it normally
-        if let Some(_type) = self.linked_components {
-            match _type {
-                ComponentQueryIterType::ArcHashMap(arc) => {
-                    let mut lock = arc.lock().unwrap();
-                    for (_, linked_components) in lock.iter_mut() {
-                        function(linked_components);
-                    }
-                }
-                ComponentQueryIterType::HashMap(hashmap) => {
-                    for (_, mut linked_components) in hashmap {
-                        function(&mut linked_components);
-                    }
-                }
-            }
-        }
-    }
-    // Update all the components consecutively, on the main thread, but we can break out from the inner loop whenever we pass it an Option::None at the end
-    pub fn update_all_breakable<F: FnMut(&mut LinkedComponents) -> Option<()>>(self, mut function: F) {
-        // Run it normally
-        if let Some(_type) = self.linked_components {
-            match _type {
-                ComponentQueryIterType::ArcHashMap(arc) => {
-                    let mut lock = arc.lock().unwrap();
-                    for (_, linked_components) in lock.iter_mut() {
-                        let opt = function(linked_components);
-                        if opt.is_none() {
-                            break;
-                        }
-                    }
-                }
-                ComponentQueryIterType::HashMap(hashmap) => {
-                    for (_, mut linked_components) in hashmap {
-                        let opt = function(&mut linked_components);
-                        if opt.is_none() {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Update all the components in parallel, on multiple worker threads
-    pub fn update_all_threaded<F: Fn(&IterExecutionID, &mut LinkedComponents) + Sync + Send>(self, function: F) {
-        if let Some(_type) = self.linked_components {
-            let thread_pool = self.thread_pool.lock().unwrap();
-            match _type {
-                ComponentQueryIterType::ArcHashMap(arc) => {
-                    let mut lock = arc.lock().unwrap();
-                    let vec = lock.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
-                    thread_pool.execute_vec_ptr(vec, function);
-                }
-                ComponentQueryIterType::HashMap(mut hashmap) => {
-                    let vec = hashmap.iter_mut().map(|(_, x)| x as *mut LinkedComponents).collect::<Vec<_>>();
-                    thread_pool.execute_vec_ptr(vec, function);
-                }
-            }
+    // Turn the component query into a rayon parallel iterator
+    // Turn the query into a simple iterator
+    pub fn into_iter<'a, F: FnOnce(IterMut<EntityID, LinkedComponents>)>(&'a mut self, function: F) -> Option<MutexGuardRefMut<'a, AHashMap<EntityID, LinkedComponents>, LinkedComponents>> {
+        if self.linked_components.is_none() { return None4 };
+        match self.linked_components.unwrap() {
+            ComponentQueryIterType::ArcHashMap(x) => {
+                let mut lock_ = x.lock().unwrap();
+                let iterator = lock_.iter_mut();
+                function(iterator);
+            },
+            ComponentQueryIterType::HashMap(mut x) => {
+                let iterator = x.iter_mut();
+                function(iterator);
+            },
         }
     }
 }
