@@ -36,22 +36,24 @@ pub struct Model {
 
 impl PipelineObject for Model {
     // Reserve an ID for this model
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.models.get_next_id_increment())))
     }
     // Send this model to the pipeline for construction
     fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
-        ConstructionTask::Material(Construct::<Self>(self, id))
+        ConstructionTask::Model(Construct::<Self>(self, id))
     }
     // Add the model to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the model
-        pipeline.models.insert(id.get()?, self);
+        //pipeline.models.insert(id.get()?, (self));
         Some(())
     }
     // Remove the model from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
-        pipeline.models.remove(id)
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
+        let (model, buffers) = pipeline.models.remove(id.get()?)?;
+        // Dispose of the OpenGL buffers 
+        Some(model)
     }
 }
 

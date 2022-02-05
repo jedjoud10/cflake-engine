@@ -4,7 +4,7 @@ use veclib::Vector;
 use crate::{
     advanced::{
         atomic::{AtomicGroup, ClearCondition},
-        shaderstorage::ShaderStorage,
+        shader_storage::ShaderStorage,
     },
     basics::texture::{Texture, TextureAccessType},
     object::ObjectID,

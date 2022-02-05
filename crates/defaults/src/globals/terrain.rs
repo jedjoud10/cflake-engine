@@ -5,7 +5,7 @@ use main::{
         advanced::{
             atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
             compute::ComputeShader,
-            shaderstorage::ShaderStorage,
+            shader_storage::ShaderStorage,
         },
         basics::{
             material::Material,
@@ -14,7 +14,7 @@ use main::{
             transfer::Transferable,
             uniforms::ShaderUniformsGroup,
         },
-        object::{ObjectID, PipelineTrackedTask, ReservedTrackedTaskID},
+        object::{ObjectID, PipelineTrackedTask, ReservedTrackedID},
         pipeline::{pipec, PipelineContext},
         utils::{AccessType, UpdateFrequency},
     },
@@ -47,10 +47,10 @@ pub struct Terrain {
     // Some CPU side objects that let us retrieve the GPU data
     pub cpu_data: Option<(AtomicGroupRead, ReadBytes)>,
     // The IDs of the generation tasks
-    pub compute_id: ReservedTrackedTaskID,
-    pub compute_id2: ReservedTrackedTaskID,
-    pub read_counters: ReservedTrackedTaskID,
-    pub read_final_voxels: ReservedTrackedTaskID,
+    pub compute_id: ReservedTrackedID,
+    pub compute_id2: ReservedTrackedID,
+    pub read_counters: ReservedTrackedID,
+    pub read_final_voxels: ReservedTrackedID,
 
     // The Entity ID of the chunk that we are generating this voxel data for
     pub chunk_id: Option<EntityID>,
@@ -97,7 +97,7 @@ impl Terrain {
         let mut settings = shader::info::ShaderInfoQuerySettings::default();
         settings.query(resource.clone(), vec![shader::info::QueryParameter::ByteSize]);
         settings.query(resource2.clone(), vec![shader::info::QueryParameter::ByteSize]);
-        let reserved_id = ReservedTrackedTaskID::default();
+        let reserved_id = ReservedTrackedID::default();
         let info = shader::info::ShaderInfo::default();
         let transfer = info.transfer();
         pipec::tracked_task(PipelineTrackedTask::QueryComputeShaderInfo(second_compute, settings, transfer), reserved_id, &pipeline);
@@ -154,10 +154,10 @@ impl Terrain {
             stored_chunk_voxel_data: StoredVoxelData::new(),
             sorted_chunks_generating: Default::default(),
             material: ObjectID::default(),
-            compute_id: ReservedTrackedTaskID::default(),
-            read_counters: ReservedTrackedTaskID::default(),
-            compute_id2: ReservedTrackedTaskID::default(),
-            read_final_voxels: ReservedTrackedTaskID::default(),
+            compute_id: ReservedTrackedID::default(),
+            read_counters: ReservedTrackedID::default(),
+            compute_id2: ReservedTrackedID::default(),
+            read_final_voxels: ReservedTrackedID::default(),
             cpu_data: None,
             chunk_id: None,
             mesh_gen_chunk_id: None,

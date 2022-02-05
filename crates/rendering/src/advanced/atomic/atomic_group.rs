@@ -36,7 +36,7 @@ impl Default for AtomicGroup {
 
 impl PipelineObject for AtomicGroup {
     // Reserve an ID for this atomic group
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.atomics.get_next_id_increment())))
     }
     // Send this atomic group to the pipeline for construction
@@ -44,14 +44,14 @@ impl PipelineObject for AtomicGroup {
         ConstructionTask::AtomicGroup(Construct::<Self>(self, id))
     }
     // Add the atomic group to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the atomic group
         pipeline.atomics.insert(id.get()?, self);
         Some(())
     }
     // Remove the atomic group from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
-        pipeline.atomics.remove(id)
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
+        pipeline.atomics.remove(id.get()?)
     }
 }
 

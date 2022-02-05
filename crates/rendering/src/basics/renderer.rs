@@ -31,7 +31,7 @@ impl Renderer {
 
 impl PipelineObject for Renderer {
     // Reserve an ID for this renderer
-    fn reserve(self, pipeline: &crate::pipeline::Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &crate::pipeline::Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.renderers.get_next_id_increment())))
     }
     // Send this rendererer to the pipeline for construction
@@ -39,7 +39,7 @@ impl PipelineObject for Renderer {
         ConstructionTask::Renderer(Construct::<Self>(self, id))
     }
     // Add the renderer to our ordered vec
-    fn add(self, pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Get the renderer data, if it does not exist then use the default renderer data
         let defaults = pipeline.defaults.as_ref()?;
         let _material_id = pipeline.get_material(defaults.material)?;
@@ -49,9 +49,10 @@ impl PipelineObject for Renderer {
         if !self.material.is_some() { self.material = defaults.material; }
         // Add the renderer
         pipeline.renderers.insert(id.get()?, self);
+        Some(())
     }
     // Delete the renderer from the pipeline
-    fn delete(pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
+    fn delete(pipeline: &mut crate::pipeline::Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let me = pipeline.renderers.remove(id.get()?)?;
         // Also remove the model if we want to
         if me.delete_model {

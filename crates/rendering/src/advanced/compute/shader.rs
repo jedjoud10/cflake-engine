@@ -12,7 +12,7 @@ pub struct ComputeShader {
 
 impl PipelineObject for ComputeShader {
     // Reserve an ID for this compute shader
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.compute_shaders.get_next_id_increment())))
     }
     // Send this compute shader to the pipeline for construction
@@ -20,14 +20,14 @@ impl PipelineObject for ComputeShader {
         ConstructionTask::ComputeShader(Construct::<Self>(self, id))
     }
     // Add the compute shader to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the compute shader
         pipeline.compute_shaders.insert(id.get()?, self);
         Some(())
     }
     // Remove the compute shader from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
-        pipeline.compute_shaders.remove(id)
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
+        pipeline.compute_shaders.remove(id.get()?)
     }
 }
 

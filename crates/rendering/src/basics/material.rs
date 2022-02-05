@@ -14,7 +14,7 @@ pub struct Material {
 
 impl PipelineObject for Material {
     // Reserve an ID for this material
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.materials.get_next_id_increment())))
     }
     // Send this material to the pipeline for construction
@@ -22,7 +22,7 @@ impl PipelineObject for Material {
         ConstructionTask::Material(Construct::<Self>(self, id))
     }
     // Add the material to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Some default uniforms
         let mut group = ShaderUniformsGroup::default();
         group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
@@ -50,8 +50,8 @@ impl PipelineObject for Material {
         Some(())
     }
     // Remove the material from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
-        pipeline.materials.remove(id)
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
+        pipeline.materials.remove(id.get()?)
     }
 }
 

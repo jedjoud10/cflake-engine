@@ -80,9 +80,9 @@ where
 pub(crate) static RESERVED_TRACKED_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 // A tracking TaskID that we can use to check wether a specific task has executed or not
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ReservedTrackedTaskID(pub(crate) u64);
+pub struct ReservedTrackedID(pub(crate) u64);
 
-impl Default for ReservedTrackedTaskID {
+impl Default for ReservedTrackedID {
     // Reserve a special trakcing ID for ourselves
     // We should do this only once if we are running a tracked task multiple times
     fn default() -> Self {

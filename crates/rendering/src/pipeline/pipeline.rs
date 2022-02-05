@@ -2,7 +2,7 @@ use crate::{
     advanced::{
         atomic::{AtomicGroup, AtomicGroupRead},
         compute::{ComputeShader, ComputeShaderExecutionSettings},
-        shaderstorage::ShaderStorage,
+        shader_storage::ShaderStorage,
     },
     basics::{
         material::Material,
@@ -17,7 +17,7 @@ use crate::{
         transfer::Transfer,
         uniforms::{ShaderUniformsGroup, ShaderUniformsSettings},
     },
-    object::{GlTracker, ObjectBuildingTask, ObjectID, PipelineTask, PipelineTaskCombination, PipelineTrackedTask, ReservedTrackedTaskID},
+    object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
     utils::{RenderWrapper, Window, DataType},
 };
@@ -51,7 +51,7 @@ pub struct DefaultPipelineObjects {
 #[derive(Default)]
 pub(crate) struct InternalPipeline {
     // Keep track of the GlTrackers and their corresponding ID
-    gltrackers: AHashMap<ReservedTrackedTaskID, GlTracker>,
+    gltrackers: AHashMap<ReservedTrackedID, GlTracker>,
 }
 
 // The rendering pipeline. It can be shared around using Arc, but we are only allowed to modify it on the Render Thread
@@ -133,7 +133,7 @@ impl Pipeline {
         }
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, _renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedTaskID) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, _renderer: &mut PipelineRenderer, task: PipelineTrackedTask, tracking_id: ReservedTrackedID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             PipelineTrackedTask::RunComputeShader(id, settings) => self.compute_run(id, settings),

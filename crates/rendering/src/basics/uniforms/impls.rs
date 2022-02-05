@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{atomic::AtomicGroup, shaderstorage::ShaderStorage},
+    advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
     basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
 };

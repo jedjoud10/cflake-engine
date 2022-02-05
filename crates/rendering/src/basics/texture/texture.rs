@@ -64,7 +64,7 @@ impl Default for Texture {
 
 impl PipelineObject for Texture {
     // Reserve an ID for this texture
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> where Self: Sized {
+    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, ObjectID::new(pipeline.textures.get_next_id_increment())))
     }
     // Send this texture to the pipeline for construction
@@ -72,7 +72,7 @@ impl PipelineObject for Texture {
         ConstructionTask::Texture(Construct::<Self>(self, id))
     }
     // Add the texture to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> where Self: Sized {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the shader
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.ttype {
@@ -85,8 +85,8 @@ impl PipelineObject for Texture {
         Some(())
     }
     // Remove the texture from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> where Self: Sized {
-        pipeline.textures.remove(id)
+    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
+        pipeline.textures.remove(id.get()?)
     }
 }
 
