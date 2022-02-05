@@ -18,9 +18,7 @@ pub struct ShaderUniformsSettings {
 impl ShaderUniformsSettings {
     // Create some new uniform settings using a shader identifier
     pub fn new(identifier: ShaderIdentifier) -> Self {
-        Self {
-            identifier
-        }
+        Self { identifier }
     }
     // Get the program OID of the shader
     pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {

@@ -3,7 +3,7 @@ pub mod pipec {
     use std::sync::{atomic::Ordering, mpsc::SendError};
 
     use crate::{
-        object::{ObjectID, PipelineObject, ReservedTrackedID, PipelineTask, TrackedTask, Deconstruct, DeconstructionTask},
+        object::{Deconstruct, DeconstructionTask, ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
         pipeline::{sender, Pipeline, PipelineContext},
     };
     // Debug some pipeline data
@@ -18,7 +18,7 @@ pub mod pipec {
     pub fn construct<T: PipelineObject>(pipeline: &Pipeline, object: T) -> Option<ObjectID<T>> {
         // Reseve an ID for the object
         let (object, id) = object.reserve(pipeline)?;
-        
+
         // Get the PipelineConstructionTask so we can send it to the pipeline
         let task = object.send(pipeline, id);
         send(pipeline, PipelineTask::Construction(task)).ok()?;
@@ -28,7 +28,9 @@ pub mod pipec {
     }
     // Deconstruct a Pipeline Object, deleting it
     pub fn deconstruct<T: PipelineObject>(pipeline: &Pipeline, id: ObjectID<T>) -> Option<()> {
-        if !id.is_some() { return None; }
+        if !id.is_some() {
+            return None;
+        }
 
         // Send a deconstruction task to destroy the object
         let task = T::pull(pipeline, id);

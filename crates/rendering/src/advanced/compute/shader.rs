@@ -1,6 +1,14 @@
 use std::{collections::HashSet, ffi::CString, ptr::null};
 
-use crate::{basics::{shader::{ShaderSource, ShaderSettings, load_includes}, uniforms::{ShaderUniformsSettings, ShaderIdentifier}}, object::{PipelineObject, ObjectID, ConstructionTask, Construct, Deconstruct, DeconstructionTask, GlTracker}, pipeline::Pipeline, utils::RenderingError};
+use crate::{
+    basics::{
+        shader::{load_includes, ShaderSettings, ShaderSource},
+        uniforms::{ShaderIdentifier, ShaderUniformsSettings},
+    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+    utils::RenderingError,
+};
 
 use super::ComputeShaderExecutionSettings;
 

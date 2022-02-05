@@ -15,23 +15,24 @@ use crate::{
         },
         texture::{calculate_size_bytes, get_ifd, Texture, TextureAccessType, TextureFilter, TextureType, TextureWrapping},
         transfer::Transfer,
-        uniforms::{ShaderUniformsGroup, ShaderUniformsSettings, ShaderIdentifier},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
-    utils::{RenderWrapper, Window, DataType},
+    utils::{DataType, RenderWrapper, Window},
 };
 use ahash::AHashMap;
 use glfw::Context;
 use ordered_vec::shareable::ShareableOrderedVec;
 use std::{
+    collections::HashMap,
     ffi::{c_void, CString},
     mem::size_of,
     ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    }, collections::HashMap,
+    },
 };
 
 use super::PipelineContext;
@@ -108,16 +109,16 @@ impl Pipeline {
         let gltracker = match task {
             TrackedTask::RunComputeShader(id, settings) => {
                 todo!()
-            },
-            TrackedTask::TextureReadBytes(id, read) => { 
+            }
+            TrackedTask::TextureReadBytes(id, read) => {
                 todo!()
-            },
+            }
             TrackedTask::ShaderStorageReadBytes(id, read) => {
                 todo!()
-            },
+            }
             TrackedTask::AtomicGroupRead(id, read) => {
                 todo!()
-            },
+            }
             TrackedTask::QueryShaderInfo(id, settings, read) => {
                 todo!()
             }
@@ -145,7 +146,7 @@ impl Pipeline {
             PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
             PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
         }
-    }    
+    }
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline) {
         // Also check each GlTracker and check if it finished executing
@@ -173,7 +174,7 @@ impl Pipeline {
                         // If the requirement is null, that means that we don't need it
                         let valid = require.and_then(|x| if self.completed_tasks.get(x.0) { None } else { Some(()) });
                         valid.is_none()
-                    },
+                    }
                     _ => true,
                 })
                 .collect::<Vec<_>>();
@@ -311,7 +312,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![255, 255, 255, 255])
             .set_mipmaps(true),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Create the default black texture
     let black = pipec::construct(
@@ -321,7 +323,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![0, 0, 0, 255])
             .set_mipmaps(true),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Create the default normal map texture
     let normals = pipec::construct(
@@ -331,7 +334,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
             .set_filter(TextureFilter::Linear)
             .set_bytes(vec![127, 128, 255, 255])
             .set_mipmaps(true),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Create the default rendering shader
     let settings = ShaderSettings::default()
@@ -470,7 +474,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let time = time_clone.lock().unwrap();
             pipeline_.update_global_shader_uniforms(time.0, time.1);
             debug = pipeline_.debugging.load(Ordering::Relaxed);
-            if debug { println!("Pipeline: "); }
+            if debug {
+                println!("Pipeline: ");
+            }
             drop(pipeline_);
 
             let i = std::time::Instant::now();

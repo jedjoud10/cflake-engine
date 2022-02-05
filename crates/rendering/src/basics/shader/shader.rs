@@ -1,4 +1,4 @@
-use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct};
+use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::Pipeline;
 use crate::utils::RenderingError;
 

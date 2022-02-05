@@ -1,6 +1,11 @@
 use std::{ffi::c_void, ptr::null};
 
-use crate::{utils::{UsageType, UpdateFrequency, AccessType}, object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct, GlTracker}, pipeline::Pipeline, basics::{transfer::Transfer, readwrite::ReadBytes}};
+use crate::{
+    basics::{readwrite::ReadBytes, transfer::Transfer},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+    utils::{AccessType, UpdateFrequency, UsageType},
+};
 
 // An OpenGL SSBO
 pub struct ShaderStorage {

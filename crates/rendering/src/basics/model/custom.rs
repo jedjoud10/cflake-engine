@@ -7,7 +7,7 @@ pub struct StoredCustomVertexDataBuffer {
     pub(crate) inner: Vec<u8>,
     pub(crate) components_per_vertex: usize,
     pub(crate) _type: DataType,
-} 
+}
 
 impl StoredCustomVertexDataBuffer {
     // Create a new stored buffer from a custom one
@@ -23,7 +23,6 @@ impl StoredCustomVertexDataBuffer {
         }
     }
 }
-
 
 // Some custom vertex data that we can store
 pub struct CustomVertexDataBuffer<T> {
@@ -41,7 +40,7 @@ impl<T> CustomVertexDataBuffer<T> {
         }
     }
     // Add a single custom vertex data, but check if the types match first
-    pub fn push(&mut self, vertex_data: T)  {
+    pub fn push(&mut self, vertex_data: T) {
         self.inner.push(vertex_data);
     }
 }

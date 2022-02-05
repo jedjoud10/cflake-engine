@@ -1,6 +1,9 @@
-use crate::{object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct}, pipeline::Pipeline};
+use crate::{
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+};
 
-use super::{model::Model, material::Material, uniforms::ShaderUniformsGroup};
+use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup};
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
@@ -49,8 +52,12 @@ impl PipelineObject for Renderer {
         let _material_id = pipeline.get_material(defaults.material)?;
         let _model_id = pipeline.get_model(defaults.model)?;
         // Make sure we have valid fields
-        if !self.model.is_some() { self.model = defaults.model; }
-        if !self.material.is_some() { self.material = defaults.material; }
+        if !self.model.is_some() {
+            self.model = defaults.model;
+        }
+        if !self.material.is_some() {
+            self.material = defaults.material;
+        }
         // Add the renderer
         pipeline.renderers.insert(id.get()?, self);
         Some(())
@@ -86,7 +93,7 @@ impl Renderer {
     // Update our uniforms
     pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
         self.uniforms = Some(uniforms);
-    }    
+    }
     // Update a renderer's matrix
     pub fn update_matrix(&mut self, matrix: veclib::Matrix4x4<f32>) {
         self.matrix = matrix;

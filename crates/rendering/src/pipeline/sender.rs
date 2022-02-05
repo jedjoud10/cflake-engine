@@ -1,8 +1,8 @@
+use crate::object::PipelineTask;
 use lazy_static::lazy_static;
 use std::cell::{Cell, RefCell};
 use std::sync::mpsc::SendError;
 use std::sync::{mpsc::Sender, Mutex};
-use crate::object::PipelineTask;
 
 use super::Pipeline;
 

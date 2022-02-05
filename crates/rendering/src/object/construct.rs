@@ -1,17 +1,8 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
-    advanced::{
-        compute::ComputeShader,
-        shader_storage::ShaderStorage, 
-        atomic::AtomicGroup,
-    },
-    basics::{
-        material::Material,
-        model::Model,
-        renderer::Renderer,
-        shader::Shader,
-        texture::Texture,
-    }, pipeline::Pipeline,
+    advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
+    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
+    pipeline::Pipeline,
 };
 
 // Task that we will send to the pipeline whenever we want to construct a specific pipeline object
@@ -39,6 +30,6 @@ impl ConstructionTask {
             ConstructionTask::Renderer(x) => Renderer::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::AtomicGroup(x) => AtomicGroup::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::ShaderStorage(x) => ShaderStorage::add(x.0, pipeline, x.1).unwrap(),
-        }       
+        }
     }
 }

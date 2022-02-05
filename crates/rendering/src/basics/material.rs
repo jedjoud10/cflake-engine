@@ -1,4 +1,4 @@
-use crate::object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct};
+use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::*;
 
 use super::shader::Shader;
@@ -47,7 +47,9 @@ impl PipelineObject for Material {
         self.uniforms = ShaderUniformsGroup::combine(self.uniforms, group);
 
         // Make sure we have a valid shader
-        if !self.shader.is_some() { self.shader = pipeline.defaults?.shader; }
+        if !self.shader.is_some() {
+            self.shader = pipeline.defaults?.shader;
+        }
 
         // Add the material
         pipeline.materials.insert(id.get()?, self);

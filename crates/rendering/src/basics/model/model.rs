@@ -1,6 +1,10 @@
-use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct}, utils::DataType, pipeline::Pipeline};
-use std::{fmt::Debug, ffi::c_void, mem::size_of, ptr::null};
 use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
+use crate::{
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+    utils::DataType,
+};
+use std::{ffi::c_void, fmt::Debug, mem::size_of, ptr::null};
 
 // Some OpenGL data for a model
 #[derive(Default, Debug)]
@@ -169,7 +173,7 @@ impl PipelineObject for Model {
                     DataType::F32 => {
                         // Float point
                         gl::VertexAttribPointer(5, custom.components_per_vertex as i32, custom._type.convert(), gl::FALSE, 0, null());
-                    },
+                    }
                     x => {
                         // Integer
                         gl::VertexAttribIPointer(5, custom.components_per_vertex as i32, x.convert(), 0, null());
@@ -188,7 +192,7 @@ impl PipelineObject for Model {
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let (model, buffers) = pipeline.models.remove(id.get()?)?;
-        // Dispose of the OpenGL buffers 
+        // Dispose of the OpenGL buffers
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(1, &mut buffers.vertex_buf);
@@ -205,7 +209,6 @@ impl PipelineObject for Model {
         Some(model)
     }
 }
-
 
 impl Debug for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

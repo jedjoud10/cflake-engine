@@ -1,9 +1,13 @@
-use std::{ffi::c_void, ptr::{null, null_mut}};
+use std::{
+    ffi::c_void,
+    ptr::{null, null_mut},
+};
 
 use crate::{
-    object::{ObjectID, PipelineObject, ConstructionTask, Construct, DeconstructionTask, Deconstruct, GlTracker},
+    basics::{readwrite::ReadBytes, texture::calculate_size_bytes, transfer::Transfer},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
-    utils::*, basics::{texture::calculate_size_bytes, transfer::Transfer, readwrite::ReadBytes},
+    utils::*,
 };
 
 use gl;
@@ -219,7 +223,7 @@ impl PipelineObject for Texture {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
         }
-        
+
         // Add the texture
         self.oid = oid;
         pipeline.textures.insert(id.get()?, self);
@@ -231,8 +235,12 @@ impl PipelineObject for Texture {
         // Dispose of the OpenGL buffers
         unsafe {
             gl::DeleteTextures(1, &texture.oid);
-            if let Some(x) = texture.read_pbo { gl::DeleteBuffers(1, &x)  }
-            if let Some(x) = texture.write_pbo { gl::DeleteBuffers(1, &x)  }
+            if let Some(x) = texture.read_pbo {
+                gl::DeleteBuffers(1, &x)
+            }
+            if let Some(x) = texture.write_pbo {
+                gl::DeleteBuffers(1, &x)
+            }
         }
         Some(texture)
     }
@@ -334,13 +342,15 @@ impl Texture {
             TextureType::Texture3D(x, y, z) => (x as usize * y as usize * z as usize),
             TextureType::Texture2DArray(x, y, z) => (x as usize * y as usize * z as usize),
         }
-    }    
+    }
     // Update the size of this texture
     // PS: This also clears the texture
     // Todo: create PipelineObjectNotFound error
     pub fn update_size(&mut self, tt: TextureType) -> Option<()> {
-        if self.oid == 0 { return None; }
-        
+        if self.oid == 0 {
+            return None;
+        }
+
         // Check if the current dimension type matches up with the new one
         self.ttype = tt;
         let ifd = self.ifd;

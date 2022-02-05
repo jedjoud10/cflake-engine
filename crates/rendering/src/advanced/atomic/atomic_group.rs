@@ -1,8 +1,12 @@
-use std::{mem::size_of, ptr::null, ffi::c_void};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use arrayvec::ArrayVec;
 
-use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct, GlTracker}, pipeline::Pipeline, basics::transfer::Transfer};
+use crate::{
+    basics::transfer::Transfer,
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+};
 
 use super::AtomicGroupRead;
 
@@ -100,7 +104,7 @@ impl AtomicGroup {
     pub fn set_clear_condition(mut self, condition: ClearCondition) -> Self {
         self.condition = condition;
         self
-    }    
+    }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     pub fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(

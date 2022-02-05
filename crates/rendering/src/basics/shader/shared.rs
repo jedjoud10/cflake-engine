@@ -1,13 +1,15 @@
 // Some shared code between the normal shaders and the compute shaders
 
-use std::{collections::HashSet, ptr::null_mut, ffi::CString};
+use std::{collections::HashSet, ffi::CString, ptr::null_mut};
 
 use ahash::AHashMap;
 
-use crate::{utils::RenderingError, basics::transfer::Transfer, object::GlTracker, pipeline::Pipeline};
+use crate::{basics::transfer::Transfer, object::GlTracker, pipeline::Pipeline, utils::RenderingError};
 
-use super::{ShaderSettings, info::{ShaderInfoQuerySettings, ShaderInfo, QueryParameter, Resource, QueryResource, UpdatedParameter}};
-
+use super::{
+    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
+    ShaderSettings,
+};
 
 // Load the files that need to be included for this specific shader and return the included lines
 pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {

@@ -1,6 +1,6 @@
-use super::{ConstructionTask, tracked::TrackedTask, ObjectID, DeconstructionTask, ReservedTrackedID};
+use super::{tracked::TrackedTask, ConstructionTask, DeconstructionTask, ObjectID, ReservedTrackedID};
 
-// A main pipeline task 
+// A main pipeline task
 pub(crate) enum PipelineTask {
     Construction(ConstructionTask),
     Deconstruction(DeconstructionTask),
