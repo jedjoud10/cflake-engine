@@ -4,15 +4,15 @@ use std::{collections::HashSet, ffi::CString, ptr::null_mut};
 
 use ahash::AHashMap;
 
-use crate::{basics::transfer::Transfer, object::GlTracker, pipeline::Pipeline, utils::RenderingError};
+use crate::{basics::transfer::Transfer, object::GlTracker, pipeline::Pipeline};
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
-    ShaderSettings,
+    ShaderSettings, IncludeExpansionError,
 };
 
 // Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, RenderingError> {
+pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
     for (_i, line) in lines.iter_mut().enumerate() {
@@ -26,7 +26,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                assets::assetc::load_text(local_path).map_err(|_| RenderingError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
+                assets::assetc::load_text(local_path).map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
             };
@@ -59,7 +59,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
                     *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
                     Ok(())
                 }
-                x => Err(RenderingError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
+                x => Err(IncludeExpansionError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
             };
             x?;
             break;
@@ -75,7 +75,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
                 *line = format(line, x);
                 Ok(())
             } else {
-                Err(RenderingError::new(format!(
+                Err(IncludeExpansionError::new(format!(
                     "Tried to expand #constant, but the given const name '{}' is not valid!",
                     const_name
                 )))

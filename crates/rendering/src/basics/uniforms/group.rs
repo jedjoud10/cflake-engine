@@ -149,7 +149,7 @@ impl ShaderUniformsGroup {
                         let atomic = pipeline.get_atomic_group(*id)?;
                         // Clear the atomic if needed
                         if let ClearCondition::BeforeShaderExecution = atomic.condition {
-                            atomic.clear_counters();
+                            atomic.clear_counters().ok()?;
                         }
                         set_atomic(index, atomic, binding);
                     }

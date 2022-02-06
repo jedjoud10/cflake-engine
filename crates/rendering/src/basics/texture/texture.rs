@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     basics::{readwrite::ReadBytes, texture::calculate_size_bytes, transfer::Transfer},
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject, OpenGLObjectNotInitialized},
     pipeline::Pipeline,
     utils::*,
 };
@@ -344,10 +344,10 @@ impl Texture {
     }
     // Update the size of this texture
     // PS: This also clears the texture
-    // Todo: create PipelineObjectNotFound error
-    pub fn update_size(&mut self, tt: TextureType) -> Option<()> {
+    // Todo: create PipelineObjectNotInitialized error
+    pub fn update_size(&mut self, tt: TextureType) -> Result<(), OpenGLObjectNotInitialized> {
         if self.oid == 0 {
-            return None;
+            return Err(OpenGLObjectNotInitialized);
         }
 
         // Check if the current dimension type matches up with the new one
@@ -371,7 +371,7 @@ impl Texture {
                 TextureType::Texture2DArray(_, _, _) => todo!(),
             }
         }
-        Some(())
+        Ok(())
     }
     // Read the bytes from this texture
     pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {

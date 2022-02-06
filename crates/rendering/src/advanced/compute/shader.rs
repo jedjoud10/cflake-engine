@@ -2,12 +2,11 @@ use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use crate::{
     basics::{
-        shader::{load_includes, ShaderSettings, ShaderSource},
+        shader::{load_includes, ShaderSettings, ShaderSource, IncludeExpansionError},
         uniforms::{ShaderIdentifier, ShaderUniformsSettings},
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
-    utils::RenderingError,
 };
 
 use super::ComputeShaderExecutionSettings;
@@ -114,8 +113,7 @@ impl PipelineObject for ComputeShader {
 
 impl ComputeShader {
     // Creates a compute shader from it's corresponding shader settings
-    // TODO: Create a main Shader compilation error
-    pub fn new(mut settings: ShaderSettings) -> Result<Self, RenderingError> {
+    pub fn new(mut settings: ShaderSettings) -> Result<Self, IncludeExpansionError> {
         let mut included_paths: HashSet<String> = HashSet::new();
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(&mut settings.sources);

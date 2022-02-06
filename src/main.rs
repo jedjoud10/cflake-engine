@@ -1,7 +1,7 @@
 use cflake_engine::*;
 fn main() {
     // Load up the engine
-    start("DevJed", "DevGame", preload_assets, init);
+    start("DevJed", "cflake-engine", preload_assets, init);
 }
 fn preload_assets() {
     // -----Pre-load the game assets here-----

@@ -40,8 +40,11 @@ impl World {
         self.io.create_default("config\\game_config.json", &crate::GameConfig::default());
         // Then load
         let config: GameConfig = self.io.load("config\\game_config.json");
+        let pipeline = self.pipeline.read();
+        pipeline.window.set_vsync(config.vsync);
+        pipeline.window.set_fullscreen(config.fullscreen);
+        drop(pipeline);
         self.config = config;
-        // TODO: Apply the config file's data to the rendering window
         println!("World init done!");
     }
     // Resize window event

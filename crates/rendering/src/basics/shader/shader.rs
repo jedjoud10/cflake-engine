@@ -1,12 +1,11 @@
 use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::Pipeline;
-use crate::utils::RenderingError;
 
 use std::collections::{HashMap, HashSet};
 use std::ffi::CString;
 use std::ptr::null;
 
-use super::load_includes;
+use super::{load_includes, IncludeExpansionError};
 
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -207,7 +206,7 @@ impl PipelineObject for Shader {
 
 impl Shader {
     // Creates a shader from it's corresponding shader settings
-    pub fn new(mut settings: ShaderSettings) -> Result<Self, RenderingError> {
+    pub fn new(mut settings: ShaderSettings) -> Result<Self, IncludeExpansionError> {
         // Create "self"
         let mut shader = Self {
             program: 0,

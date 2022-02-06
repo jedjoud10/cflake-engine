@@ -4,7 +4,7 @@ use arrayvec::ArrayVec;
 
 use crate::{
     basics::transfer::Transfer,
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject, OpenGLObjectNotInitialized},
     pipeline::Pipeline,
 };
 
@@ -108,7 +108,7 @@ impl AtomicGroup {
     pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
         GlTracker::new(
             move |_pipeline| unsafe {
-                // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicCounteGroupRead>'s inner value
+                // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicGroupRead>'s inner value
                 let oid = self.oid;
                 let mut counts: [u32; 4] = [0, 0, 0, 0];
                 gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
@@ -130,7 +130,8 @@ impl AtomicGroup {
         )
     }
     // Clear the atomic group counters
-    pub fn clear_counters(&self) {
+    pub fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
+        if self.oid == 0 { return Err(OpenGLObjectNotInitialized) }
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.oid);
             let reset = self.defaults.as_ptr();
@@ -142,5 +143,6 @@ impl AtomicGroup {
             );
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
+        Ok(())
     }
 }
