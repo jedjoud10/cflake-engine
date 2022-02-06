@@ -8,8 +8,7 @@ pub enum ShadowResolution {
     Low,
     Medium,
     High,
-    Overkill,
-    PlsHelpMyGPUIsBurning, 
+    Overkill, 
 }
 
 impl Default for ShadowResolution {
@@ -19,15 +18,14 @@ impl Default for ShadowResolution {
 }
 
 impl ShadowResolution {
-    // Convert to actualy shadow resolution
-    pub fn convert(&self) -> u16 {
+    // Convert to actualy shadow resolution and shadow bias
+    pub fn convert(&self) -> (u16, f32) {
         match self {
-            ShadowResolution::Potato => 256,
-            ShadowResolution::Low => 512,
-            ShadowResolution::Medium => 1024,
-            ShadowResolution::High => 2048,
-            ShadowResolution::Overkill => 4096,
-            ShadowResolution::PlsHelpMyGPUIsBurning => 8192,
+            ShadowResolution::Potato => (256, 0.002),
+            ShadowResolution::Low => (512, 0.0008),
+            ShadowResolution::Medium => (1024, 0.0006),
+            ShadowResolution::High => (2048, 0.0004),
+            ShadowResolution::Overkill => (4096, 0.00003),
         }
     }
 }

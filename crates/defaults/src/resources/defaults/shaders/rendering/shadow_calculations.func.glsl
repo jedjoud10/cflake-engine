@@ -1,3 +1,5 @@
+const float SHADOW_BIAS = #constant shadow_bias
+
 // Calculate if a specific fragment is in shadow or not
 float calculate_shadows(vec3 position, mat4 lightspace_matrix, sampler2D shadow_map_texture) {
     // Transform the world coordinates to NDC coordinates 
@@ -10,7 +12,6 @@ float calculate_shadows(vec3 position, mat4 lightspace_matrix, sampler2D shadow_
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // Get depths and test
-    float shadow_bias = 0.0004;
     float current_depth = lightspace_uvs.z;
     float accumulated_shadow = 0.0;
     // Sample the depth texture multiple times to smooth it out
@@ -19,7 +20,7 @@ float calculate_shadows(vec3 position, mat4 lightspace_matrix, sampler2D shadow_
         for (int y = -1; y <= 1; y++) {
             vec2 offset = vec2(x, y) * offset_size;
             float closest_depth = texture(shadow_map_texture, lightspace_uvs.xy + offset).r;
-            float in_shadow = current_depth - shadow_bias > closest_depth ? 1.0 : 0.0; 
+            float in_shadow = current_depth - SHADOW_BIAS > closest_depth ? 1.0 : 0.0; 
             accumulated_shadow += in_shadow;
         }
     }

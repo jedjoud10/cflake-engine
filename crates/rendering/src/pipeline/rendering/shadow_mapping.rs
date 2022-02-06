@@ -53,7 +53,7 @@ impl ShadowMapping {
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .set_border_colors([veclib::Vector4::<f32>::ONE; 4])
-            .set_format(TextureFormat::DepthComponent32);
+            .set_format(TextureFormat::DepthComponent16);
         let texture = pipec::construct(pipeline, texture).unwrap();
         pipeline.flush(internal, renderer);
         // Now attach the depth texture
@@ -66,7 +66,7 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 200.0;
+        const DIMS: f32 = 800.0;
         const NEAR: f32 = -3000.0;
         const FAR: f32 = 3000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
@@ -100,6 +100,7 @@ impl ShadowMapping {
             gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
+            gl::CullFace(gl::FRONT);
         }
     }   
 }

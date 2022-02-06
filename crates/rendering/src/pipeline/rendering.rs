@@ -104,7 +104,8 @@ impl PipelineRenderer {
         // Load the screen shader
         let settings = ShaderSettings::default()
             .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
-            .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
+            .source("defaults\\shaders\\rendering\\screen.frsh.glsl")
+            .shader_constant("shadow_bias", pipeline_settings.shadow_bias);
         self.screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
@@ -207,7 +208,7 @@ impl PipelineRenderer {
         self.render_deferred_quad(pipeline);
     }
     // Render the whole scene normally
-    fn render_scene(&mut self, pipeline: &Pipeline) {
+    fn render_scene(&mut self, pipeline: &Pipeline) {        
         for (_, renderer) in pipeline.renderers.iter() {
             // Check if we are visible 
             if !renderer.flags.contains(RendererFlags::VISIBLE) { continue; }
@@ -234,6 +235,9 @@ impl PipelineRenderer {
             if let Some((buffers, triangle_count)) = result {
                 self.render(buffers, triangle_count, false);
             }
+        }
+        unsafe {
+            gl::CullFace(gl::BACK);
         }
     }
     // Render the deferred quad and do all lighting calculations inside it's fragment shader

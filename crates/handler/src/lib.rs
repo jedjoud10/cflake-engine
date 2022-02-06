@@ -52,8 +52,10 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
 
 
     // Hehe multithreaded renering goes BRRRRRRRR
+    let shadows = config.shadow_resolution.convert();
     let pipelin_settings = rendering::pipeline::PipelineSettings {
-        shadow_resolution: config.shadow_resolution.convert(),
+        shadow_resolution: shadows.0,
+        shadow_bias: shadows.1,
     };
     let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, &mut glfw, &mut window);
     // Create the world

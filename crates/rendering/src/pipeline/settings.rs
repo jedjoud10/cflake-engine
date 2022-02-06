@@ -2,4 +2,5 @@
 pub struct PipelineSettings {
     // Rendering
     pub shadow_resolution: u16,
+    pub shadow_bias: f32,
 }
