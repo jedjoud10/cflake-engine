@@ -221,6 +221,9 @@ impl PipelineRenderer {
     }
     // Render the scene's shadow maps
     fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline) {
+        // Check if shadows are even enabled in the first place
+        if !self.shadow_mapping.enabled { return; }
+
         self.shadow_mapping.bind_fbo();
         let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {

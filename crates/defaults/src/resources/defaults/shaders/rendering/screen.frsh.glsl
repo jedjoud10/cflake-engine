@@ -10,7 +10,7 @@ uniform sampler2D normals_texture; // 2
 uniform sampler2D position_texture; // 3
 uniform sampler2D depth_texture; // 4
 uniform sampler2D default_sky_gradient; // 5
-uniform sampler2D shadow_map; // 6
+uniform sampler2DShadow shadow_map; // 6
 
 
 uniform vec3 directional_light_dir;
@@ -56,10 +56,10 @@ void main() {
 	vec3 ambient_lighting_color = calculate_sky_color(default_sky_gradient, sky_light_val, sun_up_factor).xyz;
 	
 	// Shadow mapping calculations
-	float in_shadow = calculate_shadows(position, lightspace_matrix, shadow_map);
+	float in_shadow = calculate_shadows(position, normal, directional_light_dir, lightspace_matrix, shadow_map);
 
 	// Add everything
-	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength;
+	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength + diffuse * 0.1;
 	vec3 frag_color = ambient_lighting;
 	frag_color += (1 - in_shadow) * (diffuse * light_val);
 	

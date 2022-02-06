@@ -17,6 +17,7 @@ pub struct ShadowMapping {
     pub shadow_shader: ObjectID<Shader>,
     pub(crate) lightspace_matrix: veclib::Matrix4x4<f32>,
     pub shadow_resolution: u16,
+    pub enabled: bool,
 }
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
@@ -50,9 +51,11 @@ impl ShadowMapping {
         // Create the depth texture
         let texture = Texture::default()
             .set_dimensions(TextureType::Texture2D(shadow_resolution, shadow_resolution))
-            .set_filter(TextureFilter::Nearest)
+            .set_filter(TextureFilter::Linear)
             .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .set_border_colors([veclib::Vector4::<f32>::ONE; 4])
+            .set_int_param(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE)
+            .set_int_param(gl::TEXTURE_COMPARE_FUNC, gl::GREATER)
             .set_format(TextureFormat::DepthComponent16);
         let texture = pipec::construct(pipeline, texture).unwrap();
         pipeline.flush(internal, renderer);
@@ -66,7 +69,7 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 800.0;
+        const DIMS: f32 = 400.0;
         const NEAR: f32 = -3000.0;
         const FAR: f32 = 3000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
@@ -84,6 +87,7 @@ impl ShadowMapping {
             ortho_matrix,
             shadow_shader: shader, 
             shadow_resolution,
+            enabled: shadow_resolution != 0,
             lightspace_matrix: veclib::Matrix4x4::IDENTITY,
         }
     }

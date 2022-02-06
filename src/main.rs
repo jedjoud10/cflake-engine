@@ -96,11 +96,11 @@ fn init(world: &mut core::World) {
     let diffuse = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
         .unwrap()
         .set_mipmaps(true)
-        .set_filter(rendering::basics::texture::TextureFilter::Nearest);
+        .set_filter(rendering::basics::texture::TextureFilter::Linear);
     let normals = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3])
         .unwrap()
         .set_mipmaps(true)
-        .set_filter(rendering::basics::texture::TextureFilter::Nearest);
+        .set_filter(rendering::basics::texture::TextureFilter::Linear);
 
     let diffuse = rendering::pipeline::pipec::construct(&pipeline, diffuse).unwrap();
     let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();

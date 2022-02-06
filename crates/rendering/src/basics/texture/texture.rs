@@ -11,6 +11,7 @@ use crate::{
 };
 
 use gl;
+use smallvec::SmallVec;
 
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
 
@@ -37,6 +38,7 @@ pub struct Texture {
     pub wrap_mode: TextureWrapping,
     // The border colors
     pub border_colors: [veclib::Vector4<f32>; 4],
+    pub custom_params: SmallVec<[(u32, u32); 2]>,
     // The dimensions of the texture and it's texture type
     pub ttype: TextureType,
     // How we access this texture on the CPU
@@ -62,6 +64,7 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             border_colors: [veclib::Vector4::<f32>::ZERO; 4],
+            custom_params: SmallVec::default(),
             ttype: TextureType::Texture2D(0, 0),
             cpu_access: TextureAccessType::empty(),
             write_pbo: None,
@@ -230,8 +233,18 @@ impl PipelineObject for Texture {
             gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
         }
 
+        // Set the custom parameter
+        for (name, param) in &self.custom_params {
+            unsafe {
+                gl::TexParameteri(tex_type, *name, *param as i32);
+            }
+        }
+
         // Add the texture
         self.oid = oid;
+        unsafe {
+            gl::BindTexture(tex_type, 0);
+        }
         pipeline.textures.insert(id.get()?, self);
         Some(())
     }
@@ -307,6 +320,11 @@ impl Texture {
     // Set the border colors
     pub fn set_border_colors(mut self, colors: [veclib::Vector4<f32>; 4]) -> Self {
         self.border_colors = colors;
+        self
+    }
+    // Set an OpenGL texture parameter for this texture
+    pub fn set_int_param(mut self, name: u32, param: u32) -> Self {
+        self.custom_params.push((name, param));
         self
     }
     // Zip up all the pixel bytes from multiple textures
