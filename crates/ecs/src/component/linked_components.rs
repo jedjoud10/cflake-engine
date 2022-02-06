@@ -4,7 +4,7 @@ use crate::{
     utils::ComponentError,
 };
 use ahash::AHashMap;
-use bitfield::Bitfield;
+use bitfield::{Bitfield, AtomicSparseBitfield};
 use ordered_vec::simple::OrderedVec;
 use std::{
     cell::UnsafeCell,
@@ -16,6 +16,7 @@ use std::{
 pub struct LinkedComponents {
     // Our linked components
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
     pub(crate) linked: AHashMap<Bitfield<u32>, u64>,
 
     // This ID can either be the valid entity ID or the ID of a removed entity that is stored in our temporary OrderedVec
@@ -28,25 +29,28 @@ unsafe impl Send for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new(entity: &Entity, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new(entity: &Entity, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
         Self {
             components,
+            mutated_components,
             linked: entity.components.clone(),
             id: (entity.id.unwrap().0, true),
         }
     }
 
-    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
         Self {
             components,
+            mutated_components,
             linked: linked.clone(),
             id: (id.0, true),
         }
     }
 
-    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
         Self {
             components,
+            mutated_components,
             linked: linked.clone(),
             id: (id, false),
         }
@@ -74,9 +78,9 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
-        let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap.get(*idx).ok_or_else(invalid_err)?;
+        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+        let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
+        let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();
@@ -94,9 +98,9 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let idx = self.linked.get(&cbitfield).ok_or(invalid_err())?;
-        let hashmap = self.components.read().map_err(|_| invalid_err())?;
-        let cell = hashmap.get(*idx).ok_or_else(invalid_err)?;
+        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+        let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
+        let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic
         let ptr = cell.get();
@@ -105,6 +109,21 @@ impl LinkedComponents {
 
         // And now we've got a write guard!
         let guard = ComponentWriteGuard::new(component);
+        let index = ordered_vec::utils::from_id(*id).index;
+        self.mutated_components.set(index as u64, true);
         Ok(guard)
+    }
+    // Check if a specific component has been updated during this frame
+    pub fn was_mutated<T>(&self) -> Result<bool, ComponentError>
+    where
+        T: Component + Send + Sync + 'static,
+    {
+        // Check if we even have the component
+        let cbitfield = registry::get_component_bitfield::<T>();
+        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+
+        // Now check if it has been mutated or not
+        let index = ordered_vec::utils::from_id(*id).index;
+        Ok(self.mutated_components.get(index as u64))
     }
 }

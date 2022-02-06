@@ -60,9 +60,9 @@ pub fn preload_default_assets() {
 }
 // Pre-load the default systems
 pub fn preload_system(world: &mut World) {
-    template_system::system(world);
+    //template_system::system(world);
     camera_system::system(world);
-    physics_system::system(world);
+    //physics_system::system(world);
     rendering_system::system(world);
     debugging_system::system(world);
     window_system::system(world);

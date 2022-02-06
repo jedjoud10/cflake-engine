@@ -1,4 +1,5 @@
 use main::{core::World, ecs::event::EventKey};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 // The physics system update loop
 fn run(world: &mut World, data: EventKey) {
@@ -7,7 +8,7 @@ fn run(world: &mut World, data: EventKey) {
     let delta = world.time.delta as f32;
 
     // For each physics object, we must update the internal physics values and apply them to our transform
-    for (_, components) in query.lock().iter_mut() {
+    query.lock().par_iter_mut().for_each(|(_, components)| {
         // For each physics object, we want to take the transform's position as as a starting point
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let (position, rotation) = (transform.position, transform.rotation);
@@ -21,7 +22,7 @@ fn run(world: &mut World, data: EventKey) {
         let mut transform = components.get_component_mut::<crate::components::Transform>().unwrap();
         transform.position = position;
         transform.rotation = rotation;
-    }
+    });
 }
 
 // Create the physics system

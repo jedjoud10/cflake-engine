@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use bitfield::Bitfield;
+use bitfield::{Bitfield, AtomicSparseBitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
@@ -24,6 +24,7 @@ pub struct ECSManager<World> {
     pub(crate) systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
     // The internal ECS thread pool
     pub(crate) rayon_pool: Arc<ThreadPool>,
     // Our internal event handler
@@ -41,6 +42,7 @@ impl<World> ECSManager<World> {
             entities_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
+            mutated_components: Default::default(),
             rayon_pool: Arc::new(pool),
             event_handler: Default::default(),
         }
@@ -82,7 +84,7 @@ impl<World> ECSManager<World> {
             if system.check_cbitfield(cbitfield) {
                 // Remove the entity, since it was contained in the system
                 let (entity, _, counter) = lock.get_mut(removed_id).unwrap();
-                system.remove_entity(id, LinkedComponents::new_dead(removed_id, &entity.components, self.components.clone()));
+                system.remove_entity(id, LinkedComponents::new_dead(removed_id, &entity.components, self.mutated_components.clone(), self.components.clone()));
                 *counter += 1;
             }
         }
@@ -124,8 +126,8 @@ impl<World> ECSManager<World> {
         for system in self.systems.iter() {
             // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
             if system.check_cbitfield(new) && !system.check_cbitfield(old) {
-                let lc1 = LinkedComponents::new_direct(id, linked, components.clone());
-                let lc2 = LinkedComponents::new_direct(id, linked, components.clone());
+                let lc1 = LinkedComponents::new_direct(id, linked, self.mutated_components.clone(), components.clone());
+                let lc2 = LinkedComponents::new_direct(id, linked, self.mutated_components.clone(), components.clone());
                 system.add_entity(id, lc1, lc2);
             }
         }
@@ -147,7 +149,7 @@ impl<World> ECSManager<World> {
         self.systems.iter().for_each(|system| {
             // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
             if system.check_cbitfield(old) && !system.check_cbitfield(new) {
-                system.remove_entity(id, LinkedComponents::new(entity, self.components.clone()));
+                system.remove_entity(id, LinkedComponents::new(entity, self.mutated_components.clone(), self.components.clone()));
             }
         });
         // Update the entity's components
@@ -226,5 +228,7 @@ impl<World> ECSManager<World> {
         for (_, (entity, _, _)) in removed_entities {
             self.remove_dangling_components(&entity).unwrap();
         }
+        // Also clear the bitfield indicating which components have been mutated
+        self.mutated_components.clear();
     }
 }

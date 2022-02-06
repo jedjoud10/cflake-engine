@@ -13,9 +13,8 @@ fn run(world: &mut World, data: EventKey) {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let renderer_object_id = renderer.object_id;
-        if renderer_object_id.is_some()
-        /* && components.component_update::<crate::components::Transform>().unwrap()  */
-        {
+        // Only update if we have a valid renderer and if we changed our transform
+        if renderer_object_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
             // Update the values if our renderer is valid
             let matrix = transform.calculate_matrix();
             pipec::update_callback(&pipeline, move |pipeline, _| {
@@ -48,8 +47,10 @@ fn added_entities(world: &mut World, data: EventKey) {
         let pipeline = world.pipeline.read();
 
         // Get the CPU renderer that we must construct
+        let matrix = components.get_component::<crate::components::Transform>().unwrap().calculate_matrix();
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
-        let cpu_renderer = renderer.renderer.take().unwrap();
+        let mut cpu_renderer = renderer.renderer.take().unwrap();
+        cpu_renderer.matrix = matrix;
         let object_id = pipec::construct(&pipeline, cpu_renderer).unwrap();
         renderer.object_id = object_id;
     }
