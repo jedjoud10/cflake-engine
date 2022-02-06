@@ -9,7 +9,8 @@ pub enum ShadowResolution {
     Low,
     Medium,
     High,
-    Overkill, 
+    Overkill,
+    Stop,
 }
 
 impl Default for ShadowResolution {
@@ -28,6 +29,7 @@ impl ShadowResolution {
             ShadowResolution::Medium => (2048, 2.0),
             ShadowResolution::High => (4096, 1.0),
             ShadowResolution::Overkill => (8192, 0.5),
+            ShadowResolution::Stop => (16384, 0.2),
         }
     }
 }

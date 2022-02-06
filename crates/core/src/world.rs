@@ -18,7 +18,7 @@ impl World {
         };
         println!("Initializing world...");
         // Load the default stuff
-    
+
         // Create an empty default UI
         let root = ui::Root::default();
         /*
@@ -29,7 +29,7 @@ impl World {
                 .with_color(veclib::vec4(1.0, 0.0, 1.0, 1.0)),
         );
         */
-        world.ui.add_root("default", root);        
+        world.ui.add_root("default", root);
         let pipeline = world.pipeline.read();
         pipeline.window.set_vsync(config.vsync);
         pipeline.window.set_fullscreen(config.fullscreen);

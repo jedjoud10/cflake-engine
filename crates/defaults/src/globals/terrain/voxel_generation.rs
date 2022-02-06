@@ -1,6 +1,27 @@
 use std::mem::size_of;
 
-use main::{rendering::{object::{ObjectID, ReservedTrackedID, TrackedTask}, advanced::{compute::ComputeShader, atomic::{AtomicGroup, AtomicGroupRead, ClearCondition}, shader_storage::ShaderStorage}, basics::{readwrite::ReadBytes, shader::{ShaderSettings, self, info::{Resource, QueryResource, QueryParameter, ShaderInfoQuerySettings, ShaderInfo}}, transfer::Transferable}, pipeline::{Pipeline, PipelineContext, pipec}, utils::{UpdateFrequency, AccessType}}, terrain::{PackedVoxelData, StoredVoxelData, CHUNK_SIZE, PackedVoxel}};
+use main::{
+    rendering::{
+        advanced::{
+            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
+            compute::ComputeShader,
+            shader_storage::ShaderStorage,
+        },
+        basics::{
+            readwrite::ReadBytes,
+            shader::{
+                self,
+                info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings},
+                ShaderSettings,
+            },
+            transfer::Transferable,
+        },
+        object::{ObjectID, ReservedTrackedID, TrackedTask},
+        pipeline::{pipec, PipelineContext},
+        utils::{AccessType, UpdateFrequency},
+    },
+    terrain::{PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
+};
 
 #[derive(Default)]
 pub struct VoxelGenerator {
@@ -17,7 +38,7 @@ pub struct VoxelGenerator {
     pub compute_id: ReservedTrackedID,
     pub compute_id2: ReservedTrackedID,
     pub read_counters: ReservedTrackedID,
-    pub read_final_voxels: ReservedTrackedID,    
+    pub read_final_voxels: ReservedTrackedID,
     // And the voxel data for said chunk
     pub packed_chunk_voxel_data: PackedVoxelData,
     pub stored_chunk_voxel_data: StoredVoxelData,
@@ -25,7 +46,7 @@ pub struct VoxelGenerator {
 
 impl VoxelGenerator {
     // Create a new voxel generator
-    pub fn new(voxel_src_path: &str, pipeline_context: &PipelineContext) -> Self {       
+    pub fn new(voxel_src_path: &str, pipeline_context: &PipelineContext) -> Self {
         // Load the first pass compute shader
         let pipeline = pipeline_context.read();
         let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path));
@@ -33,7 +54,7 @@ impl VoxelGenerator {
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())
             .shader_constant("chunk_size", CHUNK_SIZE);
- 
+
         let base_compute = ComputeShader::new(settings).unwrap();
         let base_compute = pipec::construct(&pipeline, base_compute).unwrap();
 

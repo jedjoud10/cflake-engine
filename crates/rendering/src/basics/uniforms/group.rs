@@ -89,7 +89,7 @@ impl ShaderUniformsGroup {
     pub fn new() -> Self {
         Self { uniforms: HashMap::default() }
     }
-    // Bind the shader 
+    // Bind the shader
     pub fn bind_shader(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) {
         // Get the shader program ID
         let program_id = settings.get_program_id(pipeline);

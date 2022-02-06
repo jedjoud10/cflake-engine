@@ -1,6 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
-use main::{math::octrees::DiffOctree, terrain::ChunkCoords, ecs::entity::EntityID, rendering::{basics::material::Material, object::ObjectID}};
+use main::{
+    ecs::entity::EntityID,
+    math::octrees::DiffOctree,
+    rendering::{basics::material::Material, object::ObjectID},
+    terrain::ChunkCoords,
+};
 
 #[derive(Default)]
 pub struct ChunksHandler {
@@ -16,15 +21,11 @@ pub struct ChunksHandler {
     pub chunk_id: Option<EntityID>,
     // We also store the Entity ID of the chunk whom we must create the mesh for
     pub mesh_gen_chunk_id: Option<EntityID>,
-    
 }
 
 impl ChunksHandler {
     // Create a new chunks handler using some default values
     pub fn new(octree: DiffOctree) -> Self {
-        Self {
-            octree,
-            ..Default::default()
-        }
+        Self { octree, ..Default::default() }
     }
 }

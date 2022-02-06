@@ -13,7 +13,7 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        Self { 
+        Self {
             shader: Default::default(),
             double_sided: Default::default(),
             uniforms: {
@@ -24,7 +24,7 @@ impl Default for Material {
                 group.set_f32("normals_strength", 1.0);
                 group.set_f32("emissive_strength", 1.0);
                 group
-            }
+            },
         }
     }
 }

@@ -1,5 +1,11 @@
 use crate::{
-    basics::{texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping}, renderer::Renderer, model::ModelBuffers, material::Material, uniforms::{ShaderUniformsGroup, ShaderUniformsSettings, ShaderIdentifier}, shader::{Shader, ShaderSettings}},
+    basics::{
+        model::ModelBuffers,
+        renderer::Renderer,
+        shader::{Shader, ShaderSettings},
+        texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+    },
     object::ObjectID,
     pipeline::{pipec, InternalPipeline, Pipeline},
 };
@@ -75,17 +81,19 @@ impl ShadowMapping {
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
 
         // Load our custom shadow shader
-        let shader = Shader::new(ShaderSettings::default()
-            .source("defaults\\shaders\\rendering\\shadow.vrsh.glsl")
-            .source("defaults\\shaders\\rendering\\shadow.frsh.glsl")
-        ).unwrap();
+        let shader = Shader::new(
+            ShaderSettings::default()
+                .source("defaults\\shaders\\rendering\\shadow.vrsh.glsl")
+                .source("defaults\\shaders\\rendering\\shadow.frsh.glsl"),
+        )
+        .unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();
         pipeline.flush(internal, renderer);
         Self {
             framebuffer: fbo,
             depth_texture: texture,
             ortho_matrix,
-            shadow_shader: shader, 
+            shadow_shader: shader,
             shadow_resolution,
             enabled: shadow_resolution != 0,
             lightspace_matrix: veclib::Matrix4x4::IDENTITY,
@@ -106,5 +114,5 @@ impl ShadowMapping {
             gl::Clear(gl::DEPTH_BUFFER_BIT);
             gl::CullFace(gl::FRONT);
         }
-    }   
+    }
 }

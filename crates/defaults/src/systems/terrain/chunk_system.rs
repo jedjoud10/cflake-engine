@@ -11,7 +11,7 @@ use main::{
 fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
-    let id = ecs::entity::EntityID::new(&ecs);
+    let id = ecs::entity::EntityID::new(ecs);
     let mut group = ecs::entity::ComponentLinkingGroup::default();
 
     // Link the nessecary components

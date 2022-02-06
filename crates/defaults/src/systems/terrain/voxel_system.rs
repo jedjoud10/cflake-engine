@@ -120,7 +120,10 @@ fn run(world: &mut World, data: EventKey) {
         } else {
             // We must check if we have finished generating or not
             let generator = &terrain.generator;
-            if pipec::did_tasks_execute(&pipeline, &[generator.compute_id, generator.compute_id2, generator.read_counters, generator.read_final_voxels]) {
+            if pipec::did_tasks_execute(
+                &pipeline,
+                &[generator.compute_id, generator.compute_id2, generator.read_counters, generator.read_final_voxels],
+            ) {
                 // We will now update the chunk data to store our new voxel data
                 let id = terrain.chunk_handler.chunk_id.unwrap();
                 let mut lock_ = query.lock();

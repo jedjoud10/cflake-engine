@@ -1,29 +1,8 @@
 use main::{
-    ecs::entity::EntityID,
     globals::Global,
     math::octrees::{DiffOctree, HeuristicSettings},
-    rendering::{
-        advanced::{
-            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
-            compute::ComputeShader,
-            shader_storage::ShaderStorage,
-        },
-        basics::{
-            material::Material,
-            readwrite::ReadBytes,
-            shader::{self, ShaderSettings},
-            transfer::Transferable,
-            uniforms::ShaderUniformsGroup,
-        },
-        object::{ObjectID, ReservedTrackedID, TrackedTask},
-        pipeline::{pipec, PipelineContext},
-        utils::{AccessType, UpdateFrequency},
-    },
-    terrain::{ChunkCoords, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
-};
-use std::{
-    collections::{HashMap, HashSet},
-    mem::size_of,
+    rendering::{basics::material::Material, object::ObjectID, pipeline::PipelineContext},
+    terrain::CHUNK_SIZE,
 };
 
 mod chunks;
@@ -45,7 +24,6 @@ impl Terrain {
     pub fn new(voxel_src_path: &str, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
         // Create a new octree
         let octree = DiffOctree::new(octree_depth, (CHUNK_SIZE) as u64, HeuristicSettings::default());
-        
 
         println!("Terrain component init done!");
         Self {

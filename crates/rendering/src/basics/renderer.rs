@@ -1,8 +1,8 @@
+use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup};
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
-use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup};
 use bitflags::bitflags;
 bitflags! {
     pub struct RendererFlags: u8 {
@@ -23,7 +23,6 @@ pub struct Renderer {
 
     // Some renderer specific uniforms that may override the material uniforms when rendering
     pub uniforms: Option<ShaderUniformsGroup>,
-
 }
 
 impl Renderer {

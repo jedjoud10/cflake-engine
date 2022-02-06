@@ -24,7 +24,7 @@ use std::{
     },
 };
 
-use super::{PipelineContext, settings::PipelineSettings};
+use super::{settings::PipelineSettings, PipelineContext};
 
 // Some default values like the default material or even the default shader
 pub struct DefaultPipelineObjects {
@@ -492,7 +492,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             pipeline_.update_global_shader_uniforms(time.0, time.1);
             pipeline_.time = *time;
             let debug = pipeline_.debugging.load(Ordering::Relaxed);
-            
+
             drop(time);
             drop(pipeline_);
 
@@ -510,7 +510,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             let i = std::time::Instant::now();
             pipeline.execute_end_of_frame_callbacks(&mut renderer);
             let eof_callbacks_duration = i.elapsed();
-            
+
             // Do not forget to switch buffers at the end of the frame
             let i = std::time::Instant::now();
             window.swap_buffers();
@@ -519,11 +519,11 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             let i = std::time::Instant::now();
             let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
             // Set the buffer
-            pipeline.add_tasks(messages);            
+            pipeline.add_tasks(messages);
             // Execute the tasks
             pipeline.update(&mut internal, &mut renderer);
             let update_duration = i.elapsed();
-            
+
             // Debug if needed
             if debug {
                 println!("Pipeline: ");

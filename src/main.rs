@@ -74,7 +74,10 @@ fn init(world: &mut core::World) {
     }
 
     // Create the directional light source
-    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional { quat: veclib::Quaternion::IDENTITY }).with_strength(1.0);
+    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional {
+        quat: veclib::Quaternion::IDENTITY,
+    })
+    .with_strength(1.0);
     let mut world_global = world.globals.get_global_mut::<defaults::globals::GlobalWorldData>().unwrap();
     world_global.sun_quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, 80.0);
     rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
