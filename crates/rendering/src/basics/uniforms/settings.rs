@@ -1,6 +1,7 @@
 use crate::{advanced::compute::ComputeShader, basics::shader::Shader, object::ObjectID, pipeline::Pipeline};
 
 // Some type of shader identifier we can use to execute a shader
+#[derive(Clone, Copy)]
 pub enum ShaderIdentifier {
     // The ID of a specific shader, if available
     ObjectID(ObjectID<Shader>),
@@ -11,6 +12,7 @@ pub enum ShaderIdentifier {
 }
 
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
+#[derive(Clone, Copy)]
 pub struct ShaderUniformsSettings {
     pub(crate) identifier: ShaderIdentifier,
 }

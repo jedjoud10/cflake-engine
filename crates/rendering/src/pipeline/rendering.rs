@@ -1,17 +1,17 @@
 use self::shadow_mapping::ShadowMapping;
 
-use super::{InternalPipeline, Pipeline};
+use super::{InternalPipeline, Pipeline, settings::PipelineSettings};
 use crate::{
     basics::{
         model::{Model, ModelBuffers},
-        renderer::Renderer,
+        renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, material::Material,
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, material::Material, lights::{LightSource, LightSourceType},
     },
     object::ObjectID,
     pipeline::pipec,
-    utils::DataType,
+    utils::{DataType, Window, DEFAULT_WINDOW_SIZE},
 };
 use std::ptr::null;
 mod shadow_mapping;
@@ -31,6 +31,7 @@ pub struct PipelineRenderer {
     // Screen rendering
     screenshader: ObjectID<Shader>,
     quad_model: ObjectID<Model>,
+    uniforms: ShaderUniformsGroup,
 
     // Others
     sky_texture: ObjectID<Texture>,
@@ -49,19 +50,20 @@ impl PipelineRenderer {
         let model = pipeline.get_model(renderer.model)?;
         let model_matrix = &renderer.matrix;
 
-        // Calculate the mvp matrix
-        let mvp_matrix: veclib::Matrix4x4<f32> = camera.projm * camera.viewm * *model_matrix;
-
-        // Pass the MVP and the model matrix to the shader
-        let mut group = ShaderUniformsGroup::combine(material.uniforms.clone(), renderer.uniforms.clone().unwrap_or_default());
+        // Pass the matrices to the shader
+        let mut group = ShaderUniformsGroup::default();
         let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
-        group.set_mat44f32("mvp_matrix", mvp_matrix);
+        group.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
         group.set_mat44f32("model_matrix", *model_matrix);
-        group.set_mat44f32("view_matrix", camera.viewm);
-        group.set_vec3f32("view_pos", camera.position);
 
         // Update the uniforms
-        group.execute(pipeline, settings).unwrap();
+        material.uniforms.bind_shader(pipeline, settings);
+        material.uniforms.set_uniforms(pipeline, settings);
+        if let Some(uniforms) = &renderer.uniforms {
+            uniforms.set_uniforms(pipeline, settings);
+        }
+        group.set_uniforms(pipeline, settings);
+        
         Some((&model.1, model.0.triangles.len(), material))
     }
     // Render a single renderer
@@ -82,7 +84,7 @@ impl PipelineRenderer {
         Some(())
     }
     // Initialize this new pipeline renderer
-    pub(crate) fn initialize(&mut self, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
+    pub(crate) fn initialize(&mut self, pipeline_settings: PipelineSettings, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create the quad model that we will use to render the whole screen
         use veclib::{vec2, vec3};
@@ -104,10 +106,8 @@ impl PipelineRenderer {
             .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
             .source("defaults\\shaders\\rendering\\screen.frsh.glsl");
         self.screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
-
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
-
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -161,9 +161,7 @@ impl PipelineRenderer {
         }
         /* #endregion */
         /* #region Others */
-        self.shadow_mapping = ShadowMapping::new(self, internal, pipeline);
-        /* #endregion */
-        /* #region Actual pipeline renderer shit */
+        self.shadow_mapping = ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline);
         // Load sky gradient texture
         self.sky_texture = pipec::construct(
             pipeline,
@@ -172,6 +170,17 @@ impl PipelineRenderer {
                 .set_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
         )
         .unwrap();
+        
+        // Also set our one time uniforms
+        let mut group = ShaderUniformsGroup::new();
+        group.set_texture("diffuse_texture", self.diffuse_texture, 0);
+        group.set_texture("emissive_texture", self.emissive_texture, 1);
+        group.set_texture("normals_texture", self.normals_texture, 2);
+        group.set_texture("position_texture", self.position_texture, 3);
+        group.set_texture("depth_texture", self.depth_texture, 4); 
+        group.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
+        group.set_texture("default_sky_gradient", self.sky_texture, 5);
+        self.uniforms = group;
         /* #endregion */
 
         // We must always flush to make sure we execute the tasks internally
@@ -179,8 +188,9 @@ impl PipelineRenderer {
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Prepare the FBO and clear the buffers
-    fn prepare_for_rendering(&self) {
+    fn prepare_for_rendering(&self, pipeline: &Pipeline) {
         unsafe {
+            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
@@ -188,13 +198,25 @@ impl PipelineRenderer {
     // Called each frame, to render the world
     pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) {
         // Prepare
-        self.prepare_for_rendering();
+        self.prepare_for_rendering(pipeline);
         // Render normally
         self.render_scene(pipeline);
         // Then render the scene again so we can render shadows
         self.render_scene_shadow_maps(pipeline);
         // Render the deferred quad
         self.render_deferred_quad(pipeline);
+    }
+    // Render the whole scene normally
+    fn render_scene(&mut self, pipeline: &Pipeline) {
+        for (_, renderer) in pipeline.renderers.iter() {
+            // Check if we are visible 
+            if !renderer.flags.contains(RendererFlags::VISIBLE) { continue; }
+            let result = self.configure_uniforms(pipeline, renderer);
+            // The renderer might've failed setting it's uniforms
+            if let Some((buffers, triangle_count, material)) = result {
+                self.render(buffers, triangle_count, material.double_sided);
+            }
+        }
     }
     // Render the scene's shadow maps
     fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline) {
@@ -204,6 +226,9 @@ impl PipelineRenderer {
             self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
         }
         for (_, renderer) in pipeline.renderers.iter() {
+            // Check if we should cast shadows
+            if !renderer.flags.contains(RendererFlags::SHADOW_CASTER) { continue; }
+
             let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Some((buffers, triangle_count)) = result {
@@ -211,59 +236,33 @@ impl PipelineRenderer {
             }
         }
     }
-    // Render the whole scene normally
-    fn render_scene(&mut self, pipeline: &Pipeline) {
-        for (_, renderer) in pipeline.renderers.iter() {
-            let result = self.configure_uniforms(pipeline, renderer);
-            // The renderer might've failed setting it's uniforms
-            if let Some((buffers, triangle_count, material)) = result {
-                self.render(buffers, triangle_count, material.double_sided);
-            }
-        }
-    }
     // Render the deferred quad and do all lighting calculations inside it's fragment shader
-    fn render_deferred_quad(&mut self, pipeline: &Pipeline) {
+    fn render_deferred_quad(&mut self, pipeline: &Pipeline) {   
+        unsafe {    
+            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        }  
         // Get the pipeline data
-        let dimensions = pipeline.window.dimensions;
-        unsafe {
-            gl::Viewport(0, 0, dimensions.x as i32, dimensions.y as i32);
-        }
         let camera = &pipeline.camera;
 
         // Render the screen quad
-        let mut group = ShaderUniformsGroup::new();
-        group.set_vec2i32("resolution", dimensions.into());
-        group.set_vec2f32("nf_planes", camera.clip_planes);
+        self.uniforms.set_vec2f32("nf_planes", camera.clip_planes);
         // The first light source is always the directional light source
-        let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
-        if let Some(light) = directional_light_source {
-            let directional = light._type.as_directional().unwrap();
-            group.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
-            group.set_f32("directional_light_strength", light.strength);
-            group.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
-        } else {
-            // We don't have a directional light, so we must set the default values
-            group.set_vec3f32("directional_light_dir", veclib::Vector3::ZERO);
-            group.set_f32("directional_light_strength", 0.0);
-            group.set_mat44f32("lightspace_matrix", veclib::Matrix4x4::IDENTITY);
-        }
-        // Textures
-        group.set_texture("diffuse_texture", self.diffuse_texture, 0);
-        group.set_texture("emissive_texture", self.emissive_texture, 1);
-        group.set_texture("normals_texture", self.normals_texture, 2);
-        group.set_texture("position_texture", self.position_texture, 3);
-        group.set_texture("depth_texture", self.depth_texture, 4);
-        group.set_texture("default_sky_gradient", self.sky_texture, 5);
-        group.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
-        let vp_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
-        group.set_mat44f32("custom_vp_matrix", vp_m);
+        let default_light_source = LightSource::new(LightSourceType::Directional { quat: veclib::Quaternion::<f32>::IDENTITY });
+        let light = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default_light_source);
+        let directional = light._type.as_directional().unwrap();
+        self.uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
+        self.uniforms.set_f32("directional_light_strength", light.strength);
+        self.uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);        
+        let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
+        self.uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
         // Other params
-        group.set_vec3f32("camera_pos", camera.position);
-        group.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
+        self.uniforms.set_vec3f32("camera_pos", camera.position);
+        self.uniforms.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
 
         // Update the uniform settings
         let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(self.screenshader));
-        group.execute(pipeline, settings).unwrap();
+        self.uniforms.bind_shader(pipeline, settings);
+        self.uniforms.set_uniforms(pipeline, settings).unwrap();
 
         // Render the screen quad
         let (_, quad_data) = pipeline.get_model(self.quad_model).unwrap();

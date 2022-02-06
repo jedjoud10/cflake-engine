@@ -134,7 +134,8 @@ impl ComputeShader {
         if let Some(group) = group {
             // Create some shader uniforms settings that we can use
             let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(self.program));
-            group.execute(pipeline, settings).unwrap();
+            group.bind_shader(pipeline, settings);
+            group.set_uniforms(pipeline, settings);
         }
         // Dispatch the compute shader for execution
         let axii = settings.axii;

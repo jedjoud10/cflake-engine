@@ -121,8 +121,8 @@ impl Renderer {
             group.set_texture("main_texture", id_texture, 0);
             if pipeline.get_shader(id_shader).is_some() {
                 let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(id_shader));
-                group.execute(pipeline, settings).expect("Forgot to set shader or main texture!");
-
+                group.bind_shader(pipeline, settings);
+                group.set_uniforms(pipeline, settings).expect("Forgot to set shader or main texture!");
                 unsafe {
                     //println!("{:?}", batch);
                     gl::BindVertexArray(batch.vao);

@@ -62,7 +62,7 @@ fn init(world: &mut core::World) {
             group.link_default::<defaults::components::Physics>().unwrap();
 
             // Create it's renderer
-            let renderer = rendering::basics::renderer::Renderer::new(false)
+            let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::VISIBLE)
                 .set_model(model_id)
                 .set_material(material)
                 .set_matrix(matrix);
@@ -119,13 +119,10 @@ fn init(world: &mut core::World) {
     });
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
-    let mut uniforms = rendering::basics::uniforms::ShaderUniformsGroup::default();
-    uniforms.set_texture("diffuse_tex", diffuse, 0);
     // Add the terrain
     drop(pipeline);
     let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 4, &pipeline_)
         .set_heuristic(heuristic)
-        .set_material(material)
-        .set_uniforms(uniforms);
+        .set_material(material);
     world.globals.add_global(terrain).unwrap();
 }

@@ -21,14 +21,6 @@ pub struct ShaderUniformsGroup {
 
 // Gotta change the place where this shit is in
 impl ShaderUniformsGroup {
-    // Combine a shader uniform group with an another one
-    // This adds "second" to "main"
-    pub fn combine(mut main: Self, second: Self) -> Self {
-        for elem in second.uniforms {
-            main.uniforms.insert(elem.0, elem.1);
-        }
-        Self { uniforms: main.uniforms }
-    }
     // Set singular i32 value
     pub fn set_i32(&mut self, name: &str, val: i32) {
         self.uniforms.insert(name.to_string(), Uniform::I32(val.get_unsized()));
@@ -97,13 +89,17 @@ impl ShaderUniformsGroup {
     pub fn new() -> Self {
         Self { uniforms: HashMap::default() }
     }
-    // Bind the shader and set the uniforms
-    pub fn execute(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) -> Option<()> {
+    // Bind the shader 
+    pub fn bind_shader(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) {
         // Get the shader program ID
         let program_id = settings.get_program_id(pipeline);
         unsafe {
             gl::UseProgram(program_id);
         }
+    }
+    // Bind the shader and set the uniforms
+    pub fn set_uniforms(&self, pipeline: &Pipeline, settings: ShaderUniformsSettings) -> Option<()> {
+        let program_id = settings.get_program_id(pipeline);
         use super::setters::*;
         for (name, uniform) in self.uniforms.iter() {
             let index = unsafe { gl::GetUniformLocation(program_id, CString::new(name.clone()).ok()?.as_ptr()) };

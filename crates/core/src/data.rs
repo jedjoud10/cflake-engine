@@ -5,8 +5,7 @@ use io::SaverLoader;
 use others::Time;
 use rendering::pipeline::PipelineContext;
 use ui::UIManager;
-
-use crate::GameConfig;
+use crate::GameSettings;
 
 // The whole world that stores our managers and data
 pub struct World {
@@ -16,6 +15,6 @@ pub struct World {
     pub ecs: ECSManager<Self>,
     pub globals: GlobalCollection,
     pub io: SaverLoader,
-    pub config: GameConfig,
+    pub settings: GameSettings,
     pub pipeline: PipelineContext,
 }

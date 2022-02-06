@@ -24,7 +24,7 @@ use std::{
     },
 };
 
-use super::PipelineContext;
+use super::{PipelineContext, settings::PipelineSettings};
 
 // Some default values like the default material or even the default shader
 pub struct DefaultPipelineObjects {
@@ -207,8 +207,9 @@ impl Pipeline {
             group.set_f32("_time", time as f32);
             group.set_f32("_delta", delta as f32);
             group.set_vec2i32("_resolution", self.window.dimensions.into());
-            let id = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
-            group.execute(self, id).unwrap();
+            let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
+            group.bind_shader(self, settings);
+            group.set_uniforms(self, settings);
         }
     }
     // Run the End Of Frame callbacks
@@ -384,7 +385,7 @@ unsafe fn init_opengl() {
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineContext {
+pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
@@ -470,7 +471,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap();
             let mut renderer = PipelineRenderer::default();
             pipeline.flush(&mut internal, &mut renderer);
-            renderer.initialize(&mut internal, &mut *pipeline);
+            renderer.initialize(pipeline_settings, &mut internal, &mut *pipeline);
             renderer
         };
 

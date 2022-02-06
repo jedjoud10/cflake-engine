@@ -11,14 +11,13 @@ use super::PipelineRenderer;
 #[derive(Default)]
 pub struct ShadowMapping {
     // Main
-    pub(crate) framebuffer: u32,
+    pub framebuffer: u32,
     pub(crate) depth_texture: ObjectID<Texture>,
-    pub(crate) ortho_matrix: veclib::Matrix4x4<f32>,
-    pub(crate) shadow_shader: ObjectID<Shader>,
+    pub ortho_matrix: veclib::Matrix4x4<f32>,
+    pub shadow_shader: ObjectID<Shader>,
     pub(crate) lightspace_matrix: veclib::Matrix4x4<f32>,
+    pub shadow_resolution: u16,
 }
-
-const SHADOW_RES: u16 = 1024;
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
     pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a ModelBuffers, usize)> {
@@ -36,11 +35,12 @@ impl ShadowMapping {
         group.set_mat44f32("lsm_matrix", lsm);
 
         // Update the uniforms
-        group.execute(pipeline, settings).unwrap();
+        group.bind_shader(pipeline, settings);
+        group.set_uniforms(pipeline, settings);
         Some((&model.1, model.0.triangles.len()))
     }
     // Initialize a new shadow mapper
-    pub(crate) fn new(renderer: &mut PipelineRenderer, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {
+    pub(crate) fn new(renderer: &mut PipelineRenderer, shadow_resolution: u16, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {
         // Create the framebuffer
         let fbo = unsafe {
             let mut fbo = 0;
@@ -49,7 +49,7 @@ impl ShadowMapping {
         };
         // Create the depth texture
         let texture = Texture::default()
-            .set_dimensions(TextureType::Texture2D(SHADOW_RES, SHADOW_RES))
+            .set_dimensions(TextureType::Texture2D(shadow_resolution, shadow_resolution))
             .set_filter(TextureFilter::Nearest)
             .set_wrapping_mode(TextureWrapping::ClampToBorder)
             .set_border_colors([veclib::Vector4::<f32>::ONE; 4])
@@ -83,6 +83,7 @@ impl ShadowMapping {
             depth_texture: texture,
             ortho_matrix,
             shadow_shader: shader, 
+            shadow_resolution,
             lightspace_matrix: veclib::Matrix4x4::IDENTITY,
         }
     }
@@ -96,9 +97,9 @@ impl ShadowMapping {
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self) {
         unsafe {
-            gl::Viewport(0, 0, SHADOW_RES as i32, SHADOW_RES as i32);
+            gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
         }
-    }    
+    }   
 }

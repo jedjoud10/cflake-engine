@@ -1,29 +1,24 @@
-use crate::{data::World, GameConfig, WorldTaskReceiver};
+use crate::{data::World, GameSettings, WorldTaskReceiver};
 use rendering::pipeline::PipelineContext;
 use std::sync::Arc;
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(author_name: &str, app_name: &str, pipeline: PipelineContext) -> Self {
+    pub fn new(config: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
             ecs: ecs::ECSManager::<Self>::new(),
             globals: Default::default(),
-            io: io::SaverLoader::new(author_name, app_name),
-            config: Default::default(),
+            io,
+            settings: Default::default(),
             pipeline,
         };
-        world.init();
-        world
-    }
-    // Initialize the world
-    fn init(&mut self) {
         println!("Initializing world...");
         // Load the default stuff
-
+    
         // Create an empty default UI
         let root = ui::Root::default();
         /*
@@ -34,18 +29,14 @@ impl World {
                 .with_color(veclib::vec4(1.0, 0.0, 1.0, 1.0)),
         );
         */
-        self.ui.add_root("default", root);
-
-        // Load the config file (create it if it doesn't exist already)
-        self.io.create_default("config\\game_config.json", &crate::GameConfig::default());
-        // Then load
-        let config: GameConfig = self.io.load("config\\game_config.json");
-        let pipeline = self.pipeline.read();
+        world.ui.add_root("default", root);        
+        let pipeline = world.pipeline.read();
         pipeline.window.set_vsync(config.vsync);
         pipeline.window.set_fullscreen(config.fullscreen);
         drop(pipeline);
-        self.config = config;
+        world.settings = config;
         println!("World init done!");
+        world
     }
     // Resize window event
     pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {

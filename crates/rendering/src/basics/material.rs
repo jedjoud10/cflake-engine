@@ -5,12 +5,30 @@ use super::shader::Shader;
 use super::texture::Texture;
 use super::uniforms::ShaderUniformsGroup;
 // A material that can have multiple parameters and such
-#[derive(Default)]
 pub struct Material {
     pub shader: ObjectID<Shader>,
     pub double_sided: bool,
     pub uniforms: ShaderUniformsGroup,
 }
+
+impl Default for Material {
+    fn default() -> Self {
+        Self { 
+            shader: Default::default(),
+            double_sided: Default::default(),
+            uniforms: {
+                let mut group = ShaderUniformsGroup::default();
+                // Some default uniforms
+                group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
+                group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
+                group.set_f32("normals_strength", 1.0);
+                group.set_f32("emissive_strength", 1.0);
+                group
+            }
+        }
+    }
+}
+
 impl PipelineObject for Material {
     // Reserve an ID for this material
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -26,24 +44,16 @@ impl PipelineObject for Material {
     }
     // Add the material to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
-        // Some default uniforms
-        let mut group = ShaderUniformsGroup::default();
-        group.set_vec2f32("uv_scale", veclib::Vector2::<f32>::ONE);
-        group.set_vec3f32("tint", veclib::Vector3::<f32>::ONE);
-        group.set_f32("normals_strength", 1.0);
-        group.set_f32("emissive_strength", 1.0);
         // Make sure we have valid textures in case we don't
         if !self.uniforms.contains_uniform("diffuse_tex") {
-            group.set_texture("diffuse_tex", pipeline.defaults.as_ref()?.missing_tex, 0);
+            self.uniforms.set_texture("diffuse_tex", pipeline.defaults.as_ref()?.missing_tex, 0);
         }
         if !self.uniforms.contains_uniform("emissive_tex") {
-            group.set_texture("emissive_tex", pipeline.defaults.as_ref()?.black, 1);
+            self.uniforms.set_texture("emissive_tex", pipeline.defaults.as_ref()?.black, 1);
         }
         if !self.uniforms.contains_uniform("normals_tex") {
-            group.set_texture("normals_tex", pipeline.defaults.as_ref()?.normals_tex, 2);
+            self.uniforms.set_texture("normals_tex", pipeline.defaults.as_ref()?.normals_tex, 2);
         }
-        // Combine the default uniforms and the new uniforms that we just made
-        self.uniforms = ShaderUniformsGroup::combine(group, self.uniforms);
 
         // Make sure we have a valid shader
         if !self.shader.is_some() {

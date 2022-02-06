@@ -4,7 +4,7 @@ layout(location = 1) in vec3 model_normal;
 layout(location = 2) in vec4 model_tangent;
 layout(location = 3) in vec2 model_uv;
 layout(location = 4) in vec3 model_color;
-uniform mat4 mvp_matrix;
+uniform mat4 project_view_matrix;
 uniform mat4 model_matrix;
 out vec3 m_normal;
 out vec4 m_tangents;
@@ -14,12 +14,12 @@ out vec3 m_color;
 out mat3 tbn;
 
 void main() {
-	vec4 mvp_pos = mvp_matrix * vec4(model_pos, 1.0);
-	vec3 model_matrix_pos = (model_matrix * vec4(model_pos, 1.0)).xyz;
+	vec4 model_matrix_pos = (model_matrix * vec4(model_pos, 1.0));
+	vec4 mvp_pos = project_view_matrix * model_matrix_pos;
 	gl_Position = mvp_pos;
 
 	// Pass the data to the next shader
-	m_position = model_matrix_pos;
+	m_position = model_matrix_pos.xyz;
 	m_normal = normalize((model_matrix * vec4(model_normal, 0.0)).xyz);
 	vec3 bitangent = model_tangent.w * cross(model_tangent.xyz, model_normal);
 	m_tangents = vec4(normalize((model_matrix * vec4(model_tangent.xyz, 0.0)).xyz), model_tangent.w);

@@ -24,12 +24,8 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sky.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sun.func.glsl");
     // Others
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\debug.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\frame_stats.cmpt.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\dithering.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\template_compute.cmpt.glsl");

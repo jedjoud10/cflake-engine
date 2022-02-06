@@ -38,7 +38,6 @@ pub struct Terrain {
     pub material: ObjectID<Material>,
 
     // Voxel Generation
-    pub custom_uniforms: ShaderUniformsGroup,
     pub compute_shader: ObjectID<ComputeShader>,
     pub second_compute_shader: ObjectID<ComputeShader>,
     pub atomics: ObjectID<AtomicGroup>,
@@ -161,7 +160,6 @@ impl Terrain {
             cpu_data: None,
             chunk_id: None,
             mesh_gen_chunk_id: None,
-            custom_uniforms: ShaderUniformsGroup::default(),
             compute_shader: base_compute,
             second_compute_shader: second_compute,
             atomics,
@@ -177,11 +175,6 @@ impl Terrain {
     // Generate the terrain with a specific octree heuristic settings
     pub fn set_heuristic(mut self, settings: HeuristicSettings) -> Self {
         self.octree.update_heuristic(settings);
-        self
-    }
-    // Generate the terrain with some specific compute shader uniforms
-    pub fn set_uniforms(mut self, uniforms: ShaderUniformsGroup) -> Self {
-        self.custom_uniforms = uniforms;
         self
     }
 }

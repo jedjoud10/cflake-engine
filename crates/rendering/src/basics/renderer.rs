@@ -2,8 +2,16 @@ use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
-
 use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup};
+use bitflags::bitflags;
+bitflags! {
+    pub struct RendererFlags: u8 {
+        const VISIBLE = 0b00000001;
+        const SHADOW_CASTER = 0b00000010;
+        const SHOULD_DELETE_MODEL = 0b00000100;
+        const DEFAULT = Self::VISIBLE.bits | Self::SHADOW_CASTER.bits | Self::SHOULD_DELETE_MODEL.bits;
+    }
+}
 
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
@@ -11,23 +19,22 @@ pub struct Renderer {
     pub model: ObjectID<Model>,
     pub material: ObjectID<Material>,
     pub matrix: veclib::Matrix4x4<f32>,
+    pub flags: RendererFlags,
 
     // Some renderer specific uniforms that may override the material uniforms when rendering
     pub uniforms: Option<ShaderUniformsGroup>,
 
-    // Should we dispose the model when this renderer gets destroyed?
-    pub delete_model: bool,
 }
 
 impl Renderer {
     // Create a new renderer with default settings
-    pub fn new(delete_model: bool) -> Self {
+    pub fn new(flags: RendererFlags) -> Self {
         Self {
             model: Default::default(),
             material: Default::default(),
             matrix: Default::default(),
             uniforms: Default::default(),
-            delete_model,
+            flags,
         }
     }
 }
@@ -63,7 +70,7 @@ impl PipelineObject for Renderer {
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let me = pipeline.renderers.remove(id.get()?)?;
         // Also remove the model if we want to
-        if me.delete_model {
+        if me.flags.contains(RendererFlags::SHOULD_DELETE_MODEL) {
             let _removed_model = Model::delete(pipeline, me.model)?;
         }
         Some(me)

@@ -16,7 +16,7 @@ uniform sampler2D shadow_map; // 6
 uniform vec3 directional_light_dir;
 uniform mat4 lightspace_matrix;
 uniform float directional_light_strength;
-uniform mat4 custom_vp_matrix;
+uniform mat4 projection_rotation_matrix;
 uniform vec2 nf_planes;
 uniform int debug_view;
 uniform vec3 camera_pos;
@@ -43,7 +43,7 @@ void main() {
 	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength * sun_strength;
 
 	// Sky gradient texture moment
-    vec3 pixel_dir = normalize((inverse(custom_vp_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
+    vec3 pixel_dir = normalize((inverse(projection_rotation_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
 	float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
 	vec3 sky_color = calculate_sky_color(default_sky_gradient, sky_uv_sampler, sun_up_factor);
 	

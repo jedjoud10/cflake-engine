@@ -26,4 +26,5 @@ assets = { path = "../assets" }
 debug = { path = "../debug" }
 math = { path = "../math" }
 ui = { path = "../ui" }
+io = { path = "../io" }
 terrain = { path = "../terrain" }

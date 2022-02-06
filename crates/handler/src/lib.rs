@@ -43,11 +43,22 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Pre-load the assets first
     defaults::preload_default_assets();
     preload_assets();
+    
+    // Load the config file (create it if it doesn't exist already)
+    let io = main::io::SaverLoader::new(author_name, app_name);
+    io.create_default("config\\game_config.json", &core::GameSettings::default());
+    let config: core::GameSettings = io.load("config\\game_config.json");
+    io.save("config\\game_config.json", &config);
+
+
     // Hehe multithreaded renering goes BRRRRRRRR
-    let pipeline_data = rendering::pipeline::init_pipeline(&mut glfw, &mut window);
+    let pipelin_settings = rendering::pipeline::PipelineSettings {
+        shadow_resolution: config.shadow_resolution.convert(),
+    };
+    let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, &mut glfw, &mut window);
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
-    let mut world = World::new(author_name, app_name, pipeline_data);
+    let mut world = World::new(config, io, pipeline_data);
 
     // Init the world
     // Calling the callback
