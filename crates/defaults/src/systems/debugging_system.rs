@@ -22,9 +22,9 @@ fn run(world: &mut World, _data: EventKey) {
         if let Ok(terrain) = terrain {
             println!("Terrain: ");
             println!("  #Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE);
-            println!("  #Chunks: '{}'", terrain.chunks.len());
-            println!("  #Pending Generation: '{}'", terrain.chunks_generating.len());
-            println!("  #Pending Deletion: '{}'", terrain.chunks_to_remove.len());
+            println!("  #Chunks: '{}'", terrain.chunk_handler.chunks.len());
+            println!("  #Pending Generation: '{}'", terrain.chunk_handler.chunks_generating.len());
+            println!("  #Pending Deletion: '{}'", terrain.chunk_handler.chunks_to_remove.len());
         }
     } else {
         main::rendering::pipeline::pipec::set_debugging(&pipeline, false);

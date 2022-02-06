@@ -17,9 +17,8 @@ pub struct PackedVoxel {
 // A vector full of packed voxels
 pub struct PackedVoxelData(pub Vec<PackedVoxel>);
 
-impl PackedVoxelData {
-    // Create some new packed voxel data that can store enough voxels so that we don't have to reallocate
-    pub fn with_voxel_size() -> Self {
+impl Default for PackedVoxelData {
+    fn default() -> Self {
         const CAP: usize = (CHUNK_SIZE + 1).pow(3);
         Self(vec![PackedVoxel::default(); CAP])
     }

@@ -3,6 +3,7 @@ use ahash::AHashSet;
 use super::{HeuristicSettings, Octree, OctreeNode};
 
 // A differential octree, so we can detect what nodes we have added/removes from this octree
+#[derive(Default)]
 pub struct DiffOctree {
     // Underlying simple octree
     pub inner: Octree,

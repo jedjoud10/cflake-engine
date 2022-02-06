@@ -2,7 +2,6 @@ use super::{node::OctreeNode, HeuristicSettings};
 use ordered_vec::simple::UnversionnedOrderedVec;
 
 // A simple octree, no incremental generation what so ever
-#[derive(Default)]
 pub struct Octree {
     // The old target point
     pub target: Option<veclib::Vector3<f32>>,
@@ -14,6 +13,12 @@ pub struct Octree {
     pub size: u64,
     // Some specific heuristic settings
     pub hsettings: HeuristicSettings,
+}
+
+impl Default for Octree {
+    fn default() -> Self {
+        Self::new(4, 32, HeuristicSettings::default())
+    }
 }
 
 impl Octree {

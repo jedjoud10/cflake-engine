@@ -56,15 +56,16 @@ fn run(world: &mut World, _data: EventKey) {
     }
     let mut terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
-    if terrain.chunks_generating.is_empty() && terrain.chunks_to_remove.is_empty() {
-        let octree = &mut terrain.octree;
+    let handler = &mut terrain.chunk_handler;
+    if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
+        let octree = &mut handler.octree;
         if let Some((added, removed)) = octree.update(camera_pos) {
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them
             for node in removed {
                 let coords = ChunkCoords::new(&node);
-                if let Some(id) = terrain.chunks.remove(&coords) {
-                    terrain.chunks_to_remove.push(id);
+                if let Some(id) = handler.chunks.remove(&coords) {
+                    handler.chunks_to_remove.push(id);
                 }
             }
 
@@ -73,18 +74,18 @@ fn run(world: &mut World, _data: EventKey) {
                 if node.children_indices.is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(&mut world.ecs, camera_pos, camera_dir, terrain.octree.inner.size, coords);
-                    terrain.sorted_chunks_generating.push((id, priority));
-                    terrain.chunks.insert(coords, id);
-                    terrain.chunks_generating.insert(coords);
+                    let (id, priority) = add_chunk(&mut world.ecs, camera_pos, camera_dir, octree.inner.size, coords);
+                    handler.sorted_chunks_generating.push((id, priority));
+                    handler.chunks.insert(coords, id);
+                    handler.chunks_generating.insert(coords);
                 }
             }
-            terrain.sorted_chunks_generating.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
+            handler.sorted_chunks_generating.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
         }
     } else {
         // Mass deletion when we have no more chunks
-        if terrain.chunks_generating.is_empty() {
-            let chunks_to_remove = std::mem::take(&mut terrain.chunks_to_remove);
+        if handler.chunks_generating.is_empty() {
+            let chunks_to_remove = std::mem::take(&mut handler.chunks_to_remove);
             for id in chunks_to_remove {
                 remove_chunk(&mut world.ecs, id);
             }

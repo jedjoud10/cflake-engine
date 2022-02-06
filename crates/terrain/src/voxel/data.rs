@@ -8,9 +8,9 @@ pub struct StoredVoxelData {
     material_types: Vec<u8>,
 }
 
-impl StoredVoxelData {
-    // Allocate enough space to store all the voxels voxels
-    pub fn new() -> Self {
+impl Default for StoredVoxelData {
+    fn default() -> Self {
+        // Allocate enough space to store all the voxels voxels
         const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
         let normals = vec![veclib::Vector3::ZERO; LEN];
@@ -24,6 +24,9 @@ impl StoredVoxelData {
             material_types,
         }
     }
+}
+
+impl StoredVoxelData {
     // Update the stored voxel data using some packed data that came from the GPU
     pub fn store(&mut self, packed: &PackedVoxelData) {
         // We do a bit of overwriting
