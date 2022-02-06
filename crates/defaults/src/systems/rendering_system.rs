@@ -2,7 +2,7 @@ use main::{
     core::{Context, WriteContext},
     ecs::event::EventKey,
     rendering::{
-        object::{ObjectID, UpdateTask},
+        object::{ObjectID},
         pipeline::pipec,
     },
 };
@@ -17,12 +17,19 @@ fn run(context: &mut Context, data: EventKey) {
     for (_, components) in query.lock().iter() {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
-        let renderer_object_id = &renderer.object_id;
-        if renderer_object_id.is_some() {
+        let renderer_object_id = renderer.object_id;
+        if renderer_object_id.is_some() /* && components.component_update::<crate::components::Transform>().unwrap()  */{
             // Update the values if our renderer is valid
-            pipec::update_task(&pipeline, UpdateTask::UpdateRendererMatrix(*renderer_object_id, transform.calculate_matrix())).unwrap();
+            let matrix = transform.calculate_matrix();
+            pipec::update_callback(&pipeline, move |pipeline, _| {
+                let gpu_renderer = pipeline.get_renderer_mut(renderer_object_id);
+                if let Some(gpu_renderer) = gpu_renderer {
+                    gpu_renderer.update_matrix(matrix);
+                }
+            }).unwrap();
         }
     }
+    println!("{:.2}", _i.elapsed().as_secs_f32() * 1000.0);
 }
 
 // An event fired whenever we add multiple new renderer entities

@@ -138,7 +138,7 @@ impl Pipeline {
         match task {
             PipelineTask::Construction(construction) => construction.execute(self),
             PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
-            PipelineTask::Update(update) => update.execute(self, renderer),
+            PipelineTask::Update(update) => update(self, renderer),
             PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
         }
     }
@@ -284,16 +284,16 @@ impl Pipeline {
 
     // Update methods
     // Update the window dimensions
-    pub(crate) fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
+    pub fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
         self.window.dimensions = new_dimensions;
         renderer.update_window_dimensions(new_dimensions, self);
     }
     // Update the focus state for our window
-    pub(crate) fn update_window_focus_state(&mut self, focused: bool) {
+    pub fn update_window_focus_state(&mut self, focused: bool) {
         self.window.focused = focused;
     }
     // Set our internal camera to a new one
-    pub(crate) fn set_internal_camera(&mut self, camera: Camera) {
+    pub fn set_internal_camera(&mut self, camera: Camera) {
         self.camera = camera;
     }
 }

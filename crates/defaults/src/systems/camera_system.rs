@@ -1,7 +1,6 @@
 use main::core::{Context, WriteContext};
 use main::ecs::event::EventKey;
 use main::input::Keys;
-use main::rendering::object::UpdateTask;
 
 // The camera system update loop
 fn run(context: &mut Context, data: EventKey) {
@@ -74,7 +73,9 @@ fn run(context: &mut Context, data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::update_task(&pipeline, UpdateTask::UpdateCamera(pipeline_camera)).unwrap();
+        pipeline::pipec::update_callback(&pipeline, |pipeline, renderer| {
+            pipeline.set_internal_camera(pipeline_camera)
+        });
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global

@@ -38,7 +38,7 @@ impl Renderer {
     // We must run this one the render thread
     pub fn draw(&mut self, pipeline: &mut Pipeline, root: &mut Root, window_size: veclib::Vector2<u16>) {
         // Don't do anything with the root if we won't render it ¯\_(ツ)_/¯
-        if !root.visible {
+        if !root.visible || (root.elements.count() == 0) {
             return;
         }
         let _window_size: veclib::Vector2<f32> = window_size.into();

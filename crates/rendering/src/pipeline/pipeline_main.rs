@@ -2,8 +2,10 @@
 pub mod pipec {
     use std::sync::atomic::Ordering;
 
+    use others::on_main_thread;
+
     use crate::{
-        object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask, UpdateTask},
+        object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
         pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
     };
     // Debug some pipeline data
@@ -34,10 +36,11 @@ pub mod pipec {
         send(pipeline, PipelineTask::Deconstruction(task))?;
         Some(())
     }
-    // Update task
-    pub fn update_task(pipeline: &Pipeline, task: UpdateTask) -> Option<()> {
-        // Send a update task to destroy the object
-        send(pipeline, PipelineTask::Update(task))?;
+    // Create an update callback that we will run at the end of the current/next frame
+    pub fn update_callback(pipeline: &Pipeline, function: impl FnOnce(&mut Pipeline, &mut PipelineRenderer) + Send + Sync + 'static) -> Option<()> {
+        // Create the boxed function on the heap
+        let boxed = Box::new(function);
+        send(pipeline, PipelineTask::Update(boxed));
         Some(())
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks

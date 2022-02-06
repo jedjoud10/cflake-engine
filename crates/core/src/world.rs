@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use rendering::{object::UpdateTask, pipeline::PipelineContext};
+use rendering::pipeline::PipelineContext;
 
 use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
 
@@ -48,7 +48,9 @@ impl World {
     // Resize window event
     pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
         let pipeline = self.pipeline.read();
-        rendering::pipeline::pipec::update_task(&pipeline, UpdateTask::UpdateWindowDimensions(new_dimensions)).unwrap();
+        rendering::pipeline::pipec::update_callback(&pipeline, move |pipeline, renderer| {
+            pipeline.update_window_dimensions(renderer, new_dimensions);
+        }).unwrap();
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(world: &Rc<RefCell<World>>, _task_receiver: &mut WorldTaskReceiver) {

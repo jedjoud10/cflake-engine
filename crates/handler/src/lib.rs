@@ -1,4 +1,9 @@
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 extern crate gl;
 // include the OpenGL type aliases
 extern crate glfw;
