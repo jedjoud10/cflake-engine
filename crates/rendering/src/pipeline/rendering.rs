@@ -5,7 +5,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, lights::LightSourceType,
     },
     object::ObjectID,
     pipeline::pipec,
@@ -201,7 +201,16 @@ impl PipelineRenderer {
         let mut group = ShaderUniformsGroup::new();
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);
-        group.set_vec3f32("directional_light_dir", veclib::Vector3::<f32>::ONE.normalized());
+        // The first light source is always the directional light source
+        let directional_light_source = pipeline.get_light_source(ObjectID::new(0));
+        if let Some(light) = directional_light_source {
+            let directional = light.get_directional().unwrap();
+            group.set_vec3f32("directional_light_dir", directional.direction.normalized());
+            group.set_f32("directional_light_strength", light.strength);
+        } else {
+            // We don't have a directional light
+            group.set_f32("directional_light_strength", 0.0);
+        }
         // Textures
         group.set_texture("diffuse_texture", self.diffuse_texture, 0);
         group.set_texture("emissive_texture", self.emissive_texture, 1);

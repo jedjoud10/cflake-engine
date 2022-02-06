@@ -931,7 +931,6 @@ dependencies = [
  "math",
  "ordered_vec",
  "others",
- "smallbox",
  "smallvec",
  "veclib",
 ]
@@ -1005,12 +1004,6 @@ dependencies = [
  "ryu",
  "serde",
 ]
-
-[[package]]
-name = "smallbox"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4679d6eef28b85020158619fc09769de89e90886c5de7157587d87cb72648faa"
 
 [[package]]
 name = "smallvec"

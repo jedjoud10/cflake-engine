@@ -73,7 +73,7 @@ fn run(context: &mut Context, data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::update_callback(&pipeline, |pipeline, renderer| {
+        pipeline::pipec::update_callback(&pipeline, |pipeline, _| {
             pipeline.set_internal_camera(pipeline_camera)
         });
         drop(pipeline);

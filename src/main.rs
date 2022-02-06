@@ -73,6 +73,16 @@ fn init(mut write: core::WriteContext) {
         }
     }
 
+    // Create the directional light source
+    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::Directional::new(veclib::Vector3::ONE)).with_strength(1.0);
+    rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
+    rendering::pipeline::pipec::add_end_of_frame_callback(&pipeline, move |pipeline, renderer| {
+        let new_dir = veclib::Vector3::new(0.0, (pipeline.time.0 * 0.05).sin() as f32, (pipeline.time.0 * 0.05).cos() as f32);
+        let o = pipeline.get_light_source_mut(rendering::object::ObjectID::new(0));
+        if o.is_none() { return; }
+        let d = o.unwrap().get_directional_mut().unwrap();
+        d.direction = new_dir;
+    });
     // Load a terrain material
     // Load the shader first
     let settings = rendering::basics::shader::ShaderSettings::default()
@@ -90,10 +100,12 @@ fn init(mut write: core::WriteContext) {
     let texture_norm_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_nor_gl_2k.jpg").unwrap();
     let diffuse = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
         .unwrap()
-        .set_mipmaps(true);
+        .set_mipmaps(true)
+        .set_filter(rendering::basics::texture::TextureFilter::Nearest);
     let normals = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3])
         .unwrap()
-        .set_mipmaps(true);
+        .set_mipmaps(true)
+        .set_filter(rendering::basics::texture::TextureFilter::Nearest);
 
     let diffuse = rendering::pipeline::pipec::construct(&pipeline, diffuse).unwrap();
     let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();
@@ -101,8 +113,8 @@ fn init(mut write: core::WriteContext) {
     let material = rendering::basics::material::Material::default()
         .set_diffuse_texture(diffuse)
         .set_normals_texture(normals)
-        .set_normals_strength(10.0)
-        .set_uv_scale(veclib::Vector2::ONE * 0.05)
+        .set_normals_strength(2.0)
+        .set_uv_scale(veclib::Vector2::ONE * 0.02)
         .set_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 

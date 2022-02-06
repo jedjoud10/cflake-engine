@@ -13,7 +13,6 @@ fn run(context: &mut Context, data: EventKey) {
     let (mut query, _) = data.decompose().unwrap();
     let read = context.read().unwrap();
     let pipeline = read.pipeline.read();
-    let _i = std::time::Instant::now();
     for (_, components) in query.lock().iter() {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
@@ -29,7 +28,6 @@ fn run(context: &mut Context, data: EventKey) {
             }).unwrap();
         }
     }
-    println!("{:.2}", _i.elapsed().as_secs_f32() * 1000.0);
 }
 
 // An event fired whenever we add multiple new renderer entities

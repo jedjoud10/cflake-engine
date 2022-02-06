@@ -6,7 +6,7 @@ use crate::{
         renderer::Renderer,
         shader::{query_shader_info, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, lights::LightSource,
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
@@ -63,6 +63,7 @@ pub struct Pipeline {
     pub(crate) textures: ShareableOrderedVec<Texture>,
     pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
     pub(crate) shader_storages: ShareableOrderedVec<ShaderStorage>,
+    pub(crate) light_sources: ShareableOrderedVec<LightSource>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub defaults: Option<DefaultPipelineObjects>,
@@ -76,6 +77,8 @@ pub struct Pipeline {
 
     // End Of Frame callbacks
     pub(crate) callbacks: Arc<Mutex<Vec<Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>>>>,
+
+    pub time: (f64, f64),
 }
 
 impl Pipeline {
@@ -247,6 +250,10 @@ impl Pipeline {
     pub fn get_shader_storage(&self, id: ObjectID<ShaderStorage>) -> Option<&ShaderStorage> {
         self.shader_storages.get(id.get()?)
     }
+    // Get a light source using it's repsective ID
+    pub fn get_light_source(&self, id: ObjectID<LightSource>) -> Option<&LightSource> {
+        self.light_sources.get(id.get()?)
+    }
 
     // Mutable
     // Get a mutable material using it's respective ID
@@ -280,6 +287,10 @@ impl Pipeline {
     // Get a mutable shader storage using it's respective ID
     pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
         self.shader_storages.get_mut(id.get()?)
+    }
+    // Get a mutable light source using it's repsective ID
+    pub fn get_light_source_mut(&mut self, id: ObjectID<LightSource>) -> Option<&mut LightSource> {
+        self.light_sources.get_mut(id.get()?)
     }
 
     // Update methods
@@ -473,10 +484,12 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline_ = pipeline.write().unwrap();
             let time = time_clone.lock().unwrap();
             pipeline_.update_global_shader_uniforms(time.0, time.1);
+            pipeline_.time = *time;
             let debug = pipeline_.debugging.load(Ordering::Relaxed);
             if debug {
                 println!("Pipeline: ");
             }
+            drop(time);
             drop(pipeline_);
 
             let i = std::time::Instant::now();

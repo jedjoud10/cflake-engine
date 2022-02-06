@@ -1,7 +1,7 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
+    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, lights::LightSource},
     pipeline::Pipeline,
 };
 
@@ -15,6 +15,7 @@ pub enum ConstructionTask {
     Renderer(Construct<Renderer>),
     AtomicGroup(Construct<AtomicGroup>),
     ShaderStorage(Construct<ShaderStorage>),
+    LightSource(Construct<LightSource>),
 }
 pub struct Construct<T: PipelineObject>(pub(crate) T, pub(crate) ObjectID<T>);
 
@@ -30,6 +31,7 @@ impl ConstructionTask {
             ConstructionTask::Renderer(x) => Renderer::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::AtomicGroup(x) => AtomicGroup::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::ShaderStorage(x) => ShaderStorage::add(x.0, pipeline, x.1).unwrap(),
+            ConstructionTask::LightSource(x) => LightSource::add(x.0, pipeline, x.1).unwrap(),
         }
     }
 }

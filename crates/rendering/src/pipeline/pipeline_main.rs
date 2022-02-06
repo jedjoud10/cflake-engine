@@ -2,8 +2,6 @@
 pub mod pipec {
     use std::sync::atomic::Ordering;
 
-    use others::on_main_thread;
-
     use crate::{
         object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
         pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
