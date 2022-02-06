@@ -1,10 +1,8 @@
 use std::{
-    any::TypeId,
     cell::UnsafeCell,
     sync::{Arc, Mutex, RwLock},
 };
 
-use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use rayon::{ThreadPool, ThreadPoolBuilder};

@@ -516,14 +516,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
             let i = std::time::Instant::now();
             pipeline.execute_end_of_frame_callbacks(&mut renderer);
-
-            // Do not forget to switch buffers at the end of the frame
-            window.swap_buffers();
-
+            
             // Debug if needed
             if debug {
                 println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
             }
+            
+            // Do not forget to switch buffers at the end of the frame
+            window.swap_buffers();
+
 
             let i = std::time::Instant::now();
             let messages = rx.try_iter().collect::<Vec<PipelineTask>>();

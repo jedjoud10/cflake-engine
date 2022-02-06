@@ -1,7 +1,5 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
-
+use std::sync::Arc;
 use rendering::pipeline::PipelineContext;
-
 use crate::{data::World, GameConfig, WorldTaskReceiver};
 
 // World implementation
@@ -58,14 +56,13 @@ impl World {
     pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
-        {
-            let handler = &self.pipeline.handler.lock().unwrap();
-            let mut time = handler.time.lock().unwrap();
-            time.0 = self.time.elapsed;
-            time.1 = self.time.delta;
-            handler.sbarrier.wait();
-        }
-
+        let handler = self.pipeline.handler.lock().unwrap();
+        let mut time = handler.time.lock().unwrap();
+        time.0 = self.time.elapsed;
+        time.1 = self.time.delta;
+        handler.sbarrier.wait();
+        drop(time);
+        drop(handler);
         let system_count = self.ecs.count_systems();
         // Loop for every system and update it
         for system_index in 0..system_count {

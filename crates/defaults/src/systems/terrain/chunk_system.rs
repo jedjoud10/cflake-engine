@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use main::{
     core::World,
-    ecs::{self, entity::EntityID, event::EventKey, system::System, ECSManager},
+    ecs::{self, entity::EntityID, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
 };
@@ -40,8 +40,7 @@ fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityID) {
 }
 
 // The chunk systems' update loop
-fn run(world: &mut World, data: EventKey) {
-    let query = data.get_query().unwrap();
+fn run(world: &mut World, _data: EventKey) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {

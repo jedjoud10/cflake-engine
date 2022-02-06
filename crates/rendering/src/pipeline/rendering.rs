@@ -1,7 +1,6 @@
 use super::{InternalPipeline, Pipeline};
 use crate::{
     basics::{
-        lights::LightSourceType,
         model::Model,
         renderer::Renderer,
         shader::{Shader, ShaderSettings},

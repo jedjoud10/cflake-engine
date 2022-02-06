@@ -13,7 +13,6 @@ pub use defaults;
 use glfw::WindowHint;
 use main::core::World;
 pub use main::*;
-use std::{cell::RefCell, rc::Rc};
 
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -67,31 +66,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Update the timings
         world.time.update(new_time);
         // Get the GLFW events first
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
-            match event {
-                glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
-                    // Key event
-                    let action_id = match action_type {
-                        glfw::Action::Press => 0,
-                        glfw::Action::Release => 1,
-                        glfw::Action::Repeat => 2,
-                    };
-                    // Only accept the scancode of valid keys
-                    if key_scancode > 0 {
-                        world.input.receive_key_event(key_scancode, action_id);
-                    }
-                    if let glfw::Key::Escape = key {
-                        window.set_should_close(true);
-                    }
-                }
-                glfw::WindowEvent::Size(x, y) => world.resize_window_event(veclib::Vector2::new(x as u16, y as u16)),
-                glfw::WindowEvent::Scroll(_, scroll) => world.input.receive_mouse_scroll_event(scroll),
-                glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_position_event((x, y)),
-                _ => {}
-            }
-        }
-
+        poll_glfw_events(&mut glfw, &events, &mut world, &mut window);
+        
         // We can update the world now
         World::update_start(&mut world, &mut task_receiver);
         World::update_end(&mut world, &mut task_receiver);
@@ -100,4 +76,31 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     println!("Exiting the engine...");
     world.destroy();
     println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
+}
+// Poll the glfw events first
+fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f64, glfw::WindowEvent)>, world: &mut World, window: &mut glfw::Window) {
+    glfw.poll_events();
+    for (_, event) in glfw::flush_messages(events) {
+        match event {
+            glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
+                // Key event
+                let action_id = match action_type {
+                    glfw::Action::Press => 0,
+                    glfw::Action::Release => 1,
+                    glfw::Action::Repeat => 2,
+                };
+                // Only accept the scancode of valid keys
+                if key_scancode > 0 {
+                    world.input.receive_key_event(key_scancode, action_id);
+                }
+                if let glfw::Key::Escape = key {
+                    window.set_should_close(true);
+                }
+            }
+            glfw::WindowEvent::Size(x, y) => world.resize_window_event(veclib::Vector2::new(x as u16, y as u16)),
+            glfw::WindowEvent::Scroll(_, scroll) => world.input.receive_mouse_scroll_event(scroll),
+            glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_position_event((x, y)),
+            _ => {}
+        }
+    }
 }

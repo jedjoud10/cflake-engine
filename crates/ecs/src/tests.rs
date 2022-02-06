@@ -3,7 +3,7 @@ pub mod test {
     use crate::{
         component::{
             defaults::{Name, Tagged},
-            registry, Component,
+            registry,
         },
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
         event::EventKey,

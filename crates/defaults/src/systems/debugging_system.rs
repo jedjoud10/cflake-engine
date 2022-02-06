@@ -1,7 +1,7 @@
 use main::{core::World, ecs::event::EventKey, input::Keys};
 
 // The debugging system's update loop
-fn run(world: &mut World, data: EventKey) {
+fn run(world: &mut World, _data: EventKey) {
     // Check if we need to debug
     let pipeline = world.pipeline.read();
     if world.input.map_pressed("debug") {
