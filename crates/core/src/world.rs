@@ -51,47 +51,47 @@ impl World {
         let pipeline = self.pipeline.read();
         rendering::pipeline::pipec::update_callback(&pipeline, move |pipeline, renderer| {
             pipeline.update_window_dimensions(renderer, new_dimensions);
-        }).unwrap();
+        })
+        .unwrap();
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(world: &mut World, _task_receiver: &mut WorldTaskReceiver) {
-        // While we do world logic, start rendering the frame on the other thread            
+    pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+        // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
         {
-            let handler = &world.pipeline.handler.lock().unwrap();
+            let handler = &self.pipeline.handler.lock().unwrap();
             let mut time = handler.time.lock().unwrap();
-            time.0 = world.time.elapsed;
-            time.1 = world.time.delta;
+            time.0 = self.time.elapsed;
+            time.1 = self.time.delta;
             handler.sbarrier.wait();
         }
 
-        let system_count = world.ecs.count_systems();
+        let system_count = self.ecs.count_systems();
         // Loop for every system and update it
         for system_index in 0..system_count {
             let execution_data = {
-                let system = &world.ecs.get_systems()[system_index];
-                system.run_system(&world.ecs)
+                let system = &self.ecs.get_systems()[system_index];
+                system.run_system(&self.ecs)
             };
             // Actually execute the system now
-            execution_data.run(world);
+            execution_data.run(self);
             {
                 // Flush all the commends that we have dispatched during the system's frame execution
-                _task_receiver.flush(world);
-                let system = &world.ecs.get_systems()[system_index];
+                _task_receiver.flush(self);
+                let system = &self.ecs.get_systems()[system_index];
                 system.clear::<World>();
             }
         }
         // Finish update
-        world.ecs.finish_update();
+        self.ecs.finish_update();
     }
     // End frame update
-    pub fn update_end(world: &Rc<RefCell<Self>>, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
         // End the frame
         {
-            let mut world = world.try_borrow_mut().unwrap();
-            let delta = world.time.delta as f32;
-            world.input.late_update(delta);
-            let handler = &world.pipeline.handler.lock().unwrap();
+            let delta = self.time.delta as f32;
+            self.input.late_update(delta);
+            let handler = &self.pipeline.handler.lock().unwrap();
             handler.ebarrier.wait();
         }
     }

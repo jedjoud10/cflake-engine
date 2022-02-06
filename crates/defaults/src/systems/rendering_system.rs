@@ -1,23 +1,21 @@
 use main::{
-    core::{Context, WriteContext},
+    core::World,
     ecs::event::EventKey,
-    rendering::{
-        object::{ObjectID},
-        pipeline::pipec,
-    },
+    rendering::{object::ObjectID, pipeline::pipec},
 };
 
 // The rendering system update loop
-fn run(context: &mut Context, data: EventKey) {
+fn run(world: &mut World, data: EventKey) {
     // For each renderer, we must update it's pipeline transform and other values
     let mut query = data.get_query().unwrap();
-    let read = context.read().unwrap();
-    let pipeline = read.pipeline.read();
+    let pipeline = world.pipeline.read();
     for (_, components) in query.lock().iter() {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
         let renderer_object_id = renderer.object_id;
-        if renderer_object_id.is_some() /* && components.component_update::<crate::components::Transform>().unwrap()  */{
+        if renderer_object_id.is_some()
+        /* && components.component_update::<crate::components::Transform>().unwrap()  */
+        {
             // Update the values if our renderer is valid
             let matrix = transform.calculate_matrix();
             pipec::update_callback(&pipeline, move |pipeline, _| {
@@ -25,12 +23,13 @@ fn run(context: &mut Context, data: EventKey) {
                 if let Some(gpu_renderer) = gpu_renderer {
                     gpu_renderer.update_matrix(matrix);
                 }
-            }).unwrap();
+            })
+            .unwrap();
         }
     }
 
     // Also update the direction of the sun (internally stored as a Directional Light)
-    let global = read.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
+    let global = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
     let (dir, id) = (global.sun_dir, pipeline.defaults.as_ref().unwrap().sun);
     pipec::update_callback(&pipeline, move |pipeline, _| {
         // Update the sun's light source, if possible
@@ -41,13 +40,12 @@ fn run(context: &mut Context, data: EventKey) {
 }
 
 // An event fired whenever we add multiple new renderer entities
-fn added_entities(context: &mut Context, data: EventKey) {
+fn added_entities(world: &mut World, data: EventKey) {
     // For each renderer, we must create it's pipeline renderer construction task
     let mut query = data.get_query().unwrap();
     for (_, components) in query.lock().iter_mut() {
         // Get the pipeline first
-        let read = context.read().unwrap();
-        let pipeline = read.pipeline.read();
+        let pipeline = world.pipeline.read();
 
         // Get the CPU renderer that we must construct
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
@@ -58,13 +56,12 @@ fn added_entities(context: &mut Context, data: EventKey) {
 }
 
 // An event fired whenever we remove multiple renderer entities
-fn removed_entities(context: &mut Context, data: EventKey) {
+fn removed_entities(world: &mut World, data: EventKey) {
     // For each renderer, we must dispose of it's GPU renderer
     let mut query = data.get_query().unwrap();
     for (_, components) in query.lock().iter_mut() {
         // Get the pipeline first
-        let read = context.read().unwrap();
-        let pipeline = read.pipeline.read();
+        let pipeline = world.pipeline.read();
 
         // Then get the ID of the GPU renderer
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
@@ -77,8 +74,8 @@ fn removed_entities(context: &mut Context, data: EventKey) {
 }
 
 // Create the rendering system
-pub fn system(write: &mut WriteContext) {
-    write
+pub fn system(world: &mut World) {
+    world
         .ecs
         .create_system_builder()
         .with_run_event(run)

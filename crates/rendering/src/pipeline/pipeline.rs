@@ -1,12 +1,13 @@
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
     basics::{
+        lights::LightSource,
         material::Material,
         model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{query_shader_info, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, lights::LightSource,
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},

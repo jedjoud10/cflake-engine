@@ -1,11 +1,12 @@
 use super::{InternalPipeline, Pipeline};
 use crate::{
     basics::{
+        lights::LightSourceType,
         model::Model,
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, lights::LightSourceType,
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
     },
     object::ObjectID,
     pipeline::pipec,

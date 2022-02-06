@@ -19,4 +19,3 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
     };
     output.into()
 }
-

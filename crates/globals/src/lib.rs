@@ -1,7 +1,7 @@
-mod global_collection;
-mod global;
-mod registry;
 mod error;
+mod global;
+mod global_collection;
+mod registry;
 pub use global::*;
-pub use globals_derive::*;
 pub use global_collection::*;
+pub use globals_derive::*;

@@ -1,18 +1,13 @@
+use main::core::World;
+use main::rendering::pipeline::pipec;
 use std::sync::{Arc, Mutex};
 
-use main::core::{Context, WriteContext};
-use main::ecs::event::EventKey;
-use main::rendering::pipeline::pipec;
-
-// We now must render the UI roots on the render thread
-fn run(_context: &mut Context, _data: EventKey) {}
-
 // Create the system
-pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().with_run_event(run).build();
+pub fn system(world: &mut World) {
+    world.ecs.create_system_builder().build();
     // We must create the pipeline End of Frame callback and tell it to render our UI
-    let arc_roots_clone = write.ui.roots.clone();
-    let pipeline = write.pipeline.read();
+    let arc_roots_clone = world.ui.roots.clone();
+    let pipeline = world.pipeline.read();
     // We must create the UI renderer on the main thread, but we later send it to the render thread for rendering
     let renderer = Arc::new(Mutex::new(main::ui::Renderer::new(&pipeline)));
     pipec::add_end_of_frame_callback(&pipeline, move |pipeline, _| {

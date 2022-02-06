@@ -1,14 +1,10 @@
-use main::{
-    core::{Context, WriteContext},
-    ecs::event::EventKey,
-};
+use main::{core::World, ecs::event::EventKey};
 
 // The physics system update loop
-fn run(context: &mut Context, data: EventKey) {
-    let read = context.read().unwrap();
+fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
     // Get the world's delta time
-    let delta = read.time.delta as f32;
+    let delta = world.time.delta as f32;
 
     // For each physics object, we must update the internal physics values and apply them to our transform
     for (_, components) in query.lock().iter_mut() {
@@ -29,8 +25,8 @@ fn run(context: &mut Context, data: EventKey) {
 }
 
 // Create the physics system
-pub fn system(write: &mut WriteContext) {
-    write
+pub fn system(world: &mut World) {
+    world
         .ecs
         .create_system_builder()
         .with_run_event(run)

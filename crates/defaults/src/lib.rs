@@ -1,6 +1,5 @@
 #![feature(int_roundings)]
-use main::assets::preload_asset;
-use main::core::WriteContext;
+use main::{assets::preload_asset, core::World};
 use systems::{camera_system, debugging_system, physics_system, rendering_system, terrain, ui_system, window_system};
 // Default components
 pub mod components;
@@ -60,22 +59,22 @@ pub fn preload_default_assets() {
     println!("Finished pre-loading default assets!");
 }
 // Pre-load the default systems
-pub fn preload_system(mut write: WriteContext) {
-    template_system::system(&mut write);
-    camera_system::system(&mut write);
-    physics_system::system(&mut write);
-    rendering_system::system(&mut write);
-    debugging_system::system(&mut write);
-    window_system::system(&mut write);
-    ui_system::system(&mut write);
-    //test_system::system(&mut write);
+pub fn preload_system(world: &mut World) {
+    template_system::system(world);
+    camera_system::system(world);
+    physics_system::system(world);
+    rendering_system::system(world);
+    debugging_system::system(world);
+    window_system::system(world);
+    ui_system::system(world);
+    //test_system::system(world);
     // Terrain
-    terrain::chunk_system::system(&mut write);
-    terrain::voxel_system::system(&mut write);
-    terrain::mesher_system::system(&mut write);
+    terrain::chunk_system::system(world);
+    terrain::voxel_system::system(world);
+    terrain::mesher_system::system(world);
 
-    // We gotta add the global world data
-    write.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
+    // We gotta add the globa
+    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
 }
 /*
 pub fn preload_systems() {

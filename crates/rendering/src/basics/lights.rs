@@ -1,9 +1,12 @@
+use crate::{
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
+    pipeline::Pipeline,
+};
 use enum_as_inner::EnumAsInner;
-use crate::{object::{PipelineObject, ObjectID, ConstructionTask, Construct, DeconstructionTask, Deconstruct}, pipeline::Pipeline};
 
 // A light type
 #[derive(EnumAsInner)]
-pub enum LightSourceType {  
+pub enum LightSourceType {
     Directional { dir: veclib::Vector3<f32> },
 }
 
@@ -32,7 +35,7 @@ impl PipelineObject for LightSource {
     fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // We must return an error if we try to add multiple directional lights at the same time
         if pipeline.defaults.as_ref().unwrap().sun.is_some() && self._type.as_directional().is_some() {
-            return None
+            return None;
         }
 
         // We do not have a sun direction light yet, so if we are a light source of type "directional", we must add ourselves
@@ -55,7 +58,7 @@ impl LightSource {
         Self {
             _type,
             color: veclib::Vector3::ONE,
-            strength: 1.0
+            strength: 1.0,
         }
     }
     // Create this light source with a specififed strength

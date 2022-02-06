@@ -1,6 +1,6 @@
 use main::{
+    ecs::entity::EntityID,
     globals::Global,
-    ecs::{entity::EntityID},
     math::octrees::{DiffOctree, HeuristicSettings},
     rendering::{
         advanced::{

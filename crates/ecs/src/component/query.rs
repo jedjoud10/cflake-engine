@@ -2,9 +2,7 @@ use super::{query_guard::ComponentQueryGuard, LinkedComponents};
 use crate::entity::EntityID;
 use ahash::AHashMap;
 use rayon::ThreadPool;
-use std::{
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL

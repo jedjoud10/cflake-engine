@@ -1,22 +1,21 @@
-use main::core::{Context, WriteContext};
+use main::core::World;
 use main::ecs::event::EventKey;
 use main::input::Keys;
 
 // The window system's update loop
-fn run(context: &mut Context, _data: EventKey) {
-    let read = context.read().unwrap();
-    let pipeline = read.pipeline.read();
-    if read.input.map_changed("toggle_fullscreen") {
-        pipeline.window.set_fullscreen(read.input.map_toggled("toggle_fullscreen"));
+fn run(world: &mut World, _data: EventKey) {
+    let pipeline = world.pipeline.read();
+    if world.input.map_changed("toggle_fullscreen") {
+        pipeline.window.set_fullscreen(world.input.map_toggled("toggle_fullscreen"));
     }
-    if read.input.map_changed("toggle_vsync") {
-        pipeline.window.set_vsync(read.input.map_toggled("toggle_vsync"));
+    if world.input.map_changed("toggle_vsync") {
+        pipeline.window.set_vsync(world.input.map_toggled("toggle_vsync"));
     }
 }
 
 // Create a system that'll allow us to disable/enable fullscreen and vsync
-pub fn system(write: &mut WriteContext) {
-    write.ecs.create_system_builder().with_run_event(run).build();
-    write.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
-    write.input.bind_key_toggle(Keys::F6, "toggle_vsync");
+pub fn system(world: &mut World) {
+    world.ecs.create_system_builder().with_run_event(run).build();
+    world.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
+    world.input.bind_key_toggle(Keys::F6, "toggle_vsync");
 }

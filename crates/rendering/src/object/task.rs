@@ -1,5 +1,5 @@
-use crate::{pipeline::{Pipeline, PipelineRenderer}};
 use super::{tracked::TrackedTask, ConstructionTask, DeconstructionTask, ReservedTrackedID};
+use crate::pipeline::{Pipeline, PipelineRenderer};
 
 // A main pipeline task
 pub(crate) enum PipelineTask {

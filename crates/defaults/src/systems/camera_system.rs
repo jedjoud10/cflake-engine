@@ -1,13 +1,12 @@
-use main::core::{Context, WriteContext};
+use main::core::World;
 use main::ecs::event::EventKey;
 use main::input::Keys;
 
 // The camera system update loop
-fn run(context: &mut Context, data: EventKey) {
+fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
-    let mut write = context.write().unwrap();
     // Rotate the camera around
-    let mouse_pos = write.input.get_mouse_position();
+    let mouse_pos = world.input.get_mouse_position();
     const SENSIVITY: f32 = 0.001;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
@@ -21,34 +20,34 @@ fn run(context: &mut Context, data: EventKey) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 0.1 + (write.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * write.time.delta as f32;
-    let fov_delta = if write.input.map_held("camera_zoom") {
+    let original_speed = 0.1 + (world.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
+    let fov_delta = if world.input.map_held("camera_zoom") {
         1.0
-    } else if write.input.map_held("camera_unzoom") {
+    } else if world.input.map_held("camera_unzoom") {
         -1.0
     } else {
         0.0
-    } * write.time.delta as f32
+    } * world.time.delta as f32
         * 10.0;
 
     // Actually update the velocity
     // Forward and backward
-    if write.input.map_held("camera_forward") {
+    if world.input.map_held("camera_forward") {
         velocity += -forward * speed;
-    } else if write.input.map_held("camera_backwards") {
+    } else if world.input.map_held("camera_backwards") {
         velocity += forward * speed;
     }
     // Left and right
-    if write.input.map_held("camera_right") {
+    if world.input.map_held("camera_right") {
         velocity += right * speed;
-    } else if write.input.map_held("camera_left") {
+    } else if world.input.map_held("camera_left") {
         velocity += -right * speed;
     }
     // Up and down
-    if write.input.map_held("camera_up") {
+    if world.input.map_held("camera_up") {
         velocity += up * speed;
-    } else if write.input.map_held("camera_down") {
+    } else if world.input.map_held("camera_down") {
         velocity += -up * speed;
     }
     // Update the camera values now
@@ -61,7 +60,7 @@ fn run(context: &mut Context, data: EventKey) {
         camera.horizontal_fov += fov_delta;
         // And don't forget to update the camera matrices
         // Load the pipeline since we need to get the window settings
-        let pipeline = write.pipeline.read();
+        let pipeline = world.pipeline.read();
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
 
@@ -73,34 +72,32 @@ fn run(context: &mut Context, data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::update_callback(&pipeline, |pipeline, _| {
-            pipeline.set_internal_camera(pipeline_camera)
-        });
+        pipeline::pipec::update_callback(&pipeline, |pipeline, _| pipeline.set_internal_camera(pipeline_camera));
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global
-        let mut global = write.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
+        let mut global = world.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
         global.camera_pos = position;
         global.camera_dir = rotation.mul_point(veclib::Vector3::Z);
     }
 }
 
 // Create the camera system
-pub fn system(write: &mut WriteContext) {
-    write
+pub fn system(world: &mut World) {
+    world
         .ecs
         .create_system_builder()
         .with_run_event(run)
         .link::<crate::components::Camera>()
         .link::<crate::components::Transform>()
         .build();
-    write.input.bind_key(Keys::W, "camera_forward");
-    write.input.bind_key(Keys::S, "camera_backwards");
-    write.input.bind_key(Keys::D, "camera_right");
-    write.input.bind_key(Keys::A, "camera_left");
-    write.input.bind_key(Keys::Space, "camera_up");
-    write.input.bind_key(Keys::LeftShift, "camera_down");
-    write.input.bind_key(Keys::Z, "camera_zoom");
-    write.input.bind_key(Keys::X, "camera_unzoom");
-    write.input.bind_key(Keys::RightShift, "cull_update");
+    world.input.bind_key(Keys::W, "camera_forward");
+    world.input.bind_key(Keys::S, "camera_backwards");
+    world.input.bind_key(Keys::D, "camera_right");
+    world.input.bind_key(Keys::A, "camera_left");
+    world.input.bind_key(Keys::Space, "camera_up");
+    world.input.bind_key(Keys::LeftShift, "camera_down");
+    world.input.bind_key(Keys::Z, "camera_zoom");
+    world.input.bind_key(Keys::X, "camera_unzoom");
+    world.input.bind_key(Keys::RightShift, "cull_update");
 }

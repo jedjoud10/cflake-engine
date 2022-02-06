@@ -1,7 +1,7 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture, lights::LightSource},
+    basics::{lights::LightSource, material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
     pipeline::Pipeline,
 };
 

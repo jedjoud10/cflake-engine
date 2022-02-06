@@ -16,16 +16,16 @@ fn preload_assets() {
     assets::preload_asset!(".\\resources\\user\\textures\\saber.png");
     assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
 }
-fn init(mut write: core::WriteContext) {
+fn init(world: &mut core::World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
     group.link(defaults::components::Camera::new(90.0, 2.0, 20000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
-    let id = ecs::entity::EntityID::new(&mut write.ecs);
-    write.ecs.add_entity(entity, id, group).unwrap();
-    let pipeline_ = write.pipeline.clone();
+    let id = ecs::entity::EntityID::new(&mut world.ecs);
+    world.ecs.add_entity(entity, id, group).unwrap();
+    let pipeline_ = world.pipeline.clone();
     let pipeline = pipeline_.read();
     // Create it's model
     let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
@@ -54,7 +54,7 @@ fn init(mut write: core::WriteContext) {
         for y in 0..2 {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
-            let id = ecs::entity::EntityID::new(&mut write.ecs);
+            let id = ecs::entity::EntityID::new(&mut world.ecs);
             let matrix = defaults::components::Transform::default().calculate_matrix();
             group
                 .link::<defaults::components::Transform>(defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 2.2, 0.0, x as f32 * 2.2)))
@@ -69,15 +69,14 @@ fn init(mut write: core::WriteContext) {
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
             // Add the cube
-            write.ecs.add_entity(entity, id, group).unwrap();
+            world.ecs.add_entity(entity, id, group).unwrap();
         }
     }
 
     // Create the directional light source
     let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional { dir: veclib::Vector3::ZERO }).with_strength(1.0);
-    let mut global_fetcher = write.ecs.create_global_fetcher();
-    let global1 = write.ecs.get_global::<defaults::globals::GlobalWorldData>(global_fetcher).unwrap();
-    dbg!(global1.camera_dir);
+    let mut world_global = world.globals.get_global_mut::<defaults::globals::GlobalWorldData>().unwrap();
+    world_global.sun_dir = veclib::Vector3::new(1.0, 0.5, 0.0_f32).normalized();
     rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
     // Load a terrain material
     // Load the shader first
@@ -128,5 +127,5 @@ fn init(mut write: core::WriteContext) {
         .set_heuristic(heuristic)
         .set_material(material)
         .set_uniforms(uniforms);
-    write.ecs.add_global(terrain).unwrap();
+    world.globals.add_global(terrain).unwrap();
 }

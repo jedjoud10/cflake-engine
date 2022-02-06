@@ -1,7 +1,7 @@
+use crate::WorldTask;
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::sync::{mpsc::Sender, Mutex};
-use crate::WorldTask;
 
 // We will store a global sender, that way we can copy it to the other threads using an init coms method
 lazy_static! {

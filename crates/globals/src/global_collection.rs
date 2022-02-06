@@ -2,7 +2,10 @@ use std::{any::TypeId, cell::UnsafeCell};
 
 use ahash::AHashMap;
 
-use crate::{global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard}, error::GlobalError};
+use crate::{
+    error::GlobalError,
+    global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
+};
 
 // A struct that will be stored in the world that will contain some globals
 #[derive(Default)]
@@ -10,7 +13,7 @@ pub struct GlobalCollection {
     pub(crate) globals: AHashMap<TypeId, UnsafeCell<EnclosedGlobalComponent>>,
 }
 
-impl GlobalCollection {    
+impl GlobalCollection {
     // The reason why we can access global components but not normal components:
     // Since the normal components might be mutated in multiple threads, we cannot read from multiple components at the same time or we might cause UB.
     // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB

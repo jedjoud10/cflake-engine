@@ -12,8 +12,9 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use crate::{
     component::{ComponentID, EnclosedComponent, LinkedComponents},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+    event::EventHandler,
     system::{System, SystemBuilder},
-    utils::{ComponentError, EntityError}, event::EventHandler,
+    utils::{ComponentError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -36,10 +37,7 @@ impl<World> ECSManager<World> {
     // Create a new ECS manager
     pub fn new() -> Self {
         // Start the rayon thread pool
-        let pool = ThreadPoolBuilder::new()
-            .num_threads(4)
-            .build()
-            .unwrap();
+        let pool = ThreadPoolBuilder::new().num_threads(4).build().unwrap();
         Self {
             entities: Default::default(),
             entities_to_remove: Default::default(),
