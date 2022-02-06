@@ -14,11 +14,11 @@ pub struct ShadowMapping {
     pub(crate) framebuffer: u32,
     pub(crate) depth_texture: ObjectID<Texture>,
     pub(crate) ortho_matrix: veclib::Matrix4x4<f32>,
-    pub(crate) view_matrix: veclib::Matrix4x4<f32>,
     pub(crate) shadow_shader: ObjectID<Shader>,
+    pub(crate) lightspace_matrix: veclib::Matrix4x4<f32>,
 }
 
-const SHADOW_RES: u16 = 512;
+const SHADOW_RES: u16 = 1024;
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
     pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a ModelBuffers, usize)> {
@@ -28,12 +28,12 @@ impl ShadowMapping {
         let model_matrix = &renderer.matrix;
 
         // Calculate the light space matrix
-        let lightspace_matrix: veclib::Matrix4x4<f32> = self.ortho_matrix * self.view_matrix * *model_matrix;
+        let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *model_matrix;
 
         // Pass the light space matrix to the shader
         let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(shader));
         let mut group = ShaderUniformsGroup::new();
-        group.set_mat44f32("lightspace_matrix", lightspace_matrix);
+        group.set_mat44f32("lsm_matrix", lsm);
 
         // Update the uniforms
         group.execute(pipeline, settings).unwrap();
@@ -51,7 +51,8 @@ impl ShadowMapping {
         let texture = Texture::default()
             .set_dimensions(TextureType::Texture2D(SHADOW_RES, SHADOW_RES))
             .set_filter(TextureFilter::Nearest)
-            .set_wrapping_mode(TextureWrapping::Repeat)
+            .set_wrapping_mode(TextureWrapping::ClampToBorder)
+            .set_border_colors([veclib::Vector4::<f32>::ONE; 4])
             .set_format(TextureFormat::DepthComponent32);
         let texture = pipec::construct(pipeline, texture).unwrap();
         pipeline.flush(internal, renderer);
@@ -65,9 +66,9 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 40.0;
-        const NEAR: f32 = 1.0;
-        const FAR: f32 = 160.0;
+        const DIMS: f32 = 200.0;
+        const NEAR: f32 = -3000.0;
+        const FAR: f32 = 3000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
 
         // Load our custom shadow shader
@@ -81,15 +82,16 @@ impl ShadowMapping {
             framebuffer: fbo,
             depth_texture: texture,
             ortho_matrix,
-            view_matrix: veclib::Matrix4x4::IDENTITY,
             shadow_shader: shader, 
+            lightspace_matrix: veclib::Matrix4x4::IDENTITY,
         }
     }
     // Update the internally stored view matrix with the new direction of our sun
     pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>) {
         let forward = new_quat.mul_point(veclib::Vector3::Z);
         let up = new_quat.mul_point(veclib::Vector3::Y);
-        self.view_matrix = veclib::Matrix4x4::<f32>::look_at(&(forward * 20.0), &up, &veclib::Vector3::ZERO)
+        let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
+        self.lightspace_matrix = self.ortho_matrix * view_matrix;
     }
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self) {

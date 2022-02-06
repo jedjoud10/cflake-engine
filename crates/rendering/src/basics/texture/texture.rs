@@ -35,6 +35,8 @@ pub struct Texture {
     pub filter: TextureFilter,
     // What kind of wrapping will we use for this texture
     pub wrap_mode: TextureWrapping,
+    // The border colors
+    pub border_colors: [veclib::Vector4<f32>; 4],
     // The dimensions of the texture and it's texture type
     pub ttype: TextureType,
     // How we access this texture on the CPU
@@ -59,6 +61,7 @@ impl Default for Texture {
 
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
+            border_colors: [veclib::Vector4::<f32>::ZERO; 4],
             ttype: TextureType::Texture2D(0, 0),
             cpu_access: TextureAccessType::empty(),
             write_pbo: None,
@@ -221,6 +224,10 @@ impl PipelineObject for Texture {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
+            // And also border colors
+            use veclib::Vector;
+            let ptr = self.border_colors.get(0).unwrap().as_ptr();
+            gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
         }
 
         // Add the texture
@@ -295,6 +302,11 @@ impl Texture {
     // Set the wrapping mode
     pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
         self.wrap_mode = wrapping_mode;
+        self
+    }
+    // Set the border colors
+    pub fn set_border_colors(mut self, colors: [veclib::Vector4<f32>; 4]) -> Self {
+        self.border_colors = colors;
         self
     }
     // Zip up all the pixel bytes from multiple textures

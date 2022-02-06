@@ -240,10 +240,12 @@ impl PipelineRenderer {
             let directional = light._type.as_directional().unwrap();
             group.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
             group.set_f32("directional_light_strength", light.strength);
+            group.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
         } else {
             // We don't have a directional light, so we must set the default values
             group.set_vec3f32("directional_light_dir", veclib::Vector3::ZERO);
             group.set_f32("directional_light_strength", 0.0);
+            group.set_mat44f32("lightspace_matrix", veclib::Matrix4x4::IDENTITY);
         }
         // Textures
         group.set_texture("diffuse_texture", self.diffuse_texture, 0);

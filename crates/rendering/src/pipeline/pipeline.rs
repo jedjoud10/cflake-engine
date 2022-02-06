@@ -485,6 +485,7 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             sbarrier_clone.wait();
             waiting_clone.store(false, Ordering::Relaxed);
             // This is a single frame
+            let pipeline_frame_instant = std::time::Instant::now();
             let mut pipeline_ = pipeline.write().unwrap();
             let time = time_clone.lock().unwrap();
             pipeline_.update_global_shader_uniforms(time.0, time.1);
@@ -510,7 +511,9 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let eof_callbacks_duration = i.elapsed();
             
             // Do not forget to switch buffers at the end of the frame
+            let i = std::time::Instant::now();
             window.swap_buffers();
+            let swap_buffers_duration = i.elapsed();
 
             let i = std::time::Instant::now();
             let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
@@ -523,9 +526,11 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             // Debug if needed
             if debug {
                 println!("Pipeline: ");
+                println!("  #Pipeline Whole Frame Time: {:.2}ms", pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0);
                 println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
                 println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
                 println!("  #Pipeline Update Execution Time: {:.2}ms", update_duration.as_secs_f32() * 1000.0);
+                println!("  #Pipeline Swap Buffers Time: {:.2}ms", swap_buffers_duration.as_secs_f32() * 1000.0);
             }
 
             // Check if we must exit from the render thread
