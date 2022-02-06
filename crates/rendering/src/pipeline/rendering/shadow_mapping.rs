@@ -6,7 +6,7 @@ use crate::{
 
 use super::PipelineRenderer;
 
-// Struct containing everything related to shadow mapping for the main directional light
+// Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 #[derive(Default)]
 pub struct ShadowMapping {
@@ -65,9 +65,9 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 20.0;
+        const DIMS: f32 = 40.0;
         const NEAR: f32 = 1.0;
-        const FAR: f32 = 60.0;
+        const FAR: f32 = 160.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
 
         // Load our custom shadow shader
@@ -86,8 +86,10 @@ impl ShadowMapping {
         }
     }
     // Update the internally stored view matrix with the new direction of our sun
-    pub(crate) fn update_view_matrix(&mut self, new_dir: veclib::Vector3<f32>) {
-        self.view_matrix = veclib::Matrix4x4::<f32>::look_at(&(new_dir * 10.0), &veclib::Vector3::Y, &veclib::Vector3::ZERO)
+    pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>) {
+        let forward = new_quat.mul_point(veclib::Vector3::Z);
+        let up = new_quat.mul_point(veclib::Vector3::Y);
+        self.view_matrix = veclib::Matrix4x4::<f32>::look_at(&(-forward * 10.0), &up, &veclib::Vector3::ZERO)
     }
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self) {

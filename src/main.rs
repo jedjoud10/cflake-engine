@@ -74,9 +74,9 @@ fn init(world: &mut core::World) {
     }
 
     // Create the directional light source
-    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional { dir: veclib::Vector3::ZERO }).with_strength(1.0);
+    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional { quat: veclib::Quaternion::IDENTITY }).with_strength(1.0);
     let mut world_global = world.globals.get_global_mut::<defaults::globals::GlobalWorldData>().unwrap();
-    world_global.sun_dir = veclib::Vector3::new(1.0, 0.5, 0.0_f32).normalized();
+    world_global.sun_quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, 80.0);
     rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
     // Load a terrain material
     // Load the shader first

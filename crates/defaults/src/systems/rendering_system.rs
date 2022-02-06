@@ -29,13 +29,13 @@ fn run(world: &mut World, data: EventKey) {
 
     // Also update the direction of the sun (internally stored as a Directional Light)
     let global = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
-    let (dir, id) = (global.sun_dir, pipeline.defaults.as_ref().unwrap().sun);
+    let (quat, id) = (global.sun_quat, pipeline.defaults.as_ref().unwrap().sun);
     let time = world.time.elapsed;
     pipec::update_callback(&pipeline, move |pipeline, _| {
         // Update the sun's light source, if possible
         if let Some(light) = pipeline.get_light_source_mut(id) {
-            //let mut dir = veclib::Vector3::new((time * 0.05).sin() as f32, (time * 0.05).cos() as f32, 0.0);
-            *light._type.as_directional_mut().unwrap() = dir;
+            let mut quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, (time * 0.2).sin() as f32);
+            *light._type.as_directional_mut().unwrap() = quat;
         }
     });
 }
