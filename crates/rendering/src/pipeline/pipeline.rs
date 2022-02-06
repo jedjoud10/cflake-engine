@@ -34,6 +34,8 @@ pub struct DefaultPipelineObjects {
     pub shader: ObjectID<Shader>,
     pub material: ObjectID<Material>,
     pub model: ObjectID<Model>,
+    // This value might change, since the user might remove the directional light
+    pub sun: ObjectID<LightSource>,
 }
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
@@ -369,6 +371,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         shader,
         material,
         model,
+        sun: ObjectID::new(0),
     }
 }
 // Initialize OpenGL

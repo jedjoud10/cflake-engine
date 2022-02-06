@@ -202,13 +202,14 @@ impl PipelineRenderer {
         group.set_vec2i32("resolution", dimensions.into());
         group.set_vec2f32("nf_planes", camera.clip_planes);
         // The first light source is always the directional light source
-        let directional_light_source = pipeline.get_light_source(ObjectID::new(0));
+        let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
-            let directional = light.get_directional().unwrap();
+            let directional = light._type.as_directional().unwrap();
             group.set_vec3f32("directional_light_dir", directional.direction.normalized());
             group.set_f32("directional_light_strength", light.strength);
         } else {
-            // We don't have a directional light
+            // We don't have a directional light, so we must set the default values
+            group.set_vec3f32("directional_light_dir", veclib::Vector3::ZERO);
             group.set_f32("directional_light_strength", 0.0);
         }
         // Textures

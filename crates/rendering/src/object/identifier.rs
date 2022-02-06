@@ -60,7 +60,7 @@ where
     T: PipelineObject,
 {
     // Create a new object ID using an actual index
-    pub fn new(id: u64) -> Self {
+    pub(crate) fn new(id: u64) -> Self {
         Self {
             id: Some(id),
             _phantom: PhantomData::default(),

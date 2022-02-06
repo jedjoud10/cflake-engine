@@ -76,13 +76,6 @@ fn init(mut write: core::WriteContext) {
     // Create the directional light source
     let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::Directional::new(veclib::Vector3::ONE)).with_strength(1.0);
     rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
-    rendering::pipeline::pipec::add_end_of_frame_callback(&pipeline, move |pipeline, renderer| {
-        let new_dir = veclib::Vector3::new(0.0, (pipeline.time.0 * 0.05).sin() as f32, (pipeline.time.0 * 0.05).cos() as f32);
-        let o = pipeline.get_light_source_mut(rendering::object::ObjectID::new(0));
-        if o.is_none() { return; }
-        let d = o.unwrap().get_directional_mut().unwrap();
-        d.direction = new_dir;
-    });
     // Load a terrain material
     // Load the shader first
     let settings = rendering::basics::shader::ShaderSettings::default()
