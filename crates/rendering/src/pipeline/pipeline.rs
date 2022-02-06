@@ -490,24 +490,15 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             pipeline_.update_global_shader_uniforms(time.0, time.1);
             pipeline_.time = *time;
             let debug = pipeline_.debugging.load(Ordering::Relaxed);
-            if debug {
-                println!("Pipeline: ");
-            }
+            
             drop(time);
             drop(pipeline_);
 
             let i = std::time::Instant::now();
-            // We render the entities here
+            // We render the scene here
             let pipeline_ = pipeline.read().unwrap();
-            renderer.pre_render();
             renderer.render_frame(&*pipeline_);
-            renderer.post_render(&*pipeline_);
-
-            // Debug if needed
-            if debug {
-                println!("  #Pipeline Render Frame Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-            }
-
+            let render_frame_duration = i.elapsed();
             // And we also sync at the end of each frame
             ebarrier_clone.wait();
             drop(pipeline_);
@@ -516,26 +507,25 @@ pub fn init_pipeline(glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> Pipeli
             let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
             let i = std::time::Instant::now();
             pipeline.execute_end_of_frame_callbacks(&mut renderer);
-
-            // Debug if needed
-            if debug {
-                println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-            }
-
+            let eof_callbacks_duration = i.elapsed();
+            
             // Do not forget to switch buffers at the end of the frame
             window.swap_buffers();
 
             let i = std::time::Instant::now();
             let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
             // Set the buffer
-            pipeline.add_tasks(messages);
-
+            pipeline.add_tasks(messages);            
             // Execute the tasks
             pipeline.update(&mut internal, &mut renderer);
-
+            let update_duration = i.elapsed();
+            
             // Debug if needed
             if debug {
-                println!("  #Pipeline Update Execution Time: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
+                println!("Pipeline: ");
+                println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
+                println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
+                println!("  #Pipeline Update Execution Time: {:.2}ms", update_duration.as_secs_f32() * 1000.0);
             }
 
             // Check if we must exit from the render thread

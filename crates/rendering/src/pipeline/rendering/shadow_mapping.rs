@@ -89,7 +89,7 @@ impl ShadowMapping {
     pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>) {
         let forward = new_quat.mul_point(veclib::Vector3::Z);
         let up = new_quat.mul_point(veclib::Vector3::Y);
-        self.view_matrix = veclib::Matrix4x4::<f32>::look_at(&(-forward * 10.0), &up, &veclib::Vector3::ZERO)
+        self.view_matrix = veclib::Matrix4x4::<f32>::look_at(&(forward * 20.0), &up, &veclib::Vector3::ZERO)
     }
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self) {

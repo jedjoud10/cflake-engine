@@ -65,7 +65,7 @@ impl PipelineRenderer {
         Some((&model.1, model.0.triangles.len(), material))
     }
     // Render a single renderer
-    fn render(&self, pipeline: &Pipeline, buffers: &ModelBuffers, triangle_count: usize, double_sided: bool) -> Option<()> {
+    fn render(&self, buffers: &ModelBuffers, triangle_count: usize, double_sided: bool) -> Option<()> {
         unsafe {
             // Enable / Disable vertex culling for double sided materials
             if double_sided {
@@ -178,8 +178,8 @@ impl PipelineRenderer {
         pipeline.flush(internal, self);
         println!("Successfully initialized the RenderPipeline Renderer!");
     }
-    // Pre-render event
-    pub(crate) fn pre_render(&self) {
+    // Prepare the FBO and clear the buffers
+    fn prepare_for_rendering(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -187,30 +187,42 @@ impl PipelineRenderer {
     }
     // Called each frame, to render the world
     pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) {
+        // Prepare
+        self.prepare_for_rendering();
         // Render normally
-        for (_, renderer) in pipeline.renderers.iter() {
-            let result = self.configure_uniforms(pipeline, renderer);
-            // The renderer might've failed setting it's uniforms
-            if let Some((buffers, triangle_count, material)) = result {
-                self.render(pipeline, buffers, triangle_count, material.double_sided);
-            }
-        }
+        self.render_scene(pipeline);
         // Then render the scene again so we can render shadows
+        self.render_scene_shadow_maps(pipeline);
+        // Render the deferred quad
+        self.render_deferred_quad(pipeline);
+    }
+    // Render the scene's shadow maps
+    fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline) {
         self.shadow_mapping.bind_fbo();
         let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
             self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
-        }        
+        }
         for (_, renderer) in pipeline.renderers.iter() {
             let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Some((buffers, triangle_count)) = result {
-                self.render(pipeline, buffers, triangle_count, false);
+                self.render(buffers, triangle_count, false);
             }
         }
     }
-    // Post-render event
-    pub(crate) fn post_render(&mut self, pipeline: &Pipeline) {
+    // Render the whole scene normally
+    fn render_scene(&mut self, pipeline: &Pipeline) {
+        for (_, renderer) in pipeline.renderers.iter() {
+            let result = self.configure_uniforms(pipeline, renderer);
+            // The renderer might've failed setting it's uniforms
+            if let Some((buffers, triangle_count, material)) = result {
+                self.render(buffers, triangle_count, material.double_sided);
+            }
+        }
+    }
+    // Render the deferred quad and do all lighting calculations inside it's fragment shader
+    fn render_deferred_quad(&mut self, pipeline: &Pipeline) {
         // Get the pipeline data
         let dimensions = pipeline.window.dimensions;
         unsafe {
