@@ -4,7 +4,7 @@ use crate::{
     utils::ComponentError,
 };
 use ahash::AHashMap;
-use bitfield::{Bitfield, AtomicSparseBitfield};
+use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::simple::OrderedVec;
 use std::{
     cell::UnsafeCell,
@@ -38,7 +38,12 @@ impl LinkedComponents {
         }
     }
 
-    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new_direct(
+        id: EntityID,
+        linked: &AHashMap<Bitfield<u32>, u64>,
+        mutated_components: Arc<AtomicSparseBitfield>,
+        components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    ) -> Self {
         Self {
             components,
             mutated_components,
@@ -47,7 +52,12 @@ impl LinkedComponents {
         }
     }
 
-    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new_dead(
+        id: u64,
+        linked: &AHashMap<Bitfield<u32>, u64>,
+        mutated_components: Arc<AtomicSparseBitfield>,
+        components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    ) -> Self {
         Self {
             components,
             mutated_components,

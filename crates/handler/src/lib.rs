@@ -67,7 +67,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         world.time.update(new_time);
         // Get the GLFW events first
         poll_glfw_events(&mut glfw, &events, &mut world, &mut window);
-        
+
         // We can update the world now
         World::update_start(&mut world, &mut task_receiver);
         World::update_end(&mut world, &mut task_receiver);

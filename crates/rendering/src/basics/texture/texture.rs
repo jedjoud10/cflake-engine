@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     basics::{readwrite::ReadBytes, texture::calculate_size_bytes, transfer::Transfer},
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject, OpenGLObjectNotInitialized},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
     utils::*,
 };

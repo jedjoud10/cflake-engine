@@ -18,6 +18,8 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.vrsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.frsh.glsl");
     // Others
     preload_asset!(".\\resources\\defaults\\shaders\\others\\wireframe.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl");

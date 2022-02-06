@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use rendering::pipeline::PipelineContext;
 use crate::{data::World, GameConfig, WorldTaskReceiver};
+use rendering::pipeline::PipelineContext;
+use std::sync::Arc;
 
 // World implementation
 impl World {

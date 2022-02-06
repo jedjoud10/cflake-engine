@@ -4,7 +4,7 @@ use arrayvec::ArrayVec;
 
 use crate::{
     basics::transfer::Transfer,
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject, OpenGLObjectNotInitialized},
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
 };
 
@@ -131,7 +131,9 @@ impl AtomicGroup {
     }
     // Clear the atomic group counters
     pub fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
-        if self.oid == 0 { return Err(OpenGLObjectNotInitialized) }
+        if self.oid == 0 {
+            return Err(OpenGLObjectNotInitialized);
+        }
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.oid);
             let reset = self.defaults.as_ptr();

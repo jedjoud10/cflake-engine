@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use bitfield::{Bitfield, AtomicSparseBitfield};
+use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
@@ -84,7 +84,10 @@ impl<World> ECSManager<World> {
             if system.check_cbitfield(cbitfield) {
                 // Remove the entity, since it was contained in the system
                 let (entity, _, counter) = lock.get_mut(removed_id).unwrap();
-                system.remove_entity(id, LinkedComponents::new_dead(removed_id, &entity.components, self.mutated_components.clone(), self.components.clone()));
+                system.remove_entity(
+                    id,
+                    LinkedComponents::new_dead(removed_id, &entity.components, self.mutated_components.clone(), self.components.clone()),
+                );
                 *counter += 1;
             }
         }

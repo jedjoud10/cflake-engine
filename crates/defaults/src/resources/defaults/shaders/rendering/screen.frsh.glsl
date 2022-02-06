@@ -6,9 +6,9 @@ uniform sampler2D emissive_texture; // 1
 uniform sampler2D normals_texture; // 2
 uniform sampler2D position_texture; // 3
 uniform sampler2D depth_texture; // 4
-
-// Ambient sky gradient
 uniform sampler2D default_sky_gradient; // 5
+uniform sampler2D shadow_map; // 6
+
 
 uniform vec3 directional_light_dir;
 uniform float directional_light_strength;
@@ -70,10 +70,13 @@ void main() {
 	float odepth = texture(depth_texture, uvs).x;
 	float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));	
 
-	// Depth test the sky
+	// Shadow mapping calculations
+	float shadow_mapped_depth = texture(shadow_map, uvs).r;
+
+	// Depth test with the sky
 	if (depth == 1.0) {
 		color = sky_color;
 	} else {
-		color = pixel_color;
 	}
+	color = vec3(shadow_mapped_depth);
 }

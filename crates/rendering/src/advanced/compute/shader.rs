@@ -2,7 +2,7 @@ use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use crate::{
     basics::{
-        shader::{load_includes, ShaderSettings, ShaderSource, IncludeExpansionError},
+        shader::{load_includes, IncludeExpansionError, ShaderSettings, ShaderSource},
         uniforms::{ShaderIdentifier, ShaderUniformsSettings},
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},

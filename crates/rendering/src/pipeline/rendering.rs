@@ -1,22 +1,24 @@
+use self::shadow_mapping::ShadowMapping;
+
 use super::{InternalPipeline, Pipeline};
 use crate::{
     basics::{
-        model::Model,
+        model::{Model, ModelBuffers},
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings}, material::Material,
     },
     object::ObjectID,
     pipeline::pipec,
     utils::DataType,
 };
 use std::ptr::null;
+mod shadow_mapping;
 
 // Pipeline renderer that will render our world
 #[derive(Default)]
 pub struct PipelineRenderer {
-    // The master frame buffer
     framebuffer: u32,
 
     // Our deferred textures
@@ -32,10 +34,12 @@ pub struct PipelineRenderer {
 
     // Others
     sky_texture: ObjectID<Texture>,
+
+    shadow_mapping: ShadowMapping,
 }
 impl PipelineRenderer {
-    // Render a single renderere
-    fn render(&self, pipeline: &Pipeline, renderer: &Renderer) -> Option<()> {
+    // Setup uniforms for a specific renderer
+    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a ModelBuffers, usize, &'a Material)> {
         // Pipeline data
         let camera = &pipeline.camera;
         let material = pipeline.get_material(renderer.material).unwrap();
@@ -55,30 +59,25 @@ impl PipelineRenderer {
         group.set_mat44f32("model_matrix", *model_matrix);
         group.set_mat44f32("view_matrix", camera.viewm);
         group.set_vec3f32("view_pos", camera.position);
-        /*
-        // Set a default impl uniform
-        group.set_f32("_active_time", renderer.time_alive);
-        group.set_f32("_time", new_time);
-        group.set_vec2i32("_resolution", resolution);
-        group.set_f32("_delta", new_time);
-        group.set_bool("_fade_anim", renderer.flags.contains(RendererFlags::FADING_ANIMATION));
-        */
 
         // Update the uniforms
         group.execute(pipeline, settings).unwrap();
-
+        Some((&model.1, model.0.triangles.len(), material))
+    }
+    // Render a single renderer
+    fn render(&self, pipeline: &Pipeline, buffers: &ModelBuffers, triangle_count: usize, double_sided: bool) -> Option<()> {
         unsafe {
             // Enable / Disable vertex culling for double sided materials
-            if material.double_sided {
+            if double_sided {
                 gl::Disable(gl::CULL_FACE);
             } else {
                 gl::Enable(gl::CULL_FACE);
             }
 
             // Actually draw
-            gl::BindVertexArray(model.1.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.1.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, model.1.triangle_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(buffers.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
+            gl::DrawElements(gl::TRIANGLES, triangle_count as i32, gl::UNSIGNED_INT, null());
         }
         Some(())
     }
@@ -161,6 +160,9 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         /* #endregion */
+        /* #region Others */
+        self.shadow_mapping = ShadowMapping::new(self, internal, pipeline);
+        /* #endregion */
         /* #region Actual pipeline renderer shit */
         // Load sky gradient texture
         self.sky_texture = pipec::construct(
@@ -185,16 +187,35 @@ impl PipelineRenderer {
     }
     // Called each frame, to render the world
     pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) {
-        let _i = std::time::Instant::now();
-        for (_id, renderer) in pipeline.renderers.iter() {
-            let _result = self.render(pipeline, renderer);
-            // The renderer might've failed rendering
+        // Render normally
+        for (_, renderer) in pipeline.renderers.iter() {
+            let result = self.configure_uniforms(pipeline, renderer);
+            // The renderer might've failed setting it's uniforms
+            if let Some((buffers, triangle_count, material)) = result {
+                self.render(pipeline, buffers, triangle_count, material.double_sided);
+            }
+        }
+        // Then render the scene again so we can render shadows
+        self.shadow_mapping.bind_fbo();
+        let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
+        if let Some(light) = directional_light_source {
+            self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
+        }        
+        for (_, renderer) in pipeline.renderers.iter() {
+            let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
+            // The renderer might've failed setting it's uniforms
+            if let Some((buffers, triangle_count)) = result {
+                self.render(pipeline, buffers, triangle_count, false);
+            }
         }
     }
     // Post-render event
     pub(crate) fn post_render(&mut self, pipeline: &Pipeline) {
         // Get the pipeline data
         let dimensions = pipeline.window.dimensions;
+        unsafe {
+            gl::Viewport(0, 0, dimensions.x as i32, dimensions.y as i32);
+        }
         let camera = &pipeline.camera;
 
         // Render the screen quad
@@ -219,6 +240,7 @@ impl PipelineRenderer {
         group.set_texture("position_texture", self.position_texture, 3);
         group.set_texture("depth_texture", self.depth_texture, 4);
         group.set_texture("default_sky_gradient", self.sky_texture, 5);
+        group.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
         let vp_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         group.set_mat44f32("custom_vp_matrix", vp_m);
         // Other params
@@ -254,8 +276,5 @@ impl PipelineRenderer {
         position_texture.update_size(dims).unwrap();
         let depth_texture = pipeline.get_texture_mut(self.depth_texture).unwrap();
         depth_texture.update_size(dims).unwrap();
-        unsafe {
-            gl::Viewport(0, 0, window_dimensions.x as i32, window_dimensions.y as i32);
-        }
     }
 }
