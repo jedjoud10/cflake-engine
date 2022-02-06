@@ -1,12 +1,12 @@
 use crate::event::EventKey;
 // An event handler that stores all the system events
-pub struct EventHandler<Context> {
-    evn_run_system: Vec<fn(&mut Context, EventKey)>,
-    evn_added_entity: Vec<fn(&mut Context, EventKey)>,
-    evn_removed_entity: Vec<fn(&mut Context, EventKey)>,
+pub struct EventHandler<World> {
+    evn_run_system: Vec<fn(&mut World, EventKey)>,
+    evn_added_entity: Vec<fn(&mut World, EventKey)>,
+    evn_removed_entity: Vec<fn(&mut World, EventKey)>,
 }
 
-impl<Context> Default for EventHandler<Context> {
+impl<World> Default for EventHandler<World> {
     fn default() -> Self {
         Self {
             evn_run_system: Default::default(),
@@ -16,24 +16,24 @@ impl<Context> Default for EventHandler<Context> {
     }
 }
 
-impl<Context> EventHandler<Context> {
+impl<World> EventHandler<World> {
     // Add a "Run System" event to the EventHandler
-    pub fn add_run_event(&mut self, event: fn(&mut Context, EventKey)) -> usize {
+    pub fn add_run_event(&mut self, event: fn(&mut World, EventKey)) -> usize {
         self.evn_run_system.push(event);
         self.evn_run_system.len() - 1
     }
     // Add a "Added Entity" event to the EventHandler
-    pub fn add_added_entity_event(&mut self, event: fn(&mut Context, EventKey)) -> usize {
+    pub fn add_added_entity_event(&mut self, event: fn(&mut World, EventKey)) -> usize {
         self.evn_added_entity.push(event);
         self.evn_added_entity.len() - 1
     }
     // Add a "Removed Entity" event to the EventHandler
-    pub fn add_removed_entity_event(&mut self, event: fn(&mut Context, EventKey)) -> usize {
+    pub fn add_removed_entity_event(&mut self, event: fn(&mut World, EventKey)) -> usize {
         self.evn_removed_entity.push(event);
         self.evn_removed_entity.len() - 1
     }
     // Get the "Run System" event for a specific index
-    pub fn get_run_event(&self, idx: Option<usize>) -> Option<&fn(&mut Context, EventKey)> {
+    pub fn get_run_event(&self, idx: Option<usize>) -> Option<&fn(&mut World, EventKey)> {
         if let Some(idx) = idx {
             self.evn_run_system.get(idx)
         } else {
@@ -41,7 +41,7 @@ impl<Context> EventHandler<Context> {
         }
     }
     // Get the "Added Entity" event for a specific index
-    pub fn get_added_entity_event(&self, idx: Option<usize>) -> Option<&fn(&mut Context, EventKey)> {
+    pub fn get_added_entity_event(&self, idx: Option<usize>) -> Option<&fn(&mut World, EventKey)> {
         if let Some(idx) = idx {
             self.evn_added_entity.get(idx)
         } else {
@@ -49,7 +49,7 @@ impl<Context> EventHandler<Context> {
         }
     }
     // Get the "Removed Entity" event for a specific index
-    pub fn get_removed_entity_event(&self, idx: Option<usize>) -> Option<&fn(&mut Context, EventKey)> {
+    pub fn get_removed_entity_event(&self, idx: Option<usize>) -> Option<&fn(&mut World, EventKey)> {
         if let Some(idx) = idx {
             self.evn_removed_entity.get(idx)
         } else {

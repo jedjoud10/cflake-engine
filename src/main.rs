@@ -74,7 +74,10 @@ fn init(mut write: core::WriteContext) {
     }
 
     // Create the directional light source
-    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::Directional::new(veclib::Vector3::ONE)).with_strength(1.0);
+    let light = rendering::basics::lights::LightSource::new(rendering::basics::lights::LightSourceType::Directional { dir: veclib::Vector3::ZERO }).with_strength(1.0);
+    let mut global_fetcher = write.ecs.create_global_fetcher();
+    let global1 = write.ecs.get_global::<defaults::globals::GlobalWorldData>(global_fetcher).unwrap();
+    dbg!(global1.camera_dir);
     rendering::pipeline::pipec::construct(&pipeline, light).unwrap();
     // Load a terrain material
     // Load the shader first

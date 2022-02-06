@@ -12,13 +12,12 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use crate::{
     component::{ComponentID, EnclosedComponent, LinkedComponents},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-    global::{EnclosedGlobalComponent, Global, GlobalFetchKey, GlobalReadGuard, GlobalWriteGuard},
-    system::{EventHandler, System, SystemBuilder},
-    utils::{ComponentError, EntityError, GlobalError},
+    system::{System, SystemBuilder},
+    utils::{ComponentError, EntityError}, event::EventHandler,
 };
 
 // The Entity Component System manager that will handle everything ECS related
-pub struct ECSManager<Context> {
+pub struct ECSManager<World> {
     // A vector full of entitie
     pub(crate) entities: ShareableOrderedVec<Entity>,
     pub(crate) entities_to_remove: Mutex<OrderedVec<(Entity, u64, usize)>>,
@@ -26,16 +25,14 @@ pub struct ECSManager<Context> {
     pub(crate) systems: Vec<System>,
     // The components that are valid in the world
     pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
-    // Some global components
-    pub(crate) globals: AHashMap<TypeId, UnsafeCell<EnclosedGlobalComponent>>,
     // The internal ECS thread pool
     pub(crate) rayon_pool: Arc<ThreadPool>,
     // Our internal event handler
-    pub(crate) event_handler: EventHandler<Context>,
+    pub(crate) event_handler: EventHandler<World>,
 }
 
 // Global code for the Entities, Components, and Systems
-impl<Context> ECSManager<Context> {
+impl<World> ECSManager<World> {
     // Create a new ECS manager
     pub fn new() -> Self {
         // Start the rayon thread pool
@@ -48,7 +45,6 @@ impl<Context> ECSManager<Context> {
             entities_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
-            globals: Default::default(),
             rayon_pool: Arc::new(pool),
             event_handler: Default::default(),
         }
@@ -195,47 +191,9 @@ impl<Context> ECSManager<Context> {
         self.components.read().unwrap().count()
     }
     /* #endregion */
-    /* #region Globals */
-    // The reason why we can access global components but not normal components:
-    // Since the normal components might be mutated in multiple threads, we cannot read from multiple components at the same time or we might cause UB.
-    // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB
-
-    // Add a global component to the ECS manager
-    pub fn add_global<U: Global + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
-        // UnsafeCell moment
-        let boxed = Box::new(sc);
-        self.globals.insert(TypeId::of::<U>(), UnsafeCell::new(boxed));
-        Ok(())
-    }
-    // Get a reference to a specific global component
-    pub fn get_global<'a, U: Global + 'static>(&self, _key: &'a GlobalFetchKey) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
-        // First, we gotta check if this component was mutably borrowed
-        // Kill me
-        let hashmap = &self.globals;
-        let boxed = hashmap
-            .get(&TypeId::of::<U>())
-            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
-        // Magic
-        let ptr = unsafe { &*boxed.get() }.as_ref();
-        let global = crate::global::registry::cast_global::<U>(ptr)?;
-        Ok(GlobalReadGuard::new(global))
-    }
-    // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'a, U: Global + 'static>(&mut self, _key: &'a mut GlobalFetchKey) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
-        let hashmap = &mut self.globals;
-        let boxed = hashmap
-            .get_mut(&TypeId::of::<U>())
-            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
-        // Magic
-        let ptr = unsafe { &mut *boxed.get() }.as_mut();
-        let global = crate::global::registry::cast_global_mut::<U>(ptr)?;
-        Ok(GlobalWriteGuard::new(global))
-    }
-
-    /* #endregion */
     /* #region Systems */
     // Create a new system build
-    pub fn create_system_builder<'a>(&'a mut self) -> SystemBuilder<'a, Context> {
+    pub fn create_system_builder<'a>(&'a mut self) -> SystemBuilder<'a, World> {
         SystemBuilder::new(self)
     }
     // Add a system to our current systems
@@ -253,14 +211,11 @@ impl<Context> ECSManager<Context> {
     // Run the systems in sync, but their component updates are not
     // Used only for testing
     #[allow(dead_code)]
-    pub(crate) fn run_systems(&self, context: Context)
-    where
-        Context: Clone,
-    {
+    pub(crate) fn run_systems(&self, world: &mut World) {
         for system in self.systems.iter() {
             let execution_data = system.run_system(self);
-            execution_data.run(&mut context.clone());
-            system.clear::<Context>();
+            execution_data.run(world);
+            system.clear::<World>();
         }
     }
     /* #endregion */

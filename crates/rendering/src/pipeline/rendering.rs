@@ -205,7 +205,7 @@ impl PipelineRenderer {
         let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
             let directional = light._type.as_directional().unwrap();
-            group.set_vec3f32("directional_light_dir", directional.direction.normalized());
+            group.set_vec3f32("directional_light_dir", directional.normalized());
             group.set_f32("directional_light_strength", light.strength);
         } else {
             // We don't have a directional light, so we must set the default values

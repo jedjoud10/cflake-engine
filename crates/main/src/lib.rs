@@ -7,6 +7,7 @@ pub use core;
 pub use core::tasks;
 pub use debug;
 pub use ecs;
+pub use globals;
 pub use input;
 pub use math;
 pub use network;

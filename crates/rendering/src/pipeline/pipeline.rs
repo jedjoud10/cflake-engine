@@ -371,7 +371,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         shader,
         material,
         model,
-        sun: ObjectID::new(0),
+        sun: ObjectID::default(),
     }
 }
 // Initialize OpenGL

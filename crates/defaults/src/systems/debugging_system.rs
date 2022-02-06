@@ -18,13 +18,12 @@ fn run(context: &mut Context, data: EventKey) {
         println!("  #Entities: '{}'", read.ecs.count_entities());
         println!("  #Systems: '{}'", read.ecs.count_systems());
         // Debug some global info
-        let global_fetcher = data.get_global_fetcher().unwrap();
-        let core_global = read.ecs.get_global::<crate::globals::GlobalWorldData>(&global_fetcher).unwrap();
+        let core_global = read.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
         println!("Global: ");
         println!("  #Camera Position: '{}'", core_global.camera_pos);
         main::rendering::pipeline::pipec::set_debugging(&pipeline, true);
         // Also debug the terrain if needed
-        let terrain = read.ecs.get_global::<crate::globals::Terrain>(&global_fetcher);
+        let terrain = read.globals.get_global::<crate::globals::Terrain>();
         if let Ok(terrain) = terrain {
             println!("Terrain: ");
             println!("  #Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE);

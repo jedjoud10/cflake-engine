@@ -6,10 +6,10 @@ use main::ecs::event::EventKey;
 
 // A simple system that we can use as template
 fn run(context: &mut Context, data: EventKey) {
-    let (mut query, global_fetcher) = data.decompose().unwrap();
+    let mut query = data.get_query().unwrap();
     let read = context.read().unwrap();
     let time = read.time.elapsed;
-    let _obj = read.ecs.get_global::<crate::globals::Terrain>(&global_fetcher).unwrap();
+    let _obj = read.globals.get_global::<crate::globals::Terrain>().unwrap();
     for (_, components) in query.lock().iter() {
         let name = components.get_component::<Name>().unwrap();
         dbg!(&name.name);

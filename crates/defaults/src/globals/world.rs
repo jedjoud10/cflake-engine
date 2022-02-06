@@ -1,4 +1,4 @@
-use main::{ecs::global::Global, rendering::{object::ObjectID, basics::lights::LightSource}};
+use main::globals::Global;
 
 // Some global world data
 #[derive(Default, Global)]

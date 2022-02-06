@@ -156,6 +156,7 @@ dependencies = [
  "ecs",
  "fonts",
  "glfw",
+ "globals",
  "input",
  "io",
  "itertools",
@@ -452,6 +453,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "globals"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "globals-derive",
+]
+
+[[package]]
+name = "globals-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "handler"
 version = "0.1.0"
 dependencies = [
@@ -591,6 +608,7 @@ dependencies = [
  "ecs",
  "gl",
  "glfw",
+ "globals",
  "input",
  "lazy_static",
  "math",

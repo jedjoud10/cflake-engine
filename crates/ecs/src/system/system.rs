@@ -62,7 +62,7 @@ impl System {
         }
     }
     // Create a SystemExecutionData that we can actually run at a later time
-    pub fn run_system<Context>(&self, ecs_manager: &ECSManager<Context>) -> SystemExecutionData<Context> {
+    pub fn run_system<World>(&self, ecs_manager: &ECSManager<World>) -> SystemExecutionData<World> {
         // Create the component queries
         let all_components = self.evn_run.map(|_| self.linked_components.clone());
 
@@ -101,7 +101,7 @@ impl System {
         }
     }
     // Clear the system for the next execution
-    pub fn clear<Context>(&self) {
+    pub fn clear<World>(&self) {
         // Clear the stored entity differences
         let mut added = self.added.lock().unwrap();
         added.clear();

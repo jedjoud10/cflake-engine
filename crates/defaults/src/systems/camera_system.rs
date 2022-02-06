@@ -4,7 +4,7 @@ use main::input::Keys;
 
 // The camera system update loop
 fn run(context: &mut Context, data: EventKey) {
-    let (mut query, mut global_fetcher) = data.decompose().unwrap();
+    let mut query = data.get_query().unwrap();
     let mut write = context.write().unwrap();
     // Rotate the camera around
     let mouse_pos = write.input.get_mouse_position();
@@ -79,7 +79,7 @@ fn run(context: &mut Context, data: EventKey) {
         drop(pipeline);
 
         // If we are the main camera, we must update our position in the global
-        let mut global = write.ecs.get_global_mut::<crate::globals::GlobalWorldData>(&mut global_fetcher).unwrap();
+        let mut global = write.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
         global.camera_pos = position;
         global.camera_dir = rotation.mul_point(veclib::Vector3::Z);
     }

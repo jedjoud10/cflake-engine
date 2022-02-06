@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use rendering::pipeline::PipelineContext;
 
-use crate::{data::World, Context, GameConfig, WorldTaskReceiver};
+use crate::{data::World, GameConfig, WorldTaskReceiver};
 
 // World implementation
 impl World {
@@ -12,7 +12,8 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: ecs::ECSManager::new(),
+            ecs: ecs::ECSManager::<Self>::new(),
+            globals: Default::default(),
             io: io::SaverLoader::new(author_name, app_name),
             config: Default::default(),
             pipeline,
@@ -53,49 +54,35 @@ impl World {
         }).unwrap();
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(world: &Rc<RefCell<World>>, _task_receiver: &mut WorldTaskReceiver) {
-        // While we do world logic, start rendering the frame on the other thread
+    pub fn update_start(world: &mut World, _task_receiver: &mut WorldTaskReceiver) {
+        // While we do world logic, start rendering the frame on the other thread            
+        // Update the timings then we can start rendering
         {
-            let world = world.try_borrow().unwrap();
             let handler = &world.pipeline.handler.lock().unwrap();
+            let mut time = handler.time.lock().unwrap();
+            time.0 = world.time.elapsed;
+            time.1 = world.time.delta;
+            handler.sbarrier.wait();
+        }
 
-            // Update the timings then we can start rendering
-            {
-                let mut time = handler.time.lock().unwrap();
-                time.0 = world.time.elapsed;
-                time.1 = world.time.delta;
-                handler.sbarrier.wait();
-            }
-        }
-        {
-            let system_count = {
-                let world = world.try_borrow().unwrap();
-                world.ecs.count_systems()
+        let system_count = world.ecs.count_systems();
+        // Loop for every system and update it
+        for system_index in 0..system_count {
+            let execution_data = {
+                let system = &world.ecs.get_systems()[system_index];
+                system.run_system(&world.ecs)
             };
-            // Loop for every system and update it
-            for system_index in 0..system_count {
-                let execution_data = {
-                    let world = world.try_borrow().unwrap();
-                    let system = &world.ecs.get_systems()[system_index];
-                    system.run_system(&world.ecs)
-                };
-                // Actually execute the system now
-                let mut context = Context::convert(world);
-                execution_data.run(&mut context);
-                {
-                    // Flush all the commends that we have dispatched during the system's frame execution
-                    let mut world = world.try_borrow_mut().unwrap();
-                    _task_receiver.flush(&mut world);
-                    let system = &world.ecs.get_systems()[system_index];
-                    system.clear::<Context>();
-                }
+            // Actually execute the system now
+            execution_data.run(world);
+            {
+                // Flush all the commends that we have dispatched during the system's frame execution
+                _task_receiver.flush(world);
+                let system = &world.ecs.get_systems()[system_index];
+                system.clear::<World>();
             }
         }
-        {
-            // Finish update
-            let mut world = world.try_borrow_mut().unwrap();
-            world.ecs.finish_update();
-        }
+        // Finish update
+        world.ecs.finish_update();
     }
     // End frame update
     pub fn update_end(world: &Rc<RefCell<Self>>, _task_receiver: &mut WorldTaskReceiver) {

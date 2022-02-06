@@ -23,4 +23,5 @@ rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 debug = { path = "../debug" }
 fonts = { path = "../fonts" }
+globals = { path = "../globals" }
 io = { path = "../io" }

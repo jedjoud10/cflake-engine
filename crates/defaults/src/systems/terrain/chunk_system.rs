@@ -2,16 +2,16 @@ use std::cmp::Ordering;
 
 use main::{
     core::{Context, WriteContext},
-    ecs::{self, entity::EntityID, event::EventKey},
+    ecs::{self, entity::EntityID, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
 };
 
 // Add a single chunk to the world
-fn add_chunk(write: &mut WriteContext, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
+fn add_chunk(ecs: &mut ECSManager<Context>, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
-    let id = ecs::entity::EntityID::new(&write.ecs);
+    let id = ecs::entity::EntityID::new(&ecs);
     let mut group = ecs::entity::ComponentLinkingGroup::default();
 
     // Link the nessecary components
@@ -27,7 +27,7 @@ fn add_chunk(write: &mut WriteContext, camera_position: veclib::Vector3<f32>, ca
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
-    write.ecs.add_entity(entity, id, group).unwrap();
+    ecs.add_entity(entity, id, group).unwrap();
     (id, priority)
 }
 // Remove a single chunk
@@ -41,18 +41,22 @@ fn remove_chunk(write: &mut WriteContext, id: EntityID) {
 
 // The chunk systems' update loop
 fn run(context: &mut Context, data: EventKey) {
-    let (_, mut global_fetcher) = data.decompose().unwrap();
+    let query = data.get_query().unwrap();
     // Get the global terrain component
-    let mut write = context.write().unwrap();
+    let mut write = context.write().unwrap();    
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let cam = write.ecs.get_global::<crate::globals::GlobalWorldData>(&global_fetcher).unwrap();
+        let cam = write.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
         (cam.camera_pos, cam.camera_dir)
     };
     if write.input.map_toggled("update_terrain") {
         return;
     }
-    let terrain_ = write.ecs.get_global_mut::<crate::globals::Terrain>(&mut global_fetcher);
+    // Sometimes I wonder why the rust borrow checker hates me
+    let world = &mut *write; 
+    let globals = &mut world.globals;
+    let ecs = &mut world.ecs;
+    let terrain_ = globals.get_global_mut::<crate::globals::Terrain>();
     if terrain_.is_err() {
         return;
     }
@@ -75,7 +79,7 @@ fn run(context: &mut Context, data: EventKey) {
                 if node.children_indices.is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(&mut write, camera_pos, camera_dir, terrain.octree.inner.size, coords);
+                    let (id, priority) = add_chunk(ecs, camera_pos, camera_dir, terrain.octree.inner.size, coords);
                     terrain.sorted_chunks_generating.push((id, priority));
                     terrain.chunks.insert(coords, id);
                     terrain.chunks_generating.insert(coords);
