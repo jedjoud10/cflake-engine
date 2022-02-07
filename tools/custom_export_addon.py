@@ -50,7 +50,7 @@ def write_some_data(context, filepath, skeletal_animation):
 		normal_new[0] = normal_new_new.x
 		normal_new[1] = normal_new_new.y
 		normal_new[2] = normal_new_new.z
-		normal_new = [round(x, 3) for x in normal_new]
+		new_normal_new = [int(round(x * 127)) for x in normal_new]
 		
 		tangent = loop.tangent
 		tangent_new_new = mathutils.Vector((tangent[0], tangent[1], tangent[2]))		
@@ -59,17 +59,17 @@ def write_some_data(context, filepath, skeletal_animation):
 		tangent_new[0] = tangent_new_new.x
 		tangent_new[1] = tangent_new_new.y
 		tangent_new[2] = tangent_new_new.z
-		tangent_new = [round(x, 3) for x in tangent_new]
+		new_tangent_new = [int(round(x * 127)) for x in tangent_new]
 		
 		uv = mesh.uv_layers.active.data[loop.index].uv		
-		uv_new = [round(x, 3) for x in uv]
-		bitangent_sign = round(loop.bitangent_sign, 3)
-		vertex_tuple = (vertex_new[0], vertex_new[1], vertex_new[2], normal_new[0], normal_new[1], normal_new[2], uv_new[0], uv_new[1])
+		new_uv_new = [int(round(x * 255)) for x in uv]
+		bitangent_sign = int(round(loop.bitangent_sign))
+		vertex_tuple = (vertex_new[0], vertex_new[1], vertex_new[2], normal_new[0], normal_new[1], normal_new[2], new_uv_new[0], new_uv_new[1])
 		if not (vertex_tuple in vertex_dict):
 			f.write(f'v {vertex_new[0]}/{vertex_new[1]}/{vertex_new[2]}\n')   
-			f.write(f'n {normal_new[0]}/{normal_new[1]}/{normal_new[2]}\n')   
-			f.write(f't {tangent_new[0]}/{tangent_new[1]}/{tangent_new[2]}/{bitangent_sign}\n')
-			f.write(f'u {uv_new[0]}/{uv_new[1]}\n')   
+			f.write(f'n {new_normal_new[0]}/{new_normal_new[1]}/{new_normal_new[2]}\n')   
+			f.write(f't {new_tangent_new[0]}/{new_tangent_new[1]}/{new_tangent_new[2]}/{bitangent_sign}\n')
+			f.write(f'u {new_uv_new[0]}/{new_uv_new[1]}\n')   
 			vertex_dict[vertex_tuple] = len(vertex_dict)
 			vertex_map[loop.vertex_index] = len(vertex_dict) - 1
 		else:

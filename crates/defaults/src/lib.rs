@@ -39,7 +39,6 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\ui\\font.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\fonts\\default_font.font");
     // Models
-    preload_asset!(".\\resources\\defaults\\models\\screen_quad.mdl3d");
     preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d");
     preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d");
     preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d");

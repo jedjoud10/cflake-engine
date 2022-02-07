@@ -26,10 +26,10 @@ pub struct Model {
     */
     // Vertex attribute arrays
     pub vertices: Vec<veclib::Vector3<f32>>,
-    pub normals: Vec<veclib::Vector3<f32>>,
-    pub tangents: Vec<veclib::Vector4<f32>>,
-    pub uvs: Vec<veclib::Vector2<f32>>,
-    pub colors: Vec<veclib::Vector3<f32>>,
+    pub normals: Vec<veclib::Vector3<i8>>,
+    pub tangents: Vec<veclib::Vector4<i8>>,
+    pub uvs: Vec<veclib::Vector2<u8>>,
+    pub colors: Vec<veclib::Vector3<u8>>,
 
     // How we set the VBO buffers
     pub layout: VertexAttributeBufferLayout,
@@ -107,35 +107,25 @@ impl PipelineObject for Model {
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
                 gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
-                // Create the compressed normals buffer
-                let compressed_normals = self.normals.iter().map(|normal| {
-                    // We must compress each normal so it can fit in 32 bits only
-                    // Remap from -1, 1, to -512, 511
-                    let normal = normal.normalized();
-                    let mut val = (normal.z as i32 * 512) << 20;
-                    val = (normal.y as i32 * 512) << 10;
-                    //val |= (normal.x as i32 * 512) << 0;
-                    //val
-                    val
-                }).collect::<Vec<_>>();
+                // Vertex normals buffer
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
-                    (compressed_normals.len() * size_of::<i32>()) as isize,
-                    compressed_normals.as_ptr() as *const c_void,
+                    (self.normals.len() * size_of::<i8>() * 3) as isize,
+                    self.normals.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 );
 
                 // Vertex normals attribute
                 gl::EnableVertexAttribArray(1);
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                gl::VertexAttribPointer(1, gl::BGRA as i32, gl::UNSIGNED_INT_2_10_10_10_REV, gl::TRUE, 0, null());
+                gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
                 if !self.tangents.is_empty() {
                     // And it's brother, the tangent buffer
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (self.tangents.len() * size_of::<f32>() * 4) as isize,
+                        (self.tangents.len() * size_of::<i8>() * 4) as isize,
                         self.tangents.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
@@ -143,15 +133,14 @@ impl PipelineObject for Model {
                     // Tangent attribute
                     gl::EnableVertexAttribArray(2);
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                    gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
+                    gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
                 }
-                /*
                 if !self.colors.is_empty() {
                     // Vertex colors buffer
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (self.colors.len() * size_of::<u32>()) as isize,
+                        (self.colors.len() * size_of::<u8>() * 3) as isize,
                         self.colors.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
@@ -159,9 +148,8 @@ impl PipelineObject for Model {
                     // Vertex colors attribute
                     gl::EnableVertexAttribArray(3);
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                    gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, 0, null());
+                    gl::VertexAttribPointer(3, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 }
-                */
 
 
                 if !self.uvs.is_empty() {
@@ -169,7 +157,7 @@ impl PipelineObject for Model {
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (self.uvs.len() * size_of::<f32>() * 2) as isize,
+                        (self.uvs.len() * size_of::<u8>() * 2) as isize,
                         self.uvs.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
@@ -177,7 +165,7 @@ impl PipelineObject for Model {
                     // UV attribute
                     gl::EnableVertexAttribArray(3);
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                    gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
+                    gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 }
             }
             
@@ -275,6 +263,8 @@ impl Model {
         }
 
         // Update our normals
-        self.normals = vertex_normals;
+        self.normals = vertex_normals.into_iter().map(|x| {
+            (x * 127.0).normalized().into()
+        }).collect::<Vec<_>>();
     }
 }

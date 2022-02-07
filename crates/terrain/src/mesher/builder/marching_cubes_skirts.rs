@@ -110,7 +110,7 @@ impl MarchingCubesSkirts {
         ];
 
         // This is some shared data for this whole
-        let mut shared_normal = veclib::Vector3::<f32>::ZERO;
+        let mut shared_normal = veclib::Vector3::<i8>::ZERO;
         let mut count: usize = 0;
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             // Exit early
@@ -128,8 +128,9 @@ impl MarchingCubesSkirts {
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
                 veclib::Vector3::<f32>::from(*voxels.normal(index2)),
                 value,
-            );
-            shared_normal += normal;
+            ).normalized();
+
+            shared_normal += veclib::Vector3::<i8>::from(normal * 127.0);
 
             // We must get the local offset of these two voxels
             let voxel1_local_position = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
@@ -139,7 +140,7 @@ impl MarchingCubesSkirts {
             ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
         Some(SquareData {
-            normal: shared_normal / count as f32,
+            normal: shared_normal / count as i8,
             voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
@@ -182,7 +183,7 @@ impl MarchingCubesSkirts {
             }
             model.triangles.push(model.vertices.len() as u32);
             model.vertices.push(vertex);
-            model.normals.push(data.normal.normalized());
+            model.normals.push(data.normal);
             //model.vdata.push(data.voxel_material as u32);
         }
     }
@@ -220,7 +221,7 @@ pub enum SkirtVert {
 // Skirt vertex group
 struct SquareData {
     // Shared voxel data
-    normal: veclib::Vector3<f32>,
+    normal: veclib::Vector3<i8>,
     voxel_material: u8,
 
     // Meshing data

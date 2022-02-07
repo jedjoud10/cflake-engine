@@ -56,8 +56,8 @@ impl MarchingCubes {
         // Get the normal
         let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
         let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
-        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-        InterpolatedVertexData { vertex, normal }
+        let mut normal = veclib::Vector3::<f32>::lerp(n1, n2, value).normalized();
+        InterpolatedVertexData { vertex, normal: (normal * 127.0).into() }
     }
     // Solve the marching cubes case and add the vertices to the model
     fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut Model, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
@@ -156,7 +156,7 @@ struct VertexMerger {
 // Some interpolated vertex data that we calculate for each interesting edge in the marching cube
 struct InterpolatedVertexData {
     vertex: veclib::Vector3<f32>,
-    normal: veclib::Vector3<f32>,
+    normal: veclib::Vector3<i8>,
 }
 // Edge intersection info
 struct EdgeInfo {
