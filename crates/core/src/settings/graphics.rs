@@ -27,8 +27,8 @@ impl ShadowResolution {
             ShadowResolution::Potato => (512, 4.0),
             ShadowResolution::Low => (1024, 3.0),
             ShadowResolution::Medium => (2048, 2.0),
-            ShadowResolution::High => (4096, 1.0),
-            ShadowResolution::Overkill => (8192, 0.5),
+            ShadowResolution::High => (4096, 1.4),
+            ShadowResolution::Overkill => (8192, 1.4),
             ShadowResolution::Stop => (16384, 0.2),
         }
     }

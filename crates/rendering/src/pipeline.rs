@@ -3,6 +3,8 @@ mod context;
 mod handler;
 mod pipeline;
 mod pipeline_main;
+mod frame_debug_info;
+pub use frame_debug_info::*;
 pub mod rendering;
 pub(crate) mod sender;
 mod settings;

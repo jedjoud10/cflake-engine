@@ -28,6 +28,7 @@ pub struct ShadowMapping {
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
     pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<&'a Model> {
+        if !self.enabled { return None; }
         // Always use our internal shadow shader
         let shader = self.shadow_shader;
         let model = pipeline.get_model(renderer.model)?;

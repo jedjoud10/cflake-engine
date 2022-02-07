@@ -1,6 +1,6 @@
 use self::shadow_mapping::ShadowMapping;
 
-use super::{settings::PipelineSettings, InternalPipeline, Pipeline};
+use super::{settings::PipelineSettings, InternalPipeline, Pipeline, FrameDebugInfo};
 use crate::{
     basics::{
         lights::{LightSource, LightSourceType},
@@ -195,18 +195,20 @@ impl PipelineRenderer {
         }
     }
     // Called each frame, to render the world
-    pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) {
+    pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) -> FrameDebugInfo {
         // Prepare
+        let mut debug_info = FrameDebugInfo::default();
         self.prepare_for_rendering(pipeline);
         // Render normally
-        self.render_scene(pipeline);
+        self.render_scene(pipeline, &mut debug_info);
         // Then render the scene again so we can render shadows
-        self.render_scene_shadow_maps(pipeline);
+        self.render_scene_shadow_maps(pipeline, &mut debug_info);
         // Render the deferred quad
-        self.render_deferred_quad(pipeline);
+        self.render_deferred_quad(pipeline, &mut debug_info);
+        debug_info
     }
     // Render the whole scene normally
-    fn render_scene(&mut self, pipeline: &Pipeline) {
+    fn render_scene(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
         for (_, renderer) in pipeline.renderers.iter() {
             // Check if we are visible
             if !renderer.flags.contains(RendererFlags::VISIBLE) {
@@ -216,11 +218,14 @@ impl PipelineRenderer {
             // The renderer might've failed setting it's uniforms
             if let Some((model, material)) = result {
                 self.render(model, material.double_sided);
+                debug_info.draw_calls += 1;
+                debug_info.triangles += model.triangles.len() as u64;
+                debug_info.vertices += model.vertices.len() as u64;
             }
         }
     }
     // Render the scene's shadow maps
-    fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline) {
+    fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
         // Check if shadows are even enabled in the first place
         if !self.shadow_mapping.enabled {
             return;
@@ -241,6 +246,7 @@ impl PipelineRenderer {
             // The renderer might've failed setting it's uniforms
             if let Some(model) = result {
                 self.render(model, false);
+                debug_info.shadow_draw_calls += 1;
             }
         }
         unsafe {
@@ -248,7 +254,7 @@ impl PipelineRenderer {
         }
     }
     // Render the deferred quad and do all lighting calculations inside it's fragment shader
-    fn render_deferred_quad(&mut self, pipeline: &Pipeline) {
+    fn render_deferred_quad(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
         unsafe {
             gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         }

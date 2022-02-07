@@ -11,7 +11,7 @@ use crate::{
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
-    utils::{RenderWrapper, Window},
+    utils::{RenderWrapper, Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
 use glfw::Context;
@@ -348,7 +348,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         Texture::default()
             .set_dimensions(TextureType::Texture2D(1, 1))
             .set_filter(TextureFilter::Linear)
-            .set_bytes(vec![127, 128, 255, 255])
+            .set_bytes(vec![127, 127, 255, 255])
             .set_mipmaps(true),
     )
     .unwrap();
@@ -378,7 +378,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 }
 // Initialize OpenGL
 unsafe fn init_opengl() {
-    gl::Viewport(0, 0, 1280, 720);
+    gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
     gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     gl::Enable(gl::DEPTH_TEST);
     gl::Enable(gl::CULL_FACE);
@@ -499,7 +499,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             let i = std::time::Instant::now();
             // We render the scene here
             let pipeline_ = pipeline.read().unwrap();
-            renderer.render_frame(&*pipeline_);
+            let frame_debug_info = renderer.render_frame(&*pipeline_);
             let render_frame_duration = i.elapsed();
             // And we also sync at the end of each frame
             ebarrier_clone.wait();
@@ -516,13 +516,11 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             window.swap_buffers();
             let swap_buffers_duration = i.elapsed();
 
-            let i = std::time::Instant::now();
             let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
             // Set the buffer
             pipeline.add_tasks(messages);
             // Execute the tasks
             pipeline.update(&mut internal, &mut renderer);
-            let update_duration = i.elapsed();
 
             // Debug if needed
             if debug {
@@ -530,8 +528,11 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
                 println!("  #Pipeline Whole Frame Time: {:.2}ms", pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0);
                 println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
                 println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
-                println!("  #Pipeline Update Execution Time: {:.2}ms", update_duration.as_secs_f32() * 1000.0);
                 println!("  #Pipeline Swap Buffers Time: {:.2}ms", swap_buffers_duration.as_secs_f32() * 1000.0);
+                println!("  #Draw calls {}", frame_debug_info.draw_calls);
+                println!("  #Shadow draw calls {}", frame_debug_info.shadow_draw_calls);
+                println!("  #Triangles {}k", frame_debug_info.triangles / 1000);
+                println!("  #Vertices {}k", frame_debug_info.vertices / 1000);
             }
 
             // Check if we must exit from the render thread

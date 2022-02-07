@@ -144,7 +144,7 @@ impl MarchingCubesSkirts {
             ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
         Some(SquareData {
-            normal: (shared_normal / count as f32).into(),
+            normal: (shared_normal / count as f32 * 255.0).into(),
             voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
