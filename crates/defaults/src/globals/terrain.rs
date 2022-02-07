@@ -7,8 +7,8 @@ use main::{
 
 mod chunks;
 mod voxel_generation;
-use chunks::ChunksHandler;
-use voxel_generation::VoxelGenerator;
+pub use chunks::ChunksHandler;
+pub use voxel_generation::VoxelGenerator;
 
 #[derive(Global)]
 // The global terrain component that can be added at the start of the game

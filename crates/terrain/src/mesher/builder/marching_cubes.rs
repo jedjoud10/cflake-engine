@@ -58,11 +58,7 @@ impl MarchingCubes {
         let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
         let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
         let normal = veclib::Vector3::<f32>::lerp(n1, n2, value);
-        // Get the color
-        let c1: veclib::Vector3<f32> = (*voxels.color(edge.index1)).into();
-        let c2: veclib::Vector3<f32> = (*voxels.color(edge.index2)).into();
-        let color = veclib::Vector3::<f32>::lerp(c1, c2, value) / 255.0;
-        InterpolatedVertexData { vertex, normal, color }
+        InterpolatedVertexData { vertex, normal }
     }
     // Solve the marching cubes case and add the vertices to the model
     fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
@@ -101,7 +97,6 @@ impl MarchingCubes {
                 model.model.triangles.push(model.model.vertices.len() as u32);
                 model.model.vertices.push(interpolated.vertex);
                 model.model.normals.push(interpolated.normal);
-                model.model.colors.push(interpolated.color);
                 model.vdata.push(data.material as u32);
             } else {
                 // The vertex already exists
@@ -130,7 +125,7 @@ impl MarchingCubes {
 
                     // Then solve it
                     let data = CubeData {
-                        material: *voxels.material_type(i),
+                        material: *voxels.voxel_material(i),
                         case,
                     };
                     self.solve_marching_cubes_case(voxels, model, &mut merger, &info, data)
@@ -169,7 +164,6 @@ struct VertexMerger {
 struct InterpolatedVertexData {
     vertex: veclib::Vector3<f32>,
     normal: veclib::Vector3<f32>,
-    color: veclib::Vector3<f32>,
 }
 // Edge intersection info
 struct EdgeInfo {

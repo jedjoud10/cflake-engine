@@ -4,8 +4,7 @@ use crate::{PackedVoxelData, CHUNK_SIZE};
 pub struct StoredVoxelData {
     densities: Vec<f32>,
     normals: Vec<veclib::Vector3<i8>>,
-    colors: Vec<veclib::Vector3<u8>>,
-    material_types: Vec<u8>,
+    voxel_materials: Vec<u8>,
 }
 
 impl Default for StoredVoxelData {
@@ -14,14 +13,12 @@ impl Default for StoredVoxelData {
         const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
         let normals = vec![veclib::Vector3::ZERO; LEN];
-        let colors = vec![veclib::Vector3::ZERO; LEN];
         let material_types = vec![0; LEN];
 
         Self {
             densities,
             normals,
-            colors,
-            material_types,
+            voxel_materials: material_types,
         }
     }
 }
@@ -34,8 +31,7 @@ impl StoredVoxelData {
             // Read the voxel attributes
             self.densities[i] = voxel.density;
             self.normals[i] = voxel.normal;
-            self.colors[i] = voxel.color;
-            self.material_types[i] = voxel.material_type;
+            self.voxel_materials[i] = voxel.voxel_material;
         }
     }
 
@@ -46,10 +42,7 @@ impl StoredVoxelData {
     pub fn normal(&self, idx: usize) -> &veclib::Vector3<i8> {
         self.normals.get(idx).unwrap()
     }
-    pub fn color(&self, idx: usize) -> &veclib::Vector3<u8> {
-        self.colors.get(idx).unwrap()
-    }
-    pub fn material_type(&self, idx: usize) -> &u8 {
-        self.material_types.get(idx).unwrap()
+    pub fn voxel_material(&self, idx: usize) -> &u8 {
+        self.voxel_materials.get(idx).unwrap()
     }
 }

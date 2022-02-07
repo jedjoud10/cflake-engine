@@ -119,7 +119,6 @@ impl MarchingCubesSkirts {
 
         // This is some shared data for this whole
         let mut shared_normal = veclib::Vector3::<f32>::ZERO;
-        let mut shared_color = veclib::Vector3::<f32>::ZERO;
         let mut count: usize = 0;
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             // Exit early
@@ -138,13 +137,7 @@ impl MarchingCubesSkirts {
                 veclib::Vector3::<f32>::from(*voxels.normal(index2)),
                 value,
             );
-            let color = veclib::Vector3::<f32>::lerp(
-                veclib::Vector3::<f32>::from(*voxels.color(index1)),
-                veclib::Vector3::<f32>::from(*voxels.color(index2)),
-                value,
-            );
             shared_normal += normal;
-            shared_color += color;
 
             // We must get the local offset of these two voxels
             let voxel1_local_position = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
@@ -155,8 +148,7 @@ impl MarchingCubesSkirts {
         }
         Some(SquareData {
             normal: shared_normal / count as f32,
-            color: shared_color / (count as f32 * 255.0),
-            material_type: *voxels.material_type(info.i),
+            voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
             vertices: ivertices,
@@ -199,8 +191,7 @@ impl MarchingCubesSkirts {
             model.model.triangles.push(model.model.vertices.len() as u32);
             model.model.vertices.push(vertex);
             model.model.normals.push(data.normal.normalized());
-            model.model.colors.push(data.color);
-            model.vdata.push(data.material_type as u32);
+            model.vdata.push(data.voxel_material as u32);
         }
     }
     // Create a marching squares triangle between 3 skirt voxels
@@ -238,8 +229,7 @@ pub enum SkirtVert {
 struct SquareData {
     // Shared voxel data
     normal: veclib::Vector3<f32>,
-    color: veclib::Vector3<f32>,
-    material_type: u8,
+    voxel_material: u8,
 
     // Meshing data
     position: veclib::Vector2<f32>,

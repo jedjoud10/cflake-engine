@@ -8,7 +8,6 @@ uniform sampler2D tex;
 // This voxel struct can contain some arbitrary values related to voxel generation
 struct Voxel {
     float density;
-    vec3 color;
     uint material;
 };
 
@@ -16,12 +15,11 @@ struct Voxel {
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
     float density = pos.y + snoise(pos * 0.01 * vec3(1, 2, 1)) * 40.0;
-    return Voxel(density, vec3(1.0), 0);
+    return Voxel(density, 0);
 }
 
 // Modify the voxel after we get it's normal
 void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
-    vec3 color = vec3(1.0);
     // Some colors
     if (dot(normal, vec3(0, 1, 0)) > 0.9) {
         voxel.material = 0;
@@ -29,9 +27,5 @@ void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inou
         voxel.material = 1;
     } else {
         voxel.material = 2;
-    }
-    voxel.color = color;
-    if (any(lessThan(local_pos.xz, uvec2(2, 2)))) {
-        voxel.color = vec3(0);
     }
 }

@@ -7,6 +7,8 @@ use main::{
     terrain::ChunkCoords,
 };
 
+use crate::globals::ChunksHandler;
+
 // Add a single chunk to the world
 fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
     // Create the chunk entity
@@ -47,16 +49,19 @@ fn run(world: &mut World, _data: EventKey) {
         let cam = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
         (cam.camera_pos, cam.camera_dir)
     };
-    if world.input.map_toggled("update_terrain") {
-        return;
-    }
     let terrain_ = world.globals.get_global_mut::<crate::globals::Terrain>();
-    if terrain_.is_err() {
+    if world.input.map_toggled("update_terrain") || terrain_.is_err() {
+        // No need to update the terrain
         return;
     }
     let mut terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
     let handler = &mut terrain.chunk_handler;
+    update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
+}
+
+// Update the terrain
+fn update_terrain(handler: &mut ChunksHandler, camera_pos: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_dir: veclib::Vector3<f32>) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
         let octree = &mut handler.octree;
         if let Some((added, removed)) = octree.update(camera_pos) {
@@ -74,7 +79,7 @@ fn run(world: &mut World, _data: EventKey) {
                 if node.children_indices.is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(&mut world.ecs, camera_pos, camera_dir, octree.inner.size, coords);
+                    let (id, priority) = add_chunk(ecs, camera_pos, camera_dir, octree.inner.size, coords);
                     handler.sorted_chunks_generating.push((id, priority));
                     handler.chunks.insert(coords, id);
                     handler.chunks_generating.insert(coords);
@@ -87,7 +92,7 @@ fn run(world: &mut World, _data: EventKey) {
         if handler.chunks_generating.is_empty() {
             let chunks_to_remove = std::mem::take(&mut handler.chunks_to_remove);
             for id in chunks_to_remove {
-                remove_chunk(&mut world.ecs, id);
+                remove_chunk(ecs, id);
             }
         }
     }
