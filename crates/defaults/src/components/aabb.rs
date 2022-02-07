@@ -3,20 +3,6 @@ use main::{ecs::component::Component, math};
 #[derive(Default, Component)]
 pub struct AABB {
     pub aabb: math::bounds::AABB,
-    pub generation_type: AABBGenerationType,
-}
-
-// How we are going to generate the AABB
-pub enum AABBGenerationType {
-    RenderEntity,
-    Manual,
-}
-
-// Automatically try to load the AABB from the components of a render entity (Position, Scale, Render)
-impl Default for AABBGenerationType {
-    fn default() -> Self {
-        Self::RenderEntity
-    }
 }
 
 // AABB component functions

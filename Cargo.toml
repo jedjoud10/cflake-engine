@@ -30,3 +30,6 @@ members = [
     "crates\\terrain",
     "crates\\ui",
 ]
+
+[profile.dev]
+opt-level = 3

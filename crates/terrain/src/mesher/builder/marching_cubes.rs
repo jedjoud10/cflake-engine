@@ -7,10 +7,7 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::{
-    basics::model::Model,
-    utils::DataType::U32,
-};
+use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 
 
@@ -56,7 +53,7 @@ impl MarchingCubes {
         // Get the normal
         let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
         let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
-        let mut normal = veclib::Vector3::<f32>::lerp(n1, n2, value).normalized();
+        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value).normalized();
         InterpolatedVertexData { vertex, normal: (normal * 127.0).into() }
     }
     // Solve the marching cubes case and add the vertices to the model
@@ -96,7 +93,7 @@ impl MarchingCubes {
                 model.triangles.push(model.vertices.len() as u32);
                 model.vertices.push(interpolated.vertex);
                 model.normals.push(interpolated.normal);
-                //model.vdata.push(data.material as u32);
+                model.uvs.push(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
                 model.triangles.push(merger.duplicates[&edge_tuple] as u32);
@@ -124,7 +121,7 @@ impl MarchingCubes {
 
                     // Then solve it
                     let data = CubeData {
-                        material: *voxels.voxel_material(i),
+                        voxel_material: *voxels.voxel_material(i),
                         case,
                     };
                     self.solve_marching_cubes_case(voxels, model, &mut merger, &info, data)
@@ -136,7 +133,13 @@ impl MarchingCubes {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Create the model data
-        let mut model = Model::with_capacity(64);
+        let mut model = Model {
+            vertices: Vec::with_capacity(5000),
+            normals: Vec::with_capacity(5000),
+            uvs: Vec::with_capacity(5000),
+            triangles: Vec::with_capacity(15000),
+            ..Default::default()
+        };
         // Then generate the model
         self.generate_model(voxels, &mut model);
         // Combine the model's custom vertex data with the model itself
@@ -167,7 +170,7 @@ struct EdgeInfo {
 // Info about the marching cube
 struct CubeData {
     // Shared voxel data
-    material: u8,
+    voxel_material: u8,
 
     // Meshing data
     case: u8,

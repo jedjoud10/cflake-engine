@@ -1,6 +1,5 @@
 use rendering::{
     basics::model::Model,
-    utils::DataType::U32,
 };
 
 use crate::{
@@ -35,7 +34,13 @@ impl MarchingCubesSkirts {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
-        let mut model = Model::with_capacity(64);
+        let mut model = Model {
+            vertices: Vec::with_capacity(200),
+            normals: Vec::with_capacity(200),
+            uvs: Vec::with_capacity(200),
+            triangles: Vec::with_capacity(600),
+            ..Default::default()
+        };
         // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
@@ -110,7 +115,7 @@ impl MarchingCubesSkirts {
         ];
 
         // This is some shared data for this whole
-        let mut shared_normal = veclib::Vector3::<i8>::ZERO;
+        let mut shared_normal = veclib::Vector3::<f32>::ZERO;
         let mut count: usize = 0;
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             // Exit early
@@ -130,7 +135,7 @@ impl MarchingCubesSkirts {
                 value,
             ).normalized();
 
-            shared_normal += veclib::Vector3::<i8>::from(normal * 127.0);
+            shared_normal += normal;
 
             // We must get the local offset of these two voxels
             let voxel1_local_position = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
@@ -140,7 +145,7 @@ impl MarchingCubesSkirts {
             ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
         Some(SquareData {
-            normal: shared_normal / count as i8,
+            normal: (shared_normal / count as f32).into(),
             voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
@@ -160,7 +165,6 @@ impl MarchingCubesSkirts {
             }
 
             // Add the triangle's vertices
-            //dbg!(triangle);
             let new_verts = Self::create_triangle(triangle, info, data);
             vertices[i * 3] = new_verts[0];
             vertices[i * 3 + 1] = new_verts[1];
@@ -184,7 +188,7 @@ impl MarchingCubesSkirts {
             model.triangles.push(model.vertices.len() as u32);
             model.vertices.push(vertex);
             model.normals.push(data.normal);
-            //model.vdata.push(data.voxel_material as u32);
+            model.uvs.push(veclib::Vector2::new(data.voxel_material, 0));
         }
     }
     // Create a marching squares triangle between 3 skirt voxels

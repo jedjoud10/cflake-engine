@@ -76,36 +76,3 @@ pub fn preload_system(world: &mut World) {
     // We gotta add the globa
     world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
 }
-/*
-pub fn preload_systems() {
-    let mut interpreter = terrain::interpreter::Interpreter::new_pregenerated();
-    let (string, csgtree) = interpreter.finalize().unwrap();
-    let terrain_shader = rendering::pipec::shader(
-        Shader::default()
-            .load_shader(vec![
-                "defaults\\shaders\\rendering\\default.vrsh.glsl",
-                "defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl",
-            ])
-            .unwrap(),
-    );
-
-    let mut material = Material::new("Terrain material").set_shader(terrain_shader);
-    material.uniforms.set_f32("normals_strength", 2.0);
-    material.uniforms.set_vec2f32("uv_scale", veclib::Vector2::ONE * 0.7);
-
-    let texture =
-        rendering::pipec::texture(Texture::create_texturearray(vec!["defaults\\textures\\rock_diffuse.png", "defaults\\textures\\missing_texture.png"], 256, 256).enable_mipmaps());
-    let texture2 =
-        rendering::pipec::texture(Texture::create_texturearray(vec!["defaults\\textures\\rock_normal.png", "defaults\\textures\\missing_texture.png"], 256, 256).enable_mipmaps());
-    material.uniforms.set_t2da("diffuse_textures", &texture, 0);
-    material.uniforms.set_t2da("normals_textures", &texture2, 1);
-    material.uniforms.set_i32("max_depth", 8);
-
-    default_system::system();
-    systems::terrain::mesher_system::system(rendering::pipec::material(material));
-    systems::terrain::chunk_system::system(8, csgtree);
-    systems::terrain::voxel_generation_system::system(string);
-    systems::rendering_system::system();
-    systems::camera_system::system();
-}
-*/
