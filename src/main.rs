@@ -20,7 +20,7 @@ fn init(world: &mut core::World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 2.0, 20000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 0.6, 1000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut world.ecs);
@@ -62,7 +62,7 @@ fn init(world: &mut core::World) {
             group.link_default::<defaults::components::Physics>().unwrap();
 
             // Create it's renderer
-            let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::VISIBLE)
+            let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::DEFAULT)
                 .set_model(model_id)
                 .set_material(material)
                 .set_matrix(matrix);
@@ -127,5 +127,5 @@ fn init(world: &mut core::World) {
     let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 4, &pipeline_)
         .set_heuristic(heuristic)
         .set_material(material);
-    world.globals.add_global(terrain).unwrap();
+    //world.globals.add_global(terrain).unwrap();
 }

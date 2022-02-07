@@ -79,8 +79,6 @@ impl Asset for Model {
                 _ => {}
             }
         }
-        // ISTFG If this fixes the issue I will be so angry
-        model.colors = vec![veclib::Vector3::ONE; model.vertices.len()];
         // Return
         Some(model)
     }

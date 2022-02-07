@@ -75,10 +75,10 @@ void main() {
 
 	// Calculate linear depth
 	float odepth = texture(depth_texture, uvs).x;
-	float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));	
+	//float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));	
 
 	// Depth test with the sky
-	if (depth == 1.0) {
+	if (odepth == 1.0) {
 		color = sky_color;
 	} else {
 		color = frag_color;

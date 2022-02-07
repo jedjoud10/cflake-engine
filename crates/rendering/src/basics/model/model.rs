@@ -76,9 +76,12 @@ impl PipelineObject for Model {
         self.uvs.shrink_to_fit();
         // Add the model
         unsafe {
+            // We simply don't have any vertices to render
+
             // Create the VAO
             gl::GenVertexArrays(1, &mut self.vertex_array_object);
             gl::BindVertexArray(self.vertex_array_object);
+
 
             // We can create all the buffers at once
             let mut buffers = [0_32; 6];
@@ -107,81 +110,6 @@ impl PipelineObject for Model {
                 pub color_buf: u32,
                 pub uv_buf: u32,
                 */
-
-                // Create the vertex buffer and populate it
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.vertices.len() * size_of::<f32>() * 3) as isize,
-                    self.vertices.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
-                // Vertex attrib array
-                gl::EnableVertexAttribArray(0);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
-                gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-                // Vertex normals buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.normals.len() * size_of::<i8>() * 3) as isize,
-                    self.normals.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
-                // Vertex normals attribute
-                if !self.normals.is_empty() {
-                    gl::EnableVertexAttribArray(1);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
-                    if !self.tangents.is_empty() {
-                        // And it's brother, the tangent buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.tangents.len() * size_of::<i8>() * 4) as isize,
-                            self.tangents.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
-
-                        // Tangent attribute
-                        gl::EnableVertexAttribArray(2);
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                        gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
-                    }
-                }
-                if !self.colors.is_empty() {
-                    // Vertex colors buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.colors.len() * size_of::<u8>() * 3) as isize,
-                        self.colors.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
-                    // Vertex colors attribute
-                    gl::EnableVertexAttribArray(3);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                    gl::VertexAttribPointer(3, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                }
-                if !self.uvs.is_empty() {
-                    // The texture coordinates buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.uvs.len() * size_of::<u8>() * 2) as isize,
-                        self.uvs.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
-                    // UV attribute
-                    gl::EnableVertexAttribArray(3);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                    gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                }
             } else {
                 // Normal, fallback
                 // Create the vertex buffer and populate it
@@ -195,57 +123,42 @@ impl PipelineObject for Model {
 
                 // Vertex attrib array
                 gl::EnableVertexAttribArray(0);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
                 gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
-
-                // Vertex normals buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.normals.len() * size_of::<i8>() * 3) as isize,
-                    self.normals.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
+                
 
                 // Vertex normals attribute
                 if !self.normals.is_empty() {
-                    gl::EnableVertexAttribArray(1);
+                    // Vertex normals buffer
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
-                    if !self.tangents.is_empty() {
-                        // And it's brother, the tangent buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.tangents.len() * size_of::<i8>() * 4) as isize,
-                            self.tangents.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
-
-                        // Tangent attribute
-                        gl::EnableVertexAttribArray(2);
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                        gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
-                    }
-                }
-                if !self.colors.is_empty() {
-                    // Vertex colors buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (self.colors.len() * size_of::<u8>() * 3) as isize,
-                        self.colors.as_ptr() as *const c_void,
+                        (self.normals.len() * size_of::<i8>() * 3) as isize,
+                        self.normals.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
+                    
+                    gl::EnableVertexAttribArray(1);
+                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());                    
+                }
+
+                if !self.tangents.is_empty() {
+                    // And it's brother, the tangent buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.tangents.len() * size_of::<i8>() * 4) as isize,
+                        self.tangents.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
 
-                    // Vertex colors attribute
-                    gl::EnableVertexAttribArray(3);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                    gl::VertexAttribPointer(3, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                    // Tangent attribute
+                    gl::EnableVertexAttribArray(2);
+                    gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
                 }
+
                 if !self.uvs.is_empty() {
                     // The texture coordinates buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
                         (self.uvs.len() * size_of::<u8>() * 2) as isize,
@@ -255,8 +168,23 @@ impl PipelineObject for Model {
 
                     // UV attribute
                     gl::EnableVertexAttribArray(3);
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
                     gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                }
+
+                
+                if !self.colors.is_empty() {
+                    // Vertex colors buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.colors.len() * size_of::<u8>() * 3) as isize,
+                        self.colors.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
+                    
+                    // Vertex colors attribute
+                    gl::EnableVertexAttribArray(4);
+                    gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 }
             }
 

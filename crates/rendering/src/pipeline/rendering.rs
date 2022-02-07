@@ -81,6 +81,7 @@ impl PipelineRenderer {
             // Actually draw
             gl::BindVertexArray(model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
+            gl::VertexAttrib4Nub(4, 255, 255, 255, 255);
             gl::DrawElements(gl::TRIANGLES, model.triangles.len() as i32, gl::UNSIGNED_INT, null());
         }
     }
@@ -91,10 +92,7 @@ impl PipelineRenderer {
         use veclib::{vec2, vec3};
         let quad = Model {
             vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
-            normals: vec![veclib::Vector3::ZERO; 4],
-            tangents: vec![veclib::Vector4::ZERO; 4],
             uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
-            colors: vec![veclib::Vector3::ZERO; 4],
             triangles: vec![0, 1, 2, 0, 3, 1],
             ..Model::default()
         };
