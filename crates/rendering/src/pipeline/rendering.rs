@@ -56,6 +56,8 @@ impl PipelineRenderer {
         let mut group = ShaderUniformsGroup::default();
         let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
         group.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
+
+        if pipeline.renderers.was_mutated()
         group.set_mat44f32("model_matrix", *model_matrix);
 
         // Update the uniforms
@@ -72,12 +74,13 @@ impl PipelineRenderer {
     fn render(&self, model: &Model, double_sided: bool) {
         unsafe {
             // Enable / Disable vertex culling for double sided materials
+            /*
             if double_sided {
                 gl::Disable(gl::CULL_FACE);
             } else {
                 gl::Enable(gl::CULL_FACE);
             }
-
+            */
             // Actually draw
             gl::BindVertexArray(model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
