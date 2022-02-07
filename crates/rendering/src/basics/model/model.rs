@@ -1,42 +1,59 @@
-use super::{CustomVertexDataBuffer, StoredCustomVertexDataBuffer};
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
-    utils::DataType,
+    utils::{DataType, UsageType, UpdateFrequency, AccessType},
 };
 use std::{ffi::c_void, fmt::Debug, mem::size_of, ptr::null};
 
-// Some OpenGL data for a model
-#[derive(Default, Debug)]
-pub struct ModelBuffers {
-    // The OpenGL data
+use super::VertexAttributeBufferLayout;
+
+// A simple model that holds vertex, normal, and color data
+pub struct Model {
+    // Main IDs
+    pub vertex_array_object: u32,
+    
+    // Vertex attributes IDs
+    pub buffers: [u32; 6],
+    /*
+    pub element_buffer_object: u32,
+
     pub vertex_buf: u32,
     pub normal_buf: u32,
     pub tangent_buf: u32,
-    pub uv_buf: u32,
+    
     pub color_buf: u32,
-    // Some custom vertex data if we want
-    pub custom_vertex_data: u32,
-
-    pub vertex_array_object: u32,
-    pub element_buffer_object: u32,
-    pub triangle_count: usize,
-}
-
-// A simple model that holds vertex, normal, and color data
-#[derive(Default)]
-pub struct Model {
-    // Per vertex data
+    pub uv_buf: u32,
+    */
+    // Vertex attribute arrays
     pub vertices: Vec<veclib::Vector3<f32>>,
     pub normals: Vec<veclib::Vector3<f32>>,
     pub tangents: Vec<veclib::Vector4<f32>>,
     pub uvs: Vec<veclib::Vector2<f32>>,
     pub colors: Vec<veclib::Vector3<f32>>,
-    pub(crate) custom: Option<StoredCustomVertexDataBuffer>,
+
+    // How we set the VBO buffers
+    pub layout: VertexAttributeBufferLayout,
 
     // Triangles
     pub triangles: Vec<u32>,
 }
+
+impl Default for Model {
+    fn default() -> Self {
+        Self { 
+            vertex_array_object: 0,
+            buffers: [0; 6],
+            vertices: Default::default(),
+            normals: Default::default(),
+            tangents: Default::default(),
+            uvs: Default::default(),
+            colors: Default::default(),
+            layout: Default::default(),
+            triangles: Default::default(),
+        }
+    }
+}
+
 impl PipelineObject for Model {
     // Reserve an ID for this model
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
@@ -51,18 +68,19 @@ impl PipelineObject for Model {
         DeconstructionTask::Model(Deconstruct::<Self>(id))
     }
     // Add the model to our ordered vec
-    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the model
-        let mut buffers = ModelBuffers::default();
-        buffers.triangle_count = self.triangles.len();
         unsafe {
             // Create the VAO
-            gl::GenVertexArrays(1, &mut buffers.vertex_array_object);
-            gl::BindVertexArray(buffers.vertex_array_object);
+            gl::GenVertexArrays(1, &mut self.vertex_array_object);
+            gl::BindVertexArray(self.vertex_array_object);
+            
+            // We can create all the buffers at once
+            let mut buffers = [0_32; 6];
+            gl::GenBuffers(6, buffers.as_mut_ptr());
 
             // Create the EBO
-            gl::GenBuffers(1, &mut buffers.element_buffer_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers[0]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (self.triangles.len() * size_of::<u32>()) as isize,
@@ -70,157 +88,125 @@ impl PipelineObject for Model {
                 gl::STATIC_DRAW,
             );
 
-            // Create the vertex buffer and populate it
-            gl::GenBuffers(1, &mut buffers.vertex_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.vertices.len() * size_of::<f32>() * 3) as isize,
-                self.vertices.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            // Create the normals buffer
-            gl::GenBuffers(1, &mut buffers.normal_buf);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.normals.len() * size_of::<f32>() * 3) as isize,
-                self.normals.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
-
-            if !self.tangents.is_empty() {
-                // And it's brother, the tangent buffer
-                gl::GenBuffers(1, &mut buffers.tangent_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
+            // We now have 2 ways to represent the vertex attributes: either we pack them tightly in their own VBO, or we interleave them
+            if let VertexAttributeBufferLayout::Interleaved = self.layout {
+                // Interleaved
+            } else {
+                // Normal, fallback
+                // Create the vertex buffer and populate it
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
-                    (self.tangents.len() * size_of::<f32>() * 4) as isize,
-                    self.tangents.as_ptr() as *const c_void,
+                    (self.vertices.len() * size_of::<f32>() * 3) as isize,
+                    self.vertices.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 );
-            }
 
-            if !self.uvs.is_empty() {
-                // The texture coordinates buffer
-                gl::GenBuffers(1, &mut buffers.uv_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
+                // Vertex attrib array
+                gl::EnableVertexAttribArray(0);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
+                gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+
+                // Create the compressed normals buffer
+                let compressed_normals = self.normals.iter().map(|normal| {
+                    // We must compress each normal so it can fit in 32 bits only
+                    // Remap from -1, 1, to -512, 511
+                    let normal = normal.normalized();
+                    let mut val = (normal.z as i32 * 512) << 20;
+                    val = (normal.y as i32 * 512) << 10;
+                    //val |= (normal.x as i32 * 512) << 0;
+                    //val
+                    val
+                }).collect::<Vec<_>>();
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
-                    (self.uvs.len() * size_of::<f32>() * 2) as isize,
-                    self.uvs.as_ptr() as *const c_void,
+                    (compressed_normals.len() * size_of::<i32>()) as isize,
+                    compressed_normals.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 );
-            }
 
-            if !self.colors.is_empty() {
-                // Finally, the vertex colors buffer
-                gl::GenBuffers(1, &mut buffers.color_buf);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.colors.len() * size_of::<f32>() * 3) as isize,
-                    self.colors.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-            }
+                // Vertex normals attribute
+                gl::EnableVertexAttribArray(1);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
+                gl::VertexAttribPointer(1, gl::BGRA as i32, gl::UNSIGNED_INT_2_10_10_10_REV, gl::TRUE, 0, null());
+                if !self.tangents.is_empty() {
+                    // And it's brother, the tangent buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.tangents.len() * size_of::<f32>() * 4) as isize,
+                        self.tangents.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
 
-            // Add some custom data if we want to
-            if self.custom.is_some() {
-                // Custom data moment
-                gl::GenBuffers(1, &mut buffers.custom_vertex_data);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                let stored = self.custom.as_ref().unwrap();
-                gl::BufferData(gl::ARRAY_BUFFER, stored.inner.len() as isize, stored.inner.as_ptr() as *const c_void, gl::STATIC_DRAW);
-            }
+                    // Tangent attribute
+                    gl::EnableVertexAttribArray(2);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
+                    gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
+                }
+                /*
+                if !self.colors.is_empty() {
+                    // Vertex colors buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.colors.len() * size_of::<u32>()) as isize,
+                        self.colors.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
 
-            // Create the vertex attrib arrays
-            gl::EnableVertexAttribArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.vertex_buf);
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+                    // Vertex colors attribute
+                    gl::EnableVertexAttribArray(3);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
+                    gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, 0, null());
+                }
+                */
 
-            // Normal attribute
-            gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buf);
-            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 0, null());
 
-            if !self.tangents.is_empty() {
-                // Tangent attribute
-                gl::EnableVertexAttribArray(2);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.tangent_buf);
-                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !self.uvs.is_empty() {
-                // UV attribute
-                gl::EnableVertexAttribArray(3);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.uv_buf);
-                gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if !self.colors.is_empty() {
-                // Vertex color attribute
-                gl::EnableVertexAttribArray(4);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.color_buf);
-                gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, 0, null());
-            }
-            if self.custom.is_some() {
-                // Vertex custom attribute
-                let custom = self.custom.as_ref().unwrap();
-                gl::EnableVertexAttribArray(5);
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.custom_vertex_data);
-                match custom._type {
-                    DataType::F32 => {
-                        // Float point
-                        gl::VertexAttribPointer(5, custom.components_per_vertex as i32, custom._type.convert(), gl::FALSE, 0, null());
-                    }
-                    x => {
-                        // Integer
-                        gl::VertexAttribIPointer(5, custom.components_per_vertex as i32, x.convert(), 0, null());
-                    }
+                if !self.uvs.is_empty() {
+                    // The texture coordinates buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.uvs.len() * size_of::<f32>() * 2) as isize,
+                        self.uvs.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
+
+                    // UV attribute
+                    gl::EnableVertexAttribArray(3);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
+                    gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, 0, null());
                 }
             }
+            
+            
             // Unbind
+            self.buffers = buffers;
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Add the model
-        pipeline.models.insert(id.get()?, (self, buffers));
+        pipeline.models.insert(id.get()?, self);
         Some(())
     }
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let (model, mut buffers) = pipeline.models.remove(id.get()?)?;
+        let model = pipeline.models.remove(id.get()?)?;
         // Dispose of the OpenGL buffers
         unsafe {
             // Delete the VBOs
-            gl::DeleteBuffers(1, &mut buffers.vertex_buf);
-            gl::DeleteBuffers(1, &mut buffers.normal_buf);
-            gl::DeleteBuffers(1, &mut buffers.uv_buf);
-            gl::DeleteBuffers(1, &mut buffers.tangent_buf);
-            gl::DeleteBuffers(1, &mut buffers.color_buf);
-            gl::DeleteBuffers(1, &mut buffers.element_buffer_object);
-            gl::DeleteBuffers(1, &mut buffers.custom_vertex_data);
+            gl::DeleteBuffers(model.buffers.len() as i32, model.buffers.as_ptr());
 
             // Delete the vertex array
-            gl::DeleteVertexArrays(1, &mut buffers.vertex_array_object);
+            gl::DeleteVertexArrays(1, &model.vertex_array_object);
         }
         Some(model)
     }
 }
 
-impl Debug for Model {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Model")
-            .field("vertices", &self.vertices.len())
-            .field("normals", &self.normals.len())
-            .field("tangents", &self.tangents.len())
-            .field("uvs", &self.uvs.len())
-            .field("colors", &self.colors.len())
-            .field("triangles", &self.triangles.len())
-            .finish()
-    }
-}
 
 impl Model {
     // Create a new model with some certain capacity to hold a number of vertices
@@ -231,9 +217,14 @@ impl Model {
             tangents: Vec::with_capacity(vertices_count),
             uvs: Vec::with_capacity(vertices_count),
             colors: Vec::with_capacity(vertices_count),
-            custom: None,
-            triangles: Vec::with_capacity(vertices_count * 3),
+            triangles: Vec::with_capacity(vertices_count*3),
+            ..Default::default()
         }
+    }
+    // Create the model with a specific vertex attribute vbo layout
+    pub fn with_layout(mut self, layout: VertexAttributeBufferLayout) -> Self {
+        self.layout = layout;
+        self
     }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
@@ -244,37 +235,8 @@ impl Model {
     }
     // Combine a model with this one, and return the new model
     pub fn combine(mut self, other: Self) -> Self {
-        // We must have matching custom vertex buffers
-        if self.custom.is_some() != other.custom.is_some() {
-            panic!()
-        };
-
         let max_triangle_index: u32 = self.vertices.len() as u32;
-        // Get the max triangle inde
-        let mut final_tris = other.triangles.clone();
-        for x in final_tris.iter_mut() {
-            *x += max_triangle_index;
-        }
-        self.triangles.extend(final_tris);
-        self.vertices.extend(other.vertices.into_iter());
-        self.normals.extend(other.normals.into_iter());
-        self.uvs.extend(other.uvs.into_iter());
-        self.colors.extend(other.colors.into_iter());
-        self.tangents.extend(other.tangents.into_iter());
-        if let Some(custom) = other.custom {
-            self.custom.as_mut().unwrap().inner.extend(custom.inner.into_iter());
-        }
-        self
-    }
-    // Combine a model with this one
-    // NOTE: This assumes that the second model uses vertices from the first model
-    pub fn combine_smart(mut self, other: Self) -> Self {
-        // We must have matching custom vertex buffers
-        if self.custom.is_some() != other.custom.is_some() {
-            panic!()
-        };
-
-        self.triangles.extend(other.triangles.into_iter());
+        self.triangles.extend(other.triangles.into_iter().map(|mut x| { x += max_triangle_index; x }));
         self.vertices.extend(other.vertices.into_iter());
         self.normals.extend(other.normals.into_iter());
         self.uvs.extend(other.uvs.into_iter());
@@ -283,7 +245,7 @@ impl Model {
         self
     }
     // Procedurally generate the normals for this model
-    pub fn generate_normals(mut self) {
+    pub fn with_generated_normals(mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
 
@@ -314,10 +276,5 @@ impl Model {
 
         // Update our normals
         self.normals = vertex_normals;
-    }
-    // Add some custom vertex data
-    pub fn with_custom<T>(mut self, custom: CustomVertexDataBuffer<T>, _type: DataType) -> Self {
-        self.custom = Some(StoredCustomVertexDataBuffer::new(custom, _type));
-        self
     }
 }

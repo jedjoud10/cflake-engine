@@ -1,5 +1,5 @@
 use rendering::{
-    basics::model::{CustomVertexDataBuffer, Model},
+    basics::model::Model,
     utils::DataType::U32,
 };
 
@@ -10,8 +10,6 @@ use crate::{
     },
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
-
-use super::BuilderModelData;
 
 // A skirts builder, useful since we can keep track of the current iteration as a field, which organizes somestuff
 pub(crate) struct MarchingCubesSkirts {
@@ -37,10 +35,7 @@ impl MarchingCubesSkirts {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
-        let mut model = BuilderModelData {
-            model: Model::default(),
-            vdata: CustomVertexDataBuffer::<u32>::with_capacity(200, 1),
-        };
+        let mut model = Model::with_capacity(64);
         // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
@@ -52,17 +47,14 @@ impl MarchingCubesSkirts {
             self.generate_skirt(voxels, &mut model, false, flip, index_offsets, indexing_function, transform_function);
             self.generate_skirt(voxels, &mut model, true, !flip, index_offsets, indexing_function, transform_function);
         }
-        // Combine the model's custom vertex data with the model itself
-        let extracted_model = model.model;
-        let custom_vdata = model.vdata;
         println!("Skirts: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
-        extracted_model.with_custom::<u32>(custom_vdata, U32)
+        model
     }
     // Generate a whole skirt
     fn generate_skirt(
         &self,
         voxels: &StoredVoxelData,
-        model: &mut BuilderModelData,
+        model: &mut Model,
         slice_part: bool,
         flip: bool,
         index_offsets: &'static [usize; 4],
@@ -155,7 +147,7 @@ impl MarchingCubesSkirts {
         })
     }
     // Solve a single marching squares case using a passed function for transforming the vertex position to world space
-    fn solve_marching_squares(model: &mut BuilderModelData, info: &InterInfo, data: &SquareData) {
+    fn solve_marching_squares(model: &mut Model, info: &InterInfo, data: &SquareData) {
         let mut vertices: [veclib::Vector3<f32>; 12] = [veclib::Vector3::ZERO; 12];
         let mut len: usize = 0;
         // Create the triangles from the marching squares case
@@ -188,10 +180,10 @@ impl MarchingCubesSkirts {
             if i == len {
                 return;
             }
-            model.model.triangles.push(model.model.vertices.len() as u32);
-            model.model.vertices.push(vertex);
-            model.model.normals.push(data.normal.normalized());
-            model.vdata.push(data.voxel_material as u32);
+            model.triangles.push(model.vertices.len() as u32);
+            model.vertices.push(vertex);
+            model.normals.push(data.normal.normalized());
+            //model.vdata.push(data.voxel_material as u32);
         }
     }
     // Create a marching squares triangle between 3 skirt voxels

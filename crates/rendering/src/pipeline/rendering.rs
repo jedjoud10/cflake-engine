@@ -5,7 +5,7 @@ use crate::{
     basics::{
         lights::{LightSource, LightSourceType},
         material::Material,
-        model::{Model, ModelBuffers},
+        model::Model,
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
@@ -42,7 +42,7 @@ pub struct PipelineRenderer {
 }
 impl PipelineRenderer {
     // Setup uniforms for a specific renderer
-    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a ModelBuffers, usize, &'a Material)> {
+    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a Model, &'a Material)> {
         // Pipeline data
         let camera = &pipeline.camera;
         let material = pipeline.get_material(renderer.material).unwrap();
@@ -66,10 +66,10 @@ impl PipelineRenderer {
         }
         group.set_uniforms(pipeline, settings);
 
-        Some((&model.1, model.0.triangles.len(), material))
+        Some((&model, material))
     }
     // Render a single renderer
-    fn render(&self, buffers: &ModelBuffers, triangle_count: usize, double_sided: bool) -> Option<()> {
+    fn render(&self, model: &Model, double_sided: bool) {
         unsafe {
             // Enable / Disable vertex culling for double sided materials
             if double_sided {
@@ -79,11 +79,10 @@ impl PipelineRenderer {
             }
 
             // Actually draw
-            gl::BindVertexArray(buffers.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, triangle_count as i32, gl::UNSIGNED_INT, null());
+            gl::BindVertexArray(model.vertex_array_object);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
+            gl::DrawElements(gl::TRIANGLES, model.triangles.len() as i32, gl::UNSIGNED_INT, null());
         }
-        Some(())
     }
     // Initialize this new pipeline renderer
     pub(crate) fn initialize(&mut self, pipeline_settings: PipelineSettings, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
@@ -218,8 +217,8 @@ impl PipelineRenderer {
             }
             let result = self.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
-            if let Some((buffers, triangle_count, material)) = result {
-                self.render(buffers, triangle_count, material.double_sided);
+            if let Some((model, material)) = result {
+                self.render(model, material.double_sided);
             }
         }
     }
@@ -243,8 +242,8 @@ impl PipelineRenderer {
 
             let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
-            if let Some((buffers, triangle_count)) = result {
-                self.render(buffers, triangle_count, false);
+            if let Some(model) = result {
+                self.render(model, false);
             }
         }
         unsafe {
@@ -282,13 +281,11 @@ impl PipelineRenderer {
         self.uniforms.set_uniforms(pipeline, settings).unwrap();
 
         // Render the screen quad
-        let (_, quad_data) = pipeline.get_model(self.quad_model).unwrap();
+        let quad_model = pipeline.get_model(self.quad_model).unwrap();
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            gl::BindVertexArray(quad_data.vertex_array_object);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, quad_data.element_buffer_object);
-            gl::DrawElements(gl::TRIANGLES, quad_data.triangle_count as i32, gl::UNSIGNED_INT, null());
+            self.render(quad_model, false);
             gl::BindVertexArray(0);
         }
     }

@@ -1,6 +1,6 @@
 use crate::{
     basics::{
-        model::ModelBuffers,
+        model::Model,
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
@@ -27,7 +27,7 @@ pub struct ShadowMapping {
 }
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
-    pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a ModelBuffers, usize)> {
+    pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<&'a Model> {
         // Always use our internal shadow shader
         let shader = self.shadow_shader;
         let model = pipeline.get_model(renderer.model)?;
@@ -44,7 +44,7 @@ impl ShadowMapping {
         // Update the uniforms
         group.bind_shader(pipeline, settings);
         group.set_uniforms(pipeline, settings);
-        Some((&model.1, model.0.triangles.len()))
+        Some(&model)
     }
     // Initialize a new shadow mapper
     pub(crate) fn new(renderer: &mut PipelineRenderer, shadow_resolution: u16, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {

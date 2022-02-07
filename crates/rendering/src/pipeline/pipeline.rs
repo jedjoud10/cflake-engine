@@ -3,7 +3,7 @@ use crate::{
     basics::{
         lights::LightSource,
         material::Material,
-        model::{Model, ModelBuffers},
+        model::Model,
         renderer::Renderer,
         shader::{query_shader_info, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
@@ -59,7 +59,7 @@ pub struct Pipeline {
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub(crate) materials: ShareableOrderedVec<Material>,
-    pub(crate) models: ShareableOrderedVec<(Model, ModelBuffers)>,
+    pub(crate) models: ShareableOrderedVec<Model>,
     pub(crate) renderers: ShareableOrderedVec<Renderer>,
     pub(crate) shaders: ShareableOrderedVec<Shader>,
     pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
@@ -227,7 +227,7 @@ impl Pipeline {
         self.materials.get(id.get()?)
     }
     // Get a model using it's respective ID
-    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&(Model, ModelBuffers)> {
+    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&Model> {
         self.models.get(id.get()?)
     }
     // Get a renderer using it's respective ID
@@ -265,7 +265,7 @@ impl Pipeline {
         self.materials.get_mut(id.get()?)
     }
     // Get a mutable model using it's respective ID
-    pub fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut (Model, ModelBuffers)> {
+    pub fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut Model> {
         self.models.get_mut(id.get()?)
     }
     // Get a mutable renderer using it's respective ID

@@ -8,12 +8,11 @@ use crate::{
 };
 use ahash::AHashMap;
 use rendering::{
-    basics::model::{CustomVertexDataBuffer, Model},
+    basics::model::Model,
     utils::DataType::U32,
 };
 use std::collections::hash_map::Entry;
 
-use super::BuilderModelData;
 
 // Struct that contains everything related to the marching cubes mesh generation
 pub(crate) struct MarchingCubes {
@@ -61,7 +60,7 @@ impl MarchingCubes {
         InterpolatedVertexData { vertex, normal }
     }
     // Solve the marching cubes case and add the vertices to the model
-    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
+    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut Model, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
         // The vertex indices that are gonna be used for the skirts
         'edge: for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
@@ -93,19 +92,19 @@ impl MarchingCubes {
                     },
                 );
                 // Then add it to the model
-                e.insert(model.model.vertices.len() as u16);
-                model.model.triangles.push(model.model.vertices.len() as u32);
-                model.model.vertices.push(interpolated.vertex);
-                model.model.normals.push(interpolated.normal);
-                model.vdata.push(data.material as u32);
+                e.insert(model.vertices.len() as u16);
+                model.triangles.push(model.vertices.len() as u32);
+                model.vertices.push(interpolated.vertex);
+                model.normals.push(interpolated.normal);
+                //model.vdata.push(data.material as u32);
             } else {
                 // The vertex already exists
-                model.model.triangles.push(merger.duplicates[&edge_tuple] as u32);
+                model.triangles.push(merger.duplicates[&edge_tuple] as u32);
             }
         }
     }
     // Generate the model
-    fn generate_model(&self, voxels: &StoredVoxelData, model: &mut BuilderModelData) {
+    fn generate_model(&self, voxels: &StoredVoxelData, model: &mut Model) {
         // Use vertex merging
         let mut merger = VertexMerger {
             duplicates: AHashMap::with_capacity(64),
@@ -137,18 +136,12 @@ impl MarchingCubes {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Create the model data
-        let mut model = BuilderModelData {
-            model: Model::with_capacity(64),
-            vdata: CustomVertexDataBuffer::<u32>::with_capacity(64, 1),
-        };
+        let mut model = Model::with_capacity(64);
         // Then generate the model
         self.generate_model(voxels, &mut model);
         // Combine the model's custom vertex data with the model itself
-        let extracted_model = model.model;
-        let custom_vdata = model.vdata;
-        println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, extracted_model.vertices.len());
-        //extracted_model
-        extracted_model.with_custom::<u32>(custom_vdata, U32)
+        println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, model.vertices.len());
+        model
     }
 }
 // Info about the current iteration
