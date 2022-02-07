@@ -45,11 +45,11 @@ impl PipelineRenderer {
     fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a Model, &'a Material)> {
         // Pipeline data
         let camera = &pipeline.camera;
-        let material = pipeline.get_material(renderer.material).unwrap();
+        let material = pipeline.materials.get(renderer.material).unwrap();
 
         // The shader will always be valid
-        let shader = pipeline.get_shader(material.shader).unwrap();
-        let model = pipeline.get_model(renderer.model)?;
+        let shader = pipeline.shaders.get(material.shader).unwrap();
+        let model = pipeline.models.get(renderer.model)?;
         let model_matrix = &renderer.matrix;
 
         // Pass the matrices to the shader
@@ -132,7 +132,7 @@ impl PipelineRenderer {
             // Now bind the attachememnts
             fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
-                let texture = pipeline.get_texture(*texture)?;
+                let texture = pipeline.textures.get(*texture)?;
                 unsafe {
                     gl::BindTexture(texture.target, texture.oid);
                     gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
@@ -232,7 +232,7 @@ impl PipelineRenderer {
         }
 
         self.shadow_mapping.bind_fbo();
-        let directional_light_source = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun);
+        let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
             self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
         }
@@ -267,7 +267,7 @@ impl PipelineRenderer {
         let default_light_source = LightSource::new(LightSourceType::Directional {
             quat: veclib::Quaternion::<f32>::IDENTITY,
         });
-        let light = pipeline.get_light_source(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default_light_source);
+        let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default_light_source);
         let directional = light._type.as_directional().unwrap();
         self.uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
         self.uniforms.set_f32("directional_light_strength", light.strength);
@@ -284,7 +284,7 @@ impl PipelineRenderer {
         self.uniforms.set_uniforms(pipeline, settings).unwrap();
 
         // Render the screen quad
-        let quad_model = pipeline.get_model(self.quad_model).unwrap();
+        let quad_model = pipeline.models.get(self.quad_model).unwrap();
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -296,15 +296,15 @@ impl PipelineRenderer {
     pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
         // Update the size of each texture that is bound to the framebuffer
         let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        let diffuse_texture = pipeline.get_texture_mut(self.diffuse_texture).unwrap();
+        let diffuse_texture = pipeline.textures.get_mut(self.diffuse_texture).unwrap();
         diffuse_texture.update_size(dims).unwrap();
-        let emissive_texture = pipeline.get_texture_mut(self.emissive_texture).unwrap();
+        let emissive_texture = pipeline.textures.get_mut(self.emissive_texture).unwrap();
         emissive_texture.update_size(dims).unwrap();
-        let normals_texture = pipeline.get_texture_mut(self.normals_texture).unwrap();
+        let normals_texture = pipeline.textures.get_mut(self.normals_texture).unwrap();
         normals_texture.update_size(dims).unwrap();
-        let position_texture = pipeline.get_texture_mut(self.position_texture).unwrap();
+        let position_texture = pipeline.textures.get_mut(self.position_texture).unwrap();
         position_texture.update_size(dims).unwrap();
-        let depth_texture = pipeline.get_texture_mut(self.depth_texture).unwrap();
+        let depth_texture = pipeline.textures.get_mut(self.depth_texture).unwrap();
         depth_texture.update_size(dims).unwrap();
     }
 }

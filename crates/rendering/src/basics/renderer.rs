@@ -40,7 +40,7 @@ impl Renderer {
 impl PipelineObject for Renderer {
     // Reserve an ID for this renderer
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.renderers.get_next_id_increment())))
+        Some((self, pipeline.renderers.gen_id()))
     }
     // Send this rendererer to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -62,12 +62,12 @@ impl PipelineObject for Renderer {
             self.material = defaults.material;
         }
         // Add the renderer
-        pipeline.renderers.insert(id.get()?, self);
+        pipeline.renderers.insert(id, self)?;
         Some(())
     }
     // Delete the renderer from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let me = pipeline.renderers.remove(id.get()?)?;
+        let me = pipeline.renderers.remove(id)?;
         // Also remove the model if we want to
         if me.flags.contains(RendererFlags::SHOULD_DELETE_MODEL) {
             let _removed_model = Model::delete(pipeline, me.model)?;
@@ -79,26 +79,18 @@ impl PipelineObject for Renderer {
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a model
-    pub fn set_model(mut self, model: ObjectID<Model>) -> Self {
+    pub fn with_model(mut self, model: ObjectID<Model>) -> Self {
         self.model = model;
         self
     }
     // With a specific material
-    pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
+    pub fn with_material(mut self, material: ObjectID<Material>) -> Self {
         self.material = material;
         self
     }
     // Set the model matrix for this renderer
-    pub fn set_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
+    pub fn with_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
         self.matrix = matrix;
         self
-    }
-    // Update our uniforms
-    pub fn update_uniforms(&mut self, uniforms: ShaderUniformsGroup) {
-        self.uniforms = Some(uniforms);
-    }
-    // Update a renderer's matrix
-    pub fn update_matrix(&mut self, matrix: veclib::Matrix4x4<f32>) {
-        self.matrix = matrix;
     }
 }

@@ -21,7 +21,7 @@ pub struct LightSource {
 impl PipelineObject for LightSource {
     // Reserve an ID for this light source
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.light_sources.get_next_id_increment())))
+        Some((self, pipeline.light_sources.gen_id()))
     }
     // Send this light source to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -43,12 +43,12 @@ impl PipelineObject for LightSource {
             pipeline.defaults.as_mut().unwrap().sun = id;
         }
         // Add the light source
-        pipeline.light_sources.insert(id.get()?, self);
+        pipeline.light_sources.insert(id, self)?;
         Some(())
     }
     // Remove the light source from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.light_sources.remove(id.get()?)
+        pipeline.light_sources.remove(id)
     }
 }
 

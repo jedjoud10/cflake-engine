@@ -3,7 +3,7 @@ use super::PipelineObject;
 use std::{
     fmt::Debug,
     marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering},
+    sync::atomic::{AtomicU64, Ordering, AtomicUsize},
 };
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
@@ -77,10 +77,10 @@ where
 }
 
 // Atomic counter that we will use to get the next reserved tracked ID
-pub(crate) static RESERVED_TRACKED_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
+pub(crate) static RESERVED_TRACKED_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 // A tracking TaskID that we can use to check wether a specific task has executed or not
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ReservedTrackedID(pub(crate) u64);
+pub struct ReservedTrackedID(pub(crate) usize);
 
 impl Default for ReservedTrackedID {
     // Reserve a special trakcing ID for ourselves

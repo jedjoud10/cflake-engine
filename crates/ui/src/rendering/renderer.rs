@@ -119,7 +119,7 @@ impl Renderer {
             let id_texture = if !id.texture.is_some() { pipeline.defaults.as_ref().unwrap().white } else { id.texture };
             // If the shader ID is the default one, that means that we have to use the default UI shader
             group.set_texture("main_texture", id_texture, 0);
-            if pipeline.get_shader(id_shader).is_some() {
+            if pipeline.shaders.get(id_shader).is_some() {
                 let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(id_shader));
                 group.bind_shader(pipeline, settings);
                 group.set_uniforms(pipeline, settings).expect("Forgot to set shader or main texture!");

@@ -24,7 +24,7 @@ use std::{
     },
 };
 
-use super::{settings::PipelineSettings, PipelineContext};
+use super::{settings::PipelineSettings, PipelineContext, collection::{Collection, TrackedCollection}};
 
 // Some default values like the default material or even the default shader
 pub struct DefaultPipelineObjects {
@@ -58,15 +58,15 @@ pub struct Pipeline {
 
     // We store the Pipeline Objects, for each Pipeline Object type
     // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
-    pub(crate) materials: ShareableOrderedVec<Material>,
-    pub(crate) models: ShareableOrderedVec<Model>,
-    pub(crate) renderers: ShareableOrderedVec<Renderer>,
-    pub(crate) shaders: ShareableOrderedVec<Shader>,
-    pub(crate) compute_shaders: ShareableOrderedVec<ComputeShader>,
-    pub(crate) textures: ShareableOrderedVec<Texture>,
-    pub(crate) atomics: ShareableOrderedVec<AtomicGroup>,
-    pub(crate) shader_storages: ShareableOrderedVec<ShaderStorage>,
-    pub(crate) light_sources: ShareableOrderedVec<LightSource>,
+    pub materials: Collection<Material>,
+    pub models: Collection<Model>,
+    pub renderers: TrackedCollection<Renderer>,
+    pub shaders: Collection<Shader>,
+    pub compute_shaders: Collection<ComputeShader>,
+    pub textures: Collection<Texture>,
+    pub atomics: Collection<AtomicGroup>,
+    pub shader_storages: Collection<ShaderStorage>,
+    pub light_sources: Collection<LightSource>,
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub defaults: Option<DefaultPipelineObjects>,
@@ -102,27 +102,27 @@ impl Pipeline {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             TrackedTask::RunComputeShader(id, settings) => {
-                let compute = self.get_compute_shader(id).unwrap();
+                let compute = self.compute_shaders.get(id).unwrap();
                 compute.compute_run(self, settings)
             }
             TrackedTask::TextureReadBytes(id, read) => {
-                let texture = self.get_texture(id).unwrap();
+                let texture = self.textures.get(id).unwrap();
                 texture.read_bytes(self, read)
             }
             TrackedTask::ShaderStorageReadBytes(id, read) => {
-                let shader_storage = self.get_shader_storage(id).unwrap();
+                let shader_storage = self.shader_storages.get(id).unwrap();
                 shader_storage.read_bytes(self, read)
             }
             TrackedTask::AtomicGroupRead(id, read) => {
-                let atomic_group = self.get_atomic_group(id).unwrap();
+                let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.read_counters(self, read)
             }
             TrackedTask::QueryShaderInfo(id, settings, read) => {
-                let shader = self.get_shader(id).unwrap();
+                let shader = self.shaders.get(id).unwrap();
                 query_shader_info(self, shader.program, settings, read)
             }
             TrackedTask::QueryComputeShaderInfo(id, settings, read) => {
-                let compute = self.get_compute_shader(id).unwrap();
+                let compute = self.compute_shaders.get(id).unwrap();
                 query_shader_info(self, compute.program, settings, read)
             }
         };
@@ -135,7 +135,7 @@ impl Pipeline {
 
         // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
         for (completed, _) in completed_ids {
-            self.completed_tasks.set(completed.0, true);
+            self.completed_tasks.set(completed.0 as usize, true);
         }
     }
     // Execute a single task
@@ -155,7 +155,7 @@ impl Pipeline {
 
         // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
         for (completed, _) in completed_ids {
-            self.completed_tasks.set(completed.0, true);
+            self.completed_tasks.set(completed.0 as usize, true);
         }
 
         // Always flush during the update
@@ -173,7 +173,7 @@ impl Pipeline {
                 .drain_filter(|task| match task {
                     PipelineTask::Tracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
-                        let valid = require.and_then(|x| if self.completed_tasks.get(x.0) { None } else { Some(()) });
+                        let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
                         valid.is_none()
                     }
                     _ => true,
@@ -222,81 +222,6 @@ impl Pipeline {
             callback(self, renderer);
         }
     }
-    // Get a material using it's respective ID
-    pub fn get_material(&self, id: ObjectID<Material>) -> Option<&Material> {
-        self.materials.get(id.get()?)
-    }
-    // Get a model using it's respective ID
-    pub fn get_model(&self, id: ObjectID<Model>) -> Option<&Model> {
-        self.models.get(id.get()?)
-    }
-    // Get a renderer using it's respective ID
-    pub fn get_renderer(&self, id: ObjectID<Renderer>) -> Option<&Renderer> {
-        self.renderers.get(id.get()?)
-    }
-    // Get a shader using it's respective ID
-    pub fn get_shader(&self, id: ObjectID<Shader>) -> Option<&Shader> {
-        self.shaders.get(id.get()?)
-    }
-    // Get a compute shader using it's respective ID
-    pub fn get_compute_shader(&self, id: ObjectID<ComputeShader>) -> Option<&ComputeShader> {
-        self.compute_shaders.get(id.get()?)
-    }
-    // Get a texture using it's respective ID
-    pub fn get_texture(&self, id: ObjectID<Texture>) -> Option<&Texture> {
-        self.textures.get(id.get()?)
-    }
-    // Get an atomic group using it's respective ID
-    pub fn get_atomic_group(&self, id: ObjectID<AtomicGroup>) -> Option<&AtomicGroup> {
-        self.atomics.get(id.get()?)
-    }
-    // Get a shader storage using it's respective ID
-    pub fn get_shader_storage(&self, id: ObjectID<ShaderStorage>) -> Option<&ShaderStorage> {
-        self.shader_storages.get(id.get()?)
-    }
-    // Get a light source using it's repsective ID
-    pub fn get_light_source(&self, id: ObjectID<LightSource>) -> Option<&LightSource> {
-        self.light_sources.get(id.get()?)
-    }
-
-    // Mutable
-    // Get a mutable material using it's respective ID
-    pub fn get_material_mut(&mut self, id: ObjectID<Material>) -> Option<&mut Material> {
-        self.materials.get_mut(id.get()?)
-    }
-    // Get a mutable model using it's respective ID
-    pub fn get_model_mut(&mut self, id: ObjectID<Model>) -> Option<&mut Model> {
-        self.models.get_mut(id.get()?)
-    }
-    // Get a mutable renderer using it's respective ID
-    pub fn get_renderer_mut(&mut self, id: ObjectID<Renderer>) -> Option<&mut Renderer> {
-        self.renderers.get_mut(id.get()?)
-    }
-    // Get a mutable shader using it's respective ID
-    pub fn get_shader_mut(&mut self, id: ObjectID<Shader>) -> Option<&mut Shader> {
-        self.shaders.get_mut(id.get()?)
-    }
-    // Get a mutable compute shader using it's respective ID
-    pub fn get_compute_shader_mut(&mut self, id: ObjectID<ComputeShader>) -> Option<&mut ComputeShader> {
-        self.compute_shaders.get_mut(id.get()?)
-    }
-    // Get a mutable texture using it's respective ID
-    pub fn get_texture_mut(&mut self, id: ObjectID<Texture>) -> Option<&mut Texture> {
-        self.textures.get_mut(id.get()?)
-    }
-    // Get a mutable atomic group using it's respective ID
-    pub fn get_atomic_group_mut(&mut self, id: ObjectID<AtomicGroup>) -> Option<&mut AtomicGroup> {
-        self.atomics.get_mut(id.get()?)
-    }
-    // Get a mutable shader storage using it's respective ID
-    pub fn get_shader_storage_mut(&mut self, id: ObjectID<ShaderStorage>) -> Option<&mut ShaderStorage> {
-        self.shader_storages.get_mut(id.get()?)
-    }
-    // Get a mutable light source using it's repsective ID
-    pub fn get_light_source_mut(&mut self, id: ObjectID<LightSource>) -> Option<&mut LightSource> {
-        self.light_sources.get_mut(id.get()?)
-    }
-
     // Update methods
     // Update the window dimensions
     pub fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {

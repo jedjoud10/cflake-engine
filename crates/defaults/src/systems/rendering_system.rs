@@ -18,9 +18,9 @@ fn run(world: &mut World, data: EventKey) {
             // Update the values if our renderer is valid
             let matrix = transform.calculate_matrix();
             pipec::update_callback(&pipeline, move |pipeline, _| {
-                let gpu_renderer = pipeline.get_renderer_mut(renderer_object_id);
+                let gpu_renderer = pipeline.renderers.get_mut(renderer_object_id);
                 if let Some(gpu_renderer) = gpu_renderer {
-                    gpu_renderer.update_matrix(matrix);
+                    gpu_renderer.matrix = matrix;
                 }
             })
             .unwrap();
@@ -33,7 +33,7 @@ fn run(world: &mut World, data: EventKey) {
     let time = world.time.elapsed;
     pipec::update_callback(&pipeline, move |pipeline, _| {
         // Update the sun's light source, if possible
-        if let Some(light) = pipeline.get_light_source_mut(id) {
+        if let Some(light) = pipeline.light_sources.get_mut(id) {
             let quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, -time as f32 * 0.02);
             light.strength = 1.2;
             *light._type.as_directional_mut().unwrap() = quat;

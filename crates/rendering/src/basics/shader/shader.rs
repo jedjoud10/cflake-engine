@@ -87,7 +87,7 @@ pub struct Shader {
 impl PipelineObject for Shader {
     // Reserve an ID for this shader
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.shaders.get_next_id_increment())))
+        Some((self, pipeline.shaders.gen_id()))
     }
     // Send this shader to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -195,12 +195,12 @@ impl PipelineObject for Shader {
         // Add the shader at the end
         self.program = program;
         // Add the shader
-        pipeline.shaders.insert(id.get()?, self);
+        pipeline.shaders.insert(id, self);
         Some(())
     }
     // Remove the shader from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.shaders.remove(id.get()?)
+        pipeline.shaders.remove(id)
     }
 }
 

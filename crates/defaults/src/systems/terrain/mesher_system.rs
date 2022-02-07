@@ -43,8 +43,8 @@ fn run(world: &mut World, data: EventKey) {
                 chunk.added_renderer = true;
                 let mut group = ComponentLinkingGroup::default();
                 let renderer = main::rendering::basics::renderer::Renderer::new(main::rendering::basics::renderer::RendererFlags::DEFAULT)
-                    .set_model(model_id)
-                    .set_material(terrain.chunk_handler.material);
+                    .with_model(model_id)
+                    .with_material(terrain.chunk_handler.material);
                 group.link(crate::components::Renderer::new(renderer)).unwrap();
                 world.ecs.link_components(*id, group).unwrap();
                 terrain.chunk_handler.chunks_generating.remove(&coords);

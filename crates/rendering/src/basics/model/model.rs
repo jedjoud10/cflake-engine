@@ -56,7 +56,7 @@ impl Default for Model {
 impl PipelineObject for Model {
     // Reserve an ID for this model
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.models.get_next_id_increment())))
+        Some((self, pipeline.models.gen_id()))
     }
     // Send this model to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -195,12 +195,12 @@ impl PipelineObject for Model {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);            
         }
         // Add the model
-        pipeline.models.insert(id.get()?, self);
+        pipeline.models.insert(id, self);
         Some(())
     }
     // Remove the model from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let model = pipeline.models.remove(id.get()?)?;
+        let model = pipeline.models.remove(id)?;
         // Dispose of the OpenGL buffers
         unsafe {
             // Delete the VBOs

@@ -31,7 +31,7 @@ impl ShadowMapping {
         if !self.enabled { return None; }
         // Always use our internal shadow shader
         let shader = self.shadow_shader;
-        let model = pipeline.get_model(renderer.model)?;
+        let model = pipeline.models.get(renderer.model)?;
         let model_matrix = &renderer.matrix;
 
         // Calculate the light space matrix
@@ -69,7 +69,7 @@ impl ShadowMapping {
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.get_texture(texture).unwrap().oid, 0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(texture).unwrap().oid, 0);
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind

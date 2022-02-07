@@ -21,7 +21,7 @@ pub struct ShaderStorage {
 impl PipelineObject for ShaderStorage {
     // Reserve an ID for this shader storage
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.shader_storages.get_next_id_increment())))
+        Some((self, pipeline.shader_storages.gen_id()))
     }
     // Send this shader storage to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -46,12 +46,12 @@ impl PipelineObject for ShaderStorage {
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, data_ptr, self.usage.convert());
         }
         // Add the shader storage
-        pipeline.shader_storages.insert(id.get()?, self);
+        pipeline.shader_storages.insert(id, self);
         Some(())
     }
     // Remove the compute shader from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.shader_storages.remove(id.get()?)
+        pipeline.shader_storages.remove(id)
     }
 }
 impl ShaderStorage {

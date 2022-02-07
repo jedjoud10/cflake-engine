@@ -55,17 +55,18 @@ fn init(world: &mut core::World) {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
-            let matrix = defaults::components::Transform::default().calculate_matrix();
+            let transform = defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 2.2, 0.0, x as f32 * 2.2));
+            let matrix = transform.calculate_matrix();
             group
-                .link::<defaults::components::Transform>(defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 2.2, 0.0, x as f32 * 2.2)))
+                .link::<defaults::components::Transform>(transform)
                 .unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
 
             // Create it's renderer
             let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::DEFAULT)
-                .set_model(model_id)
-                .set_material(material)
-                .set_matrix(matrix);
+                .with_model(model_id)
+                .with_material(material)
+                .with_matrix(matrix);
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
             // Add the cube
@@ -88,8 +89,8 @@ fn init(world: &mut core::World) {
         .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
     let shader = rendering::pipeline::pipec::construct(&pipeline, rendering::basics::shader::Shader::new(settings).unwrap()).unwrap();
     // Then the textures
-    let _white = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().white).unwrap();
-    let _normal_map = pipeline.get_texture(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
+    let _white = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().white).unwrap();
+    let _normal_map = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
     let texture_diff_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_diff_2k.jpg").unwrap();
     let texture_norm_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_nor_gl_2k.jpg").unwrap();
     let texture_diff_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_diff_2k.jpg").unwrap();

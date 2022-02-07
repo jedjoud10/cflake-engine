@@ -25,8 +25,8 @@ impl ShaderUniformsSettings {
     // Get the program OID of the shader
     pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {
         match self.identifier {
-            ShaderIdentifier::ObjectID(x) => pipeline.get_shader(x).unwrap().program,
-            ShaderIdentifier::ComputeObjectID(x) => pipeline.get_compute_shader(x).unwrap().program,
+            ShaderIdentifier::ObjectID(x) => pipeline.shaders.get(x).unwrap().program,
+            ShaderIdentifier::ComputeObjectID(x) => pipeline.compute_shaders.get(x).unwrap().program,
             ShaderIdentifier::OpenGLID(x) => x,
         }
     }

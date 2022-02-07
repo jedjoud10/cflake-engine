@@ -120,7 +120,7 @@ impl LinkedComponents {
         // And now we've got a write guard!
         let guard = ComponentWriteGuard::new(component);
         let index = ordered_vec::utils::from_id(*id).index;
-        self.mutated_components.set(index as u64, true);
+        self.mutated_components.set(index.try_into().unwrap(), true);
         Ok(guard)
     }
     // Check if a specific component has been updated during this frame
@@ -134,6 +134,6 @@ impl LinkedComponents {
 
         // Now check if it has been mutated or not
         let index = ordered_vec::utils::from_id(*id).index;
-        Ok(self.mutated_components.get(index as u64))
+        Ok(self.mutated_components.get(index.try_into().unwrap()))
     }
 }

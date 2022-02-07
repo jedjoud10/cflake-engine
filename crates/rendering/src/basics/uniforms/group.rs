@@ -132,17 +132,17 @@ impl ShaderUniformsGroup {
                     Uniform::Mat44F32(matrix) => set_mat44f32(index, matrix),
                     Uniform::Texture(id, active_texture_id) => {
                         // We need to know the texture target first
-                        let texture = pipeline.get_texture(*id)?;
+                        let texture = pipeline.textures.get(*id)?;
                         set_texture(index, texture, active_texture_id);
                     }
                     Uniform::Image(id, access_type) => {
                         // We need to know the texture target first
-                        let texture = pipeline.get_texture(*id)?;
+                        let texture = pipeline.textures.get(*id)?;
                         set_image(index, texture, access_type);
                     }
                     Uniform::CounterGroup(id, binding) => {
                         // Get the atomic counter and bind it
-                        let atomic = pipeline.get_atomic_group(*id)?;
+                        let atomic = pipeline.atomics.get(*id)?;
                         // Clear the atomic if needed
                         if let ClearCondition::BeforeShaderExecution = atomic.condition {
                             atomic.clear_counters().ok()?;
@@ -151,7 +151,7 @@ impl ShaderUniformsGroup {
                     }
                     Uniform::ShaderStorage(id, binding) => {
                         // Get the shader storage and bind it
-                        let shader_storage = pipeline.get_shader_storage(*id)?;
+                        let shader_storage = pipeline.shader_storages.get(*id)?;
                         set_shader_storage(index, shader_storage, binding);
                     }
                 }

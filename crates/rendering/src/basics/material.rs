@@ -32,7 +32,7 @@ impl Default for Material {
 impl PipelineObject for Material {
     // Reserve an ID for this material
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.materials.get_next_id_increment())))
+        Some((self, pipeline.materials.gen_id()))
     }
     // Send this material to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -61,12 +61,12 @@ impl PipelineObject for Material {
         }
 
         // Add the material
-        pipeline.materials.insert(id.get()?, self);
+        pipeline.materials.insert(id, self)?;
         Some(())
     }
     // Remove the material from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.materials.remove(id.get()?)
+        pipeline.materials.remove(id)
     }
 }
 

@@ -76,7 +76,7 @@ impl Default for Texture {
 impl PipelineObject for Texture {
     // Reserve an ID for this texture
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, ObjectID::new(pipeline.textures.get_next_id_increment())))
+        Some((self, pipeline.textures.gen_id()))
     }
     // Send this texture to the pipeline for construction
     fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
@@ -245,12 +245,12 @@ impl PipelineObject for Texture {
         unsafe {
             gl::BindTexture(tex_type, 0);
         }
-        pipeline.textures.insert(id.get()?, self);
+        pipeline.textures.insert(id, self);
         Some(())
     }
     // Remove the texture from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let texture = pipeline.textures.remove(id.get()?)?;
+        let texture = pipeline.textures.remove(id)?;
         // Dispose of the OpenGL buffers
         unsafe {
             gl::DeleteTextures(1, &texture.oid);

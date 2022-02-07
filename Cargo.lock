@@ -77,8 +77,8 @@ dependencies = [
 
 [[package]]
 name = "bitfield"
-version = "0.2.5"
-source = "git+https://github.com/jedjoud10/bitfield#36734649829aa97ad98935901847608188fb6f5b"
+version = "0.2.7"
+source = "git+https://github.com/jedjoud10/bitfield#9baab2836fac293dae71f5bba9cc449d6203f310"
 
 [[package]]
 name = "bitflags"
@@ -1112,9 +1112,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
+checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
 
 [[package]]
 name = "unicode-xid"
