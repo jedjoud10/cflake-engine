@@ -42,7 +42,7 @@ pub unsafe fn set_mat44f32(index: i32, matrix: &veclib::Matrix4x4<f32>) {
 }
 // Set a texture
 pub unsafe fn set_texture(index: i32, texture: &Texture, active_texture_id: &u32) {
-    gl::ActiveTexture(active_texture_id + 33984);
+    gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
     gl::BindTexture(texture.target, texture.oid);
     gl::Uniform1i(index, *active_texture_id as i32);
 }

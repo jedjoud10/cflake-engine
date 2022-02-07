@@ -81,7 +81,6 @@ impl PipelineRenderer {
             // Actually draw
             gl::BindVertexArray(model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
-            gl::VertexAttrib4Nub(4, 255, 255, 255, 255);
             gl::DrawElements(gl::TRIANGLES, model.triangles.len() as i32, gl::UNSIGNED_INT, null());
         }
     }
