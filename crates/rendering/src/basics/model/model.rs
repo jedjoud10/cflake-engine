@@ -10,7 +10,7 @@ use super::VertexAttributeBufferLayout;
 pub struct Model {
     // Main IDs
     pub vertex_array_object: u32,
-    
+
     // Vertex attributes IDs
     pub buffers: [u32; 6],
     /*
@@ -19,7 +19,7 @@ pub struct Model {
     pub vertex_buf: u32,
     pub normal_buf: u32,
     pub tangent_buf: u32,
-    
+
     pub color_buf: u32,
     pub uv_buf: u32,
     */
@@ -39,7 +39,7 @@ pub struct Model {
 
 impl Default for Model {
     fn default() -> Self {
-        Self { 
+        Self {
             vertex_array_object: 0,
             buffers: [0; 6],
             vertices: Default::default(),
@@ -79,7 +79,7 @@ impl PipelineObject for Model {
             // Create the VAO
             gl::GenVertexArrays(1, &mut self.vertex_array_object);
             gl::BindVertexArray(self.vertex_array_object);
-            
+
             // We can create all the buffers at once
             let mut buffers = [0_32; 6];
             gl::GenBuffers(6, buffers.as_mut_ptr());
@@ -100,10 +100,10 @@ impl PipelineObject for Model {
                 Interleaved VBO
                 pub element_buffer_object: u32,
                 pub vertex_buf: u32,
-                    
+
                 pub tangent_buf: u32,
                 pub normal_buf: u32,
-                
+
                 pub color_buf: u32,
                 pub uv_buf: u32,
                 */
@@ -259,8 +259,7 @@ impl PipelineObject for Model {
                     gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 }
             }
-            
-            
+
             // Unbind
             self.buffers = buffers;
             gl::BindVertexArray(0);
@@ -286,7 +285,6 @@ impl PipelineObject for Model {
     }
 }
 
-
 impl Model {
     // Create the model with a specific vertex attribute vbo layout
     pub fn with_layout(mut self, layout: VertexAttributeBufferLayout) -> Self {
@@ -303,7 +301,10 @@ impl Model {
     // Combine a model with this one, and return the new model
     pub fn combine(mut self, other: Self) -> Self {
         let max_triangle_index: u32 = self.vertices.len() as u32;
-        self.triangles.extend(other.triangles.into_iter().map(|mut x| { x += max_triangle_index; x }));
+        self.triangles.extend(other.triangles.into_iter().map(|mut x| {
+            x += max_triangle_index;
+            x
+        }));
         self.vertices.extend(other.vertices.into_iter());
         self.normals.extend(other.normals.into_iter());
         self.uvs.extend(other.uvs.into_iter());
@@ -342,8 +343,6 @@ impl Model {
         }
 
         // Update our normals
-        self.normals = vertex_normals.into_iter().map(|x| {
-            (x * 127.0).normalized().into()
-        }).collect::<Vec<_>>();
+        self.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
     }
 }

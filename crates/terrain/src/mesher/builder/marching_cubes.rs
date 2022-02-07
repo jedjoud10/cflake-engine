@@ -10,7 +10,6 @@ use ahash::AHashMap;
 use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 
-
 // Struct that contains everything related to the marching cubes mesh generation
 pub(crate) struct MarchingCubes {
     settings: MesherSettings,
@@ -54,7 +53,10 @@ impl MarchingCubes {
         let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
         let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
         let normal = veclib::Vector3::<f32>::lerp(n1, n2, value).normalized();
-        InterpolatedVertexData { vertex, normal: (normal * 127.0).into() }
+        InterpolatedVertexData {
+            vertex,
+            normal: (normal * 127.0).into(),
+        }
     }
     // Solve the marching cubes case and add the vertices to the model
     fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, model: &mut Model, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {

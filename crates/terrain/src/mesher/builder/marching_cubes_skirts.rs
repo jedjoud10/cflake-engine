@@ -1,6 +1,4 @@
-use rendering::{
-    basics::model::Model,
-};
+use rendering::basics::model::Model;
 
 use crate::{
     mesher::{
@@ -133,7 +131,8 @@ impl MarchingCubesSkirts {
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
                 veclib::Vector3::<f32>::from(*voxels.normal(index2)),
                 value,
-            ).normalized();
+            )
+            .normalized();
 
             shared_normal += normal;
 
