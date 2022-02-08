@@ -134,14 +134,14 @@ impl ComputeShader {
         // Create some shader uniforms settings that we can use
         let uniform_settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(self.program));
         let uniforms = Uniforms::new(&uniform_settings, pipeline);
-        uniforms.bind_shader();
-        settings.callback.execute(&uniforms);
         // Dispatch the compute shader for execution
         let axii = settings.axii;
 
         // Create the GlTracker and send the DispatchCompute command
         GlTracker::new(
             |_| unsafe {
+                uniforms.bind_shader();
+                settings.callback.execute(&uniforms);
                 gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
             },
             |_| {},

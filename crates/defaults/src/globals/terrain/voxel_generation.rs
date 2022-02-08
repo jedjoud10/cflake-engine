@@ -3,7 +3,7 @@ use std::mem::size_of;
 use main::{
     rendering::{
         advanced::{
-            atomic::{AtomicGroup, AtomicGroupRead, ClearCondition},
+            atomic::{AtomicGroup, AtomicGroupRead},
             compute::ComputeShader,
             shader_storage::ShaderStorage,
         },
@@ -119,7 +119,7 @@ impl VoxelGenerator {
         }
 
         // Also construct the atomics
-        let atomics = pipec::construct(&pipeline, AtomicGroup::new(&[0, 0]).unwrap().set_clear_condition(ClearCondition::BeforeShaderExecution)).unwrap();
+        let atomics = pipec::construct(&pipeline, AtomicGroup::new(&[0, 0]).unwrap()).unwrap();
 
         // Load the shader storage
         let pipeline = pipeline_context.read();

@@ -40,12 +40,12 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 
     // Set the uniforms for the second compute shader
     let uniforms = SetUniformsCallback::new(move |uniforms| {
-        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 1);
+        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 0);
         uniforms.set_shader_storage("output_voxels", output_voxels, 1);
         uniforms.set_vec3f32("node_pos", chunk_coords.position.into());
         uniforms.set_i32("node_size", chunk_coords.size as i32);
         // Set the atomic counters
-        uniforms.set_atomic_group("_", atomics, 0);
+        uniforms.set_atomic_group("_", atomics, true, 0);
     });
     // And execute the shader
     let execution_settings2 = ComputeShaderExecutionSettings {

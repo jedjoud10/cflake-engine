@@ -1,7 +1,7 @@
 use super::{ShaderUniformsSettings, UniformError, UniformsDefinitionMap};
 use crate::{
     advanced::{
-        atomic::{AtomicGroup, ClearCondition},
+        atomic::{AtomicGroup},
         shader_storage::ShaderStorage,
     },
     basics::{
@@ -176,13 +176,18 @@ impl<'a> Uniforms<'a> {
             gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
         }
     }
-    pub fn set_atomic_group(&self, name: &str, atomic_group_id: ObjectID<AtomicGroup>, binding: u32) {
+    pub fn set_atomic_group(&self, name: &str, atomic_group_id: ObjectID<AtomicGroup>, clear: bool, binding: u32) {
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group_id) {
             x
         } else {
             return;
         };
+
+        // Clear if we want to
+        if clear { atomic_group.clear_counters().unwrap(); }
+
         unsafe {
+
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic_group.oid);
             gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic_group.oid);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);

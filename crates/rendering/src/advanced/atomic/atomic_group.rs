@@ -7,15 +7,7 @@ use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
 };
-
 use super::AtomicGroupRead;
-
-// The clear condition telling us when we should clear the atomic counter
-#[derive(Clone)]
-pub enum ClearCondition {
-    BeforeShaderExecution,
-    DontClear,
-}
 
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
@@ -26,8 +18,6 @@ pub struct AtomicGroup {
     // Some predefined values that we can set before we execute the shader
     // This also stores the number of valid atomics that we have
     pub(crate) defaults: ArrayVec<u32, 4>,
-    // When should we clear this atomic buffer?
-    pub(crate) condition: ClearCondition,
 }
 
 impl Default for AtomicGroup {
@@ -37,7 +27,6 @@ impl Default for AtomicGroup {
         Self {
             oid: 0,
             defaults: arrayvec,
-            condition: ClearCondition::DontClear,
         }
     }
 }
@@ -96,13 +85,7 @@ impl AtomicGroup {
         Some(Self {
             oid: 0,
             defaults: arrayvec,
-            condition: ClearCondition::DontClear,
         })
-    }
-    // Set the clear condition
-    pub fn set_clear_condition(mut self, condition: ClearCondition) -> Self {
-        self.condition = condition;
-        self
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
@@ -130,7 +113,7 @@ impl AtomicGroup {
         )
     }
     // Clear the atomic group counters
-    pub fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
+    pub(crate) fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
         if self.oid == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
