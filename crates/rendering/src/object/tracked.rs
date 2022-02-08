@@ -7,9 +7,7 @@ use crate::{
     },
     basics::{
         readwrite::ReadBytes,
-        shader::{
-            info::{ShaderInfoQuerySettings, ShaderInfoRead},
-        },
+        shader::info::{ShaderInfoQuerySettings, ShaderInfoRead},
         texture::Texture,
         transfer::Transfer,
         uniforms::ShaderIDType,

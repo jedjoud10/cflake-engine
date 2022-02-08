@@ -89,7 +89,7 @@ impl ShaderInfoQuerySettings {
 // Shader info that we queried from the pipeline and that we must return to the calling thread
 #[derive(Default, Clone)]
 pub struct ShaderInfoRead {
-    pub(crate) inner: Arc<Mutex<ShaderInfo>>
+    pub(crate) inner: Arc<Mutex<ShaderInfo>>,
 }
 
 impl ShaderInfoRead {
@@ -113,7 +113,6 @@ impl Transferable for ShaderInfoRead {
     }
 }
 
-
 // Some shader info that we queried from the pipeline
 #[derive(Default, Clone)]
 pub(crate) struct ShaderInfo {
@@ -125,6 +124,7 @@ pub(crate) struct ShaderInfo {
 
 impl ShaderInfo {
     // Get the updated query parameters of a specific resource
+    #[allow(dead_code)]
     pub(crate) fn get(&self, res: &Resource) -> Option<&Vec<UpdatedParameter>> {
         self.res.get(res)
     }
@@ -133,4 +133,3 @@ impl ShaderInfo {
         self.res_all.get(unique_resource)
     }
 }
-

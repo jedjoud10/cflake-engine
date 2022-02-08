@@ -46,10 +46,7 @@ impl PipelineRenderer {
         material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
     }
     fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material
-            .normal_map
-            .get()
-            .map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, ObjectID::new)
+        material.normal_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, ObjectID::new)
     }
     fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, ObjectID::new)

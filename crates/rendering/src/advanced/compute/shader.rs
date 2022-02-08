@@ -104,7 +104,9 @@ impl PipelineObject for ComputeShader {
         // Add the compute shader
         pipeline.compute_shaders.insert(id, self);
         // And also get it's uniform definition map
-        if let Some(mappings) = query_shader_uniforms_definition_map(program) { pipeline.cached.uniform_definitions.insert(program, mappings); }        
+        if let Some(mappings) = query_shader_uniforms_definition_map(program) {
+            pipeline.cached.uniform_definitions.insert(program, mappings);
+        }
         Some(())
     }
     // Remove the compute shader from the pipeline
@@ -143,9 +145,7 @@ impl ComputeShader {
                 uniforms.bind_shader();
                 settings.callback.execute(&uniforms);
                 gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            },
-            |_| {},
-            pipeline,
+            }, pipeline,
         )
     }
 }

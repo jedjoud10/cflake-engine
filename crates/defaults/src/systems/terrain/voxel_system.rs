@@ -3,11 +3,7 @@ use main::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
-        basics::{
-            readwrite::ReadBytes,
-            transfer::Transferable,
-            uniforms::{SetUniformsCallback},
-        },
+        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::SetUniformsCallback},
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },

@@ -4,11 +4,10 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::{null_mut},
+    ptr::null_mut,
 };
 
 use ahash::AHashMap;
-use image::buffer::ConvertBuffer;
 
 use crate::{
     basics::{
@@ -20,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter, ShaderInfoRead},
+    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, ShaderInfoRead, UpdatedParameter},
     IncludeExpansionError, ShaderSettings,
 };
 
@@ -80,7 +79,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
         }
         // Constants
         if line.trim().contains("#constant ") {
-            fn format(line: &String, val: &String) -> String {
+            fn format(line: &str, val: &String) -> String {
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
@@ -111,17 +110,18 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> Option<Unifo
     let mut settings = ShaderInfoQuerySettings::default();
     settings.query_all(QueryResource::Uniform, vec![QueryParameter::Location]);
     let res = query_shader_info(program, settings);
-    let maybe = res.get_all(&QueryResource::Uniform);    
-    // In some cases we might not have uniforms at all 
+    let maybe = res.get_all(&QueryResource::Uniform);
+    // In some cases we might not have uniforms at all
     if let Some(mappings) = maybe {
-        let mappings = mappings.iter()
+        let mappings = mappings
+            .iter()
             .filter_map(|(name, params)| {
                 // Get the inner location
                 let location = *params.get(0)?.as_location()? as i32;
                 Some((name.clone(), location))
             })
-        .collect::<AHashMap<_, _>>();
-        Some(UniformsDefinitionMap { mappings })       
+            .collect::<AHashMap<_, _>>();
+        Some(UniformsDefinitionMap { mappings })
     } else {
         None
     }
@@ -215,7 +215,9 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
         let mut output_queried_resources_all = AHashMap::<QueryResource, Vec<(String, Vec<UpdatedParameter>)>>::new();
         for (unique_resource, (max_resources, max_name_len)) in types_and_counts.into_iter() {
             // No need
-            if !settings.res_all.contains_key(&unique_resource) { continue; }
+            if !settings.res_all.contains_key(&unique_resource) {
+                continue;
+            }
             for id in 0..max_resources {
                 // Get the resource's parameters first
                 let unique_resource_parameters = settings.res_all.get(&unique_resource).unwrap();
@@ -252,11 +254,11 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
                 let entry = output_queried_resources_all.entry(unique_resource.clone()).or_default();
                 dbg!(&converted_outputs);
                 entry.push((name, converted_outputs));
-            }            
+            }
         }
         ShaderInfo {
             res: output_queried_resources,
             res_all: output_queried_resources_all,
-        }        
+        }
     }
 }

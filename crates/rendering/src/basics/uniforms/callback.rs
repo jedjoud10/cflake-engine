@@ -1,5 +1,4 @@
-use super::{Uniforms};
-
+use super::Uniforms;
 
 // Called whenever we will execute the shader, and we must set the uniforms
 #[derive(Default)]

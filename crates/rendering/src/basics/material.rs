@@ -3,7 +3,7 @@ use crate::pipeline::*;
 
 use super::shader::Shader;
 use super::texture::Texture;
-use super::uniforms::{SetUniformsCallback};
+use super::uniforms::SetUniformsCallback;
 // A material that can have multiple parameters and such
 pub struct Material {
     // Main settings

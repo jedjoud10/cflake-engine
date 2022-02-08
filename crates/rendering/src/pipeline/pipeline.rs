@@ -24,11 +24,15 @@ use std::{
 
 use super::{
     cached::Cached,
-    collection::{Collection, TrackedCollection},
+    collection::{Collection},
     defaults::DefaultPipelineObjects,
     settings::PipelineSettings,
     PipelineContext,
 };
+
+// A single pipeline callback
+pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>;
+pub(crate) type PipelineEoFCallbacks = Arc<Mutex<Vec<SinglePipelineCallback>>>;
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
 #[derive(Default)]
@@ -50,7 +54,7 @@ pub struct Pipeline {
     // We store the Pipeline Objects, for each Pipeline Object type
     pub materials: Collection<Material>,
     pub models: Collection<Model>,
-    pub renderers: TrackedCollection<Renderer>,
+    pub renderers: Collection<Renderer>,
     pub shaders: Collection<Shader>,
     pub compute_shaders: Collection<ComputeShader>,
     pub textures: Collection<Texture>,
@@ -72,7 +76,7 @@ pub struct Pipeline {
     pub(crate) debugging: AtomicBool,
 
     // End Of Frame callbacks
-    pub(crate) callbacks: Arc<Mutex<Vec<Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>>>>,
+    pub(crate) callbacks: PipelineEoFCallbacks,
 
     pub time: (f64, f64),
 }
@@ -324,122 +328,124 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
 
     // Actually make the render thread
     let builder = std::thread::Builder::new().name("RenderThread".to_string());
-    let handle = builder.spawn(move || {
-        // Start OpenGL
-        let _glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
-        let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
-        // Initialize OpenGL
-        println!("Initializing OpenGL...");
-        window.make_current();
-        unsafe {
-            glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
-            gl::load_with(|s| window.get_proc_address(s) as *const _);
-        }
-        if gl::Viewport::is_loaded() {
+    let handle = builder
+        .spawn(move || {
+            // Start OpenGL
+            let _glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
+            let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
+            // Initialize OpenGL
+            println!("Initializing OpenGL...");
+            window.make_current();
             unsafe {
-                init_opengl();
+                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
+                gl::load_with(|s| window.get_proc_address(s) as *const _);
             }
-            println!("Successfully initialized OpenGL!");
-        } else {
-            /* NON */
-            panic!()
-        }
-        // Window wrapper
-        let window_wrapper = Window::new(wrapper.clone());
+            if gl::Viewport::is_loaded() {
+                unsafe {
+                    init_opengl();
+                }
+                println!("Successfully initialized OpenGL!");
+            } else {
+                /* NON */
+                panic!()
+            }
+            // Window wrapper
+            let window_wrapper = Window::new(wrapper.clone());
 
-        // Set the global sender
-        sender::set_global_sender(tx);
+            // Set the global sender
+            sender::set_global_sender(tx);
 
-        // Create the pipeline
-        let pipeline = Pipeline::default();
-        // Create an internal pipeline as well
-        let mut internal = InternalPipeline::default();
+            // Create the pipeline
+            let pipeline = Pipeline::default();
+            // Create an internal pipeline as well
+            let mut internal = InternalPipeline::default();
 
-        // Create the Arc and RwLock for the pipeline
-        let pipeline = Arc::new(RwLock::new(pipeline));
+            // Create the Arc and RwLock for the pipeline
+            let pipeline = Arc::new(RwLock::new(pipeline));
 
-        // Load the default objects
-        {
-            let mut pipeline = pipeline.write().unwrap();
-            pipeline.window = window_wrapper;
-            pipeline.defaults = Some(load_defaults(&*pipeline));
-        }
-
-        // Setup the pipeline renderer
-        let mut renderer = {
-            let mut pipeline = pipeline.write().unwrap();
-            let mut renderer = PipelineRenderer::default();
-            pipeline.flush(&mut internal, &mut renderer);
-            renderer.initialize(pipeline_settings, &mut internal, &mut *pipeline);
-            renderer
-        };
-
-        // ---- Finished initializing the Pipeline! ----
-        itx.send(pipeline.clone()).unwrap();
-        println!("Successfully created the RenderThread!");
-
-        // We must render every frame
-        loop {
-            // At the start of each frame we must sync up with the main thread
-            waiting_clone.store(true, Ordering::Relaxed);
-            sbarrier_clone.wait();
-            waiting_clone.store(false, Ordering::Relaxed);
-            // This is a single frame
-            let pipeline_frame_instant = std::time::Instant::now();
-            let mut pipeline_ = pipeline.write().unwrap();
-            let time = time_clone.lock().unwrap();
-            pipeline_.time = *time;
-            let debug = pipeline_.debugging.load(Ordering::Relaxed);
-
-            drop(time);
-            drop(pipeline_);
-
-            let i = std::time::Instant::now();
-            // We render the scene here
-            let pipeline_ = pipeline.read().unwrap();
-            let frame_debug_info = renderer.render_frame(&*pipeline_);
-            let render_frame_duration = i.elapsed();
-            // And we also sync at the end of each frame
-            ebarrier_clone.wait();
-            drop(pipeline_);
-
-            // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
-            let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
-            let i = std::time::Instant::now();
-            pipeline.execute_end_of_frame_callbacks(&mut renderer);
-            let eof_callbacks_duration = i.elapsed();
-
-            // Do not forget to switch buffers at the end of the frame
-            let i = std::time::Instant::now();
-            window.swap_buffers();
-            let swap_buffers_duration = i.elapsed();
-
-            let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
-            // Set the buffer
-            pipeline.add_tasks(messages);
-            // Execute the tasks
-            pipeline.update(&mut internal, &mut renderer);
-
-            // Debug if needed
-            if debug {
-                println!("Pipeline: ");
-                println!("  #Pipeline Whole Frame Time: {:.2}ms", pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0);
-                println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
-                println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
-                println!("  #Pipeline Swap Buffers Time: {:.2}ms", swap_buffers_duration.as_secs_f32() * 1000.0);
-                println!("  #Draw calls {}", frame_debug_info.draw_calls);
-                println!("  #Shadow draw calls {}", frame_debug_info.shadow_draw_calls);
-                println!("  #Triangles {}k", frame_debug_info.triangles / 1000);
-                println!("  #Vertices {}k", frame_debug_info.vertices / 1000);
+            // Load the default objects
+            {
+                let mut pipeline = pipeline.write().unwrap();
+                pipeline.window = window_wrapper;
+                pipeline.defaults = Some(load_defaults(&*pipeline));
             }
 
-            // Check if we must exit from the render thread
-            if eatomic_clone.load(Ordering::Relaxed) {
-                break;
+            // Setup the pipeline renderer
+            let mut renderer = {
+                let mut pipeline = pipeline.write().unwrap();
+                let mut renderer = PipelineRenderer::default();
+                pipeline.flush(&mut internal, &mut renderer);
+                renderer.initialize(pipeline_settings, &mut internal, &mut *pipeline);
+                renderer
+            };
+
+            // ---- Finished initializing the Pipeline! ----
+            itx.send(pipeline.clone()).unwrap();
+            println!("Successfully created the RenderThread!");
+
+            // We must render every frame
+            loop {
+                // At the start of each frame we must sync up with the main thread
+                waiting_clone.store(true, Ordering::Relaxed);
+                sbarrier_clone.wait();
+                waiting_clone.store(false, Ordering::Relaxed);
+                // This is a single frame
+                let pipeline_frame_instant = std::time::Instant::now();
+                let mut pipeline_ = pipeline.write().unwrap();
+                let time = time_clone.lock().unwrap();
+                pipeline_.time = *time;
+                let debug = pipeline_.debugging.load(Ordering::Relaxed);
+
+                drop(time);
+                drop(pipeline_);
+
+                let i = std::time::Instant::now();
+                // We render the scene here
+                let pipeline_ = pipeline.read().unwrap();
+                let frame_debug_info = renderer.render_frame(&*pipeline_);
+                let render_frame_duration = i.elapsed();
+                // And we also sync at the end of each frame
+                ebarrier_clone.wait();
+                drop(pipeline_);
+
+                // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
+                let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
+                let i = std::time::Instant::now();
+                pipeline.execute_end_of_frame_callbacks(&mut renderer);
+                let eof_callbacks_duration = i.elapsed();
+
+                // Do not forget to switch buffers at the end of the frame
+                let i = std::time::Instant::now();
+                window.swap_buffers();
+                let swap_buffers_duration = i.elapsed();
+
+                let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
+                // Set the buffer
+                pipeline.add_tasks(messages);
+                // Execute the tasks
+                pipeline.update(&mut internal, &mut renderer);
+
+                // Debug if needed
+                if debug {
+                    println!("Pipeline: ");
+                    println!("  #Pipeline Whole Frame Time: {:.2}ms", pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0);
+                    println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
+                    println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
+                    println!("  #Pipeline Swap Buffers Time: {:.2}ms", swap_buffers_duration.as_secs_f32() * 1000.0);
+                    println!("  #Draw calls {}", frame_debug_info.draw_calls);
+                    println!("  #Shadow draw calls {}", frame_debug_info.shadow_draw_calls);
+                    println!("  #Triangles {}k", frame_debug_info.triangles / 1000);
+                    println!("  #Vertices {}k", frame_debug_info.vertices / 1000);
+                }
+
+                // Check if we must exit from the render thread
+                if eatomic_clone.load(Ordering::Relaxed) {
+                    break;
+                }
             }
-        }
-        println!("Stopped the render thread!");
-    }).unwrap();
+            println!("Stopped the render thread!");
+        })
+        .unwrap();
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");

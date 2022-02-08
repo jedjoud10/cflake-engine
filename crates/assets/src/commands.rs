@@ -20,7 +20,8 @@ pub mod assetc {
             .cached_metadata
             .get(path)
             .ok_or_else(|| AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
-        obj.load_medadata(md).ok_or_else(|| AssetLoadError::new(format!("Could not load metadata for asset '{}'!", path)))
+        obj.load_medadata(md)
+            .ok_or_else(|| AssetLoadError::new(format!("Could not load metadata for asset '{}'!", path)))
     }
     // Load an asset (By creating a default version of it)
     pub fn dload<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {

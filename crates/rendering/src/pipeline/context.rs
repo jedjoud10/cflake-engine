@@ -13,7 +13,7 @@ pub struct PipelineContext {
 
 impl PipelineContext {
     // Read
-    pub fn read<'a>(&'a self) -> ReadPipelineContext<'a> {
+    pub fn read(&self) -> ReadPipelineContext {
         ReadPipelineContext {
             pipeline: self.pipeline.read().unwrap(),
         }

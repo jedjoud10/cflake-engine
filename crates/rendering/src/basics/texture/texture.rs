@@ -216,13 +216,12 @@ impl PipelineObject for Texture {
         }
 
         // Set the wrap mode for the texture (Mipmapped or not)
-        let wrapping_mode: u32;
-        match self.wrap_mode {
-            TextureWrapping::ClampToEdge => wrapping_mode = gl::CLAMP_TO_EDGE,
-            TextureWrapping::ClampToBorder => wrapping_mode = gl::CLAMP_TO_BORDER,
-            TextureWrapping::Repeat => wrapping_mode = gl::REPEAT,
-            TextureWrapping::MirroredRepeat => wrapping_mode = gl::MIRRORED_REPEAT,
-        }
+        let wrapping_mode = match self.wrap_mode {
+            TextureWrapping::ClampToEdge => gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder => gl::CLAMP_TO_BORDER,
+            TextureWrapping::Repeat => gl::REPEAT,
+            TextureWrapping::MirroredRepeat => gl::MIRRORED_REPEAT,
+        };
         unsafe {
             // Now set the actual wrapping mode in the opengl texture
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
@@ -415,17 +414,16 @@ impl Texture {
                 gl::BindTexture(self.target, self.oid);
                 let (_internal_format, format, data_type) = self.ifd;
                 gl::GetTexImage(self.target, 0, format, data_type, null_mut());
-            },
+            }, pipeline,
+        ).with_sync_satisfied_callback(
             move |_pipeline| unsafe {
-                // Gotta read back the data
-                let mut vec = vec![0_u8; byte_count];
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
-                gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
-                let read = read.0;
-                let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
-                *cpu_bytes = vec;
-            },
-            pipeline,
-        )
+            // Gotta read back the data
+            let mut vec = vec![0_u8; byte_count];
+            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
+            gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+            let read = read.0;
+            let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
+            *cpu_bytes = vec;
+        })
     }
 }

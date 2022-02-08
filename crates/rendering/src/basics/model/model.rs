@@ -7,6 +7,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use super::VertexAttributeBufferLayout;
 
 // A simple model that holds vertex, normal, and color data
+#[derive(Default)]
 pub struct Model {
     // Main IDs
     pub vertex_array_object: u32,
@@ -35,22 +36,6 @@ pub struct Model {
 
     // Triangles
     pub triangles: Vec<u32>,
-}
-
-impl Default for Model {
-    fn default() -> Self {
-        Self {
-            vertex_array_object: 0,
-            buffers: [0; 6],
-            vertices: Default::default(),
-            normals: Default::default(),
-            tangents: Default::default(),
-            uvs: Default::default(),
-            colors: Default::default(),
-            layout: Default::default(),
-            triangles: Default::default(),
-        }
-    }
 }
 
 impl PipelineObject for Model {

@@ -11,7 +11,7 @@ use main::{
             readwrite::ReadBytes,
             shader::{
                 self,
-                info::{QueryParameter, QueryResource, Resource, ShaderInfoRead, ShaderInfoQuerySettings},
+                info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings, ShaderInfoRead},
                 ShaderSettings,
             },
             transfer::Transferable,

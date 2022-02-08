@@ -1,17 +1,10 @@
 use super::{ShaderUniformsSettings, UniformsDefinitionMap};
 use crate::{
-    advanced::{
-        atomic::{AtomicGroup},
-        shader_storage::ShaderStorage,
-    },
-    basics::{
-        texture::{Texture, TextureAccessType},
-    },
+    advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
+    basics::texture::{Texture, TextureAccessType},
     object::ObjectID,
     pipeline::Pipeline,
 };
-
-
 
 // Struct that allows us to set the uniforms for a specific shader
 pub struct Uniforms<'a> {
@@ -42,7 +35,6 @@ impl<'a> Uniforms<'a> {
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
-        
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
         self.map.get(name).unwrap_or(-1)
     }
@@ -183,10 +175,11 @@ impl<'a> Uniforms<'a> {
         };
 
         // Clear if we want to
-        if clear { atomic_group.clear_counters().unwrap(); }
+        if clear {
+            atomic_group.clear_counters().unwrap();
+        }
 
         unsafe {
-
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic_group.oid);
             gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic_group.oid);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);

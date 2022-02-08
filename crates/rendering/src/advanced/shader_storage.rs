@@ -102,9 +102,7 @@ impl ShaderStorage {
                 // Now store the shader storage's bytes
                 let mut output_bytes = read.0.bytes.lock().unwrap();
                 *output_bytes = bytes;
-            },
-            |_| {},
-            pipeline,
+            }, pipeline,
         )
     }
 }

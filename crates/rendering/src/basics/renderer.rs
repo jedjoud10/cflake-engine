@@ -1,8 +1,4 @@
-use super::{
-    material::Material,
-    model::Model,
-    uniforms::{SetUniformsCallback},
-};
+use super::{material::Material, model::Model, uniforms::SetUniformsCallback};
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,

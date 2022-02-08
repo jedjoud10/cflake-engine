@@ -2,12 +2,12 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use arrayvec::ArrayVec;
 
+use super::AtomicGroupRead;
 use crate::{
     basics::transfer::Transfer,
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
 };
-use super::AtomicGroupRead;
 
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
@@ -24,10 +24,7 @@ impl Default for AtomicGroup {
     fn default() -> Self {
         let mut arrayvec = ArrayVec::<u32, 4>::new();
         arrayvec.push(0);
-        Self {
-            oid: 0,
-            defaults: arrayvec,
-        }
+        Self { oid: 0, defaults: arrayvec }
     }
 }
 impl PipelineObject for AtomicGroup {
@@ -82,10 +79,7 @@ impl AtomicGroup {
     pub fn new(vals: &[u32]) -> Option<Self> {
         let mut arrayvec = ArrayVec::<u32, 4>::new();
         arrayvec.try_extend_from_slice(vals).ok()?;
-        Some(Self {
-            oid: 0,
-            defaults: arrayvec,
-        })
+        Some(Self { oid: 0, defaults: arrayvec })
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
@@ -107,9 +101,7 @@ impl AtomicGroup {
                 let cpu_counters = &mut *cpu_counters_lock;
                 cpu_counters.clear();
                 cpu_counters.try_extend_from_slice(&counts).unwrap();
-            },
-            |_| {},
-            pipeline,
+            }, pipeline,
         )
     }
     // Clear the atomic group counters
