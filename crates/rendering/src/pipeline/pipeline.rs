@@ -5,7 +5,7 @@ use crate::{
         material::Material,
         model::Model,
         renderer::Renderer,
-        shader::{query_shader_info, Shader, ShaderSettings, query_shader_info_tracked},
+        shader::{query_shader_info, query_shader_info_tracked, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },

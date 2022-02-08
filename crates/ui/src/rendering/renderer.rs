@@ -115,7 +115,9 @@ impl Renderer {
         for (id, batch) in self.batches.iter() {
             // If the shader ID is the default one, that means that we have to use the default UI shader
             let id_shader = if !id.shader.is_some() { self.default_shader } else { id.shader };
-            if !pipeline.shaders.get(id_shader).is_some() { continue; }
+            if !pipeline.shaders.get(id_shader).is_some() {
+                continue;
+            }
             let id_texture = if !id.texture.is_some() { pipeline.defaults.as_ref().unwrap().white } else { id.texture };
             // Create some uniforms then draw
             let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(id_shader));

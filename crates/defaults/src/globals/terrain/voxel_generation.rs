@@ -14,7 +14,8 @@ use main::{
                 info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings},
                 ShaderSettings,
             },
-            transfer::Transferable, uniforms::ShaderIDType,
+            transfer::Transferable,
+            uniforms::ShaderIDType,
         },
         object::{ObjectID, ReservedTrackedID, TrackedTask},
         pipeline::{pipec, PipelineContext},
@@ -81,7 +82,11 @@ impl VoxelGenerator {
         let reserved_id = ReservedTrackedID::default();
         let info = ShaderInfo::default();
         let transfer = info.transfer();
-        pipec::tracked_task(&pipeline, TrackedTask::QueryShaderInfo(ShaderIDType::ComputeObjectID(second_compute), settings, transfer), reserved_id);
+        pipec::tracked_task(
+            &pipeline,
+            TrackedTask::QueryShaderInfo(ShaderIDType::ComputeObjectID(second_compute), settings, transfer),
+            reserved_id,
+        );
         drop(pipeline);
 
         // Force a pipeline flush and wait till we get the results back

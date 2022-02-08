@@ -1,12 +1,20 @@
 // Some shared code between the normal shaders and the compute shaders
 
-use std::{collections::HashSet, ffi::{CString, CStr}, ptr::{null_mut, null}, os::raw::c_char};
+use std::{
+    collections::HashSet,
+    ffi::{CStr, CString},
+    os::raw::c_char,
+    ptr::{null, null_mut},
+};
 
 use ahash::AHashMap;
 use image::buffer::ConvertBuffer;
 
 use crate::{
-    basics::{transfer::Transfer, uniforms::{ShaderIDType, ShaderUniformsSettings, UniformsDefinitionMap}},
+    basics::{
+        transfer::Transfer,
+        uniforms::{ShaderIDType, ShaderUniformsSettings, UniformsDefinitionMap},
+    },
     object::GlTracker,
     pipeline::Pipeline,
 };
@@ -99,25 +107,27 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
 }
 
 // Get the uniform definition map from a shader using the query API
-pub(crate) fn query_shader_uniforms_definition_map(pipeline: &Pipeline, identifier: ShaderIDType) -> UniformsDefinitionMap {
+pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefinitionMap {
     let mut settings = ShaderInfoQuerySettings::default();
     settings.query_all(vec![QueryParameter::Location]);
-    let res = query_shader_info(pipeline, identifier, settings);
-    let mappings = res.into_iter().map(|(resource, params)| {
-        // Get the inner location
-        let location = *params.get(0).unwrap().as_location().unwrap() as i32;
-        (resource.name, location)
-    }).collect::<AHashMap<_, _>>();
-    UniformsDefinitionMap {
-        mappings,
-    }
+    let res = query_shader_info(program, settings);
+    let mappings = res
+        .into_iter()
+        .map(|(resource, params)| {
+            // Get the inner location
+            let location = *params.get(0).unwrap().as_location().unwrap() as i32;
+            (resource.name, location)
+        })
+        .collect::<AHashMap<_, _>>();
+    UniformsDefinitionMap { mappings }
 }
 
 // Query some information about a shader, and then return the GlTracker
 pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
     GlTracker::fake(
-        move |_| {
-            let output_queried_resources = query_shader_info(pipeline, identifier, settings);
+        move |pipeline| {
+            let program = identifier.get_program(pipeline);
+            let output_queried_resources = query_shader_info(program, settings);
             // Finally update the mutex that holds the queried resources
             let mut lock = read.0.res.lock().unwrap();
             *lock = output_queried_resources;
@@ -127,15 +137,9 @@ pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderI
 }
 
 // Query some information about a shader, and then return
-pub(crate) fn query_shader_info(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings) -> (AHashMap<Resource, Vec<UpdatedParameter>>) {
-    let program = match identifier {
-        ShaderIDType::ObjectID(shader_id) => pipeline.shaders.get(shader_id).unwrap().program,
-        ShaderIDType::ComputeObjectID(compute_id) => pipeline.compute_shaders.get(compute_id).unwrap().program,
-        ShaderIDType::OpenGLID(program) => program,
-    };
-
+pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings) -> (AHashMap<Resource, Vec<UpdatedParameter>>) {
     unsafe {
-         // Get the query info
+        // Get the query info
         // Gotta count the number of unique resource types
         let mut unique_count = AHashMap::<QueryResource, usize>::new();
         let mut indexed_resources = AHashMap::<Resource, (Vec<QueryParameter>, usize)>::new();
@@ -202,7 +206,7 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, identifier: ShaderIDType, s
         // Get ALL the parameters, if we want to
         let parameters = settings.res_all;
         for (unique_resource, (id, max_name_len)) in types_and_counts {
-            // Get the resource's parameters first 
+            // Get the resource's parameters first
             let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
             let max_len = converted_params.len();
             let mut output = vec![-1; max_len];
@@ -227,7 +231,7 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, identifier: ShaderIDType, s
                 }
             }
 
-            let mut name = vec![c_char::default(); max_name_len+1];
+            let mut name = vec![c_char::default(); max_name_len + 1];
             // Get the resource's name
             gl::GetProgramResourceName(program, unique_resource.convert(), id as u32, name.len() as i32, null_mut(), name.as_mut_ptr());
             let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap().to_string();
@@ -237,7 +241,6 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, identifier: ShaderIDType, s
                 .zip(output)
                 .map(|(x, opengl_val)| x.convert_output(opengl_val))
                 .collect::<Vec<UpdatedParameter>>();
-            
         }
         output_queried_resources
     }

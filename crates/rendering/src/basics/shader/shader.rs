@@ -1,3 +1,4 @@
+use crate::basics::shader::query_shader_uniforms_definition_map;
 use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::Pipeline;
 
@@ -196,6 +197,8 @@ impl PipelineObject for Shader {
         self.program = program;
         // Add the shader
         pipeline.shaders.insert(id, self);
+        // And also get it's uniform definition map
+        pipeline.cached.uniform_definitions.insert(program, query_shader_uniforms_definition_map(program));
         Some(())
     }
     // Remove the shader from the pipeline

@@ -2,7 +2,7 @@ use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use crate::{
     basics::{
-        shader::{load_includes, IncludeExpansionError, ShaderSettings, ShaderSource},
+        shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
@@ -103,6 +103,8 @@ impl PipelineObject for ComputeShader {
         self.program = program;
         // Add the compute shader
         pipeline.compute_shaders.insert(id, self);
+        // And also get it's uniform definition map
+        pipeline.cached.uniform_definitions.insert(program, query_shader_uniforms_definition_map(program));
         Some(())
     }
     // Remove the compute shader from the pipeline

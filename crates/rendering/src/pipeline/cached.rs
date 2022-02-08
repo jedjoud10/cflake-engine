@@ -6,5 +6,5 @@ use crate::basics::uniforms::UniformsDefinitionMap;
 #[derive(Default)]
 pub struct Cached {
     // Uniform definitions for each shader program
-    pub(crate) uniform_defitions: AHashMap<u32, UniformsDefinitionMap>,
+    pub(crate) uniform_definitions: AHashMap<u32, UniformsDefinitionMap>,
 }

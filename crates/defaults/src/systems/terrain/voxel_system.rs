@@ -3,7 +3,11 @@ use main::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
-        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::{Uniforms, SetUniformsCallback}},
+        basics::{
+            readwrite::ReadBytes,
+            transfer::Transferable,
+            uniforms::{SetUniformsCallback, Uniforms},
+        },
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },
@@ -18,7 +22,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     const AXIS: u16 = ((CHUNK_SIZE + 1) as u16).div_ceil(8);
     // Set the uniforms for the first compute shader
     let chunk_coords = chunk.coords;
-    let arbitrary_voxels = generator.shader_storage_arbitrary_voxels; 
+    let arbitrary_voxels = generator.shader_storage_arbitrary_voxels;
     let output_voxels = generator.shader_storage_final_voxels;
     let atomics = generator.atomics;
     let uniforms = SetUniformsCallback::new(move |uniforms| {
@@ -27,7 +31,10 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_i32("node_size", chunk_coords.size as i32);
     });
     // Now we can execute the compute shader and the read bytes command
-    let execution_settings = ComputeShaderExecutionSettings { axii: (AXIS + 1, AXIS + 1, AXIS + 1), callback: uniforms };
+    let execution_settings = ComputeShaderExecutionSettings {
+        axii: (AXIS + 1, AXIS + 1, AXIS + 1),
+        callback: uniforms,
+    };
     pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
@@ -41,7 +48,10 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_atomic_group("_", atomics, 0);
     });
     // And execute the shader
-    let execution_settings2 = ComputeShaderExecutionSettings { axii: (AXIS, AXIS, AXIS), callback: uniforms };
+    let execution_settings2 = ComputeShaderExecutionSettings {
+        axii: (AXIS, AXIS, AXIS),
+        callback: uniforms,
+    };
     pipec::tracked_task_requirement(
         pipeline,
         TrackedTask::RunComputeShader(generator.second_compute_shader, execution_settings2),

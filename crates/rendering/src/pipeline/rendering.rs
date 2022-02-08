@@ -46,7 +46,10 @@ impl PipelineRenderer {
         material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, |x| ObjectID::new(x))
     }
     fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.normal_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, |x| ObjectID::new(x))
+        material
+            .normal_map
+            .get()
+            .map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, |x| ObjectID::new(x))
     }
     fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, |x| ObjectID::new(x))
@@ -261,10 +264,7 @@ impl PipelineRenderer {
         let default = LightSource::new(LightSourceType::Directional {
             quat: veclib::Quaternion::<f32>::IDENTITY,
         });
-        let light = pipeline
-            .light_sources
-            .get(pipeline.defaults.as_ref().unwrap().sun)
-            .unwrap_or(&default);
+        let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default);
         let directional = light._type.as_directional().unwrap();
         uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
         uniforms.set_f32("directional_light_strength", light.strength);
