@@ -2,7 +2,7 @@ use ahash::AHashMap;
 
 // Struct that contains all the [name -> location] mappings for each uniform in a shader
 pub struct UniformsDefinitionMap {
-    mappings: AHashMap<String, i32>,
+    pub(crate) mappings: AHashMap<String, i32>,
 }
 
 impl UniformsDefinitionMap {

@@ -100,9 +100,10 @@ impl ShaderInfo {
         lock.get(res).cloned()
     }
     // Get all the updated query parameter
-    pub fn get_all(&self) -> Option<Vec<(&Resource, &Vec<UpdatedParameter>)>> {
+    pub fn get_all(&self) -> Option<Vec<(Resource, Vec<UpdatedParameter>)>> {
         let lock = self.res.lock().ok()?;
-        Some(lock.iter().collect::<Vec<_>>())
+        let val = lock.clone().into_iter().collect::<Vec<_>>();
+        Some(val)
     }
 }
 
