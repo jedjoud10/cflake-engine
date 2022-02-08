@@ -5,11 +5,33 @@ use super::shader::Shader;
 use super::texture::Texture;
 use super::uniforms::{Uniforms, SetUniformsCallback};
 // A material that can have multiple parameters and such
-#[derive(Default)]
 pub struct Material {
+    // Main settings
     pub shader: ObjectID<Shader>,
-    pub double_sided: bool,
-    pub callback: Option<SetUniformsCallback>,
+    pub(crate) uniforms: SetUniformsCallback,
+
+    // Actual parameters used for rendering
+    pub diffuse_map: ObjectID<Texture>,
+    pub normal_map: ObjectID<Texture>,
+    pub emissive_map: ObjectID<Texture>,
+    pub tint: veclib::Vector3<f32>,
+    pub normal_map_strength: f32,
+    pub emissive_map_strength: f32,
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Self { 
+            shader: Default::default(),
+            uniforms: Default::default(),
+            diffuse_map: Default::default(),
+            normal_map: Default::default(),
+            emissive_map: Default::default(),
+            tint: veclib::Vector3::ONE,
+            normal_map_strength: 1.0,
+            emissive_map_strength: 1.0
+        }
+    }
 }
 
 impl PipelineObject for Material {
@@ -18,11 +40,11 @@ impl PipelineObject for Material {
         Some((self, pipeline.materials.gen_id()))
     }
     // Send this material to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Material(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Material(Deconstruct::<Self>(id))
     }
     // Add the material to our ordered vec
@@ -51,7 +73,34 @@ impl Material {
     }
     // Set the uniforms callback
     pub fn with_uniforms(mut self, callback: SetUniformsCallback) -> Self {
-        self.callback = Some(callback);
+        self.uniforms = callback;
+        self
+    }
+    // With some parameters
+    // Maps
+    pub fn with_diffuse(mut self, diffuse_map: ObjectID<Texture>) -> Self {
+        self.diffuse_map = diffuse_map;
+        self
+    }
+    pub fn with_normal(mut self, normal_map: ObjectID<Texture>) -> Self {
+        self.normal_map = normal_map;
+        self
+    }
+    pub fn with_emissive(mut self, emissive_map: ObjectID<Texture>) -> Self {
+        self.emissive_map = emissive_map;
+        self
+    }
+    // Values
+    pub fn with_normal_strength(mut self, strength: f32) -> Self {
+        self.normal_map_strength = strength;
+        self
+    }
+    pub fn with_emissive_strenhgth(mut self, strength: f32) -> Self {
+        self.emissive_map_strength = strength;
+        self
+    }
+    pub fn with_tint(mut self, tint: veclib::Vector3<f32>) -> Self {
+        self.tint = tint;
         self
     }
 }

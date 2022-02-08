@@ -20,7 +20,7 @@ pub struct Renderer {
     pub material: ObjectID<Material>,
     pub matrix: veclib::Matrix4x4<f32>,
     pub flags: RendererFlags,
-    pub callback: Option<SetUniformsCallback>,
+    pub uniforms: SetUniformsCallback,
 }
 
 impl Renderer {
@@ -30,7 +30,7 @@ impl Renderer {
             model: Default::default(),
             material: Default::default(),
             matrix: Default::default(),
-            callback: Default::default(),
+            uniforms: Default::default(),
             flags,
         }
     }
@@ -41,24 +41,15 @@ impl PipelineObject for Renderer {
         Some((self, pipeline.renderers.gen_id()))
     }
     // Send this rendererer to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Renderer(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Renderer(Deconstruct::<Self>(id))
     }
     // Add the renderer to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
-        // Get the renderer data, if it does not exist then use the default renderer data
-        let defaults = pipeline.defaults.as_ref()?;
-        // Make sure we have valid fields
-        if !self.model.is_some() {
-            self.model = defaults.model;
-        }
-        if !self.material.is_some() {
-            self.material = defaults.material;
-        }
         // Add the renderer
         pipeline.renderers.insert(id, self)?;
         Some(())
@@ -89,6 +80,11 @@ impl Renderer {
     // Set the model matrix for this renderer
     pub fn with_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
         self.matrix = matrix;
+        self
+    }
+    // Set a uniform callback for this renderer (This is not ideal, but it's better than the last method)
+    pub fn with_uniform(mut self, callback: SetUniformsCallback) -> Self {
+        self.uniforms = callback;
         self
     }
 }

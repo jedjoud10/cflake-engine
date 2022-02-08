@@ -79,11 +79,11 @@ impl PipelineObject for Texture {
         Some((self, pipeline.textures.gen_id()))
     }
     // Send this texture to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Texture(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Texture(Deconstruct::<Self>(id))
     }
     // Add the texture to our ordered vec

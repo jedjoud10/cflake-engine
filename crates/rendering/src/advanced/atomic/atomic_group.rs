@@ -47,11 +47,11 @@ impl PipelineObject for AtomicGroup {
         Some((self, pipeline.atomics.gen_id()))
     }
     // Send this atomic group to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::AtomicGroup(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::AtomicGroup(Deconstruct::<Self>(id))
     }
     // Add the atomic group to our ordered vec

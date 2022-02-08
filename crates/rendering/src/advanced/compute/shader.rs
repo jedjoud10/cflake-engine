@@ -3,7 +3,7 @@ use std::{collections::HashSet, ffi::CString, ptr::null};
 use crate::{
     basics::{
         shader::{load_includes, IncludeExpansionError, ShaderSettings, ShaderSource},
-        uniforms::{ShaderIDType, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -24,11 +24,11 @@ impl PipelineObject for ComputeShader {
         Some((self, pipeline.compute_shaders.gen_id()))
     }
     // Send this compute shader to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::ComputeShader(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::ComputeShader(Deconstruct::<Self>(id))
     }
     // Add the compute shader to our ordered vec
@@ -131,8 +131,9 @@ impl ComputeShader {
     pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Create some shader uniforms settings that we can use
         let uniform_settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(self.program));
-        let program = uniform_settings.get_program_id(pipeline);
-        settings.callback.execute(program);
+        let uniforms = Uniforms::new(&uniform_settings, pipeline);
+        uniforms.bind_shader();
+        settings.callback.execute(&uniforms);
         // Dispatch the compute shader for execution
         let axii = settings.axii;
 

@@ -59,11 +59,11 @@ impl PipelineObject for Model {
         Some((self, pipeline.models.gen_id()))
     }
     // Send this model to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::Model(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::Model(Deconstruct::<Self>(id))
     }
     // Add the model to our ordered vec

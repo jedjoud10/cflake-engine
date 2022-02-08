@@ -39,12 +39,11 @@ impl ShadowMapping {
 
         // Pass the light space matrix to the shader
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(shader));
-        let mut group = Uniforms::new();
+        let mut group = Uniforms::new(&settings, pipeline);
+        // Update the uniforms
+        group.bind_shader();
         group.set_mat44f32("lsm_matrix", lsm);
 
-        // Update the uniforms
-        group.bind_shader(pipeline, settings);
-        group.set_uniforms(pipeline, settings);
         Some(&model)
     }
     // Initialize a new shadow mapper

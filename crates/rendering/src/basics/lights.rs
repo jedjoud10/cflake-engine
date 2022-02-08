@@ -24,11 +24,11 @@ impl PipelineObject for LightSource {
         Some((self, pipeline.light_sources.gen_id()))
     }
     // Send this light source to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::LightSource(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::LightSource(Deconstruct::<Self>(id))
     }
     // Add the material to our ordered vec

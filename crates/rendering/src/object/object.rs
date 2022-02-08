@@ -10,10 +10,10 @@ where
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)>;
 
     // Send this object to the pipeline so it can be constructed using the add() function
-    fn send(self, pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask;
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask;
 
     // Create a deconstruction task so we can remove this object from the pipeline
-    fn pull(pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask;
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask;
 
     // Create this pipeline object using it's reserved object ID
     // This automatically adds it to the pipeline

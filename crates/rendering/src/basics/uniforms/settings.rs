@@ -11,23 +11,27 @@ pub enum ShaderIDType {
     OpenGLID(u32),
 }
 
+impl ShaderIDType {
+    // Get the program OID of the shader
+    pub(crate) fn get_program(&self, pipeline: &Pipeline) -> u32 {
+        match self {
+            ShaderIDType::ObjectID(shader_id) => pipeline.shaders.get(*shader_id).unwrap().program,
+            ShaderIDType::ComputeObjectID(compute_shader_id) => pipeline.compute_shaders.get(*compute_shader_id).unwrap().program,
+            ShaderIDType::OpenGLID(program) => *program,
+        }
+    }
+}
+
+
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 #[derive(Clone, Copy)]
 pub struct ShaderUniformsSettings {
-    pub(crate) id_type: ShaderIDType,
+    pub(crate) _type: ShaderIDType,
 }
 
 impl ShaderUniformsSettings {
     // Create some new uniform settings using a shader ID type
-    pub fn new(id_type: ShaderIDType) -> Self {
-        Self { id_type }
-    }
-    // Get the program OID of the shader
-    pub(crate) fn get_program_id(&self, pipeline: &Pipeline) -> u32 {
-        match self.id_type {
-            ShaderIDType::ObjectID(x) => pipeline.shaders.get(x).unwrap().program,
-            ShaderIDType::ComputeObjectID(x) => pipeline.compute_shaders.get(x).unwrap().program,
-            ShaderIDType::OpenGLID(x) => x,
-        }
+    pub fn new(_type: ShaderIDType) -> Self {
+        Self { _type }
     }
 }

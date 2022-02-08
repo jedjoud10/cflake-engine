@@ -6,6 +6,7 @@ mod pipeline_main;
 mod frame_debug_info;
 mod cached;
 mod collection;
+mod defaults;
 pub use frame_debug_info::*;
 pub mod rendering;
 pub(crate) mod sender;

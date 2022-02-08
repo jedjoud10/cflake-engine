@@ -9,7 +9,7 @@ use crate::{
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings, SetUniformsCallback},
+        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings, SetUniformsCallback, UsedUniformLocationsSet},
     },
     object::ObjectID,
     pipeline::pipec,
@@ -41,32 +41,41 @@ pub struct PipelineRenderer {
     shadow_mapping: ShadowMapping,
 }
 impl PipelineRenderer {
+    // Get the fallback, default texture IDs in case the provided ones are not valid
+    fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
+        material.diffuse_map.get().map_or_else(|| pipeline.defaults.unwrap().white, |x| ObjectID::new(x))
+    } 
+    fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
+        material.normal_map.get().map_or_else(|| pipeline.defaults.unwrap().normals_tex, |x| ObjectID::new(x))
+    } 
+    fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
+        material.emissive_map.get().map_or_else(|| pipeline.defaults.unwrap().black, |x| ObjectID::new(x))
+    } 
     // Setup uniforms for a specific renderer
-    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<(&'a Model, &'a Material)> {
+    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
         // Pipeline data
         let camera = &pipeline.camera;
         let material = pipeline.materials.get(renderer.material).unwrap();
 
         // The shader will always be valid
-        let shader = pipeline.shaders.get(material.shader).unwrap();
+        let shader = pipeline.shaders.get(material.shader)?;
         let model = pipeline.models.get(renderer.model)?;
         let model_matrix = &renderer.matrix;
-
-        // Pass the matrices to the shader
-        let mut group = Uniforms::default();
         let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
-        group.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
-
-        if pipeline.renderers.was_mutated()
-        group.set_mat44f32("model_matrix", *model_matrix);
-
-        // Update the uniforms
-        material.uniforms.bind_shader(pipeline, settings);
-        material.uniforms.set_uniforms(pipeline, settings);
-        if let Some(uniforms) = &renderer.uniforms {
-            uniforms.set_uniforms(pipeline, settings);
-        }
-        group.set_uniforms(pipeline, settings);
+        let uniforms = Uniforms::new(&settings, pipeline);
+        // Bind first
+        uniforms.bind_shader();        
+        // Then set the uniforms
+        uniforms.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
+        uniforms.set_mat44f32("model_matrix", *model_matrix);
+        // Optional
+        material.uniforms.execute(&uniforms);
+        renderer.uniforms.execute(&uniforms);
+        // Textures might be not valid, so we fallback to the default ones just in case
+        uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material));
+        uniforms.set_texture("normals_tex", Self::get_diffuse_map(pipeline, material));
+        uniforms.set_texture("emissive_tex", Self::get_diffuse_map(pipeline, material));
+        let 
 
         Some((&model, material))
     }

@@ -23,20 +23,7 @@ use std::{
     },
 };
 
-use super::{settings::PipelineSettings, PipelineContext, collection::{Collection, TrackedCollection}};
-
-// Some default values like the default material or even the default shader
-pub struct DefaultPipelineObjects {
-    pub missing_tex: ObjectID<Texture>,
-    pub black: ObjectID<Texture>,
-    pub white: ObjectID<Texture>,
-    pub normals_tex: ObjectID<Texture>,
-    pub shader: ObjectID<Shader>,
-    pub material: ObjectID<Material>,
-    pub model: ObjectID<Model>,
-    // This value might change, since the user might remove the directional light
-    pub sun: ObjectID<LightSource>,
-}
+use super::{settings::PipelineSettings, PipelineContext, collection::{Collection, TrackedCollection}, defaults::DefaultPipelineObjects, cached::Cached};
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
 #[derive(Default)]
@@ -56,7 +43,6 @@ pub struct Pipeline {
     pub(crate) completed_tasks: bitfield::AtomicSparseBitfield,
 
     // We store the Pipeline Objects, for each Pipeline Object type
-    // We will create these Pipeline Objects *after* they have been created by OpenGL (if applicable)
     pub materials: Collection<Material>,
     pub models: Collection<Model>,
     pub renderers: TrackedCollection<Renderer>,
@@ -69,6 +55,9 @@ pub struct Pipeline {
 
     // Store a struct that is filled with default values that we initiate at the start of the creation of this pipeline
     pub defaults: Option<DefaultPipelineObjects>,
+
+    // Some cached values for optimization
+    pub(crate) cached: Cached,
 
     // The current main camera that is rendering the world
     pub(crate) camera: Camera,
@@ -116,14 +105,7 @@ impl Pipeline {
                 let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.read_counters(self, read)
             }
-            TrackedTask::QueryShaderInfo(id, settings, read) => {
-                let shader = self.shaders.get(id).unwrap();
-                query_shader_info(self, shader.program, settings, read)
-            }
-            TrackedTask::QueryComputeShaderInfo(id, settings, read) => {
-                let compute = self.compute_shaders.get(id).unwrap();
-                query_shader_info(self, compute.program, settings, read)
-            }
+            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info(self, _type, settings, read)
         };
 
         // Add the tracked ID to our pipeline

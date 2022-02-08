@@ -24,11 +24,11 @@ impl PipelineObject for ShaderStorage {
         Some((self, pipeline.shader_storages.gen_id()))
     }
     // Send this shader storage to the pipeline for construction
-    fn send(self, _pipeline: &Pipeline, id: ObjectID<Self>) -> ConstructionTask {
+    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
         ConstructionTask::ShaderStorage(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
-    fn pull(_pipeline: &Pipeline, id: ObjectID<Self>) -> DeconstructionTask {
+    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
         DeconstructionTask::ShaderStorage(Deconstruct::<Self>(id))
     }
     // Add the shader storage to our ordered vec

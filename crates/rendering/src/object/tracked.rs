@@ -12,7 +12,7 @@ use crate::{
             Shader,
         },
         texture::Texture,
-        transfer::Transfer,
+        transfer::Transfer, uniforms::ShaderIDType,
     },
 };
 
@@ -22,6 +22,5 @@ pub enum TrackedTask {
     TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
     ShaderStorageReadBytes(ObjectID<ShaderStorage>, Transfer<ReadBytes>),
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
-    QueryShaderInfo(ObjectID<Shader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
-    QueryComputeShaderInfo(ObjectID<ComputeShader>, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
+    QueryShaderInfo(ShaderIDType, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
 }
