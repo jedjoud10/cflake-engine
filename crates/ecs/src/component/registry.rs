@@ -49,7 +49,7 @@ pub fn is_component_registered<T: Component + 'static>() -> bool {
     rc.contains_key(&TypeId::of::<T>())
 }
 // Cast a boxed component to a reference of that component
-pub(crate) fn cast_component<'a, T>(component: &'a dyn Component) -> Result<&T, ComponentError>
+pub(crate) fn cast_component<T>(component: &dyn Component) -> Result<&T, ComponentError>
 where
     T: Component + 'static,
 {
@@ -60,7 +60,7 @@ where
     Ok(reference)
 }
 // Cast a boxed component to a mutable reference of that component
-pub(crate) fn cast_component_mut<'a, T>(component: &'a mut dyn Component) -> Result<&mut T, ComponentError>
+pub(crate) fn cast_component_mut<T>(component: &mut dyn Component) -> Result<&mut T, ComponentError>
 where
     T: Component + 'static,
 {

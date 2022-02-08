@@ -14,7 +14,7 @@ pub struct SystemBuilder<'a, Context> {
 
 impl<'a, Context> SystemBuilder<'a, Context> {
     // Create a new system builder
-    pub fn new(ecs_manager: &'a mut ECSManager<Context>) -> Self {
+    pub(crate) fn new(ecs_manager: &'a mut ECSManager<Context>) -> Self {
         Self {
             ecs_manager,
             system: System::default(),

@@ -12,6 +12,7 @@ use crate::{
 };
 
 // A system that updates specific components in parallel
+#[derive(Default)]
 pub struct System {
     pub(crate) cbitfield: Bitfield<u32>,
     // Events
@@ -23,20 +24,6 @@ pub struct System {
     // Added, Removed
     added: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
     removed: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
-}
-
-impl Default for System {
-    fn default() -> Self {
-        System {
-            cbitfield: Bitfield::<u32>::default(),
-            evn_run: None,
-            evn_added_entity: None,
-            evn_removed_entity: None,
-            linked_components: Default::default(),
-            added: Default::default(),
-            removed: Default::default(),
-        }
-    }
 }
 
 // System code

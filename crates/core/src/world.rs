@@ -10,7 +10,7 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             ui: Default::default(),
-            ecs: ecs::ECSManager::<Self>::new(),
+            ecs: ecs::ECSManager::<Self>::default(),
             globals: Default::default(),
             io,
             settings: Default::default(),

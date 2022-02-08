@@ -47,17 +47,13 @@ impl ComponentLinkingGroup {
 }
 
 // A collection of omponents that we will remove from the entity
+#[derive(Default)]
 pub struct ComponentUnlinkGroup {
     pub removal_cbitfield: Bitfield<u32>,
 }
 
 // Linking methods
 impl ComponentUnlinkGroup {
-    pub fn new() -> Self {
-        Self {
-            removal_cbitfield: Bitfield::<u32>::default(),
-        }
-    }
     // Unlink a component from the entity
     pub fn unlink<T: Component + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
         self.removal_cbitfield = self.removal_cbitfield.add(&registry::get_component_bitfield::<T>());

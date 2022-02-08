@@ -8,7 +8,7 @@ pub mod assetc {
         let md = assetcacher
             .cached_metadata
             .get(path)
-            .ok_or(AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
+            .ok_or_else(|| AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
         // TODO: I must remove this global state later on
         Ok(md.clone())
     }
@@ -19,8 +19,8 @@ pub mod assetc {
         let md = assetcacher
             .cached_metadata
             .get(path)
-            .ok_or(AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
-        obj.load_medadata(md).ok_or(AssetLoadError::new(format!("Could not load metadata for asset '{}'!", path)))
+            .ok_or_else(|| AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
+        obj.load_medadata(md).ok_or_else(|| AssetLoadError::new(format!("Could not load metadata for asset '{}'!", path)))
     }
     // Load an asset (By creating a default version of it)
     pub fn dload<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {
@@ -33,7 +33,7 @@ pub mod assetc {
         let md = assetcacher
             .cached_metadata
             .get(path)
-            .ok_or(AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
+            .ok_or_else(|| AssetLoadError::new(format!("Could not load asset '{}'!", path)))?;
         // Pls don't deadlock again
         Ok(md.read_string())
     }

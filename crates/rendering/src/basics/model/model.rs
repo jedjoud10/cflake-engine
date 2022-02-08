@@ -83,7 +83,7 @@ impl PipelineObject for Model {
             gl::BindVertexArray(self.vertex_array_object);
 
             // We can create all the buffers at once
-            let mut buffers = [0_32; 6];
+            let mut buffers = [0_u32; 6];
             gl::GenBuffers(6, buffers.as_mut_ptr());
 
             // Create the EBO

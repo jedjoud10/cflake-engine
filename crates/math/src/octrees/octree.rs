@@ -61,11 +61,8 @@ impl Octree {
 
         let root_node = self.get_root_node();
         // The nodes that must be evaluated
-        let mut pending_nodes: Vec<OctreeNode> = Vec::new();
-        // The default root node
-        pending_nodes.push(root_node.clone());
+        let mut pending_nodes: Vec<OctreeNode> = vec![root_node.clone()];        
         self.nodes.push_shove(root_node);
-
         // Evaluate each node
         while !pending_nodes.is_empty() {
             // Get the current pending node

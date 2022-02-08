@@ -27,7 +27,7 @@ pub mod test {
         // Also create the context
         let mut world = World;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::new();
+        let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -64,7 +64,7 @@ pub mod test {
         // Also create the context
         let mut world = World;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::new();
+        let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -100,7 +100,7 @@ pub mod test {
         // Also create the context
         let mut world = World;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::new();
+        let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
         let builder = ecs.create_system_builder();
@@ -118,7 +118,7 @@ pub mod test {
         ecs.link_components(id, group).unwrap();
         assert_ne!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         ecs.run_systems(&mut world);
-        let mut group = ComponentUnlinkGroup::new();
+        let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.unlink_components(id, group).unwrap();
         assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
@@ -126,7 +126,7 @@ pub mod test {
     #[test]
     pub fn test_events() {
         // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::new();
+        let mut ecs = ECSManager::<World>::default();
         // Also create the context
         let mut world = World;
 

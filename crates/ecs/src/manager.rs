@@ -31,10 +31,8 @@ pub struct ECSManager<World> {
     pub(crate) event_handler: EventHandler<World>,
 }
 
-// Global code for the Entities, Components, and Systems
-impl<World> ECSManager<World> {
-    // Create a new ECS manager
-    pub fn new() -> Self {
+impl<World> Default for ECSManager<World> {
+    fn default() -> Self {
         // Start the rayon thread pool
         let pool = ThreadPoolBuilder::new().num_threads(4).build().unwrap();
         Self {
@@ -47,14 +45,18 @@ impl<World> ECSManager<World> {
             event_handler: Default::default(),
         }
     }
+}
+
+// Global code for the Entities, Components, and Systems
+impl<World> ECSManager<World> {
     /* #region Entities */
     // Get an entity
     pub fn get_entity(&self, id: &EntityID) -> Result<&Entity, EntityError> {
-        self.entities.get(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Get an entity mutably
     pub fn get_entity_mut(&mut self, id: &EntityID) -> Result<&mut Entity, EntityError> {
-        self.entities.get_mut(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), *id))
+        self.entities.get_mut(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), *id))
     }
     // Add an entity to the manager, and automatically link it's components
     pub fn add_entity(&mut self, mut entity: Entity, id: EntityID, group: ComponentLinkingGroup) -> Result<(), EntityError> {
@@ -72,7 +74,7 @@ impl<World> ECSManager<World> {
     // Remove an entity, but keep it's components alive until all systems have been notified
     pub fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
         // Invalidate the entity
-        let entity = self.entities.remove(id.0).ok_or(EntityError::new("Could not find entity!".to_string(), id))?;
+        let entity = self.entities.remove(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
         let mut lock = self.entities_to_remove.lock().unwrap();
@@ -184,7 +186,7 @@ impl<World> ECSManager<World> {
         let mut components = self.components.write().unwrap();
         components
             .remove(id.idx)
-            .ok_or(ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
+            .ok_or_else(|| ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
         Ok(())
     }
     // Count the number of valid components in the ECS manager
@@ -194,7 +196,7 @@ impl<World> ECSManager<World> {
     /* #endregion */
     /* #region Systems */
     // Create a new system build
-    pub fn create_system_builder<'a>(&'a mut self) -> SystemBuilder<'a, World> {
+    pub fn create_system_builder(&mut self) -> SystemBuilder<World> {
         SystemBuilder::new(self)
     }
     // Add a system to our current systems

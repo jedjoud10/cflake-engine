@@ -57,7 +57,7 @@ impl AABB {
 // Generation functions
 impl AABB {
     // Generate the AABB from a set of points
-    pub fn new_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
+    pub fn new_vertices(vertices: &[veclib::Vector3<f32>]) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE * 9999.0,
             max: -veclib::Vector3::ONE * 9999.0,

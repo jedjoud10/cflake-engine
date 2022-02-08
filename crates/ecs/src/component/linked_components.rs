@@ -82,13 +82,13 @@ impl LinkedComponents {
         Some(ComponentID::new(cbitfield, *idx))
     }
     // Get a reference to a specific linked component
-    pub fn get_component<'b, T>(&'b self) -> Result<ComponentReadGuard<'b, T>, ComponentError>
+    pub fn get_component<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
         let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
@@ -102,13 +102,13 @@ impl LinkedComponents {
         Ok(guard)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_component_mut<'b, T>(&'b mut self) -> Result<ComponentWriteGuard<'b, T>, ComponentError>
+    pub fn get_component_mut<T>(&mut self) -> Result<ComponentWriteGuard<T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
         let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
@@ -130,7 +130,7 @@ impl LinkedComponents {
     {
         // Check if we even have the component
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or(invalid_err())?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
 
         // Now check if it has been mutated or not
         let index = ordered_vec::utils::from_id(*id).index;
