@@ -11,7 +11,7 @@ use main::{
             readwrite::ReadBytes,
             shader::{
                 self,
-                info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings},
+                info::{QueryParameter, QueryResource, Resource, ShaderInfoRead, ShaderInfoQuerySettings},
                 ShaderSettings,
             },
             transfer::Transferable,
@@ -80,7 +80,7 @@ impl VoxelGenerator {
         settings.query(resource.clone(), vec![QueryParameter::ByteSize]);
         settings.query(resource2.clone(), vec![QueryParameter::ByteSize]);
         let reserved_id = ReservedTrackedID::default();
-        let info = ShaderInfo::default();
+        let info = ShaderInfoRead::default();
         let transfer = info.transfer();
         pipec::tracked_task(
             &pipeline,

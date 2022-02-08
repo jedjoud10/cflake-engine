@@ -72,7 +72,7 @@ pub enum UpdatedParameter {
 pub struct ShaderInfoQuerySettings {
     // Collection of resources and some query parameters we want to query for said resources
     pub res: AHashMap<Resource, Vec<QueryParameter>>,
-    pub res_all: Vec<QueryParameter>,
+    pub res_all: AHashMap<QueryResource, Vec<QueryParameter>>,
 }
 
 impl ShaderInfoQuerySettings {
@@ -81,34 +81,56 @@ impl ShaderInfoQuerySettings {
         self.res.insert(res, params);
     }
     // Query the parameters for all resources
-    pub fn query_all(&mut self, params: Vec<QueryParameter>) {
-        self.res_all.extend(params);
+    pub fn query_all(&mut self, unique_resource: QueryResource, params: Vec<QueryParameter>) {
+        self.res_all.insert(unique_resource, params);
     }
 }
 
-// Some shader info that we queried from the pipeline
+// Shader info that we queried from the pipeline and that we must return to the calling thread
 #[derive(Default, Clone)]
-pub struct ShaderInfo {
-    // The updated resources
-    pub res: Arc<Mutex<AHashMap<Resource, Vec<UpdatedParameter>>>>,
+pub struct ShaderInfoRead {
+    pub(crate) inner: Arc<Mutex<ShaderInfo>>
 }
 
-impl ShaderInfo {
+impl ShaderInfoRead {
     // Get the updated query parameters of a specific resource
     pub fn get(&self, res: &Resource) -> Option<Vec<UpdatedParameter>> {
-        let lock = self.res.lock().ok()?;
+        let lock_ = self.inner.lock().ok()?;
+        let lock = &lock_.res;
         lock.get(res).cloned()
     }
     // Get all the updated query parameter
-    pub fn get_all(&self) -> Option<Vec<(Resource, Vec<UpdatedParameter>)>> {
-        let lock = self.res.lock().ok()?;
-        let val = lock.clone().into_iter().collect::<Vec<_>>();
-        Some(val)
+    pub fn get_all(&self, unique_resource: &QueryResource) -> Option<Vec<(String, Vec<UpdatedParameter>)>> {
+        let lock_ = self.inner.lock().ok()?;
+        let lock = &lock_.res_all;
+        lock.get(unique_resource).cloned()
     }
 }
 
-impl Transferable for ShaderInfo {
+impl Transferable for ShaderInfoRead {
     fn transfer(&self) -> Transfer<Self> {
         Transfer(self.clone())
     }
 }
+
+
+// Some shader info that we queried from the pipeline
+#[derive(Default, Clone)]
+pub(crate) struct ShaderInfo {
+    // The updated resources
+    pub(crate) res: AHashMap<Resource, Vec<UpdatedParameter>>,
+    // The updated unique resources
+    pub(crate) res_all: AHashMap<QueryResource, Vec<(String, Vec<UpdatedParameter>)>>,
+}
+
+impl ShaderInfo {
+    // Get the updated query parameters of a specific resource
+    pub(crate) fn get(&self, res: &Resource) -> Option<&Vec<UpdatedParameter>> {
+        self.res.get(res)
+    }
+    // Get all the updated query parameter
+    pub(crate) fn get_all(&self, unique_resource: &QueryResource) -> Option<&Vec<(String, Vec<UpdatedParameter>)>> {
+        self.res_all.get(unique_resource)
+    }
+}
+

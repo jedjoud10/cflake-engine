@@ -4,6 +4,7 @@
 #include "defaults\shaders\rendering\sun.func.glsl"
 #include "defaults\shaders\rendering\shadow_calculations.func.glsl"
 out vec3 color;
+
 uniform sampler2D diffuse_texture; // 0
 uniform sampler2D emissive_texture; // 1
 uniform sampler2D normals_texture; // 2
@@ -11,24 +12,15 @@ uniform sampler2D position_texture; // 3
 uniform sampler2D depth_texture; // 4
 uniform sampler2D default_sky_gradient; // 5
 uniform sampler2DShadow shadow_map; // 6
-
-
 uniform vec3 directional_light_dir;
 uniform mat4 lightspace_matrix;
 uniform float directional_light_strength;
 uniform mat4 projection_rotation_matrix;
-uniform vec2 nf_planes;
-uniform int debug_view;
-uniform vec3 camera_pos;
-uniform vec3 camera_dir;
-uniform ivec2 resolution;
-uniform float time;
 in vec2 uv_coordinates;
-uniform float test;
 
 void main() {
 	vec2 uvs = uv_coordinates;
-	ivec2 pixel = ivec2(uv_coordinates * resolution);
+	ivec2 pixel = ivec2(uv_coordinates * _resolution);
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
@@ -73,12 +65,11 @@ void main() {
 		frag_color = emissive;
 	}
 
-	// Calculate linear depth
+	// Get fragment depth
 	float odepth = texture(depth_texture, uvs).x;
-	//float depth = (nf_planes.x * odepth) / (nf_planes.y - odepth * (nf_planes.y - nf_planes.x));	
 
 	// Depth test with the sky
-	if (odepth == 1.0) {
+	if (odepth == 1.0 && pixel.x < 500) {
 		color = sky_color;
 	} else {
 		color = frag_color;

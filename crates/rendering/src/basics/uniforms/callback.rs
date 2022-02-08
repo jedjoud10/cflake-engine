@@ -17,7 +17,7 @@ impl SetUniformsCallback {
         if let Some(callback) = &self.inner {
             callback(uniforms);
         } else {
-            panic!("Tried to set uniforms, but no callback was found!")
+            eprintln!("Tried to set uniforms, but no callback was found!")
         }
     }
 }

@@ -43,7 +43,9 @@ impl<'a> Uniforms<'a> {
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
-        self.map.get(name).unwrap_or(-1)
+        let res = self.map.get(name).unwrap_or(-1);
+        //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
+        res
     }
     // Bind the shader for execution/rendering
     pub(crate) fn bind_shader(&self) {
@@ -107,7 +109,7 @@ impl<'a> Uniforms<'a> {
             return;
         }
         unsafe {
-            gl::Uniform3f(location, vec3[0], vec3[1], vec3[3]);
+            gl::Uniform3f(location, vec3[0], vec3[1], vec3[2]);
         }
     }
     // Bool

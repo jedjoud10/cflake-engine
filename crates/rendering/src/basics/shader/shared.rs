@@ -20,7 +20,7 @@ use crate::{
 };
 
 use super::{
-    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
+    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter, ShaderInfoRead},
     IncludeExpansionError, ShaderSettings,
 };
 
@@ -107,29 +107,34 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
 }
 
 // Get the uniform definition map from a shader using the query API
-pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefinitionMap {
+pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> Option<UniformsDefinitionMap> {
     let mut settings = ShaderInfoQuerySettings::default();
-    settings.query_all(vec![QueryParameter::Location]);
+    settings.query_all(QueryResource::Uniform, vec![QueryParameter::Location]);
     let res = query_shader_info(program, settings);
-    let mappings = res
-        .into_iter()
-        .map(|(resource, params)| {
-            // Get the inner location
-            let location = *params.get(0).unwrap().as_location().unwrap() as i32;
-            (resource.name, location)
-        })
+    let maybe = res.get_all(&QueryResource::Uniform);    
+    // In some cases we might not have uniforms at all 
+    if let Some(mappings) = maybe {
+        let mappings = mappings.iter()
+            .map(|(name, params)| {
+                // Get the inner location
+                let location = *params.get(0).unwrap().as_location().unwrap() as i32;
+                (name.clone(), location)
+            })
         .collect::<AHashMap<_, _>>();
-    UniformsDefinitionMap { mappings }
+        Some(UniformsDefinitionMap { mappings })       
+    } else {
+        None
+    }
 }
 
 // Query some information about a shader, and then return the GlTracker
-pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
+pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfoRead>) -> GlTracker {
     GlTracker::fake(
         move |pipeline| {
             let program = identifier.get_program(pipeline);
             let output_queried_resources = query_shader_info(program, settings);
             // Finally update the mutex that holds the queried resources
-            let mut lock = read.0.res.lock().unwrap();
+            let mut lock = (read.0).inner.lock().unwrap();
             *lock = output_queried_resources;
         },
         pipeline,
@@ -137,7 +142,7 @@ pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderI
 }
 
 // Query some information about a shader, and then return
-pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings) -> (AHashMap<Resource, Vec<UpdatedParameter>>) {
+pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings) -> ShaderInfo {
     unsafe {
         // Get the query info
         // Gotta count the number of unique resource types
@@ -146,6 +151,12 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
         for (x, parameters) in settings.res.iter() {
             let count = unique_count.entry(x.res.clone()).or_default();
             indexed_resources.insert(x.clone(), (parameters.clone(), *count));
+            *count += 1;
+        }
+        // Also do the same for the unique ALL resources
+        // This only adds to the unique_count, and doesn't modify indexed_resources
+        for (x, parameters) in settings.res_all.iter() {
+            let count = unique_count.entry(x.clone()).or_default();
             *count += 1;
         }
 
@@ -204,44 +215,53 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
             output_queried_resources.insert(res, converted_outputs);
         }
         // Get ALL the parameters, if we want to
-        let parameters = settings.res_all;
-        for (unique_resource, (id, max_name_len)) in types_and_counts {
-            // Get the resource's parameters first
-            let converted_params = parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
-            let max_len = converted_params.len();
-            let mut output = vec![-1; max_len];
-            if (id as u32) == gl::INVALID_INDEX {
-                panic!()
-            }
-            gl::GetProgramResourceiv(
-                program,
-                unique_resource.convert(),
-                id as u32,
-                max_len as i32,
-                converted_params.as_ptr(),
-                output.len() as i32,
-                null_mut(),
-                output.as_mut_ptr(),
-            );
-
-            // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
-            for maybe in output.iter() {
-                if *maybe == -1 {
+        let mut output_queried_resources_all = AHashMap::<QueryResource, Vec<(String, Vec<UpdatedParameter>)>>::new();
+        for (unique_resource, (max_resources, max_name_len)) in types_and_counts.into_iter() {
+            for id in 0..max_resources {
+                // Get the resource's parameters first
+                let unique_resource_parameters = settings.res_all.get(&unique_resource).unwrap();
+                let gl_parameters = unique_resource_parameters.iter().map(|x| x.convert()).collect::<Vec<_>>();
+                let max_len = unique_resource_parameters.len();
+                let mut output = vec![-1; max_len];
+                if (id as u32) == gl::INVALID_INDEX {
                     panic!()
                 }
-            }
+                gl::GetProgramResourceiv(
+                    program,
+                    unique_resource.convert(),
+                    id as u32,
+                    max_len as i32,
+                    gl_parameters.as_ptr(),
+                    output.len() as i32,
+                    null_mut(),
+                    output.as_mut_ptr(),
+                );
 
-            let mut name = vec![c_char::default(); max_name_len + 1];
-            // Get the resource's name
-            gl::GetProgramResourceName(program, unique_resource.convert(), id as u32, name.len() as i32, null_mut(), name.as_mut_ptr());
-            let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap().to_string();
+                // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
+                for maybe in output.iter() {
+                    if *maybe == -1 {
+                        panic!()
+                    }
+                }
 
-            let converted_outputs = parameters
-                .iter()
-                .zip(output)
-                .map(|(x, opengl_val)| x.convert_output(opengl_val))
-                .collect::<Vec<UpdatedParameter>>();
+                let mut name = vec![c_char::default(); max_name_len + 1];
+                // Get the resource's name
+                gl::GetProgramResourceName(program, unique_resource.convert(), id as u32, name.len() as i32, null_mut(), name.as_mut_ptr());
+                let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap().to_string();
+                dbg!(&name);
+                let converted_outputs = unique_resource_parameters
+                    .iter()
+                    .zip(output)
+                    .map(|(x, opengl_val)| x.convert_output(opengl_val))
+                    .collect::<Vec<UpdatedParameter>>();
+                let entry = output_queried_resources_all.entry(unique_resource.clone()).or_default();
+                dbg!(&converted_outputs);
+                entry.push((name, converted_outputs));
+            }            
         }
-        output_queried_resources
+        ShaderInfo {
+            res: output_queried_resources,
+            res_all: output_queried_resources_all,
+        }        
     }
 }

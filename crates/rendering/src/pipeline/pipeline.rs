@@ -324,7 +324,8 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
     };
 
     // Actually make the render thread
-    let handle = std::thread::spawn(move || {
+    let builder = std::thread::Builder::new().name("RenderThread".to_string());
+    let handle = builder.spawn(move || {
         // Start OpenGL
         let _glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
         let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
@@ -439,7 +440,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             }
         }
         println!("Stopped the render thread!");
-    });
+    }).unwrap();
     // Wait for the init message...
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");

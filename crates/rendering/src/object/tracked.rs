@@ -8,7 +8,7 @@ use crate::{
     basics::{
         readwrite::ReadBytes,
         shader::{
-            info::{ShaderInfo, ShaderInfoQuerySettings},
+            info::{ShaderInfo, ShaderInfoQuerySettings, ShaderInfoRead},
             Shader,
         },
         texture::Texture,
@@ -23,5 +23,5 @@ pub enum TrackedTask {
     TextureReadBytes(ObjectID<Texture>, Transfer<ReadBytes>),
     ShaderStorageReadBytes(ObjectID<ShaderStorage>, Transfer<ReadBytes>),
     AtomicGroupRead(ObjectID<AtomicGroup>, Transfer<AtomicGroupRead>),
-    QueryShaderInfo(ShaderIDType, ShaderInfoQuerySettings, Transfer<ShaderInfo>),
+    QueryShaderInfo(ShaderIDType, ShaderInfoQuerySettings, Transfer<ShaderInfoRead>),
 }

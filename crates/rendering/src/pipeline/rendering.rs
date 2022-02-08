@@ -259,7 +259,6 @@ impl PipelineRenderer {
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.screenshader));
         let uniforms = Uniforms::new(&settings, pipeline);
         uniforms.bind_shader();
-        uniforms.set_vec2f32("nf_planes", camera.clip_planes);
         // The first directional light source is always the sun's light source
         let default = LightSource::new(LightSourceType::Directional {
             quat: veclib::Quaternion::<f32>::IDENTITY,
@@ -271,9 +270,6 @@ impl PipelineRenderer {
         uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
-        // Other params
-        uniforms.set_vec3f32("camera_pos", camera.position);
-        uniforms.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
         // Also gotta set the one time uniforms
         uniforms.set_texture("diffuse_texture", self.diffuse_texture, 0);
         uniforms.set_texture("emissive_texture", self.emissive_texture, 1);
