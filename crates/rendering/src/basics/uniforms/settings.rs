@@ -22,7 +22,6 @@ impl ShaderIDType {
     }
 }
 
-
 // Stores the current shader and the shader ID possibly of the shader linked to the uniforms
 #[derive(Clone, Copy)]
 pub struct ShaderUniformsSettings {

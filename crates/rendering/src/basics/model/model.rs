@@ -82,7 +82,6 @@ impl PipelineObject for Model {
             gl::GenVertexArrays(1, &mut self.vertex_array_object);
             gl::BindVertexArray(self.vertex_array_object);
 
-
             // We can create all the buffers at once
             let mut buffers = [0_32; 6];
             gl::GenBuffers(6, buffers.as_mut_ptr());
@@ -124,7 +123,6 @@ impl PipelineObject for Model {
                 // Vertex attrib array
                 gl::EnableVertexAttribArray(0);
                 gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
-                
 
                 // Vertex normals attribute
                 if !self.normals.is_empty() {
@@ -136,10 +134,12 @@ impl PipelineObject for Model {
                         self.normals.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
-                    
+
                     gl::EnableVertexAttribArray(1);
-                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());                    
-                } else { gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr()); }
+                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
+                } else {
+                    gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
+                }
 
                 if !self.tangents.is_empty() {
                     // And it's brother, the tangent buffer
@@ -154,7 +154,9 @@ impl PipelineObject for Model {
                     // Tangent attribute
                     gl::EnableVertexAttribArray(2);
                     gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
-                } else { gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr()); }
+                } else {
+                    gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
+                }
 
                 if !self.uvs.is_empty() {
                     // The texture coordinates buffer
@@ -169,9 +171,10 @@ impl PipelineObject for Model {
                     // UV attribute
                     gl::EnableVertexAttribArray(3);
                     gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                } else { gl::VertexAttrib4Nub(3, 255, 255, 0, 0); }
+                } else {
+                    gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
+                }
 
-                
                 if !self.colors.is_empty() {
                     // Vertex colors buffer
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
@@ -181,18 +184,20 @@ impl PipelineObject for Model {
                         self.colors.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
-                    
+
                     // Vertex colors attribute
                     gl::EnableVertexAttribArray(4);
                     gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                } else { gl::VertexAttrib4Nub(4, 255, 255, 255, 0); }
+                } else {
+                    gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
+                }
             }
 
             // Unbind
             self.buffers = buffers;
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);            
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
         // Add the model
         pipeline.models.insert(id, self);

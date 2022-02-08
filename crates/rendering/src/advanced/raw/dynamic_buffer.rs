@@ -1,5 +1,5 @@
-use std::{ffi::c_void, mem::size_of, ptr::null};
 use crate::utils::UsageType;
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
 pub struct DynamicRawBuffer<T> {

@@ -12,7 +12,8 @@ use crate::{
             Shader,
         },
         texture::Texture,
-        transfer::Transfer, uniforms::ShaderIDType,
+        transfer::Transfer,
+        uniforms::ShaderIDType,
     },
 };
 

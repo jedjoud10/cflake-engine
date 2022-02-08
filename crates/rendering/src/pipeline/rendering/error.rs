@@ -1,16 +1,14 @@
 use std::fmt;
 
-#[derive(Debug, Clone)]
-pub struct RenderingError {
-    renderer_id: ObjectID<Renderer>,
-    model_id: ObjectID<Renderer>,
-    material_id: ObjectID<Renderer>,
-}
+use crate::{basics::renderer::Renderer, object::ObjectID};
 
-impl fmt::Display for OpenGLObjectNotInitialized {
+#[derive(Debug, Clone)]
+pub struct RenderingError;
+
+impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "OpenGL object not initialized!")
+        write!(f, "Drawing failed!")
     }
 }
 
-impl std::error::Error for OpenGLObjectNotInitialized {}
+impl std::error::Error for RenderingError {}

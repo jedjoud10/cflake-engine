@@ -1,7 +1,7 @@
 use bitfield::SparseBitfield;
 use ordered_vec::shareable::ShareableOrderedVec;
 
-use crate::object::{PipelineObject, ObjectID};
+use crate::object::{ObjectID, PipelineObject};
 
 // A collection that contains a specific type of pipeline object
 pub struct Collection<T: PipelineObject> {
@@ -15,7 +15,7 @@ impl<T: PipelineObject> Default for Collection<T> {
 }
 
 impl<T: PipelineObject> Collection<T> {
-    // Get 
+    // Get
     pub fn get(&self, id: ObjectID<T>) -> Option<&T> {
         self.inner.get(id.get()?)
     }
@@ -49,12 +49,15 @@ pub struct TrackedCollection<T: PipelineObject> {
 
 impl<T: PipelineObject> Default for TrackedCollection<T> {
     fn default() -> Self {
-        Self { inner: Default::default(), mutated: SparseBitfield::default() }
+        Self {
+            inner: Default::default(),
+            mutated: SparseBitfield::default(),
+        }
     }
 }
 
 impl<T: PipelineObject> TrackedCollection<T> {
-    // Get 
+    // Get
     pub fn get(&self, id: ObjectID<T>) -> Option<&T> {
         self.inner.get(id.get()?)
     }

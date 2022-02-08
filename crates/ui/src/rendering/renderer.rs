@@ -2,7 +2,7 @@ use crate::{InstancedBatch, InstancedBatchIdentifier, Root};
 use rendering::{
     basics::{
         shader::{Shader, ShaderSettings},
-        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
     pipeline::{pipec, Pipeline},

@@ -7,7 +7,7 @@ use crate::{
         renderer::Renderer,
         shader::{query_shader_info, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
-        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
@@ -23,7 +23,13 @@ use std::{
     },
 };
 
-use super::{settings::PipelineSettings, PipelineContext, collection::{Collection, TrackedCollection}, defaults::DefaultPipelineObjects, cached::Cached};
+use super::{
+    cached::Cached,
+    collection::{Collection, TrackedCollection},
+    defaults::DefaultPipelineObjects,
+    settings::PipelineSettings,
+    PipelineContext,
+};
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
 #[derive(Default)]
@@ -105,7 +111,7 @@ impl Pipeline {
                 let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.read_counters(self, read)
             }
-            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info(self, _type, settings, read)
+            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info(self, _type, settings, read),
         };
 
         // Add the tracked ID to our pipeline

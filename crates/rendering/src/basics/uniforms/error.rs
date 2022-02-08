@@ -9,11 +9,15 @@ pub struct UniformError {
 
 impl UniformError {
     pub fn new(uniform: &str, cause: &str) -> Self {
-        Self { uniform: uniform.to_string(), cause: cause.to_string() }
+        Self {
+            uniform: uniform.to_string(),
+            cause: cause.to_string(),
+        }
     }
     pub fn invalid_location(uniform: &str) -> Self {
         Self {
-            uniform: uniform.to_string(), cause: "invalid location".to_string()
+            uniform: uniform.to_string(),
+            cause: "invalid location".to_string(),
         }
     }
 }

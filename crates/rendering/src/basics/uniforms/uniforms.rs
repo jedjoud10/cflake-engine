@@ -1,15 +1,18 @@
-use std::{collections::HashMap, ffi::CString};
-use veclib::Vector;
+use super::{ShaderUniformsSettings, UniformError, UniformsDefinitionMap};
 use crate::{
     advanced::{
         atomic::{AtomicGroup, ClearCondition},
         shader_storage::ShaderStorage,
     },
-    basics::{texture::{Texture, TextureAccessType}, shader::Shader},
+    basics::{
+        shader::Shader,
+        texture::{Texture, TextureAccessType},
+    },
     object::ObjectID,
     pipeline::Pipeline,
 };
-use super::{ShaderUniformsSettings, UniformsDefinitionMap, UniformError};
+use std::{collections::HashMap, ffi::CString};
+use veclib::Vector;
 
 // Struct that allows us to set the uniforms for a specific shader
 pub struct Uniforms<'a> {
@@ -22,7 +25,7 @@ impl<'a> !Sync for Uniforms<'a> {}
 
 // Gotta change the place where this shit is in
 impl<'a> Uniforms<'a> {
-    // Create a new uniforms setter using a shader uniforms settings and a pipeline 
+    // Create a new uniforms setter using a shader uniforms settings and a pipeline
     // (we must only call this internally whenever we call the set uniform callback)
     pub(crate) fn new(settings: &'a ShaderUniformsSettings, pipeline: &'a Pipeline) -> Self {
         let program = settings._type.get_program(pipeline);
@@ -32,12 +35,10 @@ impl<'a> Uniforms<'a> {
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> Result<i32, UniformError> {
         self.map.get(name).map_or(Err(UniformError::invalid_location(name)), |x| Ok(x))
-    } 
+    }
     // Bind the shader for execution/rendering
     pub(crate) fn bind_shader(&self) {
-        unsafe {
-            gl::UseProgram(self.program)
-        }
+        unsafe { gl::UseProgram(self.program) }
     }
 
     // I32
@@ -125,7 +126,7 @@ impl<'a> Uniforms<'a> {
             } else if access.contains(TextureAccessType::WRITE) {
                 gl::WRITE_ONLY
             } else {
-                return Err(UniformError::new(name, "invalid texture access type"))
+                return Err(UniformError::new(name, "invalid texture access type"));
             }
         };
         unsafe {
@@ -146,7 +147,11 @@ impl<'a> Uniforms<'a> {
     }
     pub fn set_shader_storage(&self, name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) -> Result<(), UniformError> {
         let location = self.get_location(name)?;
-        let shader_storage = self.pipeline.shader_storages.get(shader_storage_id).ok_or(UniformError::new(name, "invalid shader storage id"))?;
+        let shader_storage = self
+            .pipeline
+            .shader_storages
+            .get(shader_storage_id)
+            .ok_or(UniformError::new(name, "invalid shader storage id"))?;
         unsafe {
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
             gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.oid);

@@ -1,10 +1,10 @@
+mod callback;
+mod definition;
 mod error;
 mod settings;
-mod definition;
-mod callback;
 mod uniforms;
-pub use uniforms::Uniforms;
 pub use callback::*;
-pub use error::*;
 pub use definition::*;
+pub use error::*;
 pub use settings::*;
+pub use uniforms::Uniforms;

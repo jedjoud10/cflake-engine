@@ -3,7 +3,7 @@ use crate::pipeline::*;
 
 use super::shader::Shader;
 use super::texture::Texture;
-use super::uniforms::{Uniforms, SetUniformsCallback};
+use super::uniforms::{SetUniformsCallback, Uniforms};
 // A material that can have multiple parameters and such
 pub struct Material {
     // Main settings
@@ -21,7 +21,7 @@ pub struct Material {
 
 impl Default for Material {
     fn default() -> Self {
-        Self { 
+        Self {
             shader: Default::default(),
             uniforms: Default::default(),
             diffuse_map: Default::default(),
@@ -29,7 +29,7 @@ impl Default for Material {
             emissive_map: Default::default(),
             tint: veclib::Vector3::ONE,
             normal_map_strength: 1.0,
-            emissive_map_strength: 1.0
+            emissive_map_strength: 1.0,
         }
     }
 }

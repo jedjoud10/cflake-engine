@@ -4,13 +4,13 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
-        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
     pipeline::{pipec, InternalPipeline, Pipeline},
 };
 
-use super::PipelineRenderer;
+use super::{error::RenderingError, PipelineRenderer};
 
 // Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
@@ -27,11 +27,10 @@ pub struct ShadowMapping {
 }
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
-    pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Option<&'a Model> {
-        if !self.enabled { return None; }
+    pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
         // Always use our internal shadow shader
         let shader = self.shadow_shader;
-        let model = pipeline.models.get(renderer.model)?;
+        let model = pipeline.models.get(renderer.model).ok_or(RenderingError)?;
         let model_matrix = &renderer.matrix;
 
         // Calculate the light space matrix
@@ -44,7 +43,7 @@ impl ShadowMapping {
         group.bind_shader();
         group.set_mat44f32("lsm_matrix", lsm);
 
-        Some(&model)
+        Ok(&model)
     }
     // Initialize a new shadow mapper
     pub(crate) fn new(renderer: &mut PipelineRenderer, shadow_resolution: u16, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {

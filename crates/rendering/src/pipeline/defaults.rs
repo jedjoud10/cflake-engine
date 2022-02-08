@@ -1,4 +1,7 @@
-use crate::{object::ObjectID, basics::{texture::Texture, material::Material, shader::Shader, model::Model, lights::LightSource}};
+use crate::{
+    basics::{lights::LightSource, material::Material, model::Model, shader::Shader, texture::Texture},
+    object::ObjectID,
+};
 
 // Some default values like the default material or even the default shader
 pub struct DefaultPipelineObjects {

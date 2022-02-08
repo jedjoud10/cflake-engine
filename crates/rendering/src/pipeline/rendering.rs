@@ -1,6 +1,6 @@
 use self::shadow_mapping::ShadowMapping;
 
-use super::{settings::PipelineSettings, InternalPipeline, Pipeline, FrameDebugInfo};
+use super::{settings::PipelineSettings, FrameDebugInfo, InternalPipeline, Pipeline};
 use crate::{
     basics::{
         lights::{LightSource, LightSourceType},
@@ -9,14 +9,16 @@ use crate::{
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings, SetUniformsCallback, UsedUniformLocationsSet},
+        uniforms::{SetUniformsCallback, ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
     pipeline::pipec,
     utils::DataType,
 };
 use std::ptr::null;
+mod error;
 mod shadow_mapping;
+use self::error::*;
 
 // Pipeline renderer that will render our world
 #[derive(Default)]
@@ -33,7 +35,7 @@ pub struct PipelineRenderer {
     // Screen rendering
     screenshader: ObjectID<Shader>,
     quad_model: ObjectID<Model>,
-    uniforms_callback: SetUniformsCallback,
+    uniforms: SetUniformsCallback,
 
     // Others
     sky_texture: ObjectID<Texture>,
@@ -44,27 +46,27 @@ impl PipelineRenderer {
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.diffuse_map.get().map_or_else(|| pipeline.defaults.unwrap().white, |x| ObjectID::new(x))
-    } 
+    }
     fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.normal_map.get().map_or_else(|| pipeline.defaults.unwrap().normals_tex, |x| ObjectID::new(x))
-    } 
+    }
     fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.emissive_map.get().map_or_else(|| pipeline.defaults.unwrap().black, |x| ObjectID::new(x))
-    } 
+    }
     // Setup uniforms for a specific renderer
     fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
         // Pipeline data
         let camera = &pipeline.camera;
-        let material = pipeline.materials.get(renderer.material).unwrap();
+        let material = pipeline.materials.get(renderer.material).ok_or(RenderingError)?;
 
         // The shader will always be valid
-        let shader = pipeline.shaders.get(material.shader)?;
-        let model = pipeline.models.get(renderer.model)?;
+        let shader = pipeline.shaders.get(material.shader).ok_or(RenderingError)?;
+        let model = pipeline.models.get(renderer.model).ok_or(RenderingError)?;
         let model_matrix = &renderer.matrix;
         let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
         let uniforms = Uniforms::new(&settings, pipeline);
         // Bind first
-        uniforms.bind_shader();        
+        uniforms.bind_shader();
         // Then set the uniforms
         uniforms.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
         uniforms.set_mat44f32("model_matrix", *model_matrix);
@@ -72,25 +74,16 @@ impl PipelineRenderer {
         material.uniforms.execute(&uniforms);
         renderer.uniforms.execute(&uniforms);
         // Textures might be not valid, so we fallback to the default ones just in case
-        uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material));
-        uniforms.set_texture("normals_tex", Self::get_diffuse_map(pipeline, material));
-        uniforms.set_texture("emissive_tex", Self::get_diffuse_map(pipeline, material));
-        let 
+        uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material), 0);
+        uniforms.set_texture("normals_tex", Self::get_diffuse_map(pipeline, material), 1);
+        uniforms.set_texture("emissive_tex", Self::get_diffuse_map(pipeline, material), 2);
 
-        Some((&model, material))
+        Ok(&model)
     }
     // Render a single renderer
-    fn render(&self, model: &Model, double_sided: bool) {
+    fn render(&self, model: &Model) {
         unsafe {
-            // Enable / Disable vertex culling for double sided materials
-            /*
-            if double_sided {
-                gl::Disable(gl::CULL_FACE);
-            } else {
-                gl::Enable(gl::CULL_FACE);
-            }
-            */
-            // Actually draw
+            // Actually draw the model
             gl::BindVertexArray(model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
             gl::DrawElements(gl::TRIANGLES, model.triangles.len() as i32, gl::UNSIGNED_INT, null());
@@ -183,15 +176,17 @@ impl PipelineRenderer {
         .unwrap();
 
         // Also set our one time uniforms
-        let mut group = Uniforms::new();
-        group.set_texture("diffuse_texture", self.diffuse_texture, 0);
-        group.set_texture("emissive_texture", self.emissive_texture, 1);
-        group.set_texture("normals_texture", self.normals_texture, 2);
-        group.set_texture("position_texture", self.position_texture, 3);
-        group.set_texture("depth_texture", self.depth_texture, 4);
-        group.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
-        group.set_texture("default_sky_gradient", self.sky_texture, 5);
-        self.uniforms = group;
+        let uniforms = SetUniformsCallback::new(|uniforms| {
+            uniforms.set_texture("diffuse_texture", self.diffuse_texture, 0)?;
+            uniforms.set_texture("emissive_texture", self.emissive_texture, 1)?;
+            uniforms.set_texture("normals_texture", self.normals_texture, 2)?;
+            uniforms.set_texture("position_texture", self.position_texture, 3)?;
+            uniforms.set_texture("depth_texture", self.depth_texture, 4)?;
+            uniforms.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6)?;
+            uniforms.set_texture("default_sky_gradient", self.sky_texture, 5)?;
+            Ok(())
+        });
+        self.uniforms = uniforms;
         /* #endregion */
 
         // We must always flush to make sure we execute the tasks internally
@@ -228,8 +223,8 @@ impl PipelineRenderer {
             }
             let result = self.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
-            if let Some((model, material)) = result {
-                self.render(model, material.double_sided);
+            if let Ok(model) = result {
+                self.render(model);
                 debug_info.draw_calls += 1;
                 debug_info.triangles += model.triangles.len() as u64;
                 debug_info.vertices += model.vertices.len() as u64;
@@ -253,11 +248,10 @@ impl PipelineRenderer {
             if !renderer.flags.contains(RendererFlags::SHADOW_CASTER) {
                 continue;
             }
-
             let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
-            if let Some(model) = result {
-                self.render(model, false);
+            if let Ok(model) = result {
+                self.render(model);
                 debug_info.shadow_draw_calls += 1;
             }
         }
@@ -273,19 +267,24 @@ impl PipelineRenderer {
         // Get the pipeline data
         let camera = &pipeline.camera;
 
-        // Render the screen quad
-        self.uniforms.set_vec2f32("nf_planes", camera.clip_planes);
-        // The first light source is always the directional light source
-        let default_light_source = LightSource::new(LightSourceType::Directional {
-            quat: veclib::Quaternion::<f32>::IDENTITY,
-        });
-        let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default_light_source);
+        // New uniforms
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.screenshader));
+        let uniforms = Uniforms::new(&settings, pipeline);
+
+        uniforms.set_vec2f32("nf_planes", camera.clip_planes);
+        // The first directional light source is always the sun's light source
+        let light = pipeline
+            .light_sources
+            .get(pipeline.defaults.as_ref().unwrap().sun)
+            .unwrap_or(&LightSource::new(LightSourceType::Directional {
+                quat: veclib::Quaternion::<f32>::IDENTITY,
+            }));
         let directional = light._type.as_directional().unwrap();
-        self.uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
-        self.uniforms.set_f32("directional_light_strength", light.strength);
-        self.uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
+        uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
+        uniforms.set_f32("directional_light_strength", light.strength);
+        uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
-        self.uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
+        uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
         // Other params
         self.uniforms.set_vec3f32("camera_pos", camera.position);
         self.uniforms.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));

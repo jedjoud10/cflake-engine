@@ -4,7 +4,11 @@ use std::{collections::HashSet, ffi::CString, ptr::null_mut};
 
 use ahash::AHashMap;
 
-use crate::{basics::{transfer::Transfer, uniforms::ShaderIDType}, object::GlTracker, pipeline::Pipeline};
+use crate::{
+    basics::{transfer::Transfer, uniforms::ShaderIDType},
+    object::GlTracker,
+    pipeline::Pipeline,
+};
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
