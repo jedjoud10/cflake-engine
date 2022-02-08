@@ -1,7 +1,10 @@
-mod group;
-mod impls;
-mod setters;
+mod error;
 mod settings;
-pub use group::*;
-pub use impls::*;
+mod definition;
+mod callback;
+mod uniforms;
+pub use uniforms::Uniforms;
+pub use callback::*;
+pub use error::*;
+pub use definition::*;
 pub use settings::*;

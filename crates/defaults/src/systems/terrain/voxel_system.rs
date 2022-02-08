@@ -3,7 +3,7 @@ use main::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
-        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::ShaderUniformsGroup},
+        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::Uniforms},
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },
@@ -17,7 +17,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 1) as u16).div_ceil(8);
     // Set the uniforms for the first compute shader
-    let mut group = ShaderUniformsGroup::new();
+    let mut group = Uniforms::new();
     // Chunk specific uniforms
     group.set_shader_storage("arbitrary_voxels", generator.shader_storage_arbitrary_voxels, 1);
     let chunk_coords = chunk.coords;
@@ -29,7 +29,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader
-    let mut group = ShaderUniformsGroup::new();
+    let mut group = Uniforms::new();
     // Set the atomic counters
     group.set_atomic_group("_", generator.atomics, 0);
     // Chunk specific uniforms

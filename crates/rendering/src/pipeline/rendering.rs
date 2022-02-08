@@ -9,7 +9,7 @@ use crate::{
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings, SetUniformsCallback},
     },
     object::ObjectID,
     pipeline::pipec,
@@ -33,7 +33,7 @@ pub struct PipelineRenderer {
     // Screen rendering
     screenshader: ObjectID<Shader>,
     quad_model: ObjectID<Model>,
-    uniforms: ShaderUniformsGroup,
+    uniforms_callback: SetUniformsCallback,
 
     // Others
     sky_texture: ObjectID<Texture>,
@@ -53,8 +53,8 @@ impl PipelineRenderer {
         let model_matrix = &renderer.matrix;
 
         // Pass the matrices to the shader
-        let mut group = ShaderUniformsGroup::default();
-        let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(shader.program));
+        let mut group = Uniforms::default();
+        let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
         group.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
 
         if pipeline.renderers.was_mutated()
@@ -174,7 +174,7 @@ impl PipelineRenderer {
         .unwrap();
 
         // Also set our one time uniforms
-        let mut group = ShaderUniformsGroup::new();
+        let mut group = Uniforms::new();
         group.set_texture("diffuse_texture", self.diffuse_texture, 0);
         group.set_texture("emissive_texture", self.emissive_texture, 1);
         group.set_texture("normals_texture", self.normals_texture, 2);
@@ -282,7 +282,7 @@ impl PipelineRenderer {
         self.uniforms.set_vec3f32("camera_dir", camera.rotation.mul_point(veclib::Vector3::Z));
 
         // Update the uniform settings
-        let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(self.screenshader));
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.screenshader));
         self.uniforms.bind_shader(pipeline, settings);
         self.uniforms.set_uniforms(pipeline, settings).unwrap();
 

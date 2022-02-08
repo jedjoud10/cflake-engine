@@ -4,7 +4,7 @@ use crate::{
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
-        uniforms::{ShaderIdentifier, ShaderUniformsGroup, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, Uniforms, ShaderUniformsSettings},
     },
     object::ObjectID,
     pipeline::{pipec, InternalPipeline, Pipeline},
@@ -38,8 +38,8 @@ impl ShadowMapping {
         let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *model_matrix;
 
         // Pass the light space matrix to the shader
-        let settings = ShaderUniformsSettings::new(ShaderIdentifier::ObjectID(shader));
-        let mut group = ShaderUniformsGroup::new();
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(shader));
+        let mut group = Uniforms::new();
         group.set_mat44f32("lsm_matrix", lsm);
 
         // Update the uniforms

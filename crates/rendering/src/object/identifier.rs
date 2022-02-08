@@ -3,7 +3,7 @@ use super::PipelineObject;
 use std::{
     fmt::Debug,
     marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering, AtomicUsize},
+    sync::atomic::{Ordering, AtomicUsize},
 };
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline

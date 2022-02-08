@@ -3,7 +3,7 @@ use std::{collections::HashSet, ffi::CString, ptr::null};
 use crate::{
     basics::{
         shader::{load_includes, IncludeExpansionError, ShaderSettings, ShaderSource},
-        uniforms::{ShaderIdentifier, ShaderUniformsSettings},
+        uniforms::{ShaderIDType, ShaderUniformsSettings},
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -129,14 +129,10 @@ impl ComputeShader {
     }
     // Run a compute shader, and return it's GlTracker
     pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
-        // Execute some shader uniforms if we want to
-        let group = settings.uniforms;
-        if let Some(group) = group {
-            // Create some shader uniforms settings that we can use
-            let settings = ShaderUniformsSettings::new(ShaderIdentifier::OpenGLID(self.program));
-            group.bind_shader(pipeline, settings);
-            group.set_uniforms(pipeline, settings);
-        }
+        // Create some shader uniforms settings that we can use
+        let uniform_settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(self.program));
+        let program = uniform_settings.get_program_id(pipeline);
+        settings.callback.execute(program);
         // Dispatch the compute shader for execution
         let axii = settings.axii;
 

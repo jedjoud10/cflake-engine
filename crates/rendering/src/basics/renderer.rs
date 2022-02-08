@@ -1,4 +1,4 @@
-use super::{material::Material, model::Model, uniforms::ShaderUniformsGroup};
+use super::{material::Material, model::Model, uniforms::{Uniforms, SetUniformsCallback}};
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -20,9 +20,7 @@ pub struct Renderer {
     pub material: ObjectID<Material>,
     pub matrix: veclib::Matrix4x4<f32>,
     pub flags: RendererFlags,
-
-    // Some renderer specific uniforms that may override the material uniforms when rendering
-    pub uniforms: Option<ShaderUniformsGroup>,
+    pub callback: Option<SetUniformsCallback>,
 }
 
 impl Renderer {
@@ -32,7 +30,7 @@ impl Renderer {
             model: Default::default(),
             material: Default::default(),
             matrix: Default::default(),
-            uniforms: Default::default(),
+            callback: Default::default(),
             flags,
         }
     }

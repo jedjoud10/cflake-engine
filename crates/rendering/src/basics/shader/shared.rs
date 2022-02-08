@@ -4,7 +4,7 @@ use std::{collections::HashSet, ffi::CString, ptr::null_mut};
 
 use ahash::AHashMap;
 
-use crate::{basics::transfer::Transfer, object::GlTracker, pipeline::Pipeline};
+use crate::{basics::{transfer::Transfer, uniforms::ShaderIDType}, object::GlTracker, pipeline::Pipeline};
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
@@ -94,11 +94,15 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
 }
 
 // Query some information about a shader
-pub(crate) fn query_shader_info(pipeline: &Pipeline, oid: u32, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
+pub(crate) fn query_shader_info(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfo>) -> GlTracker {
+    let program = match identifier {
+        ShaderIDType::ObjectID(shader_id) => pipeline.shaders.get(shader_id).unwrap().program,
+        ShaderIDType::ComputeObjectID(compute_id) => pipeline.compute_shaders.get(compute_id).unwrap().program,
+        ShaderIDType::OpenGLID(program) => program,
+    };
     GlTracker::fake(
         move |_| unsafe {
             // Get the query info
-
             // Gotta count the number of unique resource types
             let mut unique_count = AHashMap::<QueryResource, usize>::new();
             let mut indexed_resources = AHashMap::<Resource, (Vec<QueryParameter>, usize)>::new();
@@ -114,8 +118,8 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, oid: u32, settings: ShaderI
                 .map(|(res, _)| {
                     let mut max_resources = 0_i32;
                     let mut max_name_len = 0_i32;
-                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
-                    gl::GetProgramInterfaceiv(oid, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
+                    gl::GetProgramInterfaceiv(program, res.convert(), gl::ACTIVE_RESOURCES, &mut max_resources);
+                    gl::GetProgramInterfaceiv(program, res.convert(), gl::MAX_NAME_LENGTH, &mut max_name_len);
                     (res.clone(), (max_resources, max_name_len as usize))
                 })
                 .collect::<AHashMap<_, _>>();
@@ -125,7 +129,7 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, oid: u32, settings: ShaderI
             for (res, (parameters, _i)) in indexed_resources {
                 let cstring = CString::new(res.name.clone()).unwrap();
                 // Get the resource's index
-                let resource_index = gl::GetProgramResourceIndex(oid, res.convert(), cstring.as_ptr());
+                let resource_index = gl::GetProgramResourceIndex(program, res.convert(), cstring.as_ptr());
                 if resource_index == gl::INVALID_INDEX {
                     panic!()
                 }
@@ -135,7 +139,7 @@ pub(crate) fn query_shader_info(pipeline: &Pipeline, oid: u32, settings: ShaderI
                 let max_len = converted_params.len();
                 let mut output = vec![-1; max_len];
                 gl::GetProgramResourceiv(
-                    oid,
+                    program,
                     res.convert(),
                     resource_index,
                     max_len as i32,

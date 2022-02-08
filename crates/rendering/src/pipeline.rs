@@ -4,6 +4,7 @@ mod handler;
 mod pipeline;
 mod pipeline_main;
 mod frame_debug_info;
+mod cached;
 mod collection;
 pub use frame_debug_info::*;
 pub mod rendering;
