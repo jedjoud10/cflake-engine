@@ -35,7 +35,9 @@ impl Renderer {
         }
     }
 }
-impl PipelineObject for Renderer {
+impl PipelineObject for Renderer {    
+    const UPDATE: bool = true;
+    
     // Reserve an ID for this renderer
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, pipeline.renderers.gen_id()))

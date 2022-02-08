@@ -37,6 +37,8 @@ impl Default for Material {
 }
 
 impl PipelineObject for Material {
+    const UPDATE: bool = true;
+
     // Reserve an ID for this material
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, pipeline.materials.gen_id()))

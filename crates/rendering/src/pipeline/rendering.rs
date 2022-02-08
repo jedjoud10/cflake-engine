@@ -198,7 +198,9 @@ impl PipelineRenderer {
         // Render normally
         self.render_scene(pipeline, &mut debug_info);
         // Then render the scene again so we can render shadows
-        self.render_scene_shadow_maps(pipeline, &mut debug_info);
+        if self.shadow_mapping.enabled {
+            self.render_scene_shadow_maps(pipeline, &mut debug_info);
+        }
         // Render the deferred quad
         self.render_deferred_quad(pipeline, &mut debug_info);
         debug_info
@@ -222,11 +224,9 @@ impl PipelineRenderer {
     }
     // Render the scene's shadow maps
     fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
-        // Check if shadows are even enabled in the first place
-        if !self.shadow_mapping.enabled {
-            return;
+        unsafe {
+            gl::CullFace(gl::FRONT);
         }
-
         self.shadow_mapping.bind_fbo();
         let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
@@ -259,6 +259,20 @@ impl PipelineRenderer {
         // New uniforms
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.screenshader));
         let uniforms = Uniforms::new(&settings, pipeline);
+        self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
+
+        // Render the screen quad
+        let quad_model = pipeline.models.get(self.quad_model).unwrap();
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::Disable(gl::DEPTH_TEST);
+            self.render(quad_model);
+            gl::BindVertexArray(0);
+            gl::Enable(gl::DEPTH_TEST);
+        }
+    }
+    // Name is pretty self explanatory
+    fn bind_screen_quad_uniforms(&mut self, uniforms: Uniforms, pipeline: &Pipeline, camera: &super::camera::Camera) {
         uniforms.bind_shader();
         // The first directional light source is always the sun's light source
         let default = LightSource::new(LightSourceType::Directional {
@@ -279,15 +293,6 @@ impl PipelineRenderer {
         uniforms.set_texture("depth_texture", self.depth_texture, 4);
         uniforms.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
         uniforms.set_texture("default_sky_gradient", self.sky_texture, 5);
-
-        // Render the screen quad
-        let quad_model = pipeline.models.get(self.quad_model).unwrap();
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            self.render(quad_model);
-            gl::BindVertexArray(0);
-        }
     }
     // Update window
     pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
