@@ -13,6 +13,7 @@ pub use defaults;
 use glfw::WindowHint;
 use main::core::World;
 pub use main::*;
+use spin_sleep::LoopHelper;
 
 // Initialize GLFW and the Window
 fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
@@ -72,17 +73,20 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         task_receiver.flush(&mut world);
     }
     println!("Hello Game World!");
+    let mut sleeper = LoopHelper::builder().build_with_target_rate(240.0);
+
     while !window.should_close() {
-        // Update the delta_time
-        let new_time = glfw.get_time();
+        // Update the delta time
+        let delta = sleeper.loop_start_s();
         // Update the timings
-        world.time.update(new_time);
+        world.time.update(delta);
         // Get the GLFW events first
         poll_glfw_events(&mut glfw, &events, &mut world, &mut window);
 
         // We can update the world now
         World::update_start(&mut world, &mut task_receiver);
         World::update_end(&mut world, &mut task_receiver);
+        sleeper.loop_sleep_no_spin();
     }
     // When the window closes and we exit from the game
     println!("Exiting the engine...");
