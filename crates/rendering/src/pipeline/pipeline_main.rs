@@ -20,7 +20,7 @@ pub mod pipec {
         let (object, id) = object.reserve(pipeline)?;
 
         // Get the PipelineConstructionTask so we can send it to the pipeline
-        let task = object.send(pipeline, id);
+        let task = object.send(id);
         send(pipeline, PipelineTask::Construction(task))?;
 
         // We can now return the object ID
@@ -30,7 +30,7 @@ pub mod pipec {
     pub fn deconstruct<T: PipelineObject>(pipeline: &Pipeline, id: ObjectID<T>) -> Option<()> {
         id.get()?;
         // Send a deconstruction task to destroy the object
-        let task = T::pull(pipeline, id);
+        let task = T::pull(id);
         send(pipeline, PipelineTask::Deconstruction(task))?;
         Some(())
     }

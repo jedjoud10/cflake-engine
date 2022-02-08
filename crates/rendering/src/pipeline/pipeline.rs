@@ -186,19 +186,6 @@ impl Pipeline {
             }
         }
     }
-    // Set the global shader uniforms
-    pub(crate) fn update_global_shader_uniforms(&mut self, time: f64, delta: f64) {
-        for (_id, shader) in self.shaders.iter() {
-            // Set the uniforms
-            let mut group = Uniforms::new();
-            group.set_f32("_time", time as f32);
-            group.set_f32("_delta", delta as f32);
-            group.set_vec2i32("_resolution", self.window.dimensions.into());
-            let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
-            group.bind_shader(self, settings);
-            group.set_uniforms(self, settings);
-        }
-    }
     // Run the End Of Frame callbacks
     pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
         let lock_ = self.callbacks.clone();
@@ -401,7 +388,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             let pipeline_frame_instant = std::time::Instant::now();
             let mut pipeline_ = pipeline.write().unwrap();
             let time = time_clone.lock().unwrap();
-            pipeline_.update_global_shader_uniforms(time.0, time.1);
             pipeline_.time = *time;
             let debug = pipeline_.debugging.load(Ordering::Relaxed);
 

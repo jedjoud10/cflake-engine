@@ -103,4 +103,7 @@ impl Material {
         self.tint = tint;
         self
     }
+    pub fn with_uv_scale(mut self, scale: veclib::Vector2<f32>) -> Self {
+        self
+    }
 }

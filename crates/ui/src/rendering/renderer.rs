@@ -35,7 +35,7 @@ impl Renderer {
         }
     }
     // Draw all the elements that are part of the root
-    // We must run this one the render thread
+    // We must run this on the render thread
     pub fn draw(&mut self, pipeline: &mut Pipeline, root: &mut Root, window_size: veclib::Vector2<u16>) {
         // Don't do anything with the root if we won't render it ¯\_(ツ)_/¯
         if !root.visible || (root.elements.count() == 0) {
@@ -113,22 +113,19 @@ impl Renderer {
         }
 
         for (id, batch) in self.batches.iter() {
-            // Get the shader, create some uniforms, then draw
-            let mut group = Uniforms::default();
-            let id_shader = if !id.shader.is_some() { self.default_shader } else { id.shader };
-            let id_texture = if !id.texture.is_some() { pipeline.defaults.as_ref().unwrap().white } else { id.texture };
             // If the shader ID is the default one, that means that we have to use the default UI shader
-            group.set_texture("main_texture", id_texture, 0);
-            if pipeline.shaders.get(id_shader).is_some() {
-                let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(id_shader));
-                group.bind_shader(pipeline, settings);
-                group.set_uniforms(pipeline, settings).expect("Forgot to set shader or main texture!");
-                unsafe {
-                    //println!("{:?}", batch);
-                    gl::BindVertexArray(batch.vao);
-                    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, batch.ebo);
-                    gl::DrawElementsInstanced(gl::TRIANGLES, 6, gl::UNSIGNED_INT, null(), batch.instance_count as i32);
-                }
+            let id_shader = if !id.shader.is_some() { self.default_shader } else { id.shader };
+            if !pipeline.shaders.get(id_shader).is_some() { continue; }
+            let id_texture = if !id.texture.is_some() { pipeline.defaults.as_ref().unwrap().white } else { id.texture };
+            // Create some uniforms then draw
+            let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(id_shader));
+            let mut uniforms = Uniforms::using_mut_pipeline(&settings, pipeline);
+            uniforms.set_texture("main_texture", id_texture, 0);
+            unsafe {
+                //println!("{:?}", batch);
+                gl::BindVertexArray(batch.vao);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, batch.ebo);
+                gl::DrawElementsInstanced(gl::TRIANGLES, 6, gl::UNSIGNED_INT, null(), batch.instance_count as i32);
             }
         }
     }

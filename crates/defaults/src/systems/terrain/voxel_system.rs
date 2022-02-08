@@ -3,7 +3,7 @@ use main::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
-        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::Uniforms},
+        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::{Uniforms, SetUniformsCallback}},
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },
@@ -17,28 +17,31 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 1) as u16).div_ceil(8);
     // Set the uniforms for the first compute shader
-    let mut group = Uniforms::new();
-    // Chunk specific uniforms
-    group.set_shader_storage("arbitrary_voxels", generator.shader_storage_arbitrary_voxels, 1);
     let chunk_coords = chunk.coords;
-    group.set_vec3f32("node_pos", chunk_coords.position.into());
-    group.set_i32("node_size", chunk_coords.size as i32);
+    let arbitrary_voxels = generator.shader_storage_arbitrary_voxels; 
+    let output_voxels = generator.shader_storage_final_voxels;
+    let atomics = generator.atomics;
+    let uniforms = SetUniformsCallback::new(move |uniforms| {
+        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 1);
+        uniforms.set_vec3f32("node_pos", chunk_coords.position.into());
+        uniforms.set_i32("node_size", chunk_coords.size as i32);
+    });
     // Now we can execute the compute shader and the read bytes command
-    let execution_settings = ComputeShaderExecutionSettings::new((AXIS + 1, AXIS + 1, AXIS + 1)).set_uniforms(group);
+    let execution_settings = ComputeShaderExecutionSettings { axii: (AXIS + 1, AXIS + 1, AXIS + 1), callback: uniforms };
     pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader
-    let mut group = Uniforms::new();
-    // Set the atomic counters
-    group.set_atomic_group("_", generator.atomics, 0);
-    // Chunk specific uniforms
-    group.set_shader_storage("arbitrary_voxels", generator.shader_storage_arbitrary_voxels, 0);
-    group.set_shader_storage("output_voxels", generator.shader_storage_final_voxels, 1);
-    group.set_vec3f32("node_pos", chunk_coords.position.into());
-    group.set_i32("node_size", chunk_coords.size as i32);
+    let uniforms = SetUniformsCallback::new(move |uniforms| {
+        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 1);
+        uniforms.set_shader_storage("output_voxels", output_voxels, 1);
+        uniforms.set_vec3f32("node_pos", chunk_coords.position.into());
+        uniforms.set_i32("node_size", chunk_coords.size as i32);
+        // Set the atomic counters
+        uniforms.set_atomic_group("_", atomics, 0);
+    });
     // And execute the shader
-    let execution_settings2 = ComputeShaderExecutionSettings::new((AXIS, AXIS, AXIS)).set_uniforms(group);
+    let execution_settings2 = ComputeShaderExecutionSettings { axii: (AXIS, AXIS, AXIS), callback: uniforms };
     pipec::tracked_task_requirement(
         pipeline,
         TrackedTask::RunComputeShader(generator.second_compute_shader, execution_settings2),

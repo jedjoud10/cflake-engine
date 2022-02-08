@@ -43,10 +43,10 @@ fn init(world: &mut core::World) {
     let texture2 = rendering::pipeline::pipec::construct(&pipeline, texture2).unwrap();
 
     let material = rendering::basics::material::Material::default()
-        .set_diffuse_texture(texture)
-        .set_normals_texture(texture2)
-        .set_normals_strength(0.3)
-        .set_uv_scale(veclib::Vector2::ONE * 3.0);
+        .with_diffuse(texture)
+        .with_normal(texture2)
+        .with_normal_strength(0.3)
+        .with_uv_scale(veclib::Vector2::ONE * 3.0);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Create a simple cube
@@ -108,11 +108,11 @@ fn init(world: &mut core::World) {
     let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();
 
     let material = rendering::basics::material::Material::default()
-        .set_diffuse_texture(diffuse)
-        .set_normals_texture(normals)
-        .set_normals_strength(2.0)
-        .set_uv_scale(veclib::Vector2::ONE * 0.02)
-        .set_shader(shader);
+        .with_diffuse(diffuse)
+        .with_normal(normals)
+        .with_normal_strength(2.0)
+        .with_uv_scale(veclib::Vector2::ONE * 0.02)
+        .with_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
