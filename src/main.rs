@@ -25,7 +25,6 @@ fn init(world: &mut core::World) {
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut world.ecs);
     world.ecs.add_entity(entity, id, group).unwrap();
-    return;
     let pipeline_ = world.pipeline.clone();
     let pipeline = pipeline_.read();
     // Create it's model

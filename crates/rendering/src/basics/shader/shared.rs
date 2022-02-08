@@ -115,10 +115,10 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> Option<Unifo
     // In some cases we might not have uniforms at all 
     if let Some(mappings) = maybe {
         let mappings = mappings.iter()
-            .map(|(name, params)| {
+            .filter_map(|(name, params)| {
                 // Get the inner location
-                let location = *params.get(0).unwrap().as_location().unwrap() as i32;
-                (name.clone(), location)
+                let location = *params.get(0)?.as_location()? as i32;
+                Some((name.clone(), location))
             })
         .collect::<AHashMap<_, _>>();
         Some(UniformsDefinitionMap { mappings })       
@@ -144,6 +144,7 @@ pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderI
 // Query some information about a shader, and then return
 pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings) -> ShaderInfo {
     unsafe {
+        gl::Flush();
         // Get the query info
         // Gotta count the number of unique resource types
         let mut unique_count = AHashMap::<QueryResource, usize>::new();
@@ -198,12 +199,8 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
                 output.as_mut_ptr(),
             );
 
-            // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
-            for maybe in output.iter() {
-                if *maybe == -1 {
-                    panic!()
-                }
-            }
+            // Check for negative numbers, and remove them
+            output.drain_filter(|x| *x == -1);
 
             let converted_outputs = parameters
                 .iter()
@@ -217,6 +214,8 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
         // Get ALL the parameters, if we want to
         let mut output_queried_resources_all = AHashMap::<QueryResource, Vec<(String, Vec<UpdatedParameter>)>>::new();
         for (unique_resource, (max_resources, max_name_len)) in types_and_counts.into_iter() {
+            // No need
+            if !settings.res_all.contains_key(&unique_resource) { continue; }
             for id in 0..max_resources {
                 // Get the resource's parameters first
                 let unique_resource_parameters = settings.res_all.get(&unique_resource).unwrap();
@@ -237,12 +236,8 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
                     output.as_mut_ptr(),
                 );
 
-                // Check for negative numbers, because if we fine some, that means that we failed to retrieve a specific parameter
-                for maybe in output.iter() {
-                    if *maybe == -1 {
-                        panic!()
-                    }
-                }
+                // Check for negative numbers, because if we find some, that means that we failed to retrieve a specific parameter
+                output.drain_filter(|x| *x == -1);
 
                 let mut name = vec![c_char::default(); max_name_len + 1];
                 // Get the resource's name

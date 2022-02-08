@@ -69,7 +69,7 @@ void main() {
 	float odepth = texture(depth_texture, uvs).x;
 
 	// Depth test with the sky
-	if (odepth == 1.0 && pixel.x < 500) {
+	if (odepth == 1.0) {
 		color = sky_color;
 	} else {
 		color = frag_color;

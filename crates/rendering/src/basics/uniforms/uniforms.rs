@@ -177,10 +177,6 @@ impl<'a> Uniforms<'a> {
         }
     }
     pub fn set_atomic_group(&self, name: &str, atomic_group_id: ObjectID<AtomicGroup>, binding: u32) {
-        let location = self.get_location(name);
-        if location == -1 {
-            return;
-        }
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group_id) {
             x
         } else {
@@ -193,10 +189,6 @@ impl<'a> Uniforms<'a> {
         }
     }
     pub fn set_shader_storage(&self, name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) {
-        let location = self.get_location(name);
-        if location == -1 {
-            return;
-        }
         let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage_id) {
             x
         } else {

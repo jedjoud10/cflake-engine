@@ -17,6 +17,7 @@ pub struct Material {
     pub tint: veclib::Vector3<f32>,
     pub normal_map_strength: f32,
     pub emissive_map_strength: f32,
+    pub uv_scale: veclib::Vector2<f32>,
 }
 
 impl Default for Material {
@@ -30,6 +31,7 @@ impl Default for Material {
             tint: veclib::Vector3::ONE,
             normal_map_strength: 1.0,
             emissive_map_strength: 1.0,
+            uv_scale: veclib::Vector2::ONE,
         }
     }
 }
@@ -104,6 +106,7 @@ impl Material {
         self
     }
     pub fn with_uv_scale(mut self, scale: veclib::Vector2<f32>) -> Self {
+        self.uv_scale = scale;
         self
     }
 }
