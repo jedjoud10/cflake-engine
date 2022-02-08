@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use ahash::AHashMap;
+use enum_as_inner::EnumAsInner;
 
 use crate::basics::transfer::{Transfer, Transferable};
 
@@ -60,7 +61,7 @@ impl QueryParameter {
 }
 
 // And their updated counter part
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, EnumAsInner)]
 pub enum UpdatedParameter {
     ByteSize(usize),
     Location(usize),
@@ -71,12 +72,17 @@ pub enum UpdatedParameter {
 pub struct ShaderInfoQuerySettings {
     // Collection of resources and some query parameters we want to query for said resources
     pub res: AHashMap<Resource, Vec<QueryParameter>>,
+    pub res_all: Vec<QueryParameter>,
 }
 
 impl ShaderInfoQuerySettings {
     // Add a resource that will get it's parameters queried
     pub fn query(&mut self, res: Resource, params: Vec<QueryParameter>) {
         self.res.insert(res, params);
+    }
+    // Query the parameters for all resources
+    pub fn query_all(&mut self, params: Vec<QueryParameter>) {
+        self.res_all.extend(params);
     }
 }
 
@@ -92,6 +98,11 @@ impl ShaderInfo {
     pub fn get(&self, res: &Resource) -> Option<Vec<UpdatedParameter>> {
         let lock = self.res.lock().ok()?;
         lock.get(res).cloned()
+    }
+    // Get all the updated query parameter
+    pub fn get_all(&self) -> Option<Vec<(&Resource, &Vec<UpdatedParameter>)>> {
+        let lock = self.res.lock().ok()?;
+        Some(lock.iter().collect::<Vec<_>>())
     }
 }
 

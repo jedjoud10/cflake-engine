@@ -5,7 +5,7 @@ use crate::{
         material::Material,
         model::Model,
         renderer::Renderer,
-        shader::{query_shader_info, Shader, ShaderSettings},
+        shader::{query_shader_info, Shader, ShaderSettings, query_shader_info_tracked},
         texture::{Texture, TextureFilter, TextureType},
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
@@ -111,7 +111,7 @@ impl Pipeline {
                 let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.read_counters(self, read)
             }
-            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info(self, _type, settings, read),
+            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info_tracked(self, _type, settings, read),
         };
 
         // Add the tracked ID to our pipeline
