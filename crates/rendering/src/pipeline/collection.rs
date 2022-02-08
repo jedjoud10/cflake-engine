@@ -1,5 +1,5 @@
-use ordered_vec::shareable::ShareableOrderedVec;
 use crate::object::{ObjectID, PipelineObject};
+use ordered_vec::shareable::ShareableOrderedVec;
 
 // A collection that contains a specific type of pipeline object
 pub struct Collection<T: PipelineObject> {

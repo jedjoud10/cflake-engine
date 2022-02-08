@@ -22,13 +22,7 @@ use std::{
     },
 };
 
-use super::{
-    cached::Cached,
-    collection::{Collection},
-    defaults::DefaultPipelineObjects,
-    settings::PipelineSettings,
-    PipelineContext,
-};
+use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
 
 // A single pipeline callback
 pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>;

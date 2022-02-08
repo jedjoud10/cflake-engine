@@ -145,7 +145,8 @@ impl ComputeShader {
                 uniforms.bind_shader();
                 settings.callback.execute(&uniforms);
                 gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
-            }, pipeline,
+            },
+            pipeline,
         )
     }
 }

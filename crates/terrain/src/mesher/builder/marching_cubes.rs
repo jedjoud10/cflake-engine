@@ -33,8 +33,8 @@ impl MarchingCubes {
     fn generate_marching_cubes_case(voxels: &StoredVoxelData, info: &IterInfo) -> u8 {
         // Calculate the 8 bit number at that voxel position, so get all the 8 neighboring voxels
         let mut case_index = 0u8;
-        for l in 0..8 {
-            let density = *voxels.density(info.i + DATA_OFFSET_TABLE[l]);
+        for (l, offset) in DATA_OFFSET_TABLE.iter().enumerate() {
+            let density = *voxels.density(info.i + offset);
             case_index |= ((density > 0.0) as u8) << l;
         }
         case_index

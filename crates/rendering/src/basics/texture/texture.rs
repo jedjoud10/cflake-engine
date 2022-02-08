@@ -414,9 +414,10 @@ impl Texture {
                 gl::BindTexture(self.target, self.oid);
                 let (_internal_format, format, data_type) = self.ifd;
                 gl::GetTexImage(self.target, 0, format, data_type, null_mut());
-            }, pipeline,
-        ).with_sync_satisfied_callback(
-            move |_pipeline| unsafe {
+            },
+            pipeline,
+        )
+        .with_sync_satisfied_callback(move |_pipeline| unsafe {
             // Gotta read back the data
             let mut vec = vec![0_u8; byte_count];
             gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());

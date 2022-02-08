@@ -101,7 +101,8 @@ impl AtomicGroup {
                 let cpu_counters = &mut *cpu_counters_lock;
                 cpu_counters.clear();
                 cpu_counters.try_extend_from_slice(&counts).unwrap();
-            }, pipeline,
+            },
+            pipeline,
         )
     }
     // Clear the atomic group counters

@@ -26,10 +26,7 @@ impl GlTracker {
             gl::Flush();
             Some(fence)
         };
-        Self {
-            fence,
-            callback: None,
-        }
+        Self { fence, callback: None }
     }
     // Create the tracker with a specific execution callback
     pub fn with_sync_satisfied_callback<C: FnOnce(&Pipeline) + 'static>(mut self, callback_finished: C) -> Self {
@@ -46,10 +43,7 @@ impl GlTracker {
             start(pipeline);
             gl::Finish();
         };
-        Self {
-            fence: None,
-            callback: None,
-        }
+        Self { fence: None, callback: None }
     }
     // Check wether the corresponding fence object has completed
     pub fn completed(&mut self, pipeline: &Pipeline) -> bool {

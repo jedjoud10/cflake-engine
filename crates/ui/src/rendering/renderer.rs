@@ -52,7 +52,7 @@ impl Renderer {
                 shader: element.shader,
                 texture: element.texture,
             };
-            let batch = self.batches.entry(identifier).or_insert(InstancedBatch::new());
+            let batch = self.batches.entry(identifier).or_insert_with(InstancedBatch::new);
             // Add the per instance parameters now
             // We will all the default values for these, since we're going to be updating them in a later step anyways
             batch.depth_buf.push(0.0);
@@ -91,7 +91,7 @@ impl Renderer {
             let center: veclib::Vector2<f32> = element.center.into();
             let size: veclib::Vector2<f32> = element.size.into();
             // I am a masochist
-            batch.screen_verts_center_and_size_buf.update(index * 4 + 0, |x| *x = center / resolution);
+            batch.screen_verts_center_and_size_buf.update(index * 4, |x| *x = center / resolution);
             batch.screen_verts_center_and_size_buf.update(index * 4 + 1, |x| *x = size / resolution);
             /*
             batch.texture_uvs_buf.update(index * 4 + 0, |x| *x = element.texture_uvs.get2([0, 1]));
