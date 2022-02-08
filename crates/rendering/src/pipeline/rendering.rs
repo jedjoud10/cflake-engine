@@ -9,7 +9,7 @@ use crate::{
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
-        uniforms::{SetUniformsCallback, ShaderIDType, ShaderUniformsSettings, Uniforms},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
     pipeline::pipec,
@@ -43,16 +43,16 @@ pub struct PipelineRenderer {
 impl PipelineRenderer {
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, |x| ObjectID::new(x))
+        material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
     }
     fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material
             .normal_map
             .get()
-            .map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, |x| ObjectID::new(x))
+            .map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, ObjectID::new)
     }
     fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, |x| ObjectID::new(x))
+        material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, ObjectID::new)
     }
     // Setup uniforms for a specific renderer
     fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
@@ -83,7 +83,7 @@ impl PipelineRenderer {
         uniforms.set_f32("emissive_strength", material.emissive_map_strength);
         uniforms.set_vec2f32("uv_scale", material.uv_scale);
 
-        Ok(&model)
+        Ok(model)
     }
     // Render a single renderer
     fn render(&self, model: &Model) {
@@ -252,7 +252,7 @@ impl PipelineRenderer {
         }
     }
     // Render the deferred quad and do all lighting calculations inside it's fragment shader
-    fn render_deferred_quad(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
+    fn render_deferred_quad(&mut self, pipeline: &Pipeline, _debug_info: &mut FrameDebugInfo) {
         unsafe {
             gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         }

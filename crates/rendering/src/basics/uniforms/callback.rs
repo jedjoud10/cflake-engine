@@ -1,5 +1,5 @@
-use super::{ShaderUniformsSettings, UniformError, Uniforms};
-use crate::{basics::shader::Shader, pipeline::Pipeline};
+use super::{Uniforms};
+
 
 // Called whenever we will execute the shader, and we must set the uniforms
 #[derive(Default)]

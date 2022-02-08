@@ -6,7 +6,7 @@ use main::{
         basics::{
             readwrite::ReadBytes,
             transfer::Transferable,
-            uniforms::{SetUniformsCallback, Uniforms},
+            uniforms::{SetUniformsCallback},
         },
         object::TrackedTask,
         pipeline::{pipec, Pipeline},

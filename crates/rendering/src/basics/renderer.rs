@@ -1,7 +1,7 @@
 use super::{
     material::Material,
     model::Model,
-    uniforms::{SetUniformsCallback, Uniforms},
+    uniforms::{SetUniformsCallback},
 };
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
@@ -53,7 +53,7 @@ impl PipelineObject for Renderer {
         DeconstructionTask::Renderer(Deconstruct::<Self>(id))
     }
     // Add the renderer to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Add the renderer
         pipeline.renderers.insert(id, self)?;
         Some(())

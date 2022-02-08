@@ -4,7 +4,7 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::{null, null_mut},
+    ptr::{null_mut},
 };
 
 use ahash::AHashMap;
@@ -13,7 +13,7 @@ use image::buffer::ConvertBuffer;
 use crate::{
     basics::{
         transfer::Transfer,
-        uniforms::{ShaderIDType, ShaderUniformsSettings, UniformsDefinitionMap},
+        uniforms::{ShaderIDType, UniformsDefinitionMap},
     },
     object::GlTracker,
     pipeline::Pipeline,
@@ -156,7 +156,7 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
         }
         // Also do the same for the unique ALL resources
         // This only adds to the unique_count, and doesn't modify indexed_resources
-        for (x, parameters) in settings.res_all.iter() {
+        for (x, _parameters) in settings.res_all.iter() {
             let count = unique_count.entry(x.clone()).or_default();
             *count += 1;
         }

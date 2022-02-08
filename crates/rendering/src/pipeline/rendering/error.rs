@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{basics::renderer::Renderer, object::ObjectID};
+
 
 #[derive(Debug, Clone)]
 pub struct RenderingError;

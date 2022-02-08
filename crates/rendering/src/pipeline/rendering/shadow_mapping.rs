@@ -38,12 +38,12 @@ impl ShadowMapping {
 
         // Pass the light space matrix to the shader
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(shader));
-        let mut group = Uniforms::new(&settings, pipeline);
+        let group = Uniforms::new(&settings, pipeline);
         // Update the uniforms
         group.bind_shader();
         group.set_mat44f32("lsm_matrix", lsm);
 
-        Ok(&model)
+        Ok(model)
     }
     // Initialize a new shadow mapper
     pub(crate) fn new(renderer: &mut PipelineRenderer, shadow_resolution: u16, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {

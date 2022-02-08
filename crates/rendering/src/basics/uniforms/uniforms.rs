@@ -1,18 +1,17 @@
-use super::{ShaderUniformsSettings, UniformError, UniformsDefinitionMap};
+use super::{ShaderUniformsSettings, UniformsDefinitionMap};
 use crate::{
     advanced::{
         atomic::{AtomicGroup},
         shader_storage::ShaderStorage,
     },
     basics::{
-        shader::Shader,
         texture::{Texture, TextureAccessType},
     },
     object::ObjectID,
     pipeline::Pipeline,
 };
-use std::{collections::HashMap, ffi::CString};
-use veclib::Vector;
+
+
 
 // Struct that allows us to set the uniforms for a specific shader
 pub struct Uniforms<'a> {
@@ -43,9 +42,9 @@ impl<'a> Uniforms<'a> {
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
-        let res = self.map.get(name).unwrap_or(-1);
+        
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
-        res
+        self.map.get(name).unwrap_or(-1)
     }
     // Bind the shader for execution/rendering
     pub(crate) fn bind_shader(&self) {
@@ -176,7 +175,7 @@ impl<'a> Uniforms<'a> {
             gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
         }
     }
-    pub fn set_atomic_group(&self, name: &str, atomic_group_id: ObjectID<AtomicGroup>, clear: bool, binding: u32) {
+    pub fn set_atomic_group(&self, _name: &str, atomic_group_id: ObjectID<AtomicGroup>, clear: bool, binding: u32) {
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group_id) {
             x
         } else {
@@ -193,7 +192,7 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage(&self, name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) {
+    pub fn set_shader_storage(&self, _name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) {
         let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage_id) {
             x
         } else {
