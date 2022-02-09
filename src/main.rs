@@ -28,7 +28,7 @@ fn init(world: &mut core::World) {
     let pipeline_ = world.pipeline.clone();
     let pipeline = pipeline_.read();
     // Create it's model
-    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\sphere.mdl3d").unwrap();
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
 
     // Create it's material
@@ -55,7 +55,7 @@ fn init(world: &mut core::World) {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
-            let transform = defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 2.2, 0.0, x as f32 * 2.2));
+            let transform = defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 5.2, 1.0, x as f32 * 5.2));
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();

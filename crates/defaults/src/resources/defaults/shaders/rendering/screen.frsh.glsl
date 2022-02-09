@@ -3,6 +3,7 @@
 #include "defaults\shaders\rendering\sky.func.glsl"
 #include "defaults\shaders\rendering\sun.func.glsl"
 #include "defaults\shaders\rendering\shadow_calculations.func.glsl"
+#include "defaults\shaders\rendering\screen_space_reflections.func.glsl"
 out vec3 color;
 
 uniform sampler2D diffuse_texture; // 0
@@ -16,6 +17,7 @@ uniform vec3 directional_light_dir;
 uniform mat4 lightspace_matrix;
 uniform float directional_light_strength;
 uniform mat4 projection_rotation_matrix;
+uniform mat4 vp_matrix;
 in vec2 uv_coordinates;
 
 void main() {
@@ -67,6 +69,9 @@ void main() {
 
 	// Get fragment depth
 	float odepth = texture(depth_texture, uvs).x;
+
+	// Calculate some ssr
+	vec3 reflected = calculate_ssr(pixel_dir, position, normal, depth_texture, diffuse_texture, vp_matrix);
 
 	// Depth test with the sky
 	if (odepth == 1.0) {
