@@ -86,7 +86,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // We can update the world now
         World::update_start(&mut world, &mut task_receiver);
         World::update_end(&mut world, &mut task_receiver);
-        sleeper.loop_sleep_no_spin();
+        //sleeper.();
     }
     // When the window closes and we exit from the game
     println!("Exiting the engine...");

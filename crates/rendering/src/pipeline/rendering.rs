@@ -197,6 +197,7 @@ impl PipelineRenderer {
         self.prepare_for_rendering(pipeline);
         // Render normally
         self.render_scene(pipeline, &mut debug_info);
+        unsafe { gl::Flush() }
         // Then render the scene again so we can render shadows
         if self.shadow_mapping.enabled {
             self.render_scene_shadow_maps(pipeline, &mut debug_info);
