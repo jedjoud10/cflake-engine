@@ -50,12 +50,14 @@ fn init(world: &mut core::World) {
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Create a simple cube
-    for x in 0..2 {
-        for y in 0..2 {
+    for x in 0..1 {
+        for y in 0..1 {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
-            let transform = defaults::components::Transform::default().with_position(veclib::vec3(y as f32 * 5.2, 1.0, x as f32 * 5.2));
+            let transform = defaults::components::Transform::default()
+                .with_position(veclib::vec3(0.0, 10.0, 0.0))
+                .with_scale(veclib::vec3(50.2, 20.0, 5.0));
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
@@ -106,15 +108,13 @@ fn init(world: &mut core::World) {
 
     let diffuse = rendering::pipeline::pipec::construct(&pipeline, diffuse).unwrap();
     let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();
-
     let material = rendering::basics::material::Material::default()
         .with_diffuse(diffuse)
         .with_normal(normals)
-        .with_normal_strength(2.0)
+        .with_normal_strength(0.0)
         .with_uv_scale(veclib::Vector2::ONE * 0.02)
         .with_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
-
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
         dist < 1.2
@@ -126,5 +126,6 @@ fn init(world: &mut core::World) {
     let terrain = defaults::globals::Terrain::new("user\\shaders\\voxel_terrain\\voxel.func.glsl", 4, &pipeline_)
         .set_heuristic(heuristic)
         .set_material(material);
+        //.set_material(material);
     world.globals.add_global(terrain).unwrap();
 }

@@ -286,7 +286,8 @@ impl PipelineRenderer {
         uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
-        uniforms.set_mat44f32("vp_matrix", camera.projm * camera.viewm);
+        uniforms.set_mat44f32("pv_matrix", camera.projm * camera.viewm);
+        uniforms.set_vec2f32("nf_planes", camera.clip_planes);
         // Also gotta set the one time uniforms
         uniforms.set_texture("diffuse_texture", self.diffuse_texture, 0);
         uniforms.set_texture("emissive_texture", self.emissive_texture, 1);
