@@ -70,27 +70,20 @@ void main() {
 
 	// Get fragment depth
 	float odepth = texture(depth_texture, uvs).x;
-
+	/*
 	// Calculate some ssr
 	vec3 reflected = vec3(0.0);
 	// No need to calculate SSR if we are the sky
-	if (odepth != 1.0 && position.y <= -0.999) {
+	if (odepth != 1.0) {
 		reflected = calculate_ssr(pixel_dir, position, nf_planes, normal, depth_texture, diffuse_texture, pv_matrix);
 	} else if (position.y > -0.999) {
 		reflected = frag_color;
 	}
-
+	*/
 	// Depth test with the sky
 	if (odepth == 1.0) {
 		color = sky_color;
 	} else {
-		if (reflected != 0.0) {
-			color = reflected;
-		} else {
-			vec3 pixel_dir = reflect(pixel_dir, normal);
-			float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
-			vec3 sky_color = calculate_sky_color(default_sky_gradient, sky_uv_sampler, sun_up_factor);
-			color = sky_color;
-		}
+		color = frag_color;
 	}
 }

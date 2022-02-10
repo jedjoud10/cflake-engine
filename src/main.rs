@@ -57,7 +57,7 @@ fn init(world: &mut core::World) {
             let id = ecs::entity::EntityID::new(&mut world.ecs);
             let transform = defaults::components::Transform::default()
                 .with_position(veclib::vec3(0.0, 10.0, 0.0))
-                .with_scale(veclib::vec3(50.2, 20.0, 5.0));
+                .with_scale(veclib::vec3(50.2, 2.0, 5.0));
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();

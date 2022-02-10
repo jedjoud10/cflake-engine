@@ -29,7 +29,7 @@ impl ShadowResolution {
             ShadowResolution::Low => (1024, 3.0),
             ShadowResolution::Medium => (2048, 2.0),
             ShadowResolution::High => (4096, 1.4),
-            ShadowResolution::Overkill => (8192, 1.4),
+            ShadowResolution::Overkill => (8192, 1.0),
             ShadowResolution::Stop => (16384, 0.3),
             &ShadowResolution::ReallyOverkill => (24000, 0.4),
         }
