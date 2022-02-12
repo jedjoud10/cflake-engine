@@ -33,11 +33,11 @@ pub struct PipelineRenderer {
     depth_texture: ObjectID<Texture>,
 
     // Screen rendering
-    screenshader: ObjectID<Shader>,
+    lighting_pass_screenshader: ObjectID<Shader>,
     quad_model: ObjectID<Model>,
 
     // Others
-    sky_texture: ObjectID<Texture>,
+    sky_gradient: ObjectID<Texture>,
     shadow_mapping: ShadowMapping,
 }
 impl PipelineRenderer {
@@ -106,12 +106,12 @@ impl PipelineRenderer {
         self.quad_model = pipec::construct(pipeline, quad).unwrap();
         println!("Quad model {:?}", self.quad_model);
 
-        // Load the screen shader
+        // Load the lighting pass shader
         let settings = ShaderSettings::default()
             .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
-            .source("defaults\\shaders\\rendering\\screen.frsh.glsl")
+            .source("defaults\\shaders\\rendering\\lighting_pass.frsh.glsl")
             .shader_constant("shadow_bias", pipeline_settings.shadow_bias);
-        self.screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
+        self.lighting_pass_screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
         unsafe {
@@ -169,7 +169,7 @@ impl PipelineRenderer {
         /* #region Others */
         self.shadow_mapping = ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline);
         // Load sky gradient texture
-        self.sky_texture = pipec::construct(
+        self.sky_gradient = pipec::construct(
             pipeline,
             assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
                 .unwrap()
@@ -218,7 +218,7 @@ impl PipelineRenderer {
             if let Ok(model) = result {
                 self.render(model);
                 debug_info.draw_calls += 1;
-                debug_info.triangles += model.triangles.len() as u64;
+                debug_info.triangles += (model.triangles.len() as u64) / 3;
                 debug_info.vertices += model.vertices.len() as u64;
             }
         }
@@ -258,7 +258,7 @@ impl PipelineRenderer {
         let camera = &pipeline.camera;
 
         // New uniforms
-        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.screenshader));
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass_screenshader));
         let uniforms = Uniforms::new(&settings, pipeline);
         self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
 
@@ -295,7 +295,7 @@ impl PipelineRenderer {
         uniforms.set_texture("position_texture", self.position_texture, 3);
         uniforms.set_texture("depth_texture", self.depth_texture, 4);
         uniforms.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
-        uniforms.set_texture("sky_gradient", self.sky_texture, 5);
+        uniforms.set_texture("sky_gradient", self.sky_gradient, 5);
     }
     // Update window
     pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {

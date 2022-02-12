@@ -19,12 +19,13 @@ vec3 compute_lighting(
 	vec3 ambient_lighting_color = calculate_sky_color(sky_texture, sky_light_val, time_of_day);
 
 	// Add everything
-	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength + diffuse * 0.1;
+	vec3 ambient_lighting = (ambient_lighting_color + diffuse * 2.0) * ambient_lighting_strength;
 	vec3 color = ambient_lighting;
 	color += (1 - in_shadow) * (diffuse * light_val);
 	
 	// Calculate some specular
-	//float specular_val = pow(clamp(dot(pixel_dir, reflect(sunlight_dir, normal)), 0, 1), 512);
-	//color += specular_val * 0.5 * (1 - in_shadow);
+	float specular_val = pow(clamp(dot(pixel_dir, reflect(sunlight_dir, normal)), 0, 1), 256);
+	color += specular_val * 0.6 * (1 - in_shadow);
+
     return color;
 }

@@ -15,7 +15,7 @@ pub fn preload_default_assets() {
     println!("Pre-loading default assets...");
     // Rendering
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\lighting_pass.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.vrsh.glsl");

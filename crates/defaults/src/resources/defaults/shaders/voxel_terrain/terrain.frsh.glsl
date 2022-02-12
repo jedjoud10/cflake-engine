@@ -26,5 +26,5 @@ void main() {
 	frag_diffuse = array_triplanar(diffuse_tex, m_position, m_normal, int(m_material_type), settings);
 	frag_normal = array_triplanar_normal(normals_tex, m_position, m_normal, int(m_material_type), normals_strength, settings);
 	frag_pos = m_position;
-	frag_emissive = vec3(0, 0, 0);
+	frag_emissive = frag_diffuse;
 }
