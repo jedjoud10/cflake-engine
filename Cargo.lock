@@ -1450,6 +1450,7 @@ dependencies = [
  "assets",
  "bitfield",
  "bitflags",
+ "egui_glfw_gl",
  "enum-as-inner",
  "gl",
  "glfw",

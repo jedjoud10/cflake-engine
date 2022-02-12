@@ -1,5 +1,7 @@
 // Simply re-export
-pub use egui_glfw_gl::*;
+pub use egui_glfw_gl::{
+    egui, EguiInputState
+};
 // A simple manager
 pub struct UIManager {
     // The contexts
@@ -34,5 +36,9 @@ impl UIManager {
             pixels_per_point: Some(pixel_per_point),
             ..Default::default()
         });
+    }
+    // Handle event
+    pub fn handle_event(&mut self, event: egui_glfw_gl::glfw::WindowEvent) {
+        egui_glfw_gl::handle_event(event, &mut self.input_state);
     }
 }

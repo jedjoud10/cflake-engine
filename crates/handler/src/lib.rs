@@ -11,7 +11,7 @@ extern crate glfw;
 // World
 pub use defaults;
 use glfw::WindowHint;
-use main::core::World;
+use main::{core::World, rendering::utils::WindowInitSettings};
 pub use main::*;
 use spin_sleep::LoopHelper;
 
@@ -57,10 +57,17 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         shadow_resolution: shadows.0,
         shadow_bias: shadows.1,
     };
+    let window_init_settings = WindowInitSettings {
+        dimensions: {
+            let fs = window.get_framebuffer_size();
+            veclib::vec2(fs.0 as u16, fs.1 as u16)
+        },
+        pixel_per_point: window.get_content_scale().0,
+    };
     let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, &mut glfw, &mut window);
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
-    let mut world = World::new(config, io, pipeline_data);
+    let mut world = World::new(window_init_settings, config, io, pipeline_data);
 
     // Init the world
     // Calling the callback
@@ -97,7 +104,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
 fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f64, glfw::WindowEvent)>, world: &mut World, window: &mut glfw::Window) {
     glfw.poll_events();
     for (_, event) in glfw::flush_messages(events) {
-        match event {
+        match event.clone() {
             glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
                 // Key event
                 let action_id = match action_type {
@@ -117,6 +124,10 @@ fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f
             glfw::WindowEvent::Scroll(_, scroll) => world.input.receive_mouse_scroll_event(scroll),
             glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_position_event((x, y)),
             _ => {}
+        }
+        match event {            
+            glfw::WindowEvent::Close => window.set_should_close(true),
+            _ => { world.ui.handle_event(event); }
         }
     }
 }

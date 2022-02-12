@@ -34,12 +34,6 @@ pub fn preload_default_assets() {
     // Default impls
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\general.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
-    // UI
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\panel.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\panel.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\font.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\ui\\font.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\fonts\\default_font.font");
     // Models
     preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d");
     preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d");

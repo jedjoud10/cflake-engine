@@ -12,6 +12,7 @@ bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 others = { path = "../others" }
+egui_glfw_gl = "0.13.1"
 lazy_static = "1.4.0"
 arrayvec = "0.7.2"
 smallvec = "1.8.0"
