@@ -3,7 +3,7 @@
 #include "defaults\shaders\rendering\sky.func.glsl"
 #include "defaults\shaders\rendering\sun.func.glsl"
 #include "defaults\shaders\rendering\shadow_calculations.func.glsl"
-#include "defaults\shaders\rendering\screen_space_reflections.func.glsl"
+#include "defaults\shaders\rendering\lighting.func.glsl"
 out vec3 color;
 
 uniform sampler2D diffuse_texture; // 0
@@ -11,12 +11,12 @@ uniform sampler2D emissive_texture; // 1
 uniform sampler2D normals_texture; // 2
 uniform sampler2D position_texture; // 3
 uniform sampler2D depth_texture; // 4
-uniform sampler2D default_sky_gradient; // 5
+uniform sampler2D sky_gradient; // 5
 uniform sampler2DShadow shadow_map; // 6
-uniform vec3 directional_light_dir;
+uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
-uniform float directional_light_strength;
-uniform mat4 projection_rotation_matrix;
+uniform float sunlight_strength;
+uniform mat4 pr_matrix;
 uniform mat4 pv_matrix;
 uniform vec2 nf_planes;
 in vec2 uv_coordinates;
@@ -30,60 +30,24 @@ void main() {
 	vec3 emissive = texture(emissive_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;
 	// Calculate the dot product using the sun's direction vector and the up vector
-	float sun_dot_product = dot(directional_light_dir, vec3(0, 1, 0));
-	float sun_up_factor = sun_dot_product * 0.5 + 0.5;
-	float sun_strength = calculate_sun_strength(sun_up_factor);	
-	
-	// Calculate the diffuse lighting
-	float light_val = max(dot(normal, normalize(directional_light_dir)), 0) * directional_light_strength * sun_strength;
-
-	// Sky gradient texture moment
-    vec3 pixel_dir = normalize((inverse(projection_rotation_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
-	float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
-	vec3 sky_color = calculate_sky_color(default_sky_gradient, sky_uv_sampler, sun_up_factor);
-	
-	// Add the sun
-	sky_color += max(pow(dot(pixel_dir, normalize(directional_light_dir)), 1024), 0) * sun_strength;
-
-	// Used for ambient lighting
-	float ambient_lighting_strength = 0.1;
-	float sky_light_val = dot(normal, vec3(0, 1, 0)); 
-	vec3 ambient_lighting_color = calculate_sky_color(default_sky_gradient, sky_light_val, sun_up_factor).xyz;
-	
-	// Shadow mapping calculations
-	float in_shadow = calculate_shadows(position, normal, directional_light_dir, lightspace_matrix, shadow_map);
-
-	// Add everything
-	vec3 ambient_lighting = ambient_lighting_color * ambient_lighting_strength + diffuse * 0.1;
-	vec3 frag_color = ambient_lighting;
-	frag_color += (1 - in_shadow) * (diffuse * light_val);
-	
-	// Calculate some specular
-	/*
-	float specular_val = pow(clamp(dot(pixel_dir, reflect(directional_light_dir, normal)), 0, 1), 128);
-	frag_color += specular_val * 0.5 * (1 - in_shadow);
-	*/
-	// Test emissive
-	if (all(notEqual(emissive, vec3(0, 0, 0)))) {
-		frag_color = emissive;
-	}
+	float sun_dot_product = dot(sunlight_dir, vec3(0, 1, 0));
+	float time_of_day = sun_dot_product * 0.5 + 0.5;
+	float sun_strength_factor = calculate_sun_strength(time_of_day);	
+	vec3 pixel_dir = normalize((inverse(pr_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
 
 	// Get fragment depth
 	float odepth = texture(depth_texture, uvs).x;
-	/*
-	// Calculate some ssr
-	vec3 reflected = vec3(0.0);
-	// No need to calculate SSR if we are the sky
-	if (odepth != 1.0) {
-		reflected = calculate_ssr(pixel_dir, position, nf_planes, normal, depth_texture, diffuse_texture, pv_matrix);
-	} else if (position.y > -0.999) {
-		reflected = frag_color;
-	}
-	*/
 	// Depth test with the sky
 	if (odepth == 1.0) {
-		color = sky_color;
+		// Sky gradient texture moment
+		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
+		color = calculate_sky_color(sky_gradient, sky_uv_sampler, time_of_day);
+		color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 1024), 0) * sun_strength_factor;
 	} else {
+		// Shadow mapping calculations
+		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
+		// Calculate lighting
+		vec3 frag_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 		color = frag_color;
 	}
 }

@@ -281,11 +281,11 @@ impl PipelineRenderer {
         });
         let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default);
         let directional = light._type.as_directional().unwrap();
-        uniforms.set_vec3f32("directional_light_dir", directional.mul_point(veclib::Vector3::Z));
-        uniforms.set_f32("directional_light_strength", light.strength);
+        uniforms.set_vec3f32("sunlight_dir", directional.mul_point(veclib::Vector3::Z));
+        uniforms.set_f32("sunlight_strength", light.strength);
         uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
-        uniforms.set_mat44f32("projection_rotation_matrix", pr_m);
+        uniforms.set_mat44f32("pr_matrix", pr_m);
         uniforms.set_mat44f32("pv_matrix", camera.projm * camera.viewm);
         uniforms.set_vec2f32("nf_planes", camera.clip_planes);
         // Also gotta set the one time uniforms
@@ -295,7 +295,7 @@ impl PipelineRenderer {
         uniforms.set_texture("position_texture", self.position_texture, 3);
         uniforms.set_texture("depth_texture", self.depth_texture, 4);
         uniforms.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
-        uniforms.set_texture("default_sky_gradient", self.sky_texture, 5);
+        uniforms.set_texture("sky_gradient", self.sky_texture, 5);
     }
     // Update window
     pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {

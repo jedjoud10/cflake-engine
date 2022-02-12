@@ -22,6 +22,7 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.frsh.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow_calculations.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen_space_reflections.func.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\lighting.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sky.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sun.func.glsl");
     // Others

@@ -111,7 +111,7 @@ fn init(world: &mut core::World) {
     let material = rendering::basics::material::Material::default()
         .with_diffuse(diffuse)
         .with_normal(normals)
-        .with_normal_strength(0.0)
+        .with_normal_strength(2.0)
         .with_uv_scale(veclib::Vector2::ONE * 0.02)
         .with_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
