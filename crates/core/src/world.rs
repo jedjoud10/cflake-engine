@@ -5,11 +5,11 @@ use std::sync::Arc;
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(config: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
+    pub fn new(window_init_settings: rendering::utils::WindowInitSettings, settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
-            ui: Default::default(),
+            ui: ui::UIManager::new(window_init_settings.dimensions.x, window_init_settings.dimensions.y, window_init_settings.pixel_per_point),
             ecs: ecs::ECSManager::<Self>::default(),
             globals: Default::default(),
             io,
@@ -17,24 +17,12 @@ impl World {
             pipeline,
         };
         println!("Initializing world...");
-        // Load the default stuff
-
-        // Create an empty default UI
-        let root = ui::Root::default();
-        /*
-        root.add_element(
-            ui::Element::default()
-                .with_size(veclib::vec2(200, 200))
-                .with_center(veclib::vec2(100, 100))
-                .with_color(veclib::vec4(1.0, 0.0, 1.0, 1.0)),
-        );
-        */
-        world.ui.add_root("default", root);
+        // Set the window settings from the game file
         let pipeline = world.pipeline.read();
-        pipeline.window.set_vsync(config.vsync);
-        pipeline.window.set_fullscreen(config.fullscreen);
+        pipeline.window.set_vsync(settings.vsync);
+        pipeline.window.set_fullscreen(settings.fullscreen);
         drop(pipeline);
-        world.settings = config;
+        world.settings = settings;
         println!("World init done!");
         world
     }

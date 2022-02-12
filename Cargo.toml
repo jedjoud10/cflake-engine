@@ -16,8 +16,6 @@ members = [
     "crates\\defaults",
     "crates\\ecs",    
     "crates\\handler",
-    "crates\\font_generator",
-    "crates\\fonts",
     "crates\\globals",
     "crates\\input",
     "crates\\io",

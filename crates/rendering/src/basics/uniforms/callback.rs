@@ -15,8 +15,6 @@ impl SetUniformsCallback {
     pub(crate) fn execute(&self, uniforms: &Uniforms) {
         if let Some(callback) = &self.inner {
             callback(uniforms);
-        } else {
-            eprintln!("Tried to set uniforms, but no callback was found!")
         }
     }
 }

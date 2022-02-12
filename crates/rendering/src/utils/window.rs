@@ -2,8 +2,13 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-
 use super::RenderWrapper;
+
+// Window init settings
+pub struct WindowInitSettings {
+    pub dimensions: veclib::Vector2<u16>,
+    pub pixel_per_point: f32,
+}
 
 // Get the default width and height of the starting window
 pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);

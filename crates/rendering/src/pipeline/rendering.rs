@@ -69,8 +69,8 @@ impl PipelineRenderer {
         uniforms.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
         uniforms.set_mat44f32("model_matrix", *model_matrix);
         // Optional
-        //material.uniforms.execute(&uniforms);
-        //renderer.uniforms.execute(&uniforms);
+        material.uniforms.execute(&uniforms);
+        renderer.uniforms.execute(&uniforms);
         // Textures might be not valid, so we fallback to the default ones just in case
         uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material), 0);
         uniforms.set_texture("normals_tex", Self::get_normal_map(pipeline, material), 1);
