@@ -1,46 +1,34 @@
 #![windows_subsystem = "windows"]
+use std::sync::Arc;
+
 use mimalloc::MiMalloc;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-extern crate gl;
 // include the OpenGL type aliases
-extern crate glfw;
+extern crate gl;
 
-// World
 pub use defaults;
-use glfw::WindowHint;
 use main::{core::World, rendering::utils::WindowInitSettings};
 pub use main::*;
 use spin_sleep::LoopHelper;
+use winit::{event_loop::{EventLoop, EventLoopWindowTarget, ControlFlow}, dpi::LogicalSize, window::{WindowBuilder, Window}, error::OsError, event::Event};
 
-// Initialize GLFW and the Window
-fn init_glfw(glfw: &mut glfw::Glfw, window: &mut glfw::Window) {
-    // Set the type of events that we want to listen to
-    use glfw::Context as GlfwContext;
-    window.make_current();
-    window.set_key_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.set_cursor_mode(glfw::CursorMode::Disabled);
-    window.set_scroll_polling(true);
-    window.set_size_polling(true);
-    glfw.set_swap_interval(glfw::SwapInterval::None);
+// Initialize winit and the window
+fn init_winit_window<T>(window_target: &EventLoopWindowTarget<T>, title: String) -> Result<Window, OsError> {
+    WindowBuilder::new()
+        .with_resizable(true)
+        .with_visible(true)
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(rendering::utils::DEFAULT_WINDOW_SIZE.x as u32, rendering::utils::DEFAULT_WINDOW_SIZE.y as u32))
+        .build(window_target)
 }
 
 // Load up the OpenGL window and such
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&mut World)) {
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-    glfw.window_hint(WindowHint::ContextVersion(1, 0));
-    let (mut window, events) = glfw
-        .create_window(
-            rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
-            rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
-            &format!("'{}', by '{}'", app_name, author_name),
-            glfw::WindowMode::Windowed,
-        )
-        .expect("Failed to create GLFW window.");
-    init_glfw(&mut glfw, &mut window);
+    let event_loop = EventLoop::new();
+    let window = init_winit_window(&event_loop, format!("'{}', by '{}'", app_name, author_name)).unwrap();
     // Pre-load the assets first
     defaults::preload_default_assets();
     preload_assets();
@@ -59,12 +47,14 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     };
     let window_init_settings = WindowInitSettings {
         dimensions: {
-            let fs = window.get_framebuffer_size();
-            veclib::vec2(fs.0 as u16, fs.1 as u16)
+            let fs = window.inner_size();
+            veclib::vec2(fs.width as u16, fs.height as u16)
         },
-        pixel_per_point: window.get_content_scale().0,
+        pixel_per_point: window.scale_factor() as f32,
     };
-    let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, &mut glfw, &mut window);
+    // A little trolling
+    let window = Arc::new(window);
+    let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, window.clone());
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let mut world = World::new(window_init_settings, config, io, pipeline_data);
@@ -82,27 +72,55 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     println!("Hello Game World!");
     let mut sleeper = LoopHelper::builder().build_with_target_rate(240.0);
 
-    while !window.should_close() {
+    event_loop.run(move |event, _, control_flow| {
+        // Winit
+        *control_flow = ControlFlow::Poll;
+
         // Update the delta time
         let delta = sleeper.loop_start_s();
         // Update the timings
         world.time.update(delta);
-        // Get the GLFW events first
-        poll_glfw_events(&mut glfw, &events, &mut world, &mut window);
+        // Handle the winit events
+        handle_winit_event(&mut world, event, control_flow, window.as_ref());
 
         // We can update the world now
-        World::update_start(&mut world, &mut task_receiver);
-        World::update_end(&mut world, &mut task_receiver);
+        world.update_start(&mut task_receiver);
+        world.update_end(&mut task_receiver);
         //sleeper.();
-    }
+    });
     // When the window closes and we exit from the game
     println!("Exiting the engine...");
     world.destroy();
     println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
 }
-// Poll the glfw events first
-fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f64, glfw::WindowEvent)>, world: &mut World, window: &mut glfw::Window) {
-    glfw.poll_events();
+// Handle the winit events
+fn handle_winit_event(world: &mut World, event: Event<()>, control_flow: &mut ControlFlow, window: &Window) {
+    match event {
+        // Event loop events
+        Event::MainEventsCleared => {
+            window.request_redraw();
+        },
+        Event::RedrawRequested(_) => {
+
+        },
+
+        // Window events
+        Event::WindowEvent { window_id, event } => {
+            match event {
+                winit::event::WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
+                //winit::event::WindowEvent::CloseRequested => window.cl,
+                //init::event::WindowEvent::Destroyed => todo!(),
+                //winit::event::WindowEvent::Focused(_) => todo!(),
+                winit::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => { world.input.receive_key_event(input.virtual_keycode.unwrap(), input.state); },
+                winit::event::WindowEvent::CursorMoved { device_id, position, modifiers: _ } => world.input.receive_mouse_position_event(veclib::vec2(position.x, position.y)),
+                winit::event::WindowEvent::MouseWheel { device_id, delta, phase, modifiers: _ } => /* world.input.receive_mouse_scroll_event(delta.) */ {},
+                //winit::event::WindowEvent::MouseInput { device_id, state, button, modifiers: _ } => todo!(),
+                _ => {}
+            }
+        }
+        _ => ()
+    }
+    /*
     for (_, event) in glfw::flush_messages(events) {
         match event.clone() {
             glfw::WindowEvent::Key(key, key_scancode, action_type, _modifiers) => {
@@ -127,4 +145,5 @@ fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f
             _ => {}
         }
     }
+    */
 }

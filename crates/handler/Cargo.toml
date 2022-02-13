@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "0.41.0"
+winit = "0.26.1"
 gl = "0.14.0"
 lazy_static = "1.4.0"
 spin_sleep = "1.0.0"

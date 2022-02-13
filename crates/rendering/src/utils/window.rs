@@ -2,7 +2,6 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use super::RenderWrapper;
 
 // Window init settings
 pub struct WindowInitSettings {
@@ -19,19 +18,19 @@ pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
     pub focused: bool,
     pub(crate) vsync: AtomicBool,
-    pub wrapper: Arc<RenderWrapper>,
     pub(crate) update: AtomicBool,
+    pub inner: Option<Arc<winit::window::Window>>,
 }
 
 impl Window {
     // Create a new window
-    pub fn new(wrapper: Arc<RenderWrapper>) -> Self {
+    pub fn new(window: Arc<winit::window::Window>) -> Self {
         Self {
             dimensions: DEFAULT_WINDOW_SIZE,
             vsync: AtomicBool::new(false),
             update: AtomicBool::new(false),
             focused: false,
-            wrapper,
+            inner: Some(window)
         }
     }
     // These methods MUST be called on the main thread
@@ -41,41 +40,8 @@ impl Window {
         if !others::on_main_thread() {
             panic!("We cannot update the window settings if we are not on the main thead!");
         }
-        let (glfw, window) = (self.wrapper.0.load(Ordering::Relaxed), self.wrapper.1.load(Ordering::Relaxed));
-        let (glfw, window) = unsafe { (&mut *glfw, &mut *window) };
         if fullscreen {
-            // Set the glfw window as a fullscreen window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                window.set_monitor(
-                    glfw::WindowMode::FullScreen(monitor.unwrap()),
-                    0,
-                    0,
-                    videomode.width,
-                    videomode.height,
-                    Some(videomode.refresh_rate),
-                );
-                unsafe {
-                    gl::Viewport(0, 0, videomode.width as i32, videomode.height as i32);
-                }
-            });
         } else {
-            // Set the glfw window as a windowed window
-            glfw.with_primary_monitor_mut(|_glfw2, monitor| {
-                let videomode = monitor.unwrap().get_video_mode().unwrap();
-                let default_window_size = crate::utils::DEFAULT_WINDOW_SIZE;
-                window.set_monitor(
-                    glfw::WindowMode::Windowed,
-                    50,
-                    50,
-                    default_window_size.x as u32,
-                    default_window_size.y as u32,
-                    Some(videomode.refresh_rate),
-                );
-                unsafe {
-                    gl::Viewport(0, 0, default_window_size.x as i32, default_window_size.y as i32);
-                }
-            });
         }
     }
     // Enable or disable vsync

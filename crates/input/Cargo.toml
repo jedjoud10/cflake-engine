@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "0.41.0"
+winit = "0.26.1"
 multimap = "0.8.3"
 fxhash = "0.2.1"
+veclib = { git = "https://github.com/jedjoud10/veclib" }

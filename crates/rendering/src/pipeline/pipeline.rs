@@ -10,10 +10,10 @@ use crate::{
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
-    utils::{RenderWrapper, Window, DEFAULT_WINDOW_SIZE},
+    utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
-use glfw::Context;
+use winit::platform::windows::WindowExtWindows;
 use std::{
     ptr::null_mut,
     sync::{
@@ -177,6 +177,7 @@ impl Pipeline {
         // Update the window if needed
         let update_window = self.window.update.load(Ordering::Relaxed);
         if update_window {
+            /*
             let (glfw, window) = (self.window.wrapper.0.load(Ordering::Relaxed), self.window.wrapper.1.load(Ordering::Relaxed));
             let (glfw, _window) = unsafe { (&mut *glfw, &mut *window) };
             if self.window.vsync.load(Ordering::Relaxed) {
@@ -184,6 +185,7 @@ impl Pipeline {
             } else {
                 glfw.set_swap_interval(glfw::SwapInterval::None);
             }
+            */
         }
     }
     // Run the End Of Frame callbacks
@@ -284,7 +286,7 @@ unsafe fn init_opengl() {
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw, window: &mut glfw::Window) -> PipelineContext {
+pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::window::Window>) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
@@ -311,32 +313,15 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
 
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
-
-    // The main thread will not own the glfw context, and we will send it to the render thread instead
-    unsafe { glfw::ffi::glfwMakeContextCurrent(null_mut()) }
-
-    // Window and GLFW wrapper
-    let wrapper = {
-        // Create the render wrapper
-        let glfw = glfw as *mut glfw::Glfw;
-        let window = window as *mut glfw::Window;
-        Arc::new(RenderWrapper(AtomicPtr::new(glfw), AtomicPtr::new(window)))
-    };
-
+    
     // Actually make the render thread
     let builder = std::thread::Builder::new().name("RenderThread".to_string());
     let handle = builder
         .spawn(move || {
-            // Start OpenGL
-            let _glfw = unsafe { &mut *wrapper.0.load(std::sync::atomic::Ordering::Relaxed) };
-            let window = unsafe { &mut *wrapper.1.load(std::sync::atomic::Ordering::Relaxed) };
             // Initialize OpenGL
             println!("Initializing OpenGL...");
-            window.make_current();
-            unsafe {
-                glfw::ffi::glfwMakeContextCurrent(window.window_ptr());
-                gl::load_with(|s| window.get_proc_address(s) as *const _);
-            }
+            gl_loader::init_gl();
+            gl::load_with(|s| gl_loader::get_proc_address(s) as *const _);
             if gl::Viewport::is_loaded() {
                 unsafe {
                     init_opengl();
@@ -346,8 +331,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
                 /* NON */
                 panic!()
             }
-            // Window wrapper
-            let window_wrapper = Window::new(wrapper.clone());
 
             // Set the global sender
             sender::set_global_sender(tx);
@@ -363,7 +346,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
             // Load the default objects
             {
                 let mut pipeline = pipeline.write().unwrap();
-                pipeline.window = window_wrapper;
+                pipeline.window = Window::new(window);
                 pipeline.defaults = Some(load_defaults(&*pipeline));
             }
 
@@ -413,7 +396,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, glfw: &mut glfw::Glfw,
 
                 // Do not forget to switch buffers at the end of the frame
                 let i = std::time::Instant::now();
-                window.swap_buffers();
+                // TODO: Swap buffers
                 let swap_buffers_duration = i.elapsed();
 
                 let messages = rx.try_iter().collect::<Vec<PipelineTask>>();

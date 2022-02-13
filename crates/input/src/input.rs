@@ -1,6 +1,6 @@
 use multimap::MultiMap;
 
-use super::Keys;
+use super::{Keys, State};
 use crate::{ButtonState, MapState, ToggleState};
 use std::collections::HashMap;
 
@@ -14,22 +14,17 @@ pub struct InputManager {
     // "W" -> ["forward_map", "launch_map"]
     keys: MultiMap<Keys, String>,
 
-    // Others
-    cache: HashMap<i32, Keys>,
-
     // Keys
     // Mouse
-    last_mouse_pos: (f64, f64),
+    last_mouse_pos: veclib::Vector2<f64>,
     last_mouse_scroll: f64,
 }
 
 impl Default for InputManager {
     fn default() -> Self {
-        let cache = crate::keys::create_key_cache();
         Self {
             maps: Default::default(),
-            keys: MultiMap::with_capacity(cache.capacity()),
-            cache,
+            keys: MultiMap::with_capacity(180),
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
         }
@@ -38,7 +33,7 @@ impl Default for InputManager {
 
 impl InputManager {
     // Called whenever the mouse position changes
-    pub fn receive_mouse_position_event(&mut self, position: (f64, f64)) {
+    pub fn receive_mouse_position_event(&mut self, position: veclib::Vector2<f64>) {
         self.last_mouse_pos = position;
     }
     // Called whenever the mous scroll changes
@@ -61,34 +56,29 @@ impl InputManager {
         }
     }
     // Get the accumulated mouse position
-    pub fn get_mouse_position(&self) -> (f64, f64) {
-        self.last_mouse_pos
+    pub fn get_mouse_position(&self) -> &veclib::Vector2<f64> {
+        &self.last_mouse_pos
     }
     // Get the accumulated mouse scroll
-    pub fn get_mouse_scroll(&self) -> f64 {
-        self.last_mouse_scroll
+    pub fn get_mouse_scroll(&self) -> &f64 {
+        &self.last_mouse_scroll
     }
-    // When we receive a key event from glfw
-    pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) -> Option<()> {
-        // This is not a valid action event
-        if action_type != 0 && action_type != 1 {
-            return None;
-        }
-        let key = self.cache.get(&key_scancode)?;
-        let maps_to_update = self.keys.get_vec(key)?;
+    // When we receive a key event from winit
+    pub fn receive_key_event(&mut self, key: Keys, state: State) -> Option<()> {
+        let maps_to_update = self.keys.get_vec(&key)?;
         // Update each map now
         for map_name in maps_to_update {
             let (map, changed) = self.maps.get_mut(map_name)?;
             *changed = true;
-            match action_type {
-                0 => {
+            match state {
+                State::Pressed => {
                     // We pressed the key
                     match map {
                         MapState::Button(button_state) => *button_state = ButtonState::Pressed,
                         MapState::Toggle(toggle_state) => toggle_state.toggle(),
                     }
                 }
-                1 => {
+                State::Released => {
                     // We released the key
                     match map {
                         MapState::Button(button_state) => *button_state = ButtonState::Released,

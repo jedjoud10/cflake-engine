@@ -6,12 +6,12 @@ use main::input::Keys;
 fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
     // Rotate the camera around
-    let mouse_pos = world.input.get_mouse_position();
+    let mouse_pos = *world.input.get_mouse_position();
     const SENSIVITY: f32 = 0.001;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
         veclib::EulerAnglesOrder::YXZ,
-        veclib::Vector3::new(-mouse_pos.1 as f32 * SENSIVITY, -mouse_pos.0 as f32 * SENSIVITY, 0.0),
+        veclib::Vector3::new(-mouse_pos.y as f32 * SENSIVITY, -mouse_pos.x as f32 * SENSIVITY, 0.0),
     );
     // Calculate the vectors
     let forward = new_rotation.mul_point(veclib::Vector3::<f32>::Z);
@@ -20,7 +20,7 @@ fn run(world: &mut World, data: EventKey) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 0.1 + (world.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
+    let original_speed = 0.1 + (*world.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
     let fov_delta = if world.input.map_held("camera_zoom") {
         1.0
@@ -96,8 +96,8 @@ pub fn system(world: &mut World) {
     world.input.bind_key(Keys::D, "camera_right");
     world.input.bind_key(Keys::A, "camera_left");
     world.input.bind_key(Keys::Space, "camera_up");
-    world.input.bind_key(Keys::LeftShift, "camera_down");
+    world.input.bind_key(Keys::LShift, "camera_down");
     world.input.bind_key(Keys::Z, "camera_zoom");
     world.input.bind_key(Keys::X, "camera_unzoom");
-    world.input.bind_key(Keys::RightShift, "cull_update");
+    world.input.bind_key(Keys::RShift, "cull_update");
 }
