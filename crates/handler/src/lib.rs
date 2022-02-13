@@ -123,11 +123,8 @@ fn poll_glfw_events(glfw: &mut glfw::Glfw, events: &std::sync::mpsc::Receiver<(f
             glfw::WindowEvent::Size(x, y) => world.resize_window_event(veclib::Vector2::new(x as u16, y as u16)),
             glfw::WindowEvent::Scroll(_, scroll) => world.input.receive_mouse_scroll_event(scroll),
             glfw::WindowEvent::CursorPos(x, y) => world.input.receive_mouse_position_event((x, y)),
-            _ => {}
-        }
-        match event {            
             glfw::WindowEvent::Close => window.set_should_close(true),
-            _ => { world.ui.handle_event(event); }
+            _ => {}
         }
     }
 }

@@ -1,6 +1,6 @@
 #![feature(int_roundings)]
 use main::{assets::preload_asset, core::World};
-use systems::{camera_system, debugging_system, rendering_system, terrain, ui_system, window_system};
+use systems::{camera_system, debugging_system, rendering_system, terrain, window_system};
 // Default components
 pub mod components;
 // Default globals
@@ -62,7 +62,6 @@ pub fn preload_system(world: &mut World) {
     rendering_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
-    ui_system::system(world);
     //test_system::system(world);
     // Terrain
     terrain::chunk_system::system(world);

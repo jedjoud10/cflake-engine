@@ -68,8 +68,6 @@ pub struct Pipeline {
     pub window: Window,
     // Atomic used to debug some data
     pub(crate) debugging: AtomicBool,
-    // Used for UI
-    pub painter: egui_glfw_gl::Painter,
 
     // End Of Frame callbacks
     pub(crate) callbacks: PipelineEoFCallbacks,

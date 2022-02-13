@@ -9,7 +9,7 @@ impl World {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
-            ui: ui::UIManager::new(window_init_settings.dimensions.x, window_init_settings.dimensions.y, window_init_settings.pixel_per_point),
+            gui: gui::GUIManager::default(),
             ecs: ecs::ECSManager::<Self>::default(),
             globals: Default::default(),
             io,

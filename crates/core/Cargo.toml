@@ -18,7 +18,7 @@ bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 input = { path = "../input" }
 others = { path = "../others" }
 ecs = { path = "../ecs" }
-ui = { path = "../ui" }
+gui = { path = "../gui" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 debug = { path = "../debug" }

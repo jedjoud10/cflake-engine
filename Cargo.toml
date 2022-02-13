@@ -16,6 +16,7 @@ members = [
     "crates\\defaults",
     "crates\\ecs",    
     "crates\\handler",
+    "crates\\gui",
     "crates\\globals",
     "crates\\input",
     "crates\\io",
@@ -26,7 +27,6 @@ members = [
     "crates\\physics",
     "crates\\rendering",
     "crates\\terrain",
-    "crates\\ui",
 ]
 
 [profile.dev]
