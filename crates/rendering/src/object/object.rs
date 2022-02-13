@@ -8,7 +8,7 @@ where
 {
     // Should we update the pipeline state if Self is mutated?
     const UPDATE: bool = false;
-    
+
     // Reserve this object's ID, returning it's ID and itself
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)>;
 

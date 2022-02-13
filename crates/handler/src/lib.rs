@@ -10,25 +10,36 @@ static GLOBAL: MiMalloc = MiMalloc;
 extern crate gl;
 
 pub use defaults;
-use main::{core::World, rendering::utils::WindowInitSettings};
+use glutin::{
+    dpi::LogicalSize,
+    error::OsError,
+    event::Event,
+    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
+    window::{Window, WindowBuilder},
+    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext,
+};
 pub use main::*;
+use main::{core::World, rendering::utils::WindowInitSettings};
 use spin_sleep::LoopHelper;
-use winit::{event_loop::{EventLoop, EventLoopWindowTarget, ControlFlow}, dpi::LogicalSize, window::{WindowBuilder, Window}, error::OsError, event::Event};
 
-// Initialize winit and the window
-fn init_winit_window<T>(window_target: &EventLoopWindowTarget<T>, title: String) -> Result<Window, OsError> {
-    WindowBuilder::new()
+// Initialize glutin and the window
+fn init_glutin_window<U>(el: &EventLoop<U>, title: String) -> WindowedContext<NotCurrent> {
+    let wb = WindowBuilder::new()
         .with_resizable(true)
         .with_visible(true)
         .with_title(title)
-        .with_inner_size(LogicalSize::new(rendering::utils::DEFAULT_WINDOW_SIZE.x as u32, rendering::utils::DEFAULT_WINDOW_SIZE.y as u32))
-        .build(window_target)
+        .with_inner_size(LogicalSize::new(
+            rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
+            rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
+        ));
+    let wc = ContextBuilder::new().build_windowed(wb, el).unwrap();
+    wc
 }
 
-// Load up the OpenGL window and such
+// Start le engine
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&mut World)) {
     let event_loop = EventLoop::new();
-    let window = init_winit_window(&event_loop, format!("'{}', by '{}'", app_name, author_name)).unwrap();
+    let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name));
     // Pre-load the assets first
     defaults::preload_default_assets();
     preload_assets();
@@ -47,14 +58,13 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     };
     let window_init_settings = WindowInitSettings {
         dimensions: {
-            let fs = window.inner_size();
+            let fs = window_context.window().inner_size();
             veclib::vec2(fs.width as u16, fs.height as u16)
         },
-        pixel_per_point: window.scale_factor() as f32,
+        pixel_per_point: window_context.window().scale_factor() as f32,
     };
     // A little trolling
-    let window = Arc::new(window);
-    let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, window.clone());
+    let pipeline_data = rendering::pipeline::init_pipeline(pipelin_settings, window_context);
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let mut world = World::new(window_init_settings, config, io, pipeline_data);
@@ -80,8 +90,8 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         let delta = sleeper.loop_start_s();
         // Update the timings
         world.time.update(delta);
-        // Handle the winit events
-        handle_winit_event(&mut world, event, control_flow, window.as_ref());
+        // Handle the glutin (winit) events
+        handle_glutin_events(&mut world, event, control_flow);
 
         // We can update the world now
         world.update_start(&mut task_receiver);
@@ -93,32 +103,39 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     world.destroy();
     println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
 }
-// Handle the winit events
-fn handle_winit_event(world: &mut World, event: Event<()>, control_flow: &mut ControlFlow, window: &Window) {
+// Handle events
+fn handle_glutin_events(world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
     match event {
-        // Event loop events
-        Event::MainEventsCleared => {
-            window.request_redraw();
-        },
-        Event::RedrawRequested(_) => {
-
-        },
-
         // Window events
         Event::WindowEvent { window_id, event } => {
             match event {
-                winit::event::WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
+                glutin::event::WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
                 //winit::event::WindowEvent::CloseRequested => window.cl,
                 //init::event::WindowEvent::Destroyed => todo!(),
                 //winit::event::WindowEvent::Focused(_) => todo!(),
-                winit::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => { world.input.receive_key_event(input.virtual_keycode.unwrap(), input.state); },
-                winit::event::WindowEvent::CursorMoved { device_id, position, modifiers: _ } => world.input.receive_mouse_position_event(veclib::vec2(position.x, position.y)),
-                winit::event::WindowEvent::MouseWheel { device_id, delta, phase, modifiers: _ } => /* world.input.receive_mouse_scroll_event(delta.) */ {},
+                glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
+                    if let Some(virtual_keycode) = input.virtual_keycode {
+                        world.input.receive_key_event(virtual_keycode, input.state);
+                    }
+                }
+                glutin::event::WindowEvent::CursorMoved {
+                    device_id,
+                    position,
+                    modifiers: _,
+                } => world.input.receive_mouse_position_event(veclib::vec2(position.x, position.y)),
+                glutin::event::WindowEvent::MouseWheel {
+                    device_id,
+                    delta,
+                    phase,
+                    modifiers: _,
+                } =>
+                    /* world.input.receive_mouse_scroll_event(delta.) */
+                    {}
                 //winit::event::WindowEvent::MouseInput { device_id, state, button, modifiers: _ } => todo!(),
                 _ => {}
             }
         }
-        _ => ()
+        _ => (),
     }
     /*
     for (_, event) in glfw::flush_messages(events) {

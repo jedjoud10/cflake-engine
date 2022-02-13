@@ -19,18 +19,16 @@ pub struct Window {
     pub focused: bool,
     pub(crate) vsync: AtomicBool,
     pub(crate) update: AtomicBool,
-    pub inner: Option<Arc<winit::window::Window>>,
 }
 
 impl Window {
     // Create a new window
-    pub fn new(window: Arc<winit::window::Window>) -> Self {
+    pub fn new() -> Self {
         Self {
             dimensions: DEFAULT_WINDOW_SIZE,
             vsync: AtomicBool::new(false),
             update: AtomicBool::new(false),
             focused: false,
-            inner: Some(window)
         }
     }
     // These methods MUST be called on the main thread

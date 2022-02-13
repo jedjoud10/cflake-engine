@@ -13,13 +13,14 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
-use winit::platform::windows::WindowExtWindows;
+use glutin::{ContextCurrentState, NotCurrent};
 use std::{
+    ffi::c_void,
     ptr::null_mut,
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    }, ffi::c_void,
+    },
 };
 
 use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
@@ -286,7 +287,7 @@ unsafe fn init_opengl() {
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::window::Window>) -> PipelineContext {
+pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::WindowedContext<NotCurrent>) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
@@ -311,23 +312,21 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::win
     let time = Arc::new(Mutex::new((0.0, 0.0)));
     let time_clone = time.clone();
 
+    dbg!(window.is_current());
+
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
-    
+
     // Actually make the render thread
     let builder = std::thread::Builder::new().name("RenderThread".to_string());
     let handle = builder
         .spawn(move || {
             // Initialize OpenGL
             println!("Initializing OpenGL...");
-            gl_loader::init_gl();
-            gl::load_with(|s| { 
-                println!("{}", s);
-                window.
-                let p = gl_loader::get_proc_address(s) as *const c_void;
-                println!("{:?}", p);
-                p
-            });
+            dbg!(window.is_current());
+            let window = unsafe { window.make_current().unwrap() };
+            dbg!(window.is_current());
+            unsafe { gl::load_with(|x| window.get_proc_address(x)) }
             if gl::Viewport::is_loaded() {
                 unsafe {
                     init_opengl();
@@ -352,7 +351,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::win
             // Load the default objects
             {
                 let mut pipeline = pipeline.write().unwrap();
-                pipeline.window = Window::new(window);
+                pipeline.window = Window::new();
                 pipeline.defaults = Some(load_defaults(&*pipeline));
             }
 
@@ -402,7 +401,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::win
 
                 // Do not forget to switch buffers at the end of the frame
                 let i = std::time::Instant::now();
-                // TODO: Swap buffers
+                window.swap_buffers().unwrap();
                 let swap_buffers_duration = i.elapsed();
 
                 let messages = rx.try_iter().collect::<Vec<PipelineTask>>();

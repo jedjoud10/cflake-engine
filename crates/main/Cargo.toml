@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-winit = "0.26.1"
+glutin = "0.28.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }

@@ -10,7 +10,10 @@ pub struct Collection<T: PipelineObject> {
 
 impl<T: PipelineObject> Default for Collection<T> {
     fn default() -> Self {
-        Self { inner: Default::default(), mutated: Default::default() }
+        Self {
+            inner: Default::default(),
+            mutated: Default::default(),
+        }
     }
 }
 
@@ -22,7 +25,7 @@ impl<T: PipelineObject> Collection<T> {
     pub fn get_mut(&mut self, id: ObjectID<T>) -> Option<&mut T> {
         let id = id.get()?;
         // Update the bitfield if we want to
-        if T::UPDATE { 
+        if T::UPDATE {
             let pair = ordered_vec::utils::from_id(id);
             self.mutated.set(pair.index as usize, true)
         }
@@ -44,7 +47,7 @@ impl<T: PipelineObject> Collection<T> {
         let id = id.get()?;
         self.inner.insert(id, val);
         // Update the bitfield if we want to
-        if T::UPDATE { 
+        if T::UPDATE {
             let pair = ordered_vec::utils::from_id(id);
             self.mutated.set(pair.index as usize, true)
         }
@@ -54,9 +57,11 @@ impl<T: PipelineObject> Collection<T> {
         self.inner.remove(id.get()?)
     }
     // Diffs
-    pub(crate) fn clear_diffs(&mut self) { self.mutated.clear() }
+    pub(crate) fn clear_diffs(&mut self) {
+        self.mutated.clear()
+    }
     #[allow(dead_code)]
-    pub(crate) fn was_mutated(&self, id: ObjectID<T>) -> bool { 
+    pub(crate) fn was_mutated(&self, id: ObjectID<T>) -> bool {
         let id = if let Some(x) = id.get() { x } else { return false };
         let pair = ordered_vec::utils::from_id(id);
         self.mutated.get(pair.index as usize)

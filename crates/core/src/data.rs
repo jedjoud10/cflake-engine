@@ -1,11 +1,11 @@
 use crate::GameSettings;
 use ecs::ECSManager;
 use globals::GlobalCollection;
+use gui::GUIManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
 use rendering::pipeline::PipelineContext;
-use gui::GUIManager;
 
 // The whole world that stores our managers and data
 pub struct World {

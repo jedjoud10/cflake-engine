@@ -1,2 +1,2 @@
-pub type Keys = winit::event::VirtualKeyCode;
-pub type State = winit::event::ElementState;
+pub type Keys = glutin::event::VirtualKeyCode;
+pub type State = glutin::event::ElementState;

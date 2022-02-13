@@ -11,7 +11,7 @@ pub enum ShadowResolution {
     High,
     Overkill,
     Stop,
-    ReallyOverkill
+    ReallyOverkill,
 }
 
 impl Default for ShadowResolution {
