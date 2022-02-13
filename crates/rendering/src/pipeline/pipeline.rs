@@ -19,7 +19,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, AtomicPtr, Ordering},
         Arc, Barrier, Mutex, RwLock,
-    },
+    }, ffi::c_void,
 };
 
 use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
@@ -321,7 +321,13 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: Arc<winit::win
             // Initialize OpenGL
             println!("Initializing OpenGL...");
             gl_loader::init_gl();
-            gl::load_with(|s| gl_loader::get_proc_address(s) as *const _);
+            gl::load_with(|s| { 
+                println!("{}", s);
+                window.
+                let p = gl_loader::get_proc_address(s) as *const c_void;
+                println!("{:?}", p);
+                p
+            });
             if gl::Viewport::is_loaded() {
                 unsafe {
                     init_opengl();
