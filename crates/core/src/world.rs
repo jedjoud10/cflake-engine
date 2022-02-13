@@ -16,12 +16,7 @@ impl World {
             settings: Default::default(),
             pipeline,
         };
-        println!("Initializing world...");
-        // Set the window settings from the game file
-        let pipeline = world.pipeline.read();
-        pipeline.window.set_vsync(settings.vsync);
-        pipeline.window.set_fullscreen(settings.fullscreen);
-        drop(pipeline);
+        // Just set the game settings and we are done
         world.settings = settings;
         println!("World init done!");
         world

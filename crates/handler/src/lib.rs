@@ -13,20 +13,19 @@ pub use defaults;
 use glutin::{
     dpi::{LogicalSize, LogicalPosition, PhysicalPosition},
     error::OsError,
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, DeviceEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowBuilder},
-    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext,
+    window::{Window, WindowBuilder, Fullscreen},
+    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext, monitor::VideoMode,
 };
 pub use main::*;
 use main::{core::{World, WorldTaskReceiver}};
 use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
-fn init_glutin_window<U>(el: &EventLoop<U>, title: String) -> WindowedContext<NotCurrent> {
+fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
     let wb = WindowBuilder::new()
         .with_resizable(true)
-        .with_visible(true)
         .with_title(title)
         .with_inner_size(LogicalSize::new(
             rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
@@ -34,39 +33,56 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String) -> WindowedContext<No
         ));
     let wc = ContextBuilder::new()
         .with_double_buffer(Some(true))    
+        .with_vsync(vsync)
         .build_windowed(wb, el)
         .unwrap();
     let window = wc.window();
+    window.set_cursor_grab(true).unwrap();
+    window.set_cursor_visible(false);
     wc
 }
 
 // Start le engine
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&mut World)) {
-    let event_loop = EventLoop::new();
-    let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name));
-    // Pre-load the assets first
-    defaults::preload_default_assets();
-    preload_assets();
-
     // Load the config file (create it if it doesn't exist already)
     let io = main::io::SaverLoader::new(author_name, app_name);
     io.create_default("config\\game_config.json", &core::GameSettings::default());
     let config: core::GameSettings = io.load("config\\game_config.json");
     io.save("config\\game_config.json", &config);
 
+    // Glutin stuff
+    let event_loop = EventLoop::new();
+    let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
+    // Pre-load the assets first
+    defaults::preload_default_assets();
+    preload_assets();   
+
+    // Set fullscreen if we want to
+    let window = window_context.window();
+    if config.fullscreen {
+        let vm = window.primary_monitor().unwrap().video_modes().nth(0).unwrap();
+        window_context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
+    } else {
+        window_context.window().set_fullscreen(None);
+    }
+
     // Hehe multithreaded renering goes BRRRRRRRR
     let shadows = config.shadow_resolution.convert();
+
+    // Create some pipeline settings
     let pipeline_settings = rendering::pipeline::PipelineSettings {
         shadow_resolution: shadows.0,
         shadow_bias: shadows.1,
+        vsync: config.vsync,
     };
+
     // A little trolling
     let pipeline_data = rendering::pipeline::init_pipeline(pipeline_settings, window_context);
+    
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let mut world = World::new(config, io, pipeline_data);
 
-    // Init the world
     // Calling the callback
     println!("Calling World Initialization callback");
     {
@@ -76,11 +92,10 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Flush everything and execute all the tasks
         task_receiver.flush(&mut world);
     }
-    println!("Hello Game World!");
-    let mut sleeper = LoopHelper::builder().build_with_target_rate(300.0);
+    let mut sleeper = LoopHelper::builder().build_without_target_rate();
 
+    // Main loop
     event_loop.run(move |event, _, control_flow| {
-        // Winit
         *control_flow = ControlFlow::Poll;
         // Handle the glutin (winit) events
         handle_glutin_events(&mut sleeper, &mut task_receiver, &mut world, event, control_flow);
@@ -91,6 +106,8 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
     match event {
         // Window events
         Event::WindowEvent { window_id: _, event } => handle_window_event(event, world, control_flow),
+        // Device event
+        Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),
         // Loop events
         Event::MainEventsCleared => {
             // Update the delta time
@@ -100,6 +117,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
             // We can update the world now
             world.update_start(task_receiver);
             world.update_end(task_receiver);
+            sleeper.loop_sleep();
         }
         // When we exit from the engine
         Event::LoopDestroyed => {
@@ -116,9 +134,25 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
 // Handle the window events
 fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut ControlFlow) {
     match event {
-        glutin::event::WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        glutin::event::WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
-        glutin::event::WindowEvent::KeyboardInput { device_id: _, input, is_synthetic: _ } => {
+        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+        WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
+        _ => ()
+    }
+}
+
+// Handle device events
+fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut ControlFlow) {
+    match event {
+        DeviceEvent::MouseMotion { delta } => {
+            world.input.receive_mouse_position_event(veclib::vec2(delta.0, delta.1));
+        },
+        DeviceEvent::MouseWheel { delta } => {
+            match delta {
+                glutin::event::MouseScrollDelta::LineDelta(x, y) => world.input.receive_mouse_scroll_event(y as f64),
+                glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
+            }
+        },
+        DeviceEvent::Key(input) => {
             if let Some(virtual_keycode) = input.virtual_keycode {
                 world.input.receive_key_event(virtual_keycode, input.state);
                 // Exit when we press the escape key
@@ -126,23 +160,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
                     *control_flow = ControlFlow::Exit;
                 }
             }
-        }
-        glutin::event::WindowEvent::CursorMoved {
-            device_id: _,
-            position,
-            modifiers: _,
-        } => { world.input.receive_mouse_position_event(veclib::vec2(position.x, position.y)); },
-        glutin::event::WindowEvent::MouseWheel {
-            device_id: _,
-            delta,
-            phase: _,
-            modifiers: _,
-        } => {
-            match delta {
-                glutin::event::MouseScrollDelta::LineDelta(x, y) => world.input.receive_mouse_scroll_event(y as f64),
-                glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
-            }
-        }
-        _ => {}
+        },
+        _ => ()
     }
 }

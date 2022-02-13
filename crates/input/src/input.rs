@@ -33,8 +33,8 @@ impl Default for InputManager {
 
 impl InputManager {
     // Called whenever the mouse position changes
-    pub fn receive_mouse_position_event(&mut self, position: veclib::Vector2<f64>) {
-        self.last_mouse_pos = position;
+    pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f64>) {
+        self.last_mouse_pos += delta;
     }
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {

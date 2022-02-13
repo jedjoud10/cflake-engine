@@ -174,20 +174,6 @@ impl Pipeline {
         for task in tasks {
             self.execute_task(internal, renderer, task);
         }
-
-        // Update the window if needed
-        let update_window = self.window.update.load(Ordering::Relaxed);
-        if update_window {
-            /*
-            let (glfw, window) = (self.window.wrapper.0.load(Ordering::Relaxed), self.window.wrapper.1.load(Ordering::Relaxed));
-            let (glfw, _window) = unsafe { (&mut *glfw, &mut *window) };
-            if self.window.vsync.load(Ordering::Relaxed) {
-                glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-            } else {
-                glfw.set_swap_interval(glfw::SwapInterval::None);
-            }
-            */
-        }
     }
     // Run the End Of Frame callbacks
     pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
@@ -204,10 +190,6 @@ impl Pipeline {
     pub fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
         self.window.dimensions = new_dimensions;
         renderer.update_window_dimensions(new_dimensions, self);
-    }
-    // Update the focus state for our window
-    pub fn update_window_focus_state(&mut self, focused: bool) {
-        self.window.focused = focused;
     }
     // Set our internal camera to a new one
     pub fn set_internal_camera(&mut self, camera: Camera) {
@@ -314,8 +296,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
 
     // Split
     let (gl_context, window) = unsafe { window.split() };
-    let window = Arc::new(window);
-
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
 
@@ -328,7 +308,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             // Make the glutin context current, since we will be using the render thread for rendering
             let gl_context = unsafe { gl_context.make_current().unwrap() };
             gl::load_with(|x| gl_context.get_proc_address(x));
-
             // Check if the gl viewport is ok
             if gl::Viewport::is_loaded() {
                 unsafe { init_opengl(); }
@@ -346,13 +325,13 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             // Create the Arc and RwLock for the pipeline
             let pipeline = Arc::new(RwLock::new(pipeline));
 
+            let mut pipeline_ = pipeline.write().unwrap();
+            // Setup the window
+            pipeline_.window.window = Some(window);
+                
             // Load the default objects
-            {
-                let mut pipeline = pipeline.write().unwrap();
-                pipeline.window.window = Some(window);
-                pipeline.defaults = Some(load_defaults(&*pipeline));
-            }
-
+            pipeline_.defaults = Some(load_defaults(&pipeline_));
+            drop(pipeline_);
             // Setup the pipeline renderer
             let mut renderer = {
                 let mut pipeline = pipeline.write().unwrap();

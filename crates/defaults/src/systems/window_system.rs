@@ -8,14 +8,10 @@ fn run(world: &mut World, _data: EventKey) {
     if world.input.map_changed("toggle_fullscreen") {
         pipeline.window.set_fullscreen(world.input.map_toggled("toggle_fullscreen"));
     }
-    if world.input.map_changed("toggle_vsync") {
-        pipeline.window.set_vsync(world.input.map_toggled("toggle_vsync"));
-    }
 }
 
 // Create a system that'll allow us to disable/enable fullscreen and vsync
 pub fn system(world: &mut World) {
     world.ecs.create_system_builder().with_run_event(run).build();
     world.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
-    world.input.bind_key_toggle(Keys::F6, "toggle_vsync");
 }
