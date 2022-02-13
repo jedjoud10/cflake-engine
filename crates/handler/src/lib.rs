@@ -11,31 +11,25 @@ extern crate gl;
 
 pub use defaults;
 use glutin::{
-    dpi::{LogicalSize, LogicalPosition, PhysicalPosition},
+    dpi::{LogicalPosition, LogicalSize, PhysicalPosition},
     error::OsError,
-    event::{Event, WindowEvent, DeviceEvent},
+    event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowBuilder, Fullscreen},
-    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext, monitor::VideoMode,
+    monitor::VideoMode,
+    window::{Fullscreen, Window, WindowBuilder},
+    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext,
 };
+use main::core::{World, WorldTaskReceiver};
 pub use main::*;
-use main::{core::{World, WorldTaskReceiver}};
 use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
 fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
-    let wb = WindowBuilder::new()
-        .with_resizable(true)
-        .with_title(title)
-        .with_inner_size(LogicalSize::new(
-            rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
-            rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
-        ));
-    let wc = ContextBuilder::new()
-        .with_double_buffer(Some(true))    
-        .with_vsync(vsync)
-        .build_windowed(wb, el)
-        .unwrap();
+    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
+        rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
+        rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
+    ));
+    let wc = ContextBuilder::new().with_double_buffer(Some(true)).with_vsync(vsync).build_windowed(wb, el).unwrap();
     let window = wc.window();
     window.set_cursor_grab(true).unwrap();
     window.set_cursor_visible(false);
@@ -55,7 +49,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
     // Pre-load the assets first
     defaults::preload_default_assets();
-    preload_assets();   
+    preload_assets();
 
     // Set fullscreen if we want to
     let window = window_context.window();
@@ -78,7 +72,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
 
     // A little trolling
     let pipeline_data = rendering::pipeline::init_pipeline(pipeline_settings, window_context);
-    
+
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
     let mut world = World::new(config, io, pipeline_data);
@@ -136,7 +130,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
     match event {
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
         WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
-        _ => ()
+        _ => (),
     }
 }
 
@@ -145,12 +139,10 @@ fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut
     match event {
         DeviceEvent::MouseMotion { delta } => {
             world.input.receive_mouse_position_event(veclib::vec2(delta.0, delta.1));
-        },
-        DeviceEvent::MouseWheel { delta } => {
-            match delta {
-                glutin::event::MouseScrollDelta::LineDelta(x, y) => world.input.receive_mouse_scroll_event(y as f64),
-                glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
-            }
+        }
+        DeviceEvent::MouseWheel { delta } => match delta {
+            glutin::event::MouseScrollDelta::LineDelta(x, y) => world.input.receive_mouse_scroll_event(y as f64),
+            glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
         },
         DeviceEvent::Key(input) => {
             if let Some(virtual_keycode) = input.virtual_keycode {
@@ -160,7 +152,7 @@ fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut
                     *control_flow = ControlFlow::Exit;
                 }
             }
-        },
-        _ => ()
+        }
+        _ => (),
     }
 }

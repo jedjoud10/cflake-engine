@@ -16,9 +16,9 @@ pub struct Window {
 
 impl Default for Window {
     fn default() -> Self {
-        Self { 
-            dimensions: DEFAULT_WINDOW_SIZE, 
-            window: Default::default()
+        Self {
+            dimensions: DEFAULT_WINDOW_SIZE,
+            window: Default::default(),
         }
     }
 }

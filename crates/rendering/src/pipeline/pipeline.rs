@@ -310,8 +310,12 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             gl::load_with(|x| gl_context.get_proc_address(x));
             // Check if the gl viewport is ok
             if gl::Viewport::is_loaded() {
-                unsafe { init_opengl(); }
-            } else { panic!() }
+                unsafe {
+                    init_opengl();
+                }
+            } else {
+                panic!()
+            }
             println!("Successfully initialized OpenGL!");
 
             // Set the global sender
@@ -328,7 +332,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             let mut pipeline_ = pipeline.write().unwrap();
             // Setup the window
             pipeline_.window.window = Some(window);
-                
+
             // Load the default objects
             pipeline_.defaults = Some(load_defaults(&pipeline_));
             drop(pipeline_);
