@@ -8,7 +8,7 @@ pub struct PipelineContext {
     // The pipeline
     pub(crate) pipeline: Arc<RwLock<Pipeline>>,
     // The pipeline's handler that allows us to call specific pipeline tasks from the main thread, like flush
-    pub handler: Arc<Mutex<PipelineHandler>>,
+    pub handler: Option<Arc<Mutex<PipelineHandler>>>,
 }
 
 impl PipelineContext {

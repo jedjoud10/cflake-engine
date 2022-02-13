@@ -312,7 +312,9 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
     let time = Arc::new(Mutex::new((0.0, 0.0)));
     let time_clone = time.clone();
 
-    dbg!(window.is_current());
+    // Split
+    let (gl_context, window) = unsafe { window.split() };
+    let window = Arc::new(window);
 
     // An init channel
     let (itx, irx) = std::sync::mpsc::sync_channel::<Arc<RwLock<Pipeline>>>(1);
@@ -323,19 +325,15 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
         .spawn(move || {
             // Initialize OpenGL
             println!("Initializing OpenGL...");
-            dbg!(window.is_current());
-            let window = unsafe { window.make_current().unwrap() };
-            dbg!(window.is_current());
-            unsafe { gl::load_with(|x| window.get_proc_address(x)) }
+            // Make the glutin context current, since we will be using the render thread for rendering
+            let gl_context = unsafe { gl_context.make_current().unwrap() };
+            gl::load_with(|x| gl_context.get_proc_address(x));
+
+            // Check if the gl viewport is ok
             if gl::Viewport::is_loaded() {
-                unsafe {
-                    init_opengl();
-                }
-                println!("Successfully initialized OpenGL!");
-            } else {
-                /* NON */
-                panic!()
-            }
+                unsafe { init_opengl(); }
+            } else { panic!() }
+            println!("Successfully initialized OpenGL!");
 
             // Set the global sender
             sender::set_global_sender(tx);
@@ -351,7 +349,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             // Load the default objects
             {
                 let mut pipeline = pipeline.write().unwrap();
-                pipeline.window = Window::new();
+                pipeline.window.window = Some(window);
                 pipeline.defaults = Some(load_defaults(&*pipeline));
             }
 
@@ -401,7 +399,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
 
                 // Do not forget to switch buffers at the end of the frame
                 let i = std::time::Instant::now();
-                window.swap_buffers().unwrap();
+                gl_context.swap_buffers().unwrap();
                 let swap_buffers_duration = i.elapsed();
 
                 let messages = rx.try_iter().collect::<Vec<PipelineTask>>();
@@ -439,13 +437,13 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
     // Create the pipeline context
     PipelineContext {
         pipeline,
-        handler: Arc::new(Mutex::new(PipelineHandler {
+        handler: Some(Arc::new(Mutex::new(PipelineHandler {
             handle,
             sbarrier,
             ebarrier,
             eatomic,
             waiting,
             time,
-        })),
+        }))),
     }
 }

@@ -5,7 +5,7 @@ use std::sync::Arc;
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(window_init_settings: rendering::utils::WindowInitSettings, settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
+    pub fn new(settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
@@ -38,7 +38,7 @@ impl World {
     pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
         // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
-        let handler = self.pipeline.handler.lock().unwrap();
+        let handler = self.pipeline.handler.as_ref().unwrap().lock().unwrap();
         let mut time = handler.time.lock().unwrap();
         time.0 = self.time.elapsed;
         time.1 = self.time.delta;
@@ -70,15 +70,15 @@ impl World {
         {
             let delta = self.time.delta as f32;
             self.input.late_update(delta);
-            let handler = &self.pipeline.handler.lock().unwrap();
+            let handler = &self.pipeline.handler.as_ref().unwrap().lock().unwrap();
             handler.ebarrier.wait();
         }
     }
     // We must destroy the world
-    pub fn destroy(self) {
+    pub fn destroy(&mut self) {
         // We update the pipeline's shutdown atomic, telling it to shutdown
         //let pipeline = self.pipeline.read().unwrap();
-        let handler = Arc::try_unwrap(self.pipeline.handler);
+        let handler = Arc::try_unwrap(self.pipeline.handler.take().unwrap());
         if let Ok(handler) = handler {
             let handler = handler.into_inner().unwrap();
             // Run the render thread loop for one last time

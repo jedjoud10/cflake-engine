@@ -3,34 +3,31 @@ use std::sync::{
     Arc,
 };
 
-// Window init settings
-pub struct WindowInitSettings {
-    pub dimensions: veclib::Vector2<u16>,
-    pub pixel_per_point: f32,
-}
-
 // Get the default width and height of the starting window
 pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 
 // A window class to organize things
-#[derive(Default)]
 pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
     pub focused: bool,
     pub(crate) vsync: AtomicBool,
     pub(crate) update: AtomicBool,
+    pub window: Option<Arc<glutin::window::Window>>,
+}
+
+impl Default for Window {
+    fn default() -> Self {
+        Self { 
+            dimensions: DEFAULT_WINDOW_SIZE, 
+            focused: Default::default(),
+            vsync: Default::default(),
+            update: Default::default(),
+            window: Default::default()
+        }
+    }
 }
 
 impl Window {
-    // Create a new window
-    pub fn new() -> Self {
-        Self {
-            dimensions: DEFAULT_WINDOW_SIZE,
-            vsync: AtomicBool::new(false),
-            update: AtomicBool::new(false),
-            focused: false,
-        }
-    }
     // These methods MUST be called on the main thread
     // Enable/disable fullscreen for the window
     pub fn set_fullscreen(&self, fullscreen: bool) {

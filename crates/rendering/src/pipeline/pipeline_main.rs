@@ -45,7 +45,7 @@ pub mod pipec {
     // This function will exit early and return None if the pipeline is in use, thus we cannot force a flush
     pub fn flush_and_execute(context: &PipelineContext) -> Option<()> {
         // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
-        let handler = &context.handler.lock().ok()?;
+        let handler = &context.handler.as_ref().unwrap().lock().ok()?;
         handler.sbarrier.wait();
         handler.ebarrier.wait();
 
