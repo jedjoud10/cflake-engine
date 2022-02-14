@@ -39,7 +39,6 @@ impl World {
             self.gui.begin_frame(window.inner.as_ref().unwrap());
         }
 
-
         // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
         let handler = self.pipeline.handler.as_ref().unwrap().lock().unwrap();

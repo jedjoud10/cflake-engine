@@ -1,6 +1,6 @@
-use std::sync::{Mutex, Arc};
-use rendering::pipeline::Pipeline;
 use crate::painter::Painter;
+use rendering::pipeline::Pipeline;
+use std::sync::{Arc, Mutex};
 
 // A simple manager
 pub struct GUIManager {
@@ -36,8 +36,8 @@ impl GUIManager {
         let meshes = self.egui.tessellate(clipped_shapes);
 
         // Set the values using the arc
-        painter.font_image = self.egui.font_image().clone(); 
-        painter.clipped_meshes = meshes; 
+        painter.font_image = self.egui.font_image().clone();
+        painter.clipped_meshes = meshes;
         painter.output = output;
     }
 }

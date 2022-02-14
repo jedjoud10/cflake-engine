@@ -128,7 +128,7 @@ impl PipelineObject for Texture {
         unsafe {
             gl::GenTextures(1, &mut oid as *mut u32);
             gl::BindTexture(tex_type, oid);
-            if texel_count > 0 {            
+            if texel_count > 0 {
                 match self.ttype {
                     TextureType::Texture1D(width) => {
                         gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);

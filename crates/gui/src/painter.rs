@@ -1,13 +1,20 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
-use egui::{CtxRef, ClippedMesh, epaint::ClippedShape, Output};
-use rendering::{pipeline::{Pipeline, pipec}, basics::{shader::{Shader, ShaderSettings}, texture::{Texture, TextureFilter, TextureFormat}}, object::ObjectID};
+use egui::{epaint::ClippedShape, ClippedMesh, CtxRef, Output};
+use rendering::{
+    basics::{
+        shader::{Shader, ShaderSettings},
+        texture::{Texture, TextureFilter, TextureFormat},
+    },
+    object::ObjectID,
+    pipeline::{pipec, Pipeline},
+};
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
     // Store everything we need to render the egui meshes
-    pub(crate) shader: ObjectID<Shader>,  
-    pub(crate) egui_font_texture: ObjectID<Texture>,  
+    pub(crate) shader: ObjectID<Shader>,
+    pub(crate) egui_font_texture: ObjectID<Texture>,
     pub(crate) clipped_meshes: Vec<ClippedMesh>,
     pub(crate) output: Output,
     pub(crate) font_image: Arc<egui::epaint::FontImage>,
@@ -23,30 +30,28 @@ impl Painter {
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();
         // Load the egui font texture
-        let egui_font_texture = Texture::default()
-            .with_filter(TextureFilter::Linear)
-            .with_format(TextureFormat::RGBA8R)
-            .with_mipmaps(false);
+        let egui_font_texture = Texture::default().with_filter(TextureFilter::Linear).with_format(TextureFormat::RGBA8R).with_mipmaps(false);
         let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();
         Self {
             shader,
             egui_font_texture,
             clipped_meshes: Default::default(),
             output: Default::default(),
-            font_image: Default::default()
+            font_image: Default::default(),
         }
     }
     // Draw a single egui mesh
-    fn draw_mesh(&self, mesh: ClippedMesh, shader: &Shader) {
-    }
+    fn draw_mesh(&self, mesh: ClippedMesh, shader: &Shader) {}
 
     // Draw a single frame using an egui context and a painter
     pub fn draw_gui(&mut self, pipeline: &mut Pipeline) {
-        // No need to draw if we don't have any meshes 
-        if self.clipped_meshes.is_empty() { return; }       
+        // No need to draw if we don't have any meshes
+        if self.clipped_meshes.is_empty() {
+            return;
+        }
         let shader = pipeline.shaders.get(self.shader);
         dbg!("Draw");
-        
+
         // We might not have a valid shader yet, so we make sure it is valid
         if let Some(shader) = shader {
             // Now we can peacefully draw

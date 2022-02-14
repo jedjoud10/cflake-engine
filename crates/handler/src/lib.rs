@@ -26,7 +26,12 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
         rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
         rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
     ));
-    let wc = ContextBuilder::new().with_double_buffer(Some(true)).with_vsync(vsync).with_srgb(true).build_windowed(wb, el).unwrap();
+    let wc = ContextBuilder::new()
+        .with_double_buffer(Some(true))
+        .with_vsync(vsync)
+        .with_srgb(true)
+        .build_windowed(wb, el)
+        .unwrap();
     let window = wc.window();
     window.set_cursor_grab(true).unwrap();
     window.set_cursor_visible(false);
@@ -126,7 +131,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
 fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut ControlFlow) {
     // GUI
     world.gui.receive_event(&event);
-    
+
     match event {
         WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
             let pipeline = world.pipeline.read();
