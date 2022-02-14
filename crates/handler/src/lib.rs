@@ -14,7 +14,7 @@ use glutin::{
     event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, WindowBuilder},
-    ContextBuilder, NotCurrent, WindowedContext,
+    ContextBuilder, NotCurrent, WindowedContext, GlProfile, GlRequest,
 };
 use main::core::{World, WorldTaskReceiver};
 pub use main::*;
@@ -22,14 +22,19 @@ use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
 fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
-    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
+    let wb = WindowBuilder::new()
+        .with_resizable(true)
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(
         rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
         rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
     ));
     let wc = ContextBuilder::new()
         .with_double_buffer(Some(true))
         .with_vsync(vsync)
-        .with_srgb(true)
+        .with_gl_profile(GlProfile::Core)
+        .with_gl_debug_flag(false)
+        .with_gl(GlRequest::Latest)
         .build_windowed(wb, el)
         .unwrap();
     let window = wc.window();
@@ -88,7 +93,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Flush everything and execute all the tasks
         task_receiver.flush(&mut world);
     }
-    let mut sleeper = LoopHelper::builder().build_without_target_rate();
+    let mut sleeper = LoopHelper::builder().build_with_target_rate(120.0);
 
     // Main loop
     event_loop.run(move |event, _, control_flow| {

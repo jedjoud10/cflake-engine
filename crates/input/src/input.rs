@@ -135,10 +135,9 @@ impl InputManager {
             .get(name)
             .and_then(|(map_state, _)| {
                 if let MapState::Button(button_state) = map_state {
-                    if let ButtonState::Held = button_state {
-                        Some(())
-                    } else {
-                        None
+                    match &button_state {
+                        ButtonState::Held | ButtonState::Pressed => Some(()),
+                        _ => None
                     }
                 } else {
                     None

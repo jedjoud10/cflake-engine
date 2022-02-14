@@ -4,8 +4,6 @@ pub use ::ordered_vec;
 pub use ::veclib;
 pub use assets;
 pub use core;
-pub use core::tasks;
-pub use debug;
 pub use ecs;
 pub use globals;
 pub use gui;

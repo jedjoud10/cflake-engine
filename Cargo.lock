@@ -257,7 +257,6 @@ dependencies = [
  "backtrace",
  "bitfield",
  "crossbeam-channel",
- "debug",
  "ecs",
  "globals",
  "glutin",
@@ -470,17 +469,6 @@ dependencies = [
  "darling_core",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "debug"
-version = "0.1.0"
-dependencies = [
- "assets",
- "math",
- "others",
- "rendering",
- "veclib",
 ]
 
 [[package]]
@@ -1007,7 +995,6 @@ dependencies = [
  "assets",
  "bitfield",
  "core",
- "debug",
  "ecs",
  "gl",
  "globals",

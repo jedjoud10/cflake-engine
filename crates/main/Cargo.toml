@@ -23,7 +23,6 @@ globals = { path = "../globals" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
-debug = { path = "../debug" }
 math = { path = "../math" }
 gui = { path = "../gui" }
 io = { path = "../io" }

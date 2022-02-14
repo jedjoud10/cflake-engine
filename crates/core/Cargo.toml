@@ -21,6 +21,5 @@ ecs = { path = "../ecs" }
 gui = { path = "../gui" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
-debug = { path = "../debug" }
 globals = { path = "../globals" }
 io = { path = "../io" }

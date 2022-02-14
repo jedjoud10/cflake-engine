@@ -7,7 +7,7 @@ fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
     // Rotate the camera around
     let mouse_pos = *world.input.get_mouse_position();
-    const SENSIVITY: f32 = 0.001;
+    const SENSIVITY: f32 = 0.0007;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
         veclib::EulerAnglesOrder::YXZ,
@@ -28,8 +28,7 @@ fn run(world: &mut World, data: EventKey) {
         -1.0
     } else {
         0.0
-    } * world.time.delta as f32
-        * 10.0;
+    } * world.time.delta as f32 * 10.0;
 
     // Actually update the velocity
     // Forward and backward

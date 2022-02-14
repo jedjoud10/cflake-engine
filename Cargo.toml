@@ -12,7 +12,6 @@ handler = { path = "crates\\handler" }
 members = [
     "crates\\assets",
     "crates\\core",
-    "crates\\debug",
     "crates\\defaults",
     "crates\\ecs",    
     "crates\\handler",
