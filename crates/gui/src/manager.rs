@@ -43,5 +43,6 @@ impl GUIManager {
         painter.font_image = self.egui.font_image().clone();
         painter.clipped_meshes = meshes;
         painter.output = output;
+        painter.upload_egui_font_texture(pipeline, texture)
     }
 }

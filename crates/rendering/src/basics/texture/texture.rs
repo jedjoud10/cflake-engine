@@ -10,7 +10,10 @@ use crate::{
     utils::*,
 };
 
-use gl::{self, types::{GLuint, GLint}};
+use gl::{
+    self,
+    types::{GLint, GLuint},
+};
 use smallvec::SmallVec;
 
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
@@ -108,9 +111,7 @@ impl PipelineObject for Texture {
             num
         }
 
-        let pointer: *const c_void = if !self.bytes.is_empty() {
-            self.bytes.as_ptr() as *const c_void
-        } else { null() };
+        let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
 
         let ifd = get_ifd(self._format, self._type);
         let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
@@ -380,10 +381,8 @@ impl Texture {
             return Err(OpenGLObjectNotInitialized);
         }
 
-        let pointer: *const c_void = if !bytes.is_empty() {
-            bytes.as_ptr() as *const c_void
-        } else { null() };
-        
+        let pointer: *const c_void = if !bytes.is_empty() { bytes.as_ptr() as *const c_void } else { null() };
+
         // Check if the current dimension type matches up with the new one
         self.ttype = tt;
         let ifd = self.ifd;

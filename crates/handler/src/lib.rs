@@ -14,18 +14,18 @@ use glutin::{
     event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, WindowBuilder},
-    ContextBuilder, NotCurrent, WindowedContext, GlProfile, GlRequest,
+    ContextBuilder, GlProfile, GlRequest, NotCurrent, WindowedContext,
 };
-use main::{core::{World, WorldTaskReceiver}, rendering::pipeline::pipec};
 pub use main::*;
+use main::{
+    core::{World, WorldTaskReceiver},
+    rendering::pipeline::pipec,
+};
 use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
 fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
-    let wb = WindowBuilder::new()
-        .with_resizable(true)
-        .with_title(title)
-        .with_inner_size(LogicalSize::new(
+    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
         rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
         rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
     ));

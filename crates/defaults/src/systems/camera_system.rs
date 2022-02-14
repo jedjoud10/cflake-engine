@@ -28,7 +28,8 @@ fn run(world: &mut World, data: EventKey) {
         -1.0
     } else {
         0.0
-    } * world.time.delta as f32 * 10.0;
+    } * world.time.delta as f32
+        * 10.0;
 
     // Actually update the velocity
     // Forward and backward

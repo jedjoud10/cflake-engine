@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use gl::types::{GLuint, GLint};
+use gl::types::{GLint, GLuint};
 
 use crate::utils::DataType;
 
