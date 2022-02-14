@@ -1,5 +1,7 @@
 use std::{collections::HashSet, ffi::CString, ptr::null};
 
+use gl::types::GLuint;
+
 use crate::{
     basics::{
         shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
@@ -14,7 +16,7 @@ use super::ComputeShaderExecutionSettings;
 // A compute shader that can run parallel calculations on the GPU
 pub struct ComputeShader {
     // The OpenGL program linked to this compute shader
-    pub(crate) program: u32,
+    pub(crate) program: GLuint,
     // We only have one shader source since we are a compute shader
     pub(crate) source: ShaderSource,
 }

@@ -10,7 +10,7 @@ use crate::{
     utils::*,
 };
 
-use gl;
+use gl::{self, types::{GLuint, GLint}};
 use smallvec::SmallVec;
 
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
@@ -19,7 +19,7 @@ use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureTyp
 #[derive(Debug)]
 pub struct Texture {
     // The OpenGL id for this texture
-    pub(crate) oid: u32,
+    pub(crate) oid: GLuint,
     // The bytes stored in this texture
     pub(crate) bytes: Vec<u8>,
 
@@ -28,9 +28,9 @@ pub struct Texture {
     // The data type that this texture uses for storage
     pub _type: DataType,
     // Internal Format, Format, Data
-    pub(crate) ifd: (i32, u32, u32),
+    pub(crate) ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
-    pub(crate) target: u32,
+    pub(crate) target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
     pub filter: TextureFilter,
@@ -38,14 +38,14 @@ pub struct Texture {
     pub wrap_mode: TextureWrapping,
     // The border colors
     pub border_colors: [veclib::Vector4<f32>; 4],
-    pub custom_params: SmallVec<[(u32, u32); 2]>,
+    pub custom_params: SmallVec<[(GLuint, GLuint); 2]>,
     // The dimensions of the texture and it's texture type
     pub ttype: TextureType,
     // How we access this texture on the CPU
     pub(crate) cpu_access: TextureAccessType,
     // And the corresponding upload / download PBOs,
-    pub(crate) write_pbo: Option<u32>,
-    pub(crate) read_pbo: Option<u32>,
+    pub(crate) write_pbo: Option<GLuint>,
+    pub(crate) read_pbo: Option<GLuint>,
     // Should we generate mipmaps for this texture
     pub mipmaps: bool,
 }
@@ -420,7 +420,7 @@ impl Texture {
             },
             pipeline,
         )
-        .with_sync_satisfied_callback(move |_pipeline| unsafe {
+        .with_completed_callback(move |_pipeline| unsafe {
             // Gotta read back the data
             let mut vec = vec![0_u8; byte_count];
             gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());

@@ -1,11 +1,13 @@
+use gl::types::GLuint;
+
 use crate::utils::UsageType;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
 pub struct DynamicRawBuffer<T> {
     // The OpenGL data for this buffer
-    pub buffer: u32,
-    _type: u32,
+    pub buffer: GLuint,
+    _type: GLuint,
 
     // Other data
     usage: UsageType,

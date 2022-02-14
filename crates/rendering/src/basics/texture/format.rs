@@ -1,5 +1,7 @@
 use std::mem::size_of;
 
+use gl::types::{GLuint, GLint};
+
 use crate::utils::DataType;
 
 // The texture format
@@ -53,7 +55,7 @@ pub enum TextureFormat {
 }
 
 // Get the IFD from a simple TextureFormat and DataType
-pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (i32, u32, u32) {
+pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
     let internal_format = match tf {
         // Red
         TextureFormat::R8R => gl::R8,

@@ -1,6 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use arrayvec::ArrayVec;
+use gl::types::GLuint;
 
 use super::AtomicGroupRead;
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
 #[derive(Clone)]
 pub struct AtomicGroup {
     // The OpenGL ID for the atomic counter buffer
-    pub(crate) oid: u32,
+    pub(crate) oid: GLuint,
     // Some predefined values that we can set before we execute the shader
     // This also stores the number of valid atomics that we have
     pub(crate) defaults: ArrayVec<u32, 4>,

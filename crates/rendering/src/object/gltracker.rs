@@ -29,7 +29,7 @@ impl GlTracker {
         Self { fence, callback: None }
     }
     // Create the tracker with a specific execution callback
-    pub fn with_sync_satisfied_callback<C: FnOnce(&Pipeline) + 'static>(mut self, callback_finished: C) -> Self {
+    pub fn with_completed_callback<C: FnOnce(&Pipeline) + 'static>(mut self, callback_finished: C) -> Self {
         self.callback = Some(Box::new(callback_finished));
         self
     }

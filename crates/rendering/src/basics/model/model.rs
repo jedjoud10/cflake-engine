@@ -1,3 +1,5 @@
+use gl::types::GLuint;
+
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -10,10 +12,10 @@ use super::VertexAttributeBufferLayout;
 #[derive(Default)]
 pub struct Model {
     // Main IDs
-    pub vertex_array_object: u32,
+    pub vertex_array_object: GLuint,
 
     // Vertex attributes IDs
-    pub buffers: [u32; 6],
+    pub buffers: [GLuint; 6],
     /*
     pub element_buffer_object: u32,
 

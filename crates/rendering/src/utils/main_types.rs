@@ -1,3 +1,5 @@
+use gl::types::GLuint;
+
 // Simple main OpenGL types
 #[derive(Clone, Copy, Debug)]
 pub enum DataType {
@@ -53,7 +55,7 @@ pub struct UsageType {
 
 impl UsageType {
     // Convert this UsageType to a valid OpenGL enum
-    pub fn convert(&self) -> u32 {
+    pub fn convert(&self) -> GLuint {
         match self.access {
             AccessType::Write => match self.frequency {
                 UpdateFrequency::Static => gl::STATIC_DRAW,
