@@ -302,14 +302,14 @@ impl PipelineRenderer {
         // Update the size of each texture that is bound to the framebuffer
         let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
         let diffuse_texture = pipeline.textures.get_mut(self.diffuse_texture).unwrap();
-        diffuse_texture.update_size(dims).unwrap();
+        diffuse_texture.update_size_fill(dims, Vec::new()).unwrap();
         let emissive_texture = pipeline.textures.get_mut(self.emissive_texture).unwrap();
-        emissive_texture.update_size(dims).unwrap();
+        emissive_texture.update_size_fill(dims, Vec::new()).unwrap();
         let normals_texture = pipeline.textures.get_mut(self.normals_texture).unwrap();
-        normals_texture.update_size(dims).unwrap();
+        normals_texture.update_size_fill(dims, Vec::new()).unwrap();
         let position_texture = pipeline.textures.get_mut(self.position_texture).unwrap();
-        position_texture.update_size(dims).unwrap();
+        position_texture.update_size_fill(dims, Vec::new()).unwrap();
         let depth_texture = pipeline.textures.get_mut(self.depth_texture).unwrap();
-        depth_texture.update_size(dims).unwrap();
+        depth_texture.update_size_fill(dims, Vec::new()).unwrap();
     }
 }

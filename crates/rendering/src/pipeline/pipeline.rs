@@ -327,7 +327,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
 
             let mut pipeline_ = pipeline.write().unwrap();
             // Setup the window
-            *pipeline_.window.pixel_per_point.lock().unwrap() = window.scale_factor();
+            pipeline_.window.pixel_per_point = window.scale_factor();
             pipeline_.window.inner = Some(window);
 
             // Load the default objects

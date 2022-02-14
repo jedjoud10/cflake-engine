@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use glutin::window::Fullscreen;
 
 // Get the default width and height of the starting window
@@ -9,7 +7,7 @@ pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
     pub inner: Option<glutin::window::Window>,
-    pub pixel_per_point: Mutex<f64>,
+    pub pixel_per_point: f64,
 }
 
 impl Default for Window {

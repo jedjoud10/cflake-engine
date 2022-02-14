@@ -108,10 +108,10 @@ impl PipelineObject for Texture {
             num
         }
 
-        let mut pointer: *const c_void = null();
-        if !self.bytes.is_empty() {
-            pointer = self.bytes.as_ptr() as *const c_void;
-        }
+        let pointer: *const c_void = if !self.bytes.is_empty() {
+            self.bytes.as_ptr() as *const c_void
+        } else { null() };
+
         let ifd = get_ifd(self._format, self._type);
         let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
 
@@ -374,14 +374,16 @@ impl Texture {
             TextureType::Texture2DArray(x, y, z) => (x as usize * y as usize * z as usize),
         }
     }
-    // Update the size of this texture
-    // PS: This also clears the texture
-    // Todo: create PipelineObjectNotInitialized error
-    pub fn update_size(&mut self, tt: TextureType) -> Result<(), OpenGLObjectNotInitialized> {
+    // Set the inner data of the texture, and resize it
+    pub fn update_size_fill(&mut self, tt: TextureType, bytes: Vec<u8>) -> Result<(), OpenGLObjectNotInitialized> {
         if self.oid == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
 
+        let pointer: *const c_void = if !bytes.is_empty() {
+            bytes.as_ptr() as *const c_void
+        } else { null() };
+        
         // Check if the current dimension type matches up with the new one
         self.ttype = tt;
         let ifd = self.ifd;
@@ -390,15 +392,15 @@ impl Texture {
             match tt {
                 TextureType::Texture1D(width) => {
                     gl::BindTexture(gl::TEXTURE_1D, self.oid);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.oid);
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, null());
+                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 TextureType::Texture3D(width, height, depth) => {
                     gl::BindTexture(gl::TEXTURE_3D, self.oid);
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, null());
+                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
                 }
                 TextureType::Texture2DArray(_, _, _) => todo!(),
             }

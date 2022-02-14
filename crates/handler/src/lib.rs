@@ -16,7 +16,7 @@ use glutin::{
     window::{Fullscreen, WindowBuilder},
     ContextBuilder, NotCurrent, WindowedContext, GlProfile, GlRequest,
 };
-use main::core::{World, WorldTaskReceiver};
+use main::{core::{World, WorldTaskReceiver}, rendering::pipeline::pipec};
 pub use main::*;
 use spin_sleep::LoopHelper;
 
@@ -140,7 +140,9 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
     match event {
         WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
             let pipeline = world.pipeline.read();
-            *pipeline.window.pixel_per_point.lock().unwrap() = scale_factor;
+            pipec::update_callback(&pipeline, move |pipeline, _| {
+                pipeline.window.pixel_per_point = scale_factor;
+            });
         }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
         WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),

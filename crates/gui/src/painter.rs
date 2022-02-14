@@ -4,7 +4,7 @@ use egui::{epaint::ClippedShape, ClippedMesh, CtxRef, Output};
 use rendering::{
     basics::{
         shader::{Shader, ShaderSettings},
-        texture::{Texture, TextureFilter, TextureFormat},
+        texture::{Texture, TextureFilter, TextureFormat}, uniforms::{ShaderUniformsSettings, ShaderIDType, Uniforms},
     },
     object::ObjectID,
     pipeline::{pipec, Pipeline},
@@ -41,7 +41,10 @@ impl Painter {
         }
     }
     // Draw a single egui mesh
-    fn draw_mesh(&self, mesh: ClippedMesh, shader: &Shader) {}
+    fn draw_mesh(&self, mesh: ClippedMesh, pipeline: &mut Pipeline, pixel_per_point: f64) {
+        // We already have the shader bound, so we just need to draw
+
+    }
 
     // Draw a single frame using an egui context and a painter
     pub fn draw_gui(&mut self, pipeline: &mut Pipeline) {
@@ -49,16 +52,16 @@ impl Painter {
         if self.clipped_meshes.is_empty() {
             return;
         }
-        let shader = pipeline.shaders.get(self.shader);
-        dbg!("Draw");
+        // Since all the elements use the same shader, we can simply set it once
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shader));
+        let uniforms = Uniforms::using_mut_pipeline(&settings, pipeline);
+        // Bind the texture and resolution
+        uniforms.set_texture("u_sampler", self.egui_font_texture, 0);
 
-        // We might not have a valid shader yet, so we make sure it is valid
-        if let Some(shader) = shader {
-            // Now we can peacefully draw
-            let clipped_meshes = std::mem::take(&mut self.clipped_meshes);
-            for mesh in clipped_meshes {
-                self.draw_mesh(mesh, shader);
-            }
+        // Now we can peacefully draw
+        let clipped_meshes = std::mem::take(&mut self.clipped_meshes);
+        for mesh in clipped_meshes {
+            self.draw_mesh(mesh, pipeline, pipeline.window.pixel_per_point);
         }
     }
 }

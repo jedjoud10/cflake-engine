@@ -1,6 +1,6 @@
 // https://github.com/emilk/egui/blob/master/egui_glium/src/shader/vertex_300es.glsl
 #version 460 core
-uniform vec2 u_screen_size;
+uniform ivec2 _resolution;
 layout(location = 0) in vec2 a_pos;
 layout(location = 1) in vec2 a_tc;
 layout(location = 2) in vec4 a_srgba;
@@ -21,8 +21,8 @@ vec4 linear_from_srgba(vec4 srgba) {
 
 void main() {
     gl_Position = vec4(
-                      2.0 * a_pos.x / u_screen_size.x - 1.0,
-                      1.0 - 2.0 * a_pos.y / u_screen_size.y,
+                      2.0 * a_pos.x / _resolution.x - 1.0,
+                      1.0 - 2.0 * a_pos.y / _resolution.y,
                       0.0,
                       1.0);
     // egui encodes vertex colors in gamma spaces, so we must decode the colors here:

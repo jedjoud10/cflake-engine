@@ -9,5 +9,6 @@ edition = "2021"
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 math = { path = "../math" }
+gl = "0.14.0"
 egui = "0.16.1"
 egui-winit = "0.16.0"

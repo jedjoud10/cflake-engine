@@ -1,3 +1,5 @@
+use gl::types::GLuint;
+
 use crate::basics::shader::query_shader_uniforms_definition_map;
 use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::Pipeline;
@@ -81,7 +83,7 @@ impl ShaderSettings {
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
 pub struct Shader {
     // The OpenGL program linked to this shader
-    pub(crate) program: u32,
+    pub program: GLuint,
     // The updated and modified shader sources
     pub(crate) sources: HashMap<String, ShaderSource>,
 }

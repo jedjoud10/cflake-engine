@@ -27,7 +27,11 @@ impl GUIManager {
     pub fn begin_frame(&mut self, window: &egui_winit::winit::window::Window) {
         let raw_input = self.state.take_egui_input(window);
         self.egui.begin_frame(raw_input);
-        egui::Window::new("Test").show(&self.egui, |ui| {});
+        let mut funny = 0.0;
+        egui::Window::new("Test").show(&self.egui, |ui| {
+            ui.add(egui::Label::new("This is a test label"));
+            ui.add(egui::Slider::new(&mut funny, 0f64..=30f64))
+        });
     }
     // End frame
     pub fn end_frame(&mut self) {

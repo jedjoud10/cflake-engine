@@ -245,14 +245,12 @@ pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings)
                 // Get the resource's name
                 gl::GetProgramResourceName(program, unique_resource.convert(), id as u32, name.len() as i32, null_mut(), name.as_mut_ptr());
                 let name = CStr::from_ptr(name.as_ptr()).to_str().unwrap().to_string();
-                dbg!(&name);
                 let converted_outputs = unique_resource_parameters
                     .iter()
                     .zip(output)
                     .map(|(x, opengl_val)| x.convert_output(opengl_val))
                     .collect::<Vec<UpdatedParameter>>();
                 let entry = output_queried_resources_all.entry(unique_resource.clone()).or_default();
-                dbg!(&converted_outputs);
                 entry.push((name, converted_outputs));
             }
         }
