@@ -74,7 +74,10 @@ impl InputManager {
                 State::Pressed => {
                     // We pressed the key
                     match map {
-                        MapState::Button(button_state) => *button_state = ButtonState::Pressed,
+                        MapState::Button(button_state) => match &button_state {
+                            ButtonState::Released | ButtonState::Nothing => *button_state = ButtonState::Pressed,
+                            _ => {}
+                        },
                         MapState::Toggle(toggle_state) => toggle_state.toggle(),
                     }
                 }
@@ -135,9 +138,10 @@ impl InputManager {
             .get(name)
             .and_then(|(map_state, _)| {
                 if let MapState::Button(button_state) = map_state {
-                    match &button_state {
-                        ButtonState::Held | ButtonState::Pressed => Some(()),
-                        _ => None
+                    if let ButtonState::Held = button_state {
+                        Some(())
+                    } else {
+                        None
                     }
                 } else {
                     None
