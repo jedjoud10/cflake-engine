@@ -122,37 +122,40 @@ impl PipelineObject for Texture {
             TextureType::Texture3D(_, _, _) => gl::TEXTURE_3D,
             TextureType::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
         };
+        let texel_count = self.count_pixels();
 
         let mut oid: u32 = 0;
         unsafe {
             gl::GenTextures(1, &mut oid as *mut u32);
             gl::BindTexture(tex_type, oid);
-            match self.ttype {
-                TextureType::Texture1D(width) => {
-                    gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a 2D texture
-                TextureType::Texture2D(width, height) => {
-                    gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a 3D texture
-                TextureType::Texture3D(width, height, depth) => {
-                    gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
-                }
-                // This is a texture array
-                TextureType::Texture2DArray(width, height, depth) => {
-                    gl::TexStorage3D(
-                        tex_type,
-                        guess_mipmap_levels(width.max(height) as usize) as i32,
-                        ifd.0 as u32,
-                        width as i32,
-                        height as i32,
-                        depth as i32,
-                    );
-                    // We might want to do mipmap
-                    for i in 0..depth {
-                        let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
-                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+            if texel_count > 0 {            
+                match self.ttype {
+                    TextureType::Texture1D(width) => {
+                        gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a 2D texture
+                    TextureType::Texture2D(width, height) => {
+                        gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a 3D texture
+                    TextureType::Texture3D(width, height, depth) => {
+                        gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a texture array
+                    TextureType::Texture2DArray(width, height, depth) => {
+                        gl::TexStorage3D(
+                            tex_type,
+                            guess_mipmap_levels(width.max(height) as usize) as i32,
+                            ifd.0 as u32,
+                            width as i32,
+                            height as i32,
+                            depth as i32,
+                        );
+                        // We might want to do mipmap
+                        for i in 0..depth {
+                            let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
+                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+                        }
                     }
                 }
             }
@@ -267,62 +270,62 @@ impl PipelineObject for Texture {
 // Create a texture and send it to the pipeline so we can actually create it on the GPU
 impl Texture {
     // The internal format and data type of the soon to be generated texture
-    pub fn set_format(mut self, _format: TextureFormat) -> Self {
+    pub fn with_format(mut self, _format: TextureFormat) -> Self {
         self._format = _format;
         self
     }
     // Set the data type for this texture
-    pub fn set_data_type(mut self, _type: DataType) -> Self {
+    pub fn with_data_type(mut self, _type: DataType) -> Self {
         self._type = _type;
         self
     }
     // Set the height and width of the soon to be generated texture
-    pub fn set_dimensions(mut self, ttype: TextureType) -> Self {
+    pub fn with_dimensions(mut self, ttype: TextureType) -> Self {
         self.ttype = ttype;
         self
     }
     // Set the texture type
-    pub fn set_type(mut self, ttype: TextureType) -> Self {
+    pub fn with_type(mut self, ttype: TextureType) -> Self {
         self.ttype = ttype;
         self
     }
     // Set the bytes of this texture
-    pub fn set_bytes(mut self, bytes: Vec<u8>) -> Self {
+    pub fn with_bytes(mut self, bytes: Vec<u8>) -> Self {
         self.bytes = bytes;
         self
     }
     // We can read from this texture on the CPU, so we must create a Download PBO
-    pub fn readable(mut self) -> Self {
+    pub fn become_readable(mut self) -> Self {
         self.cpu_access.insert(TextureAccessType::READ);
         self
     }
     // We can write to this texture on the CPU, so we must create an Upload PBO
-    pub fn writable(mut self) -> Self {
+    pub fn become_writable(mut self) -> Self {
         self.cpu_access.insert(TextureAccessType::WRITE);
         self
     }
     // Set mipmaps
-    pub fn set_mipmaps(mut self, enabled: bool) -> Self {
+    pub fn with_mipmaps(mut self, enabled: bool) -> Self {
         self.mipmaps = enabled;
         self
     }
     // Set the mag and min filters
-    pub fn set_filter(mut self, filter: TextureFilter) -> Self {
+    pub fn with_filter(mut self, filter: TextureFilter) -> Self {
         self.filter = filter;
         self
     }
     // Set the wrapping mode
-    pub fn set_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
+    pub fn with_wrapping_mode(mut self, wrapping_mode: TextureWrapping) -> Self {
         self.wrap_mode = wrapping_mode;
         self
     }
     // Set the border colors
-    pub fn set_border_colors(mut self, colors: [veclib::Vector4<f32>; 4]) -> Self {
+    pub fn with_border_colors(mut self, colors: [veclib::Vector4<f32>; 4]) -> Self {
         self.border_colors = colors;
         self
     }
     // Set an OpenGL texture parameter for this texture
-    pub fn set_int_param(mut self, name: u32, param: u32) -> Self {
+    pub fn with_custom_gl_param(mut self, name: u32, param: u32) -> Self {
         self.custom_params.push((name, param));
         self
     }

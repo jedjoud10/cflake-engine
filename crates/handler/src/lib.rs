@@ -1,5 +1,4 @@
 #![windows_subsystem = "windows"]
-use std::sync::Arc;
 
 use mimalloc::MiMalloc;
 
@@ -11,13 +10,11 @@ extern crate gl;
 
 pub use defaults;
 use glutin::{
-    dpi::{LogicalPosition, LogicalSize, PhysicalPosition},
-    error::OsError,
+    dpi::LogicalSize,
     event::{DeviceEvent, Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    monitor::VideoMode,
-    window::{Fullscreen, Window, WindowBuilder},
-    ContextBuilder, ContextCurrentState, NotCurrent, WindowedContext,
+    event_loop::{ControlFlow, EventLoop},
+    window::{Fullscreen, WindowBuilder},
+    ContextBuilder, NotCurrent, WindowedContext,
 };
 use main::core::{World, WorldTaskReceiver};
 pub use main::*;
@@ -29,7 +26,7 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
         rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
         rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
     ));
-    let wc = ContextBuilder::new().with_double_buffer(Some(true)).with_vsync(vsync).build_windowed(wb, el).unwrap();
+    let wc = ContextBuilder::new().with_double_buffer(Some(true)).with_vsync(vsync).with_srgb(true).build_windowed(wb, el).unwrap();
     let window = wc.window();
     window.set_cursor_grab(true).unwrap();
     window.set_cursor_visible(false);
@@ -54,7 +51,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Set fullscreen if we want to
     let window = window_context.window();
     if config.fullscreen {
-        let vm = window.primary_monitor().unwrap().video_modes().nth(0).unwrap();
+        let vm = window.primary_monitor().unwrap().video_modes().next().unwrap();
         window_context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
     } else {
         window_context.window().set_fullscreen(None);
@@ -127,7 +124,14 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
 
 // Handle the window events
 fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut ControlFlow) {
+    // GUI
+    world.gui.receive_event(&event);
+    
     match event {
+        WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
+            let pipeline = world.pipeline.read();
+            *pipeline.window.pixel_per_point.lock().unwrap() = scale_factor;
+        }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
         WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
         _ => (),
@@ -141,7 +145,7 @@ fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut
             world.input.receive_mouse_position_event(veclib::vec2(delta.0, delta.1));
         }
         DeviceEvent::MouseWheel { delta } => match delta {
-            glutin::event::MouseScrollDelta::LineDelta(x, y) => world.input.receive_mouse_scroll_event(y as f64),
+            glutin::event::MouseScrollDelta::LineDelta(_x, y) => world.input.receive_mouse_scroll_event(y as f64),
             glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
         },
         DeviceEvent::Key(input) => {

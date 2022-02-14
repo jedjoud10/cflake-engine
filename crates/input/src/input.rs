@@ -85,7 +85,6 @@ impl InputManager {
                         _ => {}
                     }
                 }
-                _ => {}
             }
         }
         Some(())

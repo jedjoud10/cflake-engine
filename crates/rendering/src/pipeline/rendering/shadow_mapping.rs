@@ -55,13 +55,13 @@ impl ShadowMapping {
         };
         // Create the depth texture
         let texture = Texture::default()
-            .set_dimensions(TextureType::Texture2D(shadow_resolution, shadow_resolution))
-            .set_filter(TextureFilter::Linear)
-            .set_wrapping_mode(TextureWrapping::ClampToBorder)
-            .set_border_colors([veclib::Vector4::<f32>::ONE; 4])
-            .set_int_param(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE)
-            .set_int_param(gl::TEXTURE_COMPARE_FUNC, gl::GREATER)
-            .set_format(TextureFormat::DepthComponent16);
+            .with_dimensions(TextureType::Texture2D(shadow_resolution, shadow_resolution))
+            .with_filter(TextureFilter::Linear)
+            .with_wrapping_mode(TextureWrapping::ClampToBorder)
+            .with_border_colors([veclib::Vector4::<f32>::ONE; 4])
+            .with_custom_gl_param(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE)
+            .with_custom_gl_param(gl::TEXTURE_COMPARE_FUNC, gl::GREATER)
+            .with_format(TextureFormat::DepthComponent16);
         let texture = pipec::construct(pipeline, texture).unwrap();
         pipeline.flush(internal, renderer);
         // Now attach the depth texture

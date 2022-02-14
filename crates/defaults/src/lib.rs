@@ -1,6 +1,6 @@
 #![feature(int_roundings)]
 use main::{assets::preload_asset, core::World};
-use systems::{camera_system, debugging_system, rendering_system, terrain, window_system};
+use systems::*;
 // Default components
 pub mod components;
 // Default globals
@@ -25,6 +25,9 @@ pub fn preload_default_assets() {
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\lighting.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sky.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sun.func.glsl");
+    // GUI
+    preload_asset!(".\\resources\\defaults\\shaders\\gui\\frag.frsh.glsl");
+    preload_asset!(".\\resources\\defaults\\shaders\\gui\\vert.vrsh.glsl");
     // Others
     preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl");
     preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl");
@@ -62,6 +65,7 @@ pub fn preload_system(world: &mut World) {
     rendering_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
+    gui_system::system(world);
     //test_system::system(world);
     // Terrain
     terrain::chunk_system::system(world);

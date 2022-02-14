@@ -1,7 +1,7 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
 use egui::{CtxRef, ClippedMesh, epaint::ClippedShape, Output};
-use rendering::{pipeline::{Pipeline, pipec}, basics::{shader::{Shader, ShaderSettings}, texture::Texture}, object::ObjectID};
+use rendering::{pipeline::{Pipeline, pipec}, basics::{shader::{Shader, ShaderSettings}, texture::{Texture, TextureFilter, TextureFormat}}, object::ObjectID};
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
@@ -22,7 +22,12 @@ impl Painter {
             .source("defaults\\shaders\\gui\\frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();
-        // Load the 
+        // Load the egui font texture
+        let egui_font_texture = Texture::default()
+            .with_filter(TextureFilter::Linear)
+            .with_format(TextureFormat::RGBA8R)
+            .with_mipmaps(false);
+        let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();
         Self {
             shader,
             egui_font_texture,

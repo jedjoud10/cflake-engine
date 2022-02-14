@@ -13,14 +13,10 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
-use glutin::{ContextCurrentState, NotCurrent};
-use std::{
-    ffi::c_void,
-    ptr::null_mut,
-    sync::{
-        atomic::{AtomicBool, AtomicPtr, Ordering},
-        Arc, Barrier, Mutex, RwLock,
-    },
+use glutin::NotCurrent;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Barrier, Mutex, RwLock,
 };
 
 use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
@@ -202,16 +198,16 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     use assets::assetc::load;
 
     // Create the default missing texture
-    let missing = pipec::construct::<Texture>(pipeline, load("defaults\\textures\\missing_texture.png", Texture::default().set_mipmaps(true)).unwrap()).unwrap();
+    let missing = pipec::construct::<Texture>(pipeline, load("defaults\\textures\\missing_texture.png", Texture::default().with_mipmaps(true)).unwrap()).unwrap();
 
     // Create the default white texture
     let white = pipec::construct(
         pipeline,
         Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .set_bytes(vec![255, 255, 255, 255])
-            .set_mipmaps(true),
+            .with_dimensions(TextureType::Texture2D(1, 1))
+            .with_filter(TextureFilter::Linear)
+            .with_bytes(vec![255, 255, 255, 255])
+            .with_mipmaps(true),
     )
     .unwrap();
 
@@ -219,10 +215,10 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let black = pipec::construct(
         pipeline,
         Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .set_bytes(vec![0, 0, 0, 255])
-            .set_mipmaps(true),
+            .with_dimensions(TextureType::Texture2D(1, 1))
+            .with_filter(TextureFilter::Linear)
+            .with_bytes(vec![0, 0, 0, 255])
+            .with_mipmaps(true),
     )
     .unwrap();
 
@@ -230,10 +226,10 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let normals = pipec::construct(
         pipeline,
         Texture::default()
-            .set_dimensions(TextureType::Texture2D(1, 1))
-            .set_filter(TextureFilter::Linear)
-            .set_bytes(vec![127, 127, 255, 255])
-            .set_mipmaps(true),
+            .with_dimensions(TextureType::Texture2D(1, 1))
+            .with_filter(TextureFilter::Linear)
+            .with_bytes(vec![127, 127, 255, 255])
+            .with_mipmaps(true),
     )
     .unwrap();
 
@@ -331,7 +327,8 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
 
             let mut pipeline_ = pipeline.write().unwrap();
             // Setup the window
-            pipeline_.window.window = Some(window);
+            *pipeline_.window.pixel_per_point.lock().unwrap() = window.scale_factor();
+            pipeline_.window.inner = Some(window);
 
             // Load the default objects
             pipeline_.defaults = Some(load_defaults(&pipeline_));

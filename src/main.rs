@@ -34,12 +34,12 @@ fn init(world: &mut core::World) {
     // Create it's material
     let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png")
         .unwrap()
-        .set_mipmaps(true);
+        .with_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(&pipeline, texture).unwrap();
 
     let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_normal.png")
         .unwrap()
-        .set_mipmaps(true);
+        .with_mipmaps(true);
     let texture2 = rendering::pipeline::pipec::construct(&pipeline, texture2).unwrap();
 
     let material = rendering::basics::material::Material::default()
@@ -50,8 +50,8 @@ fn init(world: &mut core::World) {
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Create a simple cube
-    for x in 0..1 {
-        for y in 0..1 {
+    for _x in 0..1 {
+        for _y in 0..1 {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
@@ -99,12 +99,12 @@ fn init(world: &mut core::World) {
     let texture_norm_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_nor_gl_2k.jpg").unwrap();
     let diffuse = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
         .unwrap()
-        .set_mipmaps(true)
-        .set_filter(rendering::basics::texture::TextureFilter::Linear);
+        .with_mipmaps(true)
+        .with_filter(rendering::basics::texture::TextureFilter::Linear);
     let normals = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3])
         .unwrap()
-        .set_mipmaps(true)
-        .set_filter(rendering::basics::texture::TextureFilter::Linear);
+        .with_mipmaps(true)
+        .with_filter(rendering::basics::texture::TextureFilter::Linear);
 
     let diffuse = rendering::pipeline::pipec::construct(&pipeline, diffuse).unwrap();
     let normals = rendering::pipeline::pipec::construct(&pipeline, normals).unwrap();

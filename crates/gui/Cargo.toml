@@ -7,4 +7,7 @@ edition = "2021"
 
 [dependencies]
 rendering = { path = "../rendering" }
-egui = "0.13.1"
+assets = { path = "../assets" }
+math = { path = "../math" }
+egui = "0.16.1"
+egui-winit = "0.16.0"

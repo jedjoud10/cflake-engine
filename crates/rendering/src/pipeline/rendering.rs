@@ -119,20 +119,20 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(pipeline, Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB16R)).unwrap();
+            self.diffuse_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB16R)).unwrap();
             // Create the emissive render texture
-            self.emissive_texture = pipec::construct(pipeline, Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F)).unwrap();
+            self.emissive_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
             // Create the normals render texture
-            self.normals_texture = pipec::construct(pipeline, Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB8RS)).unwrap();
+            self.normals_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8RS)).unwrap();
             // Create the position render texture
-            self.position_texture = pipec::construct(pipeline, Texture::default().set_dimensions(dims).set_format(TextureFormat::RGB32F)).unwrap();
+            self.position_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
             // Create the depth render texture
             self.depth_texture = pipec::construct(
                 pipeline,
                 Texture::default()
-                    .set_dimensions(dims)
-                    .set_format(TextureFormat::DepthComponent32)
-                    .set_data_type(DataType::F32),
+                    .with_dimensions(dims)
+                    .with_format(TextureFormat::DepthComponent32)
+                    .with_data_type(DataType::F32),
             )
             .unwrap();
 
@@ -173,7 +173,7 @@ impl PipelineRenderer {
             pipeline,
             assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
                 .unwrap()
-                .set_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
+                .with_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
         )
         .unwrap();
         /* #endregion */

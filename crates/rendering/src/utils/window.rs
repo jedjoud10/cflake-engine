@@ -1,7 +1,4 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use std::sync::Mutex;
 
 use glutin::window::Fullscreen;
 
@@ -11,14 +8,16 @@ pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 // A window class to organize things
 pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
-    pub window: Option<glutin::window::Window>,
+    pub inner: Option<glutin::window::Window>,
+    pub pixel_per_point: Mutex<f64>,
 }
 
 impl Default for Window {
     fn default() -> Self {
         Self {
             dimensions: DEFAULT_WINDOW_SIZE,
-            window: Default::default(),
+            inner: Default::default(),
+            pixel_per_point: Default::default(),
         }
     }
 }
@@ -31,9 +30,9 @@ impl Window {
         if !others::on_main_thread() {
             panic!("We cannot update the window settings if we are not on the main thead!");
         }
-        let window = self.window.as_ref().unwrap();
+        let window = self.inner.as_ref().unwrap();
         if fullscreen {
-            let vm = window.primary_monitor().unwrap().video_modes().nth(0).unwrap();
+            let vm = window.primary_monitor().unwrap().video_modes().next().unwrap();
             window.set_fullscreen(Some(Fullscreen::Exclusive(vm)));
         } else {
             window.set_fullscreen(None);

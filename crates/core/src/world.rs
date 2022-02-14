@@ -6,10 +6,11 @@ use std::sync::Arc;
 impl World {
     // Create a new world
     pub fn new(settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
+        let gui = gui::GUIManager::new(&pipeline.read());
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
-            gui: gui::GUIManager::default(),
+            gui,
             ecs: ecs::ECSManager::<Self>::default(),
             globals: Default::default(),
             io,
@@ -31,6 +32,14 @@ impl World {
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+        // Handle GUI begin frame
+        {
+            let pipeline = self.pipeline.read();
+            let window = &pipeline.window;
+            self.gui.begin_frame(window.inner.as_ref().unwrap());
+        }
+
+
         // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
         let handler = self.pipeline.handler.as_ref().unwrap().lock().unwrap();
@@ -68,6 +77,9 @@ impl World {
             let handler = &self.pipeline.handler.as_ref().unwrap().lock().unwrap();
             handler.ebarrier.wait();
         }
+
+        // Handle GUI end frame
+        self.gui.end_frame();
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

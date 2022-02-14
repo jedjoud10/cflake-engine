@@ -28,10 +28,10 @@ impl Asset for Texture {
 
         // Return a texture with the default parameters
         let texture = self
-            .set_bytes(bytes)
-            .set_dimensions(TextureType::Texture2D(width, height))
-            .set_format(TextureFormat::RGBA8R)
-            .set_data_type(DataType::U8);
+            .with_bytes(bytes)
+            .with_dimensions(TextureType::Texture2D(width, height))
+            .with_format(TextureFormat::RGBA8R)
+            .with_data_type(DataType::U8);
         Some(texture)
     }
 }
