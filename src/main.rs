@@ -5,6 +5,7 @@ fn main() {
 }
 fn preload_assets() {
     // -----Pre-load the game assets here-----
+    assets::preload_asset!(".\\resources\\user\\models\\untitled.mdl3d");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
     assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
     assets::preload_asset!(".\\resources\\user\\textures\\forrest_ground_01_diff_2k.jpg");
@@ -127,5 +128,28 @@ fn init(world: &mut core::World) {
         .set_heuristic(heuristic)
         .set_material(material);
     //.set_material(material);
-    world.globals.add_global(terrain).unwrap();
+    //world.globals.add_global(terrain).unwrap();
+    let pipeline = pipeline_.read();
+
+    // Sponza
+    let mut group = ecs::entity::ComponentLinkingGroup::default();
+    let entity = ecs::entity::Entity::default();
+    let id = ecs::entity::EntityID::new(&mut world.ecs);
+    let transform = defaults::components::Transform::default()
+        .with_rotation(veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, -90f32.to_radians()))
+        .with_scale(veclib::vec3(0.1, 0.1, 0.1));
+    let matrix = transform.calculate_matrix();
+    group.link::<defaults::components::Transform>(transform).unwrap();
+    group.link_default::<defaults::components::Physics>().unwrap();
+
+    // Create it's renderer
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("user\\models\\untitled.mdl3d").unwrap();
+    let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
+    let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::DEFAULT)
+        .with_model(model_id)
+        .with_matrix(matrix);
+    let renderer = defaults::components::Renderer::new(renderer);
+    group.link(renderer).unwrap();
+    // Add the sponza model
+    world.ecs.add_entity(entity, id, group).unwrap();
 }

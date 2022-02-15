@@ -6,7 +6,7 @@ use std::sync::Arc;
 impl World {
     // Create a new world
     pub fn new(settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
-        let gui = gui::GUIManager::new(&pipeline.read());
+        let gui = gui::GUIManager::new(&pipeline);
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
