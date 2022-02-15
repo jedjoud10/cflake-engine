@@ -198,9 +198,15 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     use assets::assetc::load;
 
     // Create the default missing texture
-    let missing = pipec::construct::<Texture>(pipeline, load("defaults\\textures\\missing_texture.png", Texture::default()
-        .with_filter(TextureFilter::Nearest)
-        .with_mipmaps(true)).unwrap()).unwrap();
+    let missing = pipec::construct::<Texture>(
+        pipeline,
+        load(
+            "defaults\\textures\\missing_texture.png",
+            Texture::default().with_filter(TextureFilter::Nearest).with_mipmaps(true),
+        )
+        .unwrap(),
+    )
+    .unwrap();
 
     // Create the default white texture
     let white = pipec::construct(
@@ -242,10 +248,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let shader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
 
     // Create the default material
-    let material = pipec::construct(pipeline, Material::default()
-        .with_diffuse(missing)
-        .with_uv_scale(veclib::Vector2::ONE * 0.5)
-    ).unwrap();
+    let material = pipec::construct(pipeline, Material::default().with_diffuse(missing).with_uv_scale(veclib::Vector2::ONE * 0.5)).unwrap();
 
     // Create the default model
     let model = pipec::construct(pipeline, Model::default()).unwrap();

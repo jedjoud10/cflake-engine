@@ -104,7 +104,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
 fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
     // Get the pipeline without angering the borrow checker
-    let pipeline =  world.pipeline.read();
+    let pipeline = world.pipeline.read();
 
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {

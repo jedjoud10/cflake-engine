@@ -1,6 +1,9 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
-use egui::{epaint::{ClippedShape, Mesh}, ClippedMesh, Color32, CtxRef, Output, FontImage, Rect};
+use egui::{
+    epaint::{ClippedShape, Mesh},
+    ClippedMesh, Color32, CtxRef, FontImage, Output, Rect,
+};
 use rendering::{
     basics::{
         shader::{Shader, ShaderSettings},
@@ -42,7 +45,7 @@ impl Painter {
             .with_format(TextureFormat::RGBA8R)
             .with_data_type(DataType::U8)
             .with_mipmaps(false);
-        let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();        
+        let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();
         Self {
             shader,
             egui_font_texture,
@@ -68,11 +71,11 @@ impl Painter {
 
         // Since all the elements use the same shader, we can simply set it once
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shader));
-        let uniforms = Uniforms::using_mut_pipeline(&settings, pipeline);        
-        // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature 
+        let uniforms = Uniforms::using_mut_pipeline(&settings, pipeline);
+        // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature
         uniforms.set_texture("u_sampler", self.egui_font_texture, 0);
 
-        // OpenGL settings 
+        // OpenGL settings
         unsafe {
             gl::Enable(gl::FRAMEBUFFER_SRGB);
             gl::Enable(gl::BLEND);
@@ -109,7 +112,6 @@ impl Painter {
             bytes.push(color.a());
         }
 
-        
         // Update the OpenGL version
         let gl_tex = pipeline.textures.get_mut(self.egui_font_texture).unwrap();
         let dimensions = TextureType::Texture2D(texture.width as u16, texture.height as u16);

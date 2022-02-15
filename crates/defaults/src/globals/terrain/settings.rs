@@ -1,12 +1,15 @@
-use main::{math::octrees::HeuristicSettings, rendering::{object::ObjectID, basics::material::Material}};
+use main::{
+    math::octrees::HeuristicSettings,
+    rendering::{basics::material::Material, object::ObjectID},
+};
 
 // Terrain settings for simplicity
 pub struct TerrainSettings {
     // Voxel gen
     pub(crate) voxel_src_path: String,
-    
+
     // Octree gen
-    pub(crate) depth: u8, 
+    pub(crate) depth: u8,
     pub(crate) heuristic_settings: HeuristicSettings,
 
     // Mesh generator
@@ -15,11 +18,11 @@ pub struct TerrainSettings {
 
 impl Default for TerrainSettings {
     fn default() -> Self {
-        Self { 
+        Self {
             voxel_src_path: main::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
             depth: 4,
             heuristic_settings: Default::default(),
-            material: Default::default()
+            material: Default::default(),
         }
     }
 }

@@ -8,6 +8,7 @@ use std::{
 };
 
 use ahash::AHashMap;
+use gl::types::GLuint;
 
 use crate::{
     basics::{
@@ -142,7 +143,7 @@ pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderI
 }
 
 // Query some information about a shader, and then return
-pub(crate) fn query_shader_info(program: u32, settings: ShaderInfoQuerySettings) -> ShaderInfo {
+pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettings) -> ShaderInfo {
     unsafe {
         gl::Flush();
         // Get the query info

@@ -12,11 +12,11 @@ uniform vec3 tint;
 uniform float emissive_strength;
 uniform float normals_strength;
 in vec3 m_position;
-flat in vec3 m_normal;
-flat in vec4 m_tangent;
+in vec3 m_normal;
+in vec4 m_tangent;
 in vec2 m_uv;
 in vec3 m_color;
-flat in mat3 tbn;
+in mat3 tbn;
 void main() {
 	vec4 texture_vals = texture(diffuse_tex, (m_uv) * uv_scale); 
 	vec4 emissive_vals = texture(emissive_tex, (m_uv) * uv_scale); 

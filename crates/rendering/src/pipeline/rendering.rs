@@ -57,10 +57,12 @@ impl PipelineRenderer {
         let camera = &pipeline.camera;
         let material = pipeline.materials.get(renderer.material);
         // Load the default material if we don't have a valid one
-        let material = material.or_else(|| {
-            let id = pipeline.defaults.as_ref().unwrap().material;
-            Some(pipeline.materials.get(id).unwrap())
-        }).unwrap();
+        let material = material
+            .or_else(|| {
+                let id = pipeline.defaults.as_ref().unwrap().material;
+                Some(pipeline.materials.get(id).unwrap())
+            })
+            .unwrap();
 
         // The shader will always be valid
         let shader = pipeline.shaders.get(material.shader).ok_or(RenderingError)?;

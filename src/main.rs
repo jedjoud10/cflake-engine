@@ -121,13 +121,11 @@ fn init(world: &mut core::World) {
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
-    let terrain_settings =  defaults::globals::TerrainSettings::default()
+    let terrain_settings = defaults::globals::TerrainSettings::default()
         .with_depth(4)
         .with_material(material)
         .with_heuristic(heuristic)
         .with_voxel_src("user\\shaders\\voxel_terrain\\voxel.func.glsl");
-    /*
-    let terrain = defaults::globals::Terrain::new(terrain_settings, pipeline);
+    let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();
-    */
 }

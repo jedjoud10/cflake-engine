@@ -1,5 +1,8 @@
 use gl::types::GLuint;
-use rendering::{advanced::raw::dynamic_buffer::DynamicRawBuffer, utils::{UsageType, AccessType::Read, UpdateFrequency::Stream}};
+use rendering::{
+    advanced::raw::dynamic_buffer::DynamicRawBuffer,
+    utils::{AccessType::Read, UpdateFrequency::Stream, UsageType},
+};
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
 pub(crate) struct Buffers {
@@ -23,10 +26,7 @@ impl Buffers {
         }
 
         // Also generate the buffers
-        const USAGE_TYPE: UsageType = UsageType {
-            access: Read,
-            frequency: Stream
-        };
+        const USAGE_TYPE: UsageType = UsageType { access: Read, frequency: Stream };
         // Dynamic raw buffers
         let indices = DynamicRawBuffer::<u32>::new(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE);
         let positions = DynamicRawBuffer::<veclib::Vector2<f32>>::new(gl::ARRAY_BUFFER, USAGE_TYPE);

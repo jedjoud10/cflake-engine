@@ -22,10 +22,3 @@ pub struct ChunksHandler {
     // We also store the Entity ID of the chunk whom we must create the mesh for
     pub mesh_gen_chunk_id: Option<EntityID>,
 }
-
-impl ChunksHandler {
-    // Create a new chunks handler using some default values
-    pub fn new(octree: DiffOctree) -> Self {
-        Self { octree, ..Default::default() }
-    }
-}

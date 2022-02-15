@@ -1,5 +1,5 @@
 use crate::painter::Painter;
-use rendering::pipeline::{Pipeline, PipelineContext, pipec};
+use rendering::pipeline::{pipec, Pipeline, PipelineContext};
 use std::sync::{Arc, Mutex};
 
 // A simple manager
@@ -25,7 +25,11 @@ impl GUIManager {
         pipec::flush_and_execute(context).unwrap();
 
         // Extract
-        let painter = if let Ok(ok) = Arc::try_unwrap(arc) { ok.into_inner().unwrap().unwrap() } else { panic!() };
+        let painter = if let Ok(ok) = Arc::try_unwrap(arc) {
+            ok.into_inner().unwrap().unwrap()
+        } else {
+            panic!()
+        };
         Self {
             egui: Default::default(),
             state: egui_winit::State::from_pixels_per_point(1.0),

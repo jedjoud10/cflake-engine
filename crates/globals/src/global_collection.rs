@@ -1,9 +1,9 @@
-use std::any::TypeId;
-use ahash::AHashMap;
 use crate::{
     error::GlobalError,
     global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
 };
+use ahash::AHashMap;
+use std::any::TypeId;
 
 // A struct that will be stored in the world that will contain some globals
 #[derive(Default)]

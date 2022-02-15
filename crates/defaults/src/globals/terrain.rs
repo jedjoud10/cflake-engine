@@ -1,15 +1,10 @@
-use main::{
-    globals::Global,
-    math::octrees::{DiffOctree, HeuristicSettings},
-    rendering::{basics::material::Material, object::ObjectID, pipeline::PipelineContext},
-    terrain::CHUNK_SIZE,
-};
+use main::{globals::Global, math::octrees::DiffOctree, rendering::pipeline::Pipeline, terrain::CHUNK_SIZE};
 
 mod chunks;
-mod voxel_generation;
 mod settings;
-pub use settings::*;
+mod voxel_generation;
 pub use chunks::ChunksHandler;
+pub use settings::*;
 pub use voxel_generation::VoxelGenerator;
 
 #[derive(Global)]
@@ -19,18 +14,18 @@ pub struct Terrain {
     pub chunk_handler: ChunksHandler,
     // Handler for our voxel generation
     pub generator: VoxelGenerator,
-    
-    // Save the terrain settings for when we actually initialize the voxel generator
-    settings: TerrainSettings,
 }
 
 impl Terrain {
     // Create a new terrain global
-    pub fn new(settings: TerrainSettings, pipeline: &PipelineContext) -> Self {
+    pub fn new(settings: TerrainSettings, pipeline: &Pipeline) -> Self {
         Self {
-            chunk_handler: Default::default(),
+            chunk_handler: ChunksHandler {
+                octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
+                material: settings.material,
+                ..Default::default()
+            },
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
-            settings,
         }
-    }    
+    }
 }
