@@ -113,10 +113,12 @@ impl Painter {
         }
 
         // Update the OpenGL version
-        let gl_tex = pipeline.textures.get_mut(self.egui_font_texture).unwrap();
-        let dimensions = TextureType::Texture2D(texture.width as u16, texture.height as u16);
-        gl_tex.update_size_fill(dimensions, bytes).unwrap();
-        // Don't forget to update the version
-        self.egui_font_texture_version = Some(texture.version);
+        let gl_tex = pipeline.textures.get_mut(self.egui_font_texture);
+        if let Some(gl_tex) = gl_tex {
+            let dimensions = TextureType::Texture2D(texture.width as u16, texture.height as u16);
+            gl_tex.update_size_fill(dimensions, bytes).unwrap();
+            // Don't forget to update the version
+            self.egui_font_texture_version = Some(texture.version);
+        } else { self.egui_font_texture_version = None; }
     }
 }

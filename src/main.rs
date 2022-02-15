@@ -116,7 +116,7 @@ fn init(world: &mut core::World) {
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
     let heuristic = math::octrees::HeuristicSettings::new(|node, target| {
         let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-        dist < 1.2
+        dist < 1.2 || node.depth == 1
     });
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
