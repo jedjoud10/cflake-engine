@@ -93,7 +93,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Flush everything and execute all the tasks
         task_receiver.flush(&mut world);
     }
-    let mut sleeper = LoopHelper::builder().build_with_target_rate(340.0);
+    let mut sleeper = LoopHelper::builder().build_with_target_rate(120.0);
 
     // Main loop
     event_loop.run(move |event, _, control_flow| {

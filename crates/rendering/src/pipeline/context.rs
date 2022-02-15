@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use super::{Pipeline, PipelineHandler};
 
 // A pipeline context that we can share to the main thread
-#[derive(Clone)]
 pub struct PipelineContext {
     // The pipeline
     pub(crate) pipeline: Arc<RwLock<Pipeline>>,

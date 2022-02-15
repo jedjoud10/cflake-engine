@@ -9,8 +9,7 @@ use main::{
 fn run(world: &mut World, data: EventKey) {
     let mut query = data.get_query().unwrap();
     // Get the pipeline without angering the borrow checker
-    let pipeline_ = world.pipeline.clone();
-    let pipeline = pipeline_.read();
+    let pipeline = world.pipeline.read();
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh

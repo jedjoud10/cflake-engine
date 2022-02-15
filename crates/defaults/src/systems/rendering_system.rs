@@ -34,7 +34,7 @@ fn run(world: &mut World, data: EventKey) {
     pipec::update_callback(&pipeline, move |pipeline, _| {
         // Update the sun's light source, if possible
         if let Some(light) = pipeline.light_sources.get_mut(id) {
-            let quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::Y, time as f32 * 0.02 - 1.0) * veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, -90f32.to_radians());
+            let quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, -time as f32 * 0.02 - 1.0);
             light.strength = 1.2;
             *light._type.as_directional_mut().unwrap() = quat;
         }

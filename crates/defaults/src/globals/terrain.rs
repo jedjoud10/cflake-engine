@@ -7,6 +7,8 @@ use main::{
 
 mod chunks;
 mod voxel_generation;
+mod settings;
+pub use settings::*;
 pub use chunks::ChunksHandler;
 pub use voxel_generation::VoxelGenerator;
 
@@ -17,28 +19,18 @@ pub struct Terrain {
     pub chunk_handler: ChunksHandler,
     // Handler for our voxel generation
     pub generator: VoxelGenerator,
+    
+    // Save the terrain settings for when we actually initialize the voxel generator
+    settings: TerrainSettings,
 }
 
 impl Terrain {
-    // Create a new terrain component
-    pub fn new(voxel_src_path: &str, octree_depth: u8, pipeline_context: &PipelineContext) -> Self {
-        // Create a new octree
-        let octree = DiffOctree::new(octree_depth, (CHUNK_SIZE) as u64, HeuristicSettings::default());
-
-        println!("Terrain component init done!");
+    // Create a new terrain global
+    pub fn new(settings: TerrainSettings, pipeline: &PipelineContext) -> Self {
         Self {
-            chunk_handler: ChunksHandler::new(octree),
-            generator: VoxelGenerator::new(voxel_src_path, pipeline_context),
+            chunk_handler: Default::default(),
+            generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
+            settings,
         }
-    }
-    // Generate the terrain with a specific material
-    pub fn set_material(mut self, material: ObjectID<Material>) -> Self {
-        self.chunk_handler.material = material;
-        self
-    }
-    // Generate the terrain with a specific octree heuristic settings
-    pub fn set_heuristic(mut self, settings: HeuristicSettings) -> Self {
-        self.chunk_handler.octree.update_heuristic(settings);
-        self
-    }
+    }    
 }

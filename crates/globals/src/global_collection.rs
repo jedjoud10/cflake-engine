@@ -1,7 +1,5 @@
-use std::{any::TypeId, cell::UnsafeCell};
-
+use std::any::TypeId;
 use ahash::AHashMap;
-
 use crate::{
     error::GlobalError,
     global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
@@ -10,7 +8,7 @@ use crate::{
 // A struct that will be stored in the world that will contain some globals
 #[derive(Default)]
 pub struct GlobalCollection {
-    pub(crate) globals: AHashMap<TypeId, UnsafeCell<EnclosedGlobalComponent>>,
+    pub(crate) globals: AHashMap<TypeId, EnclosedGlobalComponent>,
 }
 
 impl GlobalCollection {
@@ -21,7 +19,7 @@ impl GlobalCollection {
     pub fn add_global<U: Global + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
         // UnsafeCell moment
         let boxed = Box::new(sc);
-        self.globals.insert(TypeId::of::<U>(), UnsafeCell::new(boxed));
+        self.globals.insert(TypeId::of::<U>(), boxed);
         Ok(())
     }
     // Get a reference to a specific global component
@@ -33,7 +31,7 @@ impl GlobalCollection {
             .get(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = unsafe { &*boxed.get() }.as_ref();
+        let ptr = &*boxed.as_ref();
         let global = crate::registry::cast_global::<U>(ptr)?;
         Ok(GlobalReadGuard::new(global))
     }
@@ -44,7 +42,7 @@ impl GlobalCollection {
             .get_mut(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = unsafe { &mut *boxed.get() }.as_mut();
+        let ptr = &mut *boxed.as_mut();
         let global = crate::registry::cast_global_mut::<U>(ptr)?;
         Ok(GlobalWriteGuard::new(global))
     }

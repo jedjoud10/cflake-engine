@@ -4,12 +4,12 @@ use rendering::{advanced::raw::dynamic_buffer::DynamicRawBuffer, utils::{UsageTy
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
 pub(crate) struct Buffers {
     // We create a single VAO and update the buffers every time we render, sounds pretty inefficient but it works
-    pub(crate) vao: GLuint,
+    vao: GLuint,
 
     // No optimizations yet
-    pub(crate) indices: DynamicRawBuffer<u32>,
-    pub(crate) positions: DynamicRawBuffer<veclib::Vector2<f32>>,
-    pub(crate) uvs: DynamicRawBuffer<veclib::Vector2<f32>>,
+    indices: DynamicRawBuffer<u32>,
+    positions: DynamicRawBuffer<veclib::Vector2<f32>>,
+    uvs: DynamicRawBuffer<veclib::Vector2<f32>>,
 }
 
 impl Buffers {
