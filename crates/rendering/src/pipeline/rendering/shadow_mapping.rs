@@ -74,7 +74,7 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 400.0;
+        const DIMS: f32 = 200.0;
         const NEAR: f32 = -3000.0;
         const FAR: f32 = 3000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);

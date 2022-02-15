@@ -66,7 +66,7 @@ fn init(world: &mut core::World) {
             // Create it's renderer
             let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::DEFAULT)
                 .with_model(model_id)
-                .with_material(material)
+                //.with_material(material)
                 .with_matrix(matrix);
             let renderer = defaults::components::Renderer::new(renderer);
             group.link(renderer).unwrap();
@@ -145,8 +145,12 @@ fn init(world: &mut core::World) {
     // Create it's renderer
     let model = assets::assetc::dload::<rendering::basics::model::Model>("user\\models\\untitled.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
+    let material = rendering::basics::material::Material::default()
+        .with_diffuse(pipeline.defaults.as_ref().unwrap().white);
+    let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
     let renderer = rendering::basics::renderer::Renderer::new(rendering::basics::renderer::RendererFlags::DEFAULT)
         .with_model(model_id)
+        .with_material(material)
         .with_matrix(matrix);
     let renderer = defaults::components::Renderer::new(renderer);
     group.link(renderer).unwrap();

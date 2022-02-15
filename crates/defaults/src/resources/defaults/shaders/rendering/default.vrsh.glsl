@@ -6,12 +6,12 @@ layout(location = 3) in vec2 model_uv;
 layout(location = 4) in vec3 model_color;
 uniform mat4 project_view_matrix;
 uniform mat4 model_matrix;
-out vec3 m_normal;
-out vec4 m_tangents;
+flat out vec3 m_normal;
+flat out vec4 m_tangents;
 out vec2 m_uv;
 out vec3 m_position;
 out vec3 m_color;
-out mat3 tbn;
+flat out mat3 tbn;
 
 void main() {
 	vec4 model_matrix_pos = (model_matrix * vec4(model_pos, 1.0));
