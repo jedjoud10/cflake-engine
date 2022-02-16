@@ -42,7 +42,7 @@ impl Buffers {
             gl::EnableVertexAttribArray(1);
             gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as *const c_void);
             gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<u8>() * 4) as isize as *const c_void);
+            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as *const c_void);
 
             // Unbind
             gl::BindVertexArray(0);

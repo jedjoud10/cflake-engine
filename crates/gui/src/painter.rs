@@ -68,7 +68,6 @@ impl Painter {
         let clip_max: veclib::Vector2<i32> = clip_max.round().into();
 
         //scissor Y coordinate is from the bottom
-        /*
         unsafe {
             gl::Scissor(
                 clip_min.x,
@@ -77,7 +76,6 @@ impl Painter {
                 clip_max.y - clip_min.y,
             );
         }
-        */
 
         // Gotta fil the buffers with new data, then we can draw
         self.buffers.fill_buffers(mesh.vertices, mesh.indices);
@@ -108,7 +106,7 @@ impl Painter {
             gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
             gl::Disable(gl::CULL_FACE);
             gl::Disable(gl::DEPTH_TEST);
-            //gl::Enable(gl::SCISSOR_TEST);
+            gl::Enable(gl::SCISSOR_TEST);
         }
 
         let clipped_meshes = std::mem::take(&mut self.clipped_meshes);
@@ -123,7 +121,7 @@ impl Painter {
             gl::Disable(gl::BLEND);
             gl::Enable(gl::CULL_FACE);
             gl::Enable(gl::DEPTH_TEST);
-            //gl::Disable(gl::SCISSOR_TEST);
+            gl::Disable(gl::SCISSOR_TEST);
         }
     }
     // Upload the egui font texture and update it's OpenGL counterpart if it changed

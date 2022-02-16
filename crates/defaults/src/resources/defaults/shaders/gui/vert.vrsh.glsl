@@ -26,6 +26,6 @@ void main() {
                       0.0,
                       1.0);
     // egui encodes vertex colors in gamma spaces, so we must decode the colors here:
-    v_rgba = vec4(1.0);
+    v_rgba = linear_from_srgba(a_srgba);
     v_tc = a_tc;
 }

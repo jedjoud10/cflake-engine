@@ -163,10 +163,6 @@ fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut
         DeviceEvent::Key(input) => {
             if let Some(virtual_keycode) = input.virtual_keycode {
                 world.input.receive_key_event(virtual_keycode, input.state);
-                // Exit when we press the escape key
-                if let glutin::event::VirtualKeyCode::Escape = virtual_keycode {
-                    *control_flow = ControlFlow::Exit;
-                }
             }
         }
         _ => (),

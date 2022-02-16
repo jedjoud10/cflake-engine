@@ -68,7 +68,10 @@ impl World {
         self.ecs.finish_update();
     }
     // End frame update
-    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {        
+        // Handle GUI end frame
+        self.gui.end_frame();
+
         // End the frame
         {
             let delta = self.time.delta as f32;
@@ -76,9 +79,6 @@ impl World {
             let handler = &self.pipeline.handler.as_ref().unwrap().lock().unwrap();
             handler.ebarrier.wait();
         }
-
-        // Handle GUI end frame
-        self.gui.end_frame();
     }
     // We must destroy the world
     pub fn destroy(&mut self) {
