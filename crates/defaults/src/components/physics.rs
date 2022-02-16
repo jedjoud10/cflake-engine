@@ -1,11 +1,16 @@
-use ecs::{Component, ComponentID, ComponentInternal};
-use physics::PhysicsObject;
+use main::ecs::component::Component;
+use main::physics::PhysicsObject;
 
 // A physics component
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Component)]
 pub struct Physics {
-    pub object: PhysicsObject,
+    pub(crate) object: PhysicsObject,
 }
 
-// Main traits implemented
-ecs::impl_component!(Physics);
+// Influence the internal physics object through here
+impl Physics {
+    // Update the physic object's velocity
+    pub fn set_velocity(&mut self, vel: veclib::Vector3<f32>) {
+        self.object.set_velocity(vel);
+    }
+}

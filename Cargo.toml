@@ -1,35 +1,32 @@
 [package]
 name = "cflake-engine"
 version = "0.1.2"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+handler = { path = "crates\\handler" }
 
 [workspace]
 members = [
-    "crates\\dev_game",
-    "crates\\main",
-    "crates\\world_data",
-    "crates\\debug",
-    "crates\\core",
-    "crates\\systems",
-    "crates\\ecs",
-    "crates\\math",
-    "crates\\physics",
-    "crates\\rendering_base",
-    "crates\\rendering",
-    "crates\\input",
-    "crates\\defaults",
-    "crates\\others",
     "crates\\assets",
-    "crates\\terrain_interpreter",
-    "crates\\terrain",
-    "crates\\ui",
+    "crates\\core",
+    "crates\\defaults",
+    "crates\\ecs",    
+    "crates\\handler",
+    "crates\\gui",
+    "crates\\globals",
+    "crates\\input",
     "crates\\io",
-    "crates\\fonts",
-    "crates\\font_generator"
+    "crates\\main",
+    "crates\\math",
+    "crates\\network",
+    "crates\\others",
+    "crates\\physics",
+    "crates\\rendering",
+    "crates\\terrain",
 ]
 
-
+[profile.dev]
+opt-level = 3

@@ -1,26 +1,37 @@
-use ecs::{Entity, FilteredLinkedComponents};
-use systems::{System, SystemData, SystemEventType};
-use world_data::WorldData;
+use main::{core::World, ecs::event::EventKey};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
-use crate::components;
+// The physics system update loop
+fn run(world: &mut World, data: EventKey) {
+    let mut query = data.get_query().unwrap();
+    // Get the world's delta time
+    let delta = world.time.delta as f32;
 
-// Update the entities
-pub fn entity_update(_system_data: &mut SystemData, _entity: &Entity, components: &FilteredLinkedComponents, data: &mut WorldData) {
-    // Update the physics
-    let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
-    let (mut position, mut rotation) = (transform.position, transform.rotation);
-    let physics_object = components.get_component_mut::<components::Physics>(data.component_manager).unwrap();
-    let physics_object = &mut physics_object.object;
-    physics_object.update(&mut position, &mut rotation, data.time_manager.delta_time as f32);
-    let transform = components.get_component_mut::<components::Transform>(data.component_manager).unwrap();
-    transform.position = position;
-    transform.rotation = rotation;
+    // For each physics object, we must update the internal physics values and apply them to our transform
+    query.lock().par_iter_mut().for_each(|(_, components)| {
+        // For each physics object, we want to take the transform's position as as a starting point
+        let transform = components.get_component::<crate::components::Transform>().unwrap();
+        let (position, rotation) = (transform.position, transform.rotation);
+        let mut physics = components.get_component_mut::<crate::components::Physics>().unwrap();
+        let object = &mut physics.object;
+        object.set_position(position);
+        object.set_rotation(rotation);
+        object.update(delta);
+        let (position, rotation) = (*object.get_position(), *object.get_rotation());
+        // Apply the physics' object new transform to our current transform
+        let mut transform = components.get_component_mut::<crate::components::Transform>().unwrap();
+        transform.position = position;
+        transform.rotation = rotation;
+    });
 }
 
-// Create a physics system
-pub fn system(_world_data: &mut WorldData) -> System {
-    let mut system = System::new();
-    // Attach the events
-    system.event(SystemEventType::EntityUpdate(entity_update));
-    system
+// Create the physics system
+pub fn system(world: &mut World) {
+    world
+        .ecs
+        .create_system_builder()
+        .with_run_event(run)
+        .link::<crate::components::Transform>()
+        .link::<crate::components::Physics>()
+        .build()
 }

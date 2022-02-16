@@ -1,7 +1,9 @@
 #[macro_export]
 macro_rules! preload_asset {
-    ($file:expr, $cacher:expr) => {
+    ($file:expr) => {
         let bytes = include_bytes!($file);
-        $cacher.pre_load($file, bytes).unwrap();
+        let mut cacher = $crate::globals::asset_cacher();
+        cacher.pre_load($file, bytes).unwrap();
+        drop(cacher);
     };
 }

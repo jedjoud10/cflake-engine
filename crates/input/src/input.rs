@@ -1,314 +1,122 @@
-use super::Keys;
-use std::{array::IntoIter, collections::HashMap, iter::FromIterator};
+use multimap::MultiMap;
 
-// Status of a key
-#[derive(Clone, Copy, Debug)]
-pub enum KeyStatus {
-    Released,  // The frame the key was released on
-    Held(f32), // If the key was held more than a frame
-    Pressed,   // The frame the key was pressed on
-    Nothing,   // If nothing happens in that specific frame
-}
-
-// Toggle status of a key
-#[derive(Clone, Copy, Debug)]
-pub enum ToggleKeyStatus {
-    ToggleOn,
-    ToggleOff,
-}
-
-impl Default for ToggleKeyStatus {
-    fn default() -> Self {
-        Self::ToggleOff
-    }
-}
-
-impl Default for KeyStatus {
-    fn default() -> Self {
-        Self::Nothing
-    }
-}
-
-// The type of map
-#[derive(Clone, Copy, Debug)]
-pub enum MapType {
-    Button, // You can press and release it, or even hold it
-    Toggle, // Just a toggle
-}
+use super::{Keys, State};
+use crate::{ButtonState, MapState, ToggleState};
+use std::collections::HashMap;
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
 // Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
 pub struct InputManager {
-    pub bindings: HashMap<String, i32>,
-    pub keys: HashMap<i32, (KeyStatus, ToggleKeyStatus)>,
-    scancode_cache: HashMap<Keys, i32>,
-    last_mouse_pos: (i32, i32),
-    last_mouse_scroll: f32,
-    update: bool,
+    // "debug_map" -> State: "Pressed"
+    maps: HashMap<String, (MapState, bool)>,
 
-    // Key sentence registering
-    pub full_sentence: Option<String>,
+    // "W" -> ["forward_map", "launch_map"]
+    keys: MultiMap<Keys, String>,
+
+    // Mouse
+    last_mouse_pos: veclib::Vector2<f64>,
+    last_mouse_scroll: f64,
+    // Do we accept input currently?
+    pub accepts_input: bool,
 }
 
 impl Default for InputManager {
     fn default() -> Self {
         Self {
-            bindings: Default::default(),
-            keys: Default::default(),
-            scancode_cache: Default::default(),
+            maps: Default::default(),
+            keys: MultiMap::with_capacity(180),
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
-            update: true,
-            full_sentence: None,
+            accepts_input: true,
         }
     }
 }
 
 impl InputManager {
-    // Create the key scancode cache
-    pub fn create_key_cache(&mut self) {
-        let cache: HashMap<Keys, Option<i32>> = HashMap::<Keys, Option<i32>>::from_iter(IntoIter::new([
-            (Keys::Escape, glfw::Key::get_scancode(&glfw::Key::Escape)),
-            (Keys::Enter, glfw::Key::get_scancode(&glfw::Key::Enter)),
-            (Keys::LeftShift, glfw::Key::get_scancode(&glfw::Key::LeftShift)),
-            (Keys::LeftControl, glfw::Key::get_scancode(&glfw::Key::LeftControl)),
-            (Keys::RightShift, glfw::Key::get_scancode(&glfw::Key::RightShift)),
-            (Keys::RightControl, glfw::Key::get_scancode(&glfw::Key::RightControl)),
-            (Keys::Space, glfw::Key::get_scancode(&glfw::Key::Space)),
-            (Keys::Minus, glfw::Key::get_scancode(&glfw::Key::Minus)),
-            (Keys::Period, glfw::Key::get_scancode(&glfw::Key::Period)),
-            (Keys::Comma, glfw::Key::get_scancode(&glfw::Key::Comma)),
-            (Keys::Backspace, glfw::Key::get_scancode(&glfw::Key::Backspace)),
-            (Keys::A, glfw::Key::get_scancode(&glfw::Key::A)),
-            (Keys::B, glfw::Key::get_scancode(&glfw::Key::B)),
-            (Keys::C, glfw::Key::get_scancode(&glfw::Key::C)),
-            (Keys::D, glfw::Key::get_scancode(&glfw::Key::D)),
-            (Keys::E, glfw::Key::get_scancode(&glfw::Key::E)),
-            (Keys::F, glfw::Key::get_scancode(&glfw::Key::F)),
-            (Keys::G, glfw::Key::get_scancode(&glfw::Key::G)),
-            (Keys::H, glfw::Key::get_scancode(&glfw::Key::H)),
-            (Keys::I, glfw::Key::get_scancode(&glfw::Key::I)),
-            (Keys::J, glfw::Key::get_scancode(&glfw::Key::J)),
-            (Keys::K, glfw::Key::get_scancode(&glfw::Key::K)),
-            (Keys::L, glfw::Key::get_scancode(&glfw::Key::L)),
-            (Keys::M, glfw::Key::get_scancode(&glfw::Key::M)),
-            (Keys::N, glfw::Key::get_scancode(&glfw::Key::N)),
-            (Keys::O, glfw::Key::get_scancode(&glfw::Key::O)),
-            (Keys::P, glfw::Key::get_scancode(&glfw::Key::P)),
-            (Keys::Q, glfw::Key::get_scancode(&glfw::Key::Q)),
-            (Keys::R, glfw::Key::get_scancode(&glfw::Key::R)),
-            (Keys::S, glfw::Key::get_scancode(&glfw::Key::S)),
-            (Keys::T, glfw::Key::get_scancode(&glfw::Key::T)),
-            (Keys::U, glfw::Key::get_scancode(&glfw::Key::U)),
-            (Keys::V, glfw::Key::get_scancode(&glfw::Key::V)),
-            (Keys::W, glfw::Key::get_scancode(&glfw::Key::W)),
-            (Keys::X, glfw::Key::get_scancode(&glfw::Key::X)),
-            (Keys::Y, glfw::Key::get_scancode(&glfw::Key::Y)),
-            (Keys::Z, glfw::Key::get_scancode(&glfw::Key::Z)),
-            (Keys::F1, glfw::Key::get_scancode(&glfw::Key::F1)),
-            (Keys::F2, glfw::Key::get_scancode(&glfw::Key::F2)),
-            (Keys::F3, glfw::Key::get_scancode(&glfw::Key::F3)),
-            (Keys::F4, glfw::Key::get_scancode(&glfw::Key::F4)),
-            (Keys::F5, glfw::Key::get_scancode(&glfw::Key::F5)),
-            (Keys::F6, glfw::Key::get_scancode(&glfw::Key::F6)),
-            (Keys::F7, glfw::Key::get_scancode(&glfw::Key::F7)),
-            (Keys::F8, glfw::Key::get_scancode(&glfw::Key::F8)),
-            (Keys::F9, glfw::Key::get_scancode(&glfw::Key::F9)),
-            (Keys::F10, glfw::Key::get_scancode(&glfw::Key::F10)),
-            (Keys::F11, glfw::Key::get_scancode(&glfw::Key::F11)),
-            (Keys::F12, glfw::Key::get_scancode(&glfw::Key::F12)),
-            (Keys::NUM1, glfw::Key::get_scancode(&glfw::Key::Num1)),
-            (Keys::NUM2, glfw::Key::get_scancode(&glfw::Key::Num2)),
-            (Keys::NUM3, glfw::Key::get_scancode(&glfw::Key::Num3)),
-            (Keys::NUM4, glfw::Key::get_scancode(&glfw::Key::Num4)),
-            (Keys::NUM5, glfw::Key::get_scancode(&glfw::Key::Num5)),
-            (Keys::NUM6, glfw::Key::get_scancode(&glfw::Key::Num6)),
-            (Keys::NUM7, glfw::Key::get_scancode(&glfw::Key::Num7)),
-            (Keys::NUM8, glfw::Key::get_scancode(&glfw::Key::Num8)),
-            (Keys::NUM9, glfw::Key::get_scancode(&glfw::Key::Num9)),
-            (Keys::NUM0, glfw::Key::get_scancode(&glfw::Key::Num0)),
-        ]));
-        // Unwrap each value
-        let cache = cache.iter().map(|(key, val)| (key.clone(), val.unwrap())).collect::<HashMap<Keys, i32>>();
-        self.scancode_cache = cache;
-    }
-    // Get the key scancode using the cache that we have
-    pub fn get_key_scancode(&self, key: Keys) -> Option<&i32> {
-        return self.scancode_cache.get(&key);
-    }
-    // Convert a key to it's string literal
-    pub fn convert_key_to_string(&self, key: Keys) -> String {
-        match key {
-            Keys::Space => " ",
-            Keys::Minus => "-",
-            Keys::Period => ".",
-            Keys::Comma => ",",
-            Keys::A => "a",
-            Keys::B => "b",
-            Keys::C => "c",
-            Keys::D => "d",
-            Keys::E => "e",
-            Keys::F => "f",
-            Keys::G => "g",
-            Keys::H => "h",
-            Keys::I => "i",
-            Keys::J => "j",
-            Keys::K => "k",
-            Keys::L => "l",
-            Keys::M => "m",
-            Keys::N => "n",
-            Keys::O => "o",
-            Keys::P => "p",
-            Keys::Q => "q",
-            Keys::R => "r",
-            Keys::S => "s",
-            Keys::T => "t",
-            Keys::U => "u",
-            Keys::V => "v",
-            Keys::W => "w",
-            Keys::X => "x",
-            Keys::Y => "y",
-            Keys::Z => "z",
-            Keys::NUM0 => "0",
-            Keys::NUM1 => "1",
-            Keys::NUM2 => "2",
-            Keys::NUM3 => "3",
-            Keys::NUM4 => "4",
-            Keys::NUM5 => "5",
-            Keys::NUM6 => "6",
-            Keys::NUM7 => "7",
-            Keys::NUM8 => "8",
-            Keys::NUM9 => "9",
-            _ => "",
+    // Called whenever the mouse position changes
+    pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f64>) {
+        if !self.accepts_input {
+            return;
         }
-        .to_string()
+        self.last_mouse_pos += delta;
     }
-    // Called when we recieve a new mouse event from the window (Could either be a mouse position one or a scroll one)
-    pub fn receive_mouse_event(&mut self, position: Option<(f64, f64)>, scroll: Option<f64>) {
-        if !self.update {
-            return; /* Update only when we can */
+    // Called whenever the mous scroll changes
+    pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
+        if !self.accepts_input {
+            return;
         }
-        match position {
-            Some(position) => {
-                // This is a mouse position event
-                let mouse_pos = (position.0 as i32, position.1 as i32);
-                self.last_mouse_pos = mouse_pos;
-            }
-            _ => {}
-        }
-        match scroll {
-            Some(scroll) => {
-                // This is a mouse scroll event
-                self.last_mouse_scroll += scroll as f32;
-            }
-            _ => {}
-        }
+        self.last_mouse_scroll += scroll_delta;
     }
-    // Update event fired from the world (fired after everything happens)
-    pub fn late_update(&mut self, delta_time: f32) {
-        for key in self.keys.iter_mut() {
-            match key.1 .0 {
-                KeyStatus::Released => {
-                    // Go from "Released" to "Nothing"
-                    key.1 .0 = KeyStatus::Nothing;
-                }
-                KeyStatus::Held(old_time) => {
-                    // Add delta time to the held seconds counter
-                    key.1 .0 = KeyStatus::Held(old_time + delta_time);
-                }
-                KeyStatus::Pressed => {
-                    // Go from "Pressed" to "Held"
-                    key.1 .0 = KeyStatus::Held(0.0);
-                }
+    // This should be ran at the start of every frame, before we poll any glfw events
+    pub fn late_update(&mut self, _delta_time: f32) {
+        for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
+            // Reset the map state if needed
+            *changed = false;
+            match map_state {
+                MapState::Button(button_state) => match button_state {
+                    ButtonState::Pressed => *button_state = ButtonState::Held,
+                    ButtonState::Released => *button_state = ButtonState::Nothing,
+                    _ => {}
+                },
                 _ => {}
             }
         }
     }
     // Get the accumulated mouse position
-    pub fn get_accumulated_mouse_position(&self) -> (i32, i32) {
-        self.last_mouse_pos
+    pub fn get_mouse_position(&self) -> &veclib::Vector2<f64> {
+        &self.last_mouse_pos
     }
     // Get the accumulated mouse scroll
-    pub fn get_accumulated_mouse_scroll(&self) -> f32 {
-        self.last_mouse_scroll
+    pub fn get_mouse_scroll(&self) -> &f64 {
+        &self.last_mouse_scroll
     }
-    // Start registering the keys as a sentence
-    pub fn start_keys_reg(&mut self) {
-        self.full_sentence = Some(String::new());
-        self.update = false;
-    }
-    // Check if the key registering is active
-    pub fn keys_reg_active(&self) -> bool {
-        self.full_sentence.is_some()
-    }
-    // Stop registering the keys as a sentence and return it
-    pub fn stop_keys_reg(&mut self) -> String {
-        let output = self.full_sentence.as_ref().unwrap().clone();
-        self.full_sentence = None;
-        self.update = true;
-        return output;
-    }
-    // Toggle the registering of the keys as a literal string
-    pub fn toggle_keys_reg(&mut self) -> Option<String> {
-        match self.full_sentence.clone() {
-            Some(string) => {
-                // Stop registering
-                self.stop_keys_reg();
-                return Some(string);
-            }
-            None => {
-                // Start registering
-                self.start_keys_reg();
-                return None;
-            }
-        }
-    }
-    // When we receive a key event from glfw (Always at the start of the frame)
-    pub fn receive_key_event(&mut self, key_scancode: i32, action_type: i32) {
-        // If we are in sentence registering mode, don't do anything else
-        if self.full_sentence.is_some() && action_type == 0 {
-            match self.scancode_cache.iter().find(|(_, &scancode)| scancode == key_scancode) {
-                Some(x) => {
-                    let key = x.0.clone();
-                    let mut new_string = self.full_sentence.as_ref().unwrap().clone() + &self.convert_key_to_string(key);
-                    if let Keys::Backspace = key {
-                        if new_string.len() > 0 {
-                            new_string.remove(new_string.len() - 1);
-                        }
+    // When we receive a key event from winit
+    pub fn receive_key_event(&mut self, key: Keys, state: State) -> Option<()> {
+        let maps_to_update = self.keys.get_vec(&key)?;
+        // Update each map now
+        for map_name in maps_to_update {
+            let (map, changed) = self.maps.get_mut(map_name)?;
+            *changed = true;
+            match state {
+                State::Pressed => {
+                    // We pressed the key
+                    match map {
+                        MapState::Button(button_state) => match &button_state {
+                            ButtonState::Released | ButtonState::Nothing => *button_state = ButtonState::Pressed,
+                            _ => {}
+                        },
+                        MapState::Toggle(toggle_state) => toggle_state.toggle(),
                     }
-                    // Remove the last character of the string if the scan code was the back key
-                    self.full_sentence = Some(new_string);
                 }
-                None => { /* We simply don't have they key in the cache */ }
-            };
+                State::Released => {
+                    // We released the key
+                    match map {
+                        MapState::Button(button_state) => *button_state = ButtonState::Released,
+                        _ => {}
+                    }
+                }
+            }
         }
-        // If this key does not exist in the dictionary yet, add it
-        let mut key_data = self.keys.entry(key_scancode).or_insert((KeyStatus::default(), ToggleKeyStatus::default()));
-        match action_type {
-            0 => {
-                // Set the key status
-                key_data.0 = KeyStatus::Pressed;
-                // Update the toggle on key press
-                match key_data.1 {
-                    ToggleKeyStatus::ToggleOn => key_data.1 = ToggleKeyStatus::ToggleOff,
-                    ToggleKeyStatus::ToggleOff => key_data.1 = ToggleKeyStatus::ToggleOn,
-                }
-            }
-            1 => {
-                // Set the key status
-                key_data.0 = KeyStatus::Released;
-            }
-            _ => {}
+        Some(())
+    }
+    // Binds a key to a specific mapping, making it a button
+    pub fn bind_key(&mut self, key: Keys, map_name: &str) {
+        // Check if the binding exists
+        if !self.maps.contains_key(map_name) {
+            // The binding does not exist yet, so create a new one
+            let map_name = map_name.to_string();
+            self.maps.insert(map_name.clone(), (MapState::Button(ButtonState::default()), false));
+            self.keys.insert(key, map_name);
         }
     }
-    // Binds a key to a specific mapping
-    pub fn bind_key(&mut self, key: Keys, map_name: &str, _map_type: MapType) {
+    pub fn bind_key_toggle(&mut self, key: Keys, map_name: &str) {
         // Check if the binding exists
-        let key_scancode = self.get_key_scancode(key).unwrap().clone();
-        if !self.bindings.contains_key(map_name) {
+        if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
-            self.bindings.insert(map_name.to_string(), key_scancode);
+            let map_name = map_name.to_string();
+            self.maps.insert(map_name.clone(), (MapState::Toggle(ToggleState::default()), false));
+            self.keys.insert(key, map_name);
         }
     }
 }
@@ -317,97 +125,74 @@ impl InputManager {
 impl InputManager {
     // Returns true when the map is pressed
     pub fn map_pressed(&self, name: &str) -> bool {
-        if !self.update {
-            return false; /* We are not allowed to update so return the default value */
-        }
-        // Make sure that mapping actually exists
-        if self.bindings.contains_key(&name.to_string()) {
-            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {
-                match self.keys.get(key_scancode).unwrap().0 {
-                    KeyStatus::Pressed => true,
-                    _ => false,
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Pressed = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-    // Returns true when the map is pressed, ignores the update check
-    pub fn map_pressed_uncheck(&self, name: &str) -> bool {
-        // Make sure that mapping actually exists
-        if self.bindings.contains_key(&name.to_string()) {
-            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {
-                match self.keys.get(key_scancode).unwrap().0 {
-                    KeyStatus::Pressed => true,
-                    _ => false,
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+            })
+            .is_some()
     }
     // Returns true when the map is being held
-    pub fn map_held(&self, name: &str) -> (bool, f32) {
-        if !self.update {
-            return (false, 0.0); /* We are not allowed to update so return the default value */
-        }
-        // Make sure that mapping actually exists
-        if self.bindings.contains_key(&name.to_string()) {
-            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {
-                match self.keys.get(key_scancode).unwrap().0 {
-                    KeyStatus::Held(held_seconds) => (true, held_seconds),
-                    _ => (false, 0.0),
+    pub fn map_held(&self, name: &str) -> bool {
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Held = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-            } else {
-                (false, 0.0)
-            }
-        } else {
-            (false, 0.0)
-        }
+            })
+            .is_some()
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
-        if !self.update {
-            return false; /* We are not allowed to update so return the default value */
-        }
-        if self.bindings.contains_key(&name.to_string()) {
-            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {
-                match self.keys.get(key_scancode).unwrap().0 {
-                    KeyStatus::Released => true,
-                    _ => false,
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(button_state) = map_state {
+                    if let ButtonState::Released = button_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+            })
+            .is_some()
+    }
+    // Check if a map changed
+    pub fn map_changed(&self, name: &str) -> bool {
+        self.maps.get(name).and_then(|(_, changed)| changed.then_some(())).is_some()
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
-        if !self.update {
-            return false; /* We are not allowed to update so return the default value */
-        }
-        if self.bindings.contains_key(&name.to_string()) {
-            let key_scancode = self.bindings.get(&name.to_string()).unwrap();
-            if self.keys.contains_key(key_scancode) {
-                match self.keys.get(key_scancode).unwrap().1 {
-                    ToggleKeyStatus::ToggleOn => true,
-                    ToggleKeyStatus::ToggleOff => false,
+        self.maps
+            .get(name)
+            .and_then(|(map_state, _)| {
+                if let MapState::Toggle(toggle_state) = map_state {
+                    if let ToggleState::On = toggle_state {
+                        Some(())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+            })
+            .is_some()
     }
 }

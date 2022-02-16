@@ -1,25 +1,29 @@
 [package]
 name = "main"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glfw = "0.41.0"
+glutin = "0.28.0"
 gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-world_data = { path = "../world_data" }
-systems = { path = "../systems"  }
+ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
+bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+lazy_static = "1.4.0"
+spin_sleep = "1.0.0"
 core = { path = "../core" }
 input = { path = "../input" }
+physics = { path = "../physics" }
+network = { path = "../network" }
 others = { path = "../others" }
+globals = { path = "../globals" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
-debug = { path = "../debug" }
 math = { path = "../math" }
-ui = { path = "../ui" }
-defaults = { path = "../defaults" }
+gui = { path = "../gui" }
+io = { path = "../io" }
 terrain = { path = "../terrain" }

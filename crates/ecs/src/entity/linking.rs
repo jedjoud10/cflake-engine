@@ -1,0 +1,62 @@
+use std::any::TypeId;
+
+use ahash::AHashMap;
+use bitfield::Bitfield;
+
+use crate::{
+    component::{registry, Component, ComponentID, EnclosedComponent},
+    utils::ComponentLinkingError,
+};
+// A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
+#[derive(Default)]
+pub struct ComponentLinkingGroup {
+    pub linked_components: AHashMap<Bitfield<u32>, EnclosedComponent>,
+    pub cbitfield: Bitfield<u32>,
+}
+
+// Linking methods
+impl ComponentLinkingGroup {
+    // Link a component to this entity and automatically set it to the default variable
+    pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
+        // Simple wrapper around the default link component
+        self.link(T::default())
+    }
+    // Check if we have a component linked
+    pub fn is_component_linked(&self, id: ComponentID) -> bool {
+        self.linked_components.contains_key(&id.cbitfield)
+    }
+    // Link a component to this entity and also link it's default component dependencies if they are not linked yet
+    pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
+        let cbitfield = registry::get_component_bitfield::<T>();
+        // Check if we have the component linked on this entity
+        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
+            // Add the local component to our hashmap
+            let boxed = Box::new(default_state);
+            e.insert(boxed);
+        } else {
+            // The component was already linked
+            return Err(ComponentLinkingError::new(format!(
+                "Cannot link component '{:?}' to ComponentLinkingGroup because it is already linked!",
+                TypeId::of::<T>(),
+            )));
+        }
+        // Add the component's bitfield to the entity's bitfield
+        self.cbitfield = self.cbitfield.add(&cbitfield);
+        Ok(())
+    }
+}
+
+// A collection of omponents that we will remove from the entity
+#[derive(Default)]
+pub struct ComponentUnlinkGroup {
+    pub removal_cbitfield: Bitfield<u32>,
+}
+
+// Linking methods
+impl ComponentUnlinkGroup {
+    // Unlink a component from the entity
+    pub fn unlink<T: Component + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
+        self.removal_cbitfield = self.removal_cbitfield.add(&registry::get_component_bitfield::<T>());
+        Ok(())
+    }
+}

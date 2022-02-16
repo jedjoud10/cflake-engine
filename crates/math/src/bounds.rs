@@ -1,5 +1,3 @@
-use super::shapes;
-
 // An aabb bound
 #[derive(Clone, Copy, Debug)]
 pub struct AABB {
@@ -54,16 +52,12 @@ impl AABB {
             _ => veclib::Vector3::ZERO,
         }
     }
-    // Get a specific edge from this AABB
-    pub fn get_edge(&self, edge_index: u8) -> shapes::Line {
-        shapes::CUBE_EDGES[edge_index as usize]
-    }
 }
 
 // Generation functions
 impl AABB {
     // Generate the AABB from a set of points
-    pub fn new_vertices(vertices: &Vec<veclib::Vector3<f32>>) -> Self {
+    pub fn new_vertices(vertices: &[veclib::Vector3<f32>]) -> Self {
         let mut aabb: Self = AABB {
             min: veclib::Vector3::ONE * 9999.0,
             max: -veclib::Vector3::ONE * 9999.0,

@@ -1,35 +1,10 @@
 // Export
-mod array_data;
-mod compute_shader;
-mod error;
-mod frame_stats;
-mod material;
-mod mm_renderer;
-mod model;
-mod procedural_model;
-mod renderer;
-mod renderer_flags;
-mod shader;
-mod subshader;
-mod texture;
-mod utils;
-mod volumetric;
-mod window;
-mod traits;
-pub use traits::*;
-pub use array_data::*;
-pub use compute_shader::*;
-pub use error::*;
-pub use frame_stats::*;
-pub use material::*;
-pub use mm_renderer::*;
-pub use model::*;
-pub use procedural_model::*;
-pub use renderer::*;
-pub use renderer_flags::RendererFlags;
-pub use shader::*;
-pub use subshader::*;
-pub use texture::*;
-pub use utils::*;
-pub use volumetric::*;
-pub use window::Window;
+#![feature(hash_drain_filter)]
+#![feature(negative_impls)]
+#![feature(drain_filter)]
+pub mod advanced;
+pub mod basics;
+pub mod object;
+pub mod params;
+pub mod pipeline;
+pub mod utils;

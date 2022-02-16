@@ -1,21 +1,12 @@
 [package]
 name = "terrain"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-terrain_interpreter = { path = "../terrain_interpreter" }
-rayon = "1.5.1"
+ahash = "0.7.6"
 math = { path = "../math" }
-systems = { path = "../systems" }
-ui = { path = "../ui" }
-world_data = { path = "../world_data" }
-ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
-assets = { path = "../assets" }
-others = { path = "../others" }
-input = { path = "../input" }
-debug = { path = "../debug" }

@@ -1,23 +1,11 @@
 [package]
 name = "defaults"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gl = "0.14.0"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-ui = { path = "../ui" }
-world_data = { path = "../world_data" }
-physics = { path = "../physics" }
-math = { path = "../math" }
-fonts = { path = "../fonts"  }
-ecs = { path = "../ecs" }
-systems = { path = "../systems" }
-rendering = { path = "../rendering" }
-terrain = { path = "../terrain" }
-debug = { path = "../debug" }
-input = { path = "../input" }
-others = { path = "../others" }
-assets = { path = "../assets" }
+main = { path = "../main" }
+rayon = "1.5.1"

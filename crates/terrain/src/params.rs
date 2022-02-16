@@ -1,10 +1,6 @@
 // The actual chunk size number that you change
-pub const MAIN_CHUNK_SIZE: usize = 32;
-// The default LOD factor
-pub const DEFAULT_LOD_FACTOR: f32 = 3.0;
-// The isoline
-pub const ISOLINE: f32 = 0.0;
-// The amount of frames that the compute shader is allowed
-pub const FRAME_THRESHOLD: u64 = 1;
+pub const CHUNK_SIZE: usize = 64;
 // Default terrain compute shader path
-pub const DEFAULT_TERRAIN_COMPUTE_SHADER: &str = "defaults\\shaders\\voxel_terrain\\voxel_main.cmpt.glsl";
+pub const DEFAULT_TERRAIN_BASE_COMPUTE_SHADER: &str = "defaults\\shaders\\voxel_terrain\\base.cmpt.glsl";
+pub const DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER: &str = "defaults\\shaders\\voxel_terrain\\second.cmpt.glsl";
+pub const DEFAULT_TERRAIN_VOXEL_SRC: &str = "defaults\\shaders\\voxel_terrain\\voxel.func.glsl";
