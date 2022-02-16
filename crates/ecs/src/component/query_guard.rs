@@ -2,13 +2,13 @@ use super::LinkedComponents;
 use crate::entity::EntityID;
 use ahash::AHashMap;
 use std::{
+    cell::RefMut,
     ops::{Deref, DerefMut},
-    sync::MutexGuard,
 };
 
 // A guard that internally stores a mutex guard
 pub struct ComponentQueryGuard<'a> {
-    pub(crate) inner: MutexGuard<'a, AHashMap<EntityID, LinkedComponents>>,
+    pub(crate) inner: RefMut<'a, AHashMap<EntityID, LinkedComponents>>,
 }
 
 impl<'a> Deref for ComponentQueryGuard<'a> {

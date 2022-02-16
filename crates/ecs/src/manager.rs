@@ -1,6 +1,7 @@
 use std::{
     cell::UnsafeCell,
-    sync::{Arc, Mutex, RwLock},
+    rc::Rc,
+    sync::{Arc, Mutex},
 };
 
 use bitfield::{AtomicSparseBitfield, Bitfield};
@@ -8,7 +9,7 @@ use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::{
-    component::{ComponentID, EnclosedComponent, LinkedComponents},
+    component::{ComponentID, ComponentsCollection, EnclosedComponent, LinkedComponents},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     event::EventHandler,
     system::{System, SystemBuilder},
@@ -23,10 +24,10 @@ pub struct ECSManager<World> {
     // Each system, stored in the order they were created
     pub(crate) systems: Vec<System>,
     // The components that are valid in the world
-    pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    pub(crate) components: ComponentsCollection,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
     // The internal ECS thread pool
-    pub(crate) rayon_pool: Arc<ThreadPool>,
+    pub(crate) rayon_pool: Rc<ThreadPool>,
     // Our internal event handler
     pub(crate) event_handler: EventHandler<World>,
 }
@@ -41,7 +42,7 @@ impl<World> Default for ECSManager<World> {
             systems: Default::default(),
             components: Default::default(),
             mutated_components: Default::default(),
-            rayon_pool: Arc::new(pool),
+            rayon_pool: Rc::new(pool),
             event_handler: Default::default(),
         }
     }
@@ -172,7 +173,7 @@ impl<World> ECSManager<World> {
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<(ComponentID, *mut EnclosedComponent), ComponentError> {
         // UnsafeCell moment
-        let mut components = self.components.write().unwrap();
+        let mut components = self.components.write();
         let cell = UnsafeCell::new(boxed);
         let ptr = cell.get();
         let idx = components.push_shove(cell);
@@ -183,7 +184,7 @@ impl<World> ECSManager<World> {
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
         // To remove a specific component just set it's component slot to None
-        let mut components = self.components.write().unwrap();
+        let mut components = self.components.write();
         components
             .remove(id.idx)
             .ok_or_else(|| ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
@@ -191,7 +192,7 @@ impl<World> ECSManager<World> {
     }
     // Count the number of valid components in the ECS manager
     pub fn count_components(&self) -> usize {
-        self.components.read().unwrap().count()
+        self.components.read().count()
     }
     /* #endregion */
     /* #region Systems */

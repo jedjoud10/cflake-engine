@@ -22,8 +22,7 @@ fn run(world: &mut World, data: EventKey) {
                 if let Some(gpu_renderer) = gpu_renderer {
                     gpu_renderer.matrix = matrix;
                 }
-            })
-            .unwrap();
+            });
         }
     }
 

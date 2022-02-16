@@ -1,21 +1,17 @@
-use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, EnclosedComponent};
+use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection};
 use crate::{
     entity::{Entity, EntityID},
     utils::ComponentError,
 };
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
-use ordered_vec::simple::OrderedVec;
-use std::{
-    cell::UnsafeCell,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however
 pub struct LinkedComponents {
     // Our linked components
-    pub(crate) components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+    pub(crate) components: ComponentsCollection,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
     pub(crate) linked: AHashMap<Bitfield<u32>, u64>,
 
@@ -29,7 +25,7 @@ unsafe impl Send for LinkedComponents {}
 impl LinkedComponents {
     // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
     // Theoretically, this should only be done once, when an entity becomes valid for a system
-    pub(crate) fn new(entity: &Entity, mutated_components: Arc<AtomicSparseBitfield>, components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>) -> Self {
+    pub(crate) fn new(entity: &Entity, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
         Self {
             components,
             mutated_components,
@@ -42,7 +38,7 @@ impl LinkedComponents {
         id: EntityID,
         linked: &AHashMap<Bitfield<u32>, u64>,
         mutated_components: Arc<AtomicSparseBitfield>,
-        components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+        components: ComponentsCollection,
     ) -> Self {
         Self {
             components,
@@ -56,7 +52,7 @@ impl LinkedComponents {
         id: u64,
         linked: &AHashMap<Bitfield<u32>, u64>,
         mutated_components: Arc<AtomicSparseBitfield>,
-        components: Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>,
+        components: ComponentsCollection,
     ) -> Self {
         Self {
             components,
@@ -89,7 +85,7 @@ impl LinkedComponents {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
         let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
-        let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
+        let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic
@@ -109,7 +105,7 @@ impl LinkedComponents {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
         let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
-        let ordered_vec = self.components.read().map_err(|_| invalid_err())?;
+        let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
         // Then get it's pointer and do black magic

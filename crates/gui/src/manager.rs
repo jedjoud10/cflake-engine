@@ -22,7 +22,7 @@ impl GUIManager {
             *cloned.lock().unwrap() = Some(Painter::new(pipeline));
         });
         // Flush
-        pipec::flush_and_execute(context).unwrap();
+        pipec::flush_and_execute(context);
 
         // Extract
         let painter = if let Ok(ok) = Arc::try_unwrap(arc) {

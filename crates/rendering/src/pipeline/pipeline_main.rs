@@ -11,8 +11,8 @@ pub mod pipec {
         pipeline.debugging.store(debugging, Ordering::Relaxed);
     }
     // Send a task to the pipeline
-    fn send(pipeline: &Pipeline, task: PipelineTask) -> Option<()> {
-        sender::send_task(task, pipeline).ok()
+    fn send(pipeline: &Pipeline, task: PipelineTask) {
+        sender::send_task(task, pipeline).unwrap()
     }
     // Create a Pipeline Object, returning it's ObjectID
     pub fn construct<T: PipelineObject>(pipeline: &Pipeline, object: T) -> Option<ObjectID<T>> {
@@ -21,7 +21,7 @@ pub mod pipec {
 
         // Get the PipelineConstructionTask so we can send it to the pipeline
         let task = object.send(id);
-        send(pipeline, PipelineTask::Construction(task))?;
+        send(pipeline, PipelineTask::Construction(task));
 
         // We can now return the object ID
         Some(id)
@@ -31,21 +31,20 @@ pub mod pipec {
         id.get()?;
         // Send a deconstruction task to destroy the object
         let task = T::pull(id);
-        send(pipeline, PipelineTask::Deconstruction(task))?;
+        send(pipeline, PipelineTask::Deconstruction(task));
         Some(())
     }
     // Create an update callback that we will run at the end of the current/next frame
-    pub fn update_callback(pipeline: &Pipeline, function: impl FnOnce(&mut Pipeline, &mut PipelineRenderer) + Send + Sync + 'static) -> Option<()> {
+    pub fn update_callback(pipeline: &Pipeline, function: impl FnOnce(&mut Pipeline, &mut PipelineRenderer) + Send + Sync + 'static) {
         // Create the boxed function on the heap
         let boxed = Box::new(function);
         send(pipeline, PipelineTask::Update(boxed));
-        Some(())
     }
     // Flush the pipeline, forcing the execution of all dispatched tasks
     // This function will exit early and return None if the pipeline is in use, thus we cannot force a flush
-    pub fn flush_and_execute(context: &PipelineContext) -> Option<()> {
+    pub fn flush_and_execute(context: &PipelineContext) {
         // Run the pipeline for one frame, but make sure we have no RwLocks whenever we do so
-        let handler = &context.handler.as_ref().unwrap().lock().ok()?;
+        let handler = &context.handler.as_ref().unwrap().lock();
         handler.sbarrier.wait();
         handler.ebarrier.wait();
 
@@ -53,7 +52,6 @@ pub mod pipec {
         println!("Waiting for flush completion...");
         while !handler.waiting.load(Ordering::Relaxed) {}
         println!("Flushed!");
-        Some(())
     }
 
     // Tracked Tasks
@@ -69,18 +67,17 @@ pub mod pipec {
         all
     }
     // Create a tracked task
-    pub fn tracked_task(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID) -> Option<()> {
+    pub fn tracked_task(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID) {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, None))
     }
     // Create a tracked task with a requirement
-    pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) -> Option<()> {
+    pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req)))
     }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
-    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) -> Option<()> {
-        let mut lock = pipeline.callbacks.lock().ok()?;
+    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F){
+        let mut lock = pipeline.callbacks.lock();
         lock.push(Box::new(function));
-        Some(())
     }
 }

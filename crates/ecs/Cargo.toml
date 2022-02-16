@@ -10,6 +10,7 @@ ahash = "0.7.6"
 lazy_static = "1.4.0"
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+parking_lot = "0.12.0"
 others = { path = "../others" }
 ecs-derive = { path = "./ecs-derive"  }
 rayon = "1.5.1"

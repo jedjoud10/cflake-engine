@@ -10,6 +10,5 @@ pub fn system(world: &mut World) {
         // Draw the GUI
         let mut painter = painter.lock().unwrap();
         painter.draw_gui(pipeline);
-    })
-    .unwrap();
+    });
 }

@@ -1,5 +1,11 @@
 use bitfield::Bitfield;
-use std::any::Any;
+use ordered_vec::simple::OrderedVec;
+use parking_lot::RwLock;
+use std::{
+    any::Any,
+    cell::UnsafeCell,
+    sync::Arc,
+};
 
 // A ComponentID that will be used to identify components
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -22,6 +28,7 @@ pub trait Component: Sync {
 }
 
 // Main type because I don't want to type
+pub type ComponentsCollection = Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>;
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
 
 // Component ref guards. This can be used to detect whenever we mutate a component

@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+};
 
 use ahash::AHashMap;
 use bitfield::Bitfield;
@@ -20,10 +23,10 @@ pub struct System {
     pub(crate) evn_added_entity: Option<usize>,
     pub(crate) evn_removed_entity: Option<usize>,
 
-    linked_components: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
+    linked_components: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
     // Added, Removed
-    added: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
-    removed: Arc<Mutex<AHashMap<EntityID, LinkedComponents>>>,
+    added: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
+    removed: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
 }
 
 // System code
@@ -34,17 +37,17 @@ impl System {
     }
     // Add an entity
     pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents, linked_components2: LinkedComponents) {
-        let mut lock = self.linked_components.lock().unwrap();
+        let mut lock = self.linked_components.borrow_mut();
         lock.insert(id, linked_components);
-        let mut lock = self.added.lock().unwrap();
+        let mut lock = self.added.borrow_mut();
         lock.insert(id, linked_components2);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
     pub(crate) fn remove_entity(&self, id: EntityID, linked_components: LinkedComponents) {
-        let mut lock = self.linked_components.lock().unwrap();
+        let mut lock = self.linked_components.borrow_mut();
         if lock.contains_key(&id) {
             lock.remove(&id);
-            let mut removed_lock = self.removed.lock().unwrap();
+            let mut removed_lock = self.removed.borrow_mut();
             removed_lock.insert(id, linked_components);
         }
     }
@@ -58,7 +61,7 @@ impl System {
 
         // Do a bit of decrementing
         let removed_components = {
-            let removed = self.removed.lock().unwrap();
+            let removed = self.removed.borrow_mut();
             let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
             for (_, component) in removed.iter() {
                 // Decrement the counter
@@ -90,9 +93,9 @@ impl System {
     // Clear the system for the next execution
     pub fn clear<World>(&self) {
         // Clear the stored entity differences
-        let mut added = self.added.lock().unwrap();
+        let mut added = self.added.borrow_mut();
         added.clear();
-        let mut removed = self.removed.lock().unwrap();
+        let mut removed = self.removed.borrow_mut();
         removed.clear();
     }
 }

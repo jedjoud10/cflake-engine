@@ -14,9 +14,10 @@ use crate::{
 };
 use ahash::AHashMap;
 use glutin::NotCurrent;
+use parking_lot::{Mutex, RwLock};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc, Barrier, Mutex, RwLock,
+    Arc, Barrier,
 };
 
 use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
@@ -75,14 +76,14 @@ pub struct Pipeline {
 impl Pipeline {
     // Set the buffered tasks from RX messages
     pub(crate) fn add_tasks(&mut self, messages: Vec<PipelineTask>) {
-        let mut write = self.tasks.write().unwrap();
+        let mut write = self.tasks.write();
         for task in messages {
             write.push(task);
         }
     }
     // Add a task interally, through the render thread itself
     pub(crate) fn add_task_internally(&self, task: PipelineTask) {
-        let mut write = self.tasks.write().unwrap();
+        let mut write = self.tasks.write();
         write.push(task);
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
@@ -150,7 +151,7 @@ impl Pipeline {
         self.renderers.clear_diffs();
         // We must take the commands first
         let tasks = {
-            let mut tasks_ = self.tasks.write().unwrap();
+            let mut tasks_ = self.tasks.write();
             let tasks = &mut *tasks_;
             // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
             let tasks = tasks
@@ -174,7 +175,7 @@ impl Pipeline {
     // Run the End Of Frame callbacks
     pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
         let lock_ = self.callbacks.clone();
-        let lock = lock_.lock().unwrap();
+        let lock = lock_.lock();
         // Execute the callbacks
         for callback in &*lock {
             let callback = &**callback;
@@ -333,7 +334,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             // Create the Arc and RwLock for the pipeline
             let pipeline = Arc::new(RwLock::new(pipeline));
 
-            let mut pipeline_ = pipeline.write().unwrap();
+            let mut pipeline_ = pipeline.write();
             // Setup the window
             pipeline_.window.pixels_per_point = window.scale_factor();
             pipeline_.window.inner = Some(window);
@@ -343,7 +344,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             drop(pipeline_);
             // Setup the pipeline renderer
             let mut renderer = {
-                let mut pipeline = pipeline.write().unwrap();
+                let mut pipeline = pipeline.write();
                 let mut renderer = PipelineRenderer::default();
                 pipeline.flush(&mut internal, &mut renderer);
                 renderer.initialize(pipeline_settings, &mut internal, &mut *pipeline);
@@ -362,8 +363,8 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 waiting_clone.store(false, Ordering::Relaxed);
                 // This is a single frame
                 let pipeline_frame_instant = std::time::Instant::now();
-                let mut pipeline_ = pipeline.write().unwrap();
-                let time = time_clone.lock().unwrap();
+                let mut pipeline_ = pipeline.write();
+                let time = time_clone.lock();
                 pipeline_.time = *time;
                 let debug = pipeline_.debugging.load(Ordering::Relaxed);
 
@@ -372,7 +373,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
 
                 let i = std::time::Instant::now();
                 // We render the scene here
-                let pipeline_ = pipeline.read().unwrap();
+                let pipeline_ = pipeline.read();
                 let frame_debug_info = renderer.render_frame(&*pipeline_);
                 let render_frame_duration = i.elapsed();
                 // And we also sync at the end of each frame
@@ -380,7 +381,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 drop(pipeline_);
 
                 // This is the "free-zone". A time between the end barrier sync and the start barrier sync where we can do whatever we want with the pipeline
-                let mut pipeline = pipeline.write().unwrap(); // We poll the messages, buffer them, and execute them
+                let mut pipeline = pipeline.write(); // We poll the messages, buffer them, and execute them
                 let i = std::time::Instant::now();
                 pipeline.execute_end_of_frame_callbacks(&mut renderer);
                 let eof_callbacks_duration = i.elapsed();

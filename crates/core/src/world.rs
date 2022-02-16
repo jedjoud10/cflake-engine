@@ -1,6 +1,26 @@
-use crate::{data::World, GameSettings, WorldTaskReceiver};
+use crate::{GameSettings, WorldTaskReceiver, WorldState};
 use rendering::pipeline::PipelineContext;
 use std::sync::Arc;
+use ecs::ECSManager;
+use globals::GlobalCollection;
+use gui::GUIManager;
+use input::InputManager;
+use io::SaverLoader;
+use others::Time;
+
+
+// The whole world that stores our managers and data
+pub struct World {
+    pub input: InputManager,
+    pub time: Time,
+    pub gui: GUIManager,
+    pub ecs: ECSManager<Self>,
+    pub globals: GlobalCollection,
+    pub io: SaverLoader,
+    pub settings: GameSettings,
+    pub pipeline: PipelineContext,
+    pub state: WorldState,
+}
 
 // World implementation
 impl World {
@@ -16,10 +36,11 @@ impl World {
             io,
             settings: Default::default(),
             pipeline,
+            state: WorldState::StartingUp,
         };
         // Just set the game settings and we are done
         world.settings = settings;
-        println!("World init done!");
+        println!("World init done!");        
         world
     }
     // Resize window event
@@ -27,11 +48,11 @@ impl World {
         let pipeline = self.pipeline.read();
         rendering::pipeline::pipec::update_callback(&pipeline, move |pipeline, renderer| {
             pipeline.update_window_dimensions(renderer, new_dimensions);
-        })
-        .unwrap();
+        });
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
     pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+        self.state = WorldState::Running;
         // Handle GUI begin frame
         {
             let pipeline = self.pipeline.read();
@@ -41,8 +62,8 @@ impl World {
 
         // While we do world logic, start rendering the frame on the other thread
         // Update the timings then we can start rendering
-        let handler = self.pipeline.handler.as_ref().unwrap().lock().unwrap();
-        let mut time = handler.time.lock().unwrap();
+        let handler = self.pipeline.handler.as_ref().unwrap().lock();
+        let mut time = handler.time.lock();
         time.0 = self.time.elapsed;
         time.1 = self.time.delta;
         handler.sbarrier.wait();
@@ -76,7 +97,7 @@ impl World {
         {
             let delta = self.time.delta as f32;
             self.input.late_update(delta);
-            let handler = &self.pipeline.handler.as_ref().unwrap().lock().unwrap();
+            let handler = &self.pipeline.handler.as_ref().unwrap().lock();
             handler.ebarrier.wait();
         }
     }
@@ -86,7 +107,7 @@ impl World {
         //let pipeline = self.pipeline.read().unwrap();
         let handler = Arc::try_unwrap(self.pipeline.handler.take().unwrap());
         if let Ok(handler) = handler {
-            let handler = handler.into_inner().unwrap();
+            let handler = handler.into_inner();
             // Run the render thread loop for one last time
             handler.sbarrier.wait();
             handler.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
