@@ -1,6 +1,6 @@
 use gl::types::GLuint;
 
-use crate::{utils::UsageType, pipeline::sender::on_render_thread};
+use crate::{pipeline::sender::on_render_thread, utils::UsageType};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
@@ -28,13 +28,15 @@ impl<T> std::fmt::Debug for DynamicRawBuffer<T> {
 impl<T> DynamicRawBuffer<T> {
     // Create the dynamic raw buffer
     // This can only be called on the render thread
-    pub fn new(_type: u32, usage: UsageType) -> Self {        
+    pub fn new(_type: u32, usage: UsageType) -> Self {
         Self::with_capacity(_type, 0, usage)
     }
     // Create a new dynamic raw buffer with a specified capacity
     pub fn with_capacity(_type: u32, capacity: usize, usage: UsageType) -> Self {
         // If we are not on the render thread, we cannot make the raw buffer
-        if !on_render_thread() { panic!("We are not on the render thread!") }
+        if !on_render_thread() {
+            panic!("We are not on the render thread!")
+        }
 
         let vec = Vec::<T>::with_capacity(capacity);
         let oid = unsafe {
@@ -151,5 +153,7 @@ impl<T> DynamicRawBuffer<T> {
         }
     }
     // Len
-    pub fn len(&self) -> usize { self.vec.len() }
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
 }

@@ -68,7 +68,7 @@ impl World {
         self.ecs.finish_update();
     }
     // End frame update
-    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {        
+    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
         // Handle GUI end frame
         self.gui.end_frame();
 

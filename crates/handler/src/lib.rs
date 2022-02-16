@@ -135,7 +135,9 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
 // Handle the window events
 fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut ControlFlow) {
     // GUI
-    world.gui.receive_event(&event);
+    if !world.input.accepts_input {
+        world.gui.receive_event(&event);
+    }
 
     match event {
         WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
@@ -151,7 +153,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
 }
 
 // Handle device events
-fn handle_device_event(event: DeviceEvent, world: &mut World, control_flow: &mut ControlFlow) {
+fn handle_device_event(event: DeviceEvent, world: &mut World, _control_flow: &mut ControlFlow) {
     match event {
         DeviceEvent::MouseMotion { delta } => {
             world.input.receive_mouse_position_event(veclib::vec2(delta.0, delta.1));

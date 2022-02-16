@@ -1,5 +1,5 @@
 use crate::painter::Painter;
-use rendering::pipeline::{pipec, Pipeline, PipelineContext};
+use rendering::pipeline::{pipec, PipelineContext};
 use std::sync::{Arc, Mutex};
 
 // A simple manager

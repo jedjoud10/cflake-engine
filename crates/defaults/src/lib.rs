@@ -66,7 +66,7 @@ pub fn preload_system(world: &mut World) {
     debugging_system::system(world);
     window_system::system(world);
     gui_system::system(world);
-    //test_system::system(world);
+    test_system::system(world);
     // Terrain
     terrain::chunk_system::system(world);
     terrain::voxel_system::system(world);

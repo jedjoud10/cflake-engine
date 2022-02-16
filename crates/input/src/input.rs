@@ -36,12 +36,16 @@ impl Default for InputManager {
 impl InputManager {
     // Called whenever the mouse position changes
     pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f64>) {
-        if !self.accepts_input { return; }
+        if !self.accepts_input {
+            return;
+        }
         self.last_mouse_pos += delta;
     }
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
-        if !self.accepts_input { return; }
+        if !self.accepts_input {
+            return;
+        }
         self.last_mouse_scroll += scroll_delta;
     }
     // This should be ran at the start of every frame, before we poll any glfw events

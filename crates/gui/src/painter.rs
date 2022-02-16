@@ -1,17 +1,14 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::Arc;
 
-use egui::{
-    epaint::{ClippedShape, Mesh},
-    ClippedMesh, Color32, CtxRef, FontImage, Output, Rect,
-};
+use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
         shader::{Shader, ShaderSettings},
-        texture::{Texture, TextureFilter, TextureFormat, TextureType},
+        texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{pipec, Pipeline, PipelineRenderer},
+    pipeline::{pipec, Pipeline},
     utils::DataType,
 };
 
@@ -43,6 +40,7 @@ impl Painter {
         let egui_font_texture = Texture::default()
             .with_filter(TextureFilter::Linear)
             .with_format(TextureFormat::RGBA8R)
+            .with_wrapping_mode(TextureWrapping::ClampToEdge)
             .with_data_type(DataType::U8)
             .with_mipmaps(false);
         let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();
@@ -82,7 +80,7 @@ impl Painter {
         self.buffers.draw();
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, renderer: &mut PipelineRenderer) {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline) {
         // No need to draw if we don't have any meshes or if our shader is invalid
         if self.clipped_meshes.is_empty() || pipeline.shaders.get(self.shader).is_none() {
             return;
@@ -148,6 +146,8 @@ impl Painter {
             gl_tex.update_size_fill(dimensions, bytes).unwrap();
             // Don't forget to update the version
             self.egui_font_texture_version = Some(texture.version);
-        } else { self.egui_font_texture_version = None; }
+        } else {
+            self.egui_font_texture_version = None;
+        }
     }
 }

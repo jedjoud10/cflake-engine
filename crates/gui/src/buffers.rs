@@ -1,4 +1,4 @@
-use std::{ptr::null, mem::size_of, ffi::c_void};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use gl::types::GLuint;
 use rendering::{
@@ -50,11 +50,7 @@ impl Buffers {
 
         // Self
         println!("GUI Painter Buffers Init Successful!");
-        Self {
-            vao,
-            indices,
-            vertices
-        }
+        Self { vao, indices, vertices }
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
