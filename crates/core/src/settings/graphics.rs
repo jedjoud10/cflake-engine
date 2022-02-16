@@ -1,6 +1,6 @@
 // Some graphics settings
 use io::{serde, Deserialize, Serialize};
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 #[serde(crate = "self::serde")]
 #[serde(rename_all = "snake_case")]
 pub enum ShadowResolution {

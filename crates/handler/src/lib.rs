@@ -82,7 +82,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
 
     // Create the world
     let mut task_receiver = core::WorldTaskReceiver::new();
-    let mut world = World::new(config, io, pipeline_data);
+    let mut world = World::new(config.clone(), io, pipeline_data);
 
     // Calling the callback
     println!("Calling World Initialization callback");
@@ -93,7 +93,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Flush everything and execute all the tasks
         task_receiver.flush(&mut world);
     }
-    let mut sleeper = LoopHelper::builder().build_with_target_rate(120.0);
+    let mut sleeper = LoopHelper::builder().build_with_target_rate(config.fps_cap as f32);
 
     // Main loop
     event_loop.run(move |event, _, control_flow| {
