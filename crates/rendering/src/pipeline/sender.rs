@@ -17,6 +17,11 @@ thread_local! {
     static RENDER_THREAD: Cell<bool> = Cell::new(false);
 }
 
+// Check if we are on the render thread
+pub fn on_render_thread() -> bool {
+    RENDER_THREAD.with(|cell| cell.get())
+}
+
 // Set the global sender
 pub(crate) fn set_global_sender(sender: Sender<PipelineTask>) {
     {
@@ -40,7 +45,7 @@ pub(crate) fn send_task(task: PipelineTask, pipeline: &Pipeline) -> Result<(), S
         })
     }
     // If we are on the render thread, add the task directly
-    if RENDER_THREAD.with(|cell| cell.get()) {
+    if on_render_thread() {
         pipeline.add_task_internally(task);
         Ok(())
     } else {

@@ -127,5 +127,5 @@ fn init(world: &mut core::World) {
         .with_heuristic(heuristic)
         .with_voxel_src("user\\shaders\\voxel_terrain\\voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
-    world.globals.add_global(terrain).unwrap();
+    //world.globals.add_global(terrain).unwrap();
 }

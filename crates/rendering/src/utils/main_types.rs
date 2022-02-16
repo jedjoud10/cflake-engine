@@ -34,7 +34,7 @@ impl DataType {
 // How we will access a buffer object
 #[derive(Debug, Clone, Copy)]
 pub enum AccessType {
-    Write,
+    Draw,
     Read,
     Pass,
 }
@@ -57,7 +57,7 @@ impl UsageType {
     // Convert this UsageType to a valid OpenGL enum
     pub fn convert(&self) -> GLuint {
         match self.access {
-            AccessType::Write => match self.frequency {
+            AccessType::Draw => match self.frequency {
                 UpdateFrequency::Static => gl::STATIC_DRAW,
                 UpdateFrequency::Dynamic => gl::DYNAMIC_DRAW,
                 UpdateFrequency::Stream => gl::STREAM_DRAW,

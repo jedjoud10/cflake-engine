@@ -6,10 +6,10 @@ pub fn system(world: &mut World) {
     // We must create the pipeline End of Frame callback and tell it to render our GUI
     let painter = world.gui.painter.clone();
     let pipeline = world.pipeline.read();
-    pipec::add_end_of_frame_callback(&pipeline, move |pipeline, _| {
+    pipec::add_end_of_frame_callback(&pipeline, move |pipeline, renderer| {
         // Draw the GUI
         let mut painter = painter.lock().unwrap();
-        painter.draw_gui(pipeline);
+        painter.draw_gui(pipeline, renderer);
     })
     .unwrap();
 }

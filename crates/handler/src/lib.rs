@@ -141,7 +141,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
         WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
             let pipeline = world.pipeline.read();
             pipec::update_callback(&pipeline, move |pipeline, _| {
-                pipeline.window.pixel_per_point = scale_factor;
+                pipeline.window.pixels_per_point = scale_factor;
             });
         }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,

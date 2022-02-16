@@ -7,7 +7,7 @@ pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 pub struct Window {
     pub dimensions: veclib::Vector2<u16>,
     pub inner: Option<glutin::window::Window>,
-    pub pixel_per_point: f64,
+    pub pixels_per_point: f64,
 }
 
 impl Default for Window {
@@ -15,7 +15,7 @@ impl Default for Window {
         Self {
             dimensions: DEFAULT_WINDOW_SIZE,
             inner: Default::default(),
-            pixel_per_point: Default::default(),
+            pixels_per_point: Default::default(),
         }
     }
 }

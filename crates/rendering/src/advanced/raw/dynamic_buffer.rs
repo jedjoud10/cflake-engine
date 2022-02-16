@@ -1,6 +1,6 @@
 use gl::types::GLuint;
 
-use crate::utils::UsageType;
+use crate::{utils::UsageType, pipeline::sender::on_render_thread};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
@@ -28,11 +28,14 @@ impl<T> std::fmt::Debug for DynamicRawBuffer<T> {
 impl<T> DynamicRawBuffer<T> {
     // Create the dynamic raw buffer
     // This can only be called on the render thread
-    pub fn new(_type: u32, usage: UsageType) -> Self {
+    pub fn new(_type: u32, usage: UsageType) -> Self {        
         Self::with_capacity(_type, 0, usage)
     }
     // Create a new dynamic raw buffer with a specified capacity
     pub fn with_capacity(_type: u32, capacity: usize, usage: UsageType) -> Self {
+        // If we are not on the render thread, we cannot make the raw buffer
+        if !on_render_thread() { panic!("We are not on the render thread!") }
+
         let vec = Vec::<T>::with_capacity(capacity);
         let oid = unsafe {
             let mut oid = 0;
@@ -133,4 +136,20 @@ impl<T> DynamicRawBuffer<T> {
         }
         old
     }
+    // Set the contents of the dynamic raw buffer from an already allocated vector
+    pub fn set_contents(&mut self, vec: Vec<T>) {
+        unsafe {
+            self.vec = vec;
+            gl::BindBuffer(self._type, self.buffer);
+            gl::BufferData(
+                self._type,
+                (size_of::<T>() * self.vec.len()) as isize,
+                self.vec.as_ptr() as *const c_void,
+                self.usage.convert(),
+            );
+            gl::BindBuffer(self._type, 0);
+        }
+    }
+    // Len
+    pub fn len(&self) -> usize { self.vec.len() }
 }

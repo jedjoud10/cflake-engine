@@ -11,7 +11,7 @@ use rendering::{
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{pipec, Pipeline},
+    pipeline::{pipec, Pipeline, PipelineRenderer},
     utils::DataType,
 };
 
@@ -57,13 +57,36 @@ impl Painter {
         }
     }
     // Draw a single egui mesh
-    fn draw_mesh(&self, rect: Rect, mesh: Mesh, pipeline: &mut Pipeline, pixel_per_point: f64) {
+    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &mut Pipeline, pixels_per_point: f32) {
         // We already have the shader bound, so we just need to draw
+        // Get the rect size so we can use the scissor test
+        let clip_min = veclib::vec2(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
+        let clip_max = veclib::vec2(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
+        let clip_min = clip_min.clamp(veclib::Vector2::ZERO, pipeline.window.dimensions.into());
+        let clip_max = clip_max.clamp(veclib::Vector2::ZERO, pipeline.window.dimensions.into());
+        let clip_min: veclib::Vector2<i32> = clip_min.round().into();
+        let clip_max: veclib::Vector2<i32> = clip_max.round().into();
+
+        //scissor Y coordinate is from the bottom
+        /*
+        unsafe {
+            gl::Scissor(
+                clip_min.x,
+                pipeline.window.dimensions.y as i32 - clip_max.y,
+                clip_max.x - clip_min.x,
+                clip_max.y - clip_min.y,
+            );
+        }
+        */
+
+        // Gotta fil the buffers with new data, then we can draw
+        self.buffers.fill_buffers(mesh.vertices, mesh.indices);
+        self.buffers.draw();
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline) {
-        // No need to draw if we don't have any meshes
-        if self.clipped_meshes.is_empty() {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, renderer: &mut PipelineRenderer) {
+        // No need to draw if we don't have any meshes or if our shader is invalid
+        if self.clipped_meshes.is_empty() || pipeline.shaders.get(self.shader).is_none() {
             return;
         }
         // Le texture
@@ -77,22 +100,30 @@ impl Painter {
 
         // OpenGL settings
         unsafe {
+            // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::BindVertexArray(self.buffers.vao);
             gl::Enable(gl::FRAMEBUFFER_SRGB);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
             gl::Disable(gl::CULL_FACE);
+            gl::Disable(gl::DEPTH_TEST);
+            //gl::Enable(gl::SCISSOR_TEST);
         }
 
         let clipped_meshes = std::mem::take(&mut self.clipped_meshes);
         for ClippedMesh(rect, mesh) in clipped_meshes {
-            self.draw_mesh(rect, mesh, pipeline, pipeline.window.pixel_per_point);
+            self.draw_mesh(rect, mesh, pipeline, pipeline.window.pixels_per_point as f32);
         }
 
         // Reset
         unsafe {
             gl::Disable(gl::FRAMEBUFFER_SRGB);
+            gl::BindVertexArray(0);
             gl::Disable(gl::BLEND);
             gl::Enable(gl::CULL_FACE);
+            gl::Enable(gl::DEPTH_TEST);
+            //gl::Disable(gl::SCISSOR_TEST);
         }
     }
     // Upload the egui font texture and update it's OpenGL counterpart if it changed

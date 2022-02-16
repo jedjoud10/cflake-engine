@@ -1,3 +1,5 @@
+use gl::types::GLuint;
+
 use self::shadow_mapping::ShadowMapping;
 
 use super::{settings::PipelineSettings, FrameDebugInfo, InternalPipeline, Pipeline};
@@ -23,7 +25,7 @@ use self::error::*;
 // Pipeline renderer that will render our world
 #[derive(Default)]
 pub struct PipelineRenderer {
-    framebuffer: u32,
+    pub framebuffer: GLuint,
 
     // Our deferred textures
     diffuse_texture: ObjectID<Texture>,
