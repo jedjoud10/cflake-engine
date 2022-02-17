@@ -1,6 +1,5 @@
-
+use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use std::sync::Arc;
-use parking_lot::{RwLock, Mutex, RwLockReadGuard};
 
 use super::{Pipeline, PipelineHandler};
 
@@ -15,9 +14,7 @@ pub struct PipelineContext {
 impl PipelineContext {
     // Read
     pub fn read(&self) -> ReadPipelineContext {
-        ReadPipelineContext {
-            pipeline: self.pipeline.read(),
-        }
+        ReadPipelineContext { pipeline: self.pipeline.read() }
     }
 }
 

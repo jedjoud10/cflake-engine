@@ -31,5 +31,5 @@ impl HeuristicSettings {
     pub fn with_threshold(mut self, min_threshold_distance: f32) -> Self {
         self.min_threshold_distance = min_threshold_distance;
         self
-    } 
+    }
 }

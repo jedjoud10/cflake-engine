@@ -114,10 +114,12 @@ fn init(world: &mut core::World) {
         .with_uv_scale(veclib::Vector2::ONE * 0.02)
         .with_shader(shader);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
-    let heuristic = math::octrees::HeuristicSettings::default().with_function(|node, target| {
-        let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
-        dist < 1.2 || node.depth == 1
-    }).with_threshold(64.0);
+    let heuristic = math::octrees::HeuristicSettings::default()
+        .with_function(|node, target| {
+            let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target) / (node.half_extent as f32 * 2.0);
+            dist < 1.2 || node.depth == 1
+        })
+        .with_threshold(64.0);
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
     let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings

@@ -29,7 +29,6 @@ impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
     pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
         // Always use our internal shadow shader
-        let shader = self.shadow_shader;
         let model = pipeline.models.get(renderer.model).ok_or(RenderingError)?;
         let model_matrix = &renderer.matrix;
 
@@ -37,10 +36,9 @@ impl ShadowMapping {
         let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *model_matrix;
 
         // Pass the light space matrix to the shader
-        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(shader));
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shadow_shader));
         let group = Uniforms::new(&settings, pipeline);
         // Update the uniforms
-        group.bind_shader();
         group.set_mat44f32("lsm_matrix", lsm);
 
         Ok(model)
@@ -106,11 +104,14 @@ impl ShadowMapping {
         self.lightspace_matrix = self.ortho_matrix * view_matrix;
     }
     // Make sure we are ready to draw shadows
-    pub(crate) fn bind_fbo(&self) {
+    pub(crate) fn bind_fbo(&self, pipeline: &Pipeline) {
         unsafe {
             gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
+            let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shadow_shader));
+            let group = Uniforms::new(&settings, pipeline);
+            group.bind_shader();
         }
     }
 }

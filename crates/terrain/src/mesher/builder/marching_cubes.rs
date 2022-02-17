@@ -7,7 +7,7 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::basics::model::Model;
+use rendering::basics::model::{Model, Vertices};
 use std::collections::hash_map::Entry;
 
 // Struct that contains everything related to the marching cubes mesh generation
@@ -93,9 +93,11 @@ impl MarchingCubes {
                 // Then add it to the model
                 e.insert(model.vertices.len() as u16);
                 model.triangles.push(model.vertices.len() as u32);
-                model.vertices.push(interpolated.vertex);
-                model.normals.push(interpolated.normal);
-                model.uvs.push(veclib::Vector2::new(data.voxel_material, 0));
+                model
+                    .vertex_builder()
+                    .with_position(interpolated.vertex)
+                    .with_normal(interpolated.normal)
+                    .with_uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
                 model.triangles.push(merger.duplicates[&edge_tuple] as u32);
@@ -136,9 +138,12 @@ impl MarchingCubes {
         let i = std::time::Instant::now();
         // Create the model data
         let mut model = Model {
-            vertices: Vec::with_capacity(5000),
-            normals: Vec::with_capacity(5000),
-            uvs: Vec::with_capacity(5000),
+            vertices: Vertices {
+                positions: Vec::with_capacity(5000),
+                normals: Vec::with_capacity(5000),
+                uvs: Vec::with_capacity(5000),
+                ..Default::default()
+            },
             triangles: Vec::with_capacity(15000),
             ..Default::default()
         };

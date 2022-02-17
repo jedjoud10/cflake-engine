@@ -1,13 +1,12 @@
-use crate::{GameSettings, WorldTaskReceiver, WorldState};
-use rendering::pipeline::PipelineContext;
-use std::sync::Arc;
+use crate::{GameSettings, WorldState, WorldTaskReceiver};
 use ecs::ECSManager;
 use globals::GlobalCollection;
 use gui::GUIManager;
 use input::InputManager;
 use io::SaverLoader;
 use others::Time;
-
+use rendering::pipeline::PipelineContext;
+use std::sync::Arc;
 
 // The whole world that stores our managers and data
 pub struct World {
@@ -40,7 +39,7 @@ impl World {
         };
         // Just set the game settings and we are done
         world.settings = settings;
-        println!("World init done!");        
+        println!("World init done!");
         world
     }
     // Resize window event

@@ -34,12 +34,7 @@ impl LinkedComponents {
         }
     }
 
-    pub(crate) fn new_direct(
-        id: EntityID,
-        linked: &AHashMap<Bitfield<u32>, u64>,
-        mutated_components: Arc<AtomicSparseBitfield>,
-        components: ComponentsCollection,
-    ) -> Self {
+    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
         Self {
             components,
             mutated_components,
@@ -48,12 +43,7 @@ impl LinkedComponents {
         }
     }
 
-    pub(crate) fn new_dead(
-        id: u64,
-        linked: &AHashMap<Bitfield<u32>, u64>,
-        mutated_components: Arc<AtomicSparseBitfield>,
-        components: ComponentsCollection,
-    ) -> Self {
+    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
         Self {
             components,
             mutated_components,

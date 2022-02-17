@@ -7,7 +7,7 @@ use crate::{
     basics::{
         lights::{LightSource, LightSourceType},
         material::Material,
-        model::Model,
+        model::{Model, Vertices},
         renderer::{Renderer, RendererFlags},
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFormat, TextureType},
@@ -106,10 +106,13 @@ impl PipelineRenderer {
         // Create the quad model that we will use to render the whole screen
         use veclib::{vec2, vec3};
         let quad = Model {
-            vertices: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
-            uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
+            vertices: Vertices {
+                positions: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
+                uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
+                ..Default::default()
+            },
             triangles: vec![0, 1, 2, 0, 3, 1],
-            ..Model::default()
+            ..Default::default()
         };
         // Load the quad model
         self.quad_model = pipec::construct(pipeline, quad).unwrap();
@@ -128,7 +131,7 @@ impl PipelineRenderer {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB16R)).unwrap();
+            self.diffuse_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8R)).unwrap();
             // Create the emissive render texture
             self.emissive_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
             // Create the normals render texture
@@ -228,7 +231,7 @@ impl PipelineRenderer {
                 self.render(model);
                 debug_info.draw_calls += 1;
                 debug_info.triangles += (model.triangles.len() as u64) / 3;
-                debug_info.vertices += model.vertices.len() as u64;
+                debug_info.vertices += model.vertices.positions.len() as u64;
             }
         }
     }
@@ -237,7 +240,7 @@ impl PipelineRenderer {
         unsafe {
             gl::CullFace(gl::FRONT);
         }
-        self.shadow_mapping.bind_fbo();
+        self.shadow_mapping.bind_fbo(pipeline);
         let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
             self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());

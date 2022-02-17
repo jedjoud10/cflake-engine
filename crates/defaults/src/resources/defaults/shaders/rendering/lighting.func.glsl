@@ -27,5 +27,5 @@ vec3 compute_lighting(
 	float specular_val = pow(clamp(dot(pixel_dir, reflect(sunlight_dir, normal)), 0, 1), 256);
 	//color += specular_val * 0.6 * (1 - in_shadow);
 
-    return color;
+    return color + emissive;
 }

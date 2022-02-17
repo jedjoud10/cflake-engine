@@ -1,5 +1,5 @@
-use std::sync::{atomic::AtomicBool, Arc, Barrier};
 use parking_lot::Mutex;
+use std::sync::{atomic::AtomicBool, Arc, Barrier};
 // Data that will be sent back to the main thread after we start the pipeline thread
 pub struct PipelineHandler {
     // The thread handle for the render thread, so we can join it to the main thread at any time

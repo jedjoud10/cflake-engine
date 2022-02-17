@@ -18,7 +18,7 @@ use glutin::{
 };
 pub use main::*;
 use main::{
-    core::{World, WorldTaskReceiver, WorldState},
+    core::{World, WorldState, WorldTaskReceiver},
     rendering::pipeline::pipec,
 };
 use spin_sleep::LoopHelper;
@@ -120,7 +120,9 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
             world.update_end(task_receiver);
 
             // If the world state is "exit", we must exit from the game
-            if let WorldState::Exit = world.state { *control_flow = ControlFlow::Exit }
+            if let WorldState::Exit = world.state {
+                *control_flow = ControlFlow::Exit
+            }
             sleeper.loop_sleep();
         }
         // When we exit from the engine

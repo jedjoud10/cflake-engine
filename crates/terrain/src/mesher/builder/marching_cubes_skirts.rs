@@ -1,4 +1,4 @@
-use rendering::basics::model::Model;
+use rendering::basics::model::{Model, Vertices};
 
 use crate::{
     mesher::{
@@ -33,9 +33,12 @@ impl MarchingCubesSkirts {
         let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
         let mut model = Model {
-            vertices: Vec::with_capacity(200),
-            normals: Vec::with_capacity(200),
-            uvs: Vec::with_capacity(200),
+            vertices: Vertices {
+                positions: Vec::with_capacity(200),
+                normals: Vec::with_capacity(200),
+                uvs: Vec::with_capacity(200),
+                ..Default::default()
+            },
             triangles: Vec::with_capacity(600),
             ..Default::default()
         };
@@ -184,10 +187,13 @@ impl MarchingCubesSkirts {
             if i == len {
                 return;
             }
+            // Vertex builder
             model.triangles.push(model.vertices.len() as u32);
-            model.vertices.push(vertex);
-            model.normals.push(data.normal);
-            model.uvs.push(veclib::Vector2::new(data.voxel_material, 0));
+            model
+                .vertex_builder()
+                .with_position(vertex)
+                .with_normal(data.normal)
+                .with_uv(veclib::Vector2::new(data.voxel_material, 0));
         }
     }
     // Create a marching squares triangle between 3 skirt voxels

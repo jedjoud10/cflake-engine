@@ -13,7 +13,9 @@ pub struct GameSettings {
     #[serde(default)]
     pub shadow_resolution: ShadowResolution,
     #[serde(default = "default_fps_cap")]
-    pub fps_cap: u32
+    pub fps_cap: u32,
 }
 
-fn default_fps_cap() -> u32 { 120 }
+fn default_fps_cap() -> u32 {
+    120
+}

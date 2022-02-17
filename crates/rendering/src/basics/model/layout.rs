@@ -1,12 +1,13 @@
 // How we lay the VBO data for the model
 #[derive(Clone, Copy)]
 pub enum VertexAttributeBufferLayout {
-    Separate,
+    SeparateVBOs,
+    SameVBO,
     Interleaved,
 }
 
 impl Default for VertexAttributeBufferLayout {
     fn default() -> Self {
-        Self::Separate
+        Self::SeparateVBOs
     }
 }

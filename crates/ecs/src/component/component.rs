@@ -1,11 +1,7 @@
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 use parking_lot::RwLock;
-use std::{
-    any::Any,
-    cell::UnsafeCell,
-    sync::Arc,
-};
+use std::{any::Any, cell::UnsafeCell, sync::Arc};
 
 // A ComponentID that will be used to identify components
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]

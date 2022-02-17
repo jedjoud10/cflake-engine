@@ -53,22 +53,22 @@ impl Asset for Model {
                 // Vertices
                 "v" => {
                     let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.vertices.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                    model.vertices.positions.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
                 }
                 // Normals
                 "n" => {
                     let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
-                    model.normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                    model.vertices.normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
                 }
                 // UVs
                 "u" => {
                     let coords: Vec<u8> = other.split('/').map(|coord| coord.parse::<u8>().unwrap()).collect();
-                    model.uvs.push(veclib::Vector2::new(coords[0], coords[1]));
+                    model.vertices.uvs.push(veclib::Vector2::new(coords[0], coords[1]));
                 }
                 // Tangents
                 "t" => {
                     let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
-                    model.tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
+                    model.vertices.tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
                 }
                 // Triangle indices
                 "i" => {
