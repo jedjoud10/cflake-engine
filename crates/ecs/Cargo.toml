@@ -14,3 +14,4 @@ parking_lot = "0.12.0"
 others = { path = "../others" }
 ecs-derive = { path = "./ecs-derive"  }
 rayon = "1.5.1"
+enum-as-inner = "0.3.3"

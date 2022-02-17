@@ -5,8 +5,8 @@ use main::ecs;
 use main::ecs::event::EventKey;
 
 // A simple system that we can use as template
-fn run(world: &mut World, data: EventKey) {
-    let mut query = data.get_query().unwrap();
+fn run(world: &mut World, mut data: EventKey) {
+    let query = data.as_query_mut().unwrap();
     let time = world.time.elapsed;
     let _obj = world.globals.get_global::<crate::globals::Terrain>().unwrap();
     for (_, components) in query.lock().iter() {

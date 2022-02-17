@@ -101,8 +101,8 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
 }
 
 // The voxel systems' update loop
-fn run(world: &mut World, data: EventKey) {
-    let mut query = data.get_query().unwrap();
+fn run(world: &mut World, mut data: EventKey) {
+    let query = data.as_query_mut().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline = world.pipeline.read();
 

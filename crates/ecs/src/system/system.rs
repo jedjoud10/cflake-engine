@@ -59,7 +59,7 @@ impl System {
         // Do a bit of decrementing
         let removed_components = {
             let removed = self.removed.borrow_mut();
-            let mut lock = ecs_manager.entities_to_remove.lock().unwrap();
+            let mut lock = ecs_manager.entities_to_remove.lock();
             for (_, component) in removed.iter() {
                 // Decrement the counter
                 let (_entity, _removed_id, counter) = lock.get_mut(component.id.0).unwrap();
@@ -73,15 +73,15 @@ impl System {
             evn_added_entity: ecs_manager.event_handler.get_added_entity_event(self.evn_added_entity).cloned(),
             evn_removed_entity: ecs_manager.event_handler.get_removed_entity_event(self.evn_removed_entity).cloned(),
             // Queries
-            evn_run_ekey: EventKey::new(ComponentQuery {
+            evn_run_ekey: EventKey::Query(ComponentQuery {
                 linked_components: all_components,
                 rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
-            evn_added_entity_ekey: EventKey::new(ComponentQuery {
+            evn_added_entity_ekey: EventKey::Query(ComponentQuery {
                 linked_components: added_components,
                 rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
-            evn_removed_entity_ekey: EventKey::new(ComponentQuery {
+            evn_removed_entity_ekey: EventKey::Query(ComponentQuery {
                 linked_components: removed_components,
                 rayon_pool: ecs_manager.rayon_pool.clone(),
             }),

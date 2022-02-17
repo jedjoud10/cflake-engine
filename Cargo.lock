@@ -539,6 +539,7 @@ dependencies = [
  "ahash",
  "bitfield",
  "ecs-derive",
+ "enum-as-inner",
  "lazy_static",
  "ordered_vec",
  "others",

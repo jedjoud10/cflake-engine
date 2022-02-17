@@ -3,8 +3,8 @@ use main::ecs::event::EventKey;
 use main::input::Keys;
 
 // The camera system update loop
-fn run(world: &mut World, data: EventKey) {
-    let mut query = data.get_query().unwrap();
+fn run(world: &mut World, mut data: EventKey) {
+    let query = data.as_query_mut().unwrap();
     // Rotate the camera around
     let mouse_pos = *world.input.get_mouse_position();
     const SENSIVITY: f32 = 0.0007;

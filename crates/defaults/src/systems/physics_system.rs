@@ -2,8 +2,8 @@ use main::{core::World, ecs::event::EventKey};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 // The physics system update loop
-fn run(world: &mut World, data: EventKey) {
-    let mut query = data.get_query().unwrap();
+fn run(world: &mut World, mut data: EventKey) {
+    let query = data.as_query_mut().unwrap();
     // Get the world's delta time
     let delta = world.time.delta as f32;
 

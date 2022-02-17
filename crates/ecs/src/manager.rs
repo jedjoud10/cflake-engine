@@ -1,11 +1,12 @@
 use std::{
     cell::UnsafeCell,
     rc::Rc,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
+use parking_lot::Mutex;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::{
@@ -15,6 +16,9 @@ use crate::{
     system::{System, SystemBuilder},
     utils::{ComponentError, EntityError},
 };
+
+// Const
+pub const ECS_WORKER_THREADS: usize = 4;
 
 // The Entity Component System manager that will handle everything ECS related
 pub struct ECSManager<World> {
@@ -35,7 +39,7 @@ pub struct ECSManager<World> {
 impl<World> Default for ECSManager<World> {
     fn default() -> Self {
         // Start the rayon thread pool
-        let pool = ThreadPoolBuilder::new().num_threads(4).build().unwrap();
+        let pool = ThreadPoolBuilder::new().num_threads(ECS_WORKER_THREADS).build().unwrap();
         Self {
             entities: Default::default(),
             entities_to_remove: Default::default(),
@@ -78,7 +82,7 @@ impl<World> ECSManager<World> {
         let entity = self.entities.remove(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
         let cbitfield = entity.cbitfield;
         // And finally remove the entity from it's systems
-        let mut lock = self.entities_to_remove.lock().unwrap();
+        let mut lock = self.entities_to_remove.lock();
         let removed_id = lock.get_next_id();
         lock.push_shove((entity, removed_id, 0));
         // Get the pointer to the new entity components
@@ -227,7 +231,7 @@ impl<World> ECSManager<World> {
     pub fn finish_update(&mut self) {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
         let removed_entities = {
-            let mut lock = self.entities_to_remove.lock().unwrap();
+            let mut lock = self.entities_to_remove.lock();
             lock.my_drain(|_, (_, _, count)| *count == 0).collect::<Vec<_>>()
         };
         // Remove the dangling components

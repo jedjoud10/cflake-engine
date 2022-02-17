@@ -1,7 +1,6 @@
 mod component;
 pub mod defaults;
 mod linked_components;
-mod macros;
 mod query;
 mod query_guard;
 pub mod registry;
@@ -9,5 +8,4 @@ pub use component::Component;
 pub use component::*;
 pub use ecs_derive::Component;
 pub use linked_components::*;
-pub use macros::*;
 pub use query::*;
