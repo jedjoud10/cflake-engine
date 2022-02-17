@@ -31,7 +31,7 @@ fn init(world: &mut core::World) {
     let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
 
     // Create it's material
-    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_diffuse.png")
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png")
         .unwrap()
         .with_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(&pipeline, texture).unwrap();
@@ -56,7 +56,7 @@ fn init(world: &mut core::World) {
             let id = ecs::entity::EntityID::new(&mut world.ecs);
             let transform = defaults::components::Transform::default()
                 .with_position(veclib::vec3(0.0, 10.0, 0.0))
-                .with_scale(veclib::vec3(50.2, 2.0, 5.0));
+                .with_scale(veclib::vec3(50.2, 2.0, 50.0));
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
