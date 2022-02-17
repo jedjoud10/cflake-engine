@@ -1,7 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use ahash::AHashMap;
 use enum_as_inner::EnumAsInner;
+use parking_lot::Mutex;
 
 use crate::basics::transfer::{Transfer, Transferable};
 
@@ -95,13 +96,13 @@ pub struct ShaderInfoRead {
 impl ShaderInfoRead {
     // Get the updated query parameters of a specific resource
     pub fn get(&self, res: &Resource) -> Option<Vec<UpdatedParameter>> {
-        let lock_ = self.inner.lock().ok()?;
+        let lock_ = self.inner.lock();
         let lock = &lock_.res;
         lock.get(res).cloned()
     }
     // Get all the updated query parameter
     pub fn get_all(&self, unique_resource: &QueryResource) -> Option<Vec<(String, Vec<UpdatedParameter>)>> {
-        let lock_ = self.inner.lock().ok()?;
+        let lock_ = self.inner.lock();
         let lock = &lock_.res_all;
         lock.get(unique_resource).cloned()
     }

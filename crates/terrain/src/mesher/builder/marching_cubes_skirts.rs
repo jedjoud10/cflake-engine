@@ -30,6 +30,9 @@ impl MarchingCubesSkirts {
     }
     // Generate the marching cubes skirts
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
+        if !self.settings.skirts {
+            return Model::default();
+        }
         let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
         let mut model = Model {

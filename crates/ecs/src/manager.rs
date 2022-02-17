@@ -1,8 +1,4 @@
-use std::{
-    cell::UnsafeCell,
-    rc::Rc,
-    sync::Arc,
-};
+use std::{cell::UnsafeCell, rc::Rc, sync::Arc};
 
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};

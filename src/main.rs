@@ -20,7 +20,7 @@ fn init(world: &mut core::World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 0.6, 1000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 1.0, 10000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut world.ecs);

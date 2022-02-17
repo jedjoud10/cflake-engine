@@ -29,7 +29,7 @@ fn run(world: &mut World, mut data: EventKey) {
                     voxel_data,
                     MesherSettings {
                         interpolation: true,
-                        skirts: false,
+                        skirts: true,
                     },
                 );
                 let model = mesher.build();

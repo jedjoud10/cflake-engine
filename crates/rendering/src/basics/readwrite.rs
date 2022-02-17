@@ -1,7 +1,9 @@
 use std::{
     mem::{size_of, ManuallyDrop},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
+
+use parking_lot::Mutex;
 
 use crate::basics::transfer::{Transfer, Transferable};
 // Used to help reading back the bytes from OpenGL storage
@@ -24,7 +26,7 @@ impl ReadBytes {
     // Fill a vector of type elements using the appropriate bytes
     pub fn fill_vec<U>(self) -> Option<Vec<U>> {
         // Read the bytes
-        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
+        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner());
         if bytes.is_empty() {
             return None;
         }
@@ -38,7 +40,7 @@ impl ReadBytes {
         let len = arr.len();
         let byte_count = len * size_of::<U>();
         // Read the bytes
-        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner().ok()?);
+        let mut bytes = ManuallyDrop::new(Arc::try_unwrap(self.bytes).ok()?.into_inner());
         let src_ptr = bytes.as_ptr();
         let dst_ptr = arr.as_mut_ptr() as *mut u8;
         let _new_len = bytes.len() / size_of::<U>();

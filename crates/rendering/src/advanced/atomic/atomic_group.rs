@@ -98,7 +98,7 @@ impl AtomicGroup {
                 );
                 gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
                 // Now store the atomic counters' values
-                let mut cpu_counters_lock = read.0.inner.lock().unwrap();
+                let mut cpu_counters_lock = read.0.inner.lock();
                 let cpu_counters = &mut *cpu_counters_lock;
                 cpu_counters.clear();
                 cpu_counters.try_extend_from_slice(&counts).unwrap();

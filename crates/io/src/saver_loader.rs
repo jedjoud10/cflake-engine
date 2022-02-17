@@ -50,6 +50,4 @@ impl SaverLoader {
         let string = serde_json::to_string_pretty(struct_to_save).unwrap();
         writer.write_all(string.as_bytes()).unwrap();
     }
-    // Save a string to a specific log file in the local user data
-    pub fn save_string(&self, _file_path: &str, _string: String) {}
 }

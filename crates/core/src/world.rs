@@ -1,4 +1,4 @@
-use crate::{GameSettings, WorldState, WorldTaskReceiver};
+use crate::{GameSettings, WorldState};
 use ecs::ECSManager;
 use globals::GlobalCollection;
 use gui::GUIManager;
@@ -50,7 +50,7 @@ impl World {
         });
     }
     // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_start(&mut self) {
         self.state = WorldState::Running;
         // Handle GUI begin frame
         {
@@ -78,8 +78,7 @@ impl World {
             // Actually execute the system now
             execution_data.run(self);
             {
-                // Flush all the commends that we have dispatched during the system's frame execution
-                _task_receiver.flush(self);
+                // Flush all the commands that we have dispatched during the system's frame execution
                 let system = &self.ecs.get_systems()[system_index];
                 system.clear::<World>();
             }
@@ -88,7 +87,7 @@ impl World {
         self.ecs.finish_update();
     }
     // End frame update
-    pub fn update_end(&mut self, _task_receiver: &mut WorldTaskReceiver) {
+    pub fn update_end(&mut self) {
         // Handle GUI end frame
         self.gui.end_frame();
 

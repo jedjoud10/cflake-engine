@@ -1,5 +1,3 @@
-#![windows_subsystem = "windows"]
-
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -18,7 +16,7 @@ use glutin::{
 };
 pub use main::*;
 use main::{
-    core::{World, WorldState, WorldTaskReceiver},
+    core::{World, WorldState},
     rendering::pipeline::pipec,
 };
 use spin_sleep::LoopHelper;
@@ -81,7 +79,6 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     let pipeline_data = rendering::pipeline::init_pipeline(pipeline_settings, window_context);
 
     // Create the world
-    let mut task_receiver = core::WorldTaskReceiver::new();
     let mut world = World::new(config.clone(), io, pipeline_data);
 
     // Calling the callback
@@ -90,8 +87,6 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
         // Load the default systems first
         defaults::preload_system(&mut world);
         init_world(&mut world);
-        // Flush everything and execute all the tasks
-        task_receiver.flush(&mut world);
     }
     let mut sleeper = LoopHelper::builder().build_with_target_rate(config.fps_cap as f32);
 
@@ -99,11 +94,11 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         // Handle the glutin (winit) events
-        handle_glutin_events(&mut sleeper, &mut task_receiver, &mut world, event, control_flow);
+        handle_glutin_events(&mut sleeper, &mut world, event, control_flow);
     });
 }
 // Handle events
-fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskReceiver, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
+fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
     match event {
         // Window events
         Event::WindowEvent { window_id: _, event } => handle_window_event(event, world, control_flow),
@@ -116,8 +111,8 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, task_receiver: &mut WorldTaskR
             // Update the timings
             world.time.update(delta);
             // We can update the world now
-            world.update_start(task_receiver);
-            world.update_end(task_receiver);
+            world.update_start();
+            world.update_end();
 
             // If the world state is "exit", we must exit from the game
             if let WorldState::Exit = world.state {

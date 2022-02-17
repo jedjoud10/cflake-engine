@@ -427,7 +427,7 @@ impl Texture {
             gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
             gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
             let read = read.0;
-            let mut cpu_bytes = read.bytes.as_ref().lock().unwrap();
+            let mut cpu_bytes = read.bytes.as_ref().lock();
             *cpu_bytes = vec;
         })
     }

@@ -161,7 +161,7 @@ impl ShaderStorage {
                     vec
                 };
                 // Now store the shader storage's bytes
-                let mut output_bytes = read.0.bytes.lock().unwrap();
+                let mut output_bytes = read.0.bytes.lock();
                 *output_bytes = bytes;
             },
             pipeline,

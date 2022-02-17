@@ -135,7 +135,7 @@ pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderI
             let program = identifier.get_program(pipeline);
             let output_queried_resources = query_shader_info(program, settings);
             // Finally update the mutex that holds the queried resources
-            let mut lock = (read.0).inner.lock().unwrap();
+            let mut lock = (read.0).inner.lock();
             *lock = output_queried_resources;
         },
         pipeline,
