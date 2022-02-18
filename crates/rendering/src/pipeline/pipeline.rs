@@ -206,7 +206,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let missing = pipec::construct::<Texture>(
         pipeline,
         load(
-            "defaults\\textures\\missing_texture.png",
+            "defaults/textures/missing_texture.png",
             Texture::default().with_filter(TextureFilter::Nearest).with_mipmaps(true),
         )
         .unwrap(),
@@ -248,8 +248,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 
     // Create the default rendering shader
     let settings = ShaderSettings::default()
-        .source("defaults\\shaders\\rendering\\default.vrsh.glsl")
-        .source("defaults\\shaders\\rendering\\default.frsh.glsl");
+        .source("defaults/shaders/rendering/default.vrsh.glsl")
+        .source("defaults/shaders/rendering/default.frsh.glsl");
     let shader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
 
     // Create the default material

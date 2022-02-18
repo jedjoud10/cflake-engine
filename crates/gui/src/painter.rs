@@ -32,8 +32,8 @@ impl Painter {
     pub fn new(pipeline: &mut Pipeline) -> Self {
         // Load the GUI shader
         let shader_settings = ShaderSettings::default()
-            .source("defaults\\shaders\\gui\\vert.vrsh.glsl")
-            .source("defaults\\shaders\\gui\\frag.frsh.glsl");
+            .source("defaults/shaders/gui/vert.vrsh.glsl")
+            .source("defaults/shaders/gui/frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();
         // Load the egui font texture

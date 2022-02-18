@@ -1,6 +1,6 @@
 #version 460 core
 #include_custom {"voxel_include_path"}
-#include "defaults\shaders\voxel_terrain\shared.func.glsl"
+#include "defaults/shaders/voxel_terrain/shared.func.glsl"
 
 const int CHUNK_SIZE = #constant chunk_size
 // Load the voxel function file

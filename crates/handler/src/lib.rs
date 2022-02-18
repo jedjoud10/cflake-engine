@@ -45,9 +45,9 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
 pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = main::io::SaverLoader::new(author_name, app_name);
-    io.create_default("config\\game_config.json", &core::GameSettings::default());
-    let config: core::GameSettings = io.load("config\\game_config.json");
-    io.save("config\\game_config.json", &config);
+    io.create_default("config/game_config.json", &core::GameSettings::default());
+    let config: core::GameSettings = io.load("config/game_config.json");
+    io.save("config/game_config.json", &config);
 
     // Glutin stuff
     let event_loop = EventLoop::new();

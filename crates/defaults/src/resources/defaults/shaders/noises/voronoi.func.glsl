@@ -1,5 +1,5 @@
 // My custom implementation of Worley (Voronoi noise)
-#include "defaults\shaders\others\hashes.func.glsl"
+#include "defaults/shaders/others/hashes.func.glsl"
 // Get a random sphere location using a cell coordinate
 vec3 get_sphere_location(ivec3 cell_coord) {
     vec3 location = hash33(cell_coord);

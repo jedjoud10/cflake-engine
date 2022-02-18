@@ -116,8 +116,8 @@ impl PipelineRenderer {
 
         // Load the lighting pass shader
         let settings = ShaderSettings::default()
-            .source("defaults\\shaders\\rendering\\passthrough.vrsh.glsl")
-            .source("defaults\\shaders\\rendering\\lighting_pass.frsh.glsl")
+            .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
+            .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
             .shader_constant("shadow_bias", pipeline_settings.shadow_bias);
         self.lighting_pass_screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
         /* #region Deferred renderer init */
@@ -178,7 +178,7 @@ impl PipelineRenderer {
         // Load sky gradient texture
         self.sky_gradient = pipec::construct(
             pipeline,
-            assets::assetc::dload::<Texture>("defaults\\textures\\sky_gradient.png")
+            assets::assetc::dload::<Texture>("defaults/textures/sky_gradient.png")
                 .unwrap()
                 .with_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
         )

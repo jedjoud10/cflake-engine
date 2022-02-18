@@ -1,9 +1,9 @@
 #version 460 core
 #load general
-#include "defaults\shaders\rendering\sky.func.glsl"
-#include "defaults\shaders\rendering\sun.func.glsl"
-#include "defaults\shaders\rendering\shadow_calculations.func.glsl"
-#include "defaults\shaders\rendering\lighting.func.glsl"
+#include "defaults/shaders/rendering/sky.func.glsl"
+#include "defaults/shaders/rendering/sun.func.glsl"
+#include "defaults/shaders/rendering/shadow_calculations.func.glsl"
+#include "defaults/shaders/rendering/lighting.func.glsl"
 out vec3 color;
 
 uniform sampler2D diffuse_texture; // 0

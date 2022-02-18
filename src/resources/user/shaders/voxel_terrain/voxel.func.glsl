@@ -1,7 +1,7 @@
-#include "defaults\shaders\others\hashes.func.glsl"
-#include "defaults\shaders\noises\simplex.func.glsl"
-#include "defaults\shaders\noises\voronoi.func.glsl"
-#include "defaults\shaders\others\sdf.func.glsl"
+#include "defaults/shaders/others/hashes.func.glsl"
+#include "defaults/shaders/noises/simplex.func.glsl"
+#include "defaults/shaders/noises/voronoi.func.glsl"
+#include "defaults/shaders/others/sdf.func.glsl"
 
 uniform sampler2D tex;
 // A simple voxel that is stored in an array, in a GPU buffer 

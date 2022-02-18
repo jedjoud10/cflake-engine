@@ -6,7 +6,7 @@ mod test {
     // Some tests lol
     #[test]
     fn test() {
-        preload_asset!(".\\resources\\test.txt");
+        preload_asset!("./resources/test.txt");
         // Load the test text file
         let text = crate::assetc::load_text("test.txt").unwrap();
         assert_eq!(text, "This is a test".to_string());

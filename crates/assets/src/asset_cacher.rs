@@ -11,7 +11,7 @@ pub struct AssetCacher {
 impl AssetCacher {
     // Pre-load some asset metadata
     pub fn pre_load(&mut self, name: &str, bytes: &[u8]) -> Result<(), AssetLoadError> {
-        let name = name.split("resources\\").last().unwrap();
+        let name = name.split("resources/").last().unwrap();
         // Get the extension
         let first_dot_index = name.split("").position(|c| c == ".").unwrap();
         let extension = name.split_at(first_dot_index).1.to_string();

@@ -6,16 +6,16 @@ fn main() {
 }
 fn preload_assets() {
     // -----Pre-load the game assets here-----
-    assets::preload_asset!(".\\resources\\user\\textures\\rock_diffuse.png");
-    assets::preload_asset!(".\\resources\\user\\textures\\rock_normal.png");
-    assets::preload_asset!(".\\resources\\user\\textures\\forrest_ground_01_diff_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\forrest_ground_01_nor_gl_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_06_diff_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_06_nor_gl_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_08_diff_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\rocks_ground_08_nor_gl_2k.jpg");
-    assets::preload_asset!(".\\resources\\user\\textures\\saber.png");
-    assets::preload_asset!(".\\resources\\user\\shaders\\voxel_terrain\\voxel.func.glsl");
+    assets::preload_asset!("./resources/user/textures/rock_diffuse.png");
+    assets::preload_asset!("./resources/user/textures/rock_normal.png");
+    assets::preload_asset!("./resources/user/textures/forrest_ground_01_diff_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/forrest_ground_01_nor_gl_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/rocks_ground_06_diff_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/rocks_ground_06_nor_gl_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/rocks_ground_08_diff_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/rocks_ground_08_nor_gl_2k.jpg");
+    assets::preload_asset!("./resources/user/textures/saber.png");
+    assets::preload_asset!("./resources/user/shaders/voxel_terrain/voxel.func.glsl");
 }
 fn init(world: &mut core::World) {
     // ----Start the world----
@@ -28,16 +28,16 @@ fn init(world: &mut core::World) {
     world.ecs.add_entity(entity, id, group).unwrap();
     let pipeline = world.pipeline.read();
     // Create it's model
-    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults\\models\\cube.mdl3d").unwrap();
+    let model = assets::assetc::dload::<rendering::basics::model::Model>("defaults/models/cube.mdl3d").unwrap();
     let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
 
     // Create it's material
-    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png")
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/saber.png")
         .unwrap()
         .with_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(&pipeline, texture).unwrap();
 
-    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rock_normal.png")
+    let texture2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/rock_normal.png")
         .unwrap()
         .with_mipmaps(true);
     let texture2 = rendering::pipeline::pipec::construct(&pipeline, texture2).unwrap();
@@ -85,18 +85,18 @@ fn init(world: &mut core::World) {
     // Load a terrain material
     // Load the shader first
     let settings = rendering::basics::shader::ShaderSettings::default()
-        .source("defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl")
-        .source("defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
+        .source("defaults/shaders/voxel_terrain/terrain.vrsh.glsl")
+        .source("defaults/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = rendering::pipeline::pipec::construct(&pipeline, rendering::basics::shader::Shader::new(settings).unwrap()).unwrap();
     // Then the textures
     let _white = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().white).unwrap();
     let _normal_map = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
-    let texture_diff_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_diff_2k.jpg").unwrap();
-    let texture_norm_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\forrest_ground_01_nor_gl_2k.jpg").unwrap();
-    let texture_diff_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_diff_2k.jpg").unwrap();
-    let texture_norm_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_06_nor_gl_2k.jpg").unwrap();
-    let texture_diff_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_diff_2k.jpg").unwrap();
-    let texture_norm_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\rocks_ground_08_nor_gl_2k.jpg").unwrap();
+    let texture_diff_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
+    let texture_norm_1 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
+    let texture_diff_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
+    let texture_norm_2 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    let texture_diff_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
+    let texture_norm_3 = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     let diffuse = rendering::basics::texture::Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
         .unwrap()
         .with_mipmaps(true)
@@ -121,14 +121,14 @@ fn init(world: &mut core::World) {
             dist < 1.2 || node.depth == 1
         })
         .with_threshold(64.0);
-    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user\\textures\\saber.png").unwrap();
+    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/saber.png").unwrap();
     let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = defaults::globals::TerrainSettings::default()
         .with_depth(6)
         .with_material(material)
         .with_heuristic(heuristic)
-        .with_voxel_src("user\\shaders\\voxel_terrain\\voxel.func.glsl");
+        .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();
 }

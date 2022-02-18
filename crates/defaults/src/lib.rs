@@ -13,46 +13,46 @@ pub fn preload_default_assets() {
     // Pre load the resources
     println!("Pre-loading default assets...");
     // Rendering
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\passthrough.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\lighting_pass.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\default.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.vrsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\shadow_calculations.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\screen_space_reflections.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\lighting.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sky.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\rendering\\sun.func.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/passthrough.vrsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/lighting_pass.frsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/default.vrsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/default.frsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/shadow.vrsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/shadow.frsh.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/shadow_calculations.func.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/screen_space_reflections.func.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/lighting.func.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/sky.func.glsl");
+    preload_asset!("./resources/defaults/shaders/rendering/sun.func.glsl");
     // GUI
-    preload_asset!(".\\resources\\defaults\\shaders\\gui\\frag.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\gui\\vert.vrsh.glsl");
+    preload_asset!("./resources/defaults/shaders/gui/frag.frsh.glsl");
+    preload_asset!("./resources/defaults/shaders/gui/vert.vrsh.glsl");
     // Others
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\hashes.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\triplanar.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\sdf.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\dithering.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\template_compute.cmpt.glsl");
+    preload_asset!("./resources/defaults/shaders/others/hashes.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/triplanar.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/sdf.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/dithering.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/template_compute.cmpt.glsl");
     // Default impls
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\general.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\others\\default_impls\\renderer.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/default_impls/general.func.glsl");
+    preload_asset!("./resources/defaults/shaders/others/default_impls/renderer.func.glsl");
     // Models
-    preload_asset!(".\\resources\\defaults\\models\\sphere.mdl3d");
-    preload_asset!(".\\resources\\defaults\\models\\quad.mdl3d");
-    preload_asset!(".\\resources\\defaults\\models\\cube.mdl3d");
+    preload_asset!("./resources/defaults/models/sphere.mdl3d");
+    preload_asset!("./resources/defaults/models/quad.mdl3d");
+    preload_asset!("./resources/defaults/models/cube.mdl3d");
     // Noise
-    preload_asset!(".\\resources\\defaults\\shaders\\noises\\simplex.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\noises\\voronoi.func.glsl");
+    preload_asset!("./resources/defaults/shaders/noises/simplex.func.glsl");
+    preload_asset!("./resources/defaults/shaders/noises/voronoi.func.glsl");
     // Voxel terrain
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\base.cmpt.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\second.cmpt.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\voxel.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\shared.func.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.frsh.glsl");
-    preload_asset!(".\\resources\\defaults\\shaders\\voxel_terrain\\terrain.vrsh.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/base.cmpt.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/second.cmpt.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/voxel.func.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/shared.func.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
+    preload_asset!("./resources/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
     // Textures
-    preload_asset!(".\\resources\\defaults\\textures\\missing_texture.png");
-    preload_asset!(".\\resources\\defaults\\textures\\sky_gradient.png");
+    preload_asset!("./resources/defaults/textures/missing_texture.png");
+    preload_asset!("./resources/defaults/textures/sky_gradient.png");
 
     println!("Finished pre-loading default assets!");
 }

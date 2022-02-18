@@ -80,8 +80,8 @@ impl ShadowMapping {
         // Load our custom shadow shader
         let shader = Shader::new(
             ShaderSettings::default()
-                .source("defaults\\shaders\\rendering\\shadow.vrsh.glsl")
-                .source("defaults\\shaders\\rendering\\shadow.frsh.glsl"),
+                .source("defaults/shaders/rendering/shadow.vrsh.glsl")
+                .source("defaults/shaders/rendering/shadow.frsh.glsl"),
         )
         .unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();

@@ -1,7 +1,7 @@
 #version 460 core
 #load renderer
 #load general
-#include "defaults\shaders\others\triplanar.func.glsl"
+#include "defaults/shaders/others/triplanar.func.glsl"
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_emissive;
 layout(location = 2) out vec3 frag_normal;

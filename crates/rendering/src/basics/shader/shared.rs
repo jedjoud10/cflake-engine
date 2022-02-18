@@ -66,11 +66,11 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             let x = match line.split("#load ").collect::<Vec<&str>>()[1] {
                 // Refactor this
                 "renderer" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\renderer.func.glsl".to_string();
+                    *line = "#include defaults/shaders/others/default_impls/renderer.func.glsl".to_string();
                     Ok(())
                 }
                 "general" => {
-                    *line = "#include defaults\\shaders\\others\\default_impls\\general.func.glsl".to_string();
+                    *line = "#include defaults/shaders/others/default_impls/general.func.glsl".to_string();
                     Ok(())
                 }
                 x => Err(IncludeExpansionError::new(format!("Tried to expand #load, but the given type '{}' is not valid!", x))),
