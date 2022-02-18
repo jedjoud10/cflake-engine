@@ -1,13 +1,12 @@
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
-    pipeline::Pipeline,
+    pipeline::Pipeline, utils::UpdateFrequency,
 };
 use std::{ffi::c_void, mem::size_of, ptr::null};
 use gl::types::GLuint;
 use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
 
 // A simple model that holds vertex, normal, and color data
-#[derive(Default)]
 pub struct Model {
     // Main IDs
     pub vertex_array_object: GLuint,
@@ -30,8 +29,24 @@ pub struct Model {
     // How we set the VBO buffers
     pub layout: VertexAttributeBufferLayout,
 
+    // Update frequence
+    pub update_frequency: UpdateFrequency,
+
     // Triangles
     pub triangles: Vec<u32>,
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Self { 
+            vertex_array_object: Default::default(),
+            buffers: Default::default(),
+            vertices: Default::default(),
+            layout: Default::default(),
+            update_frequency: UpdateFrequency::Static, 
+            triangles: Default::default()
+        }
+    }
 }
 
 impl PipelineObject for Model {
@@ -243,6 +258,11 @@ impl PipelineObject for Model {
                 } else {
                     gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
                 }
+            }
+
+            // Clear the CPU buffers if we want to
+            if let UpdateFrequency::Static = self.update_frequency {
+                self.vertices.reset();
             }
 
             // Unbind

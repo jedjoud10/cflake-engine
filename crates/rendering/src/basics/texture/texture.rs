@@ -46,6 +46,8 @@ pub struct Texture {
     pub ttype: TextureType,
     // How we access this texture on the CPU
     pub(crate) cpu_access: TextureAccessType,
+    // Is this texture dynamic
+    pub(crate) dynamic_state: UpdateFrequency,
     // And the corresponding upload / download PBOs,
     pub(crate) write_pbo: Option<GLuint>,
     pub(crate) read_pbo: Option<GLuint>,
@@ -70,6 +72,7 @@ impl Default for Texture {
             custom_params: SmallVec::default(),
             ttype: TextureType::Texture2D(0, 0),
             cpu_access: TextureAccessType::empty(),
+            dynamic_state: UpdateFrequency::Static,
             write_pbo: None,
             read_pbo: None,
             mipmaps: false,
@@ -248,6 +251,13 @@ impl PipelineObject for Texture {
         unsafe {
             gl::BindTexture(tex_type, 0);
         }
+
+        // If we are a static texture, we don't need to keep the bytes on the CPU anymore
+        if let UpdateFrequency::Static = self.dynamic_state {
+            self.bytes.clear();
+            self.bytes.shrink_to_fit();
+        }
+
         pipeline.textures.insert(id, self);
         Some(())
     }

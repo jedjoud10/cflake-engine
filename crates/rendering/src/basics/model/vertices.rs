@@ -10,7 +10,17 @@ pub struct Vertices {
 }
 
 impl Vertices {
+    // Length
     pub fn len(&self) -> usize {
         self.positions.len()
+    }
+
+    // Reset all the buffers
+    pub fn reset(&mut self) {
+        self.positions.drain(..);
+        self.normals.drain(..);
+        self.tangents.drain(..);
+        self.uvs.drain(..);
+        self.colors.drain(..);
     }
 }
