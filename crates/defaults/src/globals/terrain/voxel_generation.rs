@@ -7,7 +7,7 @@ use main::{
             compute::ComputeShader,
             shader_storage::ShaderStorage,
         },
-        basics::{readwrite::ReadBytes, shader::ShaderSettings, uniforms::ShaderIDType},
+        basics::{readwrite::ReadBytes, shader::ShaderSettings, uniforms::{ShaderIDType, SetUniformsCallback}},
         object::{ObjectID, ReservedTrackedID},
         pipeline::{pipec, Pipeline},
         utils::{AccessType, UpdateFrequency},
@@ -34,11 +34,13 @@ pub struct VoxelGenerator {
     // And the voxel data for said chunk
     pub packed_chunk_voxel_data: PackedVoxelData,
     pub stored_chunk_voxel_data: StoredVoxelData,
+    // Some uniforms
+    pub uniforms: Option<SetUniformsCallback>,
 }
 
 impl VoxelGenerator {
     // Create a new voxel generator
-    pub fn new(voxel_src_path: &str, pipeline: &Pipeline) -> Self {
+    pub fn new(voxel_src_path: &str, uniforms: Option<SetUniformsCallback>, pipeline: &Pipeline) -> Self {
         // Load the first pass compute shader
         let voxel_src_path = format!("#include {}", format!(r#""{}""#, voxel_src_path));
         let settings = ShaderSettings::default()
@@ -80,6 +82,7 @@ impl VoxelGenerator {
             atomics,
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,
+            uniforms,
             ..Default::default()
         }
     }

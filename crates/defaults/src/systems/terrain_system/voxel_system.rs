@@ -28,10 +28,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_i32("node_size", chunk_coords.size as i32);
     });
     // Now we can execute the compute shader and the read bytes command
-    let execution_settings = ComputeShaderExecutionSettings {
-        axii: (AXIS, AXIS, AXIS),
-        callback: uniforms,
-    };
+    let execution_settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS)).with_callback(uniforms);
     pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
@@ -45,10 +42,10 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_atomic_group("_", atomics, true, 0);
     });
     // And execute the shader
-    let execution_settings2 = ComputeShaderExecutionSettings {
-        axii: (AXIS2, AXIS2, AXIS2),
-        callback: uniforms,
-    };
+    let execution_settings2 = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2)).with_callback(uniforms);
+    let execution_settings2 = if let Some(uniforms) = &terrain.generator.uniforms {
+        execution_settings2.with_callback(uniforms.clone())
+    } else { execution_settings2 };
     pipec::tracked_task_requirement(
         pipeline,
         TrackedTask::RunComputeShader(generator.second_compute_shader, execution_settings2),

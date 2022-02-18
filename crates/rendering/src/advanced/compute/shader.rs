@@ -145,8 +145,11 @@ impl ComputeShader {
         GlTracker::new(
             |_| unsafe {
                 uniforms.bind_shader();
-                settings.callback.execute(&uniforms);
-                gl::DispatchCompute(axii.0 as u32, axii.1 as u32, axii.2 as u32);
+                // Execute the uniforms
+                for x in settings.callbacks {
+                    x.execute(&uniforms);
+                }
+                gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
             },
             pipeline,
         )

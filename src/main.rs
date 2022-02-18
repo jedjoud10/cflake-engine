@@ -52,8 +52,8 @@ fn init(world: &mut core::World) {
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Play a sound
-    let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/nicolas.mp3").unwrap();
-    let source = world.audio.cache(source).unwrap();
+    //let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/nicolas.mp3").unwrap();
+    //let source = world.audio.cache(source).unwrap();
 
     // Create a simple cube
     let mut rng = rand::thread_rng();
@@ -63,7 +63,7 @@ fn init(world: &mut core::World) {
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
             let transform = defaults::components::Transform::default().with_position(veclib::vec3(rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0));
-            world.audio.play_positional(&source, transform.position).unwrap();
+            //world.audio.play_positional(&source, transform.position).unwrap();
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
@@ -128,12 +128,15 @@ fn init(world: &mut core::World) {
         })
         .with_threshold(64.0);
     let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/saber.png").unwrap();
-    let _tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
+    let tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = defaults::globals::TerrainSettings::default()
         .with_depth(6)
         .with_material(material)
         .with_heuristic(heuristic)
+        .with_uniforms(rendering::basics::uniforms::SetUniformsCallback::new(move |x| {
+            x.set_texture("tex", tex, 0)
+        }))
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();

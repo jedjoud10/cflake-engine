@@ -25,7 +25,7 @@ impl Terrain {
                 material: settings.material,
                 ..Default::default()
             },
-            generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
+            generator: VoxelGenerator::new(&settings.voxel_src_path, settings.uniforms, pipeline),
         }
     }
 }

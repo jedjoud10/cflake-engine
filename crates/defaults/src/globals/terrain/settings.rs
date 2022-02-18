@@ -1,12 +1,13 @@
 use main::{
     math::octrees::HeuristicSettings,
-    rendering::{basics::material::Material, object::ObjectID},
+    rendering::{basics::{material::Material, uniforms::SetUniformsCallback}, object::ObjectID},
 };
 
 // Terrain settings for simplicity
 pub struct TerrainSettings {
     // Voxel gen
     pub(crate) voxel_src_path: String,
+    pub(crate) uniforms: Option<SetUniformsCallback>,
 
     // Octree gen
     pub(crate) depth: u8,
@@ -20,6 +21,7 @@ impl Default for TerrainSettings {
     fn default() -> Self {
         Self {
             voxel_src_path: main::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
+            uniforms: Default::default(),
             depth: 4,
             heuristic_settings: Default::default(),
             material: Default::default(),
@@ -46,6 +48,11 @@ impl TerrainSettings {
     // Generate the terrain with a specific octree heuristic settings
     pub fn with_heuristic(mut self, settings: HeuristicSettings) -> Self {
         self.heuristic_settings = settings;
+        self
+    }
+    // Generate the terrain with some specific uniforms
+    pub fn with_uniforms(mut self, uniforms: SetUniformsCallback) -> Self {
+        self.uniforms = Some(uniforms);
         self
     }
 }
