@@ -1,11 +1,9 @@
-use gl::types::GLuint;
-
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
 use std::{ffi::c_void, mem::size_of, ptr::null};
-
+use gl::types::GLuint;
 use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
 
 // A simple model that holds vertex, normal, and color data
@@ -61,7 +59,7 @@ impl PipelineObject for Model {
 
             // We can create all the buffers at once
             let mut buffers = [0_u32; 6];
-            gl::GenBuffers(6, buffers.as_mut_ptr());
+            gl::GenBuffers(1, buffers.as_mut_ptr());
 
             // Create the EBO
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers[0]);
@@ -74,104 +72,96 @@ impl PipelineObject for Model {
 
             // We now have 2 ways to represent the vertex attributes: either we pack them tightly in their own VBO, or we interleave them
             if let VertexAttributeBufferLayout::Interleaved = self.layout {
-                /*
                 // Interleaved
                 // Calculate the stride
                 let mut stride;
                 // Positions
                 stride = size_of::<f32>() * 3;
                 // Normals (optional)
-                if !self.normals.is_empty() { stride += size_of::<i8>() * 3; }
+                if !self.vertices.normals.is_empty() { stride += size_of::<i8>() * 3; }
                 // Tangents (optional)
-                if !self.tangents.is_empty() { stride += size_of::<i8>() * 4; }
+                if !self.vertices.tangents.is_empty() { stride += size_of::<i8>() * 4; }
                 // UVS (optional)
-                if !self.uvs.is_empty() { stride += size_of::<u8>() * 2; }
+                if !self.vertices.uvs.is_empty() { stride += size_of::<u8>() * 2; }
                 // Colors (optional)
-                if !self.colors.is_empty() { stride += size_of::<u8>() * 3; }
+                if !self.vertices.colors.is_empty() { stride += size_of::<u8>() * 3; }
                 let stride = stride as i32;
 
-                // A single big buffer
+                // Convert the different vectors into a big chunky one
+                let mut big_vector = Vec::with_capacity(self.vertices.len() * stride as usize);
+                // Kill me.
+                // "I must optimize this but that is a problem for future me" - Me atm
+                for (idx, x) in self.vertices.positions.iter().enumerate() {
+                    // Add
+                    big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<f32>, [u8; size_of::<f32>() * 3]>(x));
+                    if !self.vertices.normals.is_empty() { 
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<i8>, [u8; size_of::<i8>() * 3]>(self.vertices.normals.get(idx)?));
+                    }
+                    if !self.vertices.tangents.is_empty() { 
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector4<i8>, [u8; size_of::<i8>() * 4]>(self.vertices.tangents.get(idx)?));
+                    }
+                    if !self.vertices.uvs.is_empty() { 
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector2<u8>, [u8; size_of::<u8>() * 2]>(self.vertices.uvs.get(idx)?));
+                    }
+                    if !self.vertices.colors.is_empty() { 
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<u8>, [u8; size_of::<u8>() * 3]>(self.vertices.colors.get(idx)?));
+                    }
+                }
+
+                gl::GenBuffers(1, buffers.as_mut_ptr().add(1));
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
                 gl::BufferData(
                     gl::ARRAY_BUFFER,
-                    (self.vertices.len() * ) as isize,
-                    self.vertices.as_ptr() as *const c_void,
+                    (big_vector.len()) as isize,
+                    big_vector.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 );
+
+                // The stride increase each time we add an attribute
+                let mut current_stride = 0;
 
                 // Vertex attrib array
                 gl::EnableVertexAttribArray(0);
                 gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, stride, null());
+                current_stride += size_of::<f32>() * 3;
 
                 // Vertex normals attribute
-                if !self.normals.is_empty() {
-                    // Vertex normals buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.normals.len() * size_of::<i8>() * 3) as isize,
-                        self.normals.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
+                if !self.vertices.normals.is_empty() {
                     gl::EnableVertexAttribArray(1);
-                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
+                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                    current_stride += size_of::<i8>() * 3;
                 } else {
                     gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
                 }
 
-                if !self.tangents.is_empty() {
-                    // And it's brother, the tangent buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.tangents.len() * size_of::<i8>() * 4) as isize,
-                        self.tangents.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
+                if !self.vertices.tangents.is_empty() {
                     // Tangent attribute
                     gl::EnableVertexAttribArray(2);
-                    gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
+                    gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                    current_stride += size_of::<i8>() * 4;
                 } else {
                     gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
                 }
 
-                if !self.uvs.is_empty() {
-                    // The texture coordinates buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.uvs.len() * size_of::<u8>() * 2) as isize,
-                        self.uvs.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
+                if !self.vertices.uvs.is_empty() {
                     // UV attribute
                     gl::EnableVertexAttribArray(3);
-                    gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                    gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                    current_stride += size_of::<u8>() * 2;
                 } else {
                     gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
                 }
 
-                if !self.colors.is_empty() {
-                    // Vertex colors buffer
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                    gl::BufferData(
-                        gl::ARRAY_BUFFER,
-                        (self.colors.len() * size_of::<u8>() * 3) as isize,
-                        self.colors.as_ptr() as *const c_void,
-                        gl::STATIC_DRAW,
-                    );
-
+                if !self.vertices.colors.is_empty() {
                     // Vertex colors attribute
                     gl::EnableVertexAttribArray(4);
-                    gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                    gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                    //current_stride += size_of::<u8>() * 3;
                 } else {
                     gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
                 }
-                */
             } else {
+                gl::GenBuffers(5, buffers.as_mut_ptr().add(1));
                 // Normal, fallback
                 // Create the vertex buffer and populate it
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);

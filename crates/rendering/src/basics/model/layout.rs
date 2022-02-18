@@ -2,7 +2,6 @@
 #[derive(Clone, Copy)]
 pub enum VertexAttributeBufferLayout {
     SeparateVBOs,
-    SameVBO,
     Interleaved,
 }
 

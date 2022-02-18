@@ -23,8 +23,8 @@ fn run(world: &mut World, _data: EventKey) {
         ui.separator();
         ui.heading("Timings");
         ui.label(format!("Time: {:.1}", world.time.elapsed));
-        ui.label(format!("Delta: {:.3}", world.time.delta));
-        ui.label(format!("FPS: {:.1}", 1.0 / world.time.delta));
+        ui.label(format!("Delta: {:.3}", world.time.smoothed_delta));
+        ui.label(format!("FPS: {:.1}", 1.0 / world.time.smoothed_delta));
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
