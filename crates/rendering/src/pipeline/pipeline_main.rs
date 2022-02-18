@@ -6,10 +6,6 @@ pub mod pipec {
         object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
         pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
     };
-    // Debug some pipeline data
-    pub fn set_debugging(pipeline: &Pipeline, debugging: bool) {
-        pipeline.debugging.store(debugging, Ordering::Relaxed);
-    }
     // Send a task to the pipeline
     fn send(pipeline: &Pipeline, task: PipelineTask) {
         sender::send_task(task, pipeline).unwrap()

@@ -160,12 +160,21 @@ impl<World> ECSManager<World> {
         });
         // Update the entity's components
         let entity = self.get_entity_mut(&id).unwrap();
-        let components = entity
+        // Dear god
+        let components_elems = entity
             .components
-            .drain_filter(|cbitfield, _idx| unlink_group.removal_cbitfield.contains(cbitfield))
-            .collect::<Vec<_>>();
+            .iter().filter_map(|(cbitfield, idx)| {
+                if unlink_group.removal_cbitfield.contains(cbitfield) {
+                    Some((*cbitfield, *idx))
+                } else { None }
+            }).collect::<Vec<_>>();
+
+        // We shall remove
         entity.cbitfield = new;
-        for (cbitfield, idx) in components {
+        for (cbitfield, _) in &components_elems {
+            entity.components.remove(&cbitfield).unwrap();
+        }
+        for (cbitfield, idx) in components_elems {
             self.remove_component(ComponentID::new(cbitfield, idx))?;
         }
         Ok(())

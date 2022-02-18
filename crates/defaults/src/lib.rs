@@ -1,4 +1,3 @@
-#![feature(int_roundings)]
 use main::{assets::preload_asset, core::World};
 use systems::*;
 // Default components

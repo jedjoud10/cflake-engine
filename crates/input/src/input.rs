@@ -176,7 +176,7 @@ impl InputManager {
     }
     // Check if a map changed
     pub fn map_changed(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(_, changed)| changed.then_some(())).is_some()
+        self.maps.get(name).and_then(|(_, changed)| if *changed { Some(()) } else { None }).is_some()
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {

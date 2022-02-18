@@ -15,7 +15,8 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     let generator = &mut terrain.generator;
     terrain.chunk_handler.chunk_id = Some(id);
     // Create the compute shader execution settings and execute the compute shader
-    const AXIS: u16 = ((CHUNK_SIZE + 1) as u16).div_ceil(8);
+    const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
+    const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
     // Set the uniforms for the first compute shader
     let chunk_coords = chunk.coords;
     let arbitrary_voxels = generator.shader_storage_arbitrary_voxels;
@@ -28,7 +29,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     });
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings {
-        axii: (AXIS + 1, AXIS + 1, AXIS + 1),
+        axii: (AXIS, AXIS, AXIS),
         callback: uniforms,
     };
     pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
@@ -45,7 +46,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     });
     // And execute the shader
     let execution_settings2 = ComputeShaderExecutionSettings {
-        axii: (AXIS, AXIS, AXIS),
+        axii: (AXIS2, AXIS2, AXIS2),
         callback: uniforms,
     };
     pipec::tracked_task_requirement(

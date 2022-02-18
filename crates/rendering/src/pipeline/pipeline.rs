@@ -20,7 +20,7 @@ use std::sync::{
     Arc, Barrier,
 };
 
-use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext};
+use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext, FrameDebugInfo};
 
 // A single pipeline callback
 pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>;
@@ -64,8 +64,8 @@ pub struct Pipeline {
     pub(crate) camera: Camera,
     // Our window
     pub window: Window,
-    // Atomic used to debug some data
-    pub(crate) debugging: AtomicBool,
+    // Some debug info
+    pub debugging: Mutex<FrameDebugInfo>,
 
     // End Of Frame callbacks
     pub(crate) callbacks: PipelineEoFCallbacks,
@@ -110,15 +110,7 @@ impl Pipeline {
         };
 
         // Add the tracked ID to our pipeline
-        internal.gltrackers.insert(tracking_id, gltracker);
-
-        // Also check each GlTracker and check if it finished executing
-        let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
-
-        // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
-        for (completed, _) in completed_ids {
-            self.completed_tasks.set(completed.0 as usize, true);
-        }
+        internal.gltrackers.insert(tracking_id, gltracker);        
     }
     // Execute a single task
     fn execute_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTask) {
@@ -132,16 +124,24 @@ impl Pipeline {
     }
     // Called each frame during the "free-zone"
     pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
-        // Also check each GlTracker and check if it finished executing
-        let completed_ids = internal.gltrackers.drain_filter(|_id, tracker| tracker.completed(self)).collect::<Vec<_>>();
-
-        // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
-        for (completed, _) in completed_ids {
-            self.completed_tasks.set(completed.0 as usize, true);
-        }
-
         // Always flush during the update
         self.flush(internal, renderer);
+
+        // Also check each GlTracker and check if it finished executing
+        let mut completed_ids: Vec<ReservedTrackedID> = Vec::new();
+        for (id, tracker) in internal.gltrackers.iter_mut() {
+            if tracker.completed(self) {
+                completed_ids.push(*id);
+            }
+        }
+        for id in completed_ids.iter() {
+            internal.gltrackers.remove(id);
+        }
+
+        // After doing all that resetting, we can actually store the new completed IDs at their respective bitfield locations
+        for completed in completed_ids {
+            self.completed_tasks.set(completed.0 as usize, true);
+        }
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
@@ -153,18 +153,22 @@ impl Pipeline {
         let tasks = {
             let mut tasks_ = self.tasks.write();
             let tasks = &mut *tasks_;
+            let taken = tasks.drain(..).collect::<Vec<_>>();
             // If we have a tracked task that requires the execution of another tracked task, we must check if the latter has completed executing
-            let tasks = tasks
-                .drain_filter(|task| match task {
+            let mut output_tasks = Vec::with_capacity(tasks.capacity());
+            for task in taken {
+                match task {
                     PipelineTask::Tracked(_, _, require) => {
                         // If the requirement is null, that means that we don't need it
                         let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
-                        valid.is_none()
-                    }
-                    _ => true,
-                })
-                .collect::<Vec<_>>();
-            tasks
+                        if valid.is_none() {
+                            output_tasks.push(task);
+                        } else { tasks.push(task); }
+                    },
+                    _ => output_tasks.push(task)
+                }
+            }
+            output_tasks
         };
 
         // Execute the tasks now
@@ -366,7 +370,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 let mut pipeline_ = pipeline.write();
                 let time = time_clone.lock();
                 pipeline_.time = *time;
-                let debug = pipeline_.debugging.load(Ordering::Relaxed);
 
                 drop(time);
                 drop(pipeline_);
@@ -397,18 +400,13 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 // Execute the tasks
                 pipeline.update(&mut internal, &mut renderer);
 
-                // Debug if needed
-                if debug {
-                    println!("Pipeline: ");
-                    println!("  #Pipeline Whole Frame Time: {:.2}ms", pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0);
-                    println!("  #Pipeline Render Frame Time: {:.2}ms", render_frame_duration.as_secs_f32() * 1000.0);
-                    println!("  #Pipeline EoF Callbacks Execution Time: {:.2}ms", eof_callbacks_duration.as_secs_f32() * 1000.0);
-                    println!("  #Pipeline Swap Buffers Time: {:.2}ms", swap_buffers_duration.as_secs_f32() * 1000.0);
-                    println!("  #Draw calls {}", frame_debug_info.draw_calls);
-                    println!("  #Shadow draw calls {}", frame_debug_info.shadow_draw_calls);
-                    println!("  #Triangles {}k", frame_debug_info.triangles / 1000);
-                    println!("  #Vertices {}k", frame_debug_info.vertices / 1000);
-                }
+                // Set the debug info
+                let mut debug = pipeline.debugging.lock();
+                *debug = frame_debug_info;
+                debug.whole_frame = pipeline_frame_instant.elapsed().as_secs_f32() * 1000.0;
+                debug.render_frame = render_frame_duration.as_secs_f32() * 1000.0;
+                debug.eof_callbacks_execution = eof_callbacks_duration.as_secs_f32() * 1000.0;
+                debug.swap_buffers = swap_buffers_duration.as_secs_f32() * 1000.0;
 
                 // Check if we must exit from the render thread
                 if eatomic_clone.load(Ordering::Relaxed) {

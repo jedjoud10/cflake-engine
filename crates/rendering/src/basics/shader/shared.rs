@@ -201,7 +201,7 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
             );
 
             // Check for negative numbers, and remove them
-            output.drain_filter(|x| *x == -1);
+            let output = output.into_iter().filter(|&x| x != -1).collect::<Vec<_>>();
 
             let converted_outputs = parameters
                 .iter()
@@ -239,8 +239,8 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
                     output.as_mut_ptr(),
                 );
 
-                // Check for negative numbers, because if we find some, that means that we failed to retrieve a specific parameter
-                output.drain_filter(|x| *x == -1);
+                // Check for negative numbers, and remove them
+                let output = output.into_iter().filter(|&x| x != -1).collect::<Vec<_>>();
 
                 let mut name = vec![c_char::default(); max_name_len + 1];
                 // Get the resource's name

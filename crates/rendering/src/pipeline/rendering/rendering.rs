@@ -215,7 +215,7 @@ impl PipelineRenderer {
     }
     // Render the whole scene normally
     fn render_scene(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
-        let camera = &pipeline.camera;
+        let _camera = &pipeline.camera;
         for (_, renderer) in pipeline.renderers.iter() {
             // Check if we are visible
             if !renderer.flags.contains(RendererFlags::VISIBLE) {

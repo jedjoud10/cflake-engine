@@ -1,5 +1,4 @@
 // Export
-#![feature(bool_to_option)]
 mod input;
 mod keys;
 mod states;
