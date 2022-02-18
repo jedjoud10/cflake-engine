@@ -135,6 +135,6 @@ fn init(world: &mut core::World) {
 
     // Play a sound
     let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
-    let source = world.audio.append(source).unwrap();
-    //world.audio.play(&source).unwrap();
+    let source = world.audio.cache(source).unwrap();
+    world.audio.play(&source).unwrap();
 }

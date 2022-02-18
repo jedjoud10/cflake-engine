@@ -79,7 +79,10 @@ fn run(world: &mut World, mut data: EventKey) {
         // If we are the main camera, we must update our position in the global
         let mut global = world.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
         global.camera_pos = position;
-        global.camera_dir = rotation.mul_point(veclib::Vector3::Z);
+        global.camera_forward = forward;
+        global.camera_right = right;
+        global.camera_up = up;
+        break;
     }
 }
 

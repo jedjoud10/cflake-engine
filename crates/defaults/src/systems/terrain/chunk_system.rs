@@ -47,7 +47,7 @@ fn run(world: &mut World, _data: EventKey) {
     // Get the camera position
     let (camera_pos, camera_dir) = {
         let cam = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
-        (cam.camera_pos, cam.camera_dir)
+        (cam.camera_pos, cam.camera_forward)
     };
     let terrain_ = world.globals.get_global_mut::<crate::globals::Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {

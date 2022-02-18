@@ -1,5 +1,5 @@
 use crate::{GameSettings, WorldState};
-use audio::playback::Playback;
+use audio::player::AudioPlayer;
 use ecs::ECSManager;
 use globals::GlobalCollection;
 use gui::GUIManager;
@@ -20,7 +20,7 @@ pub struct World {
     pub settings: GameSettings,
     pub pipeline: PipelineContext,
     pub state: WorldState,
-    pub audio: Playback,
+    pub audio: AudioPlayer,
 }
 
 // World implementation

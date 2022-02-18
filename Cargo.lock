@@ -89,7 +89,6 @@ name = "assets"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
- "veclib",
 ]
 
 [[package]]
@@ -103,7 +102,9 @@ name = "audio"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "enum-as-inner",
  "rodio",
+ "veclib",
 ]
 
 [[package]]

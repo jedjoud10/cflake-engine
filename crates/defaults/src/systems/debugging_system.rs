@@ -19,7 +19,7 @@ fn run(world: &mut World, _data: EventKey) {
             *state = WorldState::Exit;
         }
         ui.label(format!("Camera Pos: '{}'", (data.camera_pos * 10.0).round() / 10.0));
-        ui.label(format!("Camera Dir: '{}'", (data.camera_dir * 10.0).round() / 10.0));
+        ui.label(format!("Camera Dir: '{}'", (data.camera_forward * 10.0).round() / 10.0));
         // Timings
         ui.separator();
         ui.heading("Timings");
