@@ -249,7 +249,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     let shader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
 
     // Create the default material
-    let material = pipec::construct(pipeline, Material::default().with_diffuse(missing).with_uv_scale(veclib::Vector2::ONE * 0.5)).unwrap();
+    let material = pipec::construct(pipeline, Material::default().with_diffuse(missing)).unwrap();
 
     // Create the default model
     let model = pipec::construct(pipeline, Model::default()).unwrap();

@@ -4,6 +4,7 @@ use crate::{pipeline::sender::on_render_thread, utils::UsageType};
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
+#[derive(Debug)]
 pub struct DynamicRawBuffer<T> {
     // The OpenGL data for this buffer
     pub buffer: GLuint,
@@ -12,17 +13,6 @@ pub struct DynamicRawBuffer<T> {
     // Other data
     usage: UsageType,
     pub vec: Vec<T>,
-}
-
-impl<T> std::fmt::Debug for DynamicRawBuffer<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("DynamicRawBuffer")
-            .field("buffer", &self.buffer)
-            .field("_type", &self._type)
-            .field("usage", &self.usage)
-            .field("vec", &self.vec.len())
-            .finish()
-    }
 }
 
 impl<T> DynamicRawBuffer<T> {

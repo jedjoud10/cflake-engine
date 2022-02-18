@@ -37,6 +37,7 @@ impl World {
             pipeline,
             state: WorldState::StartingUp,
         };
+        others::set_main_thread();
         // Just set the game settings and we are done
         world.settings = settings;
         println!("World init done!");

@@ -1,4 +1,5 @@
 use cflake_engine::*;
+use rand::Rng;
 fn main() {
     // Load up the engine
     start("DevJed", "cflake-engine", preload_assets, init);
@@ -20,7 +21,7 @@ fn init(world: &mut core::World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ecs::entity::ComponentLinkingGroup::default();
-    group.link(defaults::components::Camera::new(90.0, 1.0, 10000.0)).unwrap();
+    group.link(defaults::components::Camera::new(90.0, 1.0, 4000.0)).unwrap();
     group.link_default::<defaults::components::Transform>().unwrap();
     let entity = ecs::entity::Entity::default();
     let id = ecs::entity::EntityID::new(&mut world.ecs);
@@ -44,19 +45,19 @@ fn init(world: &mut core::World) {
     let material = rendering::basics::material::Material::default()
         .with_diffuse(texture)
         .with_normal(texture2)
-        .with_normal_strength(0.3)
+        .with_normal_strength(1.0)
         .with_uv_scale(veclib::Vector2::ONE * 3.0);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
     // Create a simple cube
-    for _x in 0..1 {
-        for _y in 0..1 {
+    let mut rng = rand::thread_rng();
+    for _x in 0..5 {
+        for _y in 0..5 {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
             let transform = defaults::components::Transform::default()
-                .with_position(veclib::vec3(0.0, 10.0, 0.0))
-                .with_scale(veclib::vec3(50.2, 2.0, 50.0));
+                .with_position(veclib::vec3(rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0));
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
