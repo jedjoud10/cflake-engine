@@ -53,7 +53,7 @@ impl OctreeNode {
     pub fn subdivide(&mut self, nodes: &mut UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
         let half_extent = self.half_extent as i64;
         // The outputted nodes
-        let mut output: Vec<OctreeNode> = Vec::new();
+        let mut output: Vec<OctreeNode> = Vec::with_capacity(8);
 
         // Temporary array that we fill with out children's indices
         let mut children_indices: [usize; 8] = [0; 8];

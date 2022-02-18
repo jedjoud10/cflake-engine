@@ -23,3 +23,4 @@ rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 globals = { path = "../globals" }
 io = { path = "../io" }
+audio = { path = "../audio" }

@@ -1,4 +1,5 @@
 use crate::{GameSettings, WorldState};
+use audio::playback::Playback;
 use ecs::ECSManager;
 use globals::GlobalCollection;
 use gui::GUIManager;
@@ -19,6 +20,7 @@ pub struct World {
     pub settings: GameSettings,
     pub pipeline: PipelineContext,
     pub state: WorldState,
+    pub audio: Playback,
 }
 
 // World implementation
@@ -30,12 +32,13 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             gui,
-            ecs: ecs::ECSManager::<Self>::default(),
+            ecs: ECSManager::<Self>::default(),
             globals: Default::default(),
             io,
             settings: Default::default(),
             pipeline,
             state: WorldState::StartingUp,
+            audio: Default::default(),
         };
         others::set_main_thread();
         // Just set the game settings and we are done
