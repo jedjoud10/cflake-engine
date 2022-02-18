@@ -11,22 +11,22 @@ rand = "0.8.5"
 
 [workspace]
 members = [
-    "crates\\assets",
-    "crates\\core",
-    "crates\\defaults",
-    "crates\\ecs",    
-    "crates\\handler",
-    "crates\\gui",
-    "crates\\globals",
-    "crates\\input",
-    "crates\\io",
-    "crates\\main",
-    "crates\\math",
-    "crates\\network",
-    "crates\\others",
-    "crates\\physics",
-    "crates\\rendering",
-    "crates\\terrain",
+    "crates//assets",
+    "crates//core",
+    "crates//defaults",
+    "crates//ecs",    
+    "crates//handler",
+    "crates//gui",
+    "crates//globals",
+    "crates//input",
+    "crates//io",
+    "crates//main",
+    "crates//math",
+    "crates//network",
+    "crates//others",
+    "crates//physics",
+    "crates//rendering",
+    "crates//terrain",
 ]
 
 [profile.dev]

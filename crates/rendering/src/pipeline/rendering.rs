@@ -1,4 +1,4 @@
 mod error;
 mod shadow_mapping;
-mod rendering;
-pub use rendering::*;
+mod scene_rendering;
+pub use scene_rendering::*;

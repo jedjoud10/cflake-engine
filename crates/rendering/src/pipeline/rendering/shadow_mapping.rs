@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::error::RenderingError;
-use super::rendering::*;
+use super::scene_rendering::*;
 // Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 #[derive(Default)]
