@@ -66,10 +66,11 @@ pub fn preload_system(world: &mut World) {
     window_system::system(world);
     gui_system::system(world);
     test_system::system(world);
+    audio_system::system(world);
     // Terrain
-    terrain::chunk_system::system(world);
-    terrain::voxel_system::system(world);
-    terrain::mesher_system::system(world);
+    terrain_system::chunk_system::system(world);
+    terrain_system::voxel_system::system(world);
+    terrain_system::mesher_system::system(world);
 
     // We gotta add the globa
     world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();

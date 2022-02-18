@@ -136,5 +136,5 @@ fn init(world: &mut core::World) {
     // Play a sound
     let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
     let source = world.audio.cache(source).unwrap();
-    world.audio.play(&source).unwrap();
+    world.audio.play_positional(&source, veclib::vec3(0.0, 0.0, 0.0)).unwrap();
 }

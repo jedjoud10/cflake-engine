@@ -72,6 +72,14 @@ impl AudioPlayer {
         let right = [right.x, right.y, right.z];
         self.left = left;
         self.right = right;
+        // Update each spatial sink now
+        let borrowed = self.sinks.borrow();
+        for sink in borrowed.iter() {
+            if let AudioSourceTracker::Spatial(spatial) = sink {
+                spatial.set_left_ear_position(left);
+                spatial.set_right_ear_position(right);
+            }
+        }
     }
     // Cache a sound to the playback cache (not really; We are just stealing it's temporary bytes)
     pub fn cache(&mut self, mut source: AudioSource) -> Option<AudioSource> {
