@@ -17,6 +17,7 @@ fn preload_assets() {
     assets::preload_asset!("./resources/user/textures/saber.png");
     assets::preload_asset!("./resources/user/shaders/voxel_terrain/voxel.func.glsl");
     assets::preload_asset!("./resources/user/sounds/mewhenthe.mp3");
+    assets::preload_asset!("./resources/user/sounds/nicolas.mp3");
 }
 fn init(world: &mut core::World) {
     // ----Start the world----
@@ -50,6 +51,10 @@ fn init(world: &mut core::World) {
         .with_uv_scale(veclib::Vector2::ONE * 3.0);
     let material = rendering::pipeline::pipec::construct(&pipeline, material).unwrap();
 
+    // Play a sound
+    let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/nicolas.mp3").unwrap();
+    let source = world.audio.cache(source).unwrap();    
+
     // Create a simple cube
     let mut rng = rand::thread_rng();
     for _x in 0..5 {
@@ -59,6 +64,7 @@ fn init(world: &mut core::World) {
             let id = ecs::entity::EntityID::new(&mut world.ecs);
             let transform = defaults::components::Transform::default()
                 .with_position(veclib::vec3(rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0));
+            world.audio.play_positional(&source, transform.position).unwrap();
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
             group.link_default::<defaults::components::Physics>().unwrap();
@@ -131,10 +137,5 @@ fn init(world: &mut core::World) {
         .with_heuristic(heuristic)
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
-    world.globals.add_global(terrain).unwrap();
-
-    // Play a sound
-    let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
-    let source = world.audio.cache(source).unwrap();
-    world.audio.play_positional(&source, veclib::vec3(0.0, 0.0, 0.0)).unwrap();
+    world.globals.add_global(terrain).unwrap();    
 }

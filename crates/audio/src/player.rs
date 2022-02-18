@@ -75,7 +75,7 @@ impl AudioPlayer {
         // Update each spatial sink now
         let borrowed = self.sinks.borrow();
         for sink in borrowed.iter() {
-            if let AudioSourceTracker::Spatial(spatial) = sink {
+            if let Some(spatial) = sink.as_spatial() {
                 spatial.set_left_ear_position(left);
                 spatial.set_right_ear_position(right);
             }
