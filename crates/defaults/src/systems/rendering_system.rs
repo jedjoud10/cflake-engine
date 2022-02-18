@@ -1,6 +1,6 @@
 use main::{
     core::World,
-    ecs::event::EventKey,
+    ecs::{event::EventKey, rayon::{iter::{ParallelIterator, IntoParallelRefIterator}}},
     rendering::{object::ObjectID, pipeline::pipec},
 };
 
@@ -9,22 +9,36 @@ fn run(world: &mut World, mut data: EventKey) {
     // For each renderer, we must update it's pipeline transform and other values
     let query = data.as_query_mut().unwrap();
     let pipeline = world.pipeline.read();
-    for (_, components) in query.lock().iter() {
+    // Le local struct
+    struct RendererUpdatedMatrixUnit {
+        renderer_id: ObjectID<main::rendering::basics::renderer::Renderer>,
+        matrix: veclib::Matrix4x4<f32>,
+    }
+
+    let result = query.lock().par_iter().filter_map(|(_, components)| {
         let renderer = components.get_component::<crate::components::Renderer>().unwrap();
         let transform = components.get_component::<crate::components::Transform>().unwrap();
-        let renderer_object_id = renderer.object_id;
+        let renderer_id = renderer.object_id;
         // Only update if we have a valid renderer and if we changed our transform
-        if renderer_object_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
+        if renderer_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
             // Update the values if our renderer is valid
             let matrix = transform.calculate_matrix();
-            pipec::update_callback(&pipeline, move |pipeline, _| {
-                let gpu_renderer = pipeline.renderers.get_mut(renderer_object_id);
-                if let Some(gpu_renderer) = gpu_renderer {
-                    gpu_renderer.matrix = matrix;
-                }
-            });
-        }
-    }
+            Some(RendererUpdatedMatrixUnit {
+                renderer_id,
+                matrix,
+            })
+        } else { None }
+    }).collect::<Vec<RendererUpdatedMatrixUnit>>();
+
+    // Now we can send ALL of the new update matrices
+    pipec::update_callback(&pipeline, move |pipeline, _| {
+        for x in result {
+            let gpu_renderer = pipeline.renderers.get_mut(x.renderer_id);
+            if let Some(gpu_renderer) = gpu_renderer {
+                gpu_renderer.matrix = x.matrix;
+            }
+        }        
+    });
 
     // Also update the direction of the sun (internally stored as a Directional Light)
     let global = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();

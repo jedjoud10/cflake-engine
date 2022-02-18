@@ -68,6 +68,7 @@ fn run(world: &mut World, mut data: EventKey) {
         let pipeline_camera = main::rendering::pipeline::camera::Camera {
             position,
             rotation,
+            forward: forward,
             viewm: camera.view_matrix,
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,

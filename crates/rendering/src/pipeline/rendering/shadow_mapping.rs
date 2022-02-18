@@ -10,8 +10,8 @@ use crate::{
     pipeline::{pipec, InternalPipeline, Pipeline},
 };
 
-use super::{error::RenderingError, PipelineRenderer};
-
+use super::error::RenderingError;
+use super::rendering::*;
 // Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 #[derive(Default)]

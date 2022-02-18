@@ -8,6 +8,7 @@ pub struct Camera {
     // View and projection matrices
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
+    pub forward: veclib::Vector3<f32>,
 
     // Near-Far clip planes
     pub clip_planes: veclib::Vector2<f32>,

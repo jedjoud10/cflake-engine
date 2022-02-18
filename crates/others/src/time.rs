@@ -4,9 +4,9 @@ pub struct Time {
     pub elapsed: f64,
     pub delta: f64,
     pub frame_count: u128,
-
+    // Polling and smoothing delta time
     pub smoothed_delta: f64,
-    last_poll_time: f64
+    last_poll_time: f64,
 }
 
 impl Time {

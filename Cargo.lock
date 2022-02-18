@@ -477,7 +477,6 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "main",
- "rayon",
  "veclib",
 ]
 
