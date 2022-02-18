@@ -16,6 +16,7 @@ fn preload_assets() {
     assets::preload_asset!("./resources/user/textures/rocks_ground_08_nor_gl_2k.jpg");
     assets::preload_asset!("./resources/user/textures/saber.png");
     assets::preload_asset!("./resources/user/shaders/voxel_terrain/voxel.func.glsl");
+    assets::preload_asset!("./resources/user/sounds/mewhenthe.mp3");
 }
 fn init(world: &mut core::World) {
     // ----Start the world----
@@ -131,4 +132,9 @@ fn init(world: &mut core::World) {
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();
+
+    // Play a sound
+    let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
+    let source = world.audio.append(source).unwrap();
+    //world.audio.play(&source).unwrap();
 }

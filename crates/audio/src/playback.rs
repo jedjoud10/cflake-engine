@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use rodio::{Source, OutputStreamHandle, OutputStream, Decoder};
+use rodio::{Source, OutputStreamHandle, OutputStream, Decoder, Device, Devices, cpal::traits::HostTrait, DeviceTrait};
 use crate::source::AudioSource;
 // A playback cache that contains all the loaded sources
 pub struct Playback {
@@ -24,10 +24,10 @@ impl Playback {
         // Check if the index is gud
         let idx = source.idx?;
         // Decode then play the sound        
-        let compressed = self.cache.get(idx)?.clone();
+        let compressed = self.cache.get(idx).unwrap().clone();
         let cursor = Cursor::new(compressed);
-        let decoded = Decoder::new(cursor).ok()?;
-        self.stream_handle.play_raw(decoded.convert_samples()).ok()?;
+        let decoded = Decoder::new(cursor).unwrap();
+        self.stream_handle.play_raw(decoded.convert_samples()).unwrap();
         Some(())
     }
     // Append a sound to the playback cache (not really; We are just stealing it's temporary bytes)
