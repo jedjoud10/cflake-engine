@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-handler = { path = "crates\\handler" }
+handler = { path = "crates//handler" }
 rand = "0.8.5"
 
 [workspace]
