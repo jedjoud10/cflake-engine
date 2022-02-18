@@ -1,4 +1,10 @@
-use main::{core::World, ecs::{event::EventKey, rayon::iter::{IntoParallelRefMutIterator, ParallelIterator}}};
+use main::{
+    core::World,
+    ecs::{
+        event::EventKey,
+        rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
+    },
+};
 
 // The physics system update loop
 fn run(world: &mut World, mut data: EventKey) {

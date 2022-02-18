@@ -1,6 +1,9 @@
 use main::{
     core::World,
-    ecs::{event::EventKey, rayon::{iter::{ParallelIterator, IntoParallelRefIterator}}},
+    ecs::{
+        event::EventKey,
+        rayon::iter::{IntoParallelRefIterator, ParallelIterator},
+    },
     rendering::{object::ObjectID, pipeline::pipec},
 };
 
@@ -15,20 +18,23 @@ fn run(world: &mut World, mut data: EventKey) {
         matrix: veclib::Matrix4x4<f32>,
     }
 
-    let result = query.lock().par_iter().filter_map(|(_, components)| {
-        let renderer = components.get_component::<crate::components::Renderer>().unwrap();
-        let transform = components.get_component::<crate::components::Transform>().unwrap();
-        let renderer_id = renderer.object_id;
-        // Only update if we have a valid renderer and if we changed our transform
-        if renderer_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
-            // Update the values if our renderer is valid
-            let matrix = transform.calculate_matrix();
-            Some(RendererUpdatedMatrixUnit {
-                renderer_id,
-                matrix,
-            })
-        } else { None }
-    }).collect::<Vec<RendererUpdatedMatrixUnit>>();
+    let result = query
+        .lock()
+        .par_iter()
+        .filter_map(|(_, components)| {
+            let renderer = components.get_component::<crate::components::Renderer>().unwrap();
+            let transform = components.get_component::<crate::components::Transform>().unwrap();
+            let renderer_id = renderer.object_id;
+            // Only update if we have a valid renderer and if we changed our transform
+            if renderer_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
+                // Update the values if our renderer is valid
+                let matrix = transform.calculate_matrix();
+                Some(RendererUpdatedMatrixUnit { renderer_id, matrix })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<RendererUpdatedMatrixUnit>>();
 
     // Now we can send ALL of the new update matrices
     pipec::update_callback(&pipeline, move |pipeline, _| {
@@ -37,7 +43,7 @@ fn run(world: &mut World, mut data: EventKey) {
             if let Some(gpu_renderer) = gpu_renderer {
                 gpu_renderer.matrix = x.matrix;
             }
-        }        
+        }
     });
 
     // Also update the direction of the sun (internally stored as a Directional Light)

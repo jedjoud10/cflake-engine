@@ -8,7 +8,7 @@ pub struct PackedVoxel {
     pub density: f32,                // 4
     pub normal: veclib::Vector3<i8>, // 3
     pub voxel_material: u8,          // 1
-    // We have another byte that we can use
+                                     // We have another byte that we can use
 }
 
 // A vector full of packed voxels

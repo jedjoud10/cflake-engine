@@ -163,11 +163,15 @@ impl<World> ECSManager<World> {
         // Dear god
         let components_elems = entity
             .components
-            .iter().filter_map(|(cbitfield, idx)| {
+            .iter()
+            .filter_map(|(cbitfield, idx)| {
                 if unlink_group.removal_cbitfield.contains(cbitfield) {
                     Some((*cbitfield, *idx))
-                } else { None }
-            }).collect::<Vec<_>>();
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
         // We shall remove
         entity.cbitfield = new;

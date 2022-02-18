@@ -90,7 +90,9 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     }
     let mut sleeper = if config.fps_cap <= 0 {
         LoopHelper::builder().build_without_target_rate()
-    } else { LoopHelper::builder().build_with_target_rate(config.fps_cap as f32) };
+    } else {
+        LoopHelper::builder().build_with_target_rate(config.fps_cap as f32)
+    };
 
     // Main loop
     event_loop.run(move |event, _, control_flow| {

@@ -254,8 +254,7 @@ impl PipelineObject for Texture {
 
         // If we are a static texture, we don't need to keep the bytes on the CPU anymore
         if let UpdateFrequency::Static = self.dynamic_state {
-            self.bytes.clear();
-            self.bytes.shrink_to_fit();
+            self.bytes.drain(..);
         }
 
         pipeline.textures.insert(id, self);

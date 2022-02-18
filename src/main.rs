@@ -53,7 +53,7 @@ fn init(world: &mut core::World) {
 
     // Play a sound
     let source = assets::assetc::dload::<audio::source::AudioSource>("user/sounds/nicolas.mp3").unwrap();
-    let source = world.audio.cache(source).unwrap();    
+    let source = world.audio.cache(source).unwrap();
 
     // Create a simple cube
     let mut rng = rand::thread_rng();
@@ -62,8 +62,7 @@ fn init(world: &mut core::World) {
             let mut group = ecs::entity::ComponentLinkingGroup::default();
             let entity = ecs::entity::Entity::default();
             let id = ecs::entity::EntityID::new(&mut world.ecs);
-            let transform = defaults::components::Transform::default()
-                .with_position(veclib::vec3(rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0));
+            let transform = defaults::components::Transform::default().with_position(veclib::vec3(rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0, rng.gen::<f32>() * 50.0));
             world.audio.play_positional(&source, transform.position).unwrap();
             let matrix = transform.calculate_matrix();
             group.link::<defaults::components::Transform>(transform).unwrap();
@@ -137,5 +136,5 @@ fn init(world: &mut core::World) {
         .with_heuristic(heuristic)
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
-    world.globals.add_global(terrain).unwrap();    
+    world.globals.add_global(terrain).unwrap();
 }

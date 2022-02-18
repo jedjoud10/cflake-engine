@@ -1,10 +1,11 @@
+use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
 use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
-    pipeline::Pipeline, utils::UpdateFrequency,
+    pipeline::Pipeline,
+    utils::UpdateFrequency,
 };
-use std::{ffi::c_void, mem::size_of, ptr::null};
 use gl::types::GLuint;
-use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 // A simple model that holds vertex, normal, and color data
 pub struct Model {
@@ -34,17 +35,23 @@ pub struct Model {
 
     // Triangles
     pub triangles: Vec<u32>,
+
+    // Keep track of the number of vertices and triangles since we might clear the CPU buffers
+    pub vert_count: usize,
+    pub tris_count: usize,
 }
 
 impl Default for Model {
     fn default() -> Self {
-        Self { 
+        Self {
             vertex_array_object: Default::default(),
             buffers: Default::default(),
             vertices: Default::default(),
             layout: Default::default(),
-            update_frequency: UpdateFrequency::Static, 
-            triangles: Default::default()
+            update_frequency: UpdateFrequency::Static,
+            triangles: Default::default(),
+            vert_count: Default::default(),
+            tris_count: Default::default(),
         }
     }
 }
@@ -93,13 +100,21 @@ impl PipelineObject for Model {
                 // Positions
                 stride = size_of::<f32>() * 3;
                 // Normals (optional)
-                if !self.vertices.normals.is_empty() { stride += size_of::<i8>() * 3; }
+                if !self.vertices.normals.is_empty() {
+                    stride += size_of::<i8>() * 3;
+                }
                 // Tangents (optional)
-                if !self.vertices.tangents.is_empty() { stride += size_of::<i8>() * 4; }
+                if !self.vertices.tangents.is_empty() {
+                    stride += size_of::<i8>() * 4;
+                }
                 // UVS (optional)
-                if !self.vertices.uvs.is_empty() { stride += size_of::<u8>() * 2; }
+                if !self.vertices.uvs.is_empty() {
+                    stride += size_of::<u8>() * 2;
+                }
                 // Colors (optional)
-                if !self.vertices.colors.is_empty() { stride += size_of::<u8>() * 3; }
+                if !self.vertices.colors.is_empty() {
+                    stride += size_of::<u8>() * 3;
+                }
                 let stride = stride as i32;
 
                 // Convert the different vectors into a big chunky one
@@ -109,28 +124,25 @@ impl PipelineObject for Model {
                 for (idx, x) in self.vertices.positions.iter().enumerate() {
                     // Add
                     big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<f32>, [u8; size_of::<f32>() * 3]>(x));
-                    if !self.vertices.normals.is_empty() { 
+                    if !self.vertices.normals.is_empty() {
                         big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<i8>, [u8; size_of::<i8>() * 3]>(self.vertices.normals.get(idx)?));
                     }
-                    if !self.vertices.tangents.is_empty() { 
-                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector4<i8>, [u8; size_of::<i8>() * 4]>(self.vertices.tangents.get(idx)?));
+                    if !self.vertices.tangents.is_empty() {
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector4<i8>, [u8; size_of::<i8>() * 4]>(
+                            self.vertices.tangents.get(idx)?,
+                        ));
                     }
-                    if !self.vertices.uvs.is_empty() { 
+                    if !self.vertices.uvs.is_empty() {
                         big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector2<u8>, [u8; size_of::<u8>() * 2]>(self.vertices.uvs.get(idx)?));
                     }
-                    if !self.vertices.colors.is_empty() { 
+                    if !self.vertices.colors.is_empty() {
                         big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<u8>, [u8; size_of::<u8>() * 3]>(self.vertices.colors.get(idx)?));
                     }
                 }
 
                 gl::GenBuffers(1, buffers.as_mut_ptr().add(1));
                 gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (big_vector.len()) as isize,
-                    big_vector.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
+                gl::BufferData(gl::ARRAY_BUFFER, (big_vector.len()) as isize, big_vector.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
                 // The stride increase each time we add an attribute
                 let mut current_stride = 0;
@@ -261,8 +273,11 @@ impl PipelineObject for Model {
             }
 
             // Clear the CPU buffers if we want to
+            self.tris_count = self.triangles.len() / 3;
+            self.vert_count = self.vertices.len();
             if let UpdateFrequency::Static = self.update_frequency {
                 self.vertices.reset();
+                self.triangles.drain(..);
             }
 
             // Unbind

@@ -20,7 +20,7 @@ use std::sync::{
     Arc, Barrier,
 };
 
-use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, PipelineContext, FrameDebugInfo};
+use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, FrameDebugInfo, PipelineContext};
 
 // A single pipeline callback
 pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>;
@@ -110,7 +110,7 @@ impl Pipeline {
         };
 
         // Add the tracked ID to our pipeline
-        internal.gltrackers.insert(tracking_id, gltracker);        
+        internal.gltrackers.insert(tracking_id, gltracker);
     }
     // Execute a single task
     fn execute_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTask) {
@@ -163,9 +163,11 @@ impl Pipeline {
                         let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
                         if valid.is_none() {
                             output_tasks.push(task);
-                        } else { tasks.push(task); }
-                    },
-                    _ => output_tasks.push(task)
+                        } else {
+                            tasks.push(task);
+                        }
+                    }
+                    _ => output_tasks.push(task),
                 }
             }
             output_tasks

@@ -1,6 +1,5 @@
-use gl::types::GLuint;
-use super::{shadow_mapping::ShadowMapping, error::*};
 use super::super::{settings::PipelineSettings, FrameDebugInfo, InternalPipeline, Pipeline};
+use super::{error::*, shadow_mapping::ShadowMapping};
 use crate::pipeline::camera::Camera;
 use crate::{
     basics::{
@@ -16,6 +15,7 @@ use crate::{
     pipeline::pipec,
     utils::DataType,
 };
+use gl::types::GLuint;
 use std::ptr::null;
 
 // Pipeline renderer that will render our world
@@ -93,7 +93,7 @@ impl PipelineRenderer {
             // Actually draw the model
             gl::BindVertexArray(model.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, model.buffers[0]);
-            gl::DrawElements(gl::TRIANGLES, model.triangles.len() as i32, gl::UNSIGNED_INT, null());
+            gl::DrawElements(gl::TRIANGLES, model.tris_count as i32 * 3, gl::UNSIGNED_INT, null());
         }
     }
     // Initialize this new pipeline renderer
@@ -226,8 +226,8 @@ impl PipelineRenderer {
             if let Ok(model) = result {
                 self.render(model);
                 debug_info.draw_calls += 1;
-                debug_info.triangles += (model.triangles.len() as u64) / 3;
-                debug_info.vertices += model.vertices.positions.len() as u64;
+                debug_info.triangles += model.tris_count as u64;
+                debug_info.vertices += model.vert_count as u64;
             }
         }
     }

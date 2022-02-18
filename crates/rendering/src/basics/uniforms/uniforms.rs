@@ -22,7 +22,12 @@ impl<'a> Uniforms<'a> {
     pub(crate) fn new(settings: &'a ShaderUniformsSettings, pipeline: &'a Pipeline) -> Self {
         let program = settings._type.get_program(pipeline);
         let map = pipeline.cached.uniform_definitions.get(&program).unwrap();
-        Self { map, program, pipeline, _phantom: PhantomData::default() }
+        Self {
+            map,
+            program,
+            pipeline,
+            _phantom: PhantomData::default(),
+        }
     }
     // Create some new uniforms using a mutable pipeline
     // This should only be accessed by the EoF external callbacks
@@ -30,7 +35,12 @@ impl<'a> Uniforms<'a> {
     pub fn using_mut_pipeline(settings: &'a ShaderUniformsSettings, pipeline: &'a mut Pipeline) -> Self {
         let program = settings._type.get_program(pipeline);
         let map = pipeline.cached.uniform_definitions.get(&program).unwrap();
-        let uniforms = Self { map, program, pipeline, _phantom: PhantomData::default() };
+        let uniforms = Self {
+            map,
+            program,
+            pipeline,
+            _phantom: PhantomData::default(),
+        };
         uniforms.bind_shader();
         uniforms
     }

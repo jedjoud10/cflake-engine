@@ -1,4 +1,4 @@
-use main::{globals::Global, ecs::entity::EntityID};
+use main::{ecs::entity::EntityID, globals::Global};
 
 // Some global world data
 #[derive(Default, Global)]
