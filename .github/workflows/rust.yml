@@ -9,16 +9,20 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+
+
 jobs:
   build:
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
 
     steps:
     - uses: actions/checkout@v2
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v1.3.0
     - name: Build
       run: cargo build --verbose
     - name: Run tests
