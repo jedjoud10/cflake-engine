@@ -1,6 +1,6 @@
-use math::octrees::Octree;
-use crate::ChunkCoords;
 use super::Edit;
+use crate::ChunkCoords;
+use math::octrees::Octree;
 
 // An editing manager that contains all the world edits
 pub struct EditingManager {

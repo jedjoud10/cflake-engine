@@ -32,7 +32,9 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Additional uniforms
     let execution_settings = if let Some(uniforms) = &generator.uniforms {
         execution_settings.with_callback(uniforms.clone())
-    } else { execution_settings };
+    } else {
+        execution_settings
+    };
     pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
@@ -50,7 +52,9 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     // Additional uniforms
     let execution_settings2 = if let Some(uniforms) = &generator.uniforms {
         execution_settings2.with_callback(uniforms.clone())
-    } else { execution_settings2 };
+    } else {
+        execution_settings2
+    };
     pipec::tracked_task_requirement(
         pipeline,
         TrackedTask::RunComputeShader(generator.second_compute_shader, execution_settings2),

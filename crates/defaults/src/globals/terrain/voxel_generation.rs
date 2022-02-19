@@ -7,7 +7,11 @@ use main::{
             compute::ComputeShader,
             shader_storage::ShaderStorage,
         },
-        basics::{readwrite::ReadBytes, shader::ShaderSettings, uniforms::{ShaderIDType, SetUniformsCallback}},
+        basics::{
+            readwrite::ReadBytes,
+            shader::ShaderSettings,
+            uniforms::{SetUniformsCallback, ShaderIDType},
+        },
         object::{ObjectID, ReservedTrackedID},
         pipeline::{pipec, Pipeline},
         utils::{AccessType, UpdateFrequency},

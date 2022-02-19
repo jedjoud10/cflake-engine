@@ -1,6 +1,9 @@
 use main::{
     math::octrees::HeuristicSettings,
-    rendering::{basics::{material::Material, uniforms::SetUniformsCallback}, object::ObjectID},
+    rendering::{
+        basics::{material::Material, uniforms::SetUniformsCallback},
+        object::ObjectID,
+    },
 };
 
 // Terrain settings for simplicity

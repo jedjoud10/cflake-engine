@@ -11,7 +11,9 @@ pub struct SetUniformsCallback {
 impl SetUniformsCallback {
     // Create a new callback using a closure
     pub fn new<F: Fn(&Uniforms) + Send + Sync + 'static>(closure: F) -> Self {
-        Self { inner: Some(Arc::new(Box::new(closure))) }
+        Self {
+            inner: Some(Arc::new(Box::new(closure))),
+        }
     }
     // Execute the callback
     pub(crate) fn execute(&self, uniforms: &Uniforms) {

@@ -16,7 +16,7 @@ impl Default for AABB {
     }
 }
 
-impl AABB {    
+impl AABB {
     // Get the closest point of the AABB from a specific point
     pub fn get_nearest_point(&self, point: &veclib::Vector3<f32>) -> veclib::Vector3<f32> {
         point.clamp(self.min, self.max)

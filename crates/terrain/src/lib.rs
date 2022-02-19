@@ -1,11 +1,11 @@
 // Export
 mod chunk_coords;
+pub mod editing;
 pub mod mesher;
 mod params;
 mod test;
 pub mod utils;
 mod voxel;
-pub mod editing;
 
 pub use chunk_coords::*;
 pub use params::*;

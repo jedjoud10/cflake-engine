@@ -13,11 +13,7 @@ pub struct Edit {
 impl Edit {
     // Create a new edit
     pub fn new(shape: BasicShapeType, strength: f32) -> Self {
-        Self {
-            shape,
-            strength,
-            material: None,
-        }
+        Self { shape, strength, material: None }
     }
     // This edit contains a specific material override
     pub fn with_material(mut self, material: u8) -> Self {

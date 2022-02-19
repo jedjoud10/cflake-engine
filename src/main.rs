@@ -134,9 +134,7 @@ fn init(world: &mut core::World) {
         .with_depth(6)
         .with_material(material)
         .with_heuristic(heuristic)
-        .with_uniforms(rendering::basics::uniforms::SetUniformsCallback::new(move |x| {
-            x.set_texture("tex", tex, 0)
-        }))
+        .with_uniforms(rendering::basics::uniforms::SetUniformsCallback::new(move |x| x.set_texture("tex", tex, 0)))
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = defaults::globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();

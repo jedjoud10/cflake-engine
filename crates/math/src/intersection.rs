@@ -1,5 +1,8 @@
 use super::bounds::aabb::*;
-use crate::{shapes::{Sphere, BasicShapeType}, octrees::{Octree, OctreeNode}};
+use crate::{
+    octrees::{Octree, OctreeNode},
+    shapes::{BasicShapeType, Sphere},
+};
 
 /* #region AABB stuff */
 // Check if an AABB intersects another AABB
@@ -29,7 +32,7 @@ pub fn basic_shape_octree_node(shape: &BasicShapeType, node: &OctreeNode) -> boo
         BasicShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),
     }
 }
-// 
+//
 /* #endregion */
 /* #region Octree */
 // Check if some shapes intersect an octree, and if they do, return the node indices for the nodes that intersect the shapes
@@ -41,7 +44,7 @@ pub fn shapes_octree<'a>(shapes: &[BasicShapeType], octree: &'a Octree) -> Vec<&
         let mut intersects = false;
         for shape in shapes {
             intersects |= basic_shape_octree_node(shape, node);
-            if intersects { 
+            if intersects {
                 // This node intersects one of the shapes
                 intersected_nodes.push(node);
                 break;
