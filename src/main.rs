@@ -14,7 +14,7 @@ fn preload_assets() {
     assets::preload_asset!("./resources/user/textures/rocks_ground_06_nor_gl_2k.jpg");
     assets::preload_asset!("./resources/user/textures/rocks_ground_08_diff_2k.jpg");
     assets::preload_asset!("./resources/user/textures/rocks_ground_08_nor_gl_2k.jpg");
-    assets::preload_asset!("./resources/user/textures/saber.png");
+    assets::preload_asset!("./resources/user/textures/terrain.png");
     assets::preload_asset!("./resources/user/shaders/voxel_terrain/voxel.func.glsl");
     assets::preload_asset!("./resources/user/sounds/mewhenthe.mp3");
     assets::preload_asset!("./resources/user/sounds/nicolas.mp3");
@@ -34,7 +34,7 @@ fn init(world: &mut core::World) {
     let model_id = rendering::pipeline::pipec::construct(&pipeline, model).unwrap();
 
     // Create it's material
-    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/saber.png")
+    let texture = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/terrain.png")
         .unwrap()
         .with_mipmaps(true);
     let texture = rendering::pipeline::pipec::construct(&pipeline, texture).unwrap();
@@ -127,7 +127,7 @@ fn init(world: &mut core::World) {
             dist < 1.2 || node.depth == 1
         })
         .with_threshold(64.0);
-    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/saber.png").unwrap();
+    let tex = assets::assetc::dload::<rendering::basics::texture::Texture>("user/textures/terrain.png").unwrap();
     let tex = rendering::pipeline::pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = defaults::globals::TerrainSettings::default()
