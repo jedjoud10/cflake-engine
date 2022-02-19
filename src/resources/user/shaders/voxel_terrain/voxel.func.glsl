@@ -16,12 +16,7 @@ struct Voxel {
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
     //float density = pos.y + snoise(pos * 0.01 * vec3(1, 2, 1)) * 40.0;
-    float density = length(texture(tex, pos.xy * 0.001));
-    /*
-    float density = pos.y + (1-voronoi(pos * 0.002).x) * 90.0;
-    float sphere = sdSphere(pos, 20.0);
-    density = opUnion(density, sphere);
-    */
+    float density = pos.y + (1-length(texture(tex, pos.xz * 0.0005))) * 300.0;
     return Voxel(density, 0, false);
 }
 
