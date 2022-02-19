@@ -143,7 +143,6 @@ impl ShaderStorage {
             move |_pipeline| unsafe {
                 // Bind the buffer before reading
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
-                gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
                 // If we have a range, we can use it
                 let range = read.0.range;
                 let bytes = if let Some(range) = range {

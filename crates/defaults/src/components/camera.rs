@@ -1,5 +1,4 @@
 use main::ecs::component::Component;
-use main::math;
 use main::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
 #[derive(Component)]
@@ -7,7 +6,6 @@ pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
     pub projection_matrix: veclib::Matrix4x4<f32>,
     pub horizontal_fov: f32,
-    pub frustum: math::frustum::Frustum,
     pub aspect_ratio: f32,
     pub clip_planes: veclib::Vector2<f32>, // Near, far
 }
@@ -20,7 +18,6 @@ impl Camera {
             view_matrix: veclib::Matrix4x4::IDENTITY,
             projection_matrix: veclib::Matrix4x4::IDENTITY,
             aspect_ratio: DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32,
-            frustum: math::frustum::Frustum::default(),
             horizontal_fov: fov,
             clip_planes: veclib::Vector2::new(clipn, clipf),
         };
@@ -51,14 +48,6 @@ impl Camera {
     // Update the view matrix using a rotation and a position
     pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
         self.view_matrix = Self::calculate_view_matrix(position, rotation);
-    }
-    // Update the frustum-culling matrix
-    pub fn update_frustum_culling_matrix(&mut self) {
-        let m = (self.projection_matrix * self.view_matrix).transposed();
-        self.frustum = math::frustum::Frustum {
-            matrix: m,
-            projection_matrix: self.projection_matrix,
-        }
     }
 }
 

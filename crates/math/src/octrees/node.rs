@@ -33,11 +33,10 @@ impl Eq for OctreeNode {}
 
 impl OctreeNode {
     // Get the AABB from this octee node
-    pub fn get_aabb(&self) -> crate::bounds::AABB {
-        crate::bounds::AABB {
+    pub fn get_aabb(&self) -> crate::bounds::aabb::AABB {
+        crate::bounds::aabb::AABB {
             min: veclib::Vector3::<f32>::from(self.position),
             max: veclib::Vector3::<f32>::from(self.position) + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
-            center: self.get_center().into(),
         }
     }
     // Get the center of this octree node

@@ -5,6 +5,7 @@ mod params;
 mod test;
 pub mod utils;
 mod voxel;
+pub mod editing;
 
 pub use chunk_coords::*;
 pub use params::*;

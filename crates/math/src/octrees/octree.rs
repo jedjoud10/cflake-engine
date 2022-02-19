@@ -32,8 +32,8 @@ impl Octree {
             hsettings,
         }
     }
-    // Get the root node of this octree
-    pub fn get_root_node(&self) -> OctreeNode {
+    // Create a root node for this octree
+    pub(crate) fn create_root_node(&self) -> OctreeNode {
         // Get the maximum size of the root node
         let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
         let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
@@ -47,6 +47,10 @@ impl Octree {
             children_indices: None,
         }
     }
+    // Get the root node of this octree
+    pub fn get_root_node(&self) -> &OctreeNode {
+        self.nodes.get(0).unwrap()
+    }
     // Generate an octree from a root and a target point
     pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<()> {
         // Clear
@@ -59,7 +63,7 @@ impl Octree {
             }
         }
 
-        let root_node = self.get_root_node();
+        let root_node = self.create_root_node();
         // The nodes that must be evaluated
         let mut pending_nodes: Vec<OctreeNode> = vec![root_node.clone()];
         self.nodes.push_shove(root_node);
@@ -81,5 +85,29 @@ impl Octree {
 
         self.target = Some(target);
         Some(())
+    }
+    // Recursively iterate through each node, and check it's children if the given function returns true
+    pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a OctreeNode) -> bool) {
+        // The nodes that must be evaluated
+        let root_node = self.get_root_node();
+        let mut pending_nodes: Vec<&'a OctreeNode> = vec![root_node];
+        // Evaluate each node
+        while !pending_nodes.is_empty() {
+            // Get the current pending node
+            let octree_node = pending_nodes[0];
+
+            // If the node function is true, we recursively iterate through the children
+            if function(octree_node) {
+                if let Some(children) = &octree_node.children_indices {
+                    // Add the children if we have them
+                    for child_id in children {
+                        pending_nodes.push(self.nodes.get(*child_id).unwrap())
+                    }
+                }
+            }
+
+            // Don't cause an infinite loop
+            pending_nodes.remove(0);
+        }
     }
 }

@@ -1240,9 +1240,9 @@ name = "math"
 version = "0.0.1"
 dependencies = [
  "ahash",
+ "enum-as-inner",
  "ordered_vec",
  "others",
- "rayon",
  "veclib",
 ]
 

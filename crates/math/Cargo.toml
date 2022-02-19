@@ -10,4 +10,4 @@ ahash = "0.7.6"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 others = { path = "../others" }
-rayon = "1.5"
+enum-as-inner = "0.3.3"
