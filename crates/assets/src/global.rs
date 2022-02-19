@@ -1,6 +1,6 @@
-use std::sync::{MutexGuard, Mutex};
-use lazy_static::lazy_static;
 use crate::cacher::AssetCacher;
+use lazy_static::lazy_static;
+use std::sync::{Mutex, MutexGuard};
 // Half-assed multithreaded asset loading lol
 lazy_static! {
     static ref CACHER: Mutex<AssetCacher> = Mutex::new(AssetCacher::default());

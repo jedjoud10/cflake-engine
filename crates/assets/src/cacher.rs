@@ -1,6 +1,5 @@
-use ahash::AHashMap;
 use crate::metadata::AssetMetadata;
-
+use ahash::AHashMap;
 
 // Cacher that keeps assets loaded in, so it's cheaper to load them later
 #[derive(Default)]

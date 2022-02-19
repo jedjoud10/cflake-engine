@@ -63,12 +63,13 @@ impl ShaderSettings {
         // Load a shader source from scratch
         let metadata = assets::metadata::AssetMetadata::new(path).unwrap();
         let text = assets::assetc::load::<String>(path).unwrap();
+        let extension = metadata.name.to_str().unwrap().to_string().split(".").map(|x| x.to_string()).collect::<Vec<_>>()[1..].join(".");
         self.sources.insert(
             path.to_string(),
             ShaderSource {
                 path: path.to_string(),
                 text,
-                _type: match metadata.extension.to_str().unwrap() {
+                _type: match extension.as_str() {
                     "vrsh.glsl" => ShaderSourceType::Vertex,
                     "frsh.glsl" => ShaderSourceType::Fragment,
                     "cmpt.glsl" => ShaderSourceType::Compute,

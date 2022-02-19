@@ -1,4 +1,4 @@
-use std::{path::Path, ffi::OsString};
+use std::{ffi::OsString, path::Path};
 
 // Asset metadata that contains the name and extension of an asset
 #[derive(Hash, PartialEq, Eq, Clone)]
@@ -8,7 +8,6 @@ pub struct AssetMetadata {
     // PS: This also contains the extension
     pub name: OsString,
     pub relative_path: OsString,
-    
 }
 
 impl AssetMetadata {
@@ -18,6 +17,10 @@ impl AssetMetadata {
         let path = path.as_ref();
         let extension = path.extension()?.to_os_string();
         let name = path.file_name()?.to_os_string();
-        Some(Self { extension, name, relative_path: path.as_os_str().to_os_string() })
+        Some(Self {
+            extension,
+            name,
+            relative_path: path.as_os_str().to_os_string(),
+        })
     }
 }

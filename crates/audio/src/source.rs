@@ -16,7 +16,8 @@ pub struct AudioSource {
 impl assets::Asset for AudioSource {
     fn deserialize(mut self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Rodio moment
         let cursor = Cursor::new(bytes.to_vec());
         let read = Decoder::new(cursor).unwrap().buffered();
