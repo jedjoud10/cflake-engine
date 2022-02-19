@@ -250,6 +250,14 @@ version = "0.1.0"
 source = "git+https://github.com/jedjoud10/cflake-engine-packer#ae6d9ce51f97d70dd4bb5786c7dbdb4ecc1d4382"
 
 [[package]]
+name = "cflake_examples"
+version = "0.1.0"
+dependencies = [
+ "cflake-engine-packer",
+ "veclib",
+]
+
+[[package]]
 name = "cgl"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

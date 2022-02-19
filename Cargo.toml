@@ -6,31 +6,29 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-handler = { path = "crates//handler" }
+handler = { path = "crates/handler" }
 
 [workspace]
 members = [
-    "crates//assets",
-    "crates//audio",
-    "crates//core",
-    "crates//defaults",
-    "crates//ecs",    
-    "crates//handler",
-    "crates//gui",
-    "crates//globals",
-    "crates//input",
-    "crates//io",
-    "crates//main",
-    "crates//math",
-    "crates//network",
-    "crates//others",
-    "crates//physics",
-    "crates//rendering",
-    "crates//terrain",
+    "crates/assets",
+    "crates/audio",
+    "crates/core",
+    "crates/defaults",
+    "crates/ecs",    
+    "crates/handler",
+    "crates/gui",
+    "crates/globals",
+    "crates/input",
+    "crates/io",
+    "crates/main",
+    "crates/math",
+    "crates/network",
+    "crates/others",
+    "crates/physics",
+    "crates/rendering",
+    "crates/terrain",
+    "cflake_examples"
 ]
-
-[[example]]
-name = "empty"
 
 [profile.dev]
 opt-level = 3
