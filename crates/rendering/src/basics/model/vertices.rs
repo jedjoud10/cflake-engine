@@ -10,9 +10,12 @@ pub struct Vertices {
 }
 
 impl Vertices {
-    // Length
+    // Length and is_empty
     pub fn len(&self) -> usize {
         self.positions.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.positions.is_empty()
     }
 
     // Reset all the buffers

@@ -53,34 +53,35 @@ impl MarchingCubesSkirts {
             let indexing_function = SKIRTS_DIR_INDEXING_FN[direction];
             let transform_function = SKIRTS_DIR_TRANSFORM_FN[direction];
             // Create the two skirts for this direction
-            self.generate_skirt(voxels, &mut model, false, flip, index_offsets, indexing_function, transform_function);
-            self.generate_skirt(voxels, &mut model, true, !flip, index_offsets, indexing_function, transform_function);
+            let mut skirt_settings = SkirtSettings {
+                slice_part: flip,
+                index_offsets,
+                flip,
+                indexing_function,
+                transform_function,
+            };
+            self.generate_skirt(voxels, &mut model, &skirt_settings);
+
+            // Other side
+            skirt_settings.flip = !flip;
+            self.generate_skirt(voxels, &mut model, &skirt_settings);
         }
         println!("Skirts: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
         model
     }
     // Generate a whole skirt
-    fn generate_skirt(
-        &self,
-        voxels: &StoredVoxelData,
-        model: &mut Model,
-        slice_part: bool,
-        flip: bool,
-        index_offsets: &'static [usize; 4],
-        indexing_function: fn(usize, usize, usize) -> usize,
-        transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
-    ) {
-        let slice = (slice_part as usize) * CHUNK_SIZE;
+    fn generate_skirt(&self, voxels: &StoredVoxelData, model: &mut Model, skirt_settings: &SkirtSettings) {
+        let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 // Solve each marching squares case
-                let i = (indexing_function)(slice_part as usize, x, y);
+                let i = (skirt_settings.indexing_function)(skirt_settings.slice_part as usize, x, y);
                 // Create some iteration info
                 let info = InterInfo {
-                    index_offsets,
-                    transform_function,
+                    index_offsets: skirt_settings.index_offsets,
+                    transform_function: skirt_settings.transform_function,
                     slice,
-                    flip,
+                    flip: skirt_settings.flip,
                     i,
                     x,
                     y,
@@ -224,6 +225,17 @@ impl MarchingCubesSkirts {
         }
         vertices
     }
+}
+// Some skirt settings
+struct SkirtSettings {
+    // Voxel indexing
+    slice_part: bool,
+    index_offsets: &'static [usize; 4],
+    // Meshing
+    flip: bool,
+    // Functions
+    indexing_function: fn(usize, usize, usize) -> usize,
+    transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 }
 // A single skirt vertex
 pub enum SkirtVert {

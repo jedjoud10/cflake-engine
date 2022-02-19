@@ -54,6 +54,6 @@ impl GUIManager {
         // Set the values using the arc
         painter.clipped_meshes = meshes;
         painter.output = output;
-        painter.egui_font_image_arc = self.egui.font_image().clone();
+        painter.egui_font_image_arc = self.egui.font_image();
     }
 }

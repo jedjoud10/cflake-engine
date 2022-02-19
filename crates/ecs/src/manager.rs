@@ -176,7 +176,7 @@ impl<World> ECSManager<World> {
         // We shall remove
         entity.cbitfield = new;
         for (cbitfield, _) in &components_elems {
-            entity.components.remove(&cbitfield).unwrap();
+            entity.components.remove(cbitfield).unwrap();
         }
         for (cbitfield, idx) in components_elems {
             self.remove_component(ComponentID::new(cbitfield, idx))?;

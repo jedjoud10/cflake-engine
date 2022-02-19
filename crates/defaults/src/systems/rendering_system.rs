@@ -19,7 +19,7 @@ fn run(world: &mut World, mut data: EventKey) {
     }
 
     let result = query
-        .lock()
+        .write()
         .par_iter()
         .filter_map(|(_, components)| {
             let renderer = components.get_component::<crate::components::Renderer>().unwrap();
@@ -64,7 +64,7 @@ fn run(world: &mut World, mut data: EventKey) {
 fn added_entities(world: &mut World, mut data: EventKey) {
     // For each renderer, we must create it's pipeline renderer construction task
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.lock().iter_mut() {
+    for (_, components) in query.write().iter_mut() {
         // Get the pipeline first
         let pipeline = world.pipeline.read();
 
@@ -82,7 +82,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
 fn removed_entities(world: &mut World, mut data: EventKey) {
     // For each renderer, we must dispose of it's GPU renderer
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.lock().iter_mut() {
+    for (_, components) in query.write().iter_mut() {
         // Get the pipeline first
         let pipeline = world.pipeline.read();
 

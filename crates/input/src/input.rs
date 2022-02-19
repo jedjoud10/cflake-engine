@@ -53,13 +53,12 @@ impl InputManager {
         for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
             // Reset the map state if needed
             *changed = false;
-            match map_state {
-                MapState::Button(button_state) => match button_state {
+            if let MapState::Button(button_state) = map_state {
+                match button_state {
                     ButtonState::Pressed => *button_state = ButtonState::Held,
                     ButtonState::Released => *button_state = ButtonState::Nothing,
                     _ => {}
-                },
-                _ => {}
+                }
             }
         }
     }
@@ -91,9 +90,8 @@ impl InputManager {
                 }
                 State::Released => {
                     // We released the key
-                    match map {
-                        MapState::Button(button_state) => *button_state = ButtonState::Released,
-                        _ => {}
+                    if let MapState::Button(button_state) = map {
+                        *button_state = ButtonState::Released
                     }
                 }
             }
@@ -127,51 +125,21 @@ impl InputManager {
     pub fn map_pressed(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| {
-                if let MapState::Button(button_state) = map_state {
-                    if let ButtonState::Pressed = button_state {
-                        Some(())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Pressed) = map_state { Some(()) } else { None })
             .is_some()
     }
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| {
-                if let MapState::Button(button_state) = map_state {
-                    if let ButtonState::Held = button_state {
-                        Some(())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Held) = map_state { Some(()) } else { None })
             .is_some()
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| {
-                if let MapState::Button(button_state) = map_state {
-                    if let ButtonState::Released = button_state {
-                        Some(())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Released) = map_state { Some(()) } else { None })
             .is_some()
     }
     // Check if a map changed
@@ -182,17 +150,7 @@ impl InputManager {
     pub fn map_toggled(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| {
-                if let MapState::Toggle(toggle_state) = map_state {
-                    if let ToggleState::On = toggle_state {
-                        Some(())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
+            .and_then(|(map_state, _)| if let MapState::Toggle(ToggleState::On) = map_state { Some(()) } else { None })
             .is_some()
     }
 }

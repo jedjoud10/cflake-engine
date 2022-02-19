@@ -122,7 +122,7 @@ fn run(world: &mut World, mut data: EventKey) {
             }
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((entity_id, _)) = terrain.chunk_handler.sorted_chunks_generating.pop() {
-                let mut lock_ = query.lock();
+                let mut lock_ = query.write();
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
@@ -141,7 +141,7 @@ fn run(world: &mut World, mut data: EventKey) {
             ) {
                 // We will now update the chunk data to store our new voxel data
                 let id = terrain.chunk_handler.chunk_id.unwrap();
-                let mut lock_ = query.lock();
+                let mut lock_ = query.write();
                 let components = lock_.get_mut(&id).unwrap();
                 // Get our chunk and set it's new data
                 let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();

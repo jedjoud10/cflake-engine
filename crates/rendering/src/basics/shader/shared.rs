@@ -80,7 +80,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
         }
         // Constants
         if line.trim().contains("#constant ") {
-            fn format(line: &str, val: &String) -> String {
+            fn format(line: &str, val: &str) -> String {
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];

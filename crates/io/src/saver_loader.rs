@@ -35,7 +35,7 @@ impl SaverLoader {
         }
     }
     // Load a struct from a file
-    pub fn load<'a, T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: &'a str) -> T {
+    pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: &str) -> T {
         // Load the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let reader = BufReader::new(OpenOptions::new().read(true).open(global_path).unwrap());

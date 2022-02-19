@@ -1,4 +1,4 @@
-use super::{query_guard::ComponentQueryGuard, LinkedComponents};
+use super::{query_guard::{MutComponentQuery, RefComponentQuery}, LinkedComponents};
 use crate::entity::EntityID;
 use ahash::AHashMap;
 use rayon::ThreadPool;
@@ -21,9 +21,13 @@ impl ComponentQuery {
         len.unwrap_or_default()
     }
     // Lock the component query, returning a ComponentQueryGuard that we can use to iterate over the components
-    pub fn lock(&mut self) -> ComponentQueryGuard {
+    pub fn write(&self) -> MutComponentQuery {
         let locked = self.linked_components.as_ref().unwrap().borrow_mut();
-        ComponentQueryGuard { inner: locked }
+        MutComponentQuery { inner: locked }
+    }
+    pub fn read(&self) -> RefComponentQuery {
+        let locked = self.linked_components.as_ref().unwrap().borrow();
+        RefComponentQuery { inner: locked }
     }
     // Get the rayon thread pool
     pub fn get_thread_pool(&self) -> &ThreadPool {

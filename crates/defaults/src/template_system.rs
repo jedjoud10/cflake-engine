@@ -9,7 +9,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     let time = world.time.elapsed;
     let _obj = world.globals.get_global::<crate::globals::Terrain>().unwrap();
-    for (_, components) in query.lock().iter() {
+    for (_, components) in query.write().iter() {
         let name = components.get_component::<Name>().unwrap();
         dbg!(&name.name);
         dbg!(time);

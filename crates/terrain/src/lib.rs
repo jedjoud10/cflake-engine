@@ -3,7 +3,6 @@ mod chunk_coords;
 pub mod editing;
 pub mod mesher;
 mod params;
-mod test;
 pub mod utils;
 mod voxel;
 

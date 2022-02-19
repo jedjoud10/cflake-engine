@@ -79,7 +79,7 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     let pipeline_data = rendering::pipeline::init_pipeline(pipeline_settings, window_context);
 
     // Create the world
-    let mut world = World::new(config.clone(), io, pipeline_data);
+    let mut world = World::new(config, io, pipeline_data);
 
     // Calling the callback
     println!("Calling World Initialization callback");

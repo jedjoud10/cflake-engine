@@ -20,6 +20,6 @@ impl EditingManager {
         let shapes = self.edits.iter().map(|edit| edit.shape.clone()).collect::<Vec<_>>();
         let nodes = math::intersection::shapes_octree(&shapes, octree);
         // Get the chunks coordiantes
-        nodes.into_iter().map(|node| ChunkCoords::new(node)).collect::<Vec<_>>()
+        nodes.into_iter().map(ChunkCoords::new).collect::<Vec<_>>()
     }
 }

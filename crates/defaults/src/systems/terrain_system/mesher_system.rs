@@ -13,7 +13,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
-        for (id, components) in query.lock().iter_mut() {
+        for (id, components) in query.write().iter_mut() {
             let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
             if !terrain.chunk_handler.mesh_gen_chunk_id.map_or(false, |x| x == *id) {
                 continue;

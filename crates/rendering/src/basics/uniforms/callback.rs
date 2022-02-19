@@ -1,11 +1,12 @@
+use super::Uniforms;
 use std::sync::Arc;
 
-use super::Uniforms;
+type ArcCallback = Arc<Box<dyn Fn(&Uniforms) + Send + Sync>>;
 
 // Called whenever we will execute the shader, and we must set the uniforms
 #[derive(Default, Clone)]
 pub struct SetUniformsCallback {
-    inner: Option<Arc<Box<dyn Fn(&Uniforms) + Send + Sync>>>,
+    inner: Option<ArcCallback>,
 }
 
 impl SetUniformsCallback {

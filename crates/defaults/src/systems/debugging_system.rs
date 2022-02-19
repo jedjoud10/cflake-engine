@@ -10,7 +10,7 @@ fn run(world: &mut World, _data: EventKey) {
     let gui = &world.gui.egui;
     let state = &mut world.state;
     let pipeline = world.pipeline.read();
-    egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(&gui, |ui| {
+    egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
         let data = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();

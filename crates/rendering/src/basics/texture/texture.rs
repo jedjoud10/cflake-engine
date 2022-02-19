@@ -340,7 +340,7 @@ impl Texture {
         self
     }
     // Zip up all the pixel bytes from multiple textures
-    pub fn pack_bytes(textures: &Vec<&Texture>) -> Option<Vec<u8>> {
+    pub fn pack_bytes(textures: &[&Texture]) -> Option<Vec<u8>> {
         // Load the bytes
         let mut bytes: Vec<u8> = Vec::new();
         let width = textures.get(0)?.ttype.get_width();
