@@ -7,7 +7,7 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::basics::model::{Model, Vertices};
+use rendering::basics::model::Model;
 use std::collections::hash_map::Entry;
 
 // Struct that contains everything related to the marching cubes mesh generation
@@ -137,16 +137,7 @@ impl MarchingCubes {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Model {
         let i = std::time::Instant::now();
         // Create the model data
-        let mut model = Model {
-            vertices: Vertices {
-                positions: Vec::with_capacity(5000),
-                normals: Vec::with_capacity(5000),
-                uvs: Vec::with_capacity(5000),
-                ..Default::default()
-            },
-            triangles: Vec::with_capacity(15000),
-            ..Default::default()
-        };
+        let mut model = Model::default();
         // Then generate the model
         self.generate_model(voxels, &mut model);
         // Combine the model's custom vertex data with the model itself

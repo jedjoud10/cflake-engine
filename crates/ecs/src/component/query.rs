@@ -1,4 +1,7 @@
-use super::{query_guard::{MutComponentQuery, RefComponentQuery}, LinkedComponents};
+use super::{
+    query_guard::{MutComponentQuery, RefComponentQuery},
+    LinkedComponents,
+};
 use crate::entity::EntityID;
 use ahash::AHashMap;
 use rayon::ThreadPool;

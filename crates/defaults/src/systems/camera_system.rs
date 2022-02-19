@@ -112,7 +112,6 @@ fn removed_entities(world: &mut World, data: EventKey) {
     }
 }
 
-
 // Create the camera system
 pub fn system(world: &mut World) {
     world

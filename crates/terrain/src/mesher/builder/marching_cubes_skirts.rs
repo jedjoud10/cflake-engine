@@ -1,4 +1,4 @@
-use rendering::basics::model::{Model, Vertices};
+use rendering::basics::model::Model;
 
 use crate::{
     mesher::{
@@ -33,18 +33,8 @@ impl MarchingCubesSkirts {
         if !self.settings.skirts {
             return Model::default();
         }
-        let i = std::time::Instant::now();
         // Model builder data that stores the model along with it's custom vdata
-        let mut model = Model {
-            vertices: Vertices {
-                positions: Vec::with_capacity(200),
-                normals: Vec::with_capacity(200),
-                uvs: Vec::with_capacity(200),
-                ..Default::default()
-            },
-            triangles: Vec::with_capacity(600),
-            ..Default::default()
-        };
+        let mut model = Model::default();
         // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
@@ -54,7 +44,7 @@ impl MarchingCubesSkirts {
             let transform_function = SKIRTS_DIR_TRANSFORM_FN[direction];
             // Create the two skirts for this direction
             let mut skirt_settings = SkirtSettings {
-                slice_part: flip,
+                slice_part: false,
                 index_offsets,
                 flip,
                 indexing_function,
@@ -64,9 +54,9 @@ impl MarchingCubesSkirts {
 
             // Other side
             skirt_settings.flip = !flip;
+            skirt_settings.slice_part = true;
             self.generate_skirt(voxels, &mut model, &skirt_settings);
         }
-        println!("Skirts: {:.2}ms", i.elapsed().as_secs_f32() * 1000.0);
         model
     }
     // Generate a whole skirt

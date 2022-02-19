@@ -2,7 +2,7 @@ use super::LinkedComponents;
 use crate::entity::EntityID;
 use ahash::AHashMap;
 use std::{
-    cell::{RefMut, Ref},
+    cell::{Ref, RefMut},
     ops::{Deref, DerefMut},
 };
 

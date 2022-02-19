@@ -46,7 +46,7 @@ impl VoxelGenerator {
     // Create a new voxel generator
     pub fn new(voxel_src_path: &str, uniforms: Option<SetUniformsCallback>, pipeline: &Pipeline) -> Self {
         // Load the first pass compute shader
-        let voxel_src_path = format!(r#""\#include {}""#, voxel_src_path);
+        let voxel_src_path = format!(r#"#include "{}""#, voxel_src_path);
         let settings = ShaderSettings::default()
             .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())
