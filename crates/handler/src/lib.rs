@@ -42,7 +42,7 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
 }
 
 // Start le engine
-pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world: fn(&mut World)) {
+pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = main::io::SaverLoader::new(author_name, app_name);
     io.create_default("config/game_config.json", &core::GameSettings::default());
@@ -52,9 +52,6 @@ pub fn start(author_name: &str, app_name: &str, preload_assets: fn(), init_world
     // Glutin stuff
     let event_loop = EventLoop::new();
     let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
-    // Pre-load the assets first
-    defaults::preload_default_assets();
-    preload_assets();
 
     // Set fullscreen if we want to
     let window = window_context.window();

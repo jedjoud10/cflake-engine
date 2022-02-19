@@ -3,26 +3,23 @@ use std::fmt;
 // Asset metadata load error
 #[derive(Debug)]
 pub struct AssetLoadError {
-    pub details: String,
+    pub file_path: String,
 }
 
 impl AssetLoadError {
-    pub fn new(msg: String) -> Self {
-        Self { details: msg }
-    }
-    pub fn new_str(msg: &str) -> Self {
-        Self { details: msg.to_string() }
+    pub fn new(path: &str) -> Self {
+        Self { file_path: path.to_string() }
     }
 }
 
 impl fmt::Display for AssetLoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.details)
+        write!(f, "Could not load asset file '{}'!", self.file_path)
     }
 }
 
 impl std::error::Error for AssetLoadError {
     fn description(&self) -> &str {
-        &self.details
+        &self.file_path
     }
 }

@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
+ahash = "0.7.6"
+parking_lot = "0.12.0"
+cflake-engine-packer = { git = "https://github.com/jedjoud10/cflake-engine-packer" }

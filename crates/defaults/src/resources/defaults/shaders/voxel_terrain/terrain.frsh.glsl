@@ -20,7 +20,7 @@ in vec3 m_color;
 in flat vec2 m_uv;
 void main() {
 	// Triplanar settings
-	TriplanarSettings settings = TriplanarSettings(uv_scale * 0.3, 0.3);
+	TriplanarSettings settings = TriplanarSettings(uv_scale, 0.3);
 	uint m_material_type = uint(m_uv.x * 255);
 	frag_diffuse = array_triplanar(diffuse_tex, m_position, m_normal, int(m_material_type), settings);	
 	frag_normal = array_triplanar_normal(normals_tex, m_position, m_normal, int(m_material_type), normals_strength, settings);

@@ -202,12 +202,12 @@ impl Pipeline {
 
 // Load some defaults
 fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
-    use assets::assetc::load;
+    use assets::assetc::load_with;
 
     // Create the default missing texture
     let missing = pipec::construct::<Texture>(
         pipeline,
-        load(
+        load_with(
             "defaults/textures/missing_texture.png",
             Texture::default().with_filter(TextureFilter::Nearest).with_mipmaps(true),
         )

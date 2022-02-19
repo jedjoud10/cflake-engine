@@ -178,7 +178,7 @@ impl PipelineRenderer {
         // Load sky gradient texture
         self.sky_gradient = pipec::construct(
             pipeline,
-            assets::assetc::dload::<Texture>("defaults/textures/sky_gradient.png")
+            assets::assetc::load::<Texture>("defaults/textures/sky_gradient.png")
                 .unwrap()
                 .with_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
         )

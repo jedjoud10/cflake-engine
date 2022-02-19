@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 handler = { path = "crates//handler" }
-rand = "0.8.5"
 
 [workspace]
 members = [
@@ -29,6 +28,9 @@ members = [
     "crates//rendering",
     "crates//terrain",
 ]
+
+[[example]]
+name = "empty"
 
 [profile.dev]
 opt-level = 3
