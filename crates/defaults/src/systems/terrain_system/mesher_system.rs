@@ -2,28 +2,27 @@ use main::{
     core::World,
     ecs::{entity::ComponentLinkingGroup, event::EventKey},
     rendering::pipeline::pipec,
-    terrain::mesher::{Mesher, MesherSettings},
+    terrain::{mesher::{Mesher, MesherSettings}, StoredVoxelData},
 };
+use crate::{globals::ChunkGenerationState, components::Chunk};
+
+// A post generation event that will be called after the generation of a specific chunk
+fn chunk_post_gen(_terrain: &crate::globals::Terrain, _chunk: &Chunk, _data: &StoredVoxelData) {
+}
 
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
-    // Get the pipeline without angering the borrow checker
-    let pipeline = world.pipeline.read();
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
         for (id, components) in query.write().iter_mut() {
-            let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
-            if !terrain.chunk_handler.mesh_gen_chunk_id.map_or(false, |x| x == *id) {
-                continue;
-            }
-            // We have created voxel data for this chunk, and it is valid
-            if chunk.pending_model && chunk.buffered_model.is_none() && !chunk.added_renderer {
-                terrain.chunk_handler.mesh_gen_chunk_id.take().unwrap();
+            let chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
+            if terrain.chunk_handler.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(*id, true) {            
+                // We have created voxel data for this chunk, and it is valid (it contains a surface)
                 // I guess we should create the model now
                 let coords = chunk.coords;
-                let voxel_data = &terrain.generator.stored_chunk_voxel_data;
+                let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data;
                 let mesher = Mesher::new(
                     coords,
                     voxel_data,
@@ -35,11 +34,12 @@ fn run(world: &mut World, mut data: EventKey) {
                 let model = mesher.build();
 
                 // Construct the model and add it to the chunk entity
+                // Get the pipeline without angering the borrow checker
+                let pipeline = world.pipeline.read();
                 let model_id = pipec::construct(&pipeline, model).unwrap();
-                chunk.buffered_model = Some(model_id);
+                drop(pipeline);
 
                 // Create a linking group that contains the renderer
-                chunk.added_renderer = true;
                 let mut group = ComponentLinkingGroup::default();
                 let renderer = main::rendering::basics::renderer::Renderer::new(main::rendering::basics::renderer::RendererFlags::DEFAULT)
                     .with_model(model_id)
@@ -47,6 +47,16 @@ fn run(world: &mut World, mut data: EventKey) {
                 group.link(crate::components::Renderer::new(renderer)).unwrap();
                 world.ecs.link_components(*id, group).unwrap();
                 terrain.chunk_handler.chunks_generating.remove(&coords);
+                // Switch states
+                terrain.chunk_handler.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
+                chunk_post_gen(&terrain, &chunk, &terrain.voxel_generator.stored_chunk_voxel_data);
+            } else if terrain.chunk_handler.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(*id, false) {
+                // The chunk ID is the same, but we do not have a surface
+                // We still gotta update the current chunk state though
+                terrain.chunk_handler.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
+                chunk_post_gen(&terrain, &chunk, &terrain.voxel_generator.stored_chunk_voxel_data);
+            } else {
+                // Skip since this is not the proper chunk
             }
         }
     }

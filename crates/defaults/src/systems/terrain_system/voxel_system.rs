@@ -10,10 +10,11 @@ use main::{
     terrain::{PackedVoxel, CHUNK_SIZE},
 };
 
+use crate::globals::ChunkGenerationState;
+
 // Start generating the voxel data for a specific chunk
 fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
-    let generator = &mut terrain.generator;
-    terrain.chunk_handler.chunk_id = Some(id);
+    let generator = &mut terrain.voxel_generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
     const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
@@ -82,29 +83,32 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     );
 
     // Store the CPU side readers
-    generator.cpu_data = Some((read_counters, read_bytes));
+    generator.pending_reads = Some((read_counters, read_bytes));
+    terrain.chunk_handler.current_chunk_state = ChunkGenerationState::BeginVoxelDataGeneration(id);
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    let id = terrain.chunk_handler.chunk_id.take().unwrap();
-    chunk.pending_voxels = false;
-    let (read_counters, read_bytes) = terrain.generator.cpu_data.take().unwrap();
+    let (read_counters, read_bytes) = terrain.voxel_generator.pending_reads.take().unwrap();
     // Get the valid counters
     let positive = read_counters.get(0).unwrap();
     let negative = read_counters.get(1).unwrap();
+    let id = *terrain.chunk_handler.current_chunk_state.as_begin_voxel_data_generation().unwrap();
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.chunk_handler.chunks_generating.remove(&chunk.coords);
+        // Switch states
+        terrain.chunk_handler.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, false);
         return;
     }
 
     // We can read from the SSBO now
-    let allocated_packed_voxels = &mut terrain.generator.packed_chunk_voxel_data.0;
+    let allocated_packed_voxels = &mut terrain.voxel_generator.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
     read_bytes.fill_array::<PackedVoxel>(arr).unwrap();
-    terrain.generator.stored_chunk_voxel_data.store(&terrain.generator.packed_chunk_voxel_data);
-    terrain.chunk_handler.mesh_gen_chunk_id = Some(id);
-    chunk.pending_model = true;
+    terrain.voxel_generator.stored_chunk_voxel_data.store(&terrain.voxel_generator.packed_chunk_voxel_data);
+
+    // Switch states
+    terrain.chunk_handler.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
 }
 
 // The voxel systems' update loop
@@ -115,37 +119,36 @@ fn run(world: &mut World, mut data: EventKey) {
 
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
+        dbg!(&terrain.chunk_handler.current_chunk_state);
         // For each chunk in the terrain, we must create it's respective voxel data, if possible
-        if terrain.generator.cpu_data.is_none() {
-            if terrain.chunk_handler.mesh_gen_chunk_id.is_some() {
-                return;
-            }
-            // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
-            if let Some((entity_id, _)) = terrain.chunk_handler.sorted_chunks_generating.pop() {
-                let mut lock_ = query.write();
-                let components = lock_.get_mut(&entity_id).unwrap();
-                // We break out at the first chunk if we start generating it's voxel data
-                let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
-                // We can set our state as not generating if none of the chunks want to generate voxel data
-                if !chunk.pending_model && chunk.pending_voxels {
+        if terrain.voxel_generator.pending_reads.is_none() {
+            if terrain.chunk_handler.current_chunk_state == ChunkGenerationState::RequiresVoxelData {                
+                // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
+                if let Some((entity_id, _)) = terrain.chunk_handler.sorted_chunks_generating.pop() {
+                    let mut lock_ = query.write();
+                    let components = lock_.get_mut(&entity_id).unwrap();
+                    // We break out at the first chunk if we start generating it's voxel data
+                    let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
+                    // We can set our state as not generating if none of the chunks want to generate voxel data
                     // We must start generating the voxel data for this chunk
                     start_generation(&mut *terrain, &pipeline, &mut *chunk, entity_id);
                 }
             }
         } else {
             // We must check if we have finished generating or not
-            let generator = &terrain.generator;
+            let generator = &terrain.voxel_generator;
             if pipec::did_tasks_execute(
                 &pipeline,
                 &[generator.compute_id, generator.compute_id2, generator.read_counters, generator.read_final_voxels],
             ) {
                 // We will now update the chunk data to store our new voxel data
-                let id = terrain.chunk_handler.chunk_id.unwrap();
-                let mut lock_ = query.write();
-                let components = lock_.get_mut(&id).unwrap();
-                // Get our chunk and set it's new data
-                let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
-                finish_generation(&mut *terrain, &*pipeline, &mut *chunk);
+                if let ChunkGenerationState::BeginVoxelDataGeneration(id) = terrain.chunk_handler.current_chunk_state {                    
+                    let mut lock_ = query.write();
+                    let components = lock_.get_mut(&id).unwrap();
+                    // Get our chunk and set it's new data
+                    let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
+                    finish_generation(&mut *terrain, &*pipeline, &mut *chunk);
+                }
             }
         }
     }

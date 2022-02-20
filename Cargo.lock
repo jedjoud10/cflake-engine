@@ -630,6 +630,7 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "enum-as-inner",
  "main",
  "veclib",
 ]

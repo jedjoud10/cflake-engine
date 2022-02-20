@@ -25,7 +25,7 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
 
     // Calculate the chunk's priory and create it
     let priority = (camera_position - position).dot(camera_direction);
-    let chunk = crate::components::Chunk::new(coords);
+    let chunk = crate::components::Chunk { coords };
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world

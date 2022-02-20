@@ -29,7 +29,7 @@ pub struct VoxelGenerator {
     pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
     pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
     // Some CPU side objects that let us retrieve the GPU data
-    pub cpu_data: Option<(AtomicGroupRead, ReadBytes)>,
+    pub pending_reads: Option<(AtomicGroupRead, ReadBytes)>,
     // The IDs of the generation tasks
     pub compute_id: ReservedTrackedID,
     pub compute_id2: ReservedTrackedID,

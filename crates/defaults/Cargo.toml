@@ -9,3 +9,4 @@ edition = "2021"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 main = { path = "../main" }
 ahash = "0.7.6"
+enum-as-inner = "0.3.3"
