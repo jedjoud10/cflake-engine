@@ -1,9 +1,9 @@
 use main::{globals::Global, math::octrees::DiffOctree, rendering::pipeline::Pipeline, terrain::CHUNK_SIZE};
 
-mod chunks;
+mod chunks_handler;
 mod settings;
 mod voxel_generation;
-pub use chunks::*;
+pub use chunks_handler::*;
 pub use settings::*;
 pub use voxel_generation::*;
 

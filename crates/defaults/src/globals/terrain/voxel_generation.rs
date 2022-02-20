@@ -3,14 +3,13 @@ use std::mem::size_of;
 use main::{
     rendering::{
         advanced::{
-            atomic::{AtomicGroup, AtomicGroupRead},
+            atomic::AtomicGroup,
             compute::ComputeShader,
             shader_storage::ShaderStorage,
         },
         basics::{
-            readwrite::ReadBytes,
             shader::ShaderSettings,
-            uniforms::{SetUniformsCallback, ShaderIDType},
+            uniforms::{SetUniformsCallback, ShaderIDType}, buffer_operation::ReadBytes,
         },
         object::{ObjectID, ReservedTrackedID},
         pipeline::{pipec, Pipeline},
@@ -25,11 +24,13 @@ pub struct VoxelGenerator {
     pub compute_shader: ObjectID<ComputeShader>,
     pub second_compute_shader: ObjectID<ComputeShader>,
     pub atomics: ObjectID<AtomicGroup>,
-    // Our 2 shader storages
+    // Our 2 shader storages (for voxel generation)
     pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
     pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
+    // And another voxel storage for edits
+    //pub shader_storage_edits: ObjectID<ShaderStorage>,
     // Some CPU side objects that let us retrieve the GPU data
-    pub pending_reads: Option<(AtomicGroupRead, ReadBytes)>,
+    pub pending_reads: Option<(ReadBytes, ReadBytes)>,
     // The IDs of the generation tasks
     pub compute_id: ReservedTrackedID,
     pub compute_id2: ReservedTrackedID,
@@ -79,6 +80,9 @@ impl VoxelGenerator {
         let final_voxels_size = ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
         let shader_storage_final_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, final_voxels_size);
         let shader_storage_final_voxels = pipec::construct(pipeline, shader_storage_final_voxels).unwrap();
+
+        // Create a new dynamic shader storage for our terrain edits
+        //let shader_storage_edits = ShaderStorage::new_dynamic(UpdateFrequency::Stream, AccessType::Draw);
 
         Self {
             compute_shader: base_compute,

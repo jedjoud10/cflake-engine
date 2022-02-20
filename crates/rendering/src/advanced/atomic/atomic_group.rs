@@ -3,13 +3,12 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use arrayvec::ArrayVec;
 use gl::types::GLuint;
 
-use super::AtomicGroupRead;
 use crate::{
-    basics::transfer::Transfer,
+    basics::buffer_operation::BufferOperation,
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
 };
-
+const MAX_COUNTERS: usize = 4;
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
 #[derive(Clone)]
@@ -18,12 +17,12 @@ pub struct AtomicGroup {
     pub(crate) oid: GLuint,
     // Some predefined values that we can set before we execute the shader
     // This also stores the number of valid atomics that we have
-    pub(crate) defaults: ArrayVec<u32, 4>,
+    pub(crate) defaults: ArrayVec<u32, MAX_COUNTERS>,
 }
 
 impl Default for AtomicGroup {
     fn default() -> Self {
-        let mut arrayvec = ArrayVec::<u32, 4>::new();
+        let mut arrayvec = ArrayVec::<u32, MAX_COUNTERS>::new();
         arrayvec.push(0);
         Self { oid: 0, defaults: arrayvec }
     }
@@ -82,26 +81,27 @@ impl AtomicGroup {
         arrayvec.try_extend_from_slice(vals).ok()?;
         Some(Self { oid: 0, defaults: arrayvec })
     }
-    // Read the value of an atomic group by reading it's buffer data and update the transfer
-    pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
+    // Read/set the value of an atomic group
+    pub(crate) fn buffer_operation(&self, pipeline: &Pipeline, op: BufferOperation) -> GlTracker {
+        let read = if let BufferOperation::Read(rb) = op { rb } else { panic!() };
+
         GlTracker::fake(
             move |_pipeline| unsafe {
                 // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicGroupRead>'s inner value
                 let oid = self.oid;
-                let mut counts: [u32; 4] = [0, 0, 0, 0];
+                let mut bytes: Vec<u8> = vec![0; self.defaults.len() * size_of::<u32>()];
                 gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
                 gl::GetBufferSubData(
                     gl::ATOMIC_COUNTER_BUFFER,
                     0,
                     size_of::<u32>() as isize * self.defaults.len() as isize,
-                    counts.as_mut_ptr() as *mut c_void,
+                    bytes.as_mut_ptr() as *mut c_void,
                 );
                 gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-                // Now store the atomic counters' values
-                let mut cpu_counters_lock = read.0.inner.lock();
+                // Now store the atomic counter's values
+                let mut cpu_counters_lock = read.bytes.lock();
                 let cpu_counters = &mut *cpu_counters_lock;
-                cpu_counters.clear();
-                cpu_counters.try_extend_from_slice(&counts).unwrap();
+                *cpu_counters = bytes;
             },
             pipeline,
         )

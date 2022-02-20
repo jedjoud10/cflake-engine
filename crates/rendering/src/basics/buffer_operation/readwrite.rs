@@ -3,11 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use parking_lot::Mutex;
 
-use crate::basics::transfer::{Transfer, Transferable};
+use parking_lot::Mutex;
 // Used to help reading back the bytes from OpenGL storage
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ReadBytes {
     // The shared bytes that have been sent from the main thread that we must update
     pub(crate) bytes: Arc<Mutex<Vec<u8>>>,
@@ -58,11 +57,9 @@ impl ReadBytes {
     }
 }
 
-impl Transferable for ReadBytes {
-    fn transfer(&self) -> Transfer<Self> {
-        Transfer(Self {
-            bytes: self.bytes.clone(),
-            range: None,
-        })
-    }
+// Helps writing to some OpenGL buffers
+#[derive(Default)]
+pub struct WriteBytes {
+    // The bytes that we will write to the receiving buffer
+    pub(crate) bytes: Vec<u8>,
 }

@@ -2,8 +2,8 @@ use main::{
     core::World,
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
-        advanced::{atomic::AtomicGroupRead, compute::ComputeShaderExecutionSettings},
-        basics::{readwrite::ReadBytes, transfer::Transferable, uniforms::SetUniformsCallback},
+        advanced::compute::ComputeShaderExecutionSettings,
+        basics::{uniforms::SetUniformsCallback, buffer_operation::{ReadBytes, BufferOperation}},
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },
@@ -63,21 +63,19 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         generator.compute_id,
     );
     // And also read from the atomic counters
-    let read_counters = AtomicGroupRead::default();
-    let read_counters_transfer = read_counters.transfer();
+    let read_counters = ReadBytes::default();
     pipec::tracked_task_requirement(
         pipeline,
-        TrackedTask::AtomicGroupRead(generator.atomics, read_counters_transfer),
+        TrackedTask::AtomicGroupOp(generator.atomics, BufferOperation::Read(read_counters.clone())),
         generator.read_counters,
         generator.compute_id2,
     );
 
     // Send a task to read the final voxel shader values
     let read_bytes = ReadBytes::default();
-    let read_bytes_transfer = read_bytes.transfer();
     pipec::tracked_task_requirement(
         pipeline,
-        TrackedTask::ShaderStorageReadBytes(generator.shader_storage_final_voxels, read_bytes_transfer),
+        TrackedTask::ShaderStorageOp(generator.shader_storage_final_voxels, BufferOperation::Read(read_bytes.clone())),
         generator.read_final_voxels,
         generator.compute_id2,
     );
@@ -88,10 +86,12 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
 fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    let (read_counters, read_bytes) = terrain.voxel_generator.pending_reads.take().unwrap();
+    let (read_atomic_counter_bytes, read_voxel_data_bytes) = terrain.voxel_generator.pending_reads.take().unwrap();
     // Get the valid counters
-    let positive = read_counters.get(0).unwrap();
-    let negative = read_counters.get(1).unwrap();
+    let mut read_counters = [0_u32; 2];
+    read_atomic_counter_bytes.fill_array(&mut read_counters).unwrap();
+    let positive = *read_counters.get(0).unwrap();
+    let negative = *read_counters.get(1).unwrap();
     let id = *terrain.chunk_handler.current_chunk_state.as_begin_voxel_data_generation().unwrap();
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
@@ -104,7 +104,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut terrain.voxel_generator.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
-    read_bytes.fill_array::<PackedVoxel>(arr).unwrap();
+    read_voxel_data_bytes.fill_array::<PackedVoxel>(arr).unwrap();
     terrain.voxel_generator.stored_chunk_voxel_data.store(&terrain.voxel_generator.packed_chunk_voxel_data);
 
     // Switch states

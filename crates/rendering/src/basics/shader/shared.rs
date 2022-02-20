@@ -12,7 +12,6 @@ use gl::types::GLuint;
 
 use crate::{
     basics::{
-        transfer::Transfer,
         uniforms::{ShaderIDType, UniformsDefinitionMap},
     },
     object::GlTracker,
@@ -129,13 +128,13 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefi
 }
 
 // Query some information about a shader, and then return the GlTracker
-pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: Transfer<ShaderInfoRead>) -> GlTracker {
+pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: ShaderInfoRead) -> GlTracker {
     GlTracker::fake(
         move |pipeline| {
             let program = identifier.get_program(pipeline);
             let output_queried_resources = query_shader_info(program, settings);
             // Finally update the mutex that holds the queried resources
-            let mut lock = (read.0).inner.lock();
+            let mut lock = read.inner.lock();
             *lock = output_queried_resources;
         },
         pipeline,

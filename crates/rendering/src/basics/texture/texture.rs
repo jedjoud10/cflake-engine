@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    basics::{readwrite::ReadBytes, texture::calculate_size_bytes, transfer::Transfer},
+    basics::{texture::calculate_size_bytes, buffer_operation::BufferOperation},
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
     utils::*,
@@ -417,8 +417,9 @@ impl Texture {
         }
         Ok(())
     }
-    // Read the bytes from this texture
-    pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
+    // Read/write the bytes
+    pub(crate) fn buffer_operation(&self, pipeline: &Pipeline, op: BufferOperation) -> GlTracker {
+        let read = if let BufferOperation::Read(rb) = op { rb } else { panic!() };
         // Actually read the pixels
         let read_pbo = self.read_pbo;
         let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
@@ -437,7 +438,6 @@ impl Texture {
             let mut vec = vec![0_u8; byte_count];
             gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
             gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
-            let read = read.0;
             let mut cpu_bytes = read.bytes.as_ref().lock();
             *cpu_bytes = vec;
         })

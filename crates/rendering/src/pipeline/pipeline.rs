@@ -94,17 +94,17 @@ impl Pipeline {
                 let compute = self.compute_shaders.get(id).unwrap();
                 compute.compute_run(self, settings)
             }
-            TrackedTask::TextureReadBytes(id, read) => {
+            TrackedTask::TextureOp(id, op) => {
                 let texture = self.textures.get(id).unwrap();
-                texture.read_bytes(self, read)
+                texture.buffer_operation(self, op)
             }
-            TrackedTask::ShaderStorageReadBytes(id, read) => {
+            TrackedTask::ShaderStorageOp(id, op) => {
                 let shader_storage = self.shader_storages.get(id).unwrap();
-                shader_storage.read_bytes(self, read)
+                shader_storage.buffer_operation(self, op)
             }
-            TrackedTask::AtomicGroupRead(id, read) => {
+            TrackedTask::AtomicGroupOp(id, op) => {
                 let atomic_group = self.atomics.get(id).unwrap();
-                atomic_group.read_counters(self, read)
+                atomic_group.buffer_operation(self, op)
             }
             TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info_tracked(self, _type, settings, read),
         };

@@ -4,8 +4,6 @@ use ahash::AHashMap;
 use enum_as_inner::EnumAsInner;
 use parking_lot::Mutex;
 
-use crate::basics::transfer::{Transfer, Transferable};
-
 // Resource
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum QueryResource {
@@ -105,12 +103,6 @@ impl ShaderInfoRead {
         let lock_ = self.inner.lock();
         let lock = &lock_.res_all;
         lock.get(unique_resource).cloned()
-    }
-}
-
-impl Transferable for ShaderInfoRead {
-    fn transfer(&self) -> Transfer<Self> {
-        Transfer(self.clone())
     }
 }
 

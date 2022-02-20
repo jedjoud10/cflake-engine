@@ -3,13 +3,11 @@ use std::{ffi::c_void, ptr::null};
 
 use crate::{
     basics::{
-        readwrite::ReadBytes,
         shader::{
             info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
             query_shader_info,
         },
-        transfer::Transfer,
-        uniforms::ShaderIDType,
+        uniforms::ShaderIDType, buffer_operation::BufferOperation,
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -38,7 +36,8 @@ pub struct ShaderStorage {
     pub(crate) bytes: Vec<u8>,
     // The size in bytes of the underlying data
     pub(crate) byte_size: usize,
-
+    // Is this shader storage dynamic?
+    pub dynamic: bool,
     // Custom SSBO block fetcher that we can use to allocate the SSBO with the perfect amount of bytes
     fetcher: Option<CustomFetcher>,
 }
@@ -109,6 +108,7 @@ impl ShaderStorage {
             bytes: Default::default(),
             byte_size,
             fetcher: Default::default(),
+            dynamic: false,
         }
     }
     // Create a new empty shader storage that will fetch a specific shader storage block from a shader, and initialize it's size using that
@@ -123,6 +123,7 @@ impl ShaderStorage {
                 name: block_name.to_string(),
                 mul,
             }),
+            dynamic: false
         }
     }
     // Create a new shader storage with some default data
@@ -136,16 +137,18 @@ impl ShaderStorage {
             bytes: slice.to_vec(),
             byte_size,
             fetcher: Default::default(),
+            dynamic: false,
         }
     }
-    // Read some bytes from the SSBO
-    pub(crate) fn read_bytes(&self, pipeline: &Pipeline, read: Transfer<ReadBytes>) -> GlTracker {
+    // Read/WRite some bytes from/to the SSBO
+    pub(crate) fn buffer_operation(&self, pipeline: &Pipeline, op: BufferOperation) -> GlTracker {
+        let read = if let BufferOperation::Read(rb) = op { rb } else { panic!() };
         GlTracker::new(
             move |_pipeline| unsafe {
                 // Bind the buffer before reading
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
                 // If we have a range, we can use it
-                let range = read.0.range;
+                let range = read.range;
                 let bytes = if let Some(range) = range {
                     // Read using specific range
                     let offset = range.start;
@@ -161,7 +164,7 @@ impl ShaderStorage {
                     vec
                 };
                 // Now store the shader storage's bytes
-                let mut output_bytes = read.0.bytes.lock();
+                let mut output_bytes = read.bytes.lock();
                 *output_bytes = bytes;
             },
             pipeline,
