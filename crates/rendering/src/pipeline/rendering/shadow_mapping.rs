@@ -7,7 +7,7 @@ use crate::{
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{pipec, InternalPipeline, Pipeline},
+    pipeline::{pipec, InternalPipeline, Pipeline, camera::Camera},
 };
 
 use super::error::RenderingError;
@@ -72,7 +72,7 @@ impl ShadowMapping {
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
         // Create some matrices
-        const DIMS: f32 = 400.0;
+        const DIMS: f32 = 800.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
@@ -97,11 +97,17 @@ impl ShadowMapping {
         }
     }
     // Update the internally stored view matrix with the new direction of our sun
-    pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>) {
+    pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>, _camera: &Camera) {
         let forward = new_quat.mul_point(veclib::Vector3::Z);
         let up = new_quat.mul_point(veclib::Vector3::Y);
         let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
         self.lightspace_matrix = self.ortho_matrix * view_matrix;
+        /*
+        const DIMS: f32 = 400.0;
+        const NEAR: f32 = -2000.0;
+        const FAR: f32 = 2000.0;
+        self.ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS - camera.position.z, DIMS - camera.position.z, -DIMS + camera.position.x, DIMS + camera.position.x, FAR, NEAR);;
+        */
     }
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self, pipeline: &Pipeline) {

@@ -201,9 +201,9 @@ impl PipelineObject for Shader {
         // Add the shader
         pipeline.shaders.insert(id, self);
         // And also get it's uniform definition map
-        if let Some(mappings) = query_shader_uniforms_definition_map(program) {
-            pipeline.cached.uniform_definitions.insert(program, mappings);
-        }
+        let mappings = query_shader_uniforms_definition_map(program);
+        pipeline.cached.uniform_definitions.insert(program, mappings);
+        
         Some(())
     }
     // Remove the shader from the pipeline

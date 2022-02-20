@@ -28,7 +28,7 @@ const int MAX_STEPS_FINE = 8;
 const float STEP_SIZE = 2.0;
 
 // Calculate the reflected color value for a specific pixel
-vec3 calculate_ssr(vec3 pixel_dir, vec3 position, vec2 nf_planes, vec3 normal, sampler2D depth_texture, sampler2D diffuse_texture, mat4x4 pv_matrix) {
+vec3 calculate_ssr(vec3 pixel_dir, vec3 position, vec2 nf_planes, vec3 normal, sampler2D depth_texture, sampler2D color_texture, mat4x4 pv_matrix) {
     // Calculate the reflected normal
     vec3 reflected_dir = reflect(pixel_dir, normal) * STEP_SIZE;
     if (dot(reflected_dir, pixel_dir) < 0.0) { return vec3(0); } 
@@ -54,7 +54,7 @@ vec3 calculate_ssr(vec3 pixel_dir, vec3 position, vec2 nf_planes, vec3 normal, s
                 float depth_diff_fine = calculate_depth_difference(nf_planes, depth_texture, uvs);
 
                 if (depth_diff_fine > 0.0 && depth_diff_fine < 0.02) {
-                    vec3 color = texture(diffuse_texture, uvs.xy).rgb;
+                    vec3 color = texture(color_texture, uvs.xy).rgb;
                     return color;
                 }
                 point1 += dir;

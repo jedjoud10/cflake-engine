@@ -107,7 +107,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
 }
 
 // Get the uniform definition map from a shader using the query API
-pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> Option<UniformsDefinitionMap> {
+pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefinitionMap {
     let mut settings = ShaderInfoQuerySettings::default();
     settings.query_all(QueryResource::Uniform, vec![QueryParameter::Location]);
     let res = query_shader_info(program, settings);
@@ -122,9 +122,9 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> Option<Unifo
                 Some((name.clone(), location))
             })
             .collect::<AHashMap<_, _>>();
-        Some(UniformsDefinitionMap { mappings })
+        UniformsDefinitionMap { mappings }
     } else {
-        None
+        UniformsDefinitionMap::default()
     }
 }
 

@@ -4,8 +4,7 @@
 #include "defaults/shaders/rendering/sun.func.glsl"
 #include "defaults/shaders/rendering/shadow_calculations.func.glsl"
 #include "defaults/shaders/rendering/lighting.func.glsl"
-out vec3 color;
-
+layout(location = 0) out vec3 color;
 uniform sampler2D diffuse_texture; // 0
 uniform sampler2D emissive_texture; // 1
 uniform sampler2D normals_texture; // 2
@@ -19,11 +18,10 @@ uniform float sunlight_strength;
 uniform mat4 pr_matrix;
 uniform mat4 pv_matrix;
 uniform vec2 nf_planes;
-in vec2 uv_coordinates;
+in vec2 uvs;
 
 void main() {
-	vec2 uvs = uv_coordinates;
-	ivec2 pixel = ivec2(uv_coordinates * _resolution);
+	ivec2 pixel = ivec2(uvs * _resolution);
 	// Sample the textures
 	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;

@@ -15,6 +15,7 @@ pub fn preload_default_assets() {
     // Rendering
     cache_persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
     cache_persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
+    cache_persistent!("./assets/defaults/shaders/rendering/postprocessing_pass.frsh.glsl");
     cache_persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     cache_persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
     cache_persistent!("./assets/defaults/shaders/rendering/shadow.vrsh.glsl");
