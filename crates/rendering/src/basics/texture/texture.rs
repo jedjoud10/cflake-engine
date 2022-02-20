@@ -10,10 +10,12 @@ use crate::{
     utils::*,
 };
 
+use assets::Asset;
 use gl::{
     self,
     types::{GLint, GLuint},
 };
+use image::GenericImageView;
 use smallvec::SmallVec;
 
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
@@ -439,5 +441,33 @@ impl Texture {
             let mut cpu_bytes = read.bytes.as_ref().lock();
             *cpu_bytes = vec;
         })
+    }
+}
+
+
+impl Asset for Texture {
+    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        // Read bytes
+        pub fn read_bytes(bytes: &[u8]) -> (Vec<u8>, u16, u16) {
+            // Load this texture from the bytes
+            let image = image::load_from_memory(bytes).unwrap();
+            let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
+            // Flip
+            let image = image.flipv();
+            (image.to_bytes(), image.width() as u16, image.height() as u16)
+        }
+        // Load this texture from the bytes
+        let (bytes, width, height) = read_bytes(bytes);
+
+        // Return a texture with the default parameters
+        let texture = self
+            .with_bytes(bytes)
+            .with_dimensions(TextureType::Texture2D(width, height))
+            .with_format(TextureFormat::RGBA8R)
+            .with_data_type(DataType::U8);
+        Some(texture)
     }
 }

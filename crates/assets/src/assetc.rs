@@ -4,7 +4,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 #[cfg(debug_assertions)]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     // Open the source file direcetly and read
-    use std::{env, io::BufRead, path::Path};
+    use std::{env, io::{BufRead, Read}, path::Path};
     // Get the path
     let file_path = {
         let mut file_path = env::current_dir().unwrap();
@@ -13,11 +13,11 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
         file_path
     };
     dbg!(&file_path);
-    let file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
+    let mut file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
     // Read bytes
-    let mut reader = BufReader::new(file);
-    let bytes = reader.fill_buf().unwrap();
-    Ok(bytes.to_vec())
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).unwrap();
+    Ok(bytes)
 }
 // If we are in Release, we read the bytes from the "packed_assets" directory
 #[cfg(not(debug_assertions))]

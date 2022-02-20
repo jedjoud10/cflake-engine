@@ -4,6 +4,7 @@ use crate::{
     pipeline::Pipeline,
     utils::UpdateFrequency,
 };
+use assets::Asset;
 use gl::types::GLuint;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
@@ -368,5 +369,53 @@ impl Model {
 
         // Update our normals
         self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
+    }
+}
+
+
+impl Asset for Model {
+    // Load a model from an asset file
+    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        let string = String::from_utf8(bytes.to_vec()).ok()?;
+        let lines = string.lines();
+        let mut model = Model::default();
+        for line in lines {
+            let start = line.split_once(' ').unwrap().0;
+            let other = line.split_once(' ').unwrap().1;
+            match start {
+                // Vertices
+                "v" => {
+                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
+                    model.vertices.positions.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                }
+                // Normals
+                "n" => {
+                    let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
+                    model.vertices.normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                }
+                // UVs
+                "u" => {
+                    let coords: Vec<u8> = other.split('/').map(|coord| coord.parse::<u8>().unwrap()).collect();
+                    model.vertices.uvs.push(veclib::Vector2::new(coords[0], coords[1]));
+                }
+                // Tangents
+                "t" => {
+                    let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
+                    model.vertices.tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
+                }
+                // Triangle indices
+                "i" => {
+                    // Split the triangle into 3 indices
+                    let mut indices = other.split('/').map(|x| x.to_string().parse::<u32>().unwrap()).collect();
+                    model.triangles.append(&mut indices);
+                }
+                _ => {}
+            }
+        }
+        // Return
+        Some(model)
     }
 }
