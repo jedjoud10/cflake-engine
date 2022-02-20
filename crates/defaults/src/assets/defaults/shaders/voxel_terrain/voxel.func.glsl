@@ -3,11 +3,12 @@
 struct Voxel {
     float density;
     uint material;
+    vec4 color;
 };
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
-    return Voxel(pos.y, 0);
+    return Voxel(pos.y, 0, vec4(1));
 }
 
 // Modify the voxel after we get it's normal

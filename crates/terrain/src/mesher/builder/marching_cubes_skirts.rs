@@ -111,6 +111,7 @@ impl MarchingCubesSkirts {
 
         // This is some shared data for this whole
         let mut shared_normal = veclib::Vector3::<f32>::ZERO;
+        let mut shared_color = veclib::Vector3::<f32>::ZERO;
         let mut count: usize = 0;
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             // Exit early
@@ -128,10 +129,15 @@ impl MarchingCubesSkirts {
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
                 veclib::Vector3::<f32>::from(*voxels.normal(index2)),
                 value,
-            )
-            .normalized();
+            ).normalized();
+            let color = veclib::Vector3::<f32>::lerp(
+                veclib::Vector3::<f32>::from(*voxels.color(index1)),
+                veclib::Vector3::<f32>::from(*voxels.color(index2)),
+                value,
+            );
 
             shared_normal += normal;
+            shared_color += color;
 
             // We must get the local offset of these two voxels
             let voxel1_local_position = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
@@ -142,6 +148,7 @@ impl MarchingCubesSkirts {
         }
         Some(SquareData {
             normal: (shared_normal / count as f32 * 255.0).into(),
+            color: (shared_color / count as f32).into(),
             voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
@@ -187,6 +194,7 @@ impl MarchingCubesSkirts {
                 .vertex_builder()
                 .with_position(vertex)
                 .with_normal(data.normal)
+                .with_color(data.color)
                 .with_uv(veclib::Vector2::new(data.voxel_material, 0));
         }
     }
@@ -236,6 +244,7 @@ pub enum SkirtVert {
 struct SquareData {
     // Shared voxel data
     normal: veclib::Vector3<i8>,
+    color: veclib::Vector3<u8>,
     voxel_material: u8,
 
     // Meshing data

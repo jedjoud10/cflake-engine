@@ -10,3 +10,4 @@ veclib = { git = "https://github.com/jedjoud10/veclib" }
 ahash = "0.7.6"
 math = { path = "../math" }
 rendering = { path = "../rendering" }
+half = "1.8.2"

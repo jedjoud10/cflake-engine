@@ -1,7 +1,5 @@
 use std::{collections::HashSet, ffi::CString, ptr::null};
-
 use gl::types::GLuint;
-
 use crate::{
     basics::{
         shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
@@ -92,6 +90,13 @@ impl PipelineObject for ComputeShader {
                 println!("Error while finalizing shader {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
+                let error_source_lines = self.source.text.lines().enumerate();
+                let error_source = error_source_lines
+                    .into_iter()
+                    .map(|(count, line)| format!("({}): {}", count + 1, line))
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                println!("{}", error_source);
                 println!("Error: \n\x1b[31m{}", string);
                 println!("\x1b[0m");
                 panic!();

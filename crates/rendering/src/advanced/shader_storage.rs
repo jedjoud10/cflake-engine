@@ -75,7 +75,8 @@ impl PipelineObject for ShaderStorage {
 
             // Read back the byte size
             let byte_size = shader_info.get(&resource).unwrap().get(0).unwrap().as_byte_size().unwrap();
-            self.byte_size = *byte_size * fetcher.mul;
+
+            self.byte_size = byte_size.next_power_of_two() * fetcher.mul;
         }
 
         // Create the SSBO
