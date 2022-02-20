@@ -56,6 +56,8 @@ impl<'a> Uniforms<'a> {
         self.set_f32("_time", self.pipeline.time.0 as f32);
         self.set_f32("_delta", self.pipeline.time.1 as f32);
         self.set_vec2i32("_resolution", self.pipeline.window.dimensions.into());
+        let camera = &self.pipeline.camera;
+        self.set_vec2f32("_nf_planes", camera.clip_planes);
     }
 
     // I32

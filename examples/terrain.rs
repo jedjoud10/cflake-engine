@@ -40,7 +40,7 @@ fn init(world: &mut World) {
     let light = LightSource::new(LightSourceType::Directional {
         quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
     })
-    .with_strength(1.4);
+    .with_strength(1.0);
     let mut world_global = world.globals.get_global_mut::<globals::GlobalWorldData>().unwrap();
     world_global.sun_quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, 80.0);
     pipec::construct(&pipeline, light).unwrap();
@@ -73,7 +73,7 @@ fn init(world: &mut World) {
     let material = Material::default()
         .with_diffuse(diffuse)
         .with_normal(normals)
-        .with_normal_strength(0.0)
+        .with_normal_strength(2.0)
         .with_uv_scale(veclib::Vector2::ONE * 0.02)
         .with_shader(shader);
     let material = pipec::construct(&pipeline, material).unwrap();
@@ -83,7 +83,7 @@ fn init(world: &mut World) {
             dist < 1.2 || node.depth == 1
         })
         .with_threshold(64.0);
-    let tex = assetc::load::<Texture>("user/textures/terrain.png").unwrap();
+    let tex = assetc::load::<Texture>("user/textures/saber.png").unwrap();
     let tex = pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = TerrainSettings::default()

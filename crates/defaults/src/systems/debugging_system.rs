@@ -38,6 +38,8 @@ fn run(world: &mut World, _data: EventKey) {
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE));
+            ui.label(format!("Terrain Octree Depth: '{}'", terrain.chunk_handler.octree.inner.depth));
+            ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = terrain.chunk_handler.octree.inner.get_root_node().map_or(0, |x| x.half_extent * 2)));
             ui.label(format!("Chunks: '{}'", terrain.chunk_handler.chunks.len()));
             ui.label(format!("Pending Generation: '{}'", terrain.chunk_handler.chunks_generating.len()));
             ui.label(format!("Pending Deletion: '{}'", terrain.chunk_handler.chunks_to_remove.len()));

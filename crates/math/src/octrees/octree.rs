@@ -48,8 +48,8 @@ impl Octree {
         }
     }
     // Get the root node of this octree
-    pub fn get_root_node(&self) -> &OctreeNode {
-        self.nodes.get(0).unwrap()
+    pub fn get_root_node(&self) -> Option<&OctreeNode> {
+        self.nodes.get(0)
     }
     // Generate an octree from a root and a target point
     pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<()> {
@@ -89,7 +89,7 @@ impl Octree {
     // Recursively iterate through each node, and check it's children if the given function returns true
     pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a OctreeNode) -> bool) {
         // The nodes that must be evaluated
-        let root_node = self.get_root_node();
+        let root_node = self.get_root_node().unwrap();
         let mut pending_nodes: Vec<&'a OctreeNode> = vec![root_node];
         // Evaluate each node
         while !pending_nodes.is_empty() {
