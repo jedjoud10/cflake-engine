@@ -84,7 +84,7 @@ impl AtomicGroup {
     }
     // Read the value of an atomic group by reading it's buffer data and update the transfer
     pub(crate) fn read_counters(&self, pipeline: &Pipeline, read: Transfer<AtomicGroupRead>) -> GlTracker {
-        GlTracker::new(
+        GlTracker::fake(
             move |_pipeline| unsafe {
                 // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicGroupRead>'s inner value
                 let oid = self.oid;

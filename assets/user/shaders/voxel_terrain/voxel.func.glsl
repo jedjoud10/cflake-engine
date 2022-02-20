@@ -9,33 +9,38 @@ uniform sampler2D tex;
 struct Voxel {
     float density;
     uint material;
-    float 
+    bool biome;
 };
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
-    float density = pos.y + snoise(pos * 0.01 * vec3(1, 2, 1)) * 130.0;
-    float density2 = 0.0;
-    for (int i = 0; i < 8; i++) {
-        density2 += pos.y + (1-voronoi(pos * 0.001 * vec3(1, 1.5, 1) * pow(1.6, i)).x) * 500 * pow(0.423, i);
+    float density = pos.y + snoise(pos * 0.002 * vec3(1, 2, 1) + 2.43234) * 90.0;
+    float density2 = pos.y;
+    for (int i = 0; i < 6; i++) {
+        density2 += (1-voronoi(pos * 0.001 * vec3(1, 3.0, 1) * pow(1.6, i)).x) * 20 * pow(0.423, i);
     }
-    float factor = 1.0;
-    return Voxel(density2, 0, false);
+    float factor = clamp(snoise(pos * 0.001) * 2.0, 0, 1);
+    float final_density = mix(density, density2, factor);
+    //final_density = opSubtraction(sdBox(pos, vec3(128)) * 100.0, final_density);
+    return Voxel(final_density, 0, factor > 0.5);
 }
 
 // Modify the voxel after we get it's normal
 void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
     // Some colors
-    if (!voxel.artificial) {
-        if (dot(normal, vec3(0, 1, 0)) > 0.9) {
-            voxel.material = 0;
-        } else if (dot(normal, vec3(0, 1, 0)) > 0.8) {
-            voxel.material = 1;
-        } else {
-            voxel.material = 2;
-        }
+    if (voxel.biome) {
+        voxel.material = 0;
     } else {
         voxel.material = 2;
     }
+    /*
+    if (dot(normal, vec3(0, 1, 0)) > 0.9) {
+        voxel.material = 0;
+    } else if (dot(normal, vec3(0, 1, 0)) > 0.8) {
+        voxel.material = 1;
+    } else {
+        voxel.material = 2;
+    }
+    */
 }

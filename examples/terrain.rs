@@ -10,7 +10,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group.link(components::Camera::new(90.0, 1.0, 4000.0)).unwrap();
+    group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
     group.link_default::<components::Transform>().unwrap();
     let entity = Entity::default();
     let id = EntityID::new(&mut world.ecs);
@@ -18,7 +18,7 @@ fn init(world: &mut World) {
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::IDENTITY,
+        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
     })
     .with_strength(1.0);
     let mut world_global = world.globals.get_global_mut::<globals::GlobalWorldData>().unwrap();
@@ -53,7 +53,7 @@ fn init(world: &mut World) {
     let material = Material::default()
         .with_diffuse(diffuse)
         .with_normal(normals)
-        .with_normal_strength(2.0)
+        .with_normal_strength(3.0)
         .with_uv_scale(veclib::Vector2::ONE * 0.02)
         .with_shader(shader);
     let material = pipec::construct(&pipeline, material).unwrap();

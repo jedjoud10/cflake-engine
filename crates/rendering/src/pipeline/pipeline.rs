@@ -159,7 +159,7 @@ impl Pipeline {
             for task in taken {
                 match task {
                     PipelineTask::Tracked(_, _, require) => {
-                        // If the requirement is null, that means that we don't need it
+                        // If the requirement is null, that means that the required task executed and that we can start executing the current task
                         let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
                         if valid.is_none() {
                             output_tasks.push(task);

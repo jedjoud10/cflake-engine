@@ -12,7 +12,6 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
         file_path.push(Path::new(path));
         file_path
     };
-    dbg!(&file_path);
     let mut file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
     // Read bytes
     let mut bytes = Vec::new();
