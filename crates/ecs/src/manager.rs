@@ -1,9 +1,8 @@
-use std::{cell::UnsafeCell, rc::Rc, sync::Arc};
+use std::{cell::UnsafeCell, sync::Arc};
 
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use parking_lot::Mutex;
-use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::{
     component::{ComponentID, ComponentsCollection, EnclosedComponent, LinkedComponents},
@@ -12,9 +11,6 @@ use crate::{
     system::{System, SystemBuilder},
     utils::{ComponentError, EntityError},
 };
-
-// Const
-pub const ECS_WORKER_THREADS: usize = 4;
 
 // The Entity Component System manager that will handle everything ECS related
 pub struct ECSManager<World> {
@@ -26,23 +22,18 @@ pub struct ECSManager<World> {
     // The components that are valid in the world
     pub(crate) components: ComponentsCollection,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
-    // The internal ECS thread pool
-    pub(crate) rayon_pool: Rc<ThreadPool>,
     // Our internal event handler
     pub(crate) event_handler: EventHandler<World>,
 }
 
 impl<World> Default for ECSManager<World> {
     fn default() -> Self {
-        // Start the rayon thread pool
-        let pool = ThreadPoolBuilder::new().num_threads(ECS_WORKER_THREADS).build().unwrap();
         Self {
             entities: Default::default(),
             entities_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
             mutated_components: Default::default(),
-            rayon_pool: Rc::new(pool),
             event_handler: Default::default(),
         }
     }

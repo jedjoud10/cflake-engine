@@ -4,7 +4,6 @@ use super::{
 };
 use crate::entity::EntityID;
 use ahash::AHashMap;
-use rayon::ThreadPool;
 use std::{cell::RefCell, rc::Rc};
 
 // A struct full of LinkedComponents that we send off to update in parallel
@@ -13,8 +12,6 @@ use std::{cell::RefCell, rc::Rc};
 pub struct ComponentQuery {
     // The actual components
     pub(crate) linked_components: Option<Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>>,
-    // The rayon thread pool available if we want to use it
-    pub(crate) rayon_pool: Rc<ThreadPool>,
 }
 
 impl ComponentQuery {
@@ -31,9 +28,5 @@ impl ComponentQuery {
     pub fn read(&self) -> RefComponentQuery {
         let locked = self.linked_components.as_ref().unwrap().borrow();
         RefComponentQuery { inner: locked }
-    }
-    // Get the rayon thread pool
-    pub fn get_thread_pool(&self) -> &ThreadPool {
-        self.rayon_pool.as_ref()
     }
 }

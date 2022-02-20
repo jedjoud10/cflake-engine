@@ -19,8 +19,7 @@ impl Default for ChunkGenerationState {
     fn default() -> Self {
         Self::RequiresVoxelData
     }
-} 
-
+}
 
 #[derive(Default)]
 pub struct ChunksHandler {

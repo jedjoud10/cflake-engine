@@ -75,15 +75,12 @@ impl System {
             // Queries
             evn_run_ekey: EventKey::Query(ComponentQuery {
                 linked_components: all_components,
-                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
             evn_added_entity_ekey: EventKey::Query(ComponentQuery {
                 linked_components: added_components,
-                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
             evn_removed_entity_ekey: EventKey::Query(ComponentQuery {
                 linked_components: removed_components,
-                rayon_pool: ecs_manager.rayon_pool.clone(),
             }),
         }
     }
