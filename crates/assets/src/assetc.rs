@@ -1,10 +1,10 @@
-use crate::{asset::Asset, error::AssetLoadError, global::cacher, metadata::AssetMetadata};
-use std::{fs::File, io::BufReader, path::PathBuf};
+use crate::{asset::Asset, error::AssetLoadError, cacher::*, metadata::AssetMetadata};
+use std::fs::File;
 // If we are in Debug, we read the bytes directly from the source
 #[cfg(debug_assertions)]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     // Open the source file direcetly and read
-    use std::{env, io::{BufRead, Read}, path::Path};
+    use std::{env, io::Read, path::Path};
     // Get the path
     let file_path = {
         let mut file_path = env::current_dir().unwrap();

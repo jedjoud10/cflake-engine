@@ -53,6 +53,8 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     let event_loop = EventLoop::new();
     let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
 
+    defaults::preload_default_assets();
+
     // Set fullscreen if we want to
     let window = window_context.window();
     if config.fullscreen {
