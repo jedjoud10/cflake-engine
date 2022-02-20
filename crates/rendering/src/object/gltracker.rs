@@ -14,13 +14,13 @@ pub(crate) struct GlTracker {
 impl GlTracker {
     // Create a GlTracker, and call the start function
     // If the OpenGL fence has been signaled, we must run the callback function
-    pub fn new<F: FnOnce(&Pipeline)>(start: F, pipeline: &Pipeline) -> Self {
+    pub fn new<F: FnOnce()>(start: F) -> Self {
         // Create the fence object
         let fence = unsafe {
             // Flush first
             gl::Flush();
             // Call the function
-            start(pipeline);
+            start();
             // Then finally create the fence
             let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
             gl::Flush();
@@ -35,12 +35,12 @@ impl GlTracker {
     }
 
     // Create a GL tracker that will actually execute synchronously, and always be completed if we query it's completed state
-    pub fn fake<F: FnOnce(&Pipeline)>(start: F, pipeline: &Pipeline) -> Self {
+    pub fn fake<F: FnOnce()>(start: F) -> Self {
         unsafe {
             // Flush first
             gl::Flush();
             // Call the function
-            start(pipeline);
+            start();
             gl::Finish();
         };
         Self { fence: None, callback: None }

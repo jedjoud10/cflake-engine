@@ -418,29 +418,32 @@ impl Texture {
         Ok(())
     }
     // Read/write the bytes
-    pub(crate) fn buffer_operation(&self, pipeline: &Pipeline, op: BufferOperation) -> GlTracker {
-        let read = if let BufferOperation::Read(rb) = op { rb } else { panic!() };
-        // Actually read the pixels
-        let read_pbo = self.read_pbo;
-        let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
-        GlTracker::new(
-            |_pipeline| unsafe {
-                // Bind the buffer before reading
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
-                gl::BindTexture(self.target, self.oid);
-                let (_internal_format, format, data_type) = self.ifd;
-                gl::GetTexImage(self.target, 0, format, data_type, null_mut());
+    pub(crate) fn buffer_operation(&self, op: BufferOperation) -> GlTracker {
+        match op {
+            BufferOperation::Write(_write) => todo!(),
+            BufferOperation::Read(read) => {
+                // Actually read the pixels
+                let read_pbo = self.read_pbo;
+                let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
+                GlTracker::new(
+                    || unsafe {
+                        // Bind the buffer before reading
+                        gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
+                        gl::BindTexture(self.target, self.oid);
+                        let (_internal_format, format, data_type) = self.ifd;
+                        gl::GetTexImage(self.target, 0, format, data_type, null_mut());
+                    }
+                )
+                .with_completed_callback(move |_pipeline| unsafe {
+                    // Gotta read back the data
+                    let mut vec = vec![0_u8; byte_count];
+                    gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
+                    gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                    let mut cpu_bytes = read.bytes.as_ref().lock();
+                    *cpu_bytes = vec;
+                })
             },
-            pipeline,
-        )
-        .with_completed_callback(move |_pipeline| unsafe {
-            // Gotta read back the data
-            let mut vec = vec![0_u8; byte_count];
-            gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
-            gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
-            let mut cpu_bytes = read.bytes.as_ref().lock();
-            *cpu_bytes = vec;
-        })
+        }
     }
 }
 

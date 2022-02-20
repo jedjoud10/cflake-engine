@@ -63,3 +63,18 @@ pub struct WriteBytes {
     // The bytes that we will write to the receiving buffer
     pub(crate) bytes: Vec<u8>,
 }
+
+impl WriteBytes {
+    // Create some new bytes to write using a vector of structs
+    // "T" should have repr(C) just to be safe
+    pub fn new<T: Sized>(vec: Vec<T>) -> Self {
+        // Transmute
+        let mut vec = ManuallyDrop::new(vec);
+        let new_len = size_of::<T>() * vec.len();
+        let bytes = unsafe { Vec::from_raw_parts(vec.as_mut_ptr() as *mut u8, new_len, new_len) };
+        // Now we can drop safely
+        Self {
+            bytes,
+        }
+    }
+}
