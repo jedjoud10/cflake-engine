@@ -103,8 +103,7 @@ impl MarchingCubes {
                     .with_position(interpolated.vertex)
                     .with_normal(interpolated.normal)
                     .with_color(interpolated.color)
-                    .with_uv(veclib::Vector2::new(data.voxel_material, 0)
-                );
+                    .with_uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
                 model.triangles.push(merger.duplicates[&edge_tuple] as u32);

@@ -444,7 +444,6 @@ impl Texture {
     }
 }
 
-
 impl Asset for Texture {
     fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where

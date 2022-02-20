@@ -1,4 +1,24 @@
-use cflake_engine::{core::World, ecs::entity::{ComponentLinkingGroup, Entity, EntityID}, defaults::{components, globals::{self, TerrainSettings}}, assets::assetc, rendering::{pipeline::pipec, basics::{lights::{LightSource, LightSourceType}, shader::{ShaderSettings, Shader}, texture::{Texture, TextureFilter}, material::Material, uniforms::SetUniformsCallback}}, veclib, math::octrees::HeuristicSettings};
+use cflake_engine::{
+    assets::assetc,
+    core::World,
+    defaults::{
+        components,
+        globals::{self, TerrainSettings},
+    },
+    ecs::entity::{ComponentLinkingGroup, Entity, EntityID},
+    math::octrees::HeuristicSettings,
+    rendering::{
+        basics::{
+            lights::{LightSource, LightSourceType},
+            material::Material,
+            shader::{Shader, ShaderSettings},
+            texture::{Texture, TextureFilter},
+            uniforms::SetUniformsCallback,
+        },
+        pipeline::pipec,
+    },
+    veclib,
+};
 
 // A game with some test terrain
 fn main() {

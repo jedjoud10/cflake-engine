@@ -12,7 +12,6 @@ pub fn cacher() -> MutexGuard<'static, AssetCacher> {
     CACHER.lock().unwrap()
 }
 
-
 // Cacher that keeps assets loaded in, so it's cheaper to load them later
 #[derive(Default)]
 pub struct AssetCacher {

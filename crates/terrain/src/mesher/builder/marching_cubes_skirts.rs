@@ -129,7 +129,8 @@ impl MarchingCubesSkirts {
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
                 veclib::Vector3::<f32>::from(*voxels.normal(index2)),
                 value,
-            ).normalized();
+            )
+            .normalized();
             let color = veclib::Vector3::<f32>::lerp(
                 veclib::Vector3::<f32>::from(*voxels.color(index1)),
                 veclib::Vector3::<f32>::from(*voxels.color(index2)),

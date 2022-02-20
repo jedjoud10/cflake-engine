@@ -1,5 +1,3 @@
-use std::{collections::HashSet, ffi::CString, ptr::null};
-use gl::types::GLuint;
 use crate::{
     basics::{
         shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
@@ -8,6 +6,8 @@ use crate::{
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
+use gl::types::GLuint;
+use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use super::ComputeShaderExecutionSettings;
 

@@ -1,8 +1,7 @@
-use crate::{asset::Asset, error::AssetLoadError, cacher::*, metadata::AssetMetadata};
+use crate::{asset::Asset, cacher::*, error::AssetLoadError, metadata::AssetMetadata};
 use std::fs::File;
 // If we are in Debug, we read the bytes directly from the source
-/*
-#[cfg(not(debug_assertions))]
+#[cfg(debug_assertions)]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     // Open the source file directly and read
     use std::{env, io::Read, path::Path};
@@ -19,9 +18,8 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     file.read_to_end(&mut bytes).unwrap();
     Ok(bytes)
 }
-*/
 // If we are in Release, we read the bytes from the "assets" directory that is right next to the executable
-//#[cfg(debug_assertions)]
+#[cfg(not(debug_assertions))]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     // Open the "packed" file and read
     use std::{env, io::Read, path::Path};
@@ -41,10 +39,6 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
 }
 
 // Read the bytes from an asset file and cache them if needed
-// Path is the asset path relative to the "assets" directory
-// Ex: "assets/user/trainingdata/test01.txt"
-// Would be: path = "user/trainingdata/test01.txt"
-// Load an asset
 pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
     // Create metadata
     let meta = AssetMetadata::new(path).unwrap();

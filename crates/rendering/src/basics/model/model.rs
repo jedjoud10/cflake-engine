@@ -372,7 +372,6 @@ impl Model {
     }
 }
 
-
 impl Asset for Model {
     // Load a model from an asset file
     fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
