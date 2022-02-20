@@ -1,9 +1,10 @@
 use crate::{asset::Asset, error::AssetLoadError, cacher::*, metadata::AssetMetadata};
 use std::fs::File;
 // If we are in Debug, we read the bytes directly from the source
-#[cfg(debug_assertions)]
+/*
+#[cfg(not(debug_assertions))]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
-    // Open the source file direcetly and read
+    // Open the source file directly and read
     use std::{env, io::Read, path::Path};
     // Get the path
     let file_path = {
@@ -18,16 +19,25 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     file.read_to_end(&mut bytes).unwrap();
     Ok(bytes)
 }
-// If we are in Release, we read the bytes from the "packed_assets" directory
-#[cfg(not(debug_assertions))]
+*/
+// If we are in Release, we read the bytes from the "assets" directory that is right next to the executable
+//#[cfg(debug_assertions)]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
-    /*
-    // Open the file and read
-    let file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
-    let reader = BufReader::new(file);
-    let bytes = reader.buffer();
-    */
-    Ok(Vec::new())
+    // Open the "packed" file and read
+    use std::{env, io::Read, path::Path};
+    // Get the path
+    let file_path = {
+        let mut file_path = env::current_exe().unwrap();
+        file_path.pop();
+        file_path.push(Path::new("assets"));
+        file_path.push(Path::new(path));
+        file_path
+    };
+    let mut file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
+    // Read bytes
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).unwrap();
+    Ok(bytes)
 }
 
 // Read the bytes from an asset file and cache them if needed
