@@ -11,7 +11,7 @@ use crate::{
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
-    utils::{AccessType, UpdateFrequency, UsageType},
+    utils::UsageType,
 };
 
 // Some custom fetching info just for shader storage blocks
@@ -101,10 +101,10 @@ impl PipelineObject for ShaderStorage {
 }
 impl ShaderStorage {
     // Create a new empty shader storage
-    pub fn new(frequency: UpdateFrequency, access: AccessType, byte_size: usize) -> Self {
+    pub fn new(usage: UsageType, byte_size: usize) -> Self {
         Self {
             oid: 0,
-            usage: UsageType { frequency, access },
+            usage,
             bytes: Default::default(),
             byte_size,
             fetcher: Default::default(),
@@ -112,10 +112,10 @@ impl ShaderStorage {
         }
     }
     // Create a new empty shader storage that will fetch a specific shader storage block from a shader, and initialize it's size using that
-    pub fn new_using_block(frequency: UpdateFrequency, access: AccessType, shader: ShaderIDType, block_name: &str, mul: usize) -> Self {
+    pub fn new_using_block(usage: UsageType, shader: ShaderIDType, block_name: &str, mul: usize) -> Self {
         Self {
             oid: 0,
-            usage: UsageType { frequency, access },
+            usage,
             bytes: Default::default(),
             byte_size: 0,
             fetcher: Some(CustomFetcher {
@@ -128,31 +128,44 @@ impl ShaderStorage {
     }
     // Create a new shader storage with some default data
     // Type T must have a repr(C) layout
-    pub fn new_default<T: Sized>(frequency: UpdateFrequency, access: AccessType, default: T, byte_size: usize) -> Self {
+    pub fn new_default<T: Sized>(usage: UsageType, default: T, byte_size: usize) -> Self {
         let borrow = &default;
         let slice = unsafe { std::slice::from_raw_parts::<u8>(borrow as *const T as *const u8, byte_size) };
         Self {
             oid: 0,
-            usage: UsageType { frequency, access },
+            usage,
             bytes: slice.to_vec(),
             byte_size,
             fetcher: Default::default(),
             dynamic: false,
         }
     }
-    // Read/WRite some bytes from/to the SSBO
+    // Create a new dynamic shader storage 
+    pub fn new_dynamic(usage: UsageType,) -> Self {
+        Self {
+            oid: 0,
+            usage,
+            bytes: Default::default(),
+            byte_size: 0,
+            fetcher: Default::default(),
+            dynamic: true,
+        }
+    }
+    // Read/Write some bytes from/to the SSBO
     pub(crate) fn buffer_operation(&mut self, op: BufferOperation) -> GlTracker {
         match op {
-            BufferOperation::Write(write) => {
+            BufferOperation::Write(mut write) => {
                 GlTracker::fake(|| unsafe {
                         // Bind the buffer before writing
                         gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
                         write.bytes.shrink_to_fit();
                         // If the given data contains more bytes than what we can handle, we must re-allocate the buffer and increase it's size
                         if write.bytes.len() > self.byte_size {
-                            // Reallocate
-                            gl::BufferData(gl::SHADER_STORAGE_BUFFER, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void, self.usage.convert());
-                            self.byte_size = write.bytes.len();
+                            if self.dynamic {
+                                // Reallocate
+                                gl::BufferData(gl::SHADER_STORAGE_BUFFER, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void, self.usage.convert());
+                                self.byte_size = write.bytes.len();
+                            } else { panic!("Buffer is not dynamic, cannot reallocate!") }
                         } else {
                             // We have enough bytes allocated already
                             gl::BufferSubData(gl::SHADER_STORAGE_BUFFER, 0, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void);

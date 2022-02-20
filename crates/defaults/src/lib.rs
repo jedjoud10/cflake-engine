@@ -47,6 +47,7 @@ pub fn preload_default_assets() {
     cache_persistent!("./assets/defaults/shaders/voxel_terrain/second.cmpt.glsl");
     cache_persistent!("./assets/defaults/shaders/voxel_terrain/voxel.func.glsl");
     cache_persistent!("./assets/defaults/shaders/voxel_terrain/shared.func.glsl");
+    cache_persistent!("./assets/defaults/shaders/voxel_terrain/edits.func.glsl");
     cache_persistent!("./assets/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
     cache_persistent!("./assets/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
     // Textures

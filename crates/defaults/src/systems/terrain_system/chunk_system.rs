@@ -7,7 +7,7 @@ use main::{
     terrain::ChunkCoords,
 };
 
-use crate::globals::ChunksHandler;
+use crate::globals::ChunksManager;
 
 // Add a single chunk to the world
 fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_direction: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
@@ -56,12 +56,12 @@ fn run(world: &mut World, _data: EventKey) {
     }
     let mut terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
-    let handler = &mut terrain.chunk_handler;
+    let handler = &mut terrain.chunks_manager;
     update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
 }
 
 // Update the terrain
-fn update_terrain(handler: &mut ChunksHandler, camera_pos: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_dir: veclib::Vector3<f32>) {
+fn update_terrain(handler: &mut ChunksManager, camera_pos: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_dir: veclib::Vector3<f32>) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
         let octree = &mut handler.octree;
         if let Some((added, removed)) = octree.update(camera_pos) {
@@ -80,12 +80,12 @@ fn update_terrain(handler: &mut ChunksHandler, camera_pos: veclib::Vector3<f32>,
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
                     let (id, priority) = add_chunk(ecs, camera_pos, camera_dir, octree.inner.size, coords);
-                    handler.sorted_chunks_generating.push((id, priority));
+                    handler.priority_list.push((id, priority));
                     handler.chunks.insert(coords, id);
                     handler.chunks_generating.insert(coords);
                 }
             }
-            handler.sorted_chunks_generating.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
+            handler.priority_list.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
         }
     } else {
         // Mass deletion when we have no more chunks

@@ -13,7 +13,7 @@ use main::{
         },
         object::{ObjectID, ReservedTrackedID},
         pipeline::{pipec, Pipeline},
-        utils::{AccessType, UpdateFrequency},
+        utils::{AccessType, UpdateFrequency, UsageType},
     },
     terrain::{PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
@@ -28,7 +28,7 @@ pub struct VoxelGenerator {
     pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
     pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
     // And another voxel storage for edits
-    //pub shader_storage_edits: ObjectID<ShaderStorage>,
+    pub shader_storage_edits: ObjectID<ShaderStorage>,
     // Some CPU side objects that let us retrieve the GPU data
     pub pending_reads: Option<(ReadBytes, ReadBytes)>,
     // The IDs of the generation tasks
@@ -69,8 +69,10 @@ impl VoxelGenerator {
 
         // Load the shader storage
         let shader_storage_arbitrary_voxels = ShaderStorage::new_using_block(
-            UpdateFrequency::Stream,
-            AccessType::Pass,
+            UsageType {
+                access: AccessType::Pass,
+                frequency: UpdateFrequency::Stream,
+            },
             ShaderIDType::ComputeObjectID(second_compute),
             "arbitrary_voxels",
             (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2),
@@ -78,16 +80,24 @@ impl VoxelGenerator {
         let shader_storage_arbitrary_voxels = pipec::construct(pipeline, shader_storage_arbitrary_voxels).unwrap();
 
         let final_voxels_size = ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
-        let shader_storage_final_voxels = ShaderStorage::new(UpdateFrequency::Stream, AccessType::Read, final_voxels_size);
+        let shader_storage_final_voxels = ShaderStorage::new(UsageType {
+            access: AccessType::Read,
+            frequency: UpdateFrequency::Stream,
+        }, final_voxels_size);
         let shader_storage_final_voxels = pipec::construct(pipeline, shader_storage_final_voxels).unwrap();
 
         // Create a new dynamic shader storage for our terrain edits
-        //let shader_storage_edits = ShaderStorage::new_dynamic(UpdateFrequency::Stream, AccessType::Draw);
+        let shader_storage_edits = ShaderStorage::new_dynamic(UsageType {
+            access: AccessType::Draw,
+            frequency: UpdateFrequency::Stream,
+        });
+        let shader_storage_edits = pipec::construct(pipeline, shader_storage_edits).unwrap();
 
         Self {
             compute_shader: base_compute,
             second_compute_shader: second_compute,
             atomics,
+            shader_storage_edits,
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,
             uniforms,

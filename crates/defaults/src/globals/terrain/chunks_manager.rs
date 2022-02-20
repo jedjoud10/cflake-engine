@@ -22,12 +22,12 @@ impl Default for ChunkGenerationState {
 }
 
 #[derive(Default)]
-pub struct ChunksHandler {
+pub struct ChunksManager {
     // Chunk generation
     pub octree: DiffOctree,
     pub chunks: HashMap<ChunkCoords, EntityID>,
     pub chunks_generating: HashSet<ChunkCoords>,
-    pub sorted_chunks_generating: Vec<(EntityID, f32)>,
+    pub priority_list: Vec<(EntityID, f32)>,
     pub chunks_to_remove: Vec<EntityID>,
     pub material: ObjectID<Material>,
 

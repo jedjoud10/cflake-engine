@@ -1,4 +1,4 @@
-use crate::{PackedVoxelData, CHUNK_SIZE};
+use crate::{PackedVoxelData, CHUNK_SIZE, unpack_color};
 
 // Some stored voxel data, in SoA form
 pub struct StoredVoxelData {
@@ -26,16 +26,6 @@ impl Default for StoredVoxelData {
     }
 }
 
-// Convert an 8 bit RGB color into a 24 bit RGB color
-#[inline(always)]
-fn convert_color(packed: u16) -> veclib::Vector3<u8> {
-    // 65,535
-    let r = (packed >> 11).saturating_mul(8);
-    let g = ((packed >> 5) & 63).saturating_mul(4);
-    let b = (packed & 31).saturating_mul(8);
-    veclib::vec3(r as u8, g as u8, b as u8)
-}
-
 impl StoredVoxelData {
     // Update the stored voxel data using some packed data that came from the GPU
     pub fn store(&mut self, packed: &PackedVoxelData) {
@@ -43,7 +33,7 @@ impl StoredVoxelData {
         for (i, voxel) in packed.0.iter().enumerate() {
             // Read the voxel attributes
             self.densities[i] = voxel.density.to_f32();
-            self.colors[i] = convert_color(voxel.rgb_color);
+            self.colors[i] = unpack_color(voxel.rgb_color);
             self.normals[i] = voxel.normal;
             self.voxel_materials[i] = voxel.voxel_material;
         }
