@@ -9,16 +9,19 @@ uniform sampler2D tex;
 struct Voxel {
     float density;
     uint material;
-    bool artificial;
+    float 
 };
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, const vec3 pos) {
     float noise = 0.0;
-    float density = pos.y + snoise(pos * 0.01 * vec3(1, 2, 1)) * 40.0;
-    float density2 = pos.y + (1-voronoi(pos * 0.001 * vec3(1, 2, 1)).x) * 90.0;
-    float factor = 0.5;
-    return Voxel(mix(density, density2, factor), 0, false);
+    float density = pos.y + snoise(pos * 0.01 * vec3(1, 2, 1)) * 130.0;
+    float density2 = 0.0;
+    for (int i = 0; i < 8; i++) {
+        density2 += pos.y + (1-voronoi(pos * 0.001 * vec3(1, 1.5, 1) * pow(1.6, i)).x) * 500 * pow(0.423, i);
+    }
+    float factor = 1.0;
+    return Voxel(density2, 0, false);
 }
 
 // Modify the voxel after we get it's normal
