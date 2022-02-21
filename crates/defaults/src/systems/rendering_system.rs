@@ -24,7 +24,7 @@ fn run(world: &mut World, mut data: EventKey) {
         .filter_map(|(_, components)| {
             let renderer = components.get_component::<crate::components::Renderer>().unwrap();
             let transform = components.get_component::<crate::components::Transform>().unwrap();
-            let renderer_id = renderer.object_id;
+            let renderer_id = renderer.id;
             // Only update if we have a valid renderer and if we changed our transform
             if renderer_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
                 // Update the values if our renderer is valid
@@ -68,10 +68,10 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         // Get the CPU renderer that we must construct
         let matrix = components.get_component::<crate::components::Transform>().unwrap().calculate_matrix();
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
-        let mut cpu_renderer = renderer.renderer.take().unwrap();
+        let mut cpu_renderer = renderer.inner.take().unwrap();
         cpu_renderer.matrix = matrix;
         let object_id = pipec::construct(&pipeline, cpu_renderer).unwrap();
-        renderer.object_id = object_id;
+        renderer.id = object_id;
     }
 }
 
@@ -85,8 +85,8 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
 
         // Then get the ID of the GPU renderer
         let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
-        let id = renderer.object_id;
-        renderer.object_id = ObjectID::default();
+        let id = renderer.id;
+        renderer.id = ObjectID::default();
 
         // And create the task to dispose of it
         pipec::deconstruct(&pipeline, id);

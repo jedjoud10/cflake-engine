@@ -23,8 +23,6 @@ unsafe impl Sync for LinkedComponents {}
 unsafe impl Send for LinkedComponents {}
 
 impl LinkedComponents {
-    // Create some linked components from an Entity ID, the full AHashMap of components, and the System cbitfield
-    // Theoretically, this should only be done once, when an entity becomes valid for a system
     pub(crate) fn new(entity: &Entity, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
         Self {
             components,

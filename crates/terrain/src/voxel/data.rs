@@ -1,11 +1,20 @@
+use std::{rc::Rc, cell::{RefCell, Ref}};
+
 use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 
-// Some stored voxel data, in SoA form
-pub struct StoredVoxelData {
+// Inner data
+struct InnerStoredVoxelData {
     densities: Vec<f32>,
     normals: Vec<veclib::Vector3<i8>>,
     colors: Vec<veclib::Vector3<u8>>,
     voxel_materials: Vec<u8>,
+}
+
+// Some stored voxel data, in SoA form
+// This is also clonable because the actual data is stored in an Rc<RefCell<>>
+#[derive(Clone)]
+pub struct StoredVoxelData {
+    inner: Rc<RefCell<InnerStoredVoxelData>>,
 }
 
 impl Default for StoredVoxelData {
@@ -15,13 +24,15 @@ impl Default for StoredVoxelData {
         let densities = vec![0.0; LEN];
         let normals = vec![veclib::Vector3::ZERO; LEN];
         let colors = vec![veclib::Vector3::ZERO; LEN];
-        let material_types = vec![0; LEN];
+        let voxel_materials = vec![0; LEN];
 
         Self {
-            densities,
-            normals,
-            colors,
-            voxel_materials: material_types,
+            inner: Rc::new(RefCell::new(InnerStoredVoxelData {
+                densities,
+                normals,
+                colors,
+                voxel_materials,
+            }))
         }
     }
 }
@@ -30,26 +41,27 @@ impl StoredVoxelData {
     // Update the stored voxel data using some packed data that came from the GPU
     pub fn store(&mut self, packed: &PackedVoxelData) {
         // We do a bit of overwriting
+        let mut inner = self.inner.borrow_mut();
         for (i, voxel) in packed.0.iter().enumerate() {
             // Read the voxel attributes
-            self.densities[i] = voxel.density.to_f32();
-            self.colors[i] = unpack_color(voxel.rgb_color);
-            self.normals[i] = voxel.normal;
-            self.voxel_materials[i] = voxel.voxel_material;
+            inner.densities[i] = voxel.density.to_f32();
+            inner.colors[i] = unpack_color(voxel.rgb_color);
+            inner.normals[i] = voxel.normal;
+            inner.voxel_materials[i] = voxel.voxel_material;
         }
     }
 
     // Getters
-    pub fn density(&self, idx: usize) -> &f32 {
-        self.densities.get(idx).unwrap()
+    pub fn density(&self, idx: usize) -> Ref<f32> {
+        Ref::map(self.inner.borrow(), |inner| inner.densities.get(idx).unwrap())
     }
-    pub fn normal(&self, idx: usize) -> &veclib::Vector3<i8> {
-        self.normals.get(idx).unwrap()
+    pub fn normal(&self, idx: usize) -> Ref<veclib::Vector3<i8>> {
+        Ref::map(self.inner.borrow(), |inner| inner.normals.get(idx).unwrap())
     }
-    pub fn color(&self, idx: usize) -> &veclib::Vector3<u8> {
-        self.colors.get(idx).unwrap()
+    pub fn color(&self, idx: usize) -> Ref<veclib::Vector3<u8>> {
+        Ref::map(self.inner.borrow(), |inner| inner.colors.get(idx).unwrap())
     }
-    pub fn voxel_material(&self, idx: usize) -> &u8 {
-        self.voxel_materials.get(idx).unwrap()
+    pub fn voxel_material(&self, idx: usize) -> Ref<u8> {
+        Ref::map(self.inner.borrow(), |inner| inner.voxel_materials.get(idx).unwrap())
     }
 }

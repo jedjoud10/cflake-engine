@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{registry, Component, ComponentID, EnclosedComponent},
+    component::{registry, Component, EnclosedComponent},
     utils::ComponentLinkingError,
 };
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
@@ -20,11 +20,7 @@ impl ComponentLinkingGroup {
     pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
         // Simple wrapper around the default link component
         self.link(T::default())
-    }
-    // Check if we have a component linked
-    pub fn is_component_linked(&self, id: ComponentID) -> bool {
-        self.linked_components.contains_key(&id.cbitfield)
-    }
+    }    
     // Link a component to this entity
     pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();

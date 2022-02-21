@@ -100,7 +100,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
     let id = *terrain.chunks_manager.current_chunk_state.as_begin_voxel_data_generation().unwrap();
-    println!("Generated voxel data for chunk {:?}", id);
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.chunks_manager.chunks_generating.remove(&chunk.coords);

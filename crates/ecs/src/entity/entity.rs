@@ -1,4 +1,4 @@
-use crate::ECSManager;
+use crate::{ECSManager, component::Component};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
@@ -26,6 +26,15 @@ impl Default for Entity {
             cbitfield: Bitfield::default(),
             components: AHashMap::new(),
         }
+    }
+}
+
+impl Entity {
+    // Check if we have a component linked onto this entity
+    pub fn is_component_linked<T: Component + 'static>(&self) -> bool {
+        // Get the cbitfield of the component
+        let cbitfield = crate::component::registry::get_component_bitfield::<T>();
+        self.cbitfield.contains(&cbitfield)
     }
 }
 
