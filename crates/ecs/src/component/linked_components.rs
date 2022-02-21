@@ -42,9 +42,12 @@ impl LinkedComponents {
     }
 }
 
-// Function that create the "Linked component could not be fetched!" error
+// Errors
 fn invalid_err() -> ComponentError {
     ComponentError::new("Linked component could not be fetched!".to_string())
+}
+fn invalid_err_not_linked() -> ComponentError {
+    ComponentError::new("Component is not linked to the entity!".to_string())
 }
 impl LinkedComponents {
     // Get the component ID of a specific component that this entity has
@@ -56,6 +59,10 @@ impl LinkedComponents {
         let idx = self.linked.get(&cbitfield)?;
         Some(ComponentID::new(cbitfield, *idx))
     }
+    // Get the entity ID
+    pub fn get_entity_id(&self) -> EntityID {
+        EntityID(self.id)
+    }
     // Get a reference to a specific linked component
     pub fn get_component<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>
     where
@@ -63,7 +70,7 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
@@ -83,7 +90,7 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
