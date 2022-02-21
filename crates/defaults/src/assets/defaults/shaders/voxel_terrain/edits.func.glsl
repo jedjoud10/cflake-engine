@@ -51,9 +51,9 @@ void edit_density(const vec3 pos, inout float density, inout vec3 color, inout u
     float shape_density = 0.0;
     const float threshold = 5.0;
     if (edit.shape_type == 0) {
-        shape_density = sdBox(pos-edit.position, edit.size);
+        shape_density = sdBox(pos-edit.position, edit.size / 2.0);
     } else if (edit.shape_type == 1) {
-        shape_density = sdSphere(pos-edit.position, edit.size.x * 2.0);    
+        shape_density = sdSphere(pos-edit.position, edit.size.x);    
     }
     // Then combine it
     if (edit.edit_type == 0) {

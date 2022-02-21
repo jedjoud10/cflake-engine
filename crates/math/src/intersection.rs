@@ -15,8 +15,8 @@ pub fn point_aabb(point: &veclib::Vector3<f32>, aabb: &AABB) -> bool {
 }
 // Check if an AABB is intersecting a sphere
 pub fn aabb_sphere(aabb: &AABB, sphere: &Sphere) -> bool {
-    let closest_point = aabb.get_nearest_point(&sphere.center);
-    point_sphere(&closest_point, sphere)
+    let nearest_point = aabb.get_nearest_point(&sphere.center);
+    point_sphere(&nearest_point, sphere)
 }
 /* #endregion */
 /* #region Main */
