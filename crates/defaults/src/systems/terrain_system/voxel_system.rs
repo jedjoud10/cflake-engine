@@ -33,7 +33,7 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_shader_storage("terrain_edits", shader_storage_edits, 1);
         uniforms.set_vec3f32("node_pos", chunk_coords.position.into());
         uniforms.set_i32("node_size", chunk_coords.size as i32);
-        uniforms.set_u32("node_size", num_edits);
+        uniforms.set_u32("num_terrain_edits", num_edits as u32);
     });
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS)).with_callback(uniforms);

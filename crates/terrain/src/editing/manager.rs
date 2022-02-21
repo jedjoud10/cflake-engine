@@ -36,13 +36,22 @@ impl EditingManager {
                     BasicShapeType::Sphere(sphere) => (sphere.center, veclib::vec3(sphere.radius * 2.0, 0.0, 0.0), 1u8),
                 };
                 // Get the edittype
-                PackedEdit {
+                let rgbcolor = (pack_color(edit.color) as u32) << 16; // 2
+                let shape_type_edit_type = (((shapetype << 4) | (edit.operation as u8)) as u32) << 8; // 1
+                let material = edit.material.unwrap_or(255) as u32; // 1
+                let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
+                let edit = PackedEdit {
+                    
                     center: veclib::vec3(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
                     size: veclib::vec3(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
-                    rgb_color: pack_color(edit.color),
-                    shapetype_edittype: (shapetype << 4) | (edit.operation as u8),
-                    material: edit.material.unwrap_or(255),
-                }
+                    
+                    //center: veclib::vec3(f16::ZERO, f16::ZERO, f16::ZERO),
+                    //size: veclib::vec3(f16::ZERO, f16::ZERO, f16::ZERO),
+                    //x_y: 0, z_sx: 0, sy_sz: 0,
+                    rgbcolor_shape_type_edit_type_material
+                };
+                dbg!(&edit);
+                edit
             })
             .collect::<Vec<_>>()
     }

@@ -4,7 +4,7 @@ use main::{
     gui::egui,
     math::{
         csg::CSGOperation,
-        shapes::{BasicShapeType, Cube},
+        shapes::{BasicShapeType, Cube, Sphere},
     },
     terrain::editing::Edit,
 };
@@ -53,6 +53,7 @@ fn run(world: &mut World, _data: EventKey) {
             ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
             ui.label(format!("Total Edits: '{}'", terrain.editing_manager.edits.len()));
             if ui.button("Edit terrain").clicked() {
+                /*
                 terrain.edit(Edit::new(
                     BasicShapeType::Cube(Cube {
                         center: veclib::Vector3::<f32>::ZERO,
@@ -60,6 +61,16 @@ fn run(world: &mut World, _data: EventKey) {
                     }),
                     CSGOperation::Union,
                 ));
+                */
+                
+                terrain.edit(Edit::new(
+                    BasicShapeType::Sphere(Sphere {
+                        center: veclib::Vector3::<f32>::ZERO,
+                        radius: 10.0,
+                    }),
+                    CSGOperation::Union,
+                ));
+                
             }
         }
         // Rendering

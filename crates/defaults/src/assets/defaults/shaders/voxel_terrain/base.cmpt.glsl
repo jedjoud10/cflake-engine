@@ -16,7 +16,7 @@ layout(std430, binding = 1) readonly buffer terrain_edits
 };
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
-layout(location = 4) uniform uint num_edits;
+layout(location = 4) uniform uint num_terrain_edits;
 
 void main() {
     // Get the pixel coord
@@ -32,11 +32,11 @@ void main() {
     if (all(lessThan(pixel_coords, ivec3(CHUNK_SIZE+2, CHUNK_SIZE+2, CHUNK_SIZE+2)))) {        
         // Create the density value
         Voxel voxel = get_voxel(uvec3(pc), pos);
-
-        if (num_edits > 0) {
-            voxel.density = 0.0;
+        for(int i = 0; i < num_terrain_edits; i++) {
+            // Gotta convert from packed to unpacked
+            TerrainEdit edit = get_unpacked_terrain_edit(edits[i]);
+            edit_density(voxel.density, edit);
         }
-
         // And store the voxel inside our array
         voxels[flatten(pc, CHUNK_SIZE+2)] = voxel;
     }

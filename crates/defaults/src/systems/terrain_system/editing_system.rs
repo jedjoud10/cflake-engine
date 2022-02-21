@@ -13,7 +13,9 @@ fn run(world: &mut World, _data: EventKey) {
                 terrain.regenerate_chunk(coords);
             }
             // Also set the packed edits since we will need to update them on the GPU
-            terrain.voxel_generator.packed_edits_update = Some(terrain.editing_manager.convert());
+            let packed = terrain.editing_manager.convert();
+            terrain.voxel_generator.packed_edits_num = packed.len();
+            terrain.voxel_generator.packed_edits_update = Some(packed);
         } else {
             terrain.voxel_generator.packed_edits_update = None;
         }

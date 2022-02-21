@@ -27,7 +27,7 @@ pub struct VoxelGenerator {
     // And another voxel storage for edits
     pub shader_storage_edits: ObjectID<ShaderStorage>,
     pub packed_edits_update: Option<Vec<PackedEdit>>,
-    pub packed_edits_num: u32,
+    pub packed_edits_num: usize,
     // Some CPU side objects that let us retrieve the GPU data
     pub pending_reads: Option<(ReadBytes, ReadBytes)>,
     // The IDs of the generation tasks
