@@ -156,12 +156,15 @@ pub mod test {
                 assert_eq!(*name.name, "John".to_string());
             }
         }
-        let builder = ecs.create_system_builder();
-        builder
+        ecs.create_system_builder()
             .link::<Name>()
             .with_run_event(internal_run)
             .with_removed_entities_event(internal_remove_entity)
             .with_added_entities_event(internal_add_entity)
+            .build();
+        ecs.create_system_builder()
+            .link::<Name>()
+            .link::<Tagged>()
             .build();
 
         // Add a new entity and play with it's components
@@ -169,8 +172,10 @@ pub mod test {
         let id = EntityID::new(&ecs);
         let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
+        group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.add_entity(entity, id, group).unwrap();
         ecs.run_systems(&mut world);
+        ecs.finish_update();
         ecs.remove_entity(id).unwrap();
         ecs.run_systems(&mut world);
         ecs.finish_update();

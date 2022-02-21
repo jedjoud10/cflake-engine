@@ -65,10 +65,7 @@ impl<World> ECSManager<World> {
     // Remove an entity, but keep it's components alive until all systems have been notified
     pub fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
         let entity = self.entities.get(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
-        let mut group = ComponentUnlinkGroup::default();
-        for (cbitfield, id) in entity.components.iter() {
-            group.unlink_with_id(ComponentID::new(*cbitfield, *id));
-        }
+        let group = ComponentUnlinkGroup::unlink_all_from_entity(entity);
         // Unlink all of the entity's components
         self.unlink_components(id, group).unwrap();
         // Invalidate the entity
@@ -118,9 +115,8 @@ impl<World> ECSManager<World> {
         for system in self.systems.iter() {
             // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
             if system.check_cbitfield(new) && !system.check_cbitfield(old) {
-                let lc1 = LinkedComponents::new_direct(id, linked, self.mutated_components.clone(), components.clone());
-                let lc2 = LinkedComponents::new_direct(id, linked, self.mutated_components.clone(), components.clone());
-                system.add_entity(id, lc1, lc2);
+                let linked = LinkedComponents::new_direct(id, linked.clone(), self.mutated_components.clone(), components.clone());
+                system.add_entity(id, linked);
             }
         }
         Ok(())
@@ -169,25 +165,15 @@ impl<World> ECSManager<World> {
 
         // And finally remove the component group from it's systems
         let mut lock = self.component_groups_to_remove.lock();
-        let removed_id = lock.get_next_id();
+        let counter = self.systems.iter().filter(|system| { 
+            // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
+            system.check_cbitfield(old) && !system.check_cbitfield(new)
+        }).count();
         lock.push_shove(ComponentGroupToRemove {
             components: components.clone(),
-            cbitfield: unlink_group.removal_cbitfield,
-            counter: 0,
+            counter,
+            entity_id: id,
         });
-        // Get the pointer to the new entity components
-        for system in self.systems.iter_mut() {
-            if system.check_cbitfield(unlink_group.removal_cbitfield) {
-                // Remove the entity, since it was contained in the system
-                let to_remove = lock.get_mut(removed_id).unwrap();
-                system.remove_entity(
-                    id,
-                    LinkedComponents::new_dead(removed_id, &components, self.mutated_components.clone(), self.components.clone()),
-                );
-                to_remove.counter += 1;
-            }
-        }
-
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID

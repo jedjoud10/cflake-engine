@@ -33,11 +33,17 @@ impl System {
         cbitfield.contains(&self.cbitfield)
     }
     // Add an entity
-    pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents, linked_components2: LinkedComponents) {
+    pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents) {
+        let cloned = LinkedComponents {
+            components: linked_components.components.clone(),
+            mutated_components: linked_components.mutated_components.clone(),
+            linked: linked_components.linked.clone(),
+            id: linked_components.id.clone(),
+        };
         let mut lock = self.linked_components.borrow_mut();
         lock.insert(id, linked_components);
         let mut lock = self.added.borrow_mut();
-        lock.insert(id, linked_components2);
+        lock.insert(id, cloned);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
     pub(crate) fn remove_entity(&self, id: EntityID, linked_components: LinkedComponents) {
@@ -60,10 +66,10 @@ impl System {
         let removed_components = {
             let removed = self.removed.borrow_mut();
             let mut lock = ecs_manager.component_groups_to_remove.lock();
-            for (_, components) in lock.iter() {
-                if components.cbitfield.remove(&self.cbitfield).unwrap_or_default().empty() {
+            for (_, components) in lock.iter_mut() {
+                if removed.contains_key(&components.entity_id) {
                     // Decrement
-                    
+                    components.counter -= 1;
                 }
             }
             self.evn_removed_entity.map(|_| self.removed.clone())

@@ -16,7 +16,7 @@ pub struct LinkedComponents {
     pub(crate) linked: AHashMap<Bitfield<u32>, u64>,
 
     // This ID can either be the valid entity ID or the ID of a removed entity that is stored in our temporary OrderedVec
-    pub id: (u64, bool),
+    pub id: u64,
 }
 
 unsafe impl Sync for LinkedComponents {}
@@ -28,25 +28,16 @@ impl LinkedComponents {
             components,
             mutated_components,
             linked: entity.components.clone(),
-            id: (entity.id.unwrap().0, true),
+            id: (entity.id.unwrap().0),
         }
     }
 
-    pub(crate) fn new_direct(id: EntityID, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
+    pub(crate) fn new_direct(id: EntityID, linked: AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
         Self {
             components,
             mutated_components,
-            linked: linked.clone(),
-            id: (id.0, true),
-        }
-    }
-
-    pub(crate) fn new_dead(id: u64, linked: &AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
-        Self {
-            components,
-            mutated_components,
-            linked: linked.clone(),
-            id: (id, false),
+            linked,
+            id: (id.0),
         }
     }
 }

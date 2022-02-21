@@ -4,6 +4,8 @@ use ordered_vec::simple::OrderedVec;
 use parking_lot::RwLock;
 use std::{any::Any, cell::UnsafeCell, sync::Arc};
 
+use crate::entity::EntityID;
+
 // A ComponentID that will be used to identify components
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct ComponentID {
@@ -31,8 +33,8 @@ pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
 // Component groups that we must remove
 pub(crate) struct ComponentGroupToRemove {
     pub components: AHashMap<Bitfield<u32>, u64>,
-    pub cbitfield: Bitfield<u32>,
     pub counter: usize,
+    pub entity_id: EntityID,
 } 
 
 // Component ref guards. This can be used to detect whenever we mutate a component
