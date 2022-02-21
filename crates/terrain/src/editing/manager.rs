@@ -33,7 +33,7 @@ impl EditingManager {
                 // Center, size, shapetype
                 let (center, size, shapetype) = match &edit.shape {
                     BasicShapeType::Cube(cube) => (cube.center, cube.size, 0u8),
-                    BasicShapeType::Sphere(sphere) => (sphere.center, veclib::vec3(sphere.radius * 2.0, 0.0, 0.0), 1u8),
+                    BasicShapeType::Sphere(sphere) => (sphere.center, veclib::vec3(sphere.radius, 0.0, 0.0), 1u8),
                 };
                 // Get the edittype
                 let rgbcolor = (pack_color(edit.color) as u32) << 16; // 2

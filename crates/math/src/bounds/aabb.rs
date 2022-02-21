@@ -26,7 +26,7 @@ impl AABB {
 // Conversions
 impl From<Cube> for AABB {
     fn from(cube: Cube) -> Self {
-        let half_extent = cube.size / 2.0;
+        let half_extent = cube.size;
         Self {
             min: cube.center - half_extent,
             max: cube.center + half_extent,

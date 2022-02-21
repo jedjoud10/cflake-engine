@@ -33,7 +33,7 @@ TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
     vec3 color = vec3(0);
     color.r = clamp(float((packed_color >> 11) * 8), 0, 255);
     color.g = clamp(float(((packed_color >> 5) & 63) * 4), 0, 255);
-    color.g = clamp(float(((packed_color >> 5) & 31) * 8), 0, 255);
+    color.b = clamp(float(((packed_color) & 31) * 8), 0, 255);
     // Decode shape_type, edit_type, and material
     uint shape_type_edit_type_material = edit.rgbcolor_shape_type_edit_type_material & 65535;
     uint shape_type_edit_type = shape_type_edit_type_material >> 8;
@@ -45,8 +45,27 @@ TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
 
 
 // Update a density function using a single edit
-void edit_density(const vec3 pos, inout float density, TerrainEdit edit) {
+void edit_density(const vec3 pos, inout float density, inout vec3 color, inout uint material, TerrainEdit edit) {
+    // Get the shape density first
+    float shape_density = 0.0;
+    const float threshold = 5.0;
     if (edit.shape_type == 0) {
-        density = opUnion(density, sdBox(pos-edit.position, edit.size));
+        shape_density = sdBox(pos-edit.position, edit.size);
+    } else if (edit.shape_type == 1) {
+        shape_density = sdSphere(pos-edit.position, edit.size.x * 2.0);    
+    }
+    // Then combine it
+    if (edit.edit_type == 0) {
+        density = opUnion(density, shape_density);
+    } else if (edit.edit_type == 1) {
+        density = opSubtraction(shape_density, density);    
+    }
+    // Color
+    if (shape_density < threshold) {
+        color = edit.color;
+    }
+    // Material
+    if (edit.material != 255 && shape_density < threshold) {
+        material = 0;
     }
 }

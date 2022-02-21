@@ -21,7 +21,8 @@ struct PackedVoxel {
 PackedVoxel get_packed_voxel(FinalVoxel voxel) {
     // Pack the data
     uint x_y_z_material = packSnorm4x8(vec4(normalize(voxel.normal).xyz, 0.0));
-    x_y_z_material |= voxel.material << 24;
+    uint material = clamp((voxel.material), uint(0), uint(255)) << 24;
+    x_y_z_material |= material;
     uint density_rgbcolor_nothing = packHalf2x16(vec2(voxel.density, 0.0));
     uvec3 color = uvec3(clamp(voxel.color, 0, 1) * 255);
     // 5 6 5

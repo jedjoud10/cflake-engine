@@ -35,7 +35,7 @@ void main() {
         for(int i = 0; i < num_terrain_edits; i++) {
             // Gotta convert from packed to unpacked
             TerrainEdit edit = get_unpacked_terrain_edit(edits[i]);
-            edit_density(pos, voxel.density, edit);
+            edit_density(pos, voxel.density, voxel.color, voxel.material, edit);
         }
         // And store the voxel inside our array
         voxels[flatten(pc, CHUNK_SIZE+2)] = voxel;

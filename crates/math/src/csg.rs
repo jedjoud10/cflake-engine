@@ -3,6 +3,5 @@
 #[derive(Clone, Copy)]
 pub enum CSGOperation {
     Union = 0,
-    Intersection,
     Subtraction,
 }

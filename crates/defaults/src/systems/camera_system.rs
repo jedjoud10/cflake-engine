@@ -14,7 +14,7 @@ fn run(world: &mut World, mut data: EventKey) {
         veclib::Vector3::new(-mouse_pos.y as f32 * SENSIVITY, -mouse_pos.x as f32 * SENSIVITY, 0.0),
     );
     // Calculate the vectors
-    let forward = new_rotation.mul_point(veclib::Vector3::<f32>::Z);
+    let forward = new_rotation.mul_point(-veclib::Vector3::<f32>::Z);
     let up = new_rotation.mul_point(veclib::Vector3::<f32>::Y);
     let right = new_rotation.mul_point(veclib::Vector3::<f32>::X);
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
@@ -34,9 +34,9 @@ fn run(world: &mut World, mut data: EventKey) {
     // Actually update the velocity
     // Forward and backward
     if world.input.map_held("camera_forward") {
-        velocity += -forward * speed;
-    } else if world.input.map_held("camera_backwards") {
         velocity += forward * speed;
+    } else if world.input.map_held("camera_backwards") {
+        velocity += -forward * speed;
     }
     // Left and right
     if world.input.map_held("camera_right") {
