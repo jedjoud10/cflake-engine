@@ -1,4 +1,4 @@
-use crate::{PackedVoxelData, CHUNK_SIZE, unpack_color};
+use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 
 // Some stored voxel data, in SoA form
 pub struct StoredVoxelData {

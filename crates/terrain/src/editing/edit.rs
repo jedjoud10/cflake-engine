@@ -1,6 +1,7 @@
-use math::{shapes::BasicShapeType, csg::CSGOperation};
+use math::{csg::CSGOperation, shapes::BasicShapeType};
 
 // A single terrain edit
+#[derive(Clone)]
 pub struct Edit {
     // Contains the shape of the edit and some other edit parameters
     pub shape: BasicShapeType,
@@ -14,7 +15,12 @@ pub struct Edit {
 impl Edit {
     // Create a new edit
     pub fn new(shape: BasicShapeType, operation: CSGOperation) -> Self {
-        Self { shape, material: None, color: veclib::Vector3::ONE * 255, operation }
+        Self {
+            shape,
+            material: None,
+            color: veclib::Vector3::ONE * 255,
+            operation,
+        }
     }
     // Parameters
     pub fn with_material(mut self, material: u8) -> Self {

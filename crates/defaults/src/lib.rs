@@ -71,6 +71,7 @@ pub fn preload_system(world: &mut World) {
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
+    terrain_system::editing_system::system(world);
 
     // We gotta add the globa
     world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();

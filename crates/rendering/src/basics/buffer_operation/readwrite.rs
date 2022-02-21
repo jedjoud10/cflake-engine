@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-
 use parking_lot::Mutex;
 // Used to help reading back the bytes from OpenGL storage
 #[derive(Default, Clone)]
@@ -73,8 +72,6 @@ impl WriteBytes {
         let new_len = size_of::<T>() * vec.len();
         let bytes = unsafe { Vec::from_raw_parts(vec.as_mut_ptr() as *mut u8, new_len, new_len) };
         // Now we can drop safely
-        Self {
-            bytes,
-        }
+        Self { bytes }
     }
 }

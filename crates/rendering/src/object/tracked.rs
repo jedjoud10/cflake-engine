@@ -1,13 +1,15 @@
 use super::ObjectID;
 use crate::{
     advanced::{
+        atomic::AtomicGroup,
         compute::{ComputeShader, ComputeShaderExecutionSettings},
-        shader_storage::ShaderStorage, atomic::AtomicGroup,
+        shader_storage::ShaderStorage,
     },
     basics::{
+        buffer_operation::BufferOperation,
         shader::info::{ShaderInfoQuerySettings, ShaderInfoRead},
         texture::Texture,
-        uniforms::ShaderIDType, buffer_operation::BufferOperation,
+        uniforms::ShaderIDType,
     },
 };
 

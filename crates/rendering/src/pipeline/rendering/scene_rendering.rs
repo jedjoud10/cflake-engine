@@ -37,11 +37,10 @@ pub struct PipelineRenderer {
 
     // Others
     sky_gradient: ObjectID<Texture>,
-    shadow_mapping: ShadowMapping,
+    shadow_mapping: Option<ShadowMapping>,
     postprocessing: PostProcessing,
 }
 impl PipelineRenderer {
-    
     // Initialize this new pipeline renderer
     pub(crate) fn initialize(&mut self, pipeline_settings: PipelineSettings, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
@@ -120,7 +119,11 @@ impl PipelineRenderer {
         }
         /* #endregion */
         /* #region Others */
-        self.shadow_mapping = ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline);
+        self.shadow_mapping = if pipeline_settings.shadow_resolution != 0 {
+            Some(ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline))
+        } else {
+            None
+        };
         self.postprocessing = PostProcessing::new(self, internal, pipeline, dims);
         // Load sky gradient texture
         self.sky_gradient = pipec::construct(
@@ -185,7 +188,7 @@ impl PipelineRenderer {
         Ok(model)
     }
     // Render a single renderer
-    fn render(&self, model: &Model) {
+    fn render(model: &Model) {
         unsafe {
             // Actually draw the model
             gl::BindVertexArray(model.vertex_array_object);
@@ -208,11 +211,10 @@ impl PipelineRenderer {
         self.prepare_for_rendering(pipeline);
         // Render normally
         self.render_scene(pipeline, &mut debug_info);
-        unsafe { gl::Flush() }
         // Then render the scene again so we can render shadows
-        if self.shadow_mapping.enabled {
-            self.render_scene_shadow_maps(pipeline, &mut debug_info);
-        }
+        self.shadow_mapping.as_mut().map(|shadow_mapping| {
+            Self::render_scene_shadow_maps(shadow_mapping, pipeline, &mut debug_info);
+        });
         // Render the deferred quad and the post processing quad
         self.draw_deferred_quad(pipeline);
         self.draw_postprocessing_quad(pipeline);
@@ -229,7 +231,7 @@ impl PipelineRenderer {
             let result = self.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Ok(model) = result {
-                self.render(model);
+                Self::render(model);
                 debug_info.draw_calls += 1;
                 debug_info.triangles += model.tris_count as u64;
                 debug_info.vertices += model.vert_count as u64;
@@ -237,27 +239,32 @@ impl PipelineRenderer {
         }
     }
     // Render the scene's shadow maps
-    fn render_scene_shadow_maps(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
+    fn render_scene_shadow_maps(shadow_mapping: &mut ShadowMapping, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
+        // Change the cull face for better depth
         unsafe {
             gl::CullFace(gl::FRONT);
         }
-        self.shadow_mapping.bind_fbo(pipeline);
+        // Bind VBO and set light source
+        shadow_mapping.bind_fbo(pipeline);
         let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
-            self.shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap(), &pipeline.camera);
+            shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap(), &pipeline.camera);
         }
+
+        // Draw the renderers
         for (_, renderer) in pipeline.renderers.iter() {
             // Check if we should cast shadows
             if !renderer.flags.contains(RendererFlags::SHADOW_CASTER) {
                 continue;
             }
-            let result = self.shadow_mapping.configure_uniforms(pipeline, renderer);
+            let result = shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Ok(model) = result {
-                self.render(model);
+                Self::render(model);
                 debug_info.shadow_draw_calls += 1;
             }
         }
+        // Reset
         unsafe {
             gl::CullFace(gl::BACK);
         }
@@ -281,7 +288,7 @@ impl PipelineRenderer {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.postprocessing.framebuffer);
             gl::Disable(gl::DEPTH_TEST);
-            self.render(quad_model);
+            Self::render(quad_model);
         }
     }
     // Draw the postprocessing quad and render the color texture
@@ -293,7 +300,7 @@ impl PipelineRenderer {
         unsafe {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            self.render(quad_model);
+            Self::render(quad_model);
             gl::BindVertexArray(0);
             gl::Enable(gl::DEPTH_TEST);
         }
@@ -309,7 +316,12 @@ impl PipelineRenderer {
         let directional = light._type.as_directional().unwrap();
         uniforms.set_vec3f32("sunlight_dir", directional.mul_point(veclib::Vector3::Z));
         uniforms.set_f32("sunlight_strength", light.strength);
-        uniforms.set_mat44f32("lightspace_matrix", self.shadow_mapping.lightspace_matrix);
+        uniforms.set_mat44f32(
+            "lightspace_matrix",
+            self.shadow_mapping
+                .as_ref()
+                .map_or(veclib::Matrix4x4::default(), |shadow_mapping| shadow_mapping.lightspace_matrix),
+        );
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         uniforms.set_mat44f32("pr_matrix", pr_m);
         uniforms.set_mat44f32("pv_matrix", camera.projm * camera.viewm);
@@ -320,8 +332,15 @@ impl PipelineRenderer {
         uniforms.set_texture("normals_texture", self.normals_texture, 2);
         uniforms.set_texture("position_texture", self.position_texture, 3);
         uniforms.set_texture("depth_texture", self.depth_texture, 4);
-        uniforms.set_texture("shadow_map", self.shadow_mapping.depth_texture, 6);
         uniforms.set_texture("sky_gradient", self.sky_gradient, 5);
+
+        // If we have shadow mapping disabled we must use the default white texture
+        let shadow_mapping_texture = self
+            .shadow_mapping
+            .as_ref()
+            .map_or(pipeline.defaults.as_ref().unwrap().white, |shadow_mapping| shadow_mapping.depth_texture);
+        uniforms.set_texture("shadow_map", shadow_mapping_texture, 6);
+        uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
     }
     // Update window
     pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {

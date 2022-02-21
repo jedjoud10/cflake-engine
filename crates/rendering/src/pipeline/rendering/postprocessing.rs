@@ -1,6 +1,14 @@
 use gl::types::GLuint;
 
-use crate::{pipeline::{PipelineRenderer, InternalPipeline, Pipeline, pipec}, basics::{texture::{Texture, TextureFilter, TextureFormat, TextureType}, shader::{Shader, ShaderSettings}, uniforms::{ShaderUniformsSettings, ShaderIDType, Uniforms}}, object::ObjectID};
+use crate::{
+    basics::{
+        shader::{Shader, ShaderSettings},
+        texture::{Texture, TextureFilter, TextureFormat, TextureType},
+        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
+    },
+    object::ObjectID,
+    pipeline::{pipec, InternalPipeline, Pipeline, PipelineRenderer},
+};
 
 // Post processing effects that are rendered to the final frame buffer
 #[derive(Default)]
@@ -28,7 +36,7 @@ impl PostProcessing {
 
         // Flush
         pipeline.flush(internal, renderer);
-        
+
         // Now attach the color texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
@@ -43,12 +51,13 @@ impl PostProcessing {
             // Unbind
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         }
-        // Load the final post processing shader 
+        // Load the final post processing shader
         let shader = Shader::new(
             ShaderSettings::default()
                 .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
                 .source("defaults/shaders/rendering/postprocessing_pass.frsh.glsl"),
-        ).unwrap();
+        )
+        .unwrap();
         let shader = pipec::construct(pipeline, shader).unwrap();
         pipeline.flush(internal, renderer);
         Self {
@@ -61,11 +70,11 @@ impl PostProcessing {
     pub(crate) fn resize_texture(&mut self, dims: TextureType, pipeline: &mut Pipeline) {
         let color_texture = pipeline.textures.get_mut(self.color_texture).unwrap();
         color_texture.update_size_fill(dims, Vec::new()).unwrap();
-    } 
+    }
     // Make sure we are ready to draw post processing effects
     pub(crate) fn bind_fbo(&self, pipeline: &Pipeline, render: &PipelineRenderer) {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);            
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             //gl::Clear(gl::COLOR | gl::DEPTH_BUFFER_BIT);
             let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shader));
             let uniforms = Uniforms::new(&settings, pipeline);

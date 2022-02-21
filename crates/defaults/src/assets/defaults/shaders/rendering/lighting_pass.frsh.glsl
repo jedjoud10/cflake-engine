@@ -18,6 +18,7 @@ uniform float sunlight_strength;
 uniform mat4 pr_matrix;
 uniform mat4 pv_matrix;
 uniform vec2 nf_planes;
+uniform bool shadows_enabled;
 in vec2 uvs;
 
 void main() {
@@ -42,8 +43,11 @@ void main() {
 		color = calculate_sky_color(sky_gradient, sky_uv_sampler, time_of_day);
 		color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 1024), 0) * sun_strength_factor;
 	} else {
-		// Shadow mapping calculations
-		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
+		float in_shadow = 0.0;
+		if (shadows_enabled) {
+			// Shadow mapping calculations
+			in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
+		}
 		// Calculate lighting
 		vec3 frag_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 		color = frag_color;

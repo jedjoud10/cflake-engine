@@ -1,16 +1,22 @@
 #version 460 core
 #include_custom {"voxel_include_path"}
 #include "defaults/shaders/voxel_terrain/shared.func.glsl"
+#include "defaults/shaders/voxel_terrain/edits.func.glsl"
 
 const int CHUNK_SIZE = #constant chunk_size
 // Load the voxel function file
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(std430, binding = 1) writeonly buffer arbitrary_voxels
+layout(std430, binding = 0) writeonly buffer arbitrary_voxels
 {   
     Voxel voxels[];
 };
+layout(std430, binding = 1) readonly buffer terrain_edits
+{   
+    PackedTerrainEdit edits[];
+};
 layout(location = 2) uniform vec3 node_pos;
 layout(location = 3) uniform int node_size;
+layout(location = 4) uniform uint num_edits;
 
 void main() {
     // Get the pixel coord
@@ -26,6 +32,10 @@ void main() {
     if (all(lessThan(pixel_coords, ivec3(CHUNK_SIZE+2, CHUNK_SIZE+2, CHUNK_SIZE+2)))) {        
         // Create the density value
         Voxel voxel = get_voxel(uvec3(pc), pos);
+
+        if (num_edits > 0) {
+            voxel.density = 0.0;
+        }
 
         // And store the voxel inside our array
         voxels[flatten(pc, CHUNK_SIZE+2)] = voxel;

@@ -7,7 +7,7 @@ use crate::{
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{pipec, InternalPipeline, Pipeline, camera::Camera},
+    pipeline::{camera::Camera, pipec, InternalPipeline, Pipeline},
 };
 
 use super::error::RenderingError;
@@ -23,7 +23,6 @@ pub struct ShadowMapping {
     pub shadow_shader: ObjectID<Shader>,
     pub(crate) lightspace_matrix: veclib::Matrix4x4<f32>,
     pub shadow_resolution: u16,
-    pub enabled: bool,
 }
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
@@ -51,9 +50,10 @@ impl ShadowMapping {
             gl::GenFramebuffers(1, &mut fbo);
             fbo
         };
+
         // Create the depth texture
         let texture = Texture::default()
-            .with_dimensions(TextureType::Texture2D(shadow_resolution, shadow_resolution))
+            .with_dimensions(TextureType::Texture2D(shadow_resolution.max(1), shadow_resolution.max(1)))
             .with_filter(TextureFilter::Linear)
             .with_wrapping_mode(TextureWrapping::ClampToBorder)
             .with_border_colors([veclib::Vector4::<f32>::ONE; 4])
@@ -92,7 +92,6 @@ impl ShadowMapping {
             ortho_matrix,
             shadow_shader: shader,
             shadow_resolution,
-            enabled: shadow_resolution != 0,
             lightspace_matrix: veclib::Matrix4x4::IDENTITY,
         }
     }

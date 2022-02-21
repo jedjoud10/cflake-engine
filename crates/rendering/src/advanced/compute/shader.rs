@@ -113,7 +113,7 @@ impl PipelineObject for ComputeShader {
         // And also get it's uniform definition map
         let mappings = query_shader_uniforms_definition_map(program);
         pipeline.cached.uniform_definitions.insert(program, mappings);
-        
+
         Some(())
     }
     // Remove the compute shader from the pipeline
@@ -147,15 +147,13 @@ impl ComputeShader {
         let axii = settings.axii;
 
         // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(
-            || unsafe {
-                uniforms.bind_shader();
-                // Execute the uniforms
-                for x in settings.callbacks {
-                    x.execute(&uniforms);
-                }
-                gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-            },
-        )
+        GlTracker::new(|| unsafe {
+            uniforms.bind_shader();
+            // Execute the uniforms
+            for x in settings.callbacks {
+                x.execute(&uniforms);
+            }
+            gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
+        })
     }
 }

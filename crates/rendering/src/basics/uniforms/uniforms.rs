@@ -59,7 +59,34 @@ impl<'a> Uniforms<'a> {
         let camera = &self.pipeline.camera;
         self.set_vec2f32("_nf_planes", camera.clip_planes);
     }
-
+    // U32
+    pub fn set_u32(&self, name: &str, val: u32) {
+        let location = self.get_location(name);
+        if location == -1 {
+            return;
+        }
+        unsafe {
+            gl::Uniform1ui(location, val);
+        }
+    }
+    pub fn set_vec2u32(&self, name: &str, vec2: veclib::Vector2<u32>) {
+        let location = self.get_location(name);
+        if location == -1 {
+            return;
+        }
+        unsafe {
+            gl::Uniform2ui(location, vec2[0], vec2[1]);
+        }
+    }
+    pub fn set_vec3u32(&self, name: &str, vec3: veclib::Vector3<u32>) {
+        let location = self.get_location(name);
+        if location == -1 {
+            return;
+        }
+        unsafe {
+            gl::Uniform3ui(location, vec3[0], vec3[1], vec3[2]);
+        }
+    }
     // I32
     pub fn set_i32(&self, name: &str, val: i32) {
         let location = self.get_location(name);

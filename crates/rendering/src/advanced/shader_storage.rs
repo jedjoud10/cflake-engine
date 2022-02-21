@@ -3,11 +3,12 @@ use std::{ffi::c_void, ptr::null};
 
 use crate::{
     basics::{
+        buffer_operation::BufferOperation,
         shader::{
             info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
             query_shader_info,
         },
-        uniforms::ShaderIDType, buffer_operation::BufferOperation,
+        uniforms::ShaderIDType,
     },
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
@@ -123,7 +124,7 @@ impl ShaderStorage {
                 name: block_name.to_string(),
                 mul,
             }),
-            dynamic: false
+            dynamic: false,
         }
     }
     // Create a new shader storage with some default data
@@ -140,8 +141,8 @@ impl ShaderStorage {
             dynamic: false,
         }
     }
-    // Create a new dynamic shader storage 
-    pub fn new_dynamic(usage: UsageType,) -> Self {
+    // Create a new dynamic shader storage
+    pub fn new_dynamic(usage: UsageType) -> Self {
         Self {
             oid: 0,
             usage,
@@ -156,49 +157,55 @@ impl ShaderStorage {
         match op {
             BufferOperation::Write(mut write) => {
                 GlTracker::fake(|| unsafe {
-                        // Bind the buffer before writing
-                        gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
-                        write.bytes.shrink_to_fit();
-                        // If the given data contains more bytes than what we can handle, we must re-allocate the buffer and increase it's size
-                        if write.bytes.len() > self.byte_size {
-                            if self.dynamic {
-                                // Reallocate
-                                gl::BufferData(gl::SHADER_STORAGE_BUFFER, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void, self.usage.convert());
-                                self.byte_size = write.bytes.len();
-                            } else { panic!("Buffer is not dynamic, cannot reallocate!") }
+                    // Bind the buffer before writing
+                    gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
+                    write.bytes.shrink_to_fit();
+                    // If the given data contains more bytes than what we can handle, we must re-allocate the buffer and increase it's size
+                    if write.bytes.len() > self.byte_size {
+                        if self.dynamic {
+                            // Reallocate
+                            gl::BufferData(
+                                gl::SHADER_STORAGE_BUFFER,
+                                write.bytes.len() as isize,
+                                write.bytes.as_ptr() as *const c_void,
+                                self.usage.convert(),
+                            );
+                            self.byte_size = write.bytes.len();
+                            eprintln!("Writing to SSBO with {} bytes", write.bytes.len());
                         } else {
-                            // We have enough bytes allocated already
-                            gl::BufferSubData(gl::SHADER_STORAGE_BUFFER, 0, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void);
+                            panic!("Buffer is not dynamic, cannot reallocate!")
                         }
-                    },
-                )
-            },
+                    } else {
+                        // We have enough bytes allocated already
+                        gl::BufferSubData(gl::SHADER_STORAGE_BUFFER, 0, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void);
+                    }
+                })
+            }
             BufferOperation::Read(read) => {
                 GlTracker::new(|| unsafe {
-                        // Bind the buffer before reading
-                        gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
-                        // If we have a range, we can use it
-                        let range = read.range;
-                        let bytes = if let Some(range) = range {
-                            // Read using specific range
-                            let offset = range.start;
-                            let size = range.end - range.start;
-                            // Since we use a range, make a vector that can only hold that range
-                            let mut vec = vec![0; size as usize];
-                            gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, offset as isize, size as isize, vec.as_mut_ptr() as *mut c_void);
-                            vec
-                        } else {
-                            // Read the whole buffer
-                            let mut vec = vec![0; self.byte_size as usize];
-                            gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, self.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
-                            vec
-                        };
-                        // Now store the shader storage's bytes
-                        let mut output_bytes = read.bytes.lock();
-                        *output_bytes = bytes;
-                    },
-                )
-            },
-        }        
+                    // Bind the buffer before reading
+                    gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
+                    // If we have a range, we can use it
+                    let range = read.range;
+                    let bytes = if let Some(range) = range {
+                        // Read using specific range
+                        let offset = range.start;
+                        let size = range.end - range.start;
+                        // Since we use a range, make a vector that can only hold that range
+                        let mut vec = vec![0; size as usize];
+                        gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, offset as isize, size as isize, vec.as_mut_ptr() as *mut c_void);
+                        vec
+                    } else {
+                        // Read the whole buffer
+                        let mut vec = vec![0; self.byte_size as usize];
+                        gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, self.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
+                        vec
+                    };
+                    // Now store the shader storage's bytes
+                    let mut output_bytes = read.bytes.lock();
+                    *output_bytes = bytes;
+                })
+            }
+        }
     }
 }

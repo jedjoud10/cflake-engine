@@ -1,6 +1,14 @@
 use std::cmp::Ordering;
 
-use main::{globals::Global, math::octrees::DiffOctree, rendering::pipeline::Pipeline, terrain::{CHUNK_SIZE, editing::{EditingManager, Edit}, ChunkCoords}};
+use main::{
+    globals::Global,
+    math::octrees::DiffOctree,
+    rendering::pipeline::Pipeline,
+    terrain::{
+        editing::{Edit, EditingManager},
+        ChunkCoords, CHUNK_SIZE,
+    },
+};
 
 mod chunks_manager;
 mod settings;
@@ -57,6 +65,8 @@ impl Terrain {
     }
     // Update the priority list
     pub fn update_priorities(&mut self) {
-        self.chunks_manager.priority_list.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
+        self.chunks_manager
+            .priority_list
+            .sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
     }
 }

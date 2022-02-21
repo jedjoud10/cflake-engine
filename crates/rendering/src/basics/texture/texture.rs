@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    basics::{texture::calculate_size_bytes, buffer_operation::BufferOperation},
+    basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
     object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
     utils::*,
@@ -425,15 +425,13 @@ impl Texture {
                 // Actually read the pixels
                 let read_pbo = self.read_pbo;
                 let byte_count = calculate_size_bytes(&self._format, self.count_pixels());
-                GlTracker::new(
-                    || unsafe {
-                        // Bind the buffer before reading
-                        gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
-                        gl::BindTexture(self.target, self.oid);
-                        let (_internal_format, format, data_type) = self.ifd;
-                        gl::GetTexImage(self.target, 0, format, data_type, null_mut());
-                    }
-                )
+                GlTracker::new(|| unsafe {
+                    // Bind the buffer before reading
+                    gl::BindBuffer(gl::PIXEL_PACK_BUFFER, self.read_pbo.unwrap());
+                    gl::BindTexture(self.target, self.oid);
+                    let (_internal_format, format, data_type) = self.ifd;
+                    gl::GetTexImage(self.target, 0, format, data_type, null_mut());
+                })
                 .with_completed_callback(move |_pipeline| unsafe {
                     // Gotta read back the data
                     let mut vec = vec![0_u8; byte_count];
@@ -442,7 +440,7 @@ impl Texture {
                     let mut cpu_bytes = read.bytes.as_ref().lock();
                     *cpu_bytes = vec;
                 })
-            },
+            }
         }
     }
 }

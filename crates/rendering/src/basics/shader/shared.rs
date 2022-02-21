@@ -11,9 +11,7 @@ use ahash::AHashMap;
 use gl::types::GLuint;
 
 use crate::{
-    basics::{
-        uniforms::{ShaderIDType, UniformsDefinitionMap},
-    },
+    basics::uniforms::{ShaderIDType, UniformsDefinitionMap},
     object::GlTracker,
     pipeline::Pipeline,
 };
@@ -129,15 +127,13 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefi
 
 // Query some information about a shader, and then return the GlTracker
 pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: ShaderInfoRead) -> GlTracker {
-    GlTracker::fake(
-        move || {
-            let program = identifier.get_program(pipeline);
-            let output_queried_resources = query_shader_info(program, settings);
-            // Finally update the mutex that holds the queried resources
-            let mut lock = read.inner.lock();
-            *lock = output_queried_resources;
-        },
-    )
+    GlTracker::fake(move || {
+        let program = identifier.get_program(pipeline);
+        let output_queried_resources = query_shader_info(program, settings);
+        // Finally update the mutex that holds the queried resources
+        let mut lock = read.inner.lock();
+        *lock = output_queried_resources;
+    })
 }
 
 // Query some information about a shader, and then return

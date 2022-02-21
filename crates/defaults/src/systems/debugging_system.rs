@@ -2,6 +2,11 @@ use main::{
     core::{World, WorldState},
     ecs::event::EventKey,
     gui::egui,
+    math::{
+        csg::CSGOperation,
+        shapes::{BasicShapeType, Cube},
+    },
+    terrain::editing::Edit,
 };
 
 // The debugging system's update loop
@@ -33,16 +38,29 @@ fn run(world: &mut World, _data: EventKey) {
         ui.label(format!("Entities: '{}'", world.ecs.count_entities()));
         ui.label(format!("Systems: '{}'", world.ecs.count_systems()));
         // Terrain
-        let terrain = world.globals.get_global::<crate::globals::Terrain>();
-        if let Ok(terrain) = terrain {
+        let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
+        if let Ok(mut terrain) = terrain {
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE));
             ui.label(format!("Terrain Octree Depth: '{}'", terrain.chunks_manager.octree.inner.depth));
-            ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = terrain.chunks_manager.octree.inner.get_root_node().map_or(0, |x| x.half_extent * 2)));
+            ui.label(format!(
+                "Terrain Octree Size: '[{a}x{a}x{a}]'",
+                a = terrain.chunks_manager.octree.inner.get_root_node().half_extent * 2
+            ));
             ui.label(format!("Chunks: '{}'", terrain.chunks_manager.chunks.len()));
             ui.label(format!("Pending Generation: '{}'", terrain.chunks_manager.chunks_generating.len()));
             ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
+            ui.label(format!("Total Edits: '{}'", terrain.editing_manager.edits.len()));
+            if ui.button("Edit terrain").clicked() {
+                terrain.edit(Edit::new(
+                    BasicShapeType::Cube(Cube {
+                        center: veclib::Vector3::<f32>::ZERO,
+                        size: veclib::vec3(20.0, 20.0, 20.0),
+                    }),
+                    CSGOperation::Union,
+                ));
+            }
         }
         // Rendering
         ui.separator();

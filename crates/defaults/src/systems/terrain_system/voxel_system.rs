@@ -3,7 +3,10 @@ use main::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::compute::ComputeShaderExecutionSettings,
-        basics::{uniforms::SetUniformsCallback, buffer_operation::{ReadBytes, BufferOperation}},
+        basics::{
+            buffer_operation::{BufferOperation, ReadBytes, WriteBytes},
+            uniforms::SetUniformsCallback,
+        },
         object::TrackedTask,
         pipeline::{pipec, Pipeline},
     },
@@ -22,11 +25,15 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     let chunk_coords = chunk.coords;
     let arbitrary_voxels = generator.shader_storage_arbitrary_voxels;
     let output_voxels = generator.shader_storage_final_voxels;
+    let shader_storage_edits = generator.shader_storage_edits;
+    let num_edits = generator.packed_edits_num;
     let atomics = generator.atomics;
     let uniforms = SetUniformsCallback::new(move |uniforms| {
-        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 1);
+        uniforms.set_shader_storage("arbitrary_voxels", arbitrary_voxels, 0);
+        uniforms.set_shader_storage("terrain_edits", shader_storage_edits, 1);
         uniforms.set_vec3f32("node_pos", chunk_coords.position.into());
         uniforms.set_i32("node_size", chunk_coords.size as i32);
+        uniforms.set_u32("node_size", num_edits);
     });
     // Now we can execute the compute shader and the read bytes command
     let execution_settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS)).with_callback(uniforms);
@@ -110,7 +117,6 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
 }
-
 // The voxel systems' update loop
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
@@ -119,6 +125,16 @@ fn run(world: &mut World, mut data: EventKey) {
 
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
+        // Update the packed edits on the GPU
+        if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {
+            // Send a task to read the final voxel shader values
+            let write_bytes = WriteBytes::new(edits);
+            pipec::tracked_task(
+                &pipeline,
+                TrackedTask::ShaderStorageOp(terrain.voxel_generator.shader_storage_edits, BufferOperation::Write(write_bytes)),
+                terrain.voxel_generator.write_packed_edits,
+            );
+        }
         // For each chunk in the ter
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority

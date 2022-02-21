@@ -24,37 +24,37 @@ impl Default for Octree {
 impl Octree {
     // Create a new octree with a specific depth
     pub fn new(depth: u8, size: u64, hsettings: HeuristicSettings) -> Self {
+        // Create the root node
+        let mut nodes = UnversionnedOrderedVec::default();
+        nodes.push_shove({
+            // Get the maximum size of the root node
+            let root_size = (2_u64.pow(depth as u32) * size as u64) as i64;
+            let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+            // Output the root node
+            OctreeNode {
+                position: root_position,
+                half_extent: (root_size / 2) as u64,
+                depth: 0,
+                parent_index: 0,
+                index: 0,
+                children_indices: None,
+            }
+        });
         Self {
             target: None,
-            nodes: UnversionnedOrderedVec::default(),
+            nodes,
             size,
             depth,
             hsettings,
         }
     }
-    // Create a root node for this octree
-    pub(crate) fn create_root_node(&self) -> OctreeNode {
-        // Get the maximum size of the root node
-        let root_size = (2_u64.pow(self.depth as u32) * self.size as u64) as i64;
-        let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
-        // Output the root node
-        OctreeNode {
-            position: root_position,
-            half_extent: (root_size / 2) as u64,
-            depth: 0,
-            parent_index: 0,
-            index: 0,
-            children_indices: None,
-        }
-    }
+
     // Get the root node of this octree
-    pub fn get_root_node(&self) -> Option<&OctreeNode> {
-        self.nodes.get(0)
+    pub fn get_root_node(&self) -> &OctreeNode {
+        self.nodes.get(0).unwrap()
     }
     // Generate an octree from a root and a target point
     pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<()> {
-        // Clear
-        self.nodes.clear();
         // Simple check to see if we even moved lol
         if let Some(pos) = self.target.as_ref() {
             // Check distances
@@ -62,11 +62,10 @@ impl Octree {
                 return None;
             }
         }
-
-        let root_node = self.create_root_node();
+        // Clear all the nodes other than the root node
+        self.nodes.my_drain(|idx, _| idx > 0).for_each(drop);
         // The nodes that must be evaluated
-        let mut pending_nodes: Vec<OctreeNode> = vec![root_node.clone()];
-        self.nodes.push_shove(root_node);
+        let mut pending_nodes: Vec<OctreeNode> = vec![self.get_root_node().clone()];
         // Evaluate each node
         while !pending_nodes.is_empty() {
             // Get the current pending node
@@ -89,7 +88,7 @@ impl Octree {
     // Recursively iterate through each node, and check it's children if the given function returns true
     pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a OctreeNode) -> bool) {
         // The nodes that must be evaluated
-        let root_node = self.get_root_node().unwrap();
+        let root_node = self.get_root_node();
         let mut pending_nodes: Vec<&'a OctreeNode> = vec![root_node];
         // Evaluate each node
         while !pending_nodes.is_empty() {

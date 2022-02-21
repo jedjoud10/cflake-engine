@@ -17,8 +17,14 @@ struct TerrainEdit {
     uint editype;
     uint material;
 };
-
+/*
 // Unpack a packed terrain edit
 TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit packed) {
 
+}
+*/
+
+// Update a density function using some edits
+float edit_density(float original_density) {
+    return 0.0;
 }

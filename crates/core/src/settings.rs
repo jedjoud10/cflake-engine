@@ -6,7 +6,6 @@ fn default_fps_cap() -> i32 {
     -1
 }
 
-
 // Some game settings
 #[derive(Default, Serialize, Deserialize, Clone, Copy)]
 #[serde(crate = "self::serde")]

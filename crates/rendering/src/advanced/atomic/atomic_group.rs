@@ -86,27 +86,25 @@ impl AtomicGroup {
         match op {
             BufferOperation::Write(_write) => todo!(),
             BufferOperation::Read(read) => {
-                GlTracker::fake(
-                    move || unsafe {
-                        // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicGroupRead>'s inner value
-                        let oid = self.oid;
-                        let mut bytes: Vec<u8> = vec![0; self.defaults.len() * size_of::<u32>()];
-                        gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
-                        gl::GetBufferSubData(
-                            gl::ATOMIC_COUNTER_BUFFER,
-                            0,
-                            size_of::<u32>() as isize * self.defaults.len() as isize,
-                            bytes.as_mut_ptr() as *mut c_void,
-                        );
-                        gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-                        // Now store the atomic counter's values
-                        let mut cpu_counters_lock = read.bytes.lock();
-                        let cpu_counters = &mut *cpu_counters_lock;
-                        *cpu_counters = bytes;
-                    },
-                )
-            },
-        }        
+                GlTracker::fake(move || unsafe {
+                    // Read the value of the atomics from the buffer, and update the shared Transfer<AtomicGroupRead>'s inner value
+                    let oid = self.oid;
+                    let mut bytes: Vec<u8> = vec![0; self.defaults.len() * size_of::<u32>()];
+                    gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, oid);
+                    gl::GetBufferSubData(
+                        gl::ATOMIC_COUNTER_BUFFER,
+                        0,
+                        size_of::<u32>() as isize * self.defaults.len() as isize,
+                        bytes.as_mut_ptr() as *mut c_void,
+                    );
+                    gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+                    // Now store the atomic counter's values
+                    let mut cpu_counters_lock = read.bytes.lock();
+                    let cpu_counters = &mut *cpu_counters_lock;
+                    *cpu_counters = bytes;
+                })
+            }
+        }
     }
     // Clear the atomic group counters
     pub(crate) fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
