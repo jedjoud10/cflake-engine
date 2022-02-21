@@ -1,4 +1,3 @@
-use crate::component::ComponentID;
 use crate::entity::EntityID;
 use core::fmt;
 
@@ -30,22 +29,18 @@ impl std::error::Error for EntityError {
 // An error related to the components
 #[derive(Debug)]
 pub struct ComponentError {
-    details: String,
-    id: Option<ComponentID>,
+    pub(crate) details: String,
 }
 
 impl ComponentError {
-    pub fn new(msg: String, id: ComponentID) -> Self {
-        Self { details: msg, id: Some(id) }
-    }
-    pub const fn new_without_id(msg: String) -> Self {
-        Self { details: msg, id: None }
+    pub fn new(msg: String) -> Self {
+        Self { details: msg }
     }
 }
 
 impl fmt::Display for ComponentError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}. ComponentID: {:?}", self.details, self.id)
+        write!(f, "{}", self.details)
     }
 }
 
@@ -54,7 +49,7 @@ impl std::error::Error for ComponentError {
         &self.details
     }
 }
-// An error related to the linkage of the components
+// An error that might occur when trying to link component
 #[derive(Debug)]
 pub struct ComponentLinkingError {
     details: String,
@@ -77,3 +72,27 @@ impl std::error::Error for ComponentLinkingError {
         &self.details
     }
 }
+// An error that might occur when trying to unlink component
+#[derive(Debug)]
+pub struct ComponentUnlinkError {
+    details: String,
+}
+
+impl ComponentUnlinkError {
+    pub fn new(msg: String) -> Self {
+        Self { details: msg }
+    }
+}
+
+impl fmt::Display for ComponentUnlinkError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl std::error::Error for ComponentUnlinkError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+

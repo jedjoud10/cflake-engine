@@ -55,7 +55,7 @@ impl LinkedComponents {
 
 // Function that create the "Linked component could not be fetched!" error
 fn invalid_err() -> ComponentError {
-    ComponentError::new_without_id("Linked component could not be fetched!".to_string())
+    ComponentError::new("Linked component could not be fetched!".to_string())
 }
 impl LinkedComponents {
     // Get the component ID of a specific component that this entity has

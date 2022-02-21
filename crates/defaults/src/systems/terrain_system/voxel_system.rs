@@ -100,6 +100,7 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
     let id = *terrain.chunks_manager.current_chunk_state.as_begin_voxel_data_generation().unwrap();
+    println!("Generated voxel data for chunk {:?}", id);
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.chunks_manager.chunks_generating.remove(&chunk.coords);
@@ -107,13 +108,13 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
         terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, false);
         return;
     }
-
+    
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut terrain.voxel_generator.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
     read_voxel_data_bytes.fill_array::<PackedVoxel>(arr).unwrap();
     terrain.voxel_generator.stored_chunk_voxel_data.store(&terrain.voxel_generator.packed_chunk_voxel_data);
-
+    
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
 }

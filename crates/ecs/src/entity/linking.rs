@@ -25,18 +25,18 @@ impl ComponentLinkingGroup {
     pub fn is_component_linked(&self, id: ComponentID) -> bool {
         self.linked_components.contains_key(&id.cbitfield)
     }
-    // Link a component to this entity and also link it's default component dependencies if they are not linked yet
+    // Link a component to this entity
     pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();
-        // Check if we have the component linked on this entity
+        // Check if we have the component linked on this linking group
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
             // Add the local component to our hashmap
             let boxed = Box::new(default_state);
             e.insert(boxed);
         } else {
-            // The component was already linked
+            // The component was already linked to the group
             return Err(ComponentLinkingError::new(format!(
-                "Cannot link component '{:?}' to ComponentLinkingGroup because it is already linked!",
+                "Cannot link component '{:?}' to ComponentLinkingGroup because it is already linked to the group!",
                 TypeId::of::<T>(),
             )));
         }

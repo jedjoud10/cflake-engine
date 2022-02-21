@@ -56,7 +56,7 @@ where
     let component_any: &dyn Any = component.as_any();
     let reference = component_any
         .downcast_ref::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
+        .ok_or_else(|| ComponentError::new("Could not cast component".to_string()))?;
     Ok(reference)
 }
 // Cast a boxed component to a mutable reference of that component
@@ -67,6 +67,6 @@ where
     let component_any: &mut dyn Any = component.as_any_mut();
     let reference_mut = component_any
         .downcast_mut::<T>()
-        .ok_or_else(|| ComponentError::new_without_id("Could not cast component".to_string()))?;
+        .ok_or_else(|| ComponentError::new("Could not cast component".to_string()))?;
     Ok(reference_mut)
 }

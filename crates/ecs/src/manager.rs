@@ -9,7 +9,7 @@ use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     event::EventHandler,
     system::{System, SystemBuilder},
-    utils::{ComponentError, EntityError},
+    utils::{ComponentError, EntityError, ComponentLinkingError, ComponentUnlinkError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -102,9 +102,9 @@ impl<World> ECSManager<World> {
     /* #endregion */
     /* #region Components */
     // Link some components to an entity
-    pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentError> {
+    pub fn link_components(&mut self, id: EntityID, link_group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         for (cbitfield, boxed) in link_group.linked_components {
-            let (component_id, _ptr) = self.add_component(boxed, cbitfield)?;
+            let (component_id, _ptr) = self.add_component(boxed, cbitfield);
             let entity = self.get_entity_mut(&id).unwrap();
             entity.components.insert(cbitfield, component_id.idx);
         }
@@ -116,6 +116,12 @@ impl<World> ECSManager<World> {
         let old = entity.cbitfield;
         let new = entity.cbitfield.add(&link_group.cbitfield);
         entity.cbitfield = new;
+
+        // Check if we already have some components linked to the entity
+        if old.contains(&link_group.cbitfield) {
+            return Err(ComponentLinkingError::new("Cannot link components to entity because some have been already linked!".to_string()));
+        }
+
 
         let entity = self.get_entity(&id).unwrap();
         let linked = &entity.components;
@@ -131,13 +137,13 @@ impl<World> ECSManager<World> {
         Ok(())
     }
     // Unlink some components from an entity
-    pub fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentError> {
+    pub fn unlink_components(&mut self, id: EntityID, unlink_group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
         // Check if the entity even have these components
         let entity = self.get_entity(&id).unwrap();
         let valid = entity.cbitfield.contains(&unlink_group.removal_cbitfield);
         if !valid {
-            return Err(ComponentError::new_without_id(
-                "The ComponentSplitGroup contains components that do not exist on the original entity!".to_string(),
+            return Err(ComponentUnlinkError::new(
+                "The ComponentUnlinkGroup contains components that do not exist on the original entity!".to_string(),
             ));
         }
         // Remove the entity from some systems if needed
@@ -170,12 +176,14 @@ impl<World> ECSManager<World> {
             entity.components.remove(cbitfield).unwrap();
         }
         for (cbitfield, idx) in components_elems {
-            self.remove_component(ComponentID::new(cbitfield, idx))?;
+            self.remove_component(ComponentID::new(cbitfield, idx)).map_err(|c_error| {
+                ComponentUnlinkError::new(c_error.details)
+            })?;
         }
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> Result<(ComponentID, *mut EnclosedComponent), ComponentError> {
+    fn add_component(&mut self, boxed: EnclosedComponent, cbitfield: Bitfield<u32>) -> (ComponentID, *mut EnclosedComponent) {
         // UnsafeCell moment
         let mut components = self.components.write();
         let cell = UnsafeCell::new(boxed);
@@ -183,7 +191,7 @@ impl<World> ECSManager<World> {
         let idx = components.push_shove(cell);
         // Create a new Component ID
         let id = ComponentID::new(cbitfield, idx);
-        Ok((id, ptr))
+        (id, ptr)
     }
     // Remove a specified component from the list
     fn remove_component(&mut self, id: ComponentID) -> Result<(), ComponentError> {
@@ -191,7 +199,7 @@ impl<World> ECSManager<World> {
         let mut components = self.components.write();
         components
             .remove(id.idx)
-            .ok_or_else(|| ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string(), id))?;
+            .ok_or_else(|| ComponentError::new("Tried removing component, but it was not present in the ECS manager!".to_string()))?;
         Ok(())
     }
     // Count the number of valid components in the ECS manager
