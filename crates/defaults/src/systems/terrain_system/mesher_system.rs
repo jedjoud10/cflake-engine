@@ -72,6 +72,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 if world.ecs.get_entity(id).unwrap().is_component_linked::<crate::components::Renderer>() {
                     let mut unlink_group = ComponentUnlinkGroup::default();
                     unlink_group.unlink::<crate::components::Renderer>().unwrap();
+                    world.ecs.unlink_components(*id, unlink_group).unwrap();
                 }
 
                 // The chunk ID is the same, but we do not have a surface

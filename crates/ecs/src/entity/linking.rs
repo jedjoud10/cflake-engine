@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{registry, Component, EnclosedComponent},
+    component::{registry, Component, EnclosedComponent, ComponentID},
     utils::ComponentLinkingError,
 };
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
@@ -54,5 +54,9 @@ impl ComponentUnlinkGroup {
     pub fn unlink<T: Component + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
         self.removal_cbitfield = self.removal_cbitfield.add(&registry::get_component_bitfield::<T>());
         Ok(())
+    }
+    // Unlink a component using it's ID
+    pub fn unlink_with_id(&mut self, id: ComponentID) {
+        self.removal_cbitfield = self.removal_cbitfield.add(&id.cbitfield);
     }
 }

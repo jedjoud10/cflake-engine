@@ -1,7 +1,7 @@
 use main::core::World;
 use main::ecs::event::EventKey;
 use main::gui::egui;
-use main::math::shapes::{BasicShapeType, Cube, Sphere};
+use main::math::shapes::{BasicShapeType, Cube};
 use main::terrain::editing::Edit;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {

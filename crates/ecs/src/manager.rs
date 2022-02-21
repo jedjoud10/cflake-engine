@@ -1,11 +1,10 @@
 use std::{cell::UnsafeCell, sync::Arc};
-
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use parking_lot::Mutex;
 
 use crate::{
-    component::{ComponentID, ComponentsCollection, EnclosedComponent, LinkedComponents},
+    component::{ComponentID, ComponentsCollection, EnclosedComponent, LinkedComponents, ComponentGroupToRemove},
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     event::EventHandler,
     system::{System, SystemBuilder},
@@ -16,7 +15,7 @@ use crate::{
 pub struct ECSManager<World> {
     // A vector full of entitie
     pub(crate) entities: ShareableOrderedVec<Entity>,
-    pub(crate) entities_to_remove: Mutex<OrderedVec<(Entity, u64, usize)>>,
+    pub(crate) component_groups_to_remove: Mutex<OrderedVec<ComponentGroupToRemove>>,
     // Each system, stored in the order they were created
     pub(crate) systems: Vec<System>,
     // The components that are valid in the world
@@ -30,7 +29,7 @@ impl<World> Default for ECSManager<World> {
     fn default() -> Self {
         Self {
             entities: Default::default(),
-            entities_to_remove: Default::default(),
+            component_groups_to_remove: Default::default(),
             systems: Default::default(),
             components: Default::default(),
             mutated_components: Default::default(),
@@ -65,32 +64,21 @@ impl<World> ECSManager<World> {
     }
     // Remove an entity, but keep it's components alive until all systems have been notified
     pub fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
-        // Invalidate the entity
-        let entity = self.entities.remove(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
-        let cbitfield = entity.cbitfield;
-        // And finally remove the entity from it's systems
-        let mut lock = self.entities_to_remove.lock();
-        let removed_id = lock.get_next_id();
-        lock.push_shove((entity, removed_id, 0));
-        // Get the pointer to the new entity components
-
-        for system in self.systems.iter_mut() {
-            if system.check_cbitfield(cbitfield) {
-                // Remove the entity, since it was contained in the system
-                let (entity, _, counter) = lock.get_mut(removed_id).unwrap();
-                system.remove_entity(
-                    id,
-                    LinkedComponents::new_dead(removed_id, &entity.components, self.mutated_components.clone(), self.components.clone()),
-                );
-                *counter += 1;
-            }
+        let entity = self.entities.get(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
+        let mut group = ComponentUnlinkGroup::default();
+        for (cbitfield, id) in entity.components.iter() {
+            group.unlink_with_id(ComponentID::new(*cbitfield, *id));
         }
+        // Unlink all of the entity's components
+        self.unlink_components(id, group).unwrap();
+        // Invalidate the entity
+        let _entity = self.entities.remove(id.0).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), id))?;
         Ok(())
     }
-    // Remove the dangling components that have been linked to an entity that we already removed
-    fn remove_dangling_components(&mut self, entity: &Entity) -> Result<(), ComponentError> {
+    // Remove the dangling components that have been linked to a group
+    fn remove_dangling_components(&mut self, group: &ComponentGroupToRemove) -> Result<(), ComponentError> {
         // Also remove it's linked components
-        for (cbitfield, idx) in entity.components.iter() {
+        for (cbitfield, idx) in group.components.iter() {
             self.remove_component(ComponentID::new(*cbitfield, *idx))?;
         }
         Ok(())
@@ -173,13 +161,33 @@ impl<World> ECSManager<World> {
 
         // We shall remove
         entity.cbitfield = new;
+        let components = entity.components.clone();
         for (cbitfield, _) in &components_elems {
             entity.components.remove(cbitfield).unwrap();
         }
-        for (cbitfield, idx) in components_elems {
-            self.remove_component(ComponentID::new(cbitfield, idx))
-                .map_err(|c_error| ComponentUnlinkError::new(c_error.details))?;
+        drop(entity);
+
+        // And finally remove the component group from it's systems
+        let mut lock = self.component_groups_to_remove.lock();
+        let removed_id = lock.get_next_id();
+        lock.push_shove(ComponentGroupToRemove {
+            components: components.clone(),
+            cbitfield: unlink_group.removal_cbitfield,
+            counter: 0,
+        });
+        // Get the pointer to the new entity components
+        for system in self.systems.iter_mut() {
+            if system.check_cbitfield(unlink_group.removal_cbitfield) {
+                // Remove the entity, since it was contained in the system
+                let to_remove = lock.get_mut(removed_id).unwrap();
+                system.remove_entity(
+                    id,
+                    LinkedComponents::new_dead(removed_id, &components, self.mutated_components.clone(), self.components.clone()),
+                );
+                to_remove.counter += 1;
+            }
         }
+
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
@@ -237,14 +245,14 @@ impl<World> ECSManager<World> {
     /* #endregion */
     // Finish update of the ECS manager
     pub fn finish_update(&mut self) {
-        // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the entity
-        let removed_entities = {
-            let mut lock = self.entities_to_remove.lock();
-            lock.my_drain(|_, (_, _, count)| *count == 0).collect::<Vec<_>>()
+        // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
+        let removed_group = {
+            let mut lock = self.component_groups_to_remove.lock();
+            lock.my_drain(|_, group| group.counter == 0).collect::<Vec<_>>()
         };
         // Remove the dangling components
-        for (_, (entity, _, _)) in removed_entities {
-            self.remove_dangling_components(&entity).unwrap();
+        for (_, group) in removed_group {
+            self.remove_dangling_components(&group).unwrap();
         }
         // Also clear the bitfield indicating which components have been mutated
         self.mutated_components.clear();

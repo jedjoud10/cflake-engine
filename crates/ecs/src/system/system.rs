@@ -59,11 +59,12 @@ impl System {
         // Do a bit of decrementing
         let removed_components = {
             let removed = self.removed.borrow_mut();
-            let mut lock = ecs_manager.entities_to_remove.lock();
-            for (_, component) in removed.iter() {
-                // Decrement the counter
-                let (_entity, _removed_id, counter) = lock.get_mut(component.id.0).unwrap();
-                *counter -= 1;
+            let mut lock = ecs_manager.component_groups_to_remove.lock();
+            for (_, components) in lock.iter() {
+                if components.cbitfield.remove(&self.cbitfield).unwrap_or_default().empty() {
+                    // Decrement
+                    
+                }
             }
             self.evn_removed_entity.map(|_| self.removed.clone())
         };

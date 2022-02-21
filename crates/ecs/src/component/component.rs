@@ -1,3 +1,4 @@
+use ahash::AHashMap;
 use bitfield::Bitfield;
 use ordered_vec::simple::OrderedVec;
 use parking_lot::RwLock;
@@ -26,6 +27,13 @@ pub trait Component: Sync {
 // Main type because I don't want to type
 pub type ComponentsCollection = Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>;
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
+
+// Component groups that we must remove
+pub(crate) struct ComponentGroupToRemove {
+    pub components: AHashMap<Bitfield<u32>, u64>,
+    pub cbitfield: Bitfield<u32>,
+    pub counter: usize,
+} 
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>
