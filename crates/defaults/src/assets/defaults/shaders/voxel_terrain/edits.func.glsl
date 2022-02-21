@@ -34,6 +34,7 @@ TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
     color.r = clamp(float((packed_color >> 11) * 8), 0, 255);
     color.g = clamp(float(((packed_color >> 5) & 63) * 4), 0, 255);
     color.b = clamp(float(((packed_color) & 31) * 8), 0, 255);
+    color /= 255.0;
     // Decode shape_type, edit_type, and material
     uint shape_type_edit_type_material = edit.rgbcolor_shape_type_edit_type_material & 65535;
     uint shape_type_edit_type = shape_type_edit_type_material >> 8;

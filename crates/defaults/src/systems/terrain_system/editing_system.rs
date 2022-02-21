@@ -26,7 +26,7 @@ fn run(world: &mut World, _data: EventKey) {
                     let size = terrain.size;
                     let color = terrain.color;
                     terrain.edit(
-                        Edit::new(BasicShapeType::Cube(Cube { center: pos, size }), main::math::csg::CSGOperation::Union).with_color(veclib::Vector3::<u8>::from(color) * 255),
+                        Edit::new(BasicShapeType::Cube(Cube { center: pos, size }), main::math::csg::CSGOperation::Union).with_color(veclib::Vector3::<u8>::from(color * 255.0)),
                     )
                 }
             });
