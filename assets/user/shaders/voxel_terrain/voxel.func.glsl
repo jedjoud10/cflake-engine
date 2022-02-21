@@ -19,7 +19,7 @@ Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
     for (int i = 0; i < 8; i++) {
         density2 += (1-voronoi(pos * 0.0001 * vec3(1, 3.0, 1) * pow(1.6, i) + 4.0595 + snoise(pos * 0.001 * vec3(0.9, 2.0, 0.9)) * 0.04).x) * 900 * pow(0.43, i);
     }
-    return Voxel(density2 - 2500, 0, vec3(1.0));
+    return Voxel(pos.y, 0, vec3(1.0));
 }
 
 // Modify the voxel after we get it's normal

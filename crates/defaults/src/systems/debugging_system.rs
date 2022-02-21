@@ -52,25 +52,23 @@ fn run(world: &mut World, _data: EventKey) {
             ui.label(format!("Pending Generation: '{}'", terrain.chunks_manager.chunks_generating.len()));
             ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
             ui.label(format!("Total Edits: '{}'", terrain.editing_manager.edits.len()));
-            if ui.button("Edit terrain").clicked() {
-                /*
-                terrain.edit(Edit::new(
-                    BasicShapeType::Cube(Cube {
-                        center: veclib::Vector3::<f32>::ZERO,
-                        size: veclib::vec3(20.0, 20.0, 20.0),
-                    }),
-                    CSGOperation::Union,
-                ));
-                */
-                
+            if ui.button("Edit terrain Sphere").clicked() {                
                 terrain.edit(Edit::new(
                     BasicShapeType::Sphere(Sphere {
                         center: veclib::Vector3::<f32>::ZERO,
                         radius: 10.0,
                     }),
                     CSGOperation::Union,
+                ));                
+            }
+            if ui.button("Edit Terrain Cube").clicked() {
+                terrain.edit(Edit::new(
+                    BasicShapeType::Cube(Cube {
+                        center: veclib::Vector3::<f32>::Y * 100.0,
+                        size: veclib::vec3(50.0, 20.0, 20.0),
+                    }),
+                    CSGOperation::Union,
                 ));
-                
             }
         }
         // Rendering

@@ -1,3 +1,4 @@
+#include "defaults/shaders/others/sdf.func.glsl"
 // A packed terrain edit that influences the terrain
 struct PackedTerrainEdit {
     // XYZ position and RGB color
@@ -20,7 +21,6 @@ struct TerrainEdit {
 
 // Unpack a packed terrain edit
 TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
-    /*
     // Decode position and size
     vec3 pos = vec3(0);
     pos.xy = unpackHalf2x16(edit.x_y);
@@ -34,20 +34,19 @@ TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
     color.r = clamp(float((packed_color >> 11) * 8), 0, 255);
     color.g = clamp(float(((packed_color >> 5) & 63) * 4), 0, 255);
     color.g = clamp(float(((packed_color >> 5) & 31) * 8), 0, 255);
-    */
     // Decode shape_type, edit_type, and material
     uint shape_type_edit_type_material = edit.rgbcolor_shape_type_edit_type_material & 65535;
     uint shape_type_edit_type = shape_type_edit_type_material >> 8;
     uint shape_type = (shape_type_edit_type >> 4) & 15;
-    //uint material = shape_type_edit_type_material & 255;
-    //uint edit_type = shape_type_edit_type & 15;
-    return TerrainEdit(vec3(0), vec3(0), vec3(0), shape_type, 0, 0);
+    uint material = shape_type_edit_type_material & 255;
+    uint edit_type = shape_type_edit_type & 15;
+    return TerrainEdit(pos, size, color, shape_type, edit_type, material);
 }
 
 
 // Update a density function using a single edit
-void edit_density(inout float original_density, TerrainEdit edit) {
+void edit_density(const vec3 pos, inout float density, TerrainEdit edit) {
     if (edit.shape_type == 0) {
-        original_density = 0.0;
+        density = opUnion(density, sdBox(pos-edit.position, edit.size));
     }
 }

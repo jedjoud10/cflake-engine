@@ -41,13 +41,8 @@ impl EditingManager {
                 let material = edit.material.unwrap_or(255) as u32; // 1
                 let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
                 let edit = PackedEdit {
-                    
                     center: veclib::vec3(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
                     size: veclib::vec3(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
-                    
-                    //center: veclib::vec3(f16::ZERO, f16::ZERO, f16::ZERO),
-                    //size: veclib::vec3(f16::ZERO, f16::ZERO, f16::ZERO),
-                    //x_y: 0, z_sx: 0, sy_sz: 0,
                     rgbcolor_shape_type_edit_type_material
                 };
                 dbg!(&edit);
