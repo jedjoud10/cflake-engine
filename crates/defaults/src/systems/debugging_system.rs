@@ -2,11 +2,6 @@ use main::{
     core::{World, WorldState},
     ecs::event::EventKey,
     gui::egui,
-    math::{
-        csg::CSGOperation,
-        shapes::{BasicShapeType, Cube, Sphere},
-    },
-    terrain::editing::Edit,
 };
 
 // The debugging system's update loop
@@ -23,7 +18,6 @@ fn run(world: &mut World, _data: EventKey) {
         if ui.button("Quit game").clicked() {
             *state = WorldState::Exit;
         }
-        let pos = data.camera_pos + data.camera_forward * 400.0;
         ui.label(format!("Camera Pos: '{}'", (data.camera_pos * 10.0).round() / 10.0));
         ui.label(format!("Camera Dir: '{}'", (data.camera_forward * 10.0).round() / 10.0));
         // Timings
@@ -40,7 +34,7 @@ fn run(world: &mut World, _data: EventKey) {
         ui.label(format!("Systems: '{}'", world.ecs.count_systems()));
         // Terrain
         let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
-        if let Ok(mut terrain) = terrain {
+        if let Ok(terrain) = terrain {
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = main::terrain::CHUNK_SIZE));

@@ -43,7 +43,7 @@ impl EditingManager {
                 let edit = PackedEdit {
                     center: veclib::vec3(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
                     size: veclib::vec3(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
-                    rgbcolor_shape_type_edit_type_material
+                    rgbcolor_shape_type_edit_type_material,
                 };
                 dbg!(&edit);
                 edit

@@ -1,4 +1,8 @@
-use main::{ecs::component::Component, terrain::ChunkCoords, rendering::{object::ObjectID, basics::model::Model}};
+use main::{
+    ecs::component::Component,
+    rendering::{basics::model::Model, object::ObjectID},
+    terrain::ChunkCoords,
+};
 
 // A component that will be added to chunk entities
 #[derive(Component)]

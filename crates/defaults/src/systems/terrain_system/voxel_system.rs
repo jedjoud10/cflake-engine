@@ -107,13 +107,13 @@ fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline
         terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, false);
         return;
     }
-    
+
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut terrain.voxel_generator.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
     read_voxel_data_bytes.fill_array::<PackedVoxel>(arr).unwrap();
     terrain.voxel_generator.stored_chunk_voxel_data.store(&terrain.voxel_generator.packed_chunk_voxel_data);
-    
+
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
 }

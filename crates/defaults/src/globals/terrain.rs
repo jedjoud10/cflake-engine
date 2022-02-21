@@ -26,6 +26,10 @@ pub struct Terrain {
     pub(crate) voxel_generator: VoxelGenerator,
     // Terrain edits manager
     pub(crate) editing_manager: EditingManager,
+
+    // Temp
+    pub(crate) color: veclib::Vector3<f32>,
+    pub(crate) size: veclib::Vector3<f32>,
 }
 
 impl Terrain {
@@ -39,6 +43,8 @@ impl Terrain {
             },
             voxel_generator: VoxelGenerator::new(&settings.voxel_src_path, settings.uniforms, pipeline),
             editing_manager: EditingManager::default(),
+            color: veclib::Vector3::ZERO,
+            size: veclib::Vector3::ZERO,
         }
     }
     // Add a terrain edit

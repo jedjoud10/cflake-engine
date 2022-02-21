@@ -3,9 +3,9 @@ use main::rendering::basics::material::Material;
 use main::rendering::basics::model::Model;
 use main::rendering::basics::renderer::RendererFlags;
 use main::rendering::basics::uniforms::SetUniformsCallback;
-use main::rendering::pipeline::{Pipeline, pipec};
+use main::rendering::pipeline::{pipec, Pipeline};
 use main::rendering::{self, object::ObjectID};
-type GPURenderer = rendering::basics::renderer::Renderer; 
+type GPURenderer = rendering::basics::renderer::Renderer;
 // An Renderer component
 #[derive(Component)]
 pub struct Renderer {

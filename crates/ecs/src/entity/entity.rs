@@ -1,4 +1,4 @@
-use crate::{ECSManager, component::Component};
+use crate::{component::Component, ECSManager};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world

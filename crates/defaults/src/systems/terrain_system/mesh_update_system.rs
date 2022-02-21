@@ -9,12 +9,12 @@ fn run(world: &mut World, mut data: EventKey) {
         let model_id = chunk.updated_model_id.take();
         if let Some(model_id) = model_id {
             let mut renderer = components.get_component_mut::<crate::components::Renderer>().unwrap();
-            // Update the renderer 
+            // Update the renderer
             renderer.update_model(&world.pipeline.read(), model_id);
         }
     }
 }
-// Create a mesh update system that will detect whenever we need to update the mesh ID of a specific chunk and update it accordingly 
+// Create a mesh update system that will detect whenever we need to update the mesh ID of a specific chunk and update it accordingly
 pub fn system(world: &mut World) {
     world
         .ecs

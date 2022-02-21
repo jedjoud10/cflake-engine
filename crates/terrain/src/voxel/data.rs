@@ -1,4 +1,7 @@
-use std::{rc::Rc, cell::{RefCell, Ref}};
+use std::{
+    cell::{Ref, RefCell},
+    rc::Rc,
+};
 
 use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 
@@ -32,7 +35,7 @@ impl Default for StoredVoxelData {
                 normals,
                 colors,
                 voxel_materials,
-            }))
+            })),
         }
     }
 }

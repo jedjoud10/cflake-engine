@@ -9,7 +9,7 @@ use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
     event::EventHandler,
     system::{System, SystemBuilder},
-    utils::{ComponentError, EntityError, ComponentLinkingError, ComponentUnlinkError},
+    utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -119,9 +119,10 @@ impl<World> ECSManager<World> {
 
         // Check if we already have some components linked to the entity
         if old.contains(&link_group.cbitfield) {
-            return Err(ComponentLinkingError::new("Cannot link components to entity because some have been already linked!".to_string()));
+            return Err(ComponentLinkingError::new(
+                "Cannot link components to entity because some have been already linked!".to_string(),
+            ));
         }
-
 
         let entity = self.get_entity(&id).unwrap();
         let linked = &entity.components;
@@ -176,9 +177,8 @@ impl<World> ECSManager<World> {
             entity.components.remove(cbitfield).unwrap();
         }
         for (cbitfield, idx) in components_elems {
-            self.remove_component(ComponentID::new(cbitfield, idx)).map_err(|c_error| {
-                ComponentUnlinkError::new(c_error.details)
-            })?;
+            self.remove_component(ComponentID::new(cbitfield, idx))
+                .map_err(|c_error| ComponentUnlinkError::new(c_error.details))?;
         }
         Ok(())
     }
