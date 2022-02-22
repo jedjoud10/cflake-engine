@@ -30,6 +30,7 @@ pub struct Terrain {
     // Temp
     pub(crate) color: veclib::Vector3<f32>,
     pub(crate) size: veclib::Vector3<f32>,
+    pub(crate) union: bool,
 }
 
 impl Terrain {
@@ -45,6 +46,7 @@ impl Terrain {
             editing_manager: EditingManager::default(),
             color: veclib::Vector3::ZERO,
             size: veclib::Vector3::ZERO,
+            union: true,
         }
     }
     // Add a terrain edit

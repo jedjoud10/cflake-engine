@@ -22,16 +22,22 @@ fn run(world: &mut World, _data: EventKey) {
                 ui.add(egui::DragValue::new(&mut terrain.size.x).speed(0.1));
                 ui.add(egui::DragValue::new(&mut terrain.size.y).speed(0.1));
                 ui.add(egui::DragValue::new(&mut terrain.size.z).speed(0.1));
+                ui.checkbox(&mut terrain.union, "Union: ");
                 let size = terrain.size;
                 let color = terrain.color;
+                let op = if terrain.union {
+                    main::math::csg::CSGOperation::Union
+                } else {
+                    main::math::csg::CSGOperation::Subtraction
+                };
                 if ui.button("Edit Cube").clicked() {
                     terrain.edit(
-                        Edit::new(BasicShapeType::Cube(Cube { center: pos, size }), main::math::csg::CSGOperation::Union).with_color(veclib::Vector3::<u8>::from(color * 255.0)),
+                        Edit::new(BasicShapeType::Cube(Cube { center: pos, size }), op).with_color(veclib::Vector3::<u8>::from(color * 255.0)),
                     )
                 }
                 if ui.button("Edit Sphere").clicked() {
                     terrain.edit(
-                        Edit::new(BasicShapeType::Sphere(Sphere { center: pos, radius: size.x }), main::math::csg::CSGOperation::Union).with_color(veclib::Vector3::<u8>::from(color * 255.0)),
+                        Edit::new(BasicShapeType::Sphere(Sphere { center: pos, radius: size.x }), op).with_color(veclib::Vector3::<u8>::from(color * 255.0)),
                     )
                 }
             });
