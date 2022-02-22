@@ -122,7 +122,6 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline = world.pipeline.read();
-
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // Update the packed edits on the GPU
@@ -142,7 +141,6 @@ fn run(world: &mut World, mut data: EventKey) {
                 let mut lock_ = query.write();
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
-                dbg!(components.get_entity_id());
                 let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
@@ -174,12 +172,6 @@ pub fn system(world: &mut World) {
         .ecs
         .create_system_builder()
         .with_run_event(run)
-        .with_removed_entities_event(|x, y| {
-            let query = y.as_query().unwrap();
-            if query.get_entity_count() > 0 {
-                dbg!(query.get_entity_count());
-            }
-        })
         .link::<crate::components::Transform>()
         .link::<crate::components::Chunk>()
         .build();

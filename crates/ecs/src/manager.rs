@@ -1,4 +1,5 @@
 use std::{cell::UnsafeCell, sync::Arc};
+use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
 use parking_lot::Mutex;
@@ -157,7 +158,7 @@ impl<World> ECSManager<World> {
 
         // We shall remove
         entity.cbitfield = new;
-        let components = entity.components.clone();
+        let components = components_elems.iter().cloned().collect::<AHashMap<Bitfield<u32>, u64>>();
         for (cbitfield, _) in &components_elems {
             entity.components.remove(cbitfield).unwrap();
         }
