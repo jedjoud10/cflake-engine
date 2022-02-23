@@ -80,10 +80,7 @@ impl PipelineObject for ComputeShader {
                 panic!();
             }
 
-            log::info!(
-                "Subshader {} compiled succsessfully!",
-                self.source.path
-            );
+            log::info!("Subshader {} compiled succsessfully!", self.source.path);
             program
         };
         let program = unsafe {

@@ -232,7 +232,6 @@ impl MarchingCubesSkirts {
             } else {
                 // Interpolated
                 let transformed_index = ((*vertex_index as usize) - 1) / 2;
-                //dbg!(&data.vertices);
                 let inner = if let &SkirtVert::Interpolated(x) = &data.vertices[transformed_index] {
                     x
                 } else {

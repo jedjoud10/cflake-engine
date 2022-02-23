@@ -117,10 +117,7 @@ impl PipelineObject for Shader {
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {
             let shader_type: u32;
-            log::info!(
-                "Compiling & Creating Shader Source {}...",
-                source_data.path
-            );
+            log::info!("Compiling & Creating Shader Source {}...", source_data.path);
             match source_data._type {
                 ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
                 ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
@@ -165,10 +162,7 @@ impl PipelineObject for Shader {
                     panic!();
                 }
 
-                log::info!(
-                    "Shader Source {} compiled succsessfully!",
-                    source_data.path
-                );
+                log::info!("Shader Source {} compiled succsessfully!", source_data.path);
                 program
             }
         }
@@ -181,10 +175,7 @@ impl PipelineObject for Shader {
             .join("_");
 
         // Actually compile the shader now
-        log::info!(
-            "Compiling & Creating Shader {}...",
-            shader_name
-        );
+        log::info!("Compiling & Creating Shader {}...", shader_name);
         let program = unsafe {
             let program = gl::CreateProgram();
 
@@ -228,10 +219,7 @@ impl PipelineObject for Shader {
             for shader in programs.iter() {
                 gl::DetachShader(program, *shader);
             }
-            log::info!(
-                "Shader {} compiled and created succsessfully!",
-                shader_name
-            );
+            log::info!("Shader {} compiled and created succsessfully!", shader_name);
             program
         };
         // Add the shader at the end

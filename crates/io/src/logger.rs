@@ -1,8 +1,6 @@
 use log::Level;
 use parking_lot::Mutex;
-use std::{
-    sync::Arc,
-};
+use std::sync::Arc;
 
 // Logger that implements the log trait
 pub struct Logger {
@@ -23,11 +21,16 @@ impl log::Log for Logger {
             let level = record.level();
             let args = record.args();
             let mut mutex = self.messages.lock();
-            let string = format!("[{src};{line}][{level}]: {msg}", src = src_file, line = line, level = level, msg = args);
+            let string = format!(
+                "[{src};{line}][{level}]: {msg}",
+                src = src_file,
+                line = line,
+                level = level,
+                msg = args
+            );
             mutex.push(string);
         }
     }
 
-    fn flush(&self) {
-    }
+    fn flush(&self) {}
 }

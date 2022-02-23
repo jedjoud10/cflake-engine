@@ -92,7 +92,7 @@ pub mod test {
         for _x in 0..10 {
             let i = std::time::Instant::now();
             ecs.run_systems(&mut world);
-            log::info!("Took {}µs to update", i.elapsed().as_micros())
+            println!("Took {}µs to update", i.elapsed().as_micros())
         }
     }
     #[test]

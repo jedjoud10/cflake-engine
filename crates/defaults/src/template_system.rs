@@ -14,8 +14,6 @@ fn run(world: &mut World, mut data: EventKey) {
         .unwrap();
     for (_, components) in query.write().iter() {
         let name = components.get_component::<Name>().unwrap();
-        dbg!(&name.name);
-        dbg!(time);
     }
 }
 

@@ -61,7 +61,6 @@ impl EditingManager {
                     ),
                     rgbcolor_shape_type_edit_type_material,
                 };
-                dbg!(&edit);
                 edit
             })
             .collect::<Vec<_>>()

@@ -8,7 +8,6 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     // Get the path
     let file_path = {
         let mut file_path = env::current_dir().unwrap();
-        dbg!(&file_path);
         file_path.push(Path::new("assets"));
         file_path.push(Path::new(path));
         file_path
