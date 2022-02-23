@@ -346,8 +346,7 @@ impl SceneRenderer {
             .light_sources
             .get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
-            shadow_mapping
-                .update_view_matrix(*light._type.as_directional().unwrap(), &pipeline.camera);
+            shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
         }
 
         // Draw the renderers

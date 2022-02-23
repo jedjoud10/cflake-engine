@@ -7,7 +7,7 @@ use crate::{
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{camera::Camera, pipec, InternalPipeline, Pipeline},
+    pipeline::{pipec, InternalPipeline, Pipeline},
 };
 
 use super::error::RenderingError;
@@ -115,11 +115,7 @@ impl ShadowMapping {
         }
     }
     // Update the internally stored view matrix with the new direction of our sun
-    pub(crate) fn update_view_matrix(
-        &mut self,
-        new_quat: veclib::Quaternion<f32>,
-        _camera: &Camera,
-    ) {
+    pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>) {
         let forward = new_quat.mul_point(veclib::Vector3::Z);
         let up = new_quat.mul_point(veclib::Vector3::Y);
         let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);

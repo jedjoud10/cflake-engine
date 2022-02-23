@@ -119,5 +119,7 @@ impl World {
             // Join the render thread now
             handler.handle.join().unwrap();
         }
+        // Quit the saver loader
+        self.io.quit();
     }
 }

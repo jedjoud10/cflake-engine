@@ -40,14 +40,14 @@ fn init(world: &mut World) {
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
+        quat: veclib::Quaternion::IDENTITY,
     })
     .with_strength(1.0);
     let mut world_global = world
         .globals
         .get_global_mut::<globals::GlobalWorldData>()
         .unwrap();
-    world_global.sun_quat = veclib::Quaternion::<f32>::from_axis_angle(veclib::Vector3::X, 30.0);
+    world_global.sun_quat = veclib::Quaternion::<f32>::from_x_angle(-20f32.to_radians());
     pipec::construct(&pipeline, light).unwrap();
     // Load a terrain material
     // Load the shader first
@@ -107,7 +107,7 @@ fn init(world: &mut World) {
     let tex = pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = TerrainSettings::default()
-        .with_depth(7)
+        .with_depth(9)
         .with_material(material)
         .with_heuristic(heuristic)
         .with_uniforms(SetUniformsCallback::new(move |x| {

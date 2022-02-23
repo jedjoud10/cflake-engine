@@ -52,9 +52,12 @@ fn init_glutin_window<U>(
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = main::io::SaverLoader::new(author_name, app_name);
-    io.create_default("config/game_config.json", &core::GameSettings::default());
-    let config: core::GameSettings = io.load("config/game_config.json");
-    io.save("config/game_config.json", &config);
+    let config: core::GameSettings = io.load("config/game_config.json").unwrap_or_else(|_| {
+        // If we failed reading the config file, try creating it and saving it
+        io.create_file("config/game_config.json");
+        io.save("config/game_config.json", &core::GameSettings::default());
+        core::GameSettings::default()
+    });
 
     // Glutin stuff
     let event_loop = EventLoop::new();
