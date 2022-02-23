@@ -10,7 +10,7 @@ rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-log = { version = "0.4.14", features = ["std"] }
+log = "0.4.14"
 gl = "0.14.0"
 egui = "0.16.1"
 egui-winit = "0.16.0"

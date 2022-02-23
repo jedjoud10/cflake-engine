@@ -21,5 +21,5 @@ glutin = "0.28.0"
 ahash = "0.7.6"
 gl = "0.14.0"
 parking_lot = "0.12.0"
-log = { version = "0.4.14", features = ["std"] }
+log = "0.4.14"
 image = "0.23.14"
