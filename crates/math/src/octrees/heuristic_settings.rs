@@ -23,7 +23,10 @@ impl Default for HeuristicSettings {
 
 impl HeuristicSettings {
     // Create some new heuristic settings based on the subdivide function
-    pub fn with_function(mut self, function: fn(&OctreeNode, &veclib::Vector3<f32>) -> bool) -> Self {
+    pub fn with_function(
+        mut self,
+        function: fn(&OctreeNode, &veclib::Vector3<f32>) -> bool,
+    ) -> Self {
         self.function = function;
         self
     }

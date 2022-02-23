@@ -1,5 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::cmp::Ordering;
 
+use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
 use main::{
     ecs::entity::EntityID,
@@ -25,8 +26,8 @@ impl Default for ChunkGenerationState {
 pub struct ChunksManager {
     // Chunk generation
     pub octree: DiffOctree,
-    pub chunks: HashMap<ChunkCoords, EntityID>,
-    pub chunks_generating: HashSet<ChunkCoords>,
+    pub chunks: AHashMap<ChunkCoords, EntityID>,
+    pub chunks_generating: AHashSet<ChunkCoords>,
     pub priority_list: Vec<(EntityID, f32)>,
     pub chunks_to_remove: Vec<EntityID>,
     pub material: ObjectID<Material>,
@@ -34,4 +35,12 @@ pub struct ChunksManager {
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation
     pub current_chunk_state: ChunkGenerationState,
+}
+
+impl ChunksManager {
+    // Update the priority list
+    pub fn update_priorities(&mut self) {
+        self.priority_list
+            .sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
+    }
 }

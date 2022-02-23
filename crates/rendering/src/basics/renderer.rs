@@ -1,6 +1,8 @@
-use super::{material::Material, model::Model, uniforms::SetUniformsCallback};
+use super::{material::Material, mesh::Mesh, uniforms::SetUniformsCallback};
 use crate::{
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
+    object::{
+        Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
+    },
     pipeline::Pipeline,
 };
 use bitflags::bitflags;
@@ -16,7 +18,7 @@ bitflags! {
 // A component that will be linked to entities that are renderable
 pub struct Renderer {
     // Rendering
-    pub model: ObjectID<Model>,
+    pub mesh: ObjectID<Mesh>,
     pub material: ObjectID<Material>,
     pub matrix: veclib::Matrix4x4<f32>,
     pub flags: RendererFlags,
@@ -27,7 +29,7 @@ impl Renderer {
     // Create a new renderer with default settings
     pub fn new(flags: RendererFlags) -> Self {
         Self {
-            model: Default::default(),
+            mesh: Default::default(),
             material: Default::default(),
             matrix: Default::default(),
             uniforms: Default::default(),
@@ -59,9 +61,9 @@ impl PipelineObject for Renderer {
     // Delete the renderer from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let me = pipeline.renderers.remove(id)?;
-        // Also remove the model if we want to
+        // Also remove the mesh if we want to
         if me.flags.contains(RendererFlags::SHOULD_DELETE_MODEL) {
-            let _removed_model = Model::delete(pipeline, me.model)?;
+            let _removed_model = Mesh::delete(pipeline, me.mesh)?;
         }
         Some(me)
     }
@@ -69,9 +71,9 @@ impl PipelineObject for Renderer {
 
 // Everything related to the creation of a renderer
 impl Renderer {
-    // Set a model
-    pub fn with_model(mut self, model: ObjectID<Model>) -> Self {
-        self.model = model;
+    // Set a mesh
+    pub fn with_model(mut self, mesh: ObjectID<Mesh>) -> Self {
+        self.mesh = mesh;
         self
     }
     // With a specific material
@@ -79,7 +81,7 @@ impl Renderer {
         self.material = material;
         self
     }
-    // Set the model matrix for this renderer
+    // Set the mesh matrix for this renderer
     pub fn with_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
         self.matrix = matrix;
         self

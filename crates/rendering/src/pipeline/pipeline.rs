@@ -3,13 +3,13 @@ use crate::{
     basics::{
         lights::LightSource,
         material::Material,
-        model::Model,
+        mesh::Mesh,
         renderer::Renderer,
         shader::{query_shader_info_tracked, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
-    pipeline::{camera::Camera, pipec, sender, PipelineHandler, PipelineRenderer},
+    pipeline::{camera::Camera, pipec, sender, PipelineHandler, SceneRenderer},
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
@@ -20,10 +20,14 @@ use std::sync::{
     Arc, Barrier,
 };
 
-use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, FrameDebugInfo, PipelineContext};
+use super::{
+    cached::Cached, collection::Collection, defaults::DefaultPipelineObjects,
+    settings::PipelineSettings, FrameDebugInfo, PipelineContext,
+};
 
 // A single pipeline callback
-pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>;
+pub(crate) type SinglePipelineCallback =
+    Box<dyn Fn(&mut Pipeline, &mut SceneRenderer) + Sync + Send + 'static>;
 pub(crate) type PipelineEoFCallbacks = Arc<Mutex<Vec<SinglePipelineCallback>>>;
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
@@ -45,7 +49,7 @@ pub struct Pipeline {
 
     // We store the Pipeline Objects, for each Pipeline Object type
     pub materials: Collection<Material>,
-    pub models: Collection<Model>,
+    pub meshes: Collection<Mesh>,
     pub renderers: Collection<Renderer>,
     pub shaders: Collection<Shader>,
     pub compute_shaders: Collection<ComputeShader>,
@@ -87,7 +91,12 @@ impl Pipeline {
         write.push(task);
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, task: TrackedTask, tracking_id: ReservedTrackedID) {
+    fn execute_tracked_task(
+        &mut self,
+        internal: &mut InternalPipeline,
+        task: TrackedTask,
+        tracking_id: ReservedTrackedID,
+    ) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             TrackedTask::RunComputeShader(id, settings) => {
@@ -106,24 +115,33 @@ impl Pipeline {
                 let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.buffer_operation(op)
             }
-            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info_tracked(self, _type, settings, read),
+            TrackedTask::QueryShaderInfo(_type, settings, read) => {
+                query_shader_info_tracked(self, _type, settings, read)
+            }
         };
 
         // Add the tracked ID to our pipeline
         internal.gltrackers.insert(tracking_id, gltracker);
     }
     // Execute a single task
-    fn execute_task(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer, task: PipelineTask) {
+    fn execute_task(
+        &mut self,
+        internal: &mut InternalPipeline,
+        renderer: &mut SceneRenderer,
+        task: PipelineTask,
+    ) {
         // Now we must execute these tasks
         match task {
             PipelineTask::Construction(construction) => construction.execute(self),
             PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
             PipelineTask::Update(update) => update(self, renderer),
-            PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
+            PipelineTask::Tracked(task, tracking_id, _) => {
+                self.execute_tracked_task(internal, task, tracking_id)
+            }
         }
     }
     // Called each frame during the "free-zone"
-    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
+    pub(crate) fn update(&mut self, internal: &mut InternalPipeline, renderer: &mut SceneRenderer) {
         // Always flush during the update
         self.flush(internal, renderer);
 
@@ -145,7 +163,7 @@ impl Pipeline {
     }
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
-    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut PipelineRenderer) {
+    pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut SceneRenderer) {
         // Ae clear moment
         self.materials.clear_diffs();
         self.renderers.clear_diffs();
@@ -160,7 +178,13 @@ impl Pipeline {
                 match task {
                     PipelineTask::Tracked(_, _, require) => {
                         // If the requirement is null, that means that the required task executed and that we can start executing the current task
-                        let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
+                        let valid = require.and_then(|x| {
+                            if self.completed_tasks.get(x.0 as usize) {
+                                None
+                            } else {
+                                Some(())
+                            }
+                        });
                         if valid.is_none() {
                             output_tasks.push(task);
                         } else {
@@ -179,7 +203,7 @@ impl Pipeline {
         }
     }
     // Run the End Of Frame callbacks
-    pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut PipelineRenderer) {
+    pub(crate) fn execute_end_of_frame_callbacks(&mut self, renderer: &mut SceneRenderer) {
         let lock_ = self.callbacks.clone();
         let lock = lock_.lock();
         // Execute the callbacks
@@ -190,7 +214,11 @@ impl Pipeline {
     }
     // Update methods
     // Update the window dimensions
-    pub fn update_window_dimensions(&mut self, renderer: &mut PipelineRenderer, new_dimensions: veclib::Vector2<u16>) {
+    pub fn update_window_dimensions(
+        &mut self,
+        renderer: &mut SceneRenderer,
+        new_dimensions: veclib::Vector2<u16>,
+    ) {
         self.window.dimensions = new_dimensions;
         renderer.update_window_dimensions(new_dimensions, self);
     }
@@ -209,7 +237,9 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         pipeline,
         load_with(
             "defaults/textures/missing_texture.png",
-            Texture::default().with_filter(TextureFilter::Nearest).with_mipmaps(true),
+            Texture::default()
+                .with_filter(TextureFilter::Nearest)
+                .with_mipmaps(true),
         )
         .unwrap(),
     )
@@ -257,8 +287,8 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     // Create the default material
     let material = pipec::construct(pipeline, Material::default().with_diffuse(missing)).unwrap();
 
-    // Create the default model
-    let model = pipec::construct(pipeline, Model::default()).unwrap();
+    // Create the default mesh
+    let mesh = pipec::construct(pipeline, Mesh::default()).unwrap();
 
     DefaultPipelineObjects {
         missing_tex: missing,
@@ -267,20 +297,28 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         normals_tex: normals,
         shader,
         material,
-        model,
+        mesh,
         sun: ObjectID::default(),
     }
 }
 // Initialize OpenGL
 unsafe fn init_opengl() {
-    gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
+    gl::Viewport(
+        0,
+        0,
+        DEFAULT_WINDOW_SIZE.x as i32,
+        DEFAULT_WINDOW_SIZE.y as i32,
+    );
     gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     gl::Enable(gl::DEPTH_TEST);
     gl::Enable(gl::CULL_FACE);
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::WindowedContext<NotCurrent>) -> PipelineContext {
+pub fn init_pipeline(
+    pipeline_settings: PipelineSettings,
+    window: glutin::WindowedContext<NotCurrent>,
+) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
@@ -351,7 +389,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
             // Setup the pipeline renderer
             let mut renderer = {
                 let mut pipeline = pipeline.write();
-                let mut renderer = PipelineRenderer::default();
+                let mut renderer = SceneRenderer::default();
                 pipeline.flush(&mut internal, &mut renderer);
                 renderer.initialize(pipeline_settings, &mut internal, &mut *pipeline);
                 renderer
@@ -422,7 +460,10 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
-    println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
+    println!(
+        "Successfully initialized the RenderPipeline! Took {}ms to init RenderThread",
+        i.elapsed().as_millis()
+    );
     // Create the pipeline context
     PipelineContext {
         pipeline,

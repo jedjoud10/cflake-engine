@@ -29,7 +29,8 @@ impl Octree {
         nodes.push_shove({
             // Get the maximum size of the root node
             let root_size = (2_u64.pow(depth as u32) * size as u64) as i64;
-            let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
+            let root_position =
+                veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
             // Output the root node
             OctreeNode {
                 position: root_position,
@@ -58,7 +59,9 @@ impl Octree {
         // Simple check to see if we even moved lol
         if let Some(pos) = self.target.as_ref() {
             // Check distances
-            if veclib::Vector3::<f32>::distance(*pos, target) < self.hsettings.min_threshold_distance as f32 {
+            if veclib::Vector3::<f32>::distance(*pos, target)
+                < self.hsettings.min_threshold_distance as f32
+            {
                 return None;
             }
         }

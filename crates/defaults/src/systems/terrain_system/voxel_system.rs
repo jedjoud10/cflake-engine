@@ -16,7 +16,12 @@ use main::{
 use crate::globals::ChunkGenerationState;
 
 // Start generating the voxel data for a specific chunk
-fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
+fn start_generation(
+    terrain: &mut crate::globals::Terrain,
+    pipeline: &Pipeline,
+    chunk: &mut crate::components::Chunk,
+    id: EntityID,
+) {
     let generator = &mut terrain.voxel_generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
@@ -36,14 +41,19 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_u32("num_terrain_edits", num_edits as u32);
     });
     // Now we can execute the compute shader and the read bytes command
-    let execution_settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS)).with_callback(uniforms);
+    let execution_settings =
+        ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS)).with_callback(uniforms);
     // Additional uniforms
     let execution_settings = if let Some(uniforms) = &generator.uniforms {
         execution_settings.with_callback(uniforms.clone())
     } else {
         execution_settings
     };
-    pipec::tracked_task(pipeline, TrackedTask::RunComputeShader(generator.compute_shader, execution_settings), generator.compute_id);
+    pipec::tracked_task(
+        pipeline,
+        TrackedTask::RunComputeShader(generator.compute_shader, execution_settings),
+        generator.compute_id,
+    );
     // After we run the first compute shader, we must run the second compute shader, then read from the final SSBO and counters
 
     // Set the uniforms for the second compute shader
@@ -56,7 +66,9 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
         uniforms.set_atomic_group("_", atomics, true, 0);
     });
     // And execute the shader
-    let execution_settings2 = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2)).with_callback(uniforms);
+    let execution_settings2 =
+        ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2))
+            .with_callback(uniforms);
     // Additional uniforms
     let execution_settings2 = if let Some(uniforms) = &generator.uniforms {
         execution_settings2.with_callback(uniforms.clone())
@@ -73,7 +85,10 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     let read_counters = ReadBytes::default();
     pipec::tracked_task_requirement(
         pipeline,
-        TrackedTask::AtomicGroupOp(generator.atomics, BufferOperation::Read(read_counters.clone())),
+        TrackedTask::AtomicGroupOp(
+            generator.atomics,
+            BufferOperation::Read(read_counters.clone()),
+        ),
         generator.read_counters,
         generator.compute_id2,
     );
@@ -82,7 +97,10 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     let read_bytes = ReadBytes::default();
     pipec::tracked_task_requirement(
         pipeline,
-        TrackedTask::ShaderStorageOp(generator.shader_storage_final_voxels, BufferOperation::Read(read_bytes.clone())),
+        TrackedTask::ShaderStorageOp(
+            generator.shader_storage_final_voxels,
+            BufferOperation::Read(read_bytes.clone()),
+        ),
         generator.read_final_voxels,
         generator.compute_id2,
     );
@@ -92,30 +110,51 @@ fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, 
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::BeginVoxelDataGeneration(id);
 }
 // Finish generating the voxel data and read it back, then store it into the chunk
-fn finish_generation(terrain: &mut crate::globals::Terrain, _pipeline: &Pipeline, chunk: &mut crate::components::Chunk) {
-    let (read_atomic_counter_bytes, read_voxel_data_bytes) = terrain.voxel_generator.pending_reads.take().unwrap();
+fn finish_generation(
+    terrain: &mut crate::globals::Terrain,
+    _pipeline: &Pipeline,
+    chunk: &mut crate::components::Chunk,
+) {
+    let (read_atomic_counter_bytes, read_voxel_data_bytes) =
+        terrain.voxel_generator.pending_reads.take().unwrap();
     // Get the valid counters
     let mut read_counters = [0_u32; 2];
-    read_atomic_counter_bytes.fill_array(&mut read_counters).unwrap();
+    read_atomic_counter_bytes
+        .fill_array(&mut read_counters)
+        .unwrap();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
-    let id = *terrain.chunks_manager.current_chunk_state.as_begin_voxel_data_generation().unwrap();
+    let id = *terrain
+        .chunks_manager
+        .current_chunk_state
+        .as_begin_voxel_data_generation()
+        .unwrap();
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
-        terrain.chunks_manager.chunks_generating.remove(&chunk.coords);
+        terrain
+            .chunks_manager
+            .chunks_generating
+            .remove(&chunk.coords);
         // Switch states
-        terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, false);
+        terrain.chunks_manager.current_chunk_state =
+            ChunkGenerationState::EndVoxelDataGeneration(id, false);
         return;
     }
 
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut terrain.voxel_generator.packed_chunk_voxel_data.0;
     let arr = allocated_packed_voxels.as_mut_slice();
-    read_voxel_data_bytes.fill_array::<PackedVoxel>(arr).unwrap();
-    terrain.voxel_generator.stored_chunk_voxel_data.store(&terrain.voxel_generator.packed_chunk_voxel_data);
+    read_voxel_data_bytes
+        .fill_array::<PackedVoxel>(arr)
+        .unwrap();
+    terrain
+        .voxel_generator
+        .stored_chunk_voxel_data
+        .store(&terrain.voxel_generator.packed_chunk_voxel_data);
 
     // Switch states
-    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
+    terrain.chunks_manager.current_chunk_state =
+        ChunkGenerationState::EndVoxelDataGeneration(id, true);
 }
 // The voxel systems' update loop
 fn run(world: &mut World, mut data: EventKey) {
@@ -130,7 +169,10 @@ fn run(world: &mut World, mut data: EventKey) {
             let write_bytes = WriteBytes::new(edits);
             pipec::tracked_task(
                 &pipeline,
-                TrackedTask::ShaderStorageOp(terrain.voxel_generator.shader_storage_edits, BufferOperation::Write(write_bytes)),
+                TrackedTask::ShaderStorageOp(
+                    terrain.voxel_generator.shader_storage_edits,
+                    BufferOperation::Write(write_bytes),
+                ),
                 terrain.voxel_generator.write_packed_edits,
             );
         }
@@ -141,7 +183,9 @@ fn run(world: &mut World, mut data: EventKey) {
                 let mut lock_ = query.write();
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
-                let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
+                let mut chunk = components
+                    .get_component_mut::<crate::components::Chunk>()
+                    .unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
                 start_generation(&mut *terrain, &pipeline, &mut *chunk, entity_id);
@@ -151,14 +195,23 @@ fn run(world: &mut World, mut data: EventKey) {
             let generator = &terrain.voxel_generator;
             if pipec::did_tasks_execute(
                 &pipeline,
-                &[generator.compute_id, generator.compute_id2, generator.read_counters, generator.read_final_voxels],
+                &[
+                    generator.compute_id,
+                    generator.compute_id2,
+                    generator.read_counters,
+                    generator.read_final_voxels,
+                ],
             ) {
                 // We will now update the chunk data to store our new voxel data
-                if let ChunkGenerationState::BeginVoxelDataGeneration(id) = terrain.chunks_manager.current_chunk_state {
+                if let ChunkGenerationState::BeginVoxelDataGeneration(id) =
+                    terrain.chunks_manager.current_chunk_state
+                {
                     let mut lock_ = query.write();
                     let components = lock_.get_mut(&id).unwrap();
                     // Get our chunk and set it's new data
-                    let mut chunk = components.get_component_mut::<crate::components::Chunk>().unwrap();
+                    let mut chunk = components
+                        .get_component_mut::<crate::components::Chunk>()
+                        .unwrap();
                     finish_generation(&mut *terrain, &*pipeline, &mut *chunk);
                 }
             }

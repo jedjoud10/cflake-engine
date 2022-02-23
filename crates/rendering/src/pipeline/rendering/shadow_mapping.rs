@@ -1,6 +1,6 @@
 use crate::{
     basics::{
-        model::Model,
+        mesh::Mesh,
         renderer::Renderer,
         shader::{Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureFormat, TextureType, TextureWrapping},
@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::error::RenderingError;
-use super::scene_rendering::*;
+use super::scene_renderer::*;
 // Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 #[derive(Default)]
@@ -26,9 +26,13 @@ pub struct ShadowMapping {
 }
 impl ShadowMapping {
     // Setup uniforms for a specific renderer when rendering shadows
-    pub(crate) fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer) -> Result<&'a Model, RenderingError> {
+    pub(crate) fn configure_uniforms<'a>(
+        &self,
+        pipeline: &'a Pipeline,
+        renderer: &Renderer,
+    ) -> Result<&'a Mesh, RenderingError> {
         // Always use our internal shadow shader
-        let model = pipeline.models.get(renderer.model).ok_or(RenderingError)?;
+        let mesh = pipeline.meshes.get(renderer.mesh).ok_or(RenderingError)?;
         let model_matrix = &renderer.matrix;
 
         // Calculate the light space matrix
@@ -40,10 +44,15 @@ impl ShadowMapping {
         // Update the uniforms
         group.set_mat44f32("lsm_matrix", lsm);
 
-        Ok(model)
+        Ok(mesh)
     }
     // Initialize a new shadow mapper
-    pub(crate) fn new(renderer: &mut PipelineRenderer, shadow_resolution: u16, internal: &mut InternalPipeline, pipeline: &mut Pipeline) -> Self {
+    pub(crate) fn new(
+        renderer: &mut SceneRenderer,
+        shadow_resolution: u16,
+        internal: &mut InternalPipeline,
+        pipeline: &mut Pipeline,
+    ) -> Self {
         // Create the framebuffer
         let fbo = unsafe {
             let mut fbo = 0;
@@ -53,7 +62,10 @@ impl ShadowMapping {
 
         // Create the depth texture
         let texture = Texture::default()
-            .with_dimensions(TextureType::Texture2D(shadow_resolution.max(1), shadow_resolution.max(1)))
+            .with_dimensions(TextureType::Texture2D(
+                shadow_resolution.max(1),
+                shadow_resolution.max(1),
+            ))
             .with_filter(TextureFilter::Linear)
             .with_wrapping_mode(TextureWrapping::ClampToBorder)
             .with_border_colors([veclib::Vector4::<f32>::ONE; 4])
@@ -65,7 +77,13 @@ impl ShadowMapping {
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(texture).unwrap().oid, 0);
+            gl::FramebufferTexture2D(
+                gl::FRAMEBUFFER,
+                gl::DEPTH_ATTACHMENT,
+                gl::TEXTURE_2D,
+                pipeline.textures.get(texture).unwrap().oid,
+                0,
+            );
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind
@@ -75,7 +93,8 @@ impl ShadowMapping {
         const DIMS: f32 = 800.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
-        let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
+        let ortho_matrix =
+            veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
 
         // Load our custom shadow shader
         let shader = Shader::new(
@@ -96,7 +115,11 @@ impl ShadowMapping {
         }
     }
     // Update the internally stored view matrix with the new direction of our sun
-    pub(crate) fn update_view_matrix(&mut self, new_quat: veclib::Quaternion<f32>, _camera: &Camera) {
+    pub(crate) fn update_view_matrix(
+        &mut self,
+        new_quat: veclib::Quaternion<f32>,
+        _camera: &Camera,
+    ) {
         let forward = new_quat.mul_point(veclib::Vector3::Z);
         let up = new_quat.mul_point(veclib::Vector3::Y);
         let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
@@ -111,7 +134,12 @@ impl ShadowMapping {
     // Make sure we are ready to draw shadows
     pub(crate) fn bind_fbo(&self, pipeline: &Pipeline) {
         unsafe {
-            gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
+            gl::Viewport(
+                0,
+                0,
+                self.shadow_resolution as i32,
+                self.shadow_resolution as i32,
+            );
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
             let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shadow_shader));

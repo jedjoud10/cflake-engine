@@ -76,9 +76,18 @@ impl System {
         };
         SystemExecutionData {
             // Events
-            evn_run: ecs_manager.event_handler.get_run_event(self.evn_run).cloned(),
-            evn_added_entity: ecs_manager.event_handler.get_added_entity_event(self.evn_added_entity).cloned(),
-            evn_removed_entity: ecs_manager.event_handler.get_removed_entity_event(self.evn_removed_entity).cloned(),
+            evn_run: ecs_manager
+                .event_handler
+                .get_run_event(self.evn_run)
+                .cloned(),
+            evn_added_entity: ecs_manager
+                .event_handler
+                .get_added_entity_event(self.evn_added_entity)
+                .cloned(),
+            evn_removed_entity: ecs_manager
+                .event_handler
+                .get_removed_entity_event(self.evn_removed_entity)
+                .cloned(),
             // Queries
             evn_run_ekey: EventKey::Query(ComponentQuery {
                 linked_components: all_components,

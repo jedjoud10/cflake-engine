@@ -15,7 +15,11 @@ pub struct SaverLoader {
 
 impl SaverLoader {
     // Make sure a default copy of the data exists
-    pub fn create_default<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: &str, default_data: &T) {
+    pub fn create_default<T: serde::Serialize + serde::Deserialize<'static>>(
+        &self,
+        file_path: &str,
+        default_data: &T,
+    ) {
         // If default_create is true, we should create the file if it does not exist yet
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         if !global_path.exists() {
@@ -43,7 +47,11 @@ impl SaverLoader {
         serde_json::from_reader(reader).unwrap()
     }
     // Save a struct to a file
-    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: &str, struct_to_save: &T) {
+    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(
+        &self,
+        file_path: &str,
+        struct_to_save: &T,
+    ) {
         // Save the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());

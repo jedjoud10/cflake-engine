@@ -56,7 +56,9 @@ impl StoredVoxelData {
 
     // Getters
     pub fn density(&self, idx: usize) -> Ref<f32> {
-        Ref::map(self.inner.borrow(), |inner| inner.densities.get(idx).unwrap())
+        Ref::map(self.inner.borrow(), |inner| {
+            inner.densities.get(idx).unwrap()
+        })
     }
     pub fn normal(&self, idx: usize) -> Ref<veclib::Vector3<i8>> {
         Ref::map(self.inner.borrow(), |inner| inner.normals.get(idx).unwrap())
@@ -65,6 +67,8 @@ impl StoredVoxelData {
         Ref::map(self.inner.borrow(), |inner| inner.colors.get(idx).unwrap())
     }
     pub fn voxel_material(&self, idx: usize) -> Ref<u8> {
-        Ref::map(self.inner.borrow(), |inner| inner.voxel_materials.get(idx).unwrap())
+        Ref::map(self.inner.borrow(), |inner| {
+            inner.voxel_materials.get(idx).unwrap()
+        })
     }
 }

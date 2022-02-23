@@ -4,7 +4,7 @@ pub mod pipec {
 
     use crate::{
         object::{ObjectID, PipelineObject, PipelineTask, ReservedTrackedID, TrackedTask},
-        pipeline::{sender, Pipeline, PipelineContext, PipelineRenderer},
+        pipeline::{sender, Pipeline, PipelineContext, SceneRenderer},
     };
     // Send a task to the pipeline
     fn send(pipeline: &Pipeline, task: PipelineTask) {
@@ -31,7 +31,10 @@ pub mod pipec {
         Some(())
     }
     // Create an update callback that we will run at the end of the current/next frame
-    pub fn update_callback(pipeline: &Pipeline, function: impl FnOnce(&mut Pipeline, &mut PipelineRenderer) + Send + Sync + 'static) {
+    pub fn update_callback(
+        pipeline: &Pipeline,
+        function: impl FnOnce(&mut Pipeline, &mut SceneRenderer) + Send + Sync + 'static,
+    ) {
         // Create the boxed function on the heap
         let boxed = Box::new(function);
         send(pipeline, PipelineTask::Update(boxed));
@@ -54,11 +57,14 @@ pub mod pipec {
     // Detect if multiple tasks have all executed
     pub fn did_tasks_execute(pipeline: &Pipeline, ids: &[ReservedTrackedID]) -> bool {
         // Check our sparse bitfield
-        let all = ids.iter().all(|x| pipeline.completed_tasks.get(x.0 as usize));
+        let all = ids
+            .iter()
+            .all(|x| pipeline.completed_tasks.get(x.0 as usize));
 
         // If they did all execute, we have to reset
         if all {
-            ids.iter().for_each(|x| pipeline.completed_tasks.set(x.0 as usize, false));
+            ids.iter()
+                .for_each(|x| pipeline.completed_tasks.set(x.0 as usize, false));
         }
         all
     }
@@ -67,12 +73,22 @@ pub mod pipec {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, None))
     }
     // Create a tracked task with a requirement
-    pub fn tracked_task_requirement(pipeline: &Pipeline, task: TrackedTask, tracked_id: ReservedTrackedID, req: ReservedTrackedID) {
+    pub fn tracked_task_requirement(
+        pipeline: &Pipeline,
+        task: TrackedTask,
+        tracked_id: ReservedTrackedID,
+        req: ReservedTrackedID,
+    ) {
         send(pipeline, PipelineTask::Tracked(task, tracked_id, Some(req)))
     }
     // Add a callback to the pipeline that we will execute at the end of the frame after rendering all the entities
     // This callback will also be called on the render thread, so if we need to do anything with opengl we should use this
-    pub fn add_end_of_frame_callback<F: Fn(&mut Pipeline, &mut PipelineRenderer) + Sync + Send + 'static>(pipeline: &Pipeline, function: F) {
+    pub fn add_end_of_frame_callback<
+        F: Fn(&mut Pipeline, &mut SceneRenderer) + Sync + Send + 'static,
+    >(
+        pipeline: &Pipeline,
+        function: F,
+    ) {
         let mut lock = pipeline.callbacks.lock();
         lock.push(Box::new(function));
     }

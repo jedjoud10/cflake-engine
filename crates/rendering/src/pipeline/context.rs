@@ -14,7 +14,9 @@ pub struct PipelineContext {
 impl PipelineContext {
     // Read
     pub fn read(&self) -> ReadPipelineContext {
-        ReadPipelineContext { pipeline: self.pipeline.read() }
+        ReadPipelineContext {
+            pipeline: self.pipeline.read(),
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-// How we lay the VBO data for the model
+// How we lay the VBO data for the mesh
 #[derive(Clone, Copy)]
 pub enum VertexAttributeBufferLayout {
     SeparateVBOs,

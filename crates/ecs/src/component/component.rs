@@ -35,7 +35,7 @@ pub(crate) struct ComponentGroupToRemove {
     pub components: AHashMap<Bitfield<u32>, u64>,
     pub counter: usize,
     pub entity_id: EntityID,
-} 
+}
 
 // Component ref guards. This can be used to detect whenever we mutate a component
 pub struct ComponentReadGuard<'a, T>

@@ -5,7 +5,7 @@ from math import radians
 from bpy import context
 
 bl_info = {
-	"name": "Custom 3D model exporter",
+	"name": "Custom 3D mesh exporter",
 	"blender": (2, 80, 0),
 	"category": "Object",
 }
@@ -102,7 +102,7 @@ from bpy.types import Operator
 class ExportSomeData(Operator, ExportHelper):
 	"""Exports models to a file that our game engine can import and pack!"""
 	bl_idname = "export_test.some_data"  # important since its how bpy.ops.import_test.some_data is constructed
-	bl_label = "Export Model"
+	bl_label = "Export mesh"
 
 	# ExportHelper mixin class uses this
 	filename_ext = ".mdl3d"

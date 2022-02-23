@@ -44,6 +44,8 @@ impl Transform {
 impl Transform {
     // Calculate the matrix and return it
     pub fn calculate_matrix(&self) -> veclib::Matrix4x4<f32> {
-        veclib::Matrix4x4::<f32>::from_translation(self.position) * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation) * veclib::Matrix4x4::<f32>::from_scale(self.scale)
+        veclib::Matrix4x4::<f32>::from_translation(self.position)
+            * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
+            * veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
 }

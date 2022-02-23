@@ -75,5 +75,8 @@ pub fn preload_system(world: &mut World) {
     terrain_system::editing_system::system(world);
 
     // We gotta add the globa
-    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
+    world
+        .globals
+        .add_global(crate::globals::GlobalWorldData::default())
+        .unwrap();
 }

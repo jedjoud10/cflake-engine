@@ -29,8 +29,5 @@ members = [
     "crates/terrain",
 ]
 
-[[example]]
-name = "empty"
-
 [profile.dev]
 opt-level = 3

@@ -19,15 +19,22 @@ pub struct ComponentLinkingGroup {
 // Linking methods
 impl ComponentLinkingGroup {
     // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
+    pub fn link_default<T: Component + Send + Sync + Default + 'static>(
+        &mut self,
+    ) -> Result<(), ComponentLinkingError> {
         // Simple wrapper around the default link component
         self.link(T::default())
     }
     // Link a component to this entity
-    pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
+    pub fn link<T: Component + Send + Sync + 'static>(
+        &mut self,
+        default_state: T,
+    ) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this linking group
-        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
+        if let std::collections::hash_map::Entry::Vacant(e) =
+            self.linked_components.entry(cbitfield)
+        {
             // Add the local component to our hashmap
             let boxed = Box::new(default_state);
             e.insert(boxed);
@@ -54,13 +61,15 @@ pub struct ComponentUnlinkGroup {
 impl ComponentUnlinkGroup {
     // Unlink a component from the entity
     pub fn unlink<T: Component + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
-        self.removal_cbitfield = self.removal_cbitfield.add(&registry::get_component_bitfield::<T>());
+        self.removal_cbitfield = self
+            .removal_cbitfield
+            .add(&registry::get_component_bitfield::<T>());
         Ok(())
     }
     // Unlink all the components from an entity
     pub fn unlink_all_from_entity(entity: &Entity) -> Self {
         Self {
-            removal_cbitfield: entity.cbitfield
+            removal_cbitfield: entity.cbitfield,
         }
     }
 }

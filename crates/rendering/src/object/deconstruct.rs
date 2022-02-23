@@ -1,7 +1,10 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{lights::LightSource, material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
+    basics::{
+        lights::LightSource, material::Material, mesh::Mesh, renderer::Renderer, shader::Shader,
+        texture::Texture,
+    },
     pipeline::Pipeline,
 };
 
@@ -11,7 +14,7 @@ pub enum DeconstructionTask {
     Material(Deconstruct<Material>),
     Shader(Deconstruct<Shader>),
     ComputeShader(Deconstruct<ComputeShader>),
-    Model(Deconstruct<Model>),
+    Mesh(Deconstruct<Mesh>),
     Renderer(Deconstruct<Renderer>),
     AtomicGroup(Deconstruct<AtomicGroup>),
     ShaderStorage(Deconstruct<ShaderStorage>),
@@ -35,8 +38,8 @@ impl DeconstructionTask {
             DeconstructionTask::ComputeShader(x) => {
                 ComputeShader::delete(pipeline, x.0).unwrap();
             }
-            DeconstructionTask::Model(x) => {
-                Model::delete(pipeline, x.0).unwrap();
+            DeconstructionTask::Mesh(x) => {
+                Mesh::delete(pipeline, x.0).unwrap();
             }
             DeconstructionTask::Renderer(x) => {
                 Renderer::delete(pipeline, x.0).unwrap();

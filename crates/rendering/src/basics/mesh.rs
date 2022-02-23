@@ -1,8 +1,8 @@
 mod layout;
-mod model;
+mod mesh;
 mod vertex;
 mod vertices;
 pub use layout::*;
-pub use model::*;
+pub use mesh::*;
 pub use vertex::*;
 pub use vertices::*;

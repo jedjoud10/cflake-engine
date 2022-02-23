@@ -7,13 +7,17 @@ pub struct Name {
 
 impl Default for Name {
     fn default() -> Self {
-        Self { name: "Unnamed".to_string() }
+        Self {
+            name: "Unnamed".to_string(),
+        }
     }
 }
 
 impl Name {
     pub fn new(name: &str) -> Self {
-        Self { name: name.to_string() }
+        Self {
+            name: name.to_string(),
+        }
     }
 }
 
@@ -25,12 +29,16 @@ pub struct Tagged {
 
 impl Default for Tagged {
     fn default() -> Self {
-        Self { tag: "Untagged".to_string() }
+        Self {
+            tag: "Untagged".to_string(),
+        }
     }
 }
 
 impl Tagged {
     pub fn new(tag: &str) -> Self {
-        Self { tag: tag.to_string() }
+        Self {
+            tag: tag.to_string(),
+        }
     }
 }

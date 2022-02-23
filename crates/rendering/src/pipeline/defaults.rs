@@ -1,5 +1,7 @@
 use crate::{
-    basics::{lights::LightSource, material::Material, model::Model, shader::Shader, texture::Texture},
+    basics::{
+        lights::LightSource, material::Material, mesh::Mesh, shader::Shader, texture::Texture,
+    },
     object::ObjectID,
 };
 
@@ -11,7 +13,7 @@ pub struct DefaultPipelineObjects {
     pub normals_tex: ObjectID<Texture>,
     pub shader: ObjectID<Shader>,
     pub material: ObjectID<Material>,
-    pub model: ObjectID<Model>,
+    pub mesh: ObjectID<Mesh>,
     // This value might change, since the user might remove the directional light
     pub sun: ObjectID<LightSource>,
 }

@@ -82,7 +82,9 @@ impl InputManager {
                     // We pressed the key
                     match map {
                         MapState::Button(button_state) => match &button_state {
-                            ButtonState::Released | ButtonState::Nothing => *button_state = ButtonState::Pressed,
+                            ButtonState::Released | ButtonState::Nothing => {
+                                *button_state = ButtonState::Pressed
+                            }
                             _ => {}
                         },
                         MapState::Toggle(toggle_state) => toggle_state.toggle(),
@@ -104,7 +106,10 @@ impl InputManager {
         if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             let map_name = map_name.to_string();
-            self.maps.insert(map_name.clone(), (MapState::Button(ButtonState::default()), false));
+            self.maps.insert(
+                map_name.clone(),
+                (MapState::Button(ButtonState::default()), false),
+            );
             self.keys.insert(key, map_name);
         }
     }
@@ -113,7 +118,10 @@ impl InputManager {
         if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one
             let map_name = map_name.to_string();
-            self.maps.insert(map_name.clone(), (MapState::Toggle(ToggleState::default()), false));
+            self.maps.insert(
+                map_name.clone(),
+                (MapState::Toggle(ToggleState::default()), false),
+            );
             self.keys.insert(key, map_name);
         }
     }
@@ -125,32 +133,59 @@ impl InputManager {
     pub fn map_pressed(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Pressed) = map_state { Some(()) } else { None })
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(ButtonState::Pressed) = map_state {
+                    Some(())
+                } else {
+                    None
+                }
+            })
             .is_some()
     }
     // Returns true when the map is being held
     pub fn map_held(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Held) = map_state { Some(()) } else { None })
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(ButtonState::Held) = map_state {
+                    Some(())
+                } else {
+                    None
+                }
+            })
             .is_some()
     }
     // Returns true when the map has been released
     pub fn map_released(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| if let MapState::Button(ButtonState::Released) = map_state { Some(()) } else { None })
+            .and_then(|(map_state, _)| {
+                if let MapState::Button(ButtonState::Released) = map_state {
+                    Some(())
+                } else {
+                    None
+                }
+            })
             .is_some()
     }
     // Check if a map changed
     pub fn map_changed(&self, name: &str) -> bool {
-        self.maps.get(name).and_then(|(_, changed)| if *changed { Some(()) } else { None }).is_some()
+        self.maps
+            .get(name)
+            .and_then(|(_, changed)| if *changed { Some(()) } else { None })
+            .is_some()
     }
     // Returns the toggle state of the map
     pub fn map_toggled(&self, name: &str) -> bool {
         self.maps
             .get(name)
-            .and_then(|(map_state, _)| if let MapState::Toggle(ToggleState::On) = map_state { Some(()) } else { None })
+            .and_then(|(map_state, _)| {
+                if let MapState::Toggle(ToggleState::On) = map_state {
+                    Some(())
+                } else {
+                    None
+                }
+            })
             .is_some()
     }
 }

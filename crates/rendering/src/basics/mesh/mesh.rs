@@ -1,6 +1,8 @@
 use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
 use crate::{
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
+    object::{
+        Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
+    },
     pipeline::Pipeline,
     utils::UpdateFrequency,
 };
@@ -8,8 +10,8 @@ use assets::Asset;
 use gl::types::GLuint;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-// A simple model that holds vertex, normal, and color data
-pub struct Model {
+// A simple mesh that holds vertex, normal, and color data
+pub struct Mesh {
     // Main IDs
     pub vertex_array_object: GLuint,
 
@@ -42,7 +44,7 @@ pub struct Model {
     pub tris_count: usize,
 }
 
-impl Default for Model {
+impl Default for Mesh {
     fn default() -> Self {
         Self {
             vertex_array_object: Default::default(),
@@ -57,22 +59,22 @@ impl Default for Model {
     }
 }
 
-impl PipelineObject for Model {
-    // Reserve an ID for this model
+impl PipelineObject for Mesh {
+    // Reserve an ID for this mesh
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, pipeline.models.gen_id()))
+        Some((self, pipeline.meshes.gen_id()))
     }
-    // Send this model to the pipeline for construction
+    // Send this mesh to the pipeline for construction
     fn send(self, id: ObjectID<Self>) -> ConstructionTask {
-        ConstructionTask::Model(Construct::<Self>(self, id))
+        ConstructionTask::Mesh(Construct::<Self>(self, id))
     }
     // Create a deconstruction task
     fn pull(id: ObjectID<Self>) -> DeconstructionTask {
-        DeconstructionTask::Model(Deconstruct::<Self>(id))
+        DeconstructionTask::Mesh(Deconstruct::<Self>(id))
     }
-    // Add the model to our ordered vec
+    // Add the mesh to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
-        // Add the model
+        // Add the mesh
         if self.vertices.len() > 0 {
             unsafe {
                 // We simply don't have any vertices to render
@@ -125,26 +127,52 @@ impl PipelineObject for Model {
                     // "I must optimize this but that is a problem for future me" - Me atm
                     for (idx, x) in self.vertices.positions.iter().enumerate() {
                         // Add
-                        big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<f32>, [u8; size_of::<f32>() * 3]>(x));
+                        big_vector.extend_from_slice(&std::mem::transmute_copy::<
+                            veclib::Vector3<f32>,
+                            [u8; size_of::<f32>() * 3],
+                        >(x));
                         if !self.vertices.normals.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<i8>, [u8; size_of::<i8>() * 3]>(self.vertices.normals.get(idx)?));
+                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
+                                veclib::Vector3<i8>,
+                                [u8; size_of::<i8>() * 3],
+                            >(
+                                self.vertices.normals.get(idx)?
+                            ));
                         }
                         if !self.vertices.tangents.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector4<i8>, [u8; size_of::<i8>() * 4]>(
-                                self.vertices.tangents.get(idx)?,
+                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
+                                veclib::Vector4<i8>,
+                                [u8; size_of::<i8>() * 4],
+                            >(
+                                self.vertices.tangents.get(idx)?
                             ));
                         }
                         if !self.vertices.uvs.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector2<u8>, [u8; size_of::<u8>() * 2]>(self.vertices.uvs.get(idx)?));
+                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
+                                veclib::Vector2<u8>,
+                                [u8; size_of::<u8>() * 2],
+                            >(
+                                self.vertices.uvs.get(idx)?
+                            ));
                         }
                         if !self.vertices.colors.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<veclib::Vector3<u8>, [u8; size_of::<u8>() * 3]>(self.vertices.colors.get(idx)?));
+                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
+                                veclib::Vector3<u8>,
+                                [u8; size_of::<u8>() * 3],
+                            >(
+                                self.vertices.colors.get(idx)?
+                            ));
                         }
                     }
 
                     gl::GenBuffers(1, buffers.as_mut_ptr().add(1));
                     gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
-                    gl::BufferData(gl::ARRAY_BUFFER, (big_vector.len()) as isize, big_vector.as_ptr() as *const c_void, gl::STATIC_DRAW);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (big_vector.len()) as isize,
+                        big_vector.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
 
                     // The stride increase each time we add an attribute
                     let mut current_stride = 0;
@@ -157,7 +185,14 @@ impl PipelineObject for Model {
                     // Vertex normals attribute
                     if !self.vertices.normals.is_empty() {
                         gl::EnableVertexAttribArray(1);
-                        gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                        gl::VertexAttribPointer(
+                            1,
+                            3,
+                            gl::BYTE,
+                            gl::TRUE,
+                            stride,
+                            current_stride as *const c_void,
+                        );
                         current_stride += size_of::<i8>() * 3;
                     } else {
                         gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
@@ -166,7 +201,14 @@ impl PipelineObject for Model {
                     if !self.vertices.tangents.is_empty() {
                         // Tangent attribute
                         gl::EnableVertexAttribArray(2);
-                        gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                        gl::VertexAttribPointer(
+                            2,
+                            4,
+                            gl::BYTE,
+                            gl::TRUE,
+                            stride,
+                            current_stride as *const c_void,
+                        );
                         current_stride += size_of::<i8>() * 4;
                     } else {
                         gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
@@ -175,7 +217,14 @@ impl PipelineObject for Model {
                     if !self.vertices.uvs.is_empty() {
                         // UV attribute
                         gl::EnableVertexAttribArray(3);
-                        gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                        gl::VertexAttribPointer(
+                            3,
+                            2,
+                            gl::UNSIGNED_BYTE,
+                            gl::TRUE,
+                            stride,
+                            current_stride as *const c_void,
+                        );
                         current_stride += size_of::<u8>() * 2;
                     } else {
                         gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
@@ -184,7 +233,14 @@ impl PipelineObject for Model {
                     if !self.vertices.colors.is_empty() {
                         // Vertex colors attribute
                         gl::EnableVertexAttribArray(4);
-                        gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, stride, current_stride as *const c_void);
+                        gl::VertexAttribPointer(
+                            4,
+                            3,
+                            gl::UNSIGNED_BYTE,
+                            gl::TRUE,
+                            stride,
+                            current_stride as *const c_void,
+                        );
                         //current_stride += size_of::<u8>() * 3;
                     } else {
                         gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
@@ -289,33 +345,35 @@ impl PipelineObject for Model {
                 gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             }
         }
-        // Add the model
-        pipeline.models.insert(id, self);
+        // Add the mesh
+        pipeline.meshes.insert(id, self);
         Some(())
     }
-    // Remove the model from the pipeline
+    // Remove the mesh from the pipeline
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        let model = pipeline.models.remove(id)?;
+        let mesh = pipeline.meshes.remove(id)?;
         // Dispose of the OpenGL buffers
         unsafe {
-            if model.vertices.len() > 0 {
+            if mesh.vertices.len() > 0 {
                 // Delete the VBOs
-                gl::DeleteBuffers(model.buffers.len() as i32, model.buffers.as_ptr());
+                gl::DeleteBuffers(mesh.buffers.len() as i32, mesh.buffers.as_ptr());
 
                 // Delete the vertex array
-                gl::DeleteVertexArrays(1, &model.vertex_array_object);
+                gl::DeleteVertexArrays(1, &mesh.vertex_array_object);
             }
         }
-        Some(model)
+        Some(mesh)
     }
 }
 
-impl Model {
+impl Mesh {
     // Create a vertex builder
     pub fn vertex_builder(&mut self) -> VertexBuilder {
-        VertexBuilder { vertices: &mut self.vertices }
+        VertexBuilder {
+            vertices: &mut self.vertices,
+        }
     }
-    // Create the model with a specific vertex attribute vbo layout
+    // Create the mesh with a specific vertex attribute vbo layout
     pub fn with_layout(mut self, layout: VertexAttributeBufferLayout) -> Self {
         self.layout = layout;
         self
@@ -327,29 +385,43 @@ impl Model {
             self.triangles.swap(i, i + 2);
         }
     }
-    // Combine a model with this one, and return the new model
+    // Combine a mesh with this one, and return the new mesh
     pub fn combine(mut self, other: Self) -> Self {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
-        self.triangles.extend(other.triangles.into_iter().map(|mut x| {
-            x += max_triangle_index;
-            x
-        }));
-        self.vertices.positions.extend(other.vertices.positions.into_iter());
-        self.vertices.normals.extend(other.vertices.normals.into_iter());
+        self.triangles
+            .extend(other.triangles.into_iter().map(|mut x| {
+                x += max_triangle_index;
+                x
+            }));
+        self.vertices
+            .positions
+            .extend(other.vertices.positions.into_iter());
+        self.vertices
+            .normals
+            .extend(other.vertices.normals.into_iter());
         self.vertices.uvs.extend(other.vertices.uvs.into_iter());
-        self.vertices.colors.extend(other.vertices.colors.into_iter());
-        self.vertices.tangents.extend(other.vertices.tangents.into_iter());
+        self.vertices
+            .colors
+            .extend(other.vertices.colors.into_iter());
+        self.vertices
+            .tangents
+            .extend(other.vertices.tangents.into_iter());
         self
     }
-    // Procedurally generate the normals for this model
+    // Procedurally generate the normals for this mesh
     pub fn with_generated_normals(mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
 
-        let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
+        let mut vertex_normals: Vec<veclib::Vector3<f32>> =
+            vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
         for i in 0..(self.triangles.len() / 3) {
             // Calculate the face normal
-            let (i1, i2, i3) = (self.triangles[i * 3], self.triangles[i * 3 + 1], self.triangles[i * 3 + 2]);
+            let (i1, i2, i3) = (
+                self.triangles[i * 3],
+                self.triangles[i * 3 + 1],
+                self.triangles[i * 3 + 2],
+            );
             // Get the actual vertices
             let a = self.vertices.positions.get(i1 as usize).unwrap();
             let b = self.vertices.positions.get(i2 as usize).unwrap();
@@ -372,53 +444,79 @@ impl Model {
         }
 
         // Update our normals
-        self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
+        self.vertices.normals = vertex_normals
+            .into_iter()
+            .map(|x| (x * 127.0).normalized().into())
+            .collect::<Vec<_>>();
     }
 }
 
-impl Asset for Model {
-    // Load a model from an asset file
+impl Asset for Mesh {
+    // Load a mesh from an asset file
     fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
         let string = String::from_utf8(bytes.to_vec()).ok()?;
         let lines = string.lines();
-        let mut model = Model::default();
+        let mut mesh = Mesh::default();
         for line in lines {
             let start = line.split_once(' ').unwrap().0;
             let other = line.split_once(' ').unwrap().1;
             match start {
                 // Vertices
                 "v" => {
-                    let coords: Vec<f32> = other.split('/').map(|coord| coord.parse::<f32>().unwrap()).collect();
-                    model.vertices.positions.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                    let coords: Vec<f32> = other
+                        .split('/')
+                        .map(|coord| coord.parse::<f32>().unwrap())
+                        .collect();
+                    mesh.vertices
+                        .positions
+                        .push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
                 }
                 // Normals
                 "n" => {
-                    let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
-                    model.vertices.normals.push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
+                    let coords: Vec<i8> = other
+                        .split('/')
+                        .map(|coord| coord.parse::<i8>().unwrap())
+                        .collect();
+                    mesh.vertices
+                        .normals
+                        .push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
                 }
                 // UVs
                 "u" => {
-                    let coords: Vec<u8> = other.split('/').map(|coord| coord.parse::<u8>().unwrap()).collect();
-                    model.vertices.uvs.push(veclib::Vector2::new(coords[0], coords[1]));
+                    let coords: Vec<u8> = other
+                        .split('/')
+                        .map(|coord| coord.parse::<u8>().unwrap())
+                        .collect();
+                    mesh.vertices
+                        .uvs
+                        .push(veclib::Vector2::new(coords[0], coords[1]));
                 }
                 // Tangents
                 "t" => {
-                    let coords: Vec<i8> = other.split('/').map(|coord| coord.parse::<i8>().unwrap()).collect();
-                    model.vertices.tangents.push(veclib::Vector4::new(coords[0], coords[1], coords[2], coords[3]));
+                    let coords: Vec<i8> = other
+                        .split('/')
+                        .map(|coord| coord.parse::<i8>().unwrap())
+                        .collect();
+                    mesh.vertices.tangents.push(veclib::Vector4::new(
+                        coords[0], coords[1], coords[2], coords[3],
+                    ));
                 }
                 // Triangle indices
                 "i" => {
                     // Split the triangle into 3 indices
-                    let mut indices = other.split('/').map(|x| x.to_string().parse::<u32>().unwrap()).collect();
-                    model.triangles.append(&mut indices);
+                    let mut indices = other
+                        .split('/')
+                        .map(|x| x.to_string().parse::<u32>().unwrap())
+                        .collect();
+                    mesh.triangles.append(&mut indices);
                 }
                 _ => {}
             }
         }
         // Return
-        Some(model)
+        Some(mesh)
     }
 }

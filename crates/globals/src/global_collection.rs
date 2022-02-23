@@ -23,24 +23,28 @@ impl GlobalCollection {
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'a, U: Global + 'static>(&'a self) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
+    pub fn get_global<'a, U: Global + 'static>(
+        &'a self,
+    ) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
         // First, we gotta check if this component was mutably borrowed
         // Kill me
         let hashmap = &self.globals;
-        let boxed = hashmap
-            .get(&TypeId::of::<U>())
-            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
+        let boxed = hashmap.get(&TypeId::of::<U>()).ok_or_else(|| {
+            GlobalError::new("Global component could not be fetched!".to_string())
+        })?;
         // Magic
         let ptr = &*boxed.as_ref();
         let global = crate::registry::cast_global::<U>(ptr)?;
         Ok(GlobalReadGuard::new(global))
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'a, U: Global + 'static>(&'a mut self) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
+    pub fn get_global_mut<'a, U: Global + 'static>(
+        &'a mut self,
+    ) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
         let hashmap = &mut self.globals;
-        let boxed = hashmap
-            .get_mut(&TypeId::of::<U>())
-            .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
+        let boxed = hashmap.get_mut(&TypeId::of::<U>()).ok_or_else(|| {
+            GlobalError::new("Global component could not be fetched!".to_string())
+        })?;
         // Magic
         let ptr = &mut *boxed.as_mut();
         let global = crate::registry::cast_global_mut::<U>(ptr)?;

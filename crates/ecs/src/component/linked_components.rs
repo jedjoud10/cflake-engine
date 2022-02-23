@@ -1,4 +1,6 @@
-use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection};
+use super::{
+    registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection,
+};
 use crate::{
     entity::{Entity, EntityID},
     utils::ComponentError,
@@ -23,7 +25,11 @@ unsafe impl Sync for LinkedComponents {}
 unsafe impl Send for LinkedComponents {}
 
 impl LinkedComponents {
-    pub(crate) fn new(entity: &Entity, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
+    pub(crate) fn new(
+        entity: &Entity,
+        mutated_components: Arc<AtomicSparseBitfield>,
+        components: ComponentsCollection,
+    ) -> Self {
         Self {
             components,
             mutated_components,
@@ -32,7 +38,12 @@ impl LinkedComponents {
         }
     }
 
-    pub(crate) fn new_direct(id: EntityID, linked: AHashMap<Bitfield<u32>, u64>, mutated_components: Arc<AtomicSparseBitfield>, components: ComponentsCollection) -> Self {
+    pub(crate) fn new_direct(
+        id: EntityID,
+        linked: AHashMap<Bitfield<u32>, u64>,
+        mutated_components: Arc<AtomicSparseBitfield>,
+        components: ComponentsCollection,
+    ) -> Self {
         Self {
             components,
             mutated_components,
@@ -70,7 +81,10 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
+        let id = self
+            .linked
+            .get(&cbitfield)
+            .ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
@@ -90,7 +104,10 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
+        let id = self
+            .linked
+            .get(&cbitfield)
+            .ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 

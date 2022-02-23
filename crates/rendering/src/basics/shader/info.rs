@@ -99,7 +99,10 @@ impl ShaderInfoRead {
         lock.get(res).cloned()
     }
     // Get all the updated query parameter
-    pub fn get_all(&self, unique_resource: &QueryResource) -> Option<Vec<(String, Vec<UpdatedParameter>)>> {
+    pub fn get_all(
+        &self,
+        unique_resource: &QueryResource,
+    ) -> Option<Vec<(String, Vec<UpdatedParameter>)>> {
         let lock_ = self.inner.lock();
         let lock = &lock_.res_all;
         lock.get(unique_resource).cloned()
@@ -122,7 +125,10 @@ impl ShaderInfo {
         self.res.get(res)
     }
     // Get all the updated query parameter
-    pub(crate) fn get_all(&self, unique_resource: &QueryResource) -> Option<&Vec<(String, Vec<UpdatedParameter>)>> {
+    pub(crate) fn get_all(
+        &self,
+        unique_resource: &QueryResource,
+    ) -> Option<&Vec<(String, Vec<UpdatedParameter>)>> {
         self.res_all.get(unique_resource)
     }
 }

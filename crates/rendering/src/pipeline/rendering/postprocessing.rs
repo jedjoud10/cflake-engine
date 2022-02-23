@@ -7,7 +7,7 @@ use crate::{
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
     object::ObjectID,
-    pipeline::{pipec, InternalPipeline, Pipeline, PipelineRenderer},
+    pipeline::{pipec, InternalPipeline, Pipeline, SceneRenderer},
 };
 
 // Post processing effects that are rendered to the final frame buffer
@@ -20,7 +20,12 @@ pub struct PostProcessing {
 
 impl PostProcessing {
     // Initialize a new post processing effects handler
-    pub(crate) fn new(renderer: &mut PipelineRenderer, internal: &mut InternalPipeline, pipeline: &mut Pipeline, dims: TextureType) -> Self {
+    pub(crate) fn new(
+        renderer: &mut SceneRenderer,
+        internal: &mut InternalPipeline,
+        pipeline: &mut Pipeline,
+        dims: TextureType,
+    ) -> Self {
         // Create the framebuffer
         let fbo = unsafe {
             let mut fbo = 0;
@@ -40,12 +45,24 @@ impl PostProcessing {
         // Now attach the color texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, pipeline.textures.get(texture).unwrap().oid, 0);
+            gl::FramebufferTexture2D(
+                gl::FRAMEBUFFER,
+                gl::COLOR_ATTACHMENT0,
+                gl::TEXTURE_2D,
+                pipeline.textures.get(texture).unwrap().oid,
+                0,
+            );
             let attachements = vec![gl::COLOR_ATTACHMENT0];
-            gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
+            gl::DrawBuffers(
+                attachements.len() as i32,
+                attachements.as_ptr() as *const u32,
+            );
             // Check frame buffer state
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
+                panic!(
+                    "Framebuffer has failed initialization! Error: '{:#x}'",
+                    gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
+                );
             }
 
             // Unbind
@@ -72,7 +89,7 @@ impl PostProcessing {
         color_texture.update_size_fill(dims, Vec::new()).unwrap();
     }
     // Make sure we are ready to draw post processing effects
-    pub(crate) fn bind_fbo(&self, pipeline: &Pipeline, render: &PipelineRenderer) {
+    pub(crate) fn bind_fbo(&self, pipeline: &Pipeline, render: &SceneRenderer) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             //gl::Clear(gl::COLOR | gl::DEPTH_BUFFER_BIT);

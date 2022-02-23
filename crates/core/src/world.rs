@@ -112,7 +112,9 @@ impl World {
             let handler = handler.into_inner();
             // Run the render thread loop for one last time
             handler.sbarrier.wait();
-            handler.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
+            handler
+                .eatomic
+                .store(true, std::sync::atomic::Ordering::Relaxed);
             handler.ebarrier.wait();
             // Join the render thread now
             handler.handle.join().unwrap();

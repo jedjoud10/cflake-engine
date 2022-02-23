@@ -3,7 +3,9 @@ use crate::CHUNK_SIZE;
 const VOXEL_CHUNK_SIZE: usize = CHUNK_SIZE + 1;
 // Triangulation table
 pub const TRI_TABLE: [[i8; 16]; 256] = [
-    [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ],
     [0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [1, 8, 3, 9, 8, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
@@ -258,7 +260,9 @@ pub const TRI_TABLE: [[i8; 16]; 256] = [
     [1, 3, 8, 9, 1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
     [0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-    [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    [
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    ],
 ];
 
 // Edge table
@@ -282,14 +286,46 @@ pub const DATA_OFFSET_TABLE: [usize; 8] = [
 
 // Vertex table
 pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
-    veclib::Vector3::<f32> { x: 0.0, y: 0.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 0.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 0.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 0.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
+    veclib::Vector3::<f32> {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 1.0,
+        y: 0.0,
+        z: 1.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 1.0,
+        y: 0.0,
+        z: 0.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 0.0,
+        y: 1.0,
+        z: 1.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    },
+    veclib::Vector3::<f32> {
+        x: 1.0,
+        y: 1.0,
+        z: 0.0,
+    },
 ];
 pub const VERTEX_TABLE_USIZE: [veclib::Vector3<usize>; 8] = [
     veclib::Vector3::<usize> { x: 0, y: 0, z: 0 },
@@ -348,16 +384,32 @@ pub const MS_CASE_TO_EDGES: [[i8; 4]; 16] = [
 pub const MS_EDGE_TO_VERTICES: [[u8; 2]; 4] = [[0, 1], [1, 2], [2, 3], [3, 0]];
 
 // Index offset for the X axis
-pub const INDEX_OFFSET_X: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[5], DATA_OFFSET_TABLE[1]];
+pub const INDEX_OFFSET_X: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[4],
+    DATA_OFFSET_TABLE[5],
+    DATA_OFFSET_TABLE[1],
+];
 
 // Index offset for the Y axis
-pub const INDEX_OFFSET_Y: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[3], DATA_OFFSET_TABLE[2], DATA_OFFSET_TABLE[1]];
+pub const INDEX_OFFSET_Y: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[3],
+    DATA_OFFSET_TABLE[2],
+    DATA_OFFSET_TABLE[1],
+];
 
 // Index offset for the Z axis
-pub const INDEX_OFFSET_Z: [usize; 4] = [DATA_OFFSET_TABLE[0], DATA_OFFSET_TABLE[4], DATA_OFFSET_TABLE[7], DATA_OFFSET_TABLE[3]];
+pub const INDEX_OFFSET_Z: [usize; 4] = [
+    DATA_OFFSET_TABLE[0],
+    DATA_OFFSET_TABLE[4],
+    DATA_OFFSET_TABLE[7],
+    DATA_OFFSET_TABLE[3],
+];
 
 // All combined index offsets
-pub const SKIRTS_DIR_INDEX_OFFSET: [[usize; 4]; 3] = [INDEX_OFFSET_X, INDEX_OFFSET_Y, INDEX_OFFSET_Z];
+pub const SKIRTS_DIR_INDEX_OFFSET: [[usize; 4]; 3] =
+    [INDEX_OFFSET_X, INDEX_OFFSET_Y, INDEX_OFFSET_Z];
 
 // Should we flip the triangles whenever we generate a single skirt
 pub const SKIRTS_DIR_FLIP: [bool; 3] = [false, true, true];
@@ -368,10 +420,20 @@ pub const SKIRTS_DIR_INDEXING_FN: [fn(usize, usize, usize) -> usize; 3] = [
     |slice, x, y| crate::flatten((x, y, slice * (CHUNK_SIZE))),
 ];
 // The transform functions for each direction
-pub const SKIRTS_DIR_TRANSFORM_FN: [fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>; 3] = [
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x),
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y),
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32),
+pub const SKIRTS_DIR_TRANSFORM_FN: [fn(
+    usize,
+    &veclib::Vector2<f32>,
+    &veclib::Vector2<f32>,
+) -> veclib::Vector3<f32>; 3] = [
+    |slice, vertex, offset| {
+        veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x)
+    },
+    |slice, vertex, offset| {
+        veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y)
+    },
+    |slice, vertex, offset| {
+        veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32)
+    },
 ];
 
 pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [

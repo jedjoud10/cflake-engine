@@ -32,7 +32,10 @@ impl<'a> Uniforms<'a> {
     // Create some new uniforms using a mutable pipeline
     // This should only be accessed by the EoF external callbacks
     // This automatically binds the shader as well
-    pub fn using_mut_pipeline(settings: &'a ShaderUniformsSettings, pipeline: &'a mut Pipeline) -> Self {
+    pub fn using_mut_pipeline(
+        settings: &'a ShaderUniformsSettings,
+        pipeline: &'a mut Pipeline,
+    ) -> Self {
         let program = settings._type.get_program(pipeline);
         let map = pipeline.cached.uniform_definitions.get(&program).unwrap();
         let uniforms = Self {
@@ -204,10 +207,24 @@ impl<'a> Uniforms<'a> {
         };
         unsafe {
             gl::BindTexture(texture.target, texture.oid);
-            gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
+            gl::BindImageTexture(
+                location as u32,
+                texture.oid,
+                0,
+                gl::FALSE,
+                0,
+                new_access_type,
+                (texture.ifd).0 as u32,
+            );
         }
     }
-    pub fn set_atomic_group(&self, _name: &str, atomic_group_id: ObjectID<AtomicGroup>, clear: bool, binding: u32) {
+    pub fn set_atomic_group(
+        &self,
+        _name: &str,
+        atomic_group_id: ObjectID<AtomicGroup>,
+        clear: bool,
+        binding: u32,
+    ) {
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group_id) {
             x
         } else {
@@ -225,7 +242,12 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage(&self, _name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) {
+    pub fn set_shader_storage(
+        &self,
+        _name: &str,
+        shader_storage_id: ObjectID<ShaderStorage>,
+        binding: u32,
+    ) {
         let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage_id) {
             x
         } else {

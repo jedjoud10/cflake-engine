@@ -8,7 +8,9 @@ pub struct AssetLoadError {
 
 impl AssetLoadError {
     pub fn new(path: &str) -> Self {
-        Self { file_path: path.to_string() }
+        Self {
+            file_path: path.to_string(),
+        }
     }
 }
 

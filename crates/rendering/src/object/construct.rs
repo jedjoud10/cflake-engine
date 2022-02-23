@@ -1,7 +1,10 @@
 use super::{ObjectID, PipelineObject};
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{lights::LightSource, material::Material, model::Model, renderer::Renderer, shader::Shader, texture::Texture},
+    basics::{
+        lights::LightSource, material::Material, mesh::Mesh, renderer::Renderer, shader::Shader,
+        texture::Texture,
+    },
     pipeline::Pipeline,
 };
 
@@ -11,7 +14,7 @@ pub enum ConstructionTask {
     Material(Construct<Material>),
     Shader(Construct<Shader>),
     ComputeShader(Construct<ComputeShader>),
-    Model(Construct<Model>),
+    Mesh(Construct<Mesh>),
     Renderer(Construct<Renderer>),
     AtomicGroup(Construct<AtomicGroup>),
     ShaderStorage(Construct<ShaderStorage>),
@@ -27,7 +30,7 @@ impl ConstructionTask {
             ConstructionTask::Material(x) => Material::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::Shader(x) => Shader::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::ComputeShader(x) => ComputeShader::add(x.0, pipeline, x.1).unwrap(),
-            ConstructionTask::Model(x) => Model::add(x.0, pipeline, x.1).unwrap(),
+            ConstructionTask::Mesh(x) => Mesh::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::Renderer(x) => Renderer::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::AtomicGroup(x) => AtomicGroup::add(x.0, pipeline, x.1).unwrap(),
             ConstructionTask::ShaderStorage(x) => ShaderStorage::add(x.0, pipeline, x.1).unwrap(),

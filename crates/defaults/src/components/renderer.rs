@@ -1,6 +1,6 @@
 use main::ecs::component::Component;
 use main::rendering::basics::material::Material;
-use main::rendering::basics::model::Model;
+use main::rendering::basics::mesh::Mesh;
 use main::rendering::basics::renderer::RendererFlags;
 use main::rendering::basics::uniforms::SetUniformsCallback;
 use main::rendering::pipeline::{pipec, Pipeline};
@@ -24,9 +24,9 @@ impl Renderer {
             id: ObjectID::default(),
         }
     }
-    // Set a model
-    pub fn with_model(mut self, model: ObjectID<Model>) -> Self {
-        self.inner.as_mut().unwrap().model = model;
+    // Set a mesh
+    pub fn with_model(mut self, mesh: ObjectID<Mesh>) -> Self {
+        self.inner.as_mut().unwrap().mesh = mesh;
         self
     }
     // With a specific material
@@ -34,7 +34,7 @@ impl Renderer {
         self.inner.as_mut().unwrap().material = material;
         self
     }
-    // Set the model matrix for this renderer
+    // Set the mesh matrix for this renderer
     pub fn with_matrix(mut self, matrix: veclib::Matrix4x4<f32>) -> Self {
         self.inner.as_mut().unwrap().matrix = matrix;
         self
@@ -44,17 +44,17 @@ impl Renderer {
         self.inner.as_mut().unwrap().uniforms = callback;
         self
     }
-    // Update this renderer's model on the GPU, destroying the old one
-    pub fn update_model(&mut self, pipeline: &Pipeline, new_model: ObjectID<Model>) {
+    // Update this renderer's mesh on the GPU, destroying the old one
+    pub fn update_model(&mut self, pipeline: &Pipeline, new_model: ObjectID<Mesh>) {
         // Get the GPU renderer
         let renderer = pipeline.renderers.get(self.id).unwrap();
-        // Destroy the model
-        pipec::deconstruct(pipeline, renderer.model);
-        // Make a callback to set our new model
+        // Destroy the mesh
+        pipec::deconstruct(pipeline, renderer.mesh);
+        // Make a callback to set our new mesh
         let renderer_id = self.id;
         pipec::update_callback(pipeline, move |pipeline, _scene_renderer| {
             let renderer = pipeline.renderers.get_mut(renderer_id).unwrap();
-            renderer.model = new_model;
+            renderer.mesh = new_model;
         })
     }
 }

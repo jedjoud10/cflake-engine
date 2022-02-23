@@ -1,4 +1,4 @@
-use rendering::basics::model::Model;
+use rendering::basics::mesh::Mesh;
 
 use super::builder::*;
 use super::settings::MesherSettings;
@@ -16,7 +16,11 @@ pub struct Mesher<'a> {
 
 impl<'a> Mesher<'a> {
     // Create a new mesher from some new settings
-    pub fn new(coords: ChunkCoords, valid_data: &'a StoredVoxelData, settings: MesherSettings) -> Self {
+    pub fn new(
+        coords: ChunkCoords,
+        valid_data: &'a StoredVoxelData,
+        settings: MesherSettings,
+    ) -> Self {
         Self {
             valid_data,
             coords,
@@ -24,11 +28,11 @@ impl<'a> Mesher<'a> {
             skirts_builder: MarchingCubesSkirts::new(settings),
         }
     }
-    // Generate the model from the voxel data
-    pub fn build(self) -> Model {
-        // Gotta combine the main model and the skirts one
+    // Generate the mesh from the voxel data
+    pub fn build(self) -> Mesh {
+        // Gotta combine the main mesh and the skirts one
         let main = self.builder.build(self.valid_data, self.coords);
         let skirts = self.skirts_builder.build(self.valid_data, self.coords);
-        Model::combine(main, skirts)
+        Mesh::combine(main, skirts)
     }
 }

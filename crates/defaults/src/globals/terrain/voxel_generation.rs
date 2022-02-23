@@ -45,7 +45,11 @@ pub struct VoxelGenerator {
 
 impl VoxelGenerator {
     // Create a new voxel generator
-    pub fn new(voxel_src_path: &str, uniforms: Option<SetUniformsCallback>, pipeline: &Pipeline) -> Self {
+    pub fn new(
+        voxel_src_path: &str,
+        uniforms: Option<SetUniformsCallback>,
+        pipeline: &Pipeline,
+    ) -> Self {
         // Load the first pass compute shader
         let voxel_src_path = format!(r#"#include "{}""#, voxel_src_path);
         let settings = ShaderSettings::default()
@@ -77,9 +81,11 @@ impl VoxelGenerator {
             "arbitrary_voxels",
             (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2),
         );
-        let shader_storage_arbitrary_voxels = pipec::construct(pipeline, shader_storage_arbitrary_voxels).unwrap();
+        let shader_storage_arbitrary_voxels =
+            pipec::construct(pipeline, shader_storage_arbitrary_voxels).unwrap();
 
-        let final_voxels_size = ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
+        let final_voxels_size =
+            ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
         let shader_storage_final_voxels = ShaderStorage::new(
             UsageType {
                 access: AccessType::Read,
@@ -87,7 +93,8 @@ impl VoxelGenerator {
             },
             final_voxels_size,
         );
-        let shader_storage_final_voxels = pipec::construct(pipeline, shader_storage_final_voxels).unwrap();
+        let shader_storage_final_voxels =
+            pipec::construct(pipeline, shader_storage_final_voxels).unwrap();
 
         // Create a new dynamic shader storage for our terrain edits
         let shader_storage_edits = ShaderStorage::new_dynamic(UsageType {

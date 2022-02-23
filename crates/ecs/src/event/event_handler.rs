@@ -49,7 +49,10 @@ impl<World> EventHandler<World> {
         }
     }
     // Get the "Removed Entity" event for a specific index
-    pub fn get_removed_entity_event(&self, idx: Option<usize>) -> Option<&fn(&mut World, EventKey)> {
+    pub fn get_removed_entity_event(
+        &self,
+        idx: Option<usize>,
+    ) -> Option<&fn(&mut World, EventKey)> {
         if let Some(idx) = idx {
             self.evn_removed_entity.get(idx)
         } else {

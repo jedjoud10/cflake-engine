@@ -109,19 +109,29 @@ pub mod test {
         // Add a new entity and play with it's components
         let entity = Entity::default();
         let id = EntityID::new(&ecs);
-        ecs.add_entity(entity, id, ComponentLinkingGroup::default()).unwrap();
+        ecs.add_entity(entity, id, ComponentLinkingGroup::default())
+            .unwrap();
         assert!(ecs.get_entity(&id).is_ok());
-        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
+        assert_eq!(
+            ecs.get_entity(&id).unwrap().cbitfield,
+            Bitfield::<u32>::default()
+        );
         let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.link_components(id, group).unwrap();
-        assert_ne!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
+        assert_ne!(
+            ecs.get_entity(&id).unwrap().cbitfield,
+            Bitfield::<u32>::default()
+        );
         ecs.run_systems(&mut world);
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.unlink_components(id, group).unwrap();
-        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
+        assert_eq!(
+            ecs.get_entity(&id).unwrap().cbitfield,
+            registry::get_component_bitfield::<Name>()
+        );
     }
     #[test]
     pub fn test_events() {

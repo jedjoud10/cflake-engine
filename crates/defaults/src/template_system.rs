@@ -8,7 +8,10 @@ use main::ecs::event::EventKey;
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     let time = world.time.elapsed;
-    let _obj = world.globals.get_global::<crate::globals::Terrain>().unwrap();
+    let _obj = world
+        .globals
+        .get_global::<crate::globals::Terrain>()
+        .unwrap();
     for (_, components) in query.write().iter() {
         let name = components.get_component::<Name>().unwrap();
         dbg!(&name.name);
@@ -18,5 +21,10 @@ fn run(world: &mut World, mut data: EventKey) {
 
 // Create the system
 pub fn system(world: &mut World) {
-    world.ecs.create_system_builder().with_run_event(run).link::<Name>().build();
+    world
+        .ecs
+        .create_system_builder()
+        .with_run_event(run)
+        .link::<Name>()
+        .build();
 }

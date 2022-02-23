@@ -5,7 +5,10 @@ use std::{
 
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
+    object::{
+        Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID,
+        OpenGLObjectNotInitialized, PipelineObject,
+    },
     pipeline::Pipeline,
     utils::*,
 };
@@ -18,7 +21,9 @@ use gl::{
 use image::GenericImageView;
 use smallvec::SmallVec;
 
-use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping};
+use super::{
+    get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureType, TextureWrapping,
+};
 
 // A texture
 #[derive(Debug)]
@@ -116,7 +121,11 @@ impl PipelineObject for Texture {
             num
         }
 
-        let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
+        let pointer: *const c_void = if !self.bytes.is_empty() {
+            self.bytes.as_ptr() as *const c_void
+        } else {
+            null()
+        };
 
         let ifd = get_ifd(self._format, self._type);
         let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
@@ -141,11 +150,32 @@ impl PipelineObject for Texture {
                     }
                     // This is a 2D texture
                     TextureType::Texture2D(width, height) => {
-                        gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                        gl::TexImage2D(
+                            tex_type,
+                            0,
+                            ifd.0,
+                            width as i32,
+                            height as i32,
+                            0,
+                            ifd.1,
+                            ifd.2,
+                            pointer,
+                        );
                     }
                     // This is a 3D texture
                     TextureType::Texture3D(width, height, depth) => {
-                        gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                        gl::TexImage3D(
+                            tex_type,
+                            0,
+                            ifd.0,
+                            width as i32,
+                            height as i32,
+                            depth as i32,
+                            0,
+                            ifd.1,
+                            ifd.2,
+                            pointer,
+                        );
                     }
                     // This is a texture array
                     TextureType::Texture2DArray(width, height, depth) => {
@@ -159,8 +189,23 @@ impl PipelineObject for Texture {
                         );
                         // We might want to do mipmap
                         for i in 0..depth {
-                            let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
-                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+                            let localized_bytes =
+                                self.bytes[(i as usize * height as usize * 4 * width as usize)
+                                    ..self.bytes.len()]
+                                    .as_ptr() as *const c_void;
+                            gl::TexSubImage3D(
+                                gl::TEXTURE_2D_ARRAY,
+                                0,
+                                0,
+                                0,
+                                i as i32,
+                                width as i32,
+                                height as i32,
+                                1,
+                                ifd.1,
+                                ifd.2,
+                                localized_bytes,
+                            );
                         }
                     }
                 }
@@ -189,12 +234,20 @@ impl PipelineObject for Texture {
                 match self.filter {
                     TextureFilter::Linear => {
                         // 'Linear' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                        gl::TexParameteri(
+                            tex_type,
+                            gl::TEXTURE_MIN_FILTER,
+                            gl::LINEAR_MIPMAP_LINEAR as i32,
+                        );
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
                     }
                     TextureFilter::Nearest => {
                         // 'Nearest' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                        gl::TexParameteri(
+                            tex_type,
+                            gl::TEXTURE_MIN_FILTER,
+                            gl::NEAREST_MIPMAP_NEAREST as i32,
+                        );
                         gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                     }
                 }
@@ -208,7 +261,12 @@ impl PipelineObject for Texture {
             unsafe {
                 gl::GenBuffers(1, &mut pbo);
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+                gl::BufferData(
+                    gl::PIXEL_PACK_BUFFER,
+                    bytes_count as isize,
+                    null(),
+                    gl::STREAM_COPY,
+                );
                 gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
             }
             self.read_pbo = Some(pbo);
@@ -218,7 +276,12 @@ impl PipelineObject for Texture {
             unsafe {
                 gl::GenBuffers(1, &mut pbo);
                 gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+                gl::BufferData(
+                    gl::PIXEL_UNPACK_BUFFER,
+                    bytes_count as isize,
+                    null(),
+                    gl::STREAM_DRAW,
+                );
                 gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
             }
             self.write_pbo = Some(pbo);
@@ -387,12 +450,20 @@ impl Texture {
         }
     }
     // Set the inner data of the texture, and resize it
-    pub fn update_size_fill(&mut self, tt: TextureType, bytes: Vec<u8>) -> Result<(), OpenGLObjectNotInitialized> {
+    pub fn update_size_fill(
+        &mut self,
+        tt: TextureType,
+        bytes: Vec<u8>,
+    ) -> Result<(), OpenGLObjectNotInitialized> {
         if self.oid == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
 
-        let pointer: *const c_void = if !bytes.is_empty() { bytes.as_ptr() as *const c_void } else { null() };
+        let pointer: *const c_void = if !bytes.is_empty() {
+            bytes.as_ptr() as *const c_void
+        } else {
+            null()
+        };
 
         // Check if the current dimension type matches up with the new one
         self.ttype = tt;
@@ -402,15 +473,45 @@ impl Texture {
             match tt {
                 TextureType::Texture1D(width) => {
                     gl::BindTexture(gl::TEXTURE_1D, self.oid);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+                    gl::TexImage1D(
+                        gl::TEXTURE_2D,
+                        0,
+                        ifd.0,
+                        width as i32,
+                        0,
+                        ifd.1,
+                        ifd.2,
+                        pointer,
+                    );
                 }
                 TextureType::Texture2D(width, height) => {
                     gl::BindTexture(gl::TEXTURE_2D, self.oid);
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                    gl::TexImage2D(
+                        gl::TEXTURE_2D,
+                        0,
+                        ifd.0,
+                        width as i32,
+                        height as i32,
+                        0,
+                        ifd.1,
+                        ifd.2,
+                        pointer,
+                    );
                 }
                 TextureType::Texture3D(width, height, depth) => {
                     gl::BindTexture(gl::TEXTURE_3D, self.oid);
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                    gl::TexImage3D(
+                        gl::TEXTURE_3D,
+                        0,
+                        ifd.0,
+                        width as i32,
+                        height as i32,
+                        depth as i32,
+                        0,
+                        ifd.1,
+                        ifd.2,
+                        pointer,
+                    );
                 }
                 TextureType::Texture2DArray(_, _, _) => todo!(),
             }
@@ -436,7 +537,12 @@ impl Texture {
                     // Gotta read back the data
                     let mut vec = vec![0_u8; byte_count];
                     gl::BindBuffer(gl::PIXEL_PACK_BUFFER, read_pbo.unwrap());
-                    gl::GetBufferSubData(gl::PIXEL_PACK_BUFFER, 0, byte_count as isize, vec.as_mut_ptr() as *mut c_void);
+                    gl::GetBufferSubData(
+                        gl::PIXEL_PACK_BUFFER,
+                        0,
+                        byte_count as isize,
+                        vec.as_mut_ptr() as *mut c_void,
+                    );
                     let mut cpu_bytes = read.bytes.as_ref().lock();
                     *cpu_bytes = vec;
                 })
@@ -457,7 +563,11 @@ impl Asset for Texture {
             let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
             // Flip
             let image = image.flipv();
-            (image.to_bytes(), image.width() as u16, image.height() as u16)
+            (
+                image.to_bytes(),
+                image.width() as u16,
+                image.height() as u16,
+            )
         }
         // Load this texture from the bytes
         let (bytes, width, height) = read_bytes(bytes);

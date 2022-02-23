@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{shapes::Sphere, bounds::aabb::AABB};
+    use crate::{bounds::aabb::AABB, shapes::Sphere};
 
     // AABB sphere
     #[test]

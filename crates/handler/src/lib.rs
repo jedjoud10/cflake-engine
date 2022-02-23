@@ -22,11 +22,18 @@ use main::{
 use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
-fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
-    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
-        rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
-        rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
-    ));
+fn init_glutin_window<U>(
+    el: &EventLoop<U>,
+    title: String,
+    vsync: bool,
+) -> WindowedContext<NotCurrent> {
+    let wb = WindowBuilder::new()
+        .with_resizable(true)
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(
+            rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
+            rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
+        ));
     let wc = ContextBuilder::new()
         .with_double_buffer(Some(true))
         .with_vsync(vsync)
@@ -51,15 +58,26 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
 
     // Glutin stuff
     let event_loop = EventLoop::new();
-    let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
+    let window_context = init_glutin_window(
+        &event_loop,
+        format!("'{}', by '{}'", app_name, author_name),
+        config.vsync,
+    );
 
     defaults::preload_default_assets();
 
     // Set fullscreen if we want to
     let window = window_context.window();
     if config.fullscreen {
-        let vm = window.primary_monitor().unwrap().video_modes().next().unwrap();
-        window_context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
+        let vm = window
+            .primary_monitor()
+            .unwrap()
+            .video_modes()
+            .next()
+            .unwrap();
+        window_context
+            .window()
+            .set_fullscreen(Some(Fullscreen::Exclusive(vm)));
     } else {
         window_context.window().set_fullscreen(None);
     }
@@ -101,12 +119,23 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     });
 }
 // Handle events
-fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
+fn handle_glutin_events(
+    sleeper: &mut LoopHelper,
+    world: &mut World,
+    event: Event<()>,
+    control_flow: &mut ControlFlow,
+) {
     match event {
         // Window events
-        Event::WindowEvent { window_id: _, event } => handle_window_event(event, world, control_flow),
+        Event::WindowEvent {
+            window_id: _,
+            event,
+        } => handle_window_event(event, world, control_flow),
         // Device event
-        Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),
+        Event::DeviceEvent {
+            device_id: _,
+            event,
+        } => handle_device_event(event, world, control_flow),
         // Loop events
         Event::MainEventsCleared => {
             // Update the delta time
@@ -143,14 +172,19 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
     }
 
     match event {
-        WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
+        WindowEvent::ScaleFactorChanged {
+            scale_factor,
+            new_inner_size: _,
+        } => {
             let pipeline = world.pipeline.read();
             pipec::update_callback(&pipeline, move |pipeline, _| {
                 pipeline.window.pixels_per_point = scale_factor;
             });
         }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
+        WindowEvent::Resized(size) => {
+            world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16))
+        }
         _ => (),
     }
 }
@@ -159,11 +193,17 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
 fn handle_device_event(event: DeviceEvent, world: &mut World, _control_flow: &mut ControlFlow) {
     match event {
         DeviceEvent::MouseMotion { delta } => {
-            world.input.receive_mouse_position_event(veclib::vec2(delta.0, delta.1));
+            world
+                .input
+                .receive_mouse_position_event(veclib::vec2(delta.0, delta.1));
         }
         DeviceEvent::MouseWheel { delta } => match delta {
-            glutin::event::MouseScrollDelta::LineDelta(_x, y) => world.input.receive_mouse_scroll_event(y as f64),
-            glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x),
+            glutin::event::MouseScrollDelta::LineDelta(_x, y) => {
+                world.input.receive_mouse_scroll_event(y as f64)
+            }
+            glutin::event::MouseScrollDelta::PixelDelta(y) => {
+                world.input.receive_mouse_scroll_event(y.x)
+            }
         },
         DeviceEvent::Key(input) => {
             if let Some(virtual_keycode) = input.virtual_keycode {

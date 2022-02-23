@@ -62,7 +62,11 @@ impl<T: PipelineObject> Collection<T> {
     }
     #[allow(dead_code)]
     pub(crate) fn was_mutated(&self, id: ObjectID<T>) -> bool {
-        let id = if let Some(x) = id.get() { x } else { return false };
+        let id = if let Some(x) = id.get() {
+            x
+        } else {
+            return false;
+        };
         let pair = ordered_vec::utils::from_id(id);
         self.mutated.get(pair.index as usize)
     }

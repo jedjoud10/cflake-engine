@@ -131,7 +131,9 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
         | TextureFormat::RGBA32I
         | TextureFormat::RGBA16F
         | TextureFormat::RGBA32F => gl::RGBA,
-        TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
+        TextureFormat::DepthComponent16
+        | TextureFormat::DepthComponent24
+        | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
     };
     let data_type = match dt {
         DataType::U8 => gl::UNSIGNED_BYTE,
@@ -151,14 +153,25 @@ pub(crate) fn calculate_size_bytes(format: &TextureFormat, pixel_count: usize) -
         TextureFormat::R8R | TextureFormat::R8RS | TextureFormat::R8I => size_of::<u8>(),
         TextureFormat::RG8R | TextureFormat::RG8RS | TextureFormat::RG8I => size_of::<u8>() * 2,
         TextureFormat::RGB8R | TextureFormat::RGB8RS | TextureFormat::RGB8I => size_of::<u8>() * 3,
-        TextureFormat::RGBA8R | TextureFormat::RGBA8RS | TextureFormat::RGBA8I => size_of::<u8>() * 4,
+        TextureFormat::RGBA8R | TextureFormat::RGBA8RS | TextureFormat::RGBA8I => {
+            size_of::<u8>() * 4
+        }
 
-        TextureFormat::R16R | TextureFormat::R16I | TextureFormat::R16F | TextureFormat::DepthComponent16 => size_of::<u16>(),
+        TextureFormat::R16R
+        | TextureFormat::R16I
+        | TextureFormat::R16F
+        | TextureFormat::DepthComponent16 => size_of::<u16>(),
         TextureFormat::RG16R | TextureFormat::RG16I | TextureFormat::RG16F => size_of::<u16>() * 2,
-        TextureFormat::RGB16R | TextureFormat::RGB16I | TextureFormat::RGB16F => size_of::<u16>() * 3,
-        TextureFormat::RGBA16R | TextureFormat::RGBA16I | TextureFormat::RGBA16F => size_of::<u16>() * 4,
+        TextureFormat::RGB16R | TextureFormat::RGB16I | TextureFormat::RGB16F => {
+            size_of::<u16>() * 3
+        }
+        TextureFormat::RGBA16R | TextureFormat::RGBA16I | TextureFormat::RGBA16F => {
+            size_of::<u16>() * 4
+        }
 
-        TextureFormat::R32I | TextureFormat::R32F | TextureFormat::DepthComponent32 => size_of::<u32>(),
+        TextureFormat::R32I | TextureFormat::R32F | TextureFormat::DepthComponent32 => {
+            size_of::<u32>()
+        }
         TextureFormat::RG32I | TextureFormat::RG32F => size_of::<u32>() * 2,
         TextureFormat::RGB32I | TextureFormat::RGB32F => size_of::<u32>() * 3,
         TextureFormat::RGBA32I | TextureFormat::RGBA32F => size_of::<u32>() * 4,
