@@ -12,4 +12,5 @@ lazy_static = "1.4.0"
 spin_sleep = "1.0.0"
 main = { path = "../main" }
 defaults = { path = "../defaults" }
+log = { version = "0.4.14", features = ["std"] }
 mimalloc = "0.1.27"

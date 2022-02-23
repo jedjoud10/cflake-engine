@@ -26,7 +26,7 @@ impl SaverLoader {
     pub fn new(author_name: &str, app_name: &str) -> Self {
         let old_path = format!("{}/{}/", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
-        println!("Init saver-loader with path: '{:?}'", path.config_dir);
+        log::info!("Init saver-loader with path: '{:?}'", path.config_dir);
         // Also init the logger
         let log_file_path = {
             let mut path = path.config_dir.clone();

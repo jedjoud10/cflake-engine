@@ -43,7 +43,7 @@ impl World {
         others::set_main_thread();
         // Just set the game settings and we are done
         world.settings = settings;
-        println!("World init done!");
+        log::info!("World init done!");
         world
     }
     // Resize window event

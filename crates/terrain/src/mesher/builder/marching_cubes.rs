@@ -163,7 +163,7 @@ impl MarchingCubes {
         // Then generate the mesh
         self.generate_model(voxels, &mut mesh);
         // Combine the mesh's custom vertex data with the mesh itself
-        println!(
+        log::info!(
             "Main: {:.2}ms, verts: {}",
             i.elapsed().as_secs_f32() * 1000.0,
             mesh.vertices.len()

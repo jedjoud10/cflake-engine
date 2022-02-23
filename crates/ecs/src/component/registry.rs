@@ -29,7 +29,7 @@ pub fn register_component<T: Component + Sized + 'static>() -> Bitfield<u32> {
     rc.insert(TypeId::of::<T>(), component_id);
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
-    println!("{:?} {}", TypeId::of::<T>(), component_id);
+    log::info!("{:?} {}", TypeId::of::<T>(), component_id);
     // Return the component ID before the bit shift
     component_id
 }

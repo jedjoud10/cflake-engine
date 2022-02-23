@@ -24,3 +24,4 @@ assets = { path = "../assets" }
 globals = { path = "../globals" }
 io = { path = "../io" }
 audio = { path = "../audio" }
+log = { version = "0.4.14", features = ["std"] }

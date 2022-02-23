@@ -102,7 +102,7 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     let mut world = World::new(config, io, pipeline_data);
 
     // Calling the callback
-    println!("Calling World Initialization callback");
+    log::info!("Calling World Initialization callback");
     {
         // Load the default systems first
         defaults::preload_system(&mut world);
@@ -158,9 +158,9 @@ fn handle_glutin_events(
         // When we exit from the engine
         Event::LoopDestroyed => {
             // When the window closes and we exit from the game
-            println!("Exiting the engine...");
+            log::info!("Exiting the engine...");
+            log::info!("The sense of impending doom is upon us.");
             world.destroy();
-            println!("\x1b[31mThe sense of impending doom is upon us.\x1b[0m");
         }
 
         _ => (),

@@ -48,7 +48,7 @@ impl SceneRenderer {
         internal: &mut InternalPipeline,
         pipeline: &mut Pipeline,
     ) {
-        println!("Initializing the pipeline renderer...");
+        log::info!("Initializing the pipeline renderer...");
         // Create the quad mesh that we will use to render the whole screen
         use veclib::{vec2, vec3};
         let quad = Mesh {
@@ -67,7 +67,7 @@ impl SceneRenderer {
         };
         // Load the quad mesh
         self.quad_model = pipec::construct(pipeline, quad).unwrap();
-        println!("Quad mesh {:?}", self.quad_model);
+        log::info!("Quad mesh {:?}", self.quad_model);
 
         // Load the lighting pass shader
         let settings = ShaderSettings::default()
@@ -199,7 +199,7 @@ impl SceneRenderer {
 
         // We must always flush to make sure we execute the tasks internally
         pipeline.flush(internal, self);
-        println!("Successfully initialized the RenderPipeline Renderer!");
+        log::info!("Successfully initialized the RenderPipeline Renderer!");
     }
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {

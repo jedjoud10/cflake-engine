@@ -1,8 +1,6 @@
 use log::Level;
 use parking_lot::Mutex;
 use std::{
-    io::{BufWriter, Write},
-    path::PathBuf,
     sync::Arc,
 };
 
@@ -30,5 +28,6 @@ impl log::Log for Logger {
         }
     }
 
-    fn flush(&self) {}
+    fn flush(&self) {
+    }
 }
