@@ -2,7 +2,7 @@
 pub mod test {
     use crate::{
         component::{registry, Component},
-        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
+        entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
         event::EventKey,
         ECSManager,
     };
@@ -77,24 +77,15 @@ pub mod test {
         let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::default();
-        let id = EntityID::new(&ecs);
-        let id2 = id;
-        let id3 = id;
         // The entity is not created yet, so it is null
-        ecs.add_entity(entity, id, group).unwrap();
+        let id2 = ecs.add_entity(entity, group).unwrap();
+        let id3 = id2;
         // The ID is valid now
         assert!(ecs.get_entity(&id2).is_ok());
         // Run the system for two frames
         ecs.run_systems(&mut world);
-        // Remove the entity and check if the corresponding ID's became invalid
-        let id4 = id3;
         ecs.remove_entity(id3).unwrap();
         ecs.finish_update();
-        let should_not_be_the_same = EntityID::new(&ecs);
-        dbg!(id4);
-        dbg!(should_not_be_the_same);
-        assert_ne!(should_not_be_the_same, id4);
-        assert!(ecs.get_entity(&id4).is_err());
         ecs.run_systems(&mut world);
         ecs.finish_update();
     }
@@ -125,9 +116,8 @@ pub mod test {
             let mut group = ComponentLinkingGroup::default();
             group.link(Name::new("Person")).unwrap();
             let entity = Entity::default();
-            let id = EntityID::new(&ecs);
             // The entity is not created yet, so it is null
-            ecs.add_entity(entity, id, group).unwrap();
+            ecs.add_entity(entity, group).unwrap();
         }
         for _x in 0..10 {
             let i = std::time::Instant::now();
@@ -148,8 +138,8 @@ pub mod test {
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
-        let id = EntityID::new(&ecs);
-        ecs.add_entity(entity, id, ComponentLinkingGroup::default())
+        let id = ecs
+            .add_entity(entity, ComponentLinkingGroup::default())
             .unwrap();
         assert!(ecs.get_entity(&id).is_ok());
         assert_eq!(
@@ -216,11 +206,10 @@ pub mod test {
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
-        let id = EntityID::new(&ecs);
         let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
-        ecs.add_entity(entity, id, group).unwrap();
+        let id = ecs.add_entity(entity, group).unwrap();
         ecs.run_systems(&mut world);
         ecs.finish_update();
         ecs.remove_entity(id).unwrap();

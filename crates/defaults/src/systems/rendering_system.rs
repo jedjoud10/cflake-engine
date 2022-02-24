@@ -58,19 +58,6 @@ fn run(world: &mut World, mut data: EventKey) {
             }
         });
     }
-
-    // Also update the direction of the sun (internally stored as a Directional Light)
-    let global = world
-        .globals
-        .get_global::<crate::globals::GlobalWorldData>()
-        .unwrap();
-    let (quat, id) = (global.sun_quat, pipeline.defaults.as_ref().unwrap().sun);
-    pipec::update_callback(&pipeline, move |pipeline, _| {
-        // Update the sun's light source, if possible
-        if let Some(light) = pipeline.light_sources.get_mut(id) {
-            *light._type.as_directional_mut().unwrap() = quat;
-        }
-    });
 }
 
 // An event fired whenever we add multiple new renderer entities

@@ -35,10 +35,6 @@ impl Transform {
         self.scale = scale;
         self
     }
-    // Get the forward vector from this transform
-    pub fn get_forward_vector(&self) -> veclib::Vector3<f32> {
-        self.rotation.mul_point(-veclib::Vector3::Z)
-    }
 }
 
 impl Transform {

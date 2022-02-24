@@ -5,7 +5,7 @@ use cflake_engine::{
         components,
         globals::{self, TerrainSettings},
     },
-    ecs::entity::{ComponentLinkingGroup, Entity, EntityID},
+    ecs::entity::{ComponentLinkingGroup, Entity},
     math::octrees::HeuristicSettings,
     rendering::{
         basics::{
@@ -35,19 +35,13 @@ fn init(world: &mut World) {
         .unwrap();
     group.link_default::<components::Transform>().unwrap();
     let entity = Entity::default();
-    let id = EntityID::new(&mut world.ecs);
-    world.ecs.add_entity(entity, id, group).unwrap();
+    let _id = world.ecs.add_entity(entity, group).unwrap();
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::IDENTITY,
+        quat: veclib::Quaternion::<f32>::from_x_angle(-20f32.to_radians()),
     })
-    .with_strength(1.0);
-    let mut world_global = world
-        .globals
-        .get_global_mut::<globals::GlobalWorldData>()
-        .unwrap();
-    world_global.sun_quat = veclib::Quaternion::<f32>::from_x_angle(-20f32.to_radians());
+    .with_strength(1.3);
     pipec::construct(&pipeline, light).unwrap();
     // Load a terrain material
     // Load the shader first
@@ -93,7 +87,7 @@ fn init(world: &mut World) {
         .with_diffuse(diffuse)
         .with_normal(normals)
         .with_normal_strength(2.0)
-        .with_uv_scale(veclib::Vector2::ONE * 0.02)
+        .with_uv_scale(veclib::Vector2::ONE * 0.03)
         .with_shader(shader);
     let material = pipec::construct(&pipeline, material).unwrap();
     let heuristic = HeuristicSettings::default()
@@ -107,7 +101,7 @@ fn init(world: &mut World) {
     let tex = pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = TerrainSettings::default()
-        .with_depth(9)
+        .with_depth(5)
         .with_material(material)
         .with_heuristic(heuristic)
         .with_uniforms(SetUniformsCallback::new(move |x| {

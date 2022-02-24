@@ -16,7 +16,6 @@ fn add_chunk(
 ) -> (EntityID, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
-    let id = ecs::entity::EntityID::new(ecs);
     let mut group = ecs::entity::ComponentLinkingGroup::default();
 
     // Link the nessecary components
@@ -40,7 +39,7 @@ fn add_chunk(
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
-    ecs.add_entity(entity, id, group).unwrap();
+    let id = ecs.add_entity(entity, group).unwrap();
     (id, priority)
 }
 // Remove a single chunk

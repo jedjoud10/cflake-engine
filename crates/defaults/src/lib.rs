@@ -58,14 +58,11 @@ pub fn preload_default_assets() {
 }
 // Pre-load the default systems
 pub fn preload_system(world: &mut World) {
-    //template_system::system(world);
     camera_system::system(world);
-    //physics_system::system(world);
     rendering_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
     gui_system::system(world);
-    test_system::system(world);
     audio_system::system(world);
     // Terrain
     terrain_system::chunk_system::system(world);

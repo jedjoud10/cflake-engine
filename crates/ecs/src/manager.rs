@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
-use ordered_vec::{shareable::ShareableOrderedVec, simple::OrderedVec};
+use ordered_vec::simple::OrderedVec;
 use parking_lot::Mutex;
 use std::{cell::UnsafeCell, sync::Arc};
 
@@ -17,7 +17,7 @@ use crate::{
 // The Entity Component System manager that will handle everything ECS related
 pub struct ECSManager<World> {
     // A vector full of entitie
-    pub(crate) entities: ShareableOrderedVec<Entity>,
+    pub(crate) entities: OrderedVec<Entity>,
     pub(crate) component_groups_to_remove: Mutex<OrderedVec<ComponentGroupToRemove>>,
     // Each system, stored in the order they were created
     pub(crate) systems: Vec<System<World>>,
@@ -57,22 +57,16 @@ impl<World> ECSManager<World> {
     pub fn add_entity(
         &mut self,
         mut entity: Entity,
-        id: EntityID,
         group: ComponentLinkingGroup,
-    ) -> Result<(), EntityError> {
-        // Check if the EntityID was not occupied already
-        if self.entities.get(id.0).is_some() {
-            return Err(EntityError::new(
-                "Tried adding entity, but the EntityID was already occupied!".to_string(),
-                id,
-            ));
-        }
+    ) -> Result<EntityID, EntityError> {
+        // Get the ID
+        let id = EntityID(self.entities.get_next_id());
         entity.id = Some(id);
         // Add the entity
-        let _idx = self.entities.insert(id.0, entity);
+        let _idx = self.entities.push_shove(entity);
         // After doing that, we can safely add the components
         self.link_components(id, group).unwrap();
-        Ok(())
+        Ok(id)
     }
     // Remove an entity, but keep it's components alive until all systems have been notified
     pub fn remove_entity(&mut self, id: EntityID) -> Result<(), EntityError> {
