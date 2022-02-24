@@ -112,7 +112,8 @@ impl MarchingCubes {
                 // Then add it to the mesh
                 e.insert(mesh.vertices.len() as u16);
                 mesh.triangles.push(mesh.vertices.len() as u32);
-                mesh.vertex_builder()
+                mesh.vertices
+                    .add()
                     .with_position(interpolated.vertex)
                     .with_normal(interpolated.normal)
                     .with_color(interpolated.color)

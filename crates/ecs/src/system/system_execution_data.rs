@@ -1,30 +1,27 @@
 use crate::event::EventKey;
 
+use super::Event;
+
 // Some data that is created and returned whenever we want to execute a system
-pub struct SystemExecutionData<Context> {
-    // Some events
-    pub(crate) evn_run: Option<fn(&mut Context, EventKey)>,
-    pub(crate) evn_added_entity: Option<fn(&mut Context, EventKey)>,
-    pub(crate) evn_removed_entity: Option<fn(&mut Context, EventKey)>,
-    // Queries
-    pub(crate) evn_run_ekey: EventKey,
-    pub(crate) evn_added_entity_ekey: EventKey,
-    pub(crate) evn_removed_entity_ekey: EventKey,
+pub struct SystemExecutionData<World> {
+    // Some events and their queries
+    pub(crate) run: (Event<World>, EventKey),
+    pub(crate) added_entity: (Event<World>, EventKey),
+    pub(crate) removed_entity: (Event<World>, EventKey),
 }
 
-impl<Context> SystemExecutionData<Context> {
+impl<World> SystemExecutionData<World> {
     // Actually execute the system update
-    pub fn run(self, context: &mut Context) {
+    pub fn run(self, world: &mut World) {
         // Run the "Added Entity" and "Removed Entity" events first, then we can run the "Run System" event
-        if let Some(evn_added_entity) = self.evn_added_entity {
-            evn_added_entity(context, self.evn_added_entity_ekey);
+        if let Some(evn_added_entity) = self.added_entity.0 {
+            evn_added_entity(world, self.added_entity.1);
         }
-        if let Some(evn_removed_entity) = self.evn_removed_entity {
-            evn_removed_entity(context, self.evn_removed_entity_ekey);
+        if let Some(evn_removed_entity) = self.removed_entity.0 {
+            evn_removed_entity(world, self.removed_entity.1);
         }
-
-        if let Some(run_system_evn) = self.evn_run {
-            run_system_evn(context, self.evn_run_ekey);
+        if let Some(run_system_evn) = self.run.0 {
+            run_system_evn(world, self.run.1);
         }
     }
 }

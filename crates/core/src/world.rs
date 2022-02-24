@@ -1,7 +1,7 @@
 use crate::{GameSettings, WorldState};
 use audio::player::AudioPlayer;
 use ecs::ECSManager;
-use globals::GlobalCollection;
+use globals::GlobalsCollection;
 use gui::GUIManager;
 use input::InputManager;
 use io::SaverLoader;
@@ -15,7 +15,7 @@ pub struct World {
     pub time: Time,
     pub gui: GUIManager,
     pub ecs: ECSManager<Self>,
-    pub globals: GlobalCollection,
+    pub globals: GlobalsCollection,
     pub io: SaverLoader,
     pub settings: GameSettings,
     pub pipeline: PipelineContext,
@@ -84,7 +84,7 @@ impl World {
             {
                 // Flush all the commands that we have dispatched during the system's frame execution
                 let system = &self.ecs.get_systems()[system_index];
-                system.clear::<World>();
+                system.clear();
             }
         }
         // Finish update

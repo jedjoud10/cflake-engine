@@ -10,7 +10,6 @@ use crate::{
         LinkedComponents,
     },
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
-    event::EventHandler,
     system::{System, SystemBuilder},
     utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError, EntityError},
 };
@@ -21,12 +20,10 @@ pub struct ECSManager<World> {
     pub(crate) entities: ShareableOrderedVec<Entity>,
     pub(crate) component_groups_to_remove: Mutex<OrderedVec<ComponentGroupToRemove>>,
     // Each system, stored in the order they were created
-    pub(crate) systems: Vec<System>,
+    pub(crate) systems: Vec<System<World>>,
     // The components that are valid in the world
     pub(crate) components: ComponentsCollection,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
-    // Our internal event handler
-    pub(crate) event_handler: EventHandler<World>,
 }
 
 impl<World> Default for ECSManager<World> {
@@ -37,7 +34,6 @@ impl<World> Default for ECSManager<World> {
             systems: Default::default(),
             components: Default::default(),
             mutated_components: Default::default(),
-            event_handler: Default::default(),
         }
     }
 }
@@ -145,12 +141,12 @@ impl<World> ECSManager<World> {
         for system in self.systems.iter() {
             // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
             if system.check_cbitfield(new) && !system.check_cbitfield(old) {
-                let linked = LinkedComponents::new_direct(
+                let linked = LinkedComponents {
                     id,
-                    linked.clone(),
-                    self.mutated_components.clone(),
-                    components.clone(),
-                );
+                    linked: linked.clone(),
+                    mutated_components: self.mutated_components.clone(),
+                    components: components.clone(),
+                };
                 system.add_entity(id, linked);
             }
         }
@@ -181,11 +177,12 @@ impl<World> ECSManager<World> {
             if system.check_cbitfield(old) && !system.check_cbitfield(new) {
                 system.remove_entity(
                     id,
-                    LinkedComponents::new(
-                        entity,
-                        self.mutated_components.clone(),
-                        self.components.clone(),
-                    ),
+                    LinkedComponents {
+                        id,
+                        linked: entity.components.clone(),
+                        mutated_components: self.mutated_components.clone(),
+                        components: self.components.clone(),
+                    },
                 );
             }
         });
@@ -265,15 +262,15 @@ impl<World> ECSManager<World> {
     /* #endregion */
     /* #region Systems */
     // Create a new system build
-    pub fn create_system_builder(&mut self) -> SystemBuilder<World> {
+    pub fn build_system(&mut self) -> SystemBuilder<World> {
         SystemBuilder::new(self)
     }
     // Add a system to our current systems
-    pub(crate) fn add_system(&mut self, system: System) {
+    pub(crate) fn add_system(&mut self, system: System<World>) {
         self.systems.push(system)
     }
     // Get a reference to the ecsmanager's systems.
-    pub fn get_systems(&self) -> &[System] {
+    pub fn get_systems(&self) -> &[System<World>] {
         self.systems.as_ref()
     }
     // Get the number of systems that we have
@@ -287,7 +284,7 @@ impl<World> ECSManager<World> {
         for system in self.systems.iter() {
             let execution_data = system.run_system(self);
             execution_data.run(world);
-            system.clear::<World>();
+            system.clear();
         }
     }
     /* #endregion */

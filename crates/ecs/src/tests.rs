@@ -1,15 +1,55 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{
-            defaults::{Name, Tagged},
-            registry,
-        },
+        component::{registry, Component},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityID},
         event::EventKey,
         ECSManager,
     };
     use bitfield::Bitfield;
+    // A name component that can be added to named entities
+    #[derive(Component)]
+    pub struct Name {
+        pub name: String,
+    }
+
+    impl Default for Name {
+        fn default() -> Self {
+            Self {
+                name: "Unnamed".to_string(),
+            }
+        }
+    }
+
+    impl Name {
+        pub fn new(name: &str) -> Self {
+            Self {
+                name: name.to_string(),
+            }
+        }
+    }
+
+    // A tag component that can be added to entities that contain some sort of "Tag" We can then search for entities with the same tag
+    #[derive(Component)]
+    pub struct Tagged {
+        pub tag: String,
+    }
+
+    impl Default for Tagged {
+        fn default() -> Self {
+            Self {
+                tag: "Untagged".to_string(),
+            }
+        }
+    }
+
+    impl Tagged {
+        pub fn new(tag: &str) -> Self {
+            Self {
+                tag: tag.to_string(),
+            }
+        }
+    }
 
     // A test world
     pub struct World;
@@ -30,7 +70,7 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.create_system_builder();
+        let builder = ecs.build_system();
         builder.link::<Name>().with_run_event(run_system).build();
 
         // Create a simple entity with that component
@@ -67,7 +107,7 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.create_system_builder();
+        let builder = ecs.build_system();
         fn internal_run(_world: &mut World, _data: EventKey) {
             /*
             // Transform the _context to RefContext using some magic fuckery
@@ -103,7 +143,7 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.create_system_builder();
+        let builder = ecs.build_system();
         builder.link::<Name>().with_run_event(run_system).build();
 
         // Add a new entity and play with it's components
@@ -166,16 +206,13 @@ pub mod test {
                 assert_eq!(*name.name, "John".to_string());
             }
         }
-        ecs.create_system_builder()
+        ecs.build_system()
             .link::<Name>()
             .with_run_event(internal_run)
             .with_removed_entities_event(internal_remove_entity)
             .with_added_entities_event(internal_add_entity)
             .build();
-        ecs.create_system_builder()
-            .link::<Name>()
-            .link::<Tagged>()
-            .build();
+        ecs.build_system().link::<Name>().link::<Tagged>().build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();

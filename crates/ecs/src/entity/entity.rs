@@ -2,7 +2,6 @@ use crate::{component::Component, ECSManager};
 use ahash::AHashMap;
 use bitfield::Bitfield;
 // A simple entity in the world
-#[derive(Clone)]
 pub struct Entity {
     // This entity's ID
     pub(crate) id: Option<EntityID>,
@@ -13,9 +12,6 @@ pub struct Entity {
     // Our stored components
     pub(crate) components: AHashMap<Bitfield<u32>, u64>,
 }
-
-unsafe impl Sync for Entity {}
-unsafe impl Send for Entity {}
 
 // ECS time bois
 impl Default for Entity {

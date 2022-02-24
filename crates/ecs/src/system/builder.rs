@@ -7,14 +7,14 @@ use crate::{
 use super::System;
 
 // A system builder used to build multiple systems
-pub struct SystemBuilder<'a, Context> {
-    ecs_manager: &'a mut ECSManager<Context>,
-    system: System,
+pub struct SystemBuilder<'a, World> {
+    ecs_manager: &'a mut ECSManager<World>,
+    system: System<World>,
 }
 
-impl<'a, Context> SystemBuilder<'a, Context> {
+impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
-    pub(crate) fn new(ecs_manager: &'a mut ECSManager<Context>) -> Self {
+    pub(crate) fn new(ecs_manager: &'a mut ECSManager<World>) -> Self {
         Self {
             ecs_manager,
             system: System::default(),
@@ -27,20 +27,18 @@ impl<'a, Context> SystemBuilder<'a, Context> {
         self
     }
     // Set the "Run System" event of this system
-    pub fn with_run_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
-        self.system.evn_run = Some(self.ecs_manager.event_handler.add_run_event(evn));
+    pub fn with_run_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
+        self.system.evn_run = Some(evn);
         self
     }
     // Set the "Added Entity" event of this system
-    pub fn with_added_entities_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
-        self.system.evn_added_entity =
-            Some(self.ecs_manager.event_handler.add_added_entity_event(evn));
+    pub fn with_added_entities_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
+        self.system.evn_added_entity = Some(evn);
         self
     }
     // Set the "Removed Entity" event of this system
-    pub fn with_removed_entities_event(mut self, evn: fn(&mut Context, EventKey)) -> Self {
-        self.system.evn_removed_entity =
-            Some(self.ecs_manager.event_handler.add_removed_entity_event(evn));
+    pub fn with_removed_entities_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
+        self.system.evn_removed_entity = Some(evn);
         self
     }
     // Build this system and add it to the ECS manager

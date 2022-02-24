@@ -1,5 +1,4 @@
 mod component;
-pub mod defaults;
 mod linked_components;
 mod query;
 mod query_guard;

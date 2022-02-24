@@ -1,4 +1,4 @@
-use super::{VertexAttributeBufferLayout, VertexBuilder, Vertices};
+use super::Vertices;
 use crate::{
     object::{
         Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
@@ -30,9 +30,6 @@ pub struct Mesh {
     // Store the vertices (in multiple bufer or in a single big buffer)
     pub vertices: Vertices,
 
-    // How we set the VBO buffers
-    pub layout: VertexAttributeBufferLayout,
-
     // Update frequence
     pub update_frequency: UpdateFrequency,
 
@@ -50,7 +47,6 @@ impl Default for Mesh {
             vertex_array_object: Default::default(),
             buffers: Default::default(),
             vertices: Default::default(),
-            layout: Default::default(),
             update_frequency: UpdateFrequency::Static,
             triangles: Default::default(),
             vert_count: Default::default(),
@@ -96,238 +92,87 @@ impl PipelineObject for Mesh {
                     gl::STATIC_DRAW,
                 );
 
-                // We now have 2 ways to represent the vertex attributes: either we pack them tightly in their own VBO, or we interleave them
-                if let VertexAttributeBufferLayout::Interleaved = self.layout {
-                    // Interleaved
-                    // Calculate the stride
-                    let mut stride;
-                    // Positions
-                    stride = size_of::<f32>() * 3;
-                    // Normals (optional)
-                    if !self.vertices.normals.is_empty() {
-                        stride += size_of::<i8>() * 3;
-                    }
-                    // Tangents (optional)
-                    if !self.vertices.tangents.is_empty() {
-                        stride += size_of::<i8>() * 4;
-                    }
-                    // UVS (optional)
-                    if !self.vertices.uvs.is_empty() {
-                        stride += size_of::<u8>() * 2;
-                    }
-                    // Colors (optional)
-                    if !self.vertices.colors.is_empty() {
-                        stride += size_of::<u8>() * 3;
-                    }
-                    let stride = stride as i32;
+                gl::GenBuffers(5, buffers.as_mut_ptr().add(1));
+                // Normal, fallback
+                // Create the vertex buffer and populate it
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (self.vertices.positions.len() * size_of::<f32>() * 3) as isize,
+                    self.vertices.positions.as_ptr() as *const c_void,
+                    gl::STATIC_DRAW,
+                );
 
-                    // Convert the different vectors into a big chunky one
-                    let mut big_vector = Vec::with_capacity(self.vertices.len() * stride as usize);
-                    // Kill me.
-                    // "I must optimize this but that is a problem for future me" - Me atm
-                    for (idx, x) in self.vertices.positions.iter().enumerate() {
-                        // Add
-                        big_vector.extend_from_slice(&std::mem::transmute_copy::<
-                            veclib::Vector3<f32>,
-                            [u8; size_of::<f32>() * 3],
-                        >(x));
-                        if !self.vertices.normals.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
-                                veclib::Vector3<i8>,
-                                [u8; size_of::<i8>() * 3],
-                            >(
-                                self.vertices.normals.get(idx)?
-                            ));
-                        }
-                        if !self.vertices.tangents.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
-                                veclib::Vector4<i8>,
-                                [u8; size_of::<i8>() * 4],
-                            >(
-                                self.vertices.tangents.get(idx)?
-                            ));
-                        }
-                        if !self.vertices.uvs.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
-                                veclib::Vector2<u8>,
-                                [u8; size_of::<u8>() * 2],
-                            >(
-                                self.vertices.uvs.get(idx)?
-                            ));
-                        }
-                        if !self.vertices.colors.is_empty() {
-                            big_vector.extend_from_slice(&std::mem::transmute_copy::<
-                                veclib::Vector3<u8>,
-                                [u8; size_of::<u8>() * 3],
-                            >(
-                                self.vertices.colors.get(idx)?
-                            ));
-                        }
-                    }
+                // Vertex attrib array
+                gl::EnableVertexAttribArray(0);
+                gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
-                    gl::GenBuffers(1, buffers.as_mut_ptr().add(1));
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
+                // Vertex normals attribute
+                if !self.vertices.normals.is_empty() {
+                    // Vertex normals buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (big_vector.len()) as isize,
-                        big_vector.as_ptr() as *const c_void,
+                        (self.vertices.normals.len() * size_of::<i8>() * 3) as isize,
+                        self.vertices.normals.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
 
-                    // The stride increase each time we add an attribute
-                    let mut current_stride = 0;
-
-                    // Vertex attrib array
-                    gl::EnableVertexAttribArray(0);
-                    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, stride, null());
-                    current_stride += size_of::<f32>() * 3;
-
-                    // Vertex normals attribute
-                    if !self.vertices.normals.is_empty() {
-                        gl::EnableVertexAttribArray(1);
-                        gl::VertexAttribPointer(
-                            1,
-                            3,
-                            gl::BYTE,
-                            gl::TRUE,
-                            stride,
-                            current_stride as *const c_void,
-                        );
-                        current_stride += size_of::<i8>() * 3;
-                    } else {
-                        gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
-                    }
-
-                    if !self.vertices.tangents.is_empty() {
-                        // Tangent attribute
-                        gl::EnableVertexAttribArray(2);
-                        gl::VertexAttribPointer(
-                            2,
-                            4,
-                            gl::BYTE,
-                            gl::TRUE,
-                            stride,
-                            current_stride as *const c_void,
-                        );
-                        current_stride += size_of::<i8>() * 4;
-                    } else {
-                        gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
-                    }
-
-                    if !self.vertices.uvs.is_empty() {
-                        // UV attribute
-                        gl::EnableVertexAttribArray(3);
-                        gl::VertexAttribPointer(
-                            3,
-                            2,
-                            gl::UNSIGNED_BYTE,
-                            gl::TRUE,
-                            stride,
-                            current_stride as *const c_void,
-                        );
-                        current_stride += size_of::<u8>() * 2;
-                    } else {
-                        gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
-                    }
-
-                    if !self.vertices.colors.is_empty() {
-                        // Vertex colors attribute
-                        gl::EnableVertexAttribArray(4);
-                        gl::VertexAttribPointer(
-                            4,
-                            3,
-                            gl::UNSIGNED_BYTE,
-                            gl::TRUE,
-                            stride,
-                            current_stride as *const c_void,
-                        );
-                        //current_stride += size_of::<u8>() * 3;
-                    } else {
-                        gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
-                    }
+                    gl::EnableVertexAttribArray(1);
+                    gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
                 } else {
-                    gl::GenBuffers(5, buffers.as_mut_ptr().add(1));
-                    // Normal, fallback
-                    // Create the vertex buffer and populate it
-                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
+                    gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
+                }
+
+                if !self.vertices.tangents.is_empty() {
+                    // And it's brother, the tangent buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
                     gl::BufferData(
                         gl::ARRAY_BUFFER,
-                        (self.vertices.positions.len() * size_of::<f32>() * 3) as isize,
-                        self.vertices.positions.as_ptr() as *const c_void,
+                        (self.vertices.tangents.len() * size_of::<i8>() * 4) as isize,
+                        self.vertices.tangents.as_ptr() as *const c_void,
                         gl::STATIC_DRAW,
                     );
 
-                    // Vertex attrib array
-                    gl::EnableVertexAttribArray(0);
-                    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+                    // Tangent attribute
+                    gl::EnableVertexAttribArray(2);
+                    gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
+                } else {
+                    gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
+                }
 
-                    // Vertex normals attribute
-                    if !self.vertices.normals.is_empty() {
-                        // Vertex normals buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.vertices.normals.len() * size_of::<i8>() * 3) as isize,
-                            self.vertices.normals.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
+                if !self.vertices.uvs.is_empty() {
+                    // The texture coordinates buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.vertices.uvs.len() * size_of::<u8>() * 2) as isize,
+                        self.vertices.uvs.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
 
-                        gl::EnableVertexAttribArray(1);
-                        gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
-                    } else {
-                        gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
-                    }
+                    // UV attribute
+                    gl::EnableVertexAttribArray(3);
+                    gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                } else {
+                    gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
+                }
 
-                    if !self.vertices.tangents.is_empty() {
-                        // And it's brother, the tangent buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.vertices.tangents.len() * size_of::<i8>() * 4) as isize,
-                            self.vertices.tangents.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
+                if !self.vertices.colors.is_empty() {
+                    // Vertex colors buffer
+                    gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
+                    gl::BufferData(
+                        gl::ARRAY_BUFFER,
+                        (self.vertices.colors.len() * size_of::<u8>() * 3) as isize,
+                        self.vertices.colors.as_ptr() as *const c_void,
+                        gl::STATIC_DRAW,
+                    );
 
-                        // Tangent attribute
-                        gl::EnableVertexAttribArray(2);
-                        gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
-                    } else {
-                        gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
-                    }
-
-                    if !self.vertices.uvs.is_empty() {
-                        // The texture coordinates buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.vertices.uvs.len() * size_of::<u8>() * 2) as isize,
-                            self.vertices.uvs.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
-
-                        // UV attribute
-                        gl::EnableVertexAttribArray(3);
-                        gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                    } else {
-                        gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
-                    }
-
-                    if !self.vertices.colors.is_empty() {
-                        // Vertex colors buffer
-                        gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                        gl::BufferData(
-                            gl::ARRAY_BUFFER,
-                            (self.vertices.colors.len() * size_of::<u8>() * 3) as isize,
-                            self.vertices.colors.as_ptr() as *const c_void,
-                            gl::STATIC_DRAW,
-                        );
-
-                        // Vertex colors attribute
-                        gl::EnableVertexAttribArray(4);
-                        gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
-                    } else {
-                        gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
-                    }
+                    // Vertex colors attribute
+                    gl::EnableVertexAttribArray(4);
+                    gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                } else {
+                    gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
                 }
 
                 // Clear the CPU buffers if we want to
@@ -367,17 +212,6 @@ impl PipelineObject for Mesh {
 }
 
 impl Mesh {
-    // Create a vertex builder
-    pub fn vertex_builder(&mut self) -> VertexBuilder {
-        VertexBuilder {
-            vertices: &mut self.vertices,
-        }
-    }
-    // Create the mesh with a specific vertex attribute vbo layout
-    pub fn with_layout(mut self, layout: VertexAttributeBufferLayout) -> Self {
-        self.layout = layout;
-        self
-    }
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
         for i in (0..self.triangles.len()).step_by(3) {

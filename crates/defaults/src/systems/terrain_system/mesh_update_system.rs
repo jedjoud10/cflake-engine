@@ -22,7 +22,7 @@ fn run(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .create_system_builder()
+        .build_system()
         .with_run_event(run)
         .link::<crate::components::Chunk>()
         .link::<crate::components::Renderer>()

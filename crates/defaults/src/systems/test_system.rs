@@ -6,9 +6,5 @@ fn run(_world: &mut World, _data: EventKey) {}
 
 // Create the system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .create_system_builder()
-        .with_run_event(run)
-        .build();
+    world.ecs.build_system().with_run_event(run).build();
 }

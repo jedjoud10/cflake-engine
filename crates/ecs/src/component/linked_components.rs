@@ -1,10 +1,7 @@
 use super::{
     registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection,
 };
-use crate::{
-    entity::{Entity, EntityID},
-    utils::ComponentError,
-};
+use crate::{entity::EntityID, utils::ComponentError};
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use std::sync::Arc;
@@ -16,42 +13,11 @@ pub struct LinkedComponents {
     pub(crate) components: ComponentsCollection,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
     pub(crate) linked: AHashMap<Bitfield<u32>, u64>,
-
-    // This ID can either be the valid entity ID or the ID of a removed entity that is stored in our temporary OrderedVec
-    pub id: u64,
+    pub(crate) id: EntityID,
 }
 
 unsafe impl Sync for LinkedComponents {}
 unsafe impl Send for LinkedComponents {}
-
-impl LinkedComponents {
-    pub(crate) fn new(
-        entity: &Entity,
-        mutated_components: Arc<AtomicSparseBitfield>,
-        components: ComponentsCollection,
-    ) -> Self {
-        Self {
-            components,
-            mutated_components,
-            linked: entity.components.clone(),
-            id: (entity.id.unwrap().0),
-        }
-    }
-
-    pub(crate) fn new_direct(
-        id: EntityID,
-        linked: AHashMap<Bitfield<u32>, u64>,
-        mutated_components: Arc<AtomicSparseBitfield>,
-        components: ComponentsCollection,
-    ) -> Self {
-        Self {
-            components,
-            mutated_components,
-            linked,
-            id: (id.0),
-        }
-    }
-}
 
 // Errors
 fn invalid_err() -> ComponentError {
@@ -61,8 +27,12 @@ fn invalid_err_not_linked() -> ComponentError {
     ComponentError::new("Component is not linked to the entity!".to_string())
 }
 impl LinkedComponents {
+    // Get the Entity ID
+    pub fn entity_id(&self) -> EntityID {
+        self.id
+    }
     // Get the component ID of a specific component that this entity has
-    pub fn get_component_id<T>(&self) -> Option<ComponentID>
+    pub fn component_id<T>(&self) -> Option<ComponentID>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -71,8 +41,8 @@ impl LinkedComponents {
         Some(ComponentID::new(cbitfield, *idx))
     }
     // Get the entity ID
-    pub fn get_entity_id(&self) -> EntityID {
-        EntityID(self.id)
+    pub fn get_entity_id(&self) -> &EntityID {
+        &self.id
     }
     // Get a reference to a specific linked component
     pub fn get_component<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>

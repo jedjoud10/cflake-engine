@@ -2,7 +2,7 @@ use main::{core::World, rendering::pipeline::pipec};
 
 // Create the GUI system
 pub fn system(world: &mut World) {
-    world.ecs.create_system_builder().build();
+    world.ecs.build_system().build();
     // We must create the pipeline End of Frame callback and tell it to render our GUI
     let painter = world.gui.painter.clone();
     let pipeline = world.pipeline.read();

@@ -120,7 +120,7 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .create_system_builder()
+        .build_system()
         .with_run_event(run)
         .with_added_entities_event(added_entities)
         .with_removed_entities_event(removed_entities)

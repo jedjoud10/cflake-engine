@@ -1,3 +1,5 @@
+use super::VertexBuilder;
+
 // How we store the vertices
 #[derive(Default)]
 pub struct Vertices {
@@ -25,5 +27,10 @@ impl Vertices {
         self.tangents.drain(..);
         self.uvs.drain(..);
         self.colors.drain(..);
+    }
+
+    // Create a vertex builder
+    pub fn add(&mut self) -> VertexBuilder {
+        VertexBuilder { vertices: self }
     }
 }

@@ -11,14 +11,15 @@ use crate::{
     ECSManager,
 };
 
+pub(crate) type Event<World> = Option<fn(&mut World, EventKey)>;
+
 // A system that updates specific components in parallel
-#[derive(Default)]
-pub struct System {
+pub struct System<World> {
     pub(crate) cbitfield: Bitfield<u32>,
     // Events
-    pub(crate) evn_run: Option<usize>,
-    pub(crate) evn_added_entity: Option<usize>,
-    pub(crate) evn_removed_entity: Option<usize>,
+    pub(crate) evn_run: Event<World>,
+    pub(crate) evn_added_entity: Event<World>,
+    pub(crate) evn_removed_entity: Event<World>,
 
     linked_components: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
     // Added, Removed
@@ -26,8 +27,22 @@ pub struct System {
     removed: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
 }
 
+impl<World> Default for System<World> {
+    fn default() -> Self {
+        Self {
+            cbitfield: Default::default(),
+            evn_run: Default::default(),
+            evn_added_entity: Default::default(),
+            evn_removed_entity: Default::default(),
+            linked_components: Default::default(),
+            added: Default::default(),
+            removed: Default::default(),
+        }
+    }
+}
+
 // System code
-impl System {
+impl<World> System<World> {
     // Check if an entity validates our cbitfield
     pub(crate) fn check_cbitfield(&self, cbitfield: Bitfield<u32>) -> bool {
         cbitfield.contains(&self.cbitfield)
@@ -55,7 +70,7 @@ impl System {
         }
     }
     // Create a SystemExecutionData that we can actually run at a later time
-    pub fn run_system<World>(&self, ecs_manager: &ECSManager<World>) -> SystemExecutionData<World> {
+    pub fn run_system(&self, ecs_manager: &ECSManager<World>) -> SystemExecutionData<World> {
         // Create the component queries
         let all_components = self.evn_run.map(|_| self.linked_components.clone());
 
@@ -76,32 +91,28 @@ impl System {
         };
         SystemExecutionData {
             // Events
-            evn_run: ecs_manager
-                .event_handler
-                .get_run_event(self.evn_run)
-                .cloned(),
-            evn_added_entity: ecs_manager
-                .event_handler
-                .get_added_entity_event(self.evn_added_entity)
-                .cloned(),
-            evn_removed_entity: ecs_manager
-                .event_handler
-                .get_removed_entity_event(self.evn_removed_entity)
-                .cloned(),
-            // Queries
-            evn_run_ekey: EventKey::Query(ComponentQuery {
-                linked_components: all_components,
-            }),
-            evn_added_entity_ekey: EventKey::Query(ComponentQuery {
-                linked_components: added_components,
-            }),
-            evn_removed_entity_ekey: EventKey::Query(ComponentQuery {
-                linked_components: removed_components,
-            }),
+            run: (
+                self.evn_run,
+                EventKey::Query(ComponentQuery {
+                    linked_components: all_components,
+                }),
+            ),
+            added_entity: (
+                self.evn_added_entity,
+                EventKey::Query(ComponentQuery {
+                    linked_components: added_components,
+                }),
+            ),
+            removed_entity: (
+                self.evn_removed_entity,
+                EventKey::Query(ComponentQuery {
+                    linked_components: removed_components,
+                }),
+            ),
         }
     }
     // Clear the system for the next execution
-    pub fn clear<World>(&self) {
+    pub fn clear(&self) {
         // Clear the stored entity differences
         let mut added = self.added.borrow_mut();
         added.clear();

@@ -204,7 +204,8 @@ impl MarchingCubesSkirts {
             }
             // Vertex builder
             mesh.triangles.push(mesh.vertices.len() as u32);
-            mesh.vertex_builder()
+            mesh.vertices
+                .add()
                 .with_position(vertex)
                 .with_normal(data.normal)
                 .with_color(data.color)
