@@ -1,5 +1,5 @@
-use main::{
-    core::World,
+use world::{
+    World,
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::compute::ComputeShaderExecutionSettings,

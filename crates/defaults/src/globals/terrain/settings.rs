@@ -1,4 +1,4 @@
-use main::{
+use world::{
     math::octrees::HeuristicSettings,
     rendering::{
         basics::{material::Material, uniforms::SetUniformsCallback},
@@ -23,7 +23,7 @@ pub struct TerrainSettings {
 impl Default for TerrainSettings {
     fn default() -> Self {
         Self {
-            voxel_src_path: main::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
+            voxel_src_path: world::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
             uniforms: Default::default(),
             depth: 4,
             heuristic_settings: Default::default(),

@@ -33,3 +33,12 @@ impl From<Cube> for AABB {
         }
     }
 }
+impl From<AABB> for Cube {
+    fn from(aabb: AABB) -> Self {
+        let full_extent = aabb.max - aabb.min;
+        Self {
+            center: aabb.min + (full_extent / 2.0),
+            size: full_extent,
+        }
+    }
+}

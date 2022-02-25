@@ -26,7 +26,8 @@ impl Window {
     pub fn set_fullscreen(&self, fullscreen: bool) {
         // Panic if we try to do on any other thread other than the main thread
         if !others::on_main_thread() {
-            panic!("We cannot update the window settings if we are not on the main thead!");
+            log::error!("We cannot update the window settings if we are not on the main thead!");
+            panic!();
         }
         let window = self.inner.as_ref().unwrap();
         if fullscreen {

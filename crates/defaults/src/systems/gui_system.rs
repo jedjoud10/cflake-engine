@@ -1,4 +1,4 @@
-use main::{core::World, rendering::pipeline::pipec};
+use world::{World, rendering::pipeline::pipec};
 
 // Create the GUI system
 pub fn system(world: &mut World) {

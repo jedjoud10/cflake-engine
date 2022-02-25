@@ -1,5 +1,5 @@
-use main::{
-    core::World,
+use world::{
+    World,
     ecs::{
         event::EventKey,
         rayon::iter::{IntoParallelRefIterator, ParallelIterator},
@@ -14,7 +14,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let pipeline = world.pipeline.read();
     // Le local struct
     struct RendererUpdatedMatrixUnit {
-        renderer_id: ObjectID<main::rendering::basics::renderer::Renderer>,
+        renderer_id: ObjectID<world::rendering::basics::renderer::Renderer>,
         matrix: veclib::Matrix4x4<f32>,
     }
 

@@ -9,18 +9,9 @@ use parking_lot::Mutex;
 pub struct ReadBytes {
     // The shared bytes that have been sent from the main thread that we must update
     pub(crate) bytes: Arc<Mutex<Vec<u8>>>,
-    // A specific range of bytes to read from, if we want to
-    pub(crate) range: Option<std::ops::Range<usize>>,
 }
 
 impl ReadBytes {
-    // Create a new read bytes with a specific range
-    pub fn with_range(range: std::ops::Range<usize>) -> Self {
-        Self {
-            range: Some(range),
-            ..Default::default()
-        }
-    }
     // Fill a vector of type elements using the appropriate bytes
     pub fn fill_vec<U>(self) -> Option<Vec<U>> {
         // Read the bytes

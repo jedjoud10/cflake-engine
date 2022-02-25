@@ -27,7 +27,7 @@ impl Vertices {
         self.tangents.clear();
         self.uvs.clear();
         self.colors.clear();
-        
+
         self.positions.shrink_to_fit();
         self.normals.shrink_to_fit();
         self.tangents.shrink_to_fit();

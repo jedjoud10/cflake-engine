@@ -15,7 +15,7 @@ impl ChunkCoords {
     pub fn new(octree_node: &Node) -> Self {
         Self {
             position: octree_node.position,
-            center: octree_node.get_center(),
+            center: octree_node.center(),
             size: octree_node.half_extent * 2,
             depth: octree_node.depth,
         }

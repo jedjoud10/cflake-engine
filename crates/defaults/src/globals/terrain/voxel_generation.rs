@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use main::{
+use world::{
     rendering::{
         advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
         basics::{
@@ -53,7 +53,7 @@ impl VoxelGenerator {
         // Load the first pass compute shader
         let voxel_src_path = format!(r#"#include "{}""#, voxel_src_path);
         let settings = ShaderSettings::default()
-            .source(main::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
+            .source(world::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path.clone())
             .shader_constant("chunk_size", CHUNK_SIZE);
 
@@ -62,7 +62,7 @@ impl VoxelGenerator {
 
         // Load the second pass compute shader
         let settings = ShaderSettings::default()
-            .source(main::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
+            .source(world::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
             .external_code("voxel_include_path", voxel_src_path)
             .shader_constant("chunk_size", CHUNK_SIZE);
         let second_compute = ComputeShader::new(settings).unwrap();

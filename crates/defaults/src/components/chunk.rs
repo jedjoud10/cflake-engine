@@ -1,4 +1,4 @@
-use main::{
+use world::{
     ecs::component::Component,
     rendering::{basics::mesh::Mesh, object::ObjectID},
     terrain::ChunkCoords,

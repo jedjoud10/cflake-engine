@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 
-use super::{HeuristicSettings, Octree, Node};
+use super::{HeuristicSettings, Node, Octree};
 
 // A differential octree, so we can detect what nodes we have added/removes from this octree
 #[derive(Default)]
@@ -20,10 +20,7 @@ impl DiffOctree {
         }
     }
     // Update the differential, and return the values of new added nodes and old removed nodes
-    pub fn update(
-        &mut self,
-        target: veclib::Vector3<f32>,
-    ) -> Option<(Vec<Node>, Vec<Node>)> {
+    pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<(Vec<Node>, Vec<Node>)> {
         // Keep track of the previous nodes
         let success = self.inner.update(target);
         let result = if success.is_some() {

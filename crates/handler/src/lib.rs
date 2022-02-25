@@ -1,3 +1,4 @@
+use defaults::rendering::pipeline::pipec;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -14,11 +15,7 @@ use glutin::{
     window::{Fullscreen, WindowBuilder},
     ContextBuilder, GlProfile, GlRequest, NotCurrent, WindowedContext,
 };
-pub use main::*;
-use main::{
-    core::{World, WorldState},
-    rendering::pipeline::pipec,
-};
+pub use world::*;
 use spin_sleep::LoopHelper;
 
 // Initialize glutin and the window
@@ -51,12 +48,12 @@ fn init_glutin_window<U>(
 // Start le engine
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
-    let io = main::io::Manager::new(author_name, app_name);
-    let config: core::GameSettings = io.load("config/game_config.json").unwrap_or_else(|_| {
+    let io = io::Manager::new(author_name, app_name);
+    let config: GameSettings = io.load("config/game_config.json").unwrap_or_else(|_| {
         // If we failed reading the config file, try creating it and saving it
         io.create_file("config/game_config.json");
-        io.save("config/game_config.json", &core::GameSettings::default());
-        core::GameSettings::default()
+        io.save("config/game_config.json", &GameSettings::default());
+        GameSettings::default()
     });
 
     // Glutin stuff

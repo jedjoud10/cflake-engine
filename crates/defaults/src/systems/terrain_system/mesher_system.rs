@@ -1,6 +1,6 @@
 use crate::{components::Chunk, globals::ChunkGenerationState};
-use main::{
-    core::World,
+use world::{
+    World,
     ecs::{
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup},
         event::EventKey,

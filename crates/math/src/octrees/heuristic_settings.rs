@@ -14,7 +14,7 @@ impl Default for HeuristicSettings {
             function: |node, target| {
                 // AABB intersection, return true if point in on the min edge though
 
-                (node.get_aabb().min.elem_lte(target) & node.get_aabb().max.elem_gt(target)).all()
+                (node.aabb().min.elem_lte(target) & node.aabb().max.elem_gt(target)).all()
             },
             min_threshold_distance: 16.0,
         }
@@ -23,10 +23,7 @@ impl Default for HeuristicSettings {
 
 impl HeuristicSettings {
     // Create some new heuristic settings based on the subdivide function
-    pub fn with_function(
-        mut self,
-        function: fn(&Node, &veclib::Vector3<f32>) -> bool,
-    ) -> Self {
+    pub fn with_function(mut self, function: fn(&Node, &veclib::Vector3<f32>) -> bool) -> Self {
         self.function = function;
         self
     }

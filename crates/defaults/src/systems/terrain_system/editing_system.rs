@@ -1,5 +1,5 @@
-use main::core::World;
-use main::ecs::event::EventKey;
+use world::World;
+use world::ecs::event::EventKey;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
     // Camera values

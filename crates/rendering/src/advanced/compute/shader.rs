@@ -65,7 +65,7 @@ impl PipelineObject for ComputeShader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::info!("Error while compiling shader source {}!:", self.source.path);
+                log::error!("Error while compiling shader source {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
                 // Put the line count
@@ -75,8 +75,8 @@ impl PipelineObject for ComputeShader {
                     .map(|(count, line)| format!("({}): {}", count + 1, line))
                     .collect::<Vec<String>>()
                     .join("\n");
-                log::info!("{}", error_source);
-                log::info!("Error: \n{}", string);
+                log::error!("{}", error_source);
+                log::error!("Error: \n{}", string);
                 panic!();
             }
 
@@ -105,7 +105,7 @@ impl PipelineObject for ComputeShader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::info!("Error while finalizing shader {}!:", self.source.path);
+                log::error!("Error while finalizing shader {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
                 let error_source_lines = self.source.text.lines().enumerate();
@@ -114,8 +114,8 @@ impl PipelineObject for ComputeShader {
                     .map(|(count, line)| format!("({}): {}", count + 1, line))
                     .collect::<Vec<String>>()
                     .join("\n");
-                log::info!("{}", error_source);
-                log::info!("Error: \n[31m{}", string);
+                log::error!("{}", error_source);
+                log::error!("Error: \n[31m{}", string);
                 panic!();
             }
             // Detach shader source

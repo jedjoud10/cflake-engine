@@ -17,7 +17,7 @@ pub struct Node {
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        self.get_center() == other.get_center()
+        self.center() == other.center()
             && self.children_indices.is_none() == other.children_indices.is_none()
             && self.depth == other.depth
     }
@@ -25,7 +25,7 @@ impl PartialEq for Node {
 
 impl Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.get_center().hash(state);
+        self.center().hash(state);
         self.depth.hash(state);
         self.children_indices.is_none().hash(state);
     }
@@ -35,7 +35,7 @@ impl Eq for Node {}
 
 impl Node {
     // Get the AABB from this octee node
-    pub fn get_aabb(&self) -> crate::bounds::aabb::AABB {
+    pub fn aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
             min: veclib::Vector3::<f32>::from(self.position),
             max: veclib::Vector3::<f32>::from(self.position)
@@ -47,7 +47,7 @@ impl Node {
         }
     }
     // Get the center of this octree node
-    pub fn get_center(&self) -> veclib::Vector3<i64> {
+    pub fn center(&self) -> veclib::Vector3<i64> {
         self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node

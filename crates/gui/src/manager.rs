@@ -1,7 +1,7 @@
 use crate::painter::Painter;
+use parking_lot::Mutex;
 use rendering::pipeline::{pipec, PipelineContext};
 use std::sync::Arc;
-use parking_lot::Mutex;
 
 // A simple manager
 pub struct GUIManager {
@@ -29,6 +29,7 @@ impl GUIManager {
         let painter = if let Ok(ok) = Arc::try_unwrap(arc) {
             ok.into_inner().unwrap()
         } else {
+            log::error!("Could not get GUI Painter!");
             panic!()
         };
         Self {

@@ -1,7 +1,7 @@
-use main::{
-    core::{World, WorldState},
+use world::{
+    World, WorldState,
     ecs::event::EventKey,
-    gui::egui,
+    gui::egui, terrain,
 };
 
 // The debugging system's update loop
@@ -48,24 +48,17 @@ fn run(world: &mut World, _data: EventKey) {
             // Terrain
             let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
             if let Ok(terrain) = terrain {
-                let octree=  terrain.chunks_manager.octree.lock();
+                let octree = terrain.chunks_manager.octree.lock();
                 ui.separator();
                 ui.heading("Terrain");
                 ui.label(format!(
                     "Chunk Size: [{a}x{a}x{a}]",
-                    a = main::terrain::CHUNK_SIZE
+                    a = terrain::CHUNK_SIZE
                 ));
-                ui.label(format!(
-                    "Terrain Octree Depth: '{}'",
-                    octree.inner.depth
-                ));
+                ui.label(format!("Terrain Octree Depth: '{}'", octree.inner.depth));
                 ui.label(format!(
                     "Terrain Octree Size: '[{a}x{a}x{a}]'",
-                    a = octree
-                        .inner
-                        .get_root_node()
-                        .half_extent
-                        * 2
+                    a = octree.inner.get_root_node().half_extent * 2
                 ));
                 ui.label(format!("Chunks: '{}'", terrain.chunks_manager.chunks.len()));
                 ui.label(format!(

@@ -1,6 +1,6 @@
-use main::core::World;
-use main::ecs::event::EventKey;
-use main::input::Keys;
+use world::World;
+use world::ecs::event::EventKey;
+use world::input::Keys;
 
 // The camera system update loop
 fn run(world: &mut World, mut data: EventKey) {
@@ -84,8 +84,8 @@ fn run(world: &mut World, mut data: EventKey) {
         camera.update_aspect_ratio(pipeline.window.dimensions);
         camera.update_view_matrix(position, new_rotation);
 
-        use main::rendering::pipeline;
-        let pipeline_camera = main::rendering::pipeline::camera::Camera {
+        use world::rendering::pipeline;
+        let pipeline_camera = world::rendering::pipeline::camera::Camera {
             position,
             rotation,
             forward,

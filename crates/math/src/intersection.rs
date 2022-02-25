@@ -1,6 +1,6 @@
 use super::bounds::aabb::*;
 use crate::{
-    octrees::{Octree, Node},
+    octrees::{Node, Octree},
     shapes::{BasicShapeType, Sphere},
 };
 
@@ -26,7 +26,7 @@ pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &Sphere) -> bool {
 }
 // Check if a basic shape intersects an octree node
 pub fn basic_shape_octree_node(shape: &BasicShapeType, node: &Node) -> bool {
-    let aabb = node.get_aabb();
+    let aabb = node.aabb();
     match shape {
         BasicShapeType::Cube(cube) => aabb_aabb(&AABB::from(cube.clone()), &aabb),
         BasicShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),

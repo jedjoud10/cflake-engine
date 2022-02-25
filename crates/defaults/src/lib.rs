@@ -1,12 +1,12 @@
-use main::{assets::cache_persistent, core::World};
 use systems::*;
+use world::{assets::cache_persistent, World};
 // Default components
 pub mod components;
 // Default globals
 pub mod globals;
 // Default systems
 pub mod systems;
-pub mod template_system;
+pub use world::*;
 
 // Pre-load the default assets
 pub fn preload_default_assets() {

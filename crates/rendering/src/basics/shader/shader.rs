@@ -145,7 +145,7 @@ impl PipelineObject for Shader {
                         std::ptr::null_mut::<i32>(),
                         log.as_mut_ptr(),
                     );
-                    log::info!("Error while compiling shader source {}!:", source_data.path);
+                    log::error!("Error while compiling shader source {}!:", source_data.path);
                     let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                     let string = String::from_utf8(printable_log).unwrap();
 
@@ -156,9 +156,9 @@ impl PipelineObject for Shader {
                         .map(|(count, line)| format!("({}): {}", count + 1, line))
                         .collect::<Vec<String>>()
                         .join("\n");
-                    log::info!("{}", error_source);
+                    log::error!("{}", error_source);
 
-                    log::info!("Error: \n{}", string);
+                    log::error!("Error: \n{}", string);
                     panic!();
                 }
 
@@ -209,10 +209,10 @@ impl PipelineObject for Shader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::info!("Error while finalizing shader {}!:", shader_name);
+                log::error!("Error while finalizing shader {}!:", shader_name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
-                log::info!("Error: \n{}", string);
+                log::error!("Error: \n{}", string);
                 panic!();
             }
             // Detach shaders

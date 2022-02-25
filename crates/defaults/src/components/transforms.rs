@@ -1,4 +1,4 @@
-use main::ecs::component::Component;
+use world::ecs::component::Component;
 // The transform component
 #[derive(Component)]
 pub struct Transform {

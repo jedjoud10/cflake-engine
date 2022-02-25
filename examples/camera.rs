@@ -1,5 +1,5 @@
 use cflake_engine::{
-    core::World,
+    World,
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
     rendering::{

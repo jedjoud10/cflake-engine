@@ -1,6 +1,6 @@
 use cflake_engine::{
     assets::assetc,
-    core::World,
+    World,
     defaults::{
         components,
         globals::{self, TerrainSettings},
@@ -39,7 +39,7 @@ fn init(world: &mut World) {
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-20f32.to_radians()),
+        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
     })
     .with_strength(1.3);
     pipec::construct(&pipeline, light).unwrap();
@@ -92,9 +92,9 @@ fn init(world: &mut World) {
     let material = pipec::construct(&pipeline, material).unwrap();
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
-            let dist = veclib::Vector3::<f32>::distance(node.get_center().into(), *target)
+            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target)
                 / (node.half_extent as f32 * 2.0);
-            dist < 1.2 || node.depth == 1
+            dist < 1.2
         })
         .with_threshold(64.0);
     let tex = assetc::load::<Texture>("user/textures/saber.png").unwrap();

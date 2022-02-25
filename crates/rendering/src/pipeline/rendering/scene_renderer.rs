@@ -225,9 +225,9 @@ impl SceneRenderer {
         &self,
         pipeline: &'a Pipeline,
         renderer: &Renderer,
+        pj_matrix: &veclib::Matrix4x4<f32>,
     ) -> Result<&'a Mesh, RenderingError> {
         // Pipeline data
-        let camera = &pipeline.camera;
         let material = pipeline.materials.get(renderer.material);
         // Load the default material if we don't have a valid one
         let material = material
@@ -249,7 +249,7 @@ impl SceneRenderer {
         // Bind first
         uniforms.bind_shader();
         // Then set the uniforms
-        uniforms.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
+        uniforms.set_mat44f32("project_view_matrix", *pj_matrix);
         uniforms.set_mat44f32("mesh_matrix", *mesh_matrix);
         // Optional
         material.uniforms.execute(&uniforms);
@@ -314,13 +314,14 @@ impl SceneRenderer {
     }
     // Render the whole scene normally
     fn render_scene(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
-        let _camera = &pipeline.camera;
+        let camera = &pipeline.camera;
+        let pj_matrix = camera.projm * camera.viewm;
         for (_, renderer) in pipeline.renderers.iter() {
             // Check if we are visible
             if !renderer.flags.contains(RendererFlags::VISIBLE) {
                 continue;
             }
-            let result = self.configure_uniforms(pipeline, renderer);
+            let result = self.configure_uniforms(pipeline, renderer, &pj_matrix);
             // The renderer might've failed setting it's uniforms
             if let Ok(mesh) = result {
                 Self::render(mesh);

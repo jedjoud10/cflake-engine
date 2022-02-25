@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use main::{
+use world::{
     globals::Global,
     math::octrees::DiffOctree,
     rendering::pipeline::Pipeline,

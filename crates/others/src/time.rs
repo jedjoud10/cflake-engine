@@ -20,13 +20,13 @@ pub struct Time {
 
 impl Default for Time {
     fn default() -> Self {
-        Self { 
+        Self {
             elapsed: Default::default(),
             delta: Default::default(),
             current: FrameTimings {
                 begin_instant: Instant::now(),
                 count: 0,
-            }
+            },
         }
     }
 }
@@ -41,10 +41,9 @@ impl Time {
         self.current.begin_instant = Instant::now();
     }
     // Late update
-    pub fn late_update(&mut self) {
-    }
+    pub fn late_update(&mut self) {}
     // Update the current frame time
-    pub fn update_current_frame_time(&mut self) {  
-        self.current.begin_instant = Instant::now();      
+    pub fn update_current_frame_time(&mut self) {
+        self.current.begin_instant = Instant::now();
     }
 }

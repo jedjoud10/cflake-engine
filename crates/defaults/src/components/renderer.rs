@@ -1,10 +1,10 @@
-use main::ecs::component::Component;
-use main::rendering::basics::material::Material;
-use main::rendering::basics::mesh::Mesh;
-use main::rendering::basics::renderer::RendererFlags;
-use main::rendering::basics::uniforms::SetUniformsCallback;
-use main::rendering::pipeline::{pipec, Pipeline};
-use main::rendering::{self, object::ObjectID};
+use world::ecs::component::Component;
+use world::rendering::basics::material::Material;
+use world::rendering::basics::mesh::Mesh;
+use world::rendering::basics::renderer::RendererFlags;
+use world::rendering::basics::uniforms::SetUniformsCallback;
+use world::rendering::pipeline::{pipec, Pipeline};
+use world::rendering::{self, object::ObjectID};
 type GPURenderer = rendering::basics::renderer::Renderer;
 // An Renderer component
 #[derive(Component)]

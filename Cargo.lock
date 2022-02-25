@@ -352,31 +352,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "ahash",
- "assets",
- "audio",
- "backtrace",
- "bitfield",
- "crossbeam-channel",
- "ecs",
- "globals",
- "glutin",
- "gui",
- "input",
- "io",
- "itertools",
- "lazy_static",
- "log",
- "no_deadlocks",
- "others",
- "rendering",
- "veclib",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -627,9 +602,9 @@ dependencies = [
  "ahash",
  "enum-as-inner",
  "log",
- "main",
  "parking_lot 0.12.0",
  "veclib",
+ "world",
 ]
 
 [[package]]
@@ -971,9 +946,9 @@ dependencies = [
  "glutin",
  "lazy_static",
  "log",
- "main",
  "mimalloc",
  "spin_sleep",
+ "world",
 ]
 
 [[package]]
@@ -1205,33 +1180,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "main"
-version = "0.1.0"
-dependencies = [
- "assets",
- "audio",
- "bitfield",
- "core",
- "ecs",
- "gl",
- "globals",
- "glutin",
- "gui",
- "input",
- "io",
- "lazy_static",
- "math",
- "network",
- "ordered_vec",
- "others",
- "physics",
- "rendering",
- "spin_sleep",
- "terrain",
- "veclib",
 ]
 
 [[package]]
@@ -2577,6 +2525,36 @@ dependencies = [
  "web-sys",
  "winapi",
  "x11-dl",
+]
+
+[[package]]
+name = "world"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "assets",
+ "audio",
+ "backtrace",
+ "bitfield",
+ "crossbeam-channel",
+ "ecs",
+ "globals",
+ "glutin",
+ "gui",
+ "input",
+ "io",
+ "itertools",
+ "lazy_static",
+ "log",
+ "math",
+ "network",
+ "no_deadlocks",
+ "ordered_vec",
+ "others",
+ "physics",
+ "rendering",
+ "terrain",
+ "veclib",
 ]
 
 [[package]]

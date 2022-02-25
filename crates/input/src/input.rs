@@ -23,7 +23,10 @@ pub struct InputManager {
 
 impl Default for InputManager {
     fn default() -> Self {
-        let multimap = MultiMap::<Keys, String, RandomState>::with_capacity_and_hasher(180, RandomState::new());
+        let multimap = MultiMap::<Keys, String, RandomState>::with_capacity_and_hasher(
+            180,
+            RandomState::new(),
+        );
         Self {
             maps: Default::default(),
             keys: multimap,

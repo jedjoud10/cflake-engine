@@ -1,20 +1,21 @@
 [package]
-name = "main"
+name = "world"
 version = "0.1.0"
 edition = "2021"
-
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ahash = "0.7.6"
 glutin = "0.28.0"
-gl = "0.14.0"
+no_deadlocks = "1.3.0"
+backtrace = "0.3.63"
+itertools = "0.10.3"
+lazy_static = "1.4.0"
+crossbeam-channel = "0.5.1"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
-lazy_static = "1.4.0"
-spin_sleep = "1.0.0"
-core = { path = "../core" }
 input = { path = "../input" }
 physics = { path = "../physics" }
 network = { path = "../network" }
@@ -28,3 +29,4 @@ gui = { path = "../gui" }
 io = { path = "../io" }
 terrain = { path = "../terrain" }
 audio = { path = "../audio" }
+log = "0.4.14"

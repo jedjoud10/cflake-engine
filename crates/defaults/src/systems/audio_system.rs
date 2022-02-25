@@ -1,5 +1,5 @@
-use main::core::World;
-use main::ecs::event::EventKey;
+use world::World;
+use world::ecs::event::EventKey;
 
 // Update the position of the left and right ears
 fn run(world: &mut World, _data: EventKey) {

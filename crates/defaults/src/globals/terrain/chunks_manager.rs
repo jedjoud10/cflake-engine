@@ -2,7 +2,7 @@ use std::{cmp::Ordering, sync::Arc};
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
-use main::{
+use world::{
     ecs::entity::EntityID,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, object::ObjectID},

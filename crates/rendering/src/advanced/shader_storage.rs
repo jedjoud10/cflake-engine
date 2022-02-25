@@ -196,7 +196,7 @@ impl ShaderStorage {
                             self.byte_size = write.bytes.len();
                             eprintln!("Writing to SSBO with {} bytes", write.bytes.len());
                         } else {
-                            panic!("Buffer is not dynamic, cannot reallocate!")
+                            log::error!("Buffer is not dynamic, cannot reallocate!");
                         }
                     } else {
                         // We have enough bytes allocated already
@@ -213,35 +213,17 @@ impl ShaderStorage {
                 GlTracker::new(|| unsafe {
                     // Bind the buffer before reading
                     gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
-                    // If we have a range, we can use it
-                    let range = read.range;
-                    let bytes = if let Some(range) = range {
-                        // Read using specific range
-                        let offset = range.start;
-                        let size = range.end - range.start;
-                        // Since we use a range, make a vector that can only hold that range
-                        let mut vec = vec![0; size as usize];
-                        gl::GetBufferSubData(
-                            gl::SHADER_STORAGE_BUFFER,
-                            offset as isize,
-                            size as isize,
-                            vec.as_mut_ptr() as *mut c_void,
-                        );
-                        vec
-                    } else {
-                        // Read the whole buffer
-                        let mut vec = vec![0; self.byte_size as usize];
-                        gl::GetBufferSubData(
-                            gl::SHADER_STORAGE_BUFFER,
-                            0,
-                            self.byte_size as isize,
-                            vec.as_mut_ptr() as *mut c_void,
-                        );
-                        vec
-                    };
+                    // Read the whole buffer
+                    let mut vec = vec![0u8; self.byte_size as usize];
+                    gl::GetBufferSubData(
+                        gl::SHADER_STORAGE_BUFFER,
+                        0,
+                        self.byte_size as isize,
+                        vec.as_mut_ptr() as *mut c_void,
+                    );
                     // Now store the shader storage's bytes
                     let mut output_bytes = read.bytes.lock();
-                    *output_bytes = bytes;
+                    *output_bytes = vec;
                 })
             }
         }
