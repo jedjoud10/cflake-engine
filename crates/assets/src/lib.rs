@@ -9,3 +9,4 @@ mod macros;
 pub use macros::*;
 pub mod metadata;
 pub use asset::*;
+mod tests;

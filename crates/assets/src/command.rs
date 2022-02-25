@@ -22,24 +22,10 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     file.read_to_end(&mut bytes).unwrap();
     Ok(bytes)
 }
-// If we are in Release, we read the bytes from the "assets" directory that is right next to the executable
+// If we are in Release, we read the bytes from the cacher directly since they are embedded into the engine
 #[cfg(not(debug_assertions))]
 fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
-    // Open the "packed" file and read
-    use std::{env, io::Read, path::Path};
-    // Get the path
-    let file_path = {
-        let mut file_path = env::current_exe().unwrap();
-        file_path.pop();
-        file_path.push(Path::new("assets"));
-        file_path.push(Path::new(path));
-        file_path
-    };
-    let mut file = File::open(file_path).map_err(|_| AssetLoadError::new(path))?;
-    // Read bytes
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).unwrap();
-    Ok(bytes)
+    Err(AssetLoadError::new("The asset should already be cached!"))
 }
 
 // Read the bytes from an asset file and cache them if needed

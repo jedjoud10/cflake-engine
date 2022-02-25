@@ -10,6 +10,7 @@ pub use world::*;
 
 // Pre-load the default assets
 pub fn preload_default_assets() {
+    /*
     // Pre load the assets
     println!("Pre-loading default assets...");
     // Rendering
@@ -49,6 +50,7 @@ pub fn preload_default_assets() {
     // Textures
     cache_persistent!("./assets/defaults/textures/missing_texture.png");
     cache_persistent!("./assets/defaults/textures/sky_gradient.png");
+    */
 
     println!("Finished pre-loading default assets!");
 }

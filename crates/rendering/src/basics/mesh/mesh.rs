@@ -8,7 +8,7 @@ use crate::{
 };
 use assets::Asset;
 use gl::types::GLuint;
-use obj::{Obj, TexturedVertex};
+use obj::TexturedVertex;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 use veclib::{vec2, vec3};
 
