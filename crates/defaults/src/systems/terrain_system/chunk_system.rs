@@ -32,7 +32,7 @@ fn add_chunk(
     // Calculate the chunk's priory and create it
     let chunk = crate::components::Chunk {
         coords,
-        updated_model_id: None,
+        updated_mesh_id: None,
     };
     let priority =
         crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);

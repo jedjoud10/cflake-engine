@@ -100,7 +100,7 @@ from bpy.types import Operator
 
 
 class ExportSomeData(Operator, ExportHelper):
-	"""Exports models to a file that our game engine can import and pack!"""
+	"""Exports meshs to a file that our game engine can import and pack!"""
 	bl_idname = "export_test.some_data"  # important since its how bpy.ops.import_test.some_data is constructed
 	bl_label = "Export mesh"
 

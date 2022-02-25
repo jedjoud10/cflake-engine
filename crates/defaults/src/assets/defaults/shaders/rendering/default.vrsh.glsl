@@ -1,11 +1,11 @@
 #version 460 core
-layout(location = 0) in vec3 model_pos;
-layout(location = 1) in vec3 model_normal;
-layout(location = 2) in vec4 model_tangent;
-layout(location = 3) in vec2 model_uv;
-layout(location = 4) in vec3 model_color;
+layout(location = 0) in vec3 mesh_pos;
+layout(location = 1) in vec3 mesh_normal;
+layout(location = 2) in vec4 mesh_tangent;
+layout(location = 3) in vec2 mesh_uv;
+layout(location = 4) in vec3 mesh_color;
 uniform mat4 project_view_matrix;
-uniform mat4 model_matrix;
+uniform mat4 mesh_matrix;
 out vec3 m_normal;
 out vec4 m_tangents;
 out vec2 m_uv;
@@ -14,19 +14,19 @@ out vec3 m_color;
 out mat3 tbn;
 
 void main() {
-	vec4 model_matrix_pos = (model_matrix * vec4(model_pos, 1.0));
-	vec4 mvp_pos = project_view_matrix * model_matrix_pos;
+	vec4 mesh_matrix_pos = (mesh_matrix * vec4(mesh_pos, 1.0));
+	vec4 mvp_pos = project_view_matrix * mesh_matrix_pos;
 	gl_Position = mvp_pos;
 
 	// Pass the data to the next shader
-	m_position = model_matrix_pos.xyz;
-	m_normal = normalize((model_matrix * vec4(model_normal, 0.0)).xyz);
-	vec3 bitangent = model_tangent.w * cross(model_tangent.xyz, model_normal);
-	m_tangents = vec4(normalize((model_matrix * vec4(model_tangent.xyz, 0.0)).xyz), model_tangent.w);
+	m_position = mesh_matrix_pos.xyz;
+	m_normal = normalize((mesh_matrix * vec4(mesh_normal, 0.0)).xyz);
+	vec3 bitangent = mesh_tangent.w * cross(mesh_tangent.xyz, mesh_normal);
+	m_tangents = vec4(normalize((mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz), mesh_tangent.w);
 	vec3 t = m_tangents.xyz;
-	vec3 b = normalize((model_matrix * vec4(bitangent, 0.0)).xyz);
+	vec3 b = normalize((mesh_matrix * vec4(bitangent, 0.0)).xyz);
 	vec3 n = m_normal;
 	tbn = mat3(t, b, n);
-	m_uv = model_uv;
-	m_color = model_color;
+	m_uv = mesh_uv;
+	m_color = mesh_color;
 }

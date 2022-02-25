@@ -25,7 +25,7 @@ impl Renderer {
         }
     }
     // Set a mesh
-    pub fn with_model(mut self, mesh: ObjectID<Mesh>) -> Self {
+    pub fn with_mesh(mut self, mesh: ObjectID<Mesh>) -> Self {
         self.inner.as_mut().unwrap().mesh = mesh;
         self
     }
@@ -45,7 +45,7 @@ impl Renderer {
         self
     }
     // Update this renderer's mesh on the GPU, destroying the old one
-    pub fn update_model(&mut self, pipeline: &Pipeline, new_model: ObjectID<Mesh>) {
+    pub fn update_mesh(&mut self, pipeline: &Pipeline, new_mesh: ObjectID<Mesh>) {
         // Get the GPU renderer
         let renderer = pipeline.renderers.get(self.id).unwrap();
         // Destroy the mesh
@@ -54,7 +54,7 @@ impl Renderer {
         let renderer_id = self.id;
         pipec::update_callback(pipeline, move |pipeline, _scene_renderer| {
             let renderer = pipeline.renderers.get_mut(renderer_id).unwrap();
-            renderer.mesh = new_model;
+            renderer.mesh = new_mesh;
         })
     }
 }

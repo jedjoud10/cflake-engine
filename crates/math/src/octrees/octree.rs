@@ -1,4 +1,4 @@
-use super::{node::OctreeNode, HeuristicSettings};
+use super::{node::Node, HeuristicSettings};
 use ordered_vec::simple::UnversionnedOrderedVec;
 
 // A simple octree, no incremental generation what so ever
@@ -6,7 +6,7 @@ pub struct Octree {
     // The old target point
     pub target: Option<veclib::Vector3<f32>>,
     // The total nodes in the octree
-    pub nodes: UnversionnedOrderedVec<OctreeNode>,
+    pub nodes: UnversionnedOrderedVec<Node>,
     // The depth of the tree
     pub depth: u8,
     // The size factor for each node, should be a power of two
@@ -32,7 +32,7 @@ impl Octree {
             let root_position =
                 veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
             // Output the root node
-            OctreeNode {
+            Node {
                 position: root_position,
                 half_extent: (root_size / 2) as u64,
                 depth: 0,
@@ -51,7 +51,7 @@ impl Octree {
     }
 
     // Get the root node of this octree
-    pub fn get_root_node(&self) -> &OctreeNode {
+    pub fn get_root_node(&self) -> &Node {
         self.nodes.get(0).unwrap()
     }
     // Generate an octree from a root and a target point
@@ -68,7 +68,7 @@ impl Octree {
         // Clear all the nodes other than the root node
         self.nodes.my_drain(|idx, _| idx > 0).for_each(drop);
         // The nodes that must be evaluated
-        let mut pending_nodes: Vec<OctreeNode> = vec![self.get_root_node().clone()];
+        let mut pending_nodes: Vec<Node> = vec![self.get_root_node().clone()];
         // Evaluate each node
         while !pending_nodes.is_empty() {
             // Get the current pending node
@@ -89,10 +89,10 @@ impl Octree {
         Some(())
     }
     // Recursively iterate through each node, and check it's children if the given function returns true
-    pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a OctreeNode) -> bool) {
+    pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a Node) -> bool) {
         // The nodes that must be evaluated
         let root_node = self.get_root_node();
-        let mut pending_nodes: Vec<&'a OctreeNode> = vec![root_node];
+        let mut pending_nodes: Vec<&'a Node> = vec![root_node];
         // Evaluate each node
         while !pending_nodes.is_empty() {
             // Get the current pending node

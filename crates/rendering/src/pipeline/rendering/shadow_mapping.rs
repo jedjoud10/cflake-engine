@@ -33,10 +33,10 @@ impl ShadowMapping {
     ) -> Result<&'a Mesh, RenderingError> {
         // Always use our internal shadow shader
         let mesh = pipeline.meshes.get(renderer.mesh).ok_or(RenderingError)?;
-        let model_matrix = &renderer.matrix;
+        let mesh_matrix = &renderer.matrix;
 
         // Calculate the light space matrix
-        let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *model_matrix;
+        let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *mesh_matrix;
 
         // Pass the light space matrix to the shader
         let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.shadow_shader));

@@ -1,9 +1,9 @@
-use super::OctreeNode;
+use super::Node;
 
 // Some heuristic settings that can be applied to a simple octree to change when certain nodes subdivide
 pub struct HeuristicSettings {
     // A function to check against each node
-    pub(crate) function: fn(&OctreeNode, &veclib::Vector3<f32>) -> bool,
+    pub(crate) function: fn(&Node, &veclib::Vector3<f32>) -> bool,
     // The minimum distance the target needs to move before we recompute the octree
     pub(crate) min_threshold_distance: f32,
 }
@@ -25,7 +25,7 @@ impl HeuristicSettings {
     // Create some new heuristic settings based on the subdivide function
     pub fn with_function(
         mut self,
-        function: fn(&OctreeNode, &veclib::Vector3<f32>) -> bool,
+        function: fn(&Node, &veclib::Vector3<f32>) -> bool,
     ) -> Self {
         self.function = function;
         self

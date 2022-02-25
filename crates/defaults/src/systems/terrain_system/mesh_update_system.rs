@@ -8,13 +8,13 @@ fn run(world: &mut World, mut data: EventKey) {
             .get_component_mut::<crate::components::Chunk>()
             .unwrap();
         // Try to get the updated mesh ID
-        let model_id = chunk.updated_model_id.take();
-        if let Some(model_id) = model_id {
+        let mesh_id = chunk.updated_mesh_id.take();
+        if let Some(mesh_id) = mesh_id {
             let mut renderer = components
                 .get_component_mut::<crate::components::Renderer>()
                 .unwrap();
             // Update the renderer
-            renderer.update_model(&world.pipeline.read(), model_id);
+            renderer.update_mesh(&world.pipeline.read(), mesh_id);
         }
     }
 }

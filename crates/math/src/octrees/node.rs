@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 // Simple node in the octree
 #[derive(Clone, Debug)]
-pub struct OctreeNode {
+pub struct Node {
     pub position: veclib::Vector3<i64>,
     pub half_extent: u64,
     pub depth: u8,
@@ -14,7 +14,7 @@ pub struct OctreeNode {
     pub children_indices: Option<[usize; 8]>,
 }
 
-impl PartialEq for OctreeNode {
+impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
         self.get_center() == other.get_center()
@@ -23,7 +23,7 @@ impl PartialEq for OctreeNode {
     }
 }
 
-impl Hash for OctreeNode {
+impl Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.get_center().hash(state);
         self.depth.hash(state);
@@ -31,9 +31,9 @@ impl Hash for OctreeNode {
     }
 }
 
-impl Eq for OctreeNode {}
+impl Eq for Node {}
 
-impl OctreeNode {
+impl Node {
     // Get the AABB from this octee node
     pub fn get_aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
@@ -61,10 +61,10 @@ impl OctreeNode {
         test && self.depth < (max_depth - 1)
     }
     // Subdivide this node into 8 smaller nodes
-    pub fn subdivide(&mut self, nodes: &mut UnversionnedOrderedVec<OctreeNode>) -> Vec<OctreeNode> {
+    pub fn subdivide(&mut self, nodes: &mut UnversionnedOrderedVec<Node>) -> Vec<Node> {
         let half_extent = self.half_extent as i64;
         // The outputted nodes
-        let mut output: Vec<OctreeNode> = Vec::with_capacity(8);
+        let mut output: Vec<Node> = Vec::with_capacity(8);
 
         // Temporary array that we fill with out children's indices
         let mut children_indices: [usize; 8] = [0; 8];
@@ -84,7 +84,7 @@ impl OctreeNode {
                     // Calculate the child's index
                     let child_index = nodes.get_next_idx();
 
-                    let child = OctreeNode {
+                    let child = Node {
                         position: self.position + offset,
                         // The children node is two times smaller in each axis
                         half_extent: self.half_extent / 2,

@@ -51,8 +51,8 @@ fn run(world: &mut World, mut data: EventKey) {
 
                     // Construct the mesh and add it to the chunk entity
                     let mesh = mesher.build();
-                    let model_id = pipec::construct(&pipeline, mesh).unwrap();
-                    let group = create_chunk_renderer_linking_group(model_id, material);
+                    let mesh_id = pipec::construct(&pipeline, mesh).unwrap();
+                    let group = create_chunk_renderer_linking_group(mesh_id, material);
                     // Link the group
                     world.ecs.link_components(*id, group).unwrap();
                 } else {
@@ -60,9 +60,9 @@ fn run(world: &mut World, mut data: EventKey) {
                     let pipeline = world.pipeline.read();
                     // Valid renderer
                     let mesh = mesher.build();
-                    let model_id = pipec::construct(&pipeline, mesh).unwrap();
+                    let mesh_id = pipec::construct(&pipeline, mesh).unwrap();
                     // We don't deconstruct the renderer since the terrain mesh update system will take care of that
-                    chunk.updated_model_id = Some(model_id);
+                    chunk.updated_mesh_id = Some(mesh_id);
                 }
                 terrain
                     .chunks_manager
@@ -110,7 +110,7 @@ fn run(world: &mut World, mut data: EventKey) {
 
 // Create a new linking group that contains a renderer with a specific mesh
 fn create_chunk_renderer_linking_group(
-    model_id: ObjectID<Mesh>,
+    mesh_id: ObjectID<Mesh>,
     material: ObjectID<Material>,
 ) -> ComponentLinkingGroup {
     // First time we link the renderer
@@ -118,7 +118,7 @@ fn create_chunk_renderer_linking_group(
     group
         .link(
             crate::components::Renderer::new(RendererFlags::DEFAULT)
-                .with_model(model_id)
+                .with_mesh(mesh_id)
                 .with_material(material),
         )
         .unwrap();

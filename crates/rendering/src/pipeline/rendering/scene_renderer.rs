@@ -33,7 +33,7 @@ pub struct SceneRenderer {
 
     // Screen rendering
     lighting_pass_screenshader: ObjectID<Shader>,
-    quad_model: ObjectID<Mesh>,
+    quad_mesh: ObjectID<Mesh>,
 
     // Others
     sky_gradient: ObjectID<Texture>,
@@ -66,8 +66,8 @@ impl SceneRenderer {
             ..Default::default()
         };
         // Load the quad mesh
-        self.quad_model = pipec::construct(pipeline, quad).unwrap();
-        log::info!("Quad mesh {:?}", self.quad_model);
+        self.quad_mesh = pipec::construct(pipeline, quad).unwrap();
+        log::info!("Quad mesh {:?}", self.quad_mesh);
 
         // Load the lighting pass shader
         let settings = ShaderSettings::default()
@@ -243,14 +243,14 @@ impl SceneRenderer {
             .get(material.shader)
             .ok_or(RenderingError)?;
         let mesh = pipeline.meshes.get(renderer.mesh).ok_or(RenderingError)?;
-        let model_matrix = &renderer.matrix;
+        let mesh_matrix = &renderer.matrix;
         let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
         let uniforms = Uniforms::new(&settings, pipeline);
         // Bind first
         uniforms.bind_shader();
         // Then set the uniforms
         uniforms.set_mat44f32("project_view_matrix", camera.projm * camera.viewm);
-        uniforms.set_mat44f32("model_matrix", *model_matrix);
+        uniforms.set_mat44f32("mesh_matrix", *mesh_matrix);
         // Optional
         material.uniforms.execute(&uniforms);
         renderer.uniforms.execute(&uniforms);
@@ -387,12 +387,12 @@ impl SceneRenderer {
         self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
 
         // Draw the quad
-        let quad_model = pipeline.meshes.get(self.quad_model).unwrap();
+        let quad_mesh = pipeline.meshes.get(self.quad_mesh).unwrap();
         unsafe {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.postprocessing.framebuffer);
             gl::Disable(gl::DEPTH_TEST);
-            Self::render(quad_model);
+            Self::render(quad_mesh);
         }
     }
     // Draw the postprocessing quad and render the color texture
@@ -400,11 +400,11 @@ impl SceneRenderer {
         self.postprocessing.bind_fbo(pipeline, self);
 
         // Draw the quad
-        let quad_model = pipeline.meshes.get(self.quad_model).unwrap();
+        let quad_mesh = pipeline.meshes.get(self.quad_mesh).unwrap();
         unsafe {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            Self::render(quad_model);
+            Self::render(quad_mesh);
             gl::BindVertexArray(0);
             gl::Enable(gl::DEPTH_TEST);
         }

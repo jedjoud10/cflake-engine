@@ -51,7 +51,7 @@ fn init_glutin_window<U>(
 // Start le engine
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
-    let io = main::io::SaverLoader::new(author_name, app_name);
+    let io = main::io::Manager::new(author_name, app_name);
     let config: core::GameSettings = io.load("config/game_config.json").unwrap_or_else(|_| {
         // If we failed reading the config file, try creating it and saving it
         io.create_file("config/game_config.json");

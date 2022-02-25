@@ -63,7 +63,7 @@ impl PipelineObject for Renderer {
         let me = pipeline.renderers.remove(id)?;
         // Also remove the mesh if we want to
         if me.flags.contains(RendererFlags::SHOULD_DELETE_MODEL) {
-            let _removed_model = Mesh::delete(pipeline, me.mesh)?;
+            let _removed_mesh = Mesh::delete(pipeline, me.mesh)?;
         }
         Some(me)
     }
@@ -72,7 +72,7 @@ impl PipelineObject for Renderer {
 // Everything related to the creation of a renderer
 impl Renderer {
     // Set a mesh
-    pub fn with_model(mut self, mesh: ObjectID<Mesh>) -> Self {
+    pub fn with_mesh(mut self, mesh: ObjectID<Mesh>) -> Self {
         self.mesh = mesh;
         self
     }

@@ -1,7 +1,7 @@
 // Export
 mod logger;
-mod saver_loader;
-pub use saver_loader::*;
+mod manager;
+pub use manager::*;
 // Re-export
 pub use log::*;
 pub use serde;

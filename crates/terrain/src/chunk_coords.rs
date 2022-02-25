@@ -1,4 +1,4 @@
-use math::octrees::OctreeNode;
+use math::octrees::Node;
 
 // The data that will be used to store the position/scale of the chunk
 #[derive(Default, Clone, Copy, Debug)]
@@ -12,7 +12,7 @@ pub struct ChunkCoords {
 // Generate the chunk coords from an octree node
 impl ChunkCoords {
     // New from chunk coords
-    pub fn new(octree_node: &OctreeNode) -> Self {
+    pub fn new(octree_node: &Node) -> Self {
         Self {
             position: octree_node.position,
             center: octree_node.get_center(),

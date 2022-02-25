@@ -125,7 +125,7 @@ impl MarchingCubes {
         }
     }
     // Generate the mesh
-    fn generate_model(&self, voxels: &StoredVoxelData, mesh: &mut Mesh) {
+    fn generate_mesh(&self, voxels: &StoredVoxelData, mesh: &mut Mesh) {
         // Use vertex merging
         let mut merger = VertexMerger {
             duplicates: AHashMap::with_capacity(64),
@@ -162,7 +162,7 @@ impl MarchingCubes {
         // Create the mesh data
         let mut mesh = Mesh::default();
         // Then generate the mesh
-        self.generate_model(voxels, &mut mesh);
+        self.generate_mesh(voxels, &mut mesh);
         // Combine the mesh's custom vertex data with the mesh itself
         log::info!(
             "Main: {:.2}ms, verts: {}",

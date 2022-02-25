@@ -9,7 +9,7 @@ use main::{
 pub struct Chunk {
     pub coords: ChunkCoords,
     // The ID of the terrain mesh for this chunk
-    pub(crate) updated_model_id: Option<ObjectID<Mesh>>,
+    pub(crate) updated_mesh_id: Option<ObjectID<Mesh>>,
 }
 
 impl Chunk {

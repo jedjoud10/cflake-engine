@@ -4,7 +4,7 @@ use ecs::ECSManager;
 use globals::GlobalsCollection;
 use gui::GUIManager;
 use input::InputManager;
-use io::SaverLoader;
+use io::Manager;
 use others::Time;
 use rendering::pipeline::PipelineContext;
 use std::sync::Arc;
@@ -16,7 +16,7 @@ pub struct World {
     pub gui: GUIManager,
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
-    pub io: SaverLoader,
+    pub io: Manager,
     pub settings: GameSettings,
     pub pipeline: PipelineContext,
     pub state: WorldState,
@@ -26,7 +26,7 @@ pub struct World {
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(settings: GameSettings, io: io::SaverLoader, pipeline: PipelineContext) -> Self {
+    pub fn new(settings: GameSettings, io: io::Manager, pipeline: PipelineContext) -> Self {
         let gui = gui::GUIManager::new(&pipeline);
         let mut world = World {
             input: Default::default(),
