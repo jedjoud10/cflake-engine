@@ -1,12 +1,11 @@
 use cflake_engine::{
-    World,
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
     rendering::{
         basics::lights::{LightSource, LightSourceType},
         pipeline::pipec,
     },
-    veclib,
+    veclib, World,
 };
 // A game with a test camera
 fn main() {

@@ -1,6 +1,6 @@
-use world::World;
 use world::ecs::event::EventKey;
 use world::input::Keys;
+use world::World;
 
 // The window system's update loop
 fn run(world: &mut World, _data: EventKey) {

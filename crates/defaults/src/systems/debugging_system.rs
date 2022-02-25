@@ -1,8 +1,4 @@
-use world::{
-    World, WorldState,
-    ecs::event::EventKey,
-    gui::egui, terrain,
-};
+use world::{ecs::event::EventKey, gui::egui, terrain, World, WorldState};
 
 // The debugging system's update loop
 fn run(world: &mut World, _data: EventKey) {

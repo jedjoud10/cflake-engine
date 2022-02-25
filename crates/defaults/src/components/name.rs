@@ -5,5 +5,7 @@ use world::ecs::component::Component;
 pub struct Name(String);
 
 impl Name {
-    pub fn new<T: ToString>(obj: T) -> Self { Self(obj.to_string()) }
+    pub fn new<T: ToString>(obj: T) -> Self {
+        Self(obj.to_string())
+    }
 }

@@ -1,9 +1,9 @@
 use crate::globals::ChunksManager;
 use world::{
-    World,
     ecs::{self, entity::EntityID, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
+    World,
 };
 
 // Add a single chunk to the world

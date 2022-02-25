@@ -1,5 +1,4 @@
 use world::{
-    World,
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
         advanced::compute::ComputeShaderExecutionSettings,
@@ -11,6 +10,7 @@ use world::{
         pipeline::{pipec, Pipeline},
     },
     terrain::{PackedVoxel, CHUNK_SIZE},
+    World,
 };
 
 use crate::globals::ChunkGenerationState;

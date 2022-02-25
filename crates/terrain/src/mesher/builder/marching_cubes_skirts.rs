@@ -203,7 +203,7 @@ impl MarchingCubesSkirts {
                 return;
             }
             // Vertex builder
-            mesh.triangles.push(mesh.vertices.len() as u32);
+            mesh.indices.push(mesh.vertices.len() as u32);
             mesh.vertices
                 .add()
                 .with_position(vertex)

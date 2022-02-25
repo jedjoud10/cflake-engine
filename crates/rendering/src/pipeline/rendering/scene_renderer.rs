@@ -62,7 +62,7 @@ impl SceneRenderer {
                 uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
                 ..Default::default()
             },
-            triangles: vec![0, 1, 2, 0, 3, 1],
+            indices: vec![0, 1, 2, 0, 3, 1],
             ..Default::default()
         };
         // Load the quad mesh

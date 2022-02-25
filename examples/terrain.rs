@@ -1,6 +1,5 @@
 use cflake_engine::{
     assets::assetc,
-    World,
     defaults::{
         components,
         globals::{self, TerrainSettings},
@@ -17,7 +16,7 @@ use cflake_engine::{
         },
         pipeline::pipec,
     },
-    veclib,
+    veclib, World,
 };
 
 // A game with some test terrain

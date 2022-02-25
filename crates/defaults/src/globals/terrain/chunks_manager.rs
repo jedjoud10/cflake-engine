@@ -2,13 +2,13 @@ use std::{cmp::Ordering, sync::Arc};
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
+use parking_lot::Mutex;
 use world::{
     ecs::entity::EntityID,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, object::ObjectID},
     terrain::ChunkCoords,
 };
-use parking_lot::Mutex;
 // Generation state of the current chunk
 #[derive(EnumAsInner, Debug, PartialEq)]
 pub enum ChunkGenerationState {

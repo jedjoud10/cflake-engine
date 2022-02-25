@@ -1,10 +1,10 @@
 use world::{
-    World,
     ecs::{
         event::EventKey,
         rayon::iter::{IntoParallelRefIterator, ParallelIterator},
     },
     rendering::{object::ObjectID, pipeline::pipec},
+    World,
 };
 
 // The rendering system update loop

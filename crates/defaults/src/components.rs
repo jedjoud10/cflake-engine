@@ -1,11 +1,13 @@
 // Default components
 mod camera;
 mod chunk;
+mod name;
 mod renderer;
+mod tag;
 mod transforms;
-mod name; mod tag;
-pub use name::*; pub use tag::*;
 pub use camera::*;
 pub use chunk::*;
+pub use name::*;
 pub use renderer::*;
+pub use tag::*;
 pub use transforms::*;

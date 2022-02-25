@@ -1,4 +1,4 @@
-use world::{World, ecs::event::EventKey};
+use world::{ecs::event::EventKey, World};
 
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: EventKey) {

@@ -1,6 +1,6 @@
-use world::World;
 use world::ecs::event::EventKey;
 use world::input::Keys;
+use world::World;
 
 // The camera system update loop
 fn run(world: &mut World, mut data: EventKey) {

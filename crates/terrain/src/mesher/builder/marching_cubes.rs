@@ -111,7 +111,7 @@ impl MarchingCubes {
                 );
                 // Then add it to the mesh
                 e.insert(mesh.vertices.len() as u16);
-                mesh.triangles.push(mesh.vertices.len() as u32);
+                mesh.indices.push(mesh.vertices.len() as u32);
                 mesh.vertices
                     .add()
                     .with_position(interpolated.vertex)
@@ -120,7 +120,7 @@ impl MarchingCubes {
                     .with_uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
-                mesh.triangles.push(merger.duplicates[&edge_tuple] as u32);
+                mesh.indices.push(merger.duplicates[&edge_tuple] as u32);
             }
         }
     }

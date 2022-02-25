@@ -8,7 +8,9 @@ use crate::{
 };
 use assets::Asset;
 use gl::types::GLuint;
+use obj::{Obj, TexturedVertex};
 use std::{ffi::c_void, mem::size_of, ptr::null};
+use veclib::{vec2, vec3};
 
 // A simple mesh that holds vertex, normal, and color data
 pub struct Mesh {
@@ -34,7 +36,7 @@ pub struct Mesh {
     pub update_frequency: UpdateFrequency,
 
     // Triangles
-    pub triangles: Vec<u32>,
+    pub indices: Vec<u32>,
 
     // Keep track of the number of vertices and triangles since we might clear the CPU buffers
     pub vert_count: usize,
@@ -48,7 +50,7 @@ impl Default for Mesh {
             buffers: Default::default(),
             vertices: Default::default(),
             update_frequency: UpdateFrequency::Static,
-            triangles: Default::default(),
+            indices: Default::default(),
             vert_count: Default::default(),
             tris_count: Default::default(),
         }
@@ -87,8 +89,8 @@ impl PipelineObject for Mesh {
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers[0]);
                 gl::BufferData(
                     gl::ELEMENT_ARRAY_BUFFER,
-                    (self.triangles.len() * size_of::<u32>()) as isize,
-                    self.triangles.as_ptr() as *const c_void,
+                    (self.indices.len() * size_of::<u32>()) as isize,
+                    self.indices.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 );
 
@@ -176,11 +178,11 @@ impl PipelineObject for Mesh {
                 }
 
                 // Clear the CPU buffers if we want to
-                self.tris_count = self.triangles.len() / 3;
+                self.tris_count = self.indices.len() / 3;
                 self.vert_count = self.vertices.len();
                 if let UpdateFrequency::Static = self.update_frequency {
                     self.vertices.reset();
-                    self.triangles.drain(..);
+                    self.indices.drain(..);
                 }
 
                 // Unbind
@@ -214,19 +216,18 @@ impl PipelineObject for Mesh {
 impl Mesh {
     // Flip all the triangles in the mesh, basically making it look inside out. This also flips the normals
     pub fn flip_triangles(&mut self) {
-        for i in (0..self.triangles.len()).step_by(3) {
+        for i in (0..self.indices.len()).step_by(3) {
             // Swap the first and last index of each triangle
-            self.triangles.swap(i, i + 2);
+            self.indices.swap(i, i + 2);
         }
     }
     // Combine a mesh with this one, and return the new mesh
     pub fn combine(mut self, other: Self) -> Self {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
-        self.triangles
-            .extend(other.triangles.into_iter().map(|mut x| {
-                x += max_triangle_index;
-                x
-            }));
+        self.indices.extend(other.indices.into_iter().map(|mut x| {
+            x += max_triangle_index;
+            x
+        }));
         self.vertices
             .positions
             .extend(other.vertices.positions.into_iter());
@@ -249,12 +250,12 @@ impl Mesh {
 
         let mut vertex_normals: Vec<veclib::Vector3<f32>> =
             vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
-        for i in 0..(self.triangles.len() / 3) {
+        for i in 0..(self.indices.len() / 3) {
             // Calculate the face normal
             let (i1, i2, i3) = (
-                self.triangles[i * 3],
-                self.triangles[i * 3 + 1],
-                self.triangles[i * 3 + 2],
+                self.indices[i * 3],
+                self.indices[i * 3 + 1],
+                self.indices[i * 3 + 2],
             );
             // Get the actual vertices
             let a = self.vertices.positions.get(i1 as usize).unwrap();
@@ -287,70 +288,32 @@ impl Mesh {
 
 impl Asset for Mesh {
     // Load a mesh from an asset file
-    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(mut self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
-        let string = String::from_utf8(bytes.to_vec()).ok()?;
-        let lines = string.lines();
-        let mut mesh = Mesh::default();
-        for line in lines {
-            let start = line.split_once(' ').unwrap().0;
-            let other = line.split_once(' ').unwrap().1;
-            match start {
-                // Vertices
-                "v" => {
-                    let coords: Vec<f32> = other
-                        .split('/')
-                        .map(|coord| coord.parse::<f32>().unwrap())
-                        .collect();
-                    mesh.vertices
-                        .positions
-                        .push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
-                }
-                // Normals
-                "n" => {
-                    let coords: Vec<i8> = other
-                        .split('/')
-                        .map(|coord| coord.parse::<i8>().unwrap())
-                        .collect();
-                    mesh.vertices
-                        .normals
-                        .push(veclib::Vector3::new(coords[0], coords[1], coords[2]));
-                }
-                // UVs
-                "u" => {
-                    let coords: Vec<u8> = other
-                        .split('/')
-                        .map(|coord| coord.parse::<u8>().unwrap())
-                        .collect();
-                    mesh.vertices
-                        .uvs
-                        .push(veclib::Vector2::new(coords[0], coords[1]));
-                }
-                // Tangents
-                "t" => {
-                    let coords: Vec<i8> = other
-                        .split('/')
-                        .map(|coord| coord.parse::<i8>().unwrap())
-                        .collect();
-                    mesh.vertices.tangents.push(veclib::Vector4::new(
-                        coords[0], coords[1], coords[2], coords[3],
-                    ));
-                }
-                // Triangle indices
-                "i" => {
-                    // Split the triangle into 3 indices
-                    let mut indices = other
-                        .split('/')
-                        .map(|x| x.to_string().parse::<u32>().unwrap())
-                        .collect();
-                    mesh.triangles.append(&mut indices);
-                }
-                _ => {}
-            }
+        let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
+        // Generate the tangents
+        // Create the actual Mesh now
+        for vertex in parsed_obj.vertices {
+            self.vertices
+                .add()
+                .with_position(vec3(
+                    vertex.position[0],
+                    vertex.position[1],
+                    vertex.position[2],
+                ))
+                .with_normal(vec3(
+                    (vertex.normal[0] * 127.0) as i8,
+                    (vertex.normal[1] * 127.0) as i8,
+                    (vertex.normal[2] * 127.0) as i8,
+                ))
+                .with_uv(vec2(
+                    (vertex.texture[0] * 255.0) as u8,
+                    (vertex.texture[1] * 255.0) as u8,
+                ));
         }
-        // Return
-        Some(mesh)
+        self.indices = parsed_obj.indices;
+        Some(self)
     }
 }

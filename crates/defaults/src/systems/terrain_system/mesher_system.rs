@@ -1,6 +1,5 @@
 use crate::{components::Chunk, globals::ChunkGenerationState};
 use world::{
-    World,
     ecs::{
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup},
         event::EventKey,
@@ -14,6 +13,7 @@ use world::{
         mesher::{Mesher, MesherSettings},
         StoredVoxelData,
     },
+    World,
 };
 
 // A post generation event that will be called after the generation of a specific chunk

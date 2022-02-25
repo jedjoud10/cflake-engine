@@ -1,4 +1,4 @@
-use crate::{GameSettings, WorldState};
+use crate::{Settings, WorldState};
 use audio::player::AudioPlayer;
 use ecs::ECSManager;
 use globals::GlobalsCollection;
@@ -17,7 +17,7 @@ pub struct World {
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
     pub io: Manager,
-    pub settings: GameSettings,
+    pub settings: Settings,
     pub pipeline: PipelineContext,
     pub state: WorldState,
     pub audio: AudioPlayer,
@@ -26,7 +26,7 @@ pub struct World {
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(settings: GameSettings, io: io::Manager, pipeline: PipelineContext) -> Self {
+    pub fn new(settings: Settings, io: io::Manager, pipeline: PipelineContext) -> Self {
         let gui = gui::GUIManager::new(&pipeline);
         let mut world = World {
             input: Default::default(),

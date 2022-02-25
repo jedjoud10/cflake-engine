@@ -35,10 +35,6 @@ pub fn preload_default_assets() {
     // Default impls
     cache_persistent!("./assets/defaults/shaders/others/default_impls/general.func.glsl");
     cache_persistent!("./assets/defaults/shaders/others/default_impls/renderer.func.glsl");
-    // Meshes
-    cache_persistent!("./assets/defaults/meshes/sphere.mdl3d");
-    cache_persistent!("./assets/defaults/meshes/quad.mdl3d");
-    cache_persistent!("./assets/defaults/meshes/cube.mdl3d");
     // Noise
     cache_persistent!("./assets/defaults/shaders/noises/simplex.func.glsl");
     cache_persistent!("./assets/defaults/shaders/noises/voronoi.func.glsl");
