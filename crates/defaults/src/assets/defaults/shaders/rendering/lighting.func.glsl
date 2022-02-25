@@ -16,7 +16,7 @@ vec3 compute_lighting(
 	// Used for ambient lighting
 	float ambient_lighting_strength = 0.1;
 	float sky_light_val = dot(normal, vec3(0, 1, 0)); 
-	vec3 ambient_lighting_color = calculate_sky_color(sky_texture, sky_light_val, time_of_day);
+	vec3 ambient_lighting_color = calculate_sky_color(sky_texture, normal, sky_light_val, time_of_day);
 
 	// Add everything
 	vec3 ambient_lighting = (ambient_lighting_color + diffuse * 2.0) * ambient_lighting_strength;

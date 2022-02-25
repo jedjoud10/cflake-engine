@@ -40,7 +40,7 @@ impl PipelineObject for ComputeShader {
     // Add the compute shader to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Actually compile the compute shader now
-        log::info!(
+        println!(
             "Compiling & Creating Compute Shader Source {}...",
             self.source.path
         );
@@ -65,7 +65,7 @@ impl PipelineObject for ComputeShader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::error!("Error while compiling shader source {}!:", self.source.path);
+                println!("Error while compiling shader source {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
                 // Put the line count
@@ -75,12 +75,12 @@ impl PipelineObject for ComputeShader {
                     .map(|(count, line)| format!("({}): {}", count + 1, line))
                     .collect::<Vec<String>>()
                     .join("\n");
-                log::error!("{}", error_source);
-                log::error!("Error: \n{}", string);
+                println!("{}", error_source);
+                println!("Error: \n{}", string);
                 panic!();
             }
 
-            log::info!("Subshader {} compiled succsessfully!", self.source.path);
+            println!("Subshader {} compiled succsessfully!", self.source.path);
             program
         };
         let program = unsafe {
@@ -105,7 +105,7 @@ impl PipelineObject for ComputeShader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::error!("Error while finalizing shader {}!:", self.source.path);
+                println!("Error while finalizing shader {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
                 let error_source_lines = self.source.text.lines().enumerate();
@@ -114,13 +114,13 @@ impl PipelineObject for ComputeShader {
                     .map(|(count, line)| format!("({}): {}", count + 1, line))
                     .collect::<Vec<String>>()
                     .join("\n");
-                log::error!("{}", error_source);
-                log::error!("Error: \n[31m{}", string);
+                println!("{}", error_source);
+                println!("Error: \n[31m{}", string);
                 panic!();
             }
             // Detach shader source
             gl::DetachShader(program, shader_source_program);
-            log::info!(
+            println!(
                 "Shader {} compiled and created succsessfully!",
                 self.source.path
             );

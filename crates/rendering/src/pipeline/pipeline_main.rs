@@ -48,9 +48,9 @@ pub mod pipec {
         handler.ebarrier.wait();
 
         // Wait until we wait. Lol
-        log::info!("Waiting for flush completion...");
+        println!("Waiting for flush completion...");
         while !handler.waiting.load(Ordering::Relaxed) {}
-        log::info!("Flushed!");
+        println!("Flushed!");
     }
 
     // Tracked Tasks

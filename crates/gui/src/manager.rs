@@ -29,8 +29,7 @@ impl GUIManager {
         let painter = if let Ok(ok) = Arc::try_unwrap(arc) {
             ok.into_inner().unwrap()
         } else {
-            log::error!("Could not get GUI Painter!");
-            panic!()
+            panic!("Could not get GUI Painter!");
         };
         Self {
             egui: Default::default(),

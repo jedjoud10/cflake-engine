@@ -66,7 +66,7 @@ impl Buffers {
         }
 
         // Self
-        log::info!("GUI Painter Buffers Init Successful!");
+        println!("GUI Painter Buffers Init Successful!");
         Self {
             vao,
             indices,

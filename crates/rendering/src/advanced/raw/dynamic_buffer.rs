@@ -25,8 +25,7 @@ impl<T> DynamicRawBuffer<T> {
     pub fn with_capacity(_type: u32, capacity: usize, usage: UsageType) -> Self {
         // If we are not on the render thread, we cannot make the raw buffer
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
 
         let vec = Vec::<T>::with_capacity(capacity);
@@ -56,8 +55,7 @@ impl<T> DynamicRawBuffer<T> {
     // This may reallocate the OpenGL buffer if it's last len is insufficient
     pub fn push(&mut self, val: T) {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         // Get our old capacity and compare with our new capacity
         let old_capacity = self.vec.capacity();
@@ -92,8 +90,7 @@ impl<T> DynamicRawBuffer<T> {
     // Update a value at a specific index
     pub fn update(&mut self, index: usize, mut function: impl FnMut(&mut T)) {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         // Simple replace
         let old = self.vec.get_mut(index).unwrap();
@@ -115,13 +112,11 @@ impl<T> DynamicRawBuffer<T> {
     // This returns the old value at that index
     pub fn replace(&mut self, index: usize, val: T) -> T {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         // Check first
         if index > self.vec.len() {
-            log::error!("Index greater than length!");
-            panic!()
+            panic!("Index greater than length!");
         }
         // Simple replace
         let old = std::mem::replace(self.vec.get_mut(index).unwrap(), val);
@@ -142,13 +137,11 @@ impl<T> DynamicRawBuffer<T> {
     // Remove an element at a specific index, but by using swap remove, so we don't have to move all the elements
     pub fn swap_remove(&mut self, index: usize) -> T {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         // Check first
         if index > self.vec.len() {
-            log::error!("Index greater than length!");
-            panic!()
+            panic!("Index greater than length!");
         }
         // Simple swap remove
         let old = self.vec.swap_remove(index);
@@ -168,8 +161,7 @@ impl<T> DynamicRawBuffer<T> {
     // Remove the last element from the buffer. Useful when we know that we will update the buffer with new data later on
     pub fn pop(&mut self) -> Option<T> {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         // Simple pop
         let old = self.vec.pop();
@@ -189,8 +181,7 @@ impl<T> DynamicRawBuffer<T> {
     // Set the contents of the dynamic raw buffer from an already allocated vector
     pub fn set_contents(&mut self, vec: Vec<T>) {
         if !on_render_thread() {
-            log::error!("We are not on the render thread!");
-            panic!()
+            panic!("We are not on the render thread!");
         }
         unsafe {
             self.vec = vec;

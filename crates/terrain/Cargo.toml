@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-log = "0.4.14"
+
 ahash = "0.7.6"
 math = { path = "../math" }
 rendering = { path = "../rendering" }

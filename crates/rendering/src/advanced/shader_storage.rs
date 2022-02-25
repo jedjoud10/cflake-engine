@@ -196,7 +196,7 @@ impl ShaderStorage {
                             self.byte_size = write.bytes.len();
                             eprintln!("Writing to SSBO with {} bytes", write.bytes.len());
                         } else {
-                            log::error!("Buffer is not dynamic, cannot reallocate!");
+                            panic!("Buffer is not dynamic, cannot reallocate!");
                         }
                     } else {
                         // We have enough bytes allocated already

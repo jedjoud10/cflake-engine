@@ -316,7 +316,7 @@ pub fn init_pipeline(
     pipeline_settings: PipelineSettings,
     window: glutin::WindowedContext<NotCurrent>,
 ) -> PipelineContext {
-    log::info!("Initializing RenderPipeline...");
+    println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
 
@@ -350,7 +350,7 @@ pub fn init_pipeline(
     let handle = builder
         .spawn(move || {
             // Initialize OpenGL
-            log::info!("Initializing OpenGL...");
+            println!("Initializing OpenGL...");
             // Make the glutin context current, since we will be using the render thread for rendering
             let gl_context = unsafe { gl_context.make_current().unwrap() };
             gl::load_with(|x| gl_context.get_proc_address(x));
@@ -362,7 +362,7 @@ pub fn init_pipeline(
             } else {
                 panic!()
             }
-            log::info!("Successfully initialized OpenGL!");
+            println!("Successfully initialized OpenGL!");
 
             // Set the global sender
             sender::set_global_sender(tx);
@@ -394,7 +394,7 @@ pub fn init_pipeline(
 
             // ---- Finished initializing the Pipeline! ----
             itx.send(pipeline.clone()).unwrap();
-            log::info!("Successfully created the RenderThread!");
+            println!("Successfully created the RenderThread!");
 
             // We must render every frame
             loop {
@@ -450,14 +450,14 @@ pub fn init_pipeline(
                     break;
                 }
             }
-            log::info!("Stopped the render thread!");
+            println!("Stopped the render thread!");
         })
         .unwrap();
     // Wait for the init message...
     let i = std::time::Instant::now();
-    log::info!("Waiting for RenderThread init confirmation...");
+    println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
-    log::info!(
+    println!(
         "Successfully initialized the RenderPipeline! Took {}ms to init RenderThread",
         i.elapsed().as_millis()
     );

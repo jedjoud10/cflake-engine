@@ -117,7 +117,7 @@ impl PipelineObject for Shader {
         // Compile a single shader source
         fn compile_single_source(source_data: ShaderSource) -> u32 {
             let shader_type: u32;
-            log::info!("Compiling & Creating Shader Source {}...", source_data.path);
+            println!("Compiling & Creating Shader Source {}...", source_data.path);
             match source_data._type {
                 ShaderSourceType::Vertex => shader_type = gl::VERTEX_SHADER,
                 ShaderSourceType::Fragment => shader_type = gl::FRAGMENT_SHADER,
@@ -145,7 +145,7 @@ impl PipelineObject for Shader {
                         std::ptr::null_mut::<i32>(),
                         log.as_mut_ptr(),
                     );
-                    log::error!("Error while compiling shader source {}!:", source_data.path);
+                    println!("Error while compiling shader source {}!:", source_data.path);
                     let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                     let string = String::from_utf8(printable_log).unwrap();
 
@@ -156,13 +156,13 @@ impl PipelineObject for Shader {
                         .map(|(count, line)| format!("({}): {}", count + 1, line))
                         .collect::<Vec<String>>()
                         .join("\n");
-                    log::error!("{}", error_source);
+                    println!("{}", error_source);
 
-                    log::error!("Error: \n{}", string);
+                    println!("Error: \n{}", string);
                     panic!();
                 }
 
-                log::info!("Shader Source {} compiled succsessfully!", source_data.path);
+                println!("Shader Source {} compiled succsessfully!", source_data.path);
                 program
             }
         }
@@ -175,7 +175,7 @@ impl PipelineObject for Shader {
             .join("_");
 
         // Actually compile the shader now
-        log::info!("Compiling & Creating Shader {}...", shader_name);
+        println!("Compiling & Creating Shader {}...", shader_name);
         let program = unsafe {
             let program = gl::CreateProgram();
 
@@ -209,17 +209,17 @@ impl PipelineObject for Shader {
                     std::ptr::null_mut::<i32>(),
                     log.as_mut_ptr(),
                 );
-                log::error!("Error while finalizing shader {}!:", shader_name);
+                println!("Error while finalizing shader {}!:", shader_name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
-                log::error!("Error: \n{}", string);
+                println!("Error: \n{}", string);
                 panic!();
             }
             // Detach shaders
             for shader in programs.iter() {
                 gl::DetachShader(program, *shader);
             }
-            log::info!("Shader {} compiled and created succsessfully!", shader_name);
+            println!("Shader {} compiled and created succsessfully!", shader_name);
             program
         };
         // Add the shader at the end

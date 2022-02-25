@@ -11,7 +11,7 @@ pub use world::*;
 // Pre-load the default assets
 pub fn preload_default_assets() {
     // Pre load the assets
-    log::info!("Pre-loading default assets...");
+    println!("Pre-loading default assets...");
     // Rendering
     cache_persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
     cache_persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
@@ -54,7 +54,7 @@ pub fn preload_default_assets() {
     cache_persistent!("./assets/defaults/textures/missing_texture.png");
     cache_persistent!("./assets/defaults/textures/sky_gradient.png");
 
-    log::info!("Finished pre-loading default assets!");
+    println!("Finished pre-loading default assets!");
 }
 // Pre-load the default systems
 pub fn preload_system(world: &mut World) {

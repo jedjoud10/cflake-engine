@@ -202,7 +202,7 @@ impl<'a> Uniforms<'a> {
             } else if access.contains(TextureAccessType::WRITE) {
                 gl::WRITE_ONLY
             } else {
-                log::error!("Image access type is neither READ or WRITE!");
+                println!("Image access type is neither READ or WRITE!");
                 panic!()
             }
         };

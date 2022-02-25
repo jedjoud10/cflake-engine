@@ -29,4 +29,3 @@ gui = { path = "../gui" }
 io = { path = "../io" }
 terrain = { path = "../terrain" }
 audio = { path = "../audio" }
-log = "0.4.14"
