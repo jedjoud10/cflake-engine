@@ -169,7 +169,6 @@ pub(crate) fn query_shader_info_tracked(
 // Query some information about a shader, and then return
 pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettings) -> ShaderInfo {
     unsafe {
-        gl::Flush();
         // Get the query info
         // Gotta count the number of unique resource types
         let mut unique_count = AHashMap::<QueryResource, usize>::new();

@@ -37,8 +37,8 @@ fn run(world: &mut World, _data: EventKey) {
             ui.separator();
             ui.heading("Timings");
             ui.label(format!("Time: {:.1}", world.time.elapsed));
-            ui.label(format!("Delta: {:.3}", world.time.smoothed_delta));
-            ui.label(format!("FPS: {:.1}", 1.0 / world.time.smoothed_delta));
+            ui.label(format!("Delta: {:.3}", world.time.delta));
+            ui.label(format!("FPS: {:.1}", 1.0 / world.time.delta));
             // ECS
             ui.separator();
             ui.heading("Entity Component Systems");
@@ -48,6 +48,7 @@ fn run(world: &mut World, _data: EventKey) {
             // Terrain
             let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
             if let Ok(terrain) = terrain {
+                let octree=  terrain.chunks_manager.octree.lock();
                 ui.separator();
                 ui.heading("Terrain");
                 ui.label(format!(
@@ -56,13 +57,11 @@ fn run(world: &mut World, _data: EventKey) {
                 ));
                 ui.label(format!(
                     "Terrain Octree Depth: '{}'",
-                    terrain.chunks_manager.octree.inner.depth
+                    octree.inner.depth
                 ));
                 ui.label(format!(
                     "Terrain Octree Size: '[{a}x{a}x{a}]'",
-                    a = terrain
-                        .chunks_manager
-                        .octree
+                    a = octree
                         .inner
                         .get_root_node()
                         .half_extent

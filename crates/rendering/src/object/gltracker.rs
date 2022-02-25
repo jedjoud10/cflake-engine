@@ -23,7 +23,6 @@ impl GlTracker {
             start();
             // Then finally create the fence
             let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
-            gl::Flush();
             Some(fence)
         };
         Self {
@@ -42,13 +41,8 @@ impl GlTracker {
 
     // Create a GL tracker that will actually execute synchronously, and always be completed if we query it's completed state
     pub fn fake<F: FnOnce()>(start: F) -> Self {
-        unsafe {
-            // Flush first
-            gl::Flush();
-            // Call the function
-            start();
-            gl::Finish();
-        };
+        // Call the function
+        start();
         Self {
             fence: None,
             callback: None,
@@ -58,6 +52,10 @@ impl GlTracker {
     pub fn completed(&mut self, pipeline: &Pipeline) -> bool {
         // Check if this tracker was made to be always completed
         if self.fence.is_none() {
+            let callback = self.callback.take();
+            if let Some(callback) = callback {
+                callback(pipeline);
+            }
             return true;
         }
         let result =

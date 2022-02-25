@@ -15,7 +15,7 @@ fn run(world: &mut World, _data: EventKey) {
         let terrain = &mut *terrain;
         let chunks_to_regenerate = terrain
             .editing_manager
-            .get_influenced_chunks(&terrain.chunks_manager.octree.inner);
+            .get_influenced_chunks(&terrain.chunks_manager.octree.lock().inner);
         if !chunks_to_regenerate.is_empty() && terrain.chunks_manager.chunks_generating.is_empty() {
             // Regenerate the specified chunks
             for coords in chunks_to_regenerate {

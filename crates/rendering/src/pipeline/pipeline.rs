@@ -164,9 +164,6 @@ impl Pipeline {
     // Flush all the buffered tasks, and execute them
     // We should do this at the end of each frame, but we can force execution of it if we are running it internally
     pub(crate) fn flush(&mut self, internal: &mut InternalPipeline, renderer: &mut SceneRenderer) {
-        // Ae clear moment
-        self.materials.clear_diffs();
-        self.renderers.clear_diffs();
         // We must take the commands first
         let tasks = {
             let mut tasks_ = self.tasks.write();

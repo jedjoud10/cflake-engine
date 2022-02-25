@@ -82,9 +82,10 @@ impl World {
             // Actually execute the system now
             execution_data.run(self);
             {
-                // Flush all the commands that we have dispatched during the system's frame execution
+                // Clear
                 let system = &self.ecs.get_systems()[system_index];
                 system.clear();
+                self.time.update_current_frame_time();
             }
         }
         // Finish update

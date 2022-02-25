@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use main::{
     globals::Global,
     math::octrees::DiffOctree,
@@ -12,6 +14,7 @@ mod chunks_manager;
 mod settings;
 mod voxel_generation;
 pub use chunks_manager::*;
+use parking_lot::Mutex;
 pub use settings::*;
 pub use voxel_generation::*;
 
@@ -31,11 +34,11 @@ impl Terrain {
     pub fn new(settings: TerrainSettings, pipeline: &Pipeline) -> Self {
         Self {
             chunks_manager: ChunksManager {
-                octree: DiffOctree::new(
+                octree: Arc::new(Mutex::new(DiffOctree::new(
                     settings.depth,
                     CHUNK_SIZE as u64,
                     settings.heuristic_settings,
-                ),
+                ))),
                 material: settings.material,
                 ..Default::default()
             },

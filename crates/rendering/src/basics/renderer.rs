@@ -10,8 +10,8 @@ bitflags! {
     pub struct RendererFlags: u8 {
         const VISIBLE = 0b00000001;
         const SHADOW_CASTER = 0b00000010;
-        const SHOULD_DELETE_MODEL = 0b00000100;
-        const DEFAULT = Self::VISIBLE.bits | Self::SHADOW_CASTER.bits | Self::SHOULD_DELETE_MODEL.bits;
+        const SHOULD_DELETE_MESH = 0b00000100;
+        const DEFAULT = Self::VISIBLE.bits | Self::SHADOW_CASTER.bits | Self::SHOULD_DELETE_MESH.bits;
     }
 }
 
@@ -38,8 +38,6 @@ impl Renderer {
     }
 }
 impl PipelineObject for Renderer {
-    const UPDATE: bool = true;
-
     // Reserve an ID for this renderer
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
         Some((self, pipeline.renderers.gen_id()))
@@ -62,7 +60,7 @@ impl PipelineObject for Renderer {
     fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
         let me = pipeline.renderers.remove(id)?;
         // Also remove the mesh if we want to
-        if me.flags.contains(RendererFlags::SHOULD_DELETE_MODEL) {
+        if me.flags.contains(RendererFlags::SHOULD_DELETE_MESH) {
             let _removed_mesh = Mesh::delete(pipeline, me.mesh)?;
         }
         Some(me)

@@ -13,7 +13,7 @@ pub struct Renderer {
     pub(crate) inner: Option<GPURenderer>,
 
     // The returned Object ID for our Renderer that is stored on the GPU Pipeline
-    pub(crate) id: ObjectID<rendering::basics::renderer::Renderer>,
+    pub(crate) id: ObjectID<GPURenderer>,
 }
 
 impl Renderer {

@@ -1,18 +1,18 @@
+use ahash::{AHashMap, RandomState};
 use multimap::MultiMap;
 
 use super::{Keys, State};
 use crate::{ButtonState, MapState, ToggleState};
-use std::collections::HashMap;
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
 // Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
 pub struct InputManager {
     // "debug_map" -> State: "Pressed"
-    maps: HashMap<String, (MapState, bool)>,
+    maps: AHashMap<String, (MapState, bool)>,
 
     // "W" -> ["forward_map", "launch_map"]
-    keys: MultiMap<Keys, String>,
+    keys: MultiMap<Keys, String, RandomState>,
 
     // Mouse
     last_mouse_pos: veclib::Vector2<f64>,
@@ -23,9 +23,10 @@ pub struct InputManager {
 
 impl Default for InputManager {
     fn default() -> Self {
+        let multimap = MultiMap::<Keys, String, RandomState>::with_capacity_and_hasher(180, RandomState::new());
         Self {
             maps: Default::default(),
-            keys: MultiMap::with_capacity(180),
+            keys: multimap,
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
             accepts_input: true,

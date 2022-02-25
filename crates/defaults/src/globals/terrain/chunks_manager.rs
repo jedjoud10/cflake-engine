@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, sync::Arc};
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
@@ -8,6 +8,7 @@ use main::{
     rendering::{basics::material::Material, object::ObjectID},
     terrain::ChunkCoords,
 };
+use parking_lot::Mutex;
 // Generation state of the current chunk
 #[derive(EnumAsInner, Debug, PartialEq)]
 pub enum ChunkGenerationState {
@@ -25,7 +26,7 @@ impl Default for ChunkGenerationState {
 #[derive(Default)]
 pub struct ChunksManager {
     // Chunk generation
-    pub octree: DiffOctree,
+    pub octree: Arc<Mutex<DiffOctree>>,
     pub chunks: AHashMap<ChunkCoords, EntityID>,
     pub chunks_generating: AHashSet<ChunkCoords>,
     pub priority_list: Vec<(EntityID, f32)>,

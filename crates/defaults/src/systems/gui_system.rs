@@ -8,7 +8,7 @@ pub fn system(world: &mut World) {
     let pipeline = world.pipeline.read();
     pipec::add_end_of_frame_callback(&pipeline, move |pipeline, _| {
         // Draw the GUI
-        let mut painter = painter.lock().unwrap();
+        let mut painter = painter.lock();
         painter.draw_gui(pipeline);
     });
 }

@@ -7,7 +7,11 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, AssetLoadError> {
     use std::{env, io::Read, path::Path};
     // Get the path
     let file_path = {
-        let mut file_path = env::current_dir().unwrap();
+        // I hate living
+        let manifest_path = env!("CARGO_MANIFEST_DIR");
+        let mut file_path = Path::new(manifest_path).to_path_buf();
+        file_path.pop();
+        file_path.pop();
         file_path.push(Path::new("assets"));
         file_path.push(Path::new(path));
         file_path

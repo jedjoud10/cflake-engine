@@ -11,3 +11,4 @@ main = { path = "../main" }
 ahash = "0.7.6"
 enum-as-inner = "0.3.3"
 log = "0.4.14"
+parking_lot = "0.12.0"

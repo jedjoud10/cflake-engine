@@ -81,7 +81,8 @@ fn update_terrain(
     camera_forward: veclib::Vector3<f32>,
 ) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
-        let octree = &mut handler.octree;
+        let octree_ = handler.octree.clone();
+        let mut octree = octree_.lock();
         if let Some((added, removed)) = octree.update(camera_position) {
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them

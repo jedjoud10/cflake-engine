@@ -1,6 +1,7 @@
 use crate::painter::Painter;
 use rendering::pipeline::{pipec, PipelineContext};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 
 // A simple manager
 pub struct GUIManager {
@@ -19,14 +20,14 @@ impl GUIManager {
         let cloned = arc.clone();
         pipec::update_callback(&context.read(), move |pipeline, _| {
             // Init on the render thread
-            *cloned.lock().unwrap() = Some(Painter::new(pipeline));
+            *cloned.lock() = Some(Painter::new(pipeline));
         });
         // Flush
         pipec::flush_and_execute(context);
 
         // Extract
         let painter = if let Ok(ok) = Arc::try_unwrap(arc) {
-            ok.into_inner().unwrap().unwrap()
+            ok.into_inner().unwrap()
         } else {
             panic!()
         };
@@ -49,7 +50,7 @@ impl GUIManager {
     // End frame
     pub fn end_frame(&mut self) {
         let (output, clipped_shapes) = self.egui.end_frame();
-        let mut painter = self.painter.lock().unwrap();
+        let mut painter = self.painter.lock();
         let meshes = self.egui.tessellate(clipped_shapes);
         // Set the values using the arc
         painter.clipped_meshes = meshes;
