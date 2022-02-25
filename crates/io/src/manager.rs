@@ -69,10 +69,12 @@ impl Manager {
     }
     // Create a file if it is not created yet
     pub fn create_file(&self, file_path: impl AsRef<Path>) {
-        let parent = file_path.as_ref().parent().unwrap();
-        if !file_path.as_ref().exists() {
+        let mut path = self.local_path.clone().unwrap();
+        path.push(file_path);
+        let parent = path.parent().unwrap();
+        if !path.exists() {
             std::fs::create_dir_all(parent).unwrap();
-            File::create(file_path).unwrap();
+            File::create(path).unwrap();
         }
     }
     // Load a struct from a file
