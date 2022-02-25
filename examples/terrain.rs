@@ -12,7 +12,6 @@ use cflake_engine::{
             material::Material,
             shader::{Shader, ShaderSettings},
             texture::{Texture, TextureFilter},
-            uniforms::SetUniformsCallback,
         },
         pipeline::pipec,
     },
@@ -26,6 +25,17 @@ fn main() {
 // Init the terrain world
 
 fn init(world: &mut World) {
+    cflake_engine::assets::init!("/examples/assets/");
+    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
+    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
+    cflake_engine::assets::asset!("./assets/user/textures/forrest_ground_01_diff_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/forrest_ground_01_nor_gl_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_diff_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_nor_gl_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_diff_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_nor_gl_2k.jpg");
+    // Load le assets
+
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
@@ -96,16 +106,11 @@ fn init(world: &mut World) {
             dist < 1.2
         })
         .with_threshold(64.0);
-    let tex = assetc::load::<Texture>("user/textures/saber.png").unwrap();
-    let tex = pipec::construct(&pipeline, tex).unwrap();
     // Create some terrain settings
     let terrain_settings = TerrainSettings::default()
         .with_depth(5)
         .with_material(material)
         .with_heuristic(heuristic)
-        .with_uniforms(SetUniformsCallback::new(move |x| {
-            x.set_texture("tex", tex, 0)
-        }))
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let terrain = globals::Terrain::new(terrain_settings, &pipeline);
     world.globals.add_global(terrain).unwrap();

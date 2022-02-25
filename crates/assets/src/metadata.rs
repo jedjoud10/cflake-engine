@@ -1,7 +1,7 @@
 use std::{ffi::OsString, path::Path};
 
 // Asset metadata that contains the name and extension of an asset
-#[derive(Hash, PartialEq, Eq, Clone)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct AssetMetadata {
     // Paths
     pub extension: OsString,

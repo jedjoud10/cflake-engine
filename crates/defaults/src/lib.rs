@@ -1,5 +1,5 @@
 use systems::*;
-use world::{assets::cache_persistent, World};
+use world::{assets::persistent, World};
 // Default components
 pub mod components;
 // Default globals
@@ -10,47 +10,45 @@ pub use world::*;
 
 // Pre-load the default assets
 pub fn preload_default_assets() {
-    /*
     // Pre load the assets
     println!("Pre-loading default assets...");
     // Rendering
-    cache_persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/postprocessing_pass.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/shadow.vrsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/shadow.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/shadow_calculations.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/screen_space_reflections.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/postprocessing_pass.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/shadow.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/shadow.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/shadow_calculations.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/screen_space_reflections.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
     // GUI
-    cache_persistent!("./assets/defaults/shaders/gui/frag.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/gui/vert.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/gui/frag.frsh.glsl");
+    persistent!("./assets/defaults/shaders/gui/vert.vrsh.glsl");
     // Others
-    cache_persistent!("./assets/defaults/shaders/others/hashes.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/others/triplanar.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/others/sdf.func.glsl");
+    persistent!("./assets/defaults/shaders/others/hashes.func.glsl");
+    persistent!("./assets/defaults/shaders/others/triplanar.func.glsl");
+    persistent!("./assets/defaults/shaders/others/sdf.func.glsl");
     // Default impls
-    cache_persistent!("./assets/defaults/shaders/others/default_impls/general.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/others/default_impls/renderer.func.glsl");
+    persistent!("./assets/defaults/shaders/others/default_impls/general.func.glsl");
+    persistent!("./assets/defaults/shaders/others/default_impls/renderer.func.glsl");
     // Noise
-    cache_persistent!("./assets/defaults/shaders/noises/simplex.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/noises/voronoi.func.glsl");
+    persistent!("./assets/defaults/shaders/noises/simplex.func.glsl");
+    persistent!("./assets/defaults/shaders/noises/voronoi.func.glsl");
     // Voxel terrain
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/base.cmpt.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/second.cmpt.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/voxel.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/shared.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/edits.func.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
-    cache_persistent!("./assets/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/base.cmpt.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/second.cmpt.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/voxel.func.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/shared.func.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/edits.func.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
+    persistent!("./assets/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
     // Textures
-    cache_persistent!("./assets/defaults/textures/missing_texture.png");
-    cache_persistent!("./assets/defaults/textures/sky_gradient.png");
-    */
+    persistent!("./assets/defaults/textures/missing_texture.png");
+    persistent!("./assets/defaults/textures/sky_gradient.png");
 
     println!("Finished pre-loading default assets!");
 }
