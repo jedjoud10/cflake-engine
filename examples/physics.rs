@@ -1,6 +1,5 @@
 use cflake_engine::{
-    assets::{self, assetc},
-    defaults::components::{self, Camera, Collider, ColliderType, Renderer, RigidBody, RigidBodyType, Transform},
+    defaults::components::{Camera, Collider, ColliderType, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::{ComponentLinkingGroup, Entity},
     math::shapes::{Cuboid, ShapeType},
     rendering::{

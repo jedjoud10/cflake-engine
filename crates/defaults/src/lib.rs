@@ -55,25 +55,29 @@ pub fn preload_default_assets() {
 
     println!("Finished pre-loading default assets!");
 }
-// Pre-load the default systems
-pub fn preload_system(world: &mut World) {
+// Start the default systems that will be executed before the user systems
+pub fn start_before_user_sytems(world: &mut World) {
     // Engine defaults
     camera_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
     gui_system::system(world);
     audio_system::system(world);
+
+    // We gotta add the globa
+    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
+}
+
+// Start the defaults systems that will be executed after the user systems 
+pub fn start_after_user_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
+    rendering_system::system(world);
+
     // Terrain
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
     terrain_system::mesh_update_system::system(world);
     terrain_system::editing_system::system(world);
-
-    rendering_system::system(world);
-
-    // We gotta add the globa
-    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
 }

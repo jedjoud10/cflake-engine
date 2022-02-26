@@ -84,7 +84,8 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     println!("Calling World Initialization callback");
     {
         // Load the default systems first
-        defaults::preload_system(&mut world);
+        defaults::start_before_user_sytems(&mut world);
+        defaults::start_after_user_systems(&mut world);
         init_world(&mut world);
     }
     let mut sleeper = if config.fps_cap <= 0 {

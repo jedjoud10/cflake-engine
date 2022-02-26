@@ -9,7 +9,6 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter() {
         // Check if we even need to update the position/rotation
-        /*
         if components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
             let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
             let transform = components.get::<crate::components::Transform>().unwrap();
@@ -30,7 +29,6 @@ fn run(world: &mut World, mut data: EventKey) {
                 r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
             }
         }
-        */
     }
 
     // Step the simulation once
@@ -41,12 +39,14 @@ fn run(world: &mut World, mut data: EventKey) {
         // Get the handle only
         let handle = components.get_mut::<crate::components::RigidBody>().unwrap().handle;
         if let Some(r_rigidbody) = world.physics.bodies.get(handle) {
-            // Update the components
-            let mut rigidbody = components.get_mut::<crate::components::RigidBody>().unwrap();
-            rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
-            let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
-            transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
-            transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
+            if !r_rigidbody.is_sleeping() {
+                // Update the components
+                let mut rigidbody = components.get_mut::<crate::components::RigidBody>().unwrap();
+                rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
+                let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
+                transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
+                transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
+            }
         }
     }
 }
