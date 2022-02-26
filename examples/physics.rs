@@ -28,7 +28,7 @@ fn init(world: &mut World) {
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
+        quat: veclib::Quaternion::<f32>::from_x_angle(-15f32.to_radians()),
     })
     .with_strength(1.0);
     pipec::construct(&pipeline, light).unwrap();
@@ -49,24 +49,26 @@ fn init(world: &mut World) {
         .unwrap();
     let entity = Entity::default();
     world.ecs.add_entity(entity, group).unwrap();
-    for y in 0..10 {
-        for x in 0..10 {
-            // Create a cube
-            let mut group = ComponentLinkingGroup::default();
-            group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, 20.0, y as f32 * 0.3)).with_scale(veclib::vec3(1.0, 10.0, 1.0))).unwrap();
-            let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().cube);
-            group.link(renderer).unwrap();
-            // Add the rigidbody
-            group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
-            // Add the collider
-            group
-            .link(Collider::new(ColliderType::Shape(ShapeType::Cuboid(Cuboid {
-                center: veclib::Vector3::ZERO,
-                size: veclib::Vector3::new(1.0, 10.0, 1.0),
-            }))))
-            .unwrap();
-            let entity = Entity::default();
-            world.ecs.add_entity(entity, group).unwrap();
+    for y in 0..5 {
+        for x in 0..15 {
+            for z in 0..5 {
+                // Create a cube
+                let mut group = ComponentLinkingGroup::default();
+                group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
+                let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().cube);
+                group.link(renderer).unwrap();
+                // Add the rigidbody
+                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
+                // Add the collider
+                group
+                .link(Collider::new(ColliderType::Shape(ShapeType::Cuboid(Cuboid {
+                    center: veclib::Vector3::ZERO,
+                    size: veclib::Vector3::new(1.0, 1.0, 1.0),
+                }))))
+                .unwrap();
+                let entity = Entity::default();
+                world.ecs.add_entity(entity, group).unwrap();
+            }
         }
     }
 }

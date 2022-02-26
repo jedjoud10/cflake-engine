@@ -47,7 +47,8 @@ impl Transform {
         veclib::Matrix4x4::<f32>::from_translation(self.position)
     }
     pub fn rotation_matrix(&self) -> veclib::Matrix4x4<f32> {
-        veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
+        // TODO: Bruh this shit's transposed
+        veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation).transposed()
     }
     pub fn scale_matrix(&self) -> veclib::Matrix4x4<f32> {
         veclib::Matrix4x4::<f32>::from_scale(self.scale)
