@@ -5,7 +5,7 @@ use rapier3d::prelude::{ColliderBuilder, RigidBodyBuilder, RigidBodyType, Shared
 use crate::colliders::{Collider, ColliderType};
 use crate::identifier::{PhysicsID, PhysicsIDType};
 use crate::rigidbody::*;
-use crate::state::PhysicsSimulation;
+use crate::simulation::PhysicsSimulation;
 use crate::surface::Surface;
 
 // Physics manager that contains everything related to the Rapier3D physics engine
@@ -27,6 +27,12 @@ impl Default for PhysicsManager {
 }
 
 impl PhysicsManager {
+    // Add a surface to the manager
+    pub fn add_surface(&mut self, surface: Surface) -> PhysicsID<Surface> {
+        let id = self.surfaces.len();
+        self.surfaces.push(surface);
+        PhysicsID::new(PhysicsIDType::Surface(id))
+    }
     // Add a rigidbody to the manager
     pub fn add_rigidbody(&mut self, rigidbody: RigidBody) -> PhysicsID<RigidBody> {
         // Convert our rigidbody to a Rapier3D rigidbody
@@ -53,13 +59,14 @@ impl PhysicsManager {
                 translation,
             })
             .build();
+        // And add it
         let wrapped = self.sim.bodies.insert(rigidbody);
 
         // Create the ID now
         PhysicsID::new(PhysicsIDType::RigidBody(wrapped))
     }
     // Add a shape collider to the manager
-    pub fn add_collider(&mut self, collider: Collider) -> PhysicsID<Collider> {
+    pub fn add_collider(&mut self, collider: Collider, rigidbody: PhysicsID<RigidBody>) -> PhysicsID<Collider> {
         // Convert isometry
         let position = collider
             .shape
@@ -80,12 +87,16 @@ impl PhysicsManager {
         let idx = *collider.surface.inner.as_surface().unwrap();
         let surface: &Surface = self.surfaces.get(idx).unwrap();
 
+        // Build the collider
         let collider = ColliderBuilder::new(shared_shape)
             .position(rapier3d::na::Isometry {
                 rotation: Rotation::default(),
                 translation,
             })
             .build();
-        panic!()
+        // And add it
+        let wrapped = self.sim.colliders.insert_with_parent(collider, *rigidbody.inner.as_rigid_body().unwrap(), &mut self.sim.bodies);
+        // Create the ID now
+        PhysicsID::new(PhysicsIDType::Collider(wrapped))
     }
 }
