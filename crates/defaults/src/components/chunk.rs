@@ -20,6 +20,8 @@ impl Chunk {
         camera_forward: veclib::Vector3<f32>,
     ) -> f32 {
         let position = veclib::Vector3::<f32>::from(coords.position);
-        (position - camera_position).normalized().dot(camera_forward)
+        (position - camera_position)
+            .normalized()
+            .dot(camera_forward)
     }
 }

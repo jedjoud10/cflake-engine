@@ -30,7 +30,9 @@ impl EditingManager {
         nodes.into_iter().map(ChunkCoords::new).collect::<Vec<_>>()
     }
     // Check if we have any new pending edits
-    pub fn is_pending(&self) -> bool { !self.new_edits.is_empty() }
+    pub fn is_pending(&self) -> bool {
+        !self.new_edits.is_empty()
+    }
     // Convert the list of edits to a list of packed edits
     pub fn convert(&self) -> Vec<PackedEdit> {
         self.edits
@@ -38,7 +40,7 @@ impl EditingManager {
             .map(|edit| {
                 // Center, size, shapetype
                 let (center, size, shapetype) = match &edit.shape {
-                    BasicShapeType::Cube(cube) => (cube.center, cube.size, 0u8),
+                    BasicShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
                     BasicShapeType::Sphere(sphere) => {
                         (sphere.center, veclib::vec3(sphere.radius, 0.0, 0.0), 1u8)
                     }

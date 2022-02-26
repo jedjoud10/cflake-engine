@@ -2,7 +2,6 @@
 pub mod tests {
     use crate::{asset, init};
 
-
     #[test]
     fn test() {
         // Test

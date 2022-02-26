@@ -7,7 +7,6 @@ macro_rules! init {
     };
 }
 
-
 #[macro_export]
 macro_rules! asset {
     ($file:expr) => {

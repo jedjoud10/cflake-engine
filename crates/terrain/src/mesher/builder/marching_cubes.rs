@@ -80,10 +80,10 @@ impl MarchingCubes {
         data: CubeData,
     ) {
         // The vertex indices that are gonna be used for the skirts
-        'edge: for edge in TRI_TABLE[data.case as usize] {
+        for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
             if edge.is_negative() {
-                break 'edge;
+                break;
             }
             // Get the vertex in local space
             let vert1 = VERTEX_TABLE_USIZE[EDGE_TABLE[(edge as usize) * 2]];
@@ -96,7 +96,7 @@ impl MarchingCubes {
             );
 
             // Check if this vertex was already added
-            if let Entry::Vacant(e) = merger.duplicates.entry(edge_tuple) {
+            if let Entry::Vacant(e) = merger.entry(edge_tuple) {
                 // Get the interpolated data
                 let index1 = flatten_vec3(info.pos + vert1);
                 let index2 = flatten_vec3(info.pos + vert2);
@@ -120,16 +120,14 @@ impl MarchingCubes {
                     .with_uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
-                mesh.indices.push(merger.duplicates[&edge_tuple] as u32);
+                mesh.indices.push(merger[&edge_tuple] as u32);
             }
         }
     }
     // Generate the mesh
     fn generate_mesh(&self, voxels: &StoredVoxelData, mesh: &mut Mesh) {
         // Use vertex merging
-        let mut merger = VertexMerger {
-            duplicates: AHashMap::with_capacity(64),
-        };
+        let mut merger = VertexMerger::default();
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
@@ -178,9 +176,7 @@ struct IterInfo {
     pos: veclib::Vector3<usize>,
 }
 // A vertex merger used to tell us when we should merge vertices or not
-struct VertexMerger {
-    duplicates: AHashMap<(u8, u8, u8), u16>,
-}
+type VertexMerger = AHashMap<(u8, u8, u8), u16>;
 // Some interpolated vertex data that we calculate for each interesting edge in the marching cube
 struct InterpolatedVertexData {
     vertex: veclib::Vector3<f32>,

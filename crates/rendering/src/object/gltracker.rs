@@ -42,7 +42,7 @@ impl GlTracker {
     // Create a GL tracker that will actually execute synchronously, and always be completed if we query it's completed state
     pub fn fake<F: FnOnce()>(start: F) -> Self {
         // Call the function
-        start();        
+        start();
         Self {
             fence: None,
             callback: None,

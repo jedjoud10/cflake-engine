@@ -1,4 +1,4 @@
-use crate::shapes::Cube;
+use crate::shapes::Cuboid;
 
 // An AABB bound
 pub struct AABB {
@@ -6,7 +6,7 @@ pub struct AABB {
     pub max: veclib::Vector3<f32>,
 }
 
-// Default AABB, just a unit cube with a center at 0,0,0
+// Default AABB, just a unit cuboid with a center at 0,0,0
 impl Default for AABB {
     fn default() -> Self {
         Self {
@@ -24,16 +24,16 @@ impl AABB {
 }
 
 // Conversions
-impl From<Cube> for AABB {
-    fn from(cube: Cube) -> Self {
-        let half_extent = cube.size / 2.0;
+impl From<Cuboid> for AABB {
+    fn from(cuboid: Cuboid) -> Self {
+        let half_extent = cuboid.size / 2.0;
         Self {
-            min: cube.center - half_extent,
-            max: cube.center + half_extent,
+            min: cuboid.center - half_extent,
+            max: cuboid.center + half_extent,
         }
     }
 }
-impl From<AABB> for Cube {
+impl From<AABB> for Cuboid {
     fn from(aabb: AABB) -> Self {
         let full_extent = aabb.max - aabb.min;
         Self {

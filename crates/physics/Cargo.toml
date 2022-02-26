@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+rapier3d = "0.11.1"

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use world::{
     ecs::{entity::EntityID, event::EventKey},
     rendering::{
@@ -163,8 +165,17 @@ fn run(world: &mut World, mut data: EventKey) {
     let pipeline = world.pipeline.read();
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
+        if Instant::now()
+            .saturating_duration_since(world.time.current.begin_instant)
+            .as_millis()
+            > 2
+        {
+            return;
+        }
         // The edit system didn't pack the edits yet, we must skip
-        if terrain.editing_manager.is_pending() { return; }
+        if terrain.editing_manager.is_pending() {
+            return;
+        }
 
         // Update the packed edits on the GPU
         if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {

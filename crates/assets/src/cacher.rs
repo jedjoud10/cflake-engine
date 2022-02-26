@@ -1,7 +1,10 @@
 use crate::metadata::AssetMetadata;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
-use std::{sync::{Mutex, MutexGuard}, path::{PathBuf, Path}};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Mutex, MutexGuard},
+};
 
 // Half-assed multithreaded asset loading lol
 lazy_static! {
@@ -35,9 +38,8 @@ impl AssetCacher {
     // Init the manager using a specific asset dir path
     pub fn init(&mut self, path: &str) {
         // Keep track of the directory containing the assets
-        self.asset_dir.get_or_insert_with(|| {
-            Path::new(path).to_path_buf()
-        });
+        self.asset_dir
+            .get_or_insert_with(|| Path::new(path).to_path_buf());
     }
     // Get the path that contains all the user assets
     pub fn get_user_assets_path(&self) -> &Path {

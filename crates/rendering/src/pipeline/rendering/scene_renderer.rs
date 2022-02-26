@@ -351,7 +351,11 @@ impl SceneRenderer {
         }
 
         // Draw the renderers
-        for (_, renderer) in pipeline.renderers.iter().filter(|(_, renderer)| renderer.flags.contains(RendererFlags::SHADOW_CASTER)) {
+        for (_, renderer) in pipeline
+            .renderers
+            .iter()
+            .filter(|(_, renderer)| renderer.flags.contains(RendererFlags::SHADOW_CASTER))
+        {
             let result = shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Ok(mesh) = result {

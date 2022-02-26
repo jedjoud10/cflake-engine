@@ -1,9 +1,9 @@
-mod cube;
+mod cuboid;
 mod plane;
 mod segment;
 mod shared;
 mod sphere;
-pub use cube::*;
+pub use cuboid::*;
 pub use plane::*;
 pub use segment::*;
 pub use shared::*;

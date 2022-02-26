@@ -15,8 +15,8 @@ use glutin::{
     window::{Fullscreen, WindowBuilder},
     ContextBuilder, GlProfile, GlRequest, NotCurrent, WindowedContext,
 };
-pub use world::*;
 use spin_sleep::LoopHelper;
+pub use world::*;
 
 // Initialize glutin and the window
 fn init_glutin_window<U>(

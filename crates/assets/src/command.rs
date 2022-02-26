@@ -21,7 +21,10 @@ fn read_bytes(path: &str, asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoadE
 // If we are in Release, we read the bytes from the cacher directly since they are embedded into the binary
 #[cfg(not(debug_assertions))]
 fn read_bytes(path: &str, _asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoadError> {
-    Err(AssetLoadError::new(&format!("The asset '{}' is not cached!", path)))
+    Err(AssetLoadError::new(&format!(
+        "The asset '{}' is not cached!",
+        path
+    )))
 }
 
 // Read the bytes from an asset file and cache them if needed

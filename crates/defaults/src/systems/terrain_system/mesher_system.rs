@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{components::Chunk, globals::ChunkGenerationState};
 use world::{
     ecs::{
@@ -23,7 +25,13 @@ fn chunk_post_gen(_world: &mut World, _chunk: &Chunk, _data: &StoredVoxelData) {
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
-    if world.time.current.count % 3 != 0 { return; }
+    if Instant::now()
+        .saturating_duration_since(world.time.current.begin_instant)
+        .as_millis()
+        > 2
+    {
+        return;
+    }
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
         for (id, components) in query.write().iter_mut() {

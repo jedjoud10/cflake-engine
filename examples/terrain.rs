@@ -5,7 +5,11 @@ use cflake_engine::{
         globals::{self, TerrainSettings},
     },
     ecs::entity::{ComponentLinkingGroup, Entity},
-    math::{octrees::HeuristicSettings, shapes::{BasicShapeType, Sphere, Cube}, csg::CSGOperation},
+    math::{
+        csg::CSGOperation,
+        octrees::HeuristicSettings,
+        shapes::{BasicShapeType, Cuboid, Sphere},
+    },
     rendering::{
         basics::{
             lights::{LightSource, LightSourceType},
@@ -15,7 +19,9 @@ use cflake_engine::{
         },
         pipeline::pipec,
     },
-    veclib::{self, vec3}, World, terrain::editing::Edit,
+    terrain::editing::Edit,
+    veclib::{self, vec3},
+    World,
 };
 
 // A game with some test terrain
@@ -115,13 +121,25 @@ fn init(world: &mut World) {
         .with_heuristic(heuristic)
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let mut terrain = globals::Terrain::new(terrain_settings, &pipeline);
-    terrain.edit(Edit::new(BasicShapeType::Sphere(Sphere {
-        center: veclib::Vector3::ZERO,
-        radius: 500.0,
-    }), CSGOperation::Subtraction).with_material(2));
-    terrain.edit(Edit::new(BasicShapeType::Cube(Cube {
-        center: veclib::Vector3::ZERO,
-        size: vec3(200.0, 6000.0, 200.0)
-    }), CSGOperation::Union).with_material(2));
+    terrain.edit(
+        Edit::new(
+            BasicShapeType::Sphere(Sphere {
+                center: veclib::Vector3::ZERO,
+                radius: 500.0,
+            }),
+            CSGOperation::Subtraction,
+        )
+        .with_material(2),
+    );
+    terrain.edit(
+        Edit::new(
+            BasicShapeType::Cuboid(Cuboid {
+                center: veclib::Vector3::ZERO,
+                size: vec3(200.0, 6000.0, 200.0),
+            }),
+            CSGOperation::Union,
+        )
+        .with_material(2),
+    );
     world.globals.add_global(terrain).unwrap();
 }
