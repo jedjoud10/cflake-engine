@@ -1,6 +1,6 @@
 use half::f16;
 
-#[repr(align(16))]
+#[repr(align(16), C)]
 #[derive(Default, Clone, Copy, Debug)]
 // A packed edit that will be sent to the GPU
 pub struct PackedEdit {

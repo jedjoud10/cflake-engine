@@ -5,7 +5,7 @@ use cflake_engine::{
         globals::{self, TerrainSettings},
     },
     ecs::entity::{ComponentLinkingGroup, Entity},
-    math::octrees::HeuristicSettings,
+    math::{octrees::HeuristicSettings, shapes::{BasicShapeType, Sphere, Cube}, csg::CSGOperation},
     rendering::{
         basics::{
             lights::{LightSource, LightSourceType},
@@ -15,7 +15,7 @@ use cflake_engine::{
         },
         pipeline::pipec,
     },
-    veclib, World,
+    veclib::{self, vec3}, World, terrain::editing::Edit,
 };
 
 // A game with some test terrain
@@ -34,6 +34,8 @@ fn init(world: &mut World) {
     cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_nor_gl_2k.jpg");
     cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_diff_2k.jpg");
     cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_nor_gl_2k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/snow_01_diff_8k.jpg");
+    cflake_engine::assets::asset!("./assets/user/textures/snow_01_nor_gl_8k.jpg");
     // Load le assets
 
     // ----Start the world----
@@ -48,7 +50,7 @@ fn init(world: &mut World) {
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
+        quat: veclib::Quaternion::<f32>::from_x_angle(-45f32.to_radians()),
     })
     .with_strength(1.3);
     pipec::construct(&pipeline, light).unwrap();
@@ -95,7 +97,7 @@ fn init(world: &mut World) {
     let material = Material::default()
         .with_diffuse(diffuse)
         .with_normal(normals)
-        .with_normal_strength(2.0)
+        .with_normal_strength(0.7)
         .with_uv_scale(veclib::Vector2::ONE * 0.03)
         .with_shader(shader);
     let material = pipec::construct(&pipeline, material).unwrap();
@@ -112,6 +114,14 @@ fn init(world: &mut World) {
         .with_material(material)
         .with_heuristic(heuristic)
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
-    let terrain = globals::Terrain::new(terrain_settings, &pipeline);
+    let mut terrain = globals::Terrain::new(terrain_settings, &pipeline);
+    terrain.edit(Edit::new(BasicShapeType::Sphere(Sphere {
+        center: veclib::Vector3::ZERO,
+        radius: 500.0,
+    }), CSGOperation::Subtraction).with_material(2));
+    terrain.edit(Edit::new(BasicShapeType::Cube(Cube {
+        center: veclib::Vector3::ZERO,
+        size: vec3(200.0, 6000.0, 200.0)
+    }), CSGOperation::Union).with_material(2));
     world.globals.add_global(terrain).unwrap();
 }

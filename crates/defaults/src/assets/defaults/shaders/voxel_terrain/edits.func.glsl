@@ -49,7 +49,7 @@ TerrainEdit get_unpacked_terrain_edit(PackedTerrainEdit edit) {
 void edit_density(const vec3 pos, inout float density, inout vec3 color, inout uint material, TerrainEdit edit) {
     // Get the shape density first
     float shape_density = 0.0;
-    const float threshold = 5.0;
+    float threshold = 10.0;
     if (edit.shape_type == 0) {
         shape_density = sdBox(pos-edit.position, edit.size / 2.0);
     } else if (edit.shape_type == 1) {
@@ -67,6 +67,6 @@ void edit_density(const vec3 pos, inout float density, inout vec3 color, inout u
     }
     // Material
     if (edit.material != 255 && shape_density < threshold) {
-        material = 0;
+        material = edit.material;
     }
 }

@@ -194,7 +194,7 @@ impl ShaderStorage {
                                 self.usage.convert(),
                             );
                             self.byte_size = write.bytes.len();
-                            eprintln!("Writing to SSBO with {} bytes", write.bytes.len());
+                            println!("Writing to SSBO with {} bytes", write.bytes.len());
                         } else {
                             panic!("Buffer is not dynamic, cannot reallocate!");
                         }

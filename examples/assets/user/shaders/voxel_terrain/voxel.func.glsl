@@ -15,11 +15,10 @@ struct Voxel {
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
     float noise = 0.0;
-    float density2 = pos.y;
-    for (int i = 0; i < 6; i++) {
-        density2 += (1-voronoi(pos * 0.0001 * vec3(1, 3.0, 1) * pow(1.6, i) + 4.0595 + snoise(pos * 0.001 * vec3(0.9, 6.0, 0.9)) * 0.04).x) * 900 * pow(0.43, i);
+    for (int i = 0; i < 9; i++) {
+        noise += snoise(pos * 0.001 * vec3(1, 0.2, 1.0) * pow(1.6, i) + 4.0595) * pow(0.43, i);
     }
-    return Voxel(density2 - 2500, 255, vec3(1.0));
+    return Voxel(noise * 300 + pos.y, 255, vec3(1.0));
 }
 
 // Modify the voxel after we get it's normal

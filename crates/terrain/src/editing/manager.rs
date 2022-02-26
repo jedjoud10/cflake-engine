@@ -29,6 +29,8 @@ impl EditingManager {
         // Get the chunks coordiantes
         nodes.into_iter().map(ChunkCoords::new).collect::<Vec<_>>()
     }
+    // Check if we have any new pending edits
+    pub fn is_pending(&self) -> bool { !self.new_edits.is_empty() }
     // Convert the list of edits to a list of packed edits
     pub fn convert(&self) -> Vec<PackedEdit> {
         self.edits

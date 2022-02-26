@@ -183,6 +183,7 @@ impl ComputeShader {
             for x in settings.callbacks {
                 x.execute(&uniforms);
             }
+            println!("Dispatch compute");            
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
         })
     }
