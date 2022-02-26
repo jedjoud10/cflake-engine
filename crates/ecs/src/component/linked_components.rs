@@ -45,7 +45,7 @@ impl LinkedComponents {
         &self.id
     }
     // Get a reference to a specific linked component
-    pub fn get_component<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>
+    pub fn get<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -68,7 +68,7 @@ impl LinkedComponents {
         Ok(guard)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_component_mut<T>(&mut self) -> Result<ComponentWriteGuard<T>, ComponentError>
+    pub fn get_mut<T>(&mut self) -> Result<ComponentWriteGuard<T>, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {

@@ -198,7 +198,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components
-                    .get_component_mut::<crate::components::Chunk>()
+                    .get_mut::<crate::components::Chunk>()
                     .unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
@@ -224,7 +224,7 @@ fn run(world: &mut World, mut data: EventKey) {
                     let components = lock_.get_mut(&id).unwrap();
                     // Get our chunk and set it's new data
                     let mut chunk = components
-                        .get_component_mut::<crate::components::Chunk>()
+                        .get_mut::<crate::components::Chunk>()
                         .unwrap();
                     finish_generation(&mut *terrain, &*pipeline, &mut *chunk);
                 }

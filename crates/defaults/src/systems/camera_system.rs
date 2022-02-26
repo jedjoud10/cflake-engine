@@ -69,13 +69,13 @@ fn run(world: &mut World, mut data: EventKey) {
             continue;
         }
         let mut transform = components
-            .get_component_mut::<crate::components::Transform>()
+            .get_mut::<crate::components::Transform>()
             .unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
         let (position, rotation) = (transform.position, transform.rotation);
         let mut camera = components
-            .get_component_mut::<crate::components::Camera>()
+            .get_mut::<crate::components::Camera>()
             .unwrap();
         camera.horizontal_fov += fov_delta;
         // And don't forget to update the camera matrices

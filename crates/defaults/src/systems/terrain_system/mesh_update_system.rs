@@ -5,13 +5,13 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter_mut() {
         let mut chunk = components
-            .get_component_mut::<crate::components::Chunk>()
+            .get_mut::<crate::components::Chunk>()
             .unwrap();
         // Try to get the updated mesh ID
         let mesh_id = chunk.updated_mesh_id.take();
         if let Some(mesh_id) = mesh_id {
             let mut renderer = components
-                .get_component_mut::<crate::components::Renderer>()
+                .get_mut::<crate::components::Renderer>()
                 .unwrap();
             // Update the renderer
             renderer.update_mesh(&world.pipeline.read(), mesh_id);
