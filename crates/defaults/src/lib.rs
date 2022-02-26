@@ -25,6 +25,9 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
+    // Meshes
+    persistent!("./assets/defaults/meshes/cube.obj");
+    persistent!("./assets/defaults/meshes/sphere.obj");
     // GUI
     persistent!("./assets/defaults/shaders/gui/frag.frsh.glsl");
     persistent!("./assets/defaults/shaders/gui/vert.vrsh.glsl");
@@ -56,7 +59,6 @@ pub fn preload_default_assets() {
 pub fn preload_system(world: &mut World) {
     // Engine defaults
     camera_system::system(world);
-    rendering_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
     gui_system::system(world);
@@ -69,6 +71,8 @@ pub fn preload_system(world: &mut World) {
     terrain_system::mesher_system::system(world);
     terrain_system::mesh_update_system::system(world);
     terrain_system::editing_system::system(world);
+
+    rendering_system::system(world);
 
     // We gotta add the globa
     world

@@ -18,6 +18,7 @@ pub struct System<World> {
     pub(crate) cbitfield: Bitfield<u32>,
     // Events
     pub(crate) evn_run: Event<World>,
+    pub(crate) evn_run_fixed: Event<World>,
     pub(crate) evn_added_entity: Event<World>,
     pub(crate) evn_removed_entity: Event<World>,
 
@@ -32,6 +33,7 @@ impl<World> Default for System<World> {
         Self {
             cbitfield: Default::default(),
             evn_run: Default::default(),
+            evn_run_fixed: Default::default(),
             evn_added_entity: Default::default(),
             evn_removed_entity: Default::default(),
             linked_components: Default::default(),

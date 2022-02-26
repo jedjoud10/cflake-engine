@@ -6,6 +6,7 @@ use super::Event;
 pub struct SystemExecutionData<World> {
     // Some events and their queries
     pub(crate) run: (Event<World>, EventKey),
+    pub(crate) run_fixed: (Event<World>, EventKey),
     pub(crate) added_entity: (Event<World>, EventKey),
     pub(crate) removed_entity: (Event<World>, EventKey),
 }
@@ -23,5 +24,6 @@ impl<World> SystemExecutionData<World> {
         if let Some(run_system_evn) = self.run.0 {
             run_system_evn(world, self.run.1);
         }
+        // Run the fixed time event
     }
 }

@@ -3,22 +3,24 @@ use crate::{
     basics::{
         lights::LightSource,
         material::Material,
-        mesh::Mesh,
+        mesh::{Mesh, Vertices},
         renderer::Renderer,
         shader::{query_shader_info_tracked, Shader, ShaderSettings},
         texture::{Texture, TextureFilter, TextureType},
     },
     object::{GlTracker, ObjectID, PipelineTask, ReservedTrackedID, TrackedTask},
     pipeline::{camera::Camera, pipec, sender, PipelineHandler, SceneRenderer},
-    utils::{Window, DEFAULT_WINDOW_SIZE},
+    utils::{UpdateFrequency, Window, DEFAULT_WINDOW_SIZE},
 };
 use ahash::AHashMap;
+use assets::assetc;
 use glutin::NotCurrent;
 use parking_lot::{Mutex, RwLock};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Barrier,
 };
+use veclib::{vec2, vec3};
 
 use super::{
     cached::Cached, collection::Collection, defaults::DefaultPipelineObjects,
@@ -287,7 +289,50 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
     // Create the default mesh
     let mesh = pipec::construct(pipeline, Mesh::default()).unwrap();
 
+    // Create a default plane mesh
+    let plane = pipec::construct(
+        pipeline,
+        Mesh {
+            vertices: {
+                let mut vertices = Vertices::default();
+                // Corners
+                // TODO: Tangents
+                vertices
+                    .add()
+                    .with_position(vec3(-0.5, 0.0, -0.5))
+                    .with_normal(vec3(0, 127, 0))
+                    .with_uv(vec2(255, 0));
+                vertices
+                    .add()
+                    .with_position(vec3(0.5, 0.0, -0.5))
+                    .with_normal(vec3(0, 127, 0))
+                    .with_uv(vec2(0, 0));
+                vertices
+                    .add()
+                    .with_position(vec3(0.5, 0.0, 0.5))
+                    .with_normal(vec3(0, 127, 0))
+                    .with_uv(vec2(0, 255));
+                vertices
+                    .add()
+                    .with_position(vec3(-0.5, 0.0, 0.5))
+                    .with_normal(vec3(0, 127, 0))
+                    .with_uv(vec2(255, 255));
+                vertices
+            },
+            update_frequency: UpdateFrequency::Static,
+            indices: vec![2, 1, 0, 0, 3, 2],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    // Load the default cube and sphere
+    let cube = pipec::construct(pipeline, assetc::load("defaults/meshes/cube.obj").unwrap()).unwrap();
+    let sphere = pipec::construct(pipeline, assetc::load("defaults/meshes/sphere.obj").unwrap()).unwrap();
+
     DefaultPipelineObjects {
+        cube,
+        sphere,
         missing_tex: missing,
         black,
         white,
@@ -295,6 +340,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         shader,
         material,
         mesh,
+        plane,
         sun: ObjectID::default(),
     }
 }

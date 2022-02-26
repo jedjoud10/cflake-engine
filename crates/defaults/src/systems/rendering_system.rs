@@ -32,7 +32,7 @@ fn run(world: &mut World, mut data: EventKey) {
                     .unwrap_or_default()
             {
                 // Update the values if our renderer is valid
-                let matrix = transform.calculate_matrix();
+                let matrix = transform.transform_matrix();
                 Some(RendererUpdatedMatrixUnit {
                     renderer_id,
                     matrix,
@@ -68,7 +68,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         let matrix = components
             .get::<crate::components::Transform>()
             .unwrap()
-            .calculate_matrix();
+            .transform_matrix();
         let mut renderer = components.get_mut::<crate::components::Renderer>().unwrap();
         let mut cpu_renderer = renderer.inner.take().unwrap();
         cpu_renderer.matrix = matrix;

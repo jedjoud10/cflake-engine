@@ -38,10 +38,18 @@ impl Transform {
 }
 
 impl Transform {
-    // Calculate the matrix and return it
-    pub fn calculate_matrix(&self) -> veclib::Matrix4x4<f32> {
+    // Calculate the transform matrix and return it
+    pub fn transform_matrix(&self) -> veclib::Matrix4x4<f32> {
+        self.position_matrix() * self.rotation_matrix() * self.scale_matrix()
+    }
+    // Matrix for each attribute
+    pub fn position_matrix(&self) -> veclib::Matrix4x4<f32> {
         veclib::Matrix4x4::<f32>::from_translation(self.position)
-            * veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
-            * veclib::Matrix4x4::<f32>::from_scale(self.scale)
+    }
+    pub fn rotation_matrix(&self) -> veclib::Matrix4x4<f32> {
+        veclib::Matrix4x4::<f32>::from_quaternion(&self.rotation)
+    }
+    pub fn scale_matrix(&self) -> veclib::Matrix4x4<f32> {
+        veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
 }
