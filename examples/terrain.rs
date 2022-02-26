@@ -8,7 +8,7 @@ use cflake_engine::{
     math::{
         csg::CSGOperation,
         octrees::HeuristicSettings,
-        shapes::{BasicShapeType, Cuboid, Sphere},
+        shapes::{Cuboid, ShapeType, Sphere},
     },
     rendering::{
         basics::{
@@ -121,9 +121,11 @@ fn init(world: &mut World) {
         .with_heuristic(heuristic)
         .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
     let mut terrain = globals::Terrain::new(terrain_settings, &pipeline);
+
+    // Big sphere
     terrain.edit(
         Edit::new(
-            BasicShapeType::Sphere(Sphere {
+            ShapeType::Sphere(Sphere {
                 center: veclib::Vector3::ZERO,
                 radius: 500.0,
             }),
@@ -131,9 +133,10 @@ fn init(world: &mut World) {
         )
         .with_material(1),
     );
+    // Pillar
     terrain.edit(
         Edit::new(
-            BasicShapeType::Cuboid(Cuboid {
+            ShapeType::Cuboid(Cuboid {
                 center: veclib::Vector3::ZERO,
                 size: vec3(200.0, 6000.0, 200.0),
             }),
@@ -141,5 +144,6 @@ fn init(world: &mut World) {
         )
         .with_material(2),
     );
+
     world.globals.add_global(terrain).unwrap();
 }

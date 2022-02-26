@@ -1,10 +1,10 @@
-use math::{csg::CSGOperation, shapes::BasicShapeType};
+use math::{csg::CSGOperation, shapes::ShapeType};
 
 // A single terrain edit
 #[derive(Clone)]
 pub struct Edit {
     // Contains the shape of the edit and some other edit parameters
-    pub shape: BasicShapeType,
+    pub shape: ShapeType,
 
     // Params
     pub material: Option<u8>,
@@ -14,7 +14,7 @@ pub struct Edit {
 
 impl Edit {
     // Create a new edit
-    pub fn new(shape: BasicShapeType, operation: CSGOperation) -> Self {
+    pub fn new(shape: ShapeType, operation: CSGOperation) -> Self {
         Self {
             shape,
             material: None,

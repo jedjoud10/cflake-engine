@@ -1,7 +1,7 @@
 use super::{Edit, PackedEdit};
 use crate::{pack_color, ChunkCoords};
 use half::f16;
-use math::{octrees::Octree, shapes::BasicShapeType};
+use math::{octrees::Octree, shapes::ShapeType};
 
 // An editing manager that contains all the world edits
 #[derive(Default)]
@@ -40,8 +40,8 @@ impl EditingManager {
             .map(|edit| {
                 // Center, size, shapetype
                 let (center, size, shapetype) = match &edit.shape {
-                    BasicShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
-                    BasicShapeType::Sphere(sphere) => {
+                    ShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
+                    ShapeType::Sphere(sphere) => {
                         (sphere.center, veclib::vec3(sphere.radius, 0.0, 0.0), 1u8)
                     }
                 };

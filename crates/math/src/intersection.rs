@@ -1,7 +1,7 @@
 use super::bounds::aabb::*;
 use crate::{
     octrees::{Node, Octree},
-    shapes::{BasicShapeType, Sphere},
+    shapes::{ShapeType, Sphere},
 };
 
 /* #region AABB stuff */
@@ -25,18 +25,18 @@ pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &Sphere) -> bool {
     point.distance(sphere.center) < sphere.radius
 }
 // Check if a basic shape intersects an octree node
-pub fn basic_shape_octree_node(shape: &BasicShapeType, node: &Node) -> bool {
+pub fn basic_shape_octree_node(shape: &ShapeType, node: &Node) -> bool {
     let aabb = node.aabb();
     match shape {
-        BasicShapeType::Cuboid(cuboid) => aabb_aabb(&AABB::from(cuboid.clone()), &aabb),
-        BasicShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),
+        ShapeType::Cuboid(cuboid) => aabb_aabb(&AABB::from(cuboid.clone()), &aabb),
+        ShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),
     }
 }
 //
 /* #endregion */
 /* #region Octree */
 // Check if some shapes intersect an octree, and if they do, return the node indices for the nodes that intersect the shapes
-pub fn shapes_octree<'a>(shapes: &[BasicShapeType], octree: &'a Octree) -> Vec<&'a Node> {
+pub fn shapes_octree<'a>(shapes: &[ShapeType], octree: &'a Octree) -> Vec<&'a Node> {
     // Loop through each octree node recursively and check collision
     let mut intersected_nodes: Vec<&'a Node> = Vec::new();
     octree.recurse(|node| {

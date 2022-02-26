@@ -21,7 +21,7 @@ impl ComponentQuery {
         len.unwrap_or_default()
     }
     // Lock the component query, returning a ComponentQueryGuard that we can use to iterate over the components
-    pub fn write(&self) -> MutComponentQuery {
+    pub fn write(&mut self) -> MutComponentQuery {
         let locked = self.linked_components.as_ref().unwrap().borrow_mut();
         MutComponentQuery { inner: locked }
     }
