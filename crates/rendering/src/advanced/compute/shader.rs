@@ -1,15 +1,9 @@
 use crate::{
     basics::{
-        shader::{
-            load_includes, query_shader_uniforms_definition_map, IncludeExpansionError,
-            ShaderSettings, ShaderSource,
-        },
+        shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
         uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
     },
-    object::{
-        Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID,
-        PipelineObject,
-    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
 use gl::types::GLuint;
@@ -40,10 +34,7 @@ impl PipelineObject for ComputeShader {
     // Add the compute shader to our ordered vec
     fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // Actually compile the compute shader now
-        println!(
-            "Compiling & Creating Compute Shader Source {}...",
-            self.source.path
-        );
+        println!("Compiling & Creating Compute Shader Source {}...", self.source.path);
         let shader_source_program = unsafe {
             // Compiling the source
             let program = gl::CreateShader(gl::COMPUTE_SHADER);
@@ -59,12 +50,7 @@ impl PipelineObject for ComputeShader {
             // Print any errors that might've happened while compiling this shader source
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetShaderInfoLog(
-                    program,
-                    info_log_length,
-                    std::ptr::null_mut::<i32>(),
-                    log.as_mut_ptr(),
-                );
+                gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while compiling shader source {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
@@ -99,12 +85,7 @@ impl PipelineObject for ComputeShader {
             // Print any errors that might've happened while finalizing this shader
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(
-                    program,
-                    info_log_length,
-                    std::ptr::null_mut::<i32>(),
-                    log.as_mut_ptr(),
-                );
+                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while finalizing shader {}!:", self.source.path);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
@@ -120,10 +101,7 @@ impl PipelineObject for ComputeShader {
             }
             // Detach shader source
             gl::DetachShader(program, shader_source_program);
-            println!(
-                "Shader {} compiled and created succsessfully!",
-                self.source.path
-            );
+            println!("Shader {} compiled and created succsessfully!", self.source.path);
             program
         };
         // Add the shader at the end
@@ -132,10 +110,7 @@ impl PipelineObject for ComputeShader {
         pipeline.compute_shaders.insert(id, self);
         // And also get it's uniform definition map
         let mappings = query_shader_uniforms_definition_map(program);
-        pipeline
-            .cached
-            .uniform_definitions
-            .insert(program, mappings);
+        pipeline.cached.uniform_definitions.insert(program, mappings);
 
         Some(())
     }
@@ -159,17 +134,10 @@ impl ComputeShader {
             // We are still including paths
         }
         // Add this shader source to be generated as a subshader
-        Ok(Self {
-            program: 0,
-            source: source_data,
-        })
+        Ok(Self { program: 0, source: source_data })
     }
     // Run a compute shader, and return it's GlTracker
-    pub(crate) fn compute_run(
-        &self,
-        pipeline: &Pipeline,
-        settings: ComputeShaderExecutionSettings,
-    ) -> GlTracker {
+    pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Create some shader uniforms settings that we can use
         let uniform_settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(self.program));
         let uniforms = Uniforms::new(&uniform_settings, pipeline);

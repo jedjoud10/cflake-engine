@@ -5,10 +5,7 @@ use gl::types::GLuint;
 
 use crate::{
     basics::buffer_operation::BufferOperation,
-    object::{
-        Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID,
-        OpenGLObjectNotInitialized, PipelineObject,
-    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
     pipeline::Pipeline,
 };
 const MAX_COUNTERS: usize = 4;
@@ -27,10 +24,7 @@ impl Default for AtomicGroup {
     fn default() -> Self {
         let mut arrayvec = ArrayVec::<u32, MAX_COUNTERS>::new();
         arrayvec.push(0);
-        Self {
-            oid: 0,
-            defaults: arrayvec,
-        }
+        Self { oid: 0, defaults: arrayvec }
     }
 }
 impl PipelineObject for AtomicGroup {
@@ -85,10 +79,7 @@ impl AtomicGroup {
     pub fn new(vals: &[u32]) -> Option<Self> {
         let mut arrayvec = ArrayVec::<u32, 4>::new();
         arrayvec.try_extend_from_slice(vals).ok()?;
-        Some(Self {
-            oid: 0,
-            defaults: arrayvec,
-        })
+        Some(Self { oid: 0, defaults: arrayvec })
     }
     // Read/set the value of an atomic group
     pub(crate) fn buffer_operation(&self, op: BufferOperation) -> GlTracker {

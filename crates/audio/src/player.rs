@@ -1,7 +1,5 @@
 use crate::{source::AudioSource, AudioSourceTracker};
-use rodio::{
-    source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink,
-};
+use rodio::{source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink};
 use std::{cell::RefCell, fmt::Debug, io::Cursor, sync::Arc};
 // A playback cache that contains all the loaded sources
 pub struct AudioPlayer {
@@ -45,11 +43,7 @@ impl AudioPlayer {
         Some(tracker)
     }
     // Play an audio source at a specified position
-    pub fn play_positional(
-        &self,
-        source: &AudioSource,
-        position: veclib::Vector3<f32>,
-    ) -> Option<AudioSourceTracker> {
+    pub fn play_positional(&self, source: &AudioSource, position: veclib::Vector3<f32>) -> Option<AudioSourceTracker> {
         // Check if the index is gud
         let idx = source.idx?;
         // Decode then play the sound
@@ -57,8 +51,7 @@ impl AudioPlayer {
         // Create a new spatial sink
         // Convert positions
         let pos = [position.x, position.y, position.z];
-        let spatial_sink =
-            SpatialSink::try_new(&self.stream_handle, pos, self.left, self.right).ok()?;
+        let spatial_sink = SpatialSink::try_new(&self.stream_handle, pos, self.left, self.right).ok()?;
         spatial_sink.append(buffered);
         // Arc
         let tracker = AudioSourceTracker::Spatial(Arc::new(spatial_sink));
@@ -106,8 +99,7 @@ impl AudioPlayer {
         // Create a new spatial sink
         // Convert positions
         let pos = [position.x, position.y, position.z];
-        let spatial_sink =
-            SpatialSink::try_new(&self.stream_handle, pos, self.left, self.right).ok()?;
+        let spatial_sink = SpatialSink::try_new(&self.stream_handle, pos, self.left, self.right).ok()?;
         spatial_sink.append(buffered);
         // Arc
         let tracker = AudioSourceTracker::Spatial(Arc::new(spatial_sink));
@@ -116,11 +108,7 @@ impl AudioPlayer {
         Some(tracker)
     }
     // Update the positions of the spatial ears
-    pub fn update_ear_positions(
-        &mut self,
-        left: veclib::Vector3<f32>,
-        right: veclib::Vector3<f32>,
-    ) {
+    pub fn update_ear_positions(&mut self, left: veclib::Vector3<f32>, right: veclib::Vector3<f32>) {
         let left = [left.x, left.y, left.z];
         let right = [right.x, right.y, right.z];
         self.left = left;

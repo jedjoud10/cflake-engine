@@ -1,7 +1,5 @@
 use crate::{
-    object::{
-        Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
-    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
 use enum_as_inner::EnumAsInner;
@@ -36,9 +34,7 @@ impl PipelineObject for LightSource {
     // Add the material to our ordered vec
     fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
         // We must return an error if we try to add multiple directional lights at the same time
-        if pipeline.defaults.as_ref().unwrap().sun.is_some()
-            && self._type.as_directional().is_some()
-        {
+        if pipeline.defaults.as_ref().unwrap().sun.is_some() && self._type.as_directional().is_some() {
             return None;
         }
 

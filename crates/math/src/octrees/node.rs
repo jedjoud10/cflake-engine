@@ -17,9 +17,7 @@ pub struct Node {
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        self.center() == other.center()
-            && self.children_indices.is_none() == other.children_indices.is_none()
-            && self.depth == other.depth
+        self.center() == other.center() && self.children_indices.is_none() == other.children_indices.is_none() && self.depth == other.depth
     }
 }
 
@@ -38,12 +36,7 @@ impl Node {
     pub fn aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
             min: veclib::Vector3::<f32>::from(self.position),
-            max: veclib::Vector3::<f32>::from(self.position)
-                + veclib::Vector3::<f32>::new(
-                    self.half_extent as f32,
-                    self.half_extent as f32,
-                    self.half_extent as f32,
-                ) * 2.0,
+            max: veclib::Vector3::<f32>::from(self.position) + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
         }
     }
     // Get the center of this octree node
@@ -51,12 +44,7 @@ impl Node {
         self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(
-        &self,
-        target: &veclib::Vector3<f32>,
-        max_depth: u8,
-        settings: &HeuristicSettings,
-    ) -> bool {
+    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
         let test = (settings.function)(self, target);
         test && self.depth < (max_depth - 1)
     }
@@ -75,11 +63,7 @@ impl Node {
             for z in 0..2 {
                 for x in 0..2 {
                     // The position offset for the new octree node
-                    let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(
-                        x * half_extent,
-                        y * half_extent,
-                        z * half_extent,
-                    );
+                    let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
                     let child_index = nodes.get_next_idx();

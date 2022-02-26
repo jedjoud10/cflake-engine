@@ -25,16 +25,10 @@ impl GlTracker {
             let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
             Some(fence)
         };
-        Self {
-            fence,
-            callback: None,
-        }
+        Self { fence, callback: None }
     }
     // Create the tracker with a specific execution callback
-    pub fn with_completed_callback<C: FnOnce(&Pipeline) + 'static>(
-        mut self,
-        callback_finished: C,
-    ) -> Self {
+    pub fn with_completed_callback<C: FnOnce(&Pipeline) + 'static>(mut self, callback_finished: C) -> Self {
         self.callback = Some(Box::new(callback_finished));
         self
     }
@@ -43,10 +37,7 @@ impl GlTracker {
     pub fn fake<F: FnOnce()>(start: F) -> Self {
         // Call the function
         start();
-        Self {
-            fence: None,
-            callback: None,
-        }
+        Self { fence: None, callback: None }
     }
     // Check wether the corresponding fence object has completed
     pub fn completed(&mut self, pipeline: &Pipeline) -> bool {
@@ -58,8 +49,7 @@ impl GlTracker {
             }
             return true;
         }
-        let result =
-            unsafe { gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0) };
+        let result = unsafe { gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0) };
 
         // Check
         let completed = result == gl::ALREADY_SIGNALED || result == gl::CONDITION_SATISFIED;

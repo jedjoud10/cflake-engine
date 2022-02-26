@@ -1,7 +1,5 @@
 use crate::{
-    basics::{
-        lights::LightSource, material::Material, mesh::Mesh, shader::Shader, texture::Texture,
-    },
+    basics::{lights::LightSource, material::Material, mesh::Mesh, shader::Shader, texture::Texture},
     object::ObjectID,
 };
 

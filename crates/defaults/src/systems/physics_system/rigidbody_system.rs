@@ -17,34 +17,20 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
         .map(|vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
-    let indices = mesh
-        .indices
-        .chunks_exact(3)
-        .map(|slice| slice.try_into().unwrap())
-        .collect::<Vec<[u32; 3]>>();
+    let indices = mesh.indices.chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
 
     // Done
     SharedShape::trimesh(vertices, indices)
 }
 
 // Get the Rapier3D shared shape from a collider components
-fn get_shared_shape(
-    pipeline: &Pipeline,
-    scale_matrix: &veclib::Matrix4x4<f32>,
-    collider: &crate::components::Collider,
-) -> SharedShape {
+fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &crate::components::Collider) -> SharedShape {
     match &collider._type {
         crate::components::ColliderType::Shape(shape) => match shape {
-            world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(
-                cuboid.size.x / 2.0,
-                cuboid.size.y / 2.0,
-                cuboid.size.z / 2.0,
-            ),
+            world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             world::math::shapes::ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        crate::components::ColliderType::Mesh(mesh) => {
-            get_mesh(scale_matrix, pipeline.meshes.get(*mesh).unwrap())
-        }
+        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(*mesh).unwrap()),
     }
 }
 
@@ -66,26 +52,18 @@ fn added_entities(world: &mut World, mut data: EventKey) {
                 translation: vec3_to_translation(transform.position),
             })
             .build();
-        let r_collider = ColliderBuilder::new(get_shared_shape(
-            &pipeline,
-            &transform.scale_matrix(),
-            &collider,
-        ))
-        .friction(collider.friction)
-        .restitution(collider.restitution)
-        .build();
+        let r_collider = ColliderBuilder::new(get_shared_shape(&pipeline, &transform.scale_matrix(), &collider))
+            .friction(collider.friction)
+            .restitution(collider.restitution)
+            .build();
 
         // Add the collider and rigidbody
         let sim = &mut world.physics;
         let rigidbody_handle = sim.bodies.insert(r_rigibody);
-        let collider_handle =
-            sim.colliders
-                .insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
+        let collider_handle = sim.colliders.insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
 
         // Set the handles in their respective components
-        let mut rigidbody = components
-            .get_mut::<crate::components::RigidBody>()
-            .unwrap();
+        let mut rigidbody = components.get_mut::<crate::components::RigidBody>().unwrap();
         rigidbody.handle = rigidbody_handle;
         let mut collider = components.get_mut::<crate::components::Collider>().unwrap();
         collider.handle = collider_handle;

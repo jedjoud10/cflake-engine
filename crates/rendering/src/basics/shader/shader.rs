@@ -1,9 +1,7 @@
 use gl::types::GLuint;
 
 use crate::basics::shader::query_shader_uniforms_definition_map;
-use crate::object::{
-    Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
-};
+use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::Pipeline;
 
 use std::collections::{HashMap, HashSet};
@@ -65,15 +63,7 @@ impl ShaderSettings {
         // Load a shader source from scratch
         let metadata = assets::metadata::AssetMetadata::new(path).unwrap();
         let text = assets::assetc::load::<String>(path).unwrap();
-        let extension = metadata
-            .name
-            .to_str()
-            .unwrap()
-            .to_string()
-            .split(".")
-            .map(|x| x.to_string())
-            .collect::<Vec<_>>()[1..]
-            .join(".");
+        let extension = metadata.name.to_str().unwrap().to_string().split(".").map(|x| x.to_string()).collect::<Vec<_>>()[1..].join(".");
         self.sources.insert(
             path.to_string(),
             ShaderSource {
@@ -139,12 +129,7 @@ impl PipelineObject for Shader {
                 // Print any errors that might've happened while compiling this shader source
                 if info_log_length > 0 {
                     let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                    gl::GetShaderInfoLog(
-                        program,
-                        info_log_length,
-                        std::ptr::null_mut::<i32>(),
-                        log.as_mut_ptr(),
-                    );
+                    gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                     println!("Error while compiling shader source {}!:", source_data.path);
                     let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                     let string = String::from_utf8(printable_log).unwrap();
@@ -167,12 +152,7 @@ impl PipelineObject for Shader {
             }
         }
         // Extract the shader
-        let shader_name = self
-            .sources
-            .iter()
-            .map(|(name, _)| name.clone())
-            .collect::<Vec<String>>()
-            .join("_");
+        let shader_name = self.sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
 
         // Actually compile the shader now
         println!("Compiling & Creating Shader {}...", shader_name);
@@ -181,10 +161,7 @@ impl PipelineObject for Shader {
 
             // Create & compile the shader sources and link them
             let taken = std::mem::take(&mut self.sources);
-            let programs: Vec<u32> = taken
-                .into_iter()
-                .map(|(_path, data)| compile_single_source(data))
-                .collect::<Vec<_>>();
+            let programs: Vec<u32> = taken.into_iter().map(|(_path, data)| compile_single_source(data)).collect::<Vec<_>>();
             // Link
             for shader in programs.iter() {
                 gl::AttachShader(program, *shader)
@@ -203,12 +180,7 @@ impl PipelineObject for Shader {
             // Print any errors that might've happened while finalizing this shader
             if info_log_length > 0 {
                 let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
-                gl::GetProgramInfoLog(
-                    program,
-                    info_log_length,
-                    std::ptr::null_mut::<i32>(),
-                    log.as_mut_ptr(),
-                );
+                gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
                 println!("Error while finalizing shader {}!:", shader_name);
                 let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
                 let string = String::from_utf8(printable_log).unwrap();
@@ -228,10 +200,7 @@ impl PipelineObject for Shader {
         pipeline.shaders.insert(id, self);
         // And also get it's uniform definition map
         let mappings = query_shader_uniforms_definition_map(program);
-        pipeline
-            .cached
-            .uniform_definitions
-            .insert(program, mappings);
+        pipeline.cached.uniform_definitions.insert(program, mappings);
 
         Some(())
     }

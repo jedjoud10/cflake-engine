@@ -3,8 +3,7 @@ use rendering::basics::mesh::Mesh;
 use crate::{
     mesher::{
         tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
-        MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET,
-        SKIRTS_DIR_TRANSFORM_FN,
+        MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
     },
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
@@ -61,18 +60,12 @@ impl MarchingCubesSkirts {
         mesh
     }
     // Generate a whole skirt
-    fn generate_skirt(
-        &self,
-        voxels: &StoredVoxelData,
-        mesh: &mut Mesh,
-        skirt_settings: &SkirtSettings,
-    ) {
+    fn generate_skirt(&self, voxels: &StoredVoxelData, mesh: &mut Mesh, skirt_settings: &SkirtSettings) {
         let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 // Solve each marching squares case
-                let i =
-                    (skirt_settings.indexing_function)(skirt_settings.slice_part as usize, x, y);
+                let i = (skirt_settings.indexing_function)(skirt_settings.slice_part as usize, x, y);
                 // Create some iteration info
                 let info = InterInfo {
                     index_offsets: skirt_settings.index_offsets,
@@ -92,11 +85,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Calculate a marching square case and it's local voxels
-    fn generate_marching_squares_case(
-        &self,
-        voxels: &StoredVoxelData,
-        info: &InterInfo,
-    ) -> Option<SquareData> {
+    fn generate_marching_squares_case(&self, voxels: &StoredVoxelData, info: &InterInfo) -> Option<SquareData> {
         // Get the position
         let p = veclib::Vector2::new(info.x as f32, info.y as f32);
         // Get the marching cube case
@@ -134,8 +123,7 @@ impl MarchingCubesSkirts {
             let two_voxels = MS_EDGE_TO_VERTICES[edge as usize];
             let index1 = info.i + info.index_offsets[two_voxels[0] as usize];
             let index2 = info.i + info.index_offsets[two_voxels[1] as usize];
-            let value: f32 =
-                self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
+            let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
             // Now interpolate the voxel attributes
             let normal = veclib::Vector3::<f32>::lerp(
                 veclib::Vector3::<f32>::from(*voxels.normal(index1)),
@@ -155,8 +143,7 @@ impl MarchingCubesSkirts {
             // We must get the local offset of these two voxels
             let voxel1_local_position = SQUARES_VERTEX_TABLE[two_voxels[0] as usize];
             let voxel2_local_position = SQUARES_VERTEX_TABLE[two_voxels[1] as usize];
-            let position =
-                veclib::Vector2::<f32>::lerp(voxel1_local_position, voxel2_local_position, value);
+            let position = veclib::Vector2::<f32>::lerp(voxel1_local_position, voxel2_local_position, value);
             count += 1;
             ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
@@ -213,11 +200,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Create a marching squares triangle between 3 skirt voxels
-    fn create_triangle(
-        indices: &[i8],
-        info: &InterInfo,
-        data: &SquareData,
-    ) -> [veclib::Vector3<f32>; 3] {
+    fn create_triangle(indices: &[i8], info: &InterInfo, data: &SquareData) -> [veclib::Vector3<f32>; 3] {
         // Check if the local index is one of the interpolated ones
         let mut vertices = [veclib::Vector3::<f32>::ZERO; 3];
         for (triangle_index, vertex_index) in indices.iter().enumerate() {
@@ -225,11 +208,7 @@ impl MarchingCubesSkirts {
                 // Not interpolated
                 let transformed_index = (*vertex_index as usize) / 2;
 
-                (info.transform_function)(
-                    info.slice,
-                    &SQUARES_VERTEX_TABLE[transformed_index],
-                    &data.position,
-                )
+                (info.transform_function)(info.slice, &SQUARES_VERTEX_TABLE[transformed_index], &data.position)
             } else {
                 // Interpolated
                 let transformed_index = ((*vertex_index as usize) - 1) / 2;
@@ -254,8 +233,7 @@ struct SkirtSettings {
     flip: bool,
     // Functions
     indexing_function: fn(usize, usize, usize) -> usize,
-    transform_function:
-        fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
+    transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
 }
 // A single skirt vertex
 pub enum SkirtVert {
@@ -277,8 +255,7 @@ struct SquareData {
 // Some information about the current iteration
 pub struct InterInfo {
     index_offsets: &'static [usize; 4],
-    transform_function:
-        fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
+    transform_function: fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>,
     slice: usize,
     flip: bool,
     i: usize,

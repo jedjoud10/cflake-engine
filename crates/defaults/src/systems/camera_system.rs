@@ -11,11 +11,7 @@ fn run(world: &mut World, mut data: EventKey) {
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
         veclib::EulerAnglesOrder::YXZ,
-        veclib::Vector3::new(
-            -mouse_pos.y as f32 * SENSIVITY,
-            -mouse_pos.x as f32 * SENSIVITY,
-            0.0,
-        ),
+        veclib::Vector3::new(-mouse_pos.y as f32 * SENSIVITY, -mouse_pos.x as f32 * SENSIVITY, 0.0),
     );
     // Calculate the vectors
     let forward = new_rotation.mul_point(-veclib::Vector3::<f32>::Z);
@@ -24,12 +20,8 @@ fn run(world: &mut World, mut data: EventKey) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 0.1
-        + (*world.input.get_mouse_scroll() as f32 * 0.1)
-            .clamp(0.0, 100.0)
-            .powf(2.0);
-    let speed =
-        original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
+    let original_speed = 0.1 + (*world.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
     let fov_delta = if world.input.map_held("camera_zoom") {
         1.0
     } else if world.input.map_held("camera_unzoom") {
@@ -59,18 +51,13 @@ fn run(world: &mut World, mut data: EventKey) {
         velocity += -up * speed;
     }
     // Update the camera values now
-    let mut global = world
-        .globals
-        .get_global_mut::<crate::globals::GlobalWorldData>()
-        .unwrap();
+    let mut global = world.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
     for (&entity_id, components) in query.write().iter_mut() {
         // If we are not the right camera, skip
         if Some(entity_id) != global.camera_entity_id {
             continue;
         }
-        let mut transform = components
-            .get_mut::<crate::components::Transform>()
-            .unwrap();
+        let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
         let (position, rotation) = (transform.position, transform.rotation);
@@ -91,9 +78,7 @@ fn run(world: &mut World, mut data: EventKey) {
             projm: camera.projection_matrix,
             clip_planes: camera.clip_planes,
         };
-        pipeline::pipec::update_callback(&pipeline, |pipeline, _| {
-            pipeline.set_internal_camera(pipeline_camera)
-        });
+        pipeline::pipec::update_callback(&pipeline, |pipeline, _| pipeline.set_internal_camera(pipeline_camera));
         drop(pipeline);
 
         // Since we are the main camera, we must update our position in the global
@@ -106,10 +91,7 @@ fn run(world: &mut World, mut data: EventKey) {
 
 // When we add new cameras
 fn added_entities(world: &mut World, mut data: EventKey) {
-    let mut global = world
-        .globals
-        .get_global_mut::<crate::globals::GlobalWorldData>()
-        .unwrap();
+    let mut global = world.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the first one
     let query = data.as_query_mut().unwrap();
     if let Some((entity_id, _)) = query.write().iter().nth(0) {
@@ -119,10 +101,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
 
 // When we remove old cameras
 fn removed_entities(world: &mut World, mut data: EventKey) {
-    let mut global = world
-        .globals
-        .get_global_mut::<crate::globals::GlobalWorldData>()
-        .unwrap();
+    let mut global = world.globals.get_global_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If we remove the main camera, we must empty the camera entity ID
     let query = data.as_query_mut().unwrap();
     for (&entity_id, _) in query.write().iter() {

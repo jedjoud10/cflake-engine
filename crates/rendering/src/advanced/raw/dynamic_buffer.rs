@@ -34,22 +34,12 @@ impl<T> DynamicRawBuffer<T> {
             gl::GenBuffers(1, &mut oid);
             gl::BindBuffer(_type, oid);
             if capacity != 0 {
-                gl::BufferData(
-                    _type,
-                    (size_of::<T>() * capacity) as isize,
-                    null(),
-                    usage.convert(),
-                );
+                gl::BufferData(_type, (size_of::<T>() * capacity) as isize, null(), usage.convert());
             }
             gl::BindBuffer(_type, 0);
             oid
         };
-        Self {
-            buffer: oid,
-            _type,
-            vec,
-            usage,
-        }
+        Self { buffer: oid, _type, vec, usage }
     }
     // Add an element to the raw buffer
     // This may reallocate the OpenGL buffer if it's last len is insufficient
@@ -77,12 +67,7 @@ impl<T> DynamicRawBuffer<T> {
                 // We don't need to reallocate, we just need to update our sub-data
                 let offset = (self.vec.len() - 1) * size_of::<T>();
                 let data = self.vec.last().unwrap();
-                gl::BufferSubData(
-                    self._type,
-                    offset as isize,
-                    size_of::<T>() as isize,
-                    data as *const T as *const c_void,
-                );
+                gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, data as *const T as *const c_void);
             }
             gl::BindBuffer(self._type, 0);
         }
@@ -99,12 +84,7 @@ impl<T> DynamicRawBuffer<T> {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
             //gl::BufferSubData(self._type, (index * size_of::<T>()) as isize, size_of::<T>() as isize, self.vec.as_ptr() as *const T as *const c_void);
-            gl::BufferSubData(
-                self._type,
-                0,
-                (size_of::<T>() * self.vec.len()) as isize,
-                self.vec.as_ptr() as *const c_void,
-            );
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
     }
@@ -124,12 +104,7 @@ impl<T> DynamicRawBuffer<T> {
         let offset = index * size_of::<T>();
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(
-                self._type,
-                offset as isize,
-                size_of::<T>() as isize,
-                self.vec.as_ptr() as *const T as *const c_void,
-            );
+            gl::BufferSubData(self._type, offset as isize, size_of::<T>() as isize, self.vec.as_ptr() as *const T as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
         old
@@ -148,12 +123,7 @@ impl<T> DynamicRawBuffer<T> {
         // Also update the whole OpenGL buffer
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(
-                self._type,
-                0,
-                (size_of::<T>() * self.vec.len()) as isize,
-                self.vec.as_ptr() as *const c_void,
-            );
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
         old
@@ -168,12 +138,7 @@ impl<T> DynamicRawBuffer<T> {
         // Also update the whole OpenGL buffer
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(
-                self._type,
-                0,
-                (size_of::<T>() * self.vec.len()) as isize,
-                self.vec.as_ptr() as *const c_void,
-            );
+            gl::BufferSubData(self._type, 0, (size_of::<T>() * self.vec.len()) as isize, self.vec.as_ptr() as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
         old

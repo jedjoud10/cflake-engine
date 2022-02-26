@@ -41,9 +41,7 @@ impl IOManager {
             path
         };
         let messages = Arc::new(Mutex::new(Vec::new()));
-        let logger = Logger {
-            messages: messages.clone(),
-        };
+        let logger = Logger { messages: messages.clone() };
         log::set_boxed_logger(Box::new(logger)).unwrap();
         log::set_max_level(LevelFilter::Info);
         IOManager {
@@ -58,10 +56,7 @@ impl IOManager {
         let mut lock = self.messages.lock();
         let taken = lock.drain(..);
         // Open the log file so we can start writing to it
-        let file = std::fs::OpenOptions::new()
-            .write(true)
-            .open(&self.log_file_path)
-            .unwrap();
+        let file = std::fs::OpenOptions::new().write(true).open(&self.log_file_path).unwrap();
         let mut writer = BufWriter::new(file);
         for message in taken {
             writeln!(&mut writer, "{}", message).unwrap();
@@ -78,10 +73,7 @@ impl IOManager {
         }
     }
     // Load a struct from a file
-    pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(
-        &self,
-        file_path: impl AsRef<Path>,
-    ) -> io::Result<T> {
+    pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: impl AsRef<Path>) -> io::Result<T> {
         // Load the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let reader = BufReader::new(OpenOptions::new().read(true).open(global_path)?);
@@ -89,11 +81,7 @@ impl IOManager {
         Ok(serde_json::from_reader(reader).unwrap())
     }
     // Save a struct to a file
-    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(
-        &self,
-        file_path: impl AsRef<Path>,
-        struct_to_save: &T,
-    ) {
+    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: impl AsRef<Path>, struct_to_save: &T) {
         // Save the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());

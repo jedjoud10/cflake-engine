@@ -7,13 +7,7 @@ use world::{
 };
 
 // Add a single chunk to the world
-fn add_chunk(
-    ecs: &mut ECSManager<World>,
-    camera_position: veclib::Vector3<f32>,
-    camera_forward: veclib::Vector3<f32>,
-    octree_size: u64,
-    coords: ChunkCoords,
-) -> (EntityID, f32) {
+fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
     let mut group = ecs::entity::ComponentLinkingGroup::default();
@@ -22,20 +16,12 @@ fn add_chunk(
     // Transform
     let position = veclib::Vector3::<f32>::from(coords.position);
     let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
-    let transform = crate::components::Transform::default()
-        .with_position(position)
-        .with_scale(scale);
-    group
-        .link::<crate::components::Transform>(transform)
-        .unwrap();
+    let transform = crate::components::Transform::default().with_position(position).with_scale(scale);
+    group.link::<crate::components::Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
-    let chunk = crate::components::Chunk {
-        coords,
-        updated_mesh_id: None,
-    };
-    let priority =
-        crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
+    let chunk = crate::components::Chunk { coords, updated_mesh_id: None };
+    let priority = crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
@@ -56,10 +42,7 @@ fn run(world: &mut World, _data: EventKey) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let cam = world
-            .globals
-            .get_global::<crate::globals::GlobalWorldData>()
-            .unwrap();
+        let cam = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
         (cam.camera_pos, cam.camera_forward)
     };
     let terrain_ = world.globals.get_global_mut::<crate::globals::Terrain>();
@@ -74,12 +57,7 @@ fn run(world: &mut World, _data: EventKey) {
 }
 
 // Update the terrain
-fn update_terrain(
-    handler: &mut ChunksManager,
-    camera_position: veclib::Vector3<f32>,
-    ecs: &mut ECSManager<World>,
-    camera_forward: veclib::Vector3<f32>,
-) {
+fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_forward: veclib::Vector3<f32>) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
         let octree_ = handler.octree.clone();
         let mut octree = octree_.lock();
@@ -98,13 +76,7 @@ fn update_terrain(
                 if node.children_indices.is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(
-                        ecs,
-                        camera_position,
-                        camera_forward,
-                        octree.inner.size,
-                        coords,
-                    );
+                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size, coords);
                     handler.priority_list.push((id, priority));
                     handler.chunks.insert(coords, id);
                     handler.chunks_generating.insert(coords);

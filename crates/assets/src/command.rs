@@ -21,10 +21,7 @@ fn read_bytes(path: &str, asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoadE
 // If we are in Release, we read the bytes from the cacher directly since they are embedded into the binary
 #[cfg(not(debug_assertions))]
 fn read_bytes(path: &str, _asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoadError> {
-    Err(AssetLoadError::new(&format!(
-        "The asset '{}' is not cached!",
-        path
-    )))
+    Err(AssetLoadError::new(&format!("The asset '{}' is not cached!", path)))
 }
 
 // Read the bytes from an asset file and cache them if needed
@@ -43,8 +40,7 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
         cacher.try_load(&meta).unwrap()
     };
     // Deserialize
-    obj.deserialize(&meta, bytes)
-        .ok_or_else(|| AssetLoadError::new(path))
+    obj.deserialize(&meta, bytes).ok_or_else(|| AssetLoadError::new(path))
 }
 // Load an asset (By creating a default version of it)
 pub fn load<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {

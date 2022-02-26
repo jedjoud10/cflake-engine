@@ -47,9 +47,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group
-        .link(components::Camera::new(90.0, 2.0, 9000.0))
-        .unwrap();
+    group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
     group.link_default::<components::Transform>().unwrap();
     let entity = Entity::default();
     let _id = world.ecs.add_entity(entity, group).unwrap();
@@ -67,36 +65,22 @@ fn init(world: &mut World) {
         .source("defaults/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = pipec::construct(&pipeline, Shader::new(settings).unwrap()).unwrap();
     // Then the textures
-    let _white = pipeline
-        .textures
-        .get(pipeline.defaults.as_ref().unwrap().white)
-        .unwrap();
-    let _normal_map = pipeline
-        .textures
-        .get(pipeline.defaults.as_ref().unwrap().normals_tex)
-        .unwrap();
-    let texture_diff_1 =
-        assetc::load::<Texture>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
-    let texture_norm_1 =
-        assetc::load::<Texture>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
-    let texture_diff_2 =
-        assetc::load::<Texture>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
-    let texture_norm_2 =
-        assetc::load::<Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
-    let texture_diff_3 =
-        assetc::load::<Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
-    let texture_norm_3 =
-        assetc::load::<Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    let diffuse =
-        Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
-            .unwrap()
-            .with_mipmaps(true)
-            .with_filter(TextureFilter::Linear);
-    let normals =
-        Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3])
-            .unwrap()
-            .with_mipmaps(true)
-            .with_filter(TextureFilter::Linear);
+    let _white = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().white).unwrap();
+    let _normal_map = pipeline.textures.get(pipeline.defaults.as_ref().unwrap().normals_tex).unwrap();
+    let texture_diff_1 = assetc::load::<Texture>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
+    let texture_norm_1 = assetc::load::<Texture>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
+    let texture_diff_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
+    let texture_norm_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    let texture_diff_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
+    let texture_norm_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
+    let diffuse = Texture::convert_texturearray(vec![&texture_diff_1, &texture_diff_2, &texture_diff_3])
+        .unwrap()
+        .with_mipmaps(true)
+        .with_filter(TextureFilter::Linear);
+    let normals = Texture::convert_texturearray(vec![&texture_norm_1, &texture_norm_2, &texture_norm_3])
+        .unwrap()
+        .with_mipmaps(true)
+        .with_filter(TextureFilter::Linear);
 
     let diffuse = pipec::construct(&pipeline, diffuse).unwrap();
     let normals = pipec::construct(&pipeline, normals).unwrap();
@@ -109,8 +93,7 @@ fn init(world: &mut World) {
     let material = pipec::construct(&pipeline, material).unwrap();
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
-            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target)
-                / (node.half_extent as f32 * 2.0);
+            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target) / (node.half_extent as f32 * 2.0);
             dist < 1.2
         })
         .with_threshold(64.0);

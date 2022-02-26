@@ -1,6 +1,4 @@
-use crate::object::{
-    Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
-};
+use crate::object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject};
 use crate::pipeline::*;
 
 use super::shader::Shader;

@@ -42,23 +42,13 @@ pub struct SceneRenderer {
 }
 impl SceneRenderer {
     // Initialize this new pipeline renderer
-    pub(crate) fn initialize(
-        &mut self,
-        pipeline_settings: PipelineSettings,
-        internal: &mut InternalPipeline,
-        pipeline: &mut Pipeline,
-    ) {
+    pub(crate) fn initialize(&mut self, pipeline_settings: PipelineSettings, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
         println!("Initializing the pipeline renderer...");
         // Create the quad mesh that we will use to render the whole screen
         use veclib::{vec2, vec3};
         let quad = Mesh {
             vertices: Vertices {
-                positions: vec![
-                    vec3(1.0, -1.0, 0.0),
-                    vec3(-1.0, 1.0, 0.0),
-                    vec3(-1.0, -1.0, 0.0),
-                    vec3(1.0, 1.0, 0.0),
-                ],
+                positions: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
                 uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
                 ..Default::default()
             },
@@ -74,47 +64,21 @@ impl SceneRenderer {
             .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
             .shader_constant("shadow_bias", pipeline_settings.shadow_bias);
-        self.lighting_pass_screenshader =
-            pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
+        self.lighting_pass_screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
         /* #region Deferred renderer init */
         // Local function for binding a texture to a specific frame buffer attachement
-        let dims =
-            TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
+        let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
         unsafe {
             gl::GenFramebuffers(1, &mut self.framebuffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(
-                pipeline,
-                Texture::default()
-                    .with_dimensions(dims)
-                    .with_format(TextureFormat::RGB8R),
-            )
-            .unwrap();
+            self.diffuse_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8R)).unwrap();
             // Create the emissive render texture
-            self.emissive_texture = pipec::construct(
-                pipeline,
-                Texture::default()
-                    .with_dimensions(dims)
-                    .with_format(TextureFormat::RGB32F),
-            )
-            .unwrap();
+            self.emissive_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
             // Create the normals render texture
-            self.normals_texture = pipec::construct(
-                pipeline,
-                Texture::default()
-                    .with_dimensions(dims)
-                    .with_format(TextureFormat::RGB8RS),
-            )
-            .unwrap();
+            self.normals_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8RS)).unwrap();
             // Create the position render texture
-            self.position_texture = pipec::construct(
-                pipeline,
-                Texture::default()
-                    .with_dimensions(dims)
-                    .with_format(TextureFormat::RGB32F),
-            )
-            .unwrap();
+            self.position_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
             // Create the depth render texture
             self.depth_texture = pipec::construct(
                 pipeline,
@@ -126,22 +90,12 @@ impl SceneRenderer {
             .unwrap();
 
             // Now bind the attachememnts
-            fn bind_attachement(
-                attachement: u32,
-                texture: &ObjectID<Texture>,
-                pipeline: &Pipeline,
-            ) -> Option<()> {
+            fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
                 // Get the textures from the GPUObjectID
                 let texture = pipeline.textures.get(*texture)?;
                 unsafe {
                     gl::BindTexture(texture.target, texture.oid);
-                    gl::FramebufferTexture2D(
-                        gl::FRAMEBUFFER,
-                        attachement,
-                        texture.target,
-                        texture.oid,
-                        0,
-                    );
+                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
                 }
                 Some(())
             }
@@ -152,23 +106,12 @@ impl SceneRenderer {
             bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
             bind_attachement(gl::COLOR_ATTACHMENT3, &self.position_texture, pipeline).unwrap();
             bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture, pipeline).unwrap();
-            let attachements = vec![
-                gl::COLOR_ATTACHMENT0,
-                gl::COLOR_ATTACHMENT1,
-                gl::COLOR_ATTACHMENT2,
-                gl::COLOR_ATTACHMENT3,
-            ];
-            gl::DrawBuffers(
-                attachements.len() as i32,
-                attachements.as_ptr() as *const u32,
-            );
+            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
+            gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
 
             // Check frame buffer state
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                panic!(
-                    "Framebuffer has failed initialization! Error: '{:#x}'",
-                    gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
-                );
+                panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
             }
 
             // Unbind
@@ -177,12 +120,7 @@ impl SceneRenderer {
         /* #endregion */
         /* #region Others */
         self.shadow_mapping = if pipeline_settings.shadow_resolution != 0 {
-            Some(ShadowMapping::new(
-                self,
-                pipeline_settings.shadow_resolution,
-                internal,
-                pipeline,
-            ))
+            Some(ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline))
         } else {
             None
         };
@@ -203,30 +141,16 @@ impl SceneRenderer {
     }
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material
-            .diffuse_map
-            .get()
-            .map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
+        material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
     }
     fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.normal_map.get().map_or_else(
-            || pipeline.defaults.as_ref().unwrap().normals_tex,
-            ObjectID::new,
-        )
+        material.normal_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, ObjectID::new)
     }
     fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material
-            .emissive_map
-            .get()
-            .map_or_else(|| pipeline.defaults.as_ref().unwrap().black, ObjectID::new)
+        material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, ObjectID::new)
     }
     // Setup uniforms for a specific renderer
-    fn configure_uniforms<'a>(
-        &self,
-        pipeline: &'a Pipeline,
-        renderer: &Renderer,
-        pj_matrix: &veclib::Matrix4x4<f32>,
-    ) -> Result<&'a Mesh, RenderingError> {
+    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer, pj_matrix: &veclib::Matrix4x4<f32>) -> Result<&'a Mesh, RenderingError> {
         // Pipeline data
         let material = pipeline.materials.get(renderer.material);
         // Load the default material if we don't have a valid one
@@ -238,10 +162,7 @@ impl SceneRenderer {
             .unwrap();
 
         // The shader will always be valid
-        let shader = pipeline
-            .shaders
-            .get(material.shader)
-            .ok_or(RenderingError)?;
+        let shader = pipeline.shaders.get(material.shader).ok_or(RenderingError)?;
         let mesh = pipeline.meshes.get(renderer.mesh).ok_or(RenderingError)?;
         let mesh_matrix = &renderer.matrix;
         let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
@@ -257,11 +178,7 @@ impl SceneRenderer {
         // Textures might be not valid, so we fallback to the default ones just in case
         uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material), 0);
         uniforms.set_texture("normals_tex", Self::get_normal_map(pipeline, material), 1);
-        uniforms.set_texture(
-            "emissive_tex",
-            Self::get_emissive_map(pipeline, material),
-            2,
-        );
+        uniforms.set_texture("emissive_tex", Self::get_emissive_map(pipeline, material), 2);
         uniforms.set_vec3f32("tint", material.tint);
         uniforms.set_f32("normals_strength", material.normal_map_strength);
         uniforms.set_f32("emissive_strength", material.emissive_map_strength);
@@ -275,23 +192,13 @@ impl SceneRenderer {
             // Actually draw the mesh
             gl::BindVertexArray(mesh.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.buffers[0]);
-            gl::DrawElements(
-                gl::TRIANGLES,
-                mesh.tris_count as i32 * 3,
-                gl::UNSIGNED_INT,
-                null(),
-            );
+            gl::DrawElements(gl::TRIANGLES, mesh.tris_count as i32 * 3, gl::UNSIGNED_INT, null());
         }
     }
     // Prepare the FBO and clear the buffers
     fn prepare_for_rendering(&self, pipeline: &Pipeline) {
         unsafe {
-            gl::Viewport(
-                0,
-                0,
-                pipeline.window.dimensions.x as i32,
-                pipeline.window.dimensions.y as i32,
-            );
+            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
@@ -332,30 +239,20 @@ impl SceneRenderer {
         }
     }
     // Render the scene's shadow maps
-    fn render_scene_shadow_maps(
-        shadow_mapping: &mut ShadowMapping,
-        pipeline: &Pipeline,
-        debug_info: &mut FrameDebugInfo,
-    ) {
+    fn render_scene_shadow_maps(shadow_mapping: &mut ShadowMapping, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
         // Change the cull face for better depth
         unsafe {
             gl::CullFace(gl::FRONT);
         }
         // Bind VBO and set light source
         shadow_mapping.bind_fbo(pipeline);
-        let directional_light_source = pipeline
-            .light_sources
-            .get(pipeline.defaults.as_ref().unwrap().sun);
+        let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
         if let Some(light) = directional_light_source {
             shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
         }
 
         // Draw the renderers
-        for (_, renderer) in pipeline
-            .renderers
-            .iter()
-            .filter(|(_, renderer)| renderer.flags.contains(RendererFlags::SHADOW_CASTER))
-        {
+        for (_, renderer) in pipeline.renderers.iter().filter(|(_, renderer)| renderer.flags.contains(RendererFlags::SHADOW_CASTER)) {
             let result = shadow_mapping.configure_uniforms(pipeline, renderer);
             // The renderer might've failed setting it's uniforms
             if let Ok(mesh) = result {
@@ -371,19 +268,13 @@ impl SceneRenderer {
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
     fn draw_deferred_quad(&mut self, pipeline: &Pipeline) {
         unsafe {
-            gl::Viewport(
-                0,
-                0,
-                pipeline.window.dimensions.x as i32,
-                pipeline.window.dimensions.y as i32,
-            );
+            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         }
         // Get the pipeline data
         let camera = &pipeline.camera;
 
         // New uniforms
-        let settings =
-            ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass_screenshader));
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass_screenshader));
         let uniforms = Uniforms::new(&settings, pipeline);
         self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
 
@@ -411,21 +302,13 @@ impl SceneRenderer {
         }
     }
     // Name is pretty self explanatory
-    fn bind_screen_quad_uniforms(
-        &mut self,
-        uniforms: Uniforms,
-        pipeline: &Pipeline,
-        camera: &Camera,
-    ) {
+    fn bind_screen_quad_uniforms(&mut self, uniforms: Uniforms, pipeline: &Pipeline, camera: &Camera) {
         uniforms.bind_shader();
         // The first directional light source is always the sun's light source
         let default = LightSource::new(LightSourceType::Directional {
             quat: veclib::Quaternion::<f32>::IDENTITY,
         });
-        let light = pipeline
-            .light_sources
-            .get(pipeline.defaults.as_ref().unwrap().sun)
-            .unwrap_or(&default);
+        let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default);
         let directional = light._type.as_directional().unwrap();
         uniforms.set_vec3f32("sunlight_dir", directional.mul_point(veclib::Vector3::Z));
         uniforms.set_f32("sunlight_strength", light.strength);
@@ -433,9 +316,7 @@ impl SceneRenderer {
             "lightspace_matrix",
             self.shadow_mapping
                 .as_ref()
-                .map_or(veclib::Matrix4x4::default(), |shadow_mapping| {
-                    shadow_mapping.lightspace_matrix
-                }),
+                .map_or(veclib::Matrix4x4::default(), |shadow_mapping| shadow_mapping.lightspace_matrix),
         );
         let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
         uniforms.set_mat44f32("pr_matrix", pr_m);
@@ -450,19 +331,15 @@ impl SceneRenderer {
         uniforms.set_texture("sky_gradient", self.sky_gradient, 5);
 
         // If we have shadow mapping disabled we must use the default white texture
-        let shadow_mapping_texture = self.shadow_mapping.as_ref().map_or(
-            pipeline.defaults.as_ref().unwrap().white,
-            |shadow_mapping| shadow_mapping.depth_texture,
-        );
+        let shadow_mapping_texture = self
+            .shadow_mapping
+            .as_ref()
+            .map_or(pipeline.defaults.as_ref().unwrap().white, |shadow_mapping| shadow_mapping.depth_texture);
         uniforms.set_texture("shadow_map", shadow_mapping_texture, 6);
         uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
     }
     // Update window
-    pub(crate) fn update_window_dimensions(
-        &mut self,
-        window_dimensions: veclib::Vector2<u16>,
-        pipeline: &mut Pipeline,
-    ) {
+    pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
         // Update the size of each texture that is bound to the framebuffer
         let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
         let diffuse_texture = pipeline.textures.get_mut(self.diffuse_texture).unwrap();

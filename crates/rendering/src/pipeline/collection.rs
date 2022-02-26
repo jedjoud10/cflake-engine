@@ -8,9 +8,7 @@ pub struct Collection<T: PipelineObject> {
 
 impl<T: PipelineObject> Default for Collection<T> {
     fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
+        Self { inner: Default::default() }
     }
 }
 

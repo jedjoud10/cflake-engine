@@ -14,8 +14,7 @@ use super::Component;
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
-    static ref REGISTERED_COMPONENTS: RwLock<AHashMap<TypeId, Bitfield<u32>>> =
-        RwLock::new(AHashMap::new());
+    static ref REGISTERED_COMPONENTS: RwLock<AHashMap<TypeId, Bitfield<u32>>> = RwLock::new(AHashMap::new());
 }
 
 // Register a specific component

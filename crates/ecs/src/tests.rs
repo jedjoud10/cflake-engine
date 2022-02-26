@@ -15,17 +15,13 @@ pub mod test {
 
     impl Default for Name {
         fn default() -> Self {
-            Self {
-                name: "Unnamed".to_string(),
-            }
+            Self { name: "Unnamed".to_string() }
         }
     }
 
     impl Name {
         pub fn new(name: &str) -> Self {
-            Self {
-                name: name.to_string(),
-            }
+            Self { name: name.to_string() }
         }
     }
 
@@ -37,17 +33,13 @@ pub mod test {
 
     impl Default for Tagged {
         fn default() -> Self {
-            Self {
-                tag: "Untagged".to_string(),
-            }
+            Self { tag: "Untagged".to_string() }
         }
     }
 
     impl Tagged {
         pub fn new(tag: &str) -> Self {
-            Self {
-                tag: tag.to_string(),
-            }
+            Self { tag: tag.to_string() }
         }
     }
 
@@ -138,30 +130,19 @@ pub mod test {
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
-        let id = ecs
-            .add_entity(entity, ComponentLinkingGroup::default())
-            .unwrap();
+        let id = ecs.add_entity(entity, ComponentLinkingGroup::default()).unwrap();
         assert!(ecs.get_entity(&id).is_ok());
-        assert_eq!(
-            ecs.get_entity(&id).unwrap().cbitfield,
-            Bitfield::<u32>::default()
-        );
+        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.link_components(id, group).unwrap();
-        assert_ne!(
-            ecs.get_entity(&id).unwrap().cbitfield,
-            Bitfield::<u32>::default()
-        );
+        assert_ne!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
         ecs.run_systems(&mut world);
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.unlink_components(id, group).unwrap();
-        assert_eq!(
-            ecs.get_entity(&id).unwrap().cbitfield,
-            registry::get_component_bitfield::<Name>()
-        );
+        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
     }
     #[test]
     pub fn test_events() {

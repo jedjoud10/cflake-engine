@@ -26,17 +26,10 @@ fn run(world: &mut World, mut data: EventKey) {
             let transform = components.get::<crate::components::Transform>().unwrap();
             let renderer_id = renderer.id;
             // Only update if we have a valid renderer and if we changed our transform
-            if renderer_id.is_some()
-                && components
-                    .was_mutated::<crate::components::Transform>()
-                    .unwrap_or_default()
-            {
+            if renderer_id.is_some() && components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
                 // Update the values if our renderer is valid
                 let matrix = transform.transform_matrix();
-                Some(RendererUpdatedMatrixUnit {
-                    renderer_id,
-                    matrix,
-                })
+                Some(RendererUpdatedMatrixUnit { renderer_id, matrix })
             } else {
                 None
             }
@@ -65,10 +58,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         let pipeline = world.pipeline.read();
 
         // Get the CPU renderer that we must construct
-        let matrix = components
-            .get::<crate::components::Transform>()
-            .unwrap()
-            .transform_matrix();
+        let matrix = components.get::<crate::components::Transform>().unwrap().transform_matrix();
         let mut renderer = components.get_mut::<crate::components::Renderer>().unwrap();
         let mut cpu_renderer = renderer.inner.take().unwrap();
         cpu_renderer.matrix = matrix;

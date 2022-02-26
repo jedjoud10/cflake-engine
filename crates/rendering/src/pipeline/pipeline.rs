@@ -22,14 +22,10 @@ use std::sync::{
 };
 use veclib::{vec2, vec3};
 
-use super::{
-    cached::Cached, collection::Collection, defaults::DefaultPipelineObjects,
-    settings::PipelineSettings, FrameDebugInfo, PipelineContext,
-};
+use super::{cached::Cached, collection::Collection, defaults::DefaultPipelineObjects, settings::PipelineSettings, FrameDebugInfo, PipelineContext};
 
 // A single pipeline callback
-pub(crate) type SinglePipelineCallback =
-    Box<dyn Fn(&mut Pipeline, &mut SceneRenderer) + Sync + Send + 'static>;
+pub(crate) type SinglePipelineCallback = Box<dyn Fn(&mut Pipeline, &mut SceneRenderer) + Sync + Send + 'static>;
 pub(crate) type PipelineEoFCallbacks = Arc<Mutex<Vec<SinglePipelineCallback>>>;
 
 // Some internal pipeline data that we store on the render thread and that we cannot share with the other threads
@@ -93,12 +89,7 @@ impl Pipeline {
         write.push(task);
     }
     // Execute a single tracked task, but also create a respective OpenGL fence for said task
-    fn execute_tracked_task(
-        &mut self,
-        internal: &mut InternalPipeline,
-        task: TrackedTask,
-        tracking_id: ReservedTrackedID,
-    ) {
+    fn execute_tracked_task(&mut self, internal: &mut InternalPipeline, task: TrackedTask, tracking_id: ReservedTrackedID) {
         // Create a corresponding GlTracker for this task
         let gltracker = match task {
             TrackedTask::RunComputeShader(id, settings) => {
@@ -117,29 +108,20 @@ impl Pipeline {
                 let atomic_group = self.atomics.get(id).unwrap();
                 atomic_group.buffer_operation(op)
             }
-            TrackedTask::QueryShaderInfo(_type, settings, read) => {
-                query_shader_info_tracked(self, _type, settings, read)
-            }
+            TrackedTask::QueryShaderInfo(_type, settings, read) => query_shader_info_tracked(self, _type, settings, read),
         };
 
         // Add the tracked ID to our pipeline
         internal.gltrackers.insert(tracking_id, gltracker);
     }
     // Execute a single task
-    fn execute_task(
-        &mut self,
-        internal: &mut InternalPipeline,
-        renderer: &mut SceneRenderer,
-        task: PipelineTask,
-    ) {
+    fn execute_task(&mut self, internal: &mut InternalPipeline, renderer: &mut SceneRenderer, task: PipelineTask) {
         // Now we must execute these tasks
         match task {
             PipelineTask::Construction(construction) => construction.execute(self),
             PipelineTask::Deconstruction(deconstruction) => deconstruction.execute(self),
             PipelineTask::Update(update) => update(self, renderer),
-            PipelineTask::Tracked(task, tracking_id, _) => {
-                self.execute_tracked_task(internal, task, tracking_id)
-            }
+            PipelineTask::Tracked(task, tracking_id, _) => self.execute_tracked_task(internal, task, tracking_id),
         }
     }
     // Called each frame during the "free-zone"
@@ -177,13 +159,7 @@ impl Pipeline {
                 match task {
                     PipelineTask::Tracked(_, _, require) => {
                         // If the requirement is null, that means that the required task executed and that we can start executing the current task
-                        let valid = require.and_then(|x| {
-                            if self.completed_tasks.get(x.0 as usize) {
-                                None
-                            } else {
-                                Some(())
-                            }
-                        });
+                        let valid = require.and_then(|x| if self.completed_tasks.get(x.0 as usize) { None } else { Some(()) });
                         if valid.is_none() {
                             output_tasks.push(task);
                         } else {
@@ -213,11 +189,7 @@ impl Pipeline {
     }
     // Update methods
     // Update the window dimensions
-    pub fn update_window_dimensions(
-        &mut self,
-        renderer: &mut SceneRenderer,
-        new_dimensions: veclib::Vector2<u16>,
-    ) {
+    pub fn update_window_dimensions(&mut self, renderer: &mut SceneRenderer, new_dimensions: veclib::Vector2<u16>) {
         self.window.dimensions = new_dimensions;
         renderer.update_window_dimensions(new_dimensions, self);
     }
@@ -236,9 +208,7 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
         pipeline,
         load_with(
             "defaults/textures/missing_texture.png",
-            Texture::default()
-                .with_filter(TextureFilter::Nearest)
-                .with_mipmaps(true),
+            Texture::default().with_filter(TextureFilter::Nearest).with_mipmaps(true),
         )
         .unwrap(),
     )
@@ -297,26 +267,10 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
                 let mut vertices = Vertices::default();
                 // Corners
                 // TODO: Tangents
-                vertices
-                    .add()
-                    .with_position(vec3(-0.5, 0.0, -0.5))
-                    .with_normal(vec3(0, 127, 0))
-                    .with_uv(vec2(255, 0));
-                vertices
-                    .add()
-                    .with_position(vec3(0.5, 0.0, -0.5))
-                    .with_normal(vec3(0, 127, 0))
-                    .with_uv(vec2(0, 0));
-                vertices
-                    .add()
-                    .with_position(vec3(0.5, 0.0, 0.5))
-                    .with_normal(vec3(0, 127, 0))
-                    .with_uv(vec2(0, 255));
-                vertices
-                    .add()
-                    .with_position(vec3(-0.5, 0.0, 0.5))
-                    .with_normal(vec3(0, 127, 0))
-                    .with_uv(vec2(255, 255));
+                vertices.add().with_position(vec3(-0.5, 0.0, -0.5)).with_normal(vec3(0, 127, 0)).with_uv(vec2(255, 0));
+                vertices.add().with_position(vec3(0.5, 0.0, -0.5)).with_normal(vec3(0, 127, 0)).with_uv(vec2(0, 0));
+                vertices.add().with_position(vec3(0.5, 0.0, 0.5)).with_normal(vec3(0, 127, 0)).with_uv(vec2(0, 255));
+                vertices.add().with_position(vec3(-0.5, 0.0, 0.5)).with_normal(vec3(0, 127, 0)).with_uv(vec2(255, 255));
                 vertices
             },
             update_frequency: UpdateFrequency::Static,
@@ -346,22 +300,14 @@ fn load_defaults(pipeline: &Pipeline) -> DefaultPipelineObjects {
 }
 // Initialize OpenGL
 unsafe fn init_opengl() {
-    gl::Viewport(
-        0,
-        0,
-        DEFAULT_WINDOW_SIZE.x as i32,
-        DEFAULT_WINDOW_SIZE.y as i32,
-    );
+    gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
     gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     gl::Enable(gl::DEPTH_TEST);
     gl::Enable(gl::CULL_FACE);
     gl::CullFace(gl::BACK);
 }
 // Create the new render thread, and return some data so we can access it from other threads
-pub fn init_pipeline(
-    pipeline_settings: PipelineSettings,
-    window: glutin::WindowedContext<NotCurrent>,
-) -> PipelineContext {
+pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::WindowedContext<NotCurrent>) -> PipelineContext {
     println!("Initializing RenderPipeline...");
     // Create a single channel to allow us to receive Pipeline Tasks from the other threads
     let (tx, rx) = std::sync::mpsc::channel::<PipelineTask>(); // Main to render
@@ -503,10 +449,7 @@ pub fn init_pipeline(
     let i = std::time::Instant::now();
     println!("Waiting for RenderThread init confirmation...");
     let pipeline = irx.recv().unwrap();
-    println!(
-        "Successfully initialized the RenderPipeline! Took {}ms to init RenderThread",
-        i.elapsed().as_millis()
-    );
+    println!("Successfully initialized the RenderPipeline! Took {}ms to init RenderThread", i.elapsed().as_millis());
     // Create the pipeline context
     PipelineContext {
         pipeline,

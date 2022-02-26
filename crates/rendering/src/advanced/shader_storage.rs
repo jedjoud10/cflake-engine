@@ -5,18 +5,12 @@ use crate::{
     basics::{
         buffer_operation::BufferOperation,
         shader::{
-            info::{
-                QueryParameter, QueryResource::ShaderStorageBlock, Resource,
-                ShaderInfoQuerySettings,
-            },
+            info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
             query_shader_info,
         },
         uniforms::ShaderIDType,
     },
-    object::{
-        Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID,
-        PipelineObject,
-    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
     utils::UsageType,
 };
@@ -80,13 +74,7 @@ impl PipelineObject for ShaderStorage {
             let shader_info = query_shader_info(program, settings);
 
             // Read back the byte size
-            let byte_size = shader_info
-                .get(&resource)
-                .unwrap()
-                .get(0)
-                .unwrap()
-                .as_byte_size()
-                .unwrap();
+            let byte_size = shader_info.get(&resource).unwrap().get(0).unwrap().as_byte_size().unwrap();
 
             self.byte_size = byte_size.next_power_of_two() * fetcher.mul;
         }
@@ -101,12 +89,7 @@ impl PipelineObject for ShaderStorage {
             } else {
                 null() as *const c_void
             };
-            gl::BufferData(
-                gl::SHADER_STORAGE_BUFFER,
-                self.byte_size as isize,
-                data_ptr,
-                self.usage.convert(),
-            );
+            gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, data_ptr, self.usage.convert());
         }
         // Add the shader storage
         pipeline.shader_storages.insert(id, self);
@@ -130,12 +113,7 @@ impl ShaderStorage {
         }
     }
     // Create a new empty shader storage that will fetch a specific shader storage block from a shader, and initialize it's size using that
-    pub fn new_using_block(
-        usage: UsageType,
-        shader: ShaderIDType,
-        block_name: &str,
-        mul: usize,
-    ) -> Self {
+    pub fn new_using_block(usage: UsageType, shader: ShaderIDType, block_name: &str, mul: usize) -> Self {
         Self {
             oid: 0,
             usage,
@@ -153,8 +131,7 @@ impl ShaderStorage {
     // Type T must have a repr(C) layout
     pub fn new_default<T: Sized>(usage: UsageType, default: T, byte_size: usize) -> Self {
         let borrow = &default;
-        let slice =
-            unsafe { std::slice::from_raw_parts::<u8>(borrow as *const T as *const u8, byte_size) };
+        let slice = unsafe { std::slice::from_raw_parts::<u8>(borrow as *const T as *const u8, byte_size) };
         Self {
             oid: 0,
             usage,
@@ -200,12 +177,7 @@ impl ShaderStorage {
                         }
                     } else {
                         // We have enough bytes allocated already
-                        gl::BufferSubData(
-                            gl::SHADER_STORAGE_BUFFER,
-                            0,
-                            write.bytes.len() as isize,
-                            write.bytes.as_ptr() as *const c_void,
-                        );
+                        gl::BufferSubData(gl::SHADER_STORAGE_BUFFER, 0, write.bytes.len() as isize, write.bytes.as_ptr() as *const c_void);
                     }
                 })
             }
@@ -215,12 +187,7 @@ impl ShaderStorage {
                     gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
                     // Read the whole buffer
                     let mut vec = vec![0u8; self.byte_size as usize];
-                    gl::GetBufferSubData(
-                        gl::SHADER_STORAGE_BUFFER,
-                        0,
-                        self.byte_size as isize,
-                        vec.as_mut_ptr() as *mut c_void,
-                    );
+                    gl::GetBufferSubData(gl::SHADER_STORAGE_BUFFER, 0, self.byte_size as isize, vec.as_mut_ptr() as *mut c_void);
                     // Now store the shader storage's bytes
                     let mut output_bytes = read.bytes.lock();
                     *output_bytes = vec;

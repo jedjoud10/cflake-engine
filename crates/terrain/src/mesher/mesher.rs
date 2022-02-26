@@ -16,11 +16,7 @@ pub struct Mesher<'a> {
 
 impl<'a> Mesher<'a> {
     // Create a new mesher from some new settings
-    pub fn new(
-        coords: ChunkCoords,
-        valid_data: &'a StoredVoxelData,
-        settings: MesherSettings,
-    ) -> Self {
+    pub fn new(coords: ChunkCoords, valid_data: &'a StoredVoxelData, settings: MesherSettings) -> Self {
         Self {
             valid_data,
             coords,

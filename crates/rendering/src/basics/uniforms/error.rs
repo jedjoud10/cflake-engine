@@ -24,11 +24,7 @@ impl UniformError {
 
 impl fmt::Display for UniformError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "could not set uniform '{}' because of an {}!",
-            self.uniform, self.cause
-        )
+        write!(f, "could not set uniform '{}' because of an {}!", self.uniform, self.cause)
     }
 }
 

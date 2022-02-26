@@ -33,10 +33,7 @@ pub(crate) fn set_global_sender(sender: Sender<PipelineTask>) {
 }
 
 // Send a task using the thread local sender
-pub(crate) fn send_task(
-    task: PipelineTask,
-    pipeline: &Pipeline,
-) -> Result<(), SendError<PipelineTask>> {
+pub(crate) fn send_task(task: PipelineTask, pipeline: &Pipeline) -> Result<(), SendError<PipelineTask>> {
     // Set the local sender if it is still not valid
     if LOCAL_SENDER.with(|cell| cell.borrow().is_none()) {
         // Get the global sender and copy it to the local sender

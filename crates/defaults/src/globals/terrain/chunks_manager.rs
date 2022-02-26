@@ -41,7 +41,6 @@ pub struct ChunksManager {
 impl ChunksManager {
     // Update the priority list
     pub fn update_priorities(&mut self) {
-        self.priority_list
-            .sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
+        self.priority_list.sort_by(|(_, x), (_, y)| f32::partial_cmp(x, y).unwrap_or(Ordering::Equal));
     }
 }

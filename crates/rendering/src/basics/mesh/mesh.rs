@@ -1,8 +1,6 @@
 use super::Vertices;
 use crate::{
-    object::{
-        Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject,
-    },
+    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
     pipeline::Pipeline,
     utils::UpdateFrequency,
 };
@@ -228,19 +226,11 @@ impl Mesh {
             x += max_triangle_index;
             x
         }));
-        self.vertices
-            .positions
-            .extend(other.vertices.positions.into_iter());
-        self.vertices
-            .normals
-            .extend(other.vertices.normals.into_iter());
+        self.vertices.positions.extend(other.vertices.positions.into_iter());
+        self.vertices.normals.extend(other.vertices.normals.into_iter());
         self.vertices.uvs.extend(other.vertices.uvs.into_iter());
-        self.vertices
-            .colors
-            .extend(other.vertices.colors.into_iter());
-        self.vertices
-            .tangents
-            .extend(other.vertices.tangents.into_iter());
+        self.vertices.colors.extend(other.vertices.colors.into_iter());
+        self.vertices.tangents.extend(other.vertices.tangents.into_iter());
         self
     }
     // Procedurally generate the normals for this mesh
@@ -248,15 +238,10 @@ impl Mesh {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
 
-        let mut vertex_normals: Vec<veclib::Vector3<f32>> =
-            vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
+        let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
         for i in 0..(self.indices.len() / 3) {
             // Calculate the face normal
-            let (i1, i2, i3) = (
-                self.indices[i * 3],
-                self.indices[i * 3 + 1],
-                self.indices[i * 3 + 2],
-            );
+            let (i1, i2, i3) = (self.indices[i * 3], self.indices[i * 3 + 1], self.indices[i * 3 + 2]);
             // Get the actual vertices
             let a = self.vertices.positions.get(i1 as usize).unwrap();
             let b = self.vertices.positions.get(i2 as usize).unwrap();
@@ -279,10 +264,7 @@ impl Mesh {
         }
 
         // Update our normals
-        self.vertices.normals = vertex_normals
-            .into_iter()
-            .map(|x| (x * 127.0).normalized().into())
-            .collect::<Vec<_>>();
+        self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
     }
 }
 
@@ -298,20 +280,9 @@ impl Asset for Mesh {
         for vertex in parsed_obj.vertices {
             self.vertices
                 .add()
-                .with_position(vec3(
-                    vertex.position[0],
-                    vertex.position[1],
-                    vertex.position[2],
-                ))
-                .with_normal(vec3(
-                    (vertex.normal[0] * 127.0) as i8,
-                    (vertex.normal[1] * 127.0) as i8,
-                    (vertex.normal[2] * 127.0) as i8,
-                ))
-                .with_uv(vec2(
-                    (vertex.texture[0] * 255.0) as u8,
-                    (vertex.texture[1] * 255.0) as u8,
-                ));
+                .with_position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]))
+                .with_normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
+                .with_uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
         self.indices = parsed_obj.indices;
         Some(self)

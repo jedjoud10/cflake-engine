@@ -75,8 +75,5 @@ pub fn preload_system(world: &mut World) {
     rendering_system::system(world);
 
     // We gotta add the globa
-    world
-        .globals
-        .add_global(crate::globals::GlobalWorldData::default())
-        .unwrap();
+    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
 }

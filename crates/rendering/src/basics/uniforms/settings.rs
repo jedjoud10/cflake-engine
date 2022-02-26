@@ -1,8 +1,6 @@
 use gl::types::GLuint;
 
-use crate::{
-    advanced::compute::ComputeShader, basics::shader::Shader, object::ObjectID, pipeline::Pipeline,
-};
+use crate::{advanced::compute::ComputeShader, basics::shader::Shader, object::ObjectID, pipeline::Pipeline};
 
 // Some type of shader identifier we can use to execute a shader
 #[derive(Clone, Copy)]
@@ -20,13 +18,7 @@ impl ShaderIDType {
     pub(crate) fn get_program(&self, pipeline: &Pipeline) -> GLuint {
         match self {
             ShaderIDType::ObjectID(shader_id) => pipeline.shaders.get(*shader_id).unwrap().program,
-            ShaderIDType::ComputeObjectID(compute_shader_id) => {
-                pipeline
-                    .compute_shaders
-                    .get(*compute_shader_id)
-                    .unwrap()
-                    .program
-            }
+            ShaderIDType::ComputeObjectID(compute_shader_id) => pipeline.compute_shaders.get(*compute_shader_id).unwrap().program,
             ShaderIDType::OpenGLID(program) => *program,
         }
     }

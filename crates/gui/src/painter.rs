@@ -55,13 +55,7 @@ impl Painter {
         }
     }
     // Draw a single egui mesh
-    fn draw_mesh(
-        &mut self,
-        rect: Rect,
-        mesh: Mesh,
-        pipeline: &mut Pipeline,
-        pixels_per_point: f32,
-    ) {
+    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &mut Pipeline, pixels_per_point: f32) {
         // We already have the shader bound, so we just need to draw
         // Get the rect size so we can use the scissor test
         let clip_min = veclib::vec2(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
@@ -115,12 +109,7 @@ impl Painter {
 
         let clipped_meshes = std::mem::take(&mut self.clipped_meshes);
         for ClippedMesh(rect, mesh) in clipped_meshes {
-            self.draw_mesh(
-                rect,
-                mesh,
-                pipeline,
-                pipeline.window.pixels_per_point as f32,
-            );
+            self.draw_mesh(rect, mesh, pipeline, pipeline.window.pixels_per_point as f32);
         }
 
         // Reset

@@ -20,12 +20,7 @@ pub struct PostProcessing {
 
 impl PostProcessing {
     // Initialize a new post processing effects handler
-    pub(crate) fn new(
-        renderer: &mut SceneRenderer,
-        internal: &mut InternalPipeline,
-        pipeline: &mut Pipeline,
-        dims: TextureType,
-    ) -> Self {
+    pub(crate) fn new(renderer: &mut SceneRenderer, internal: &mut InternalPipeline, pipeline: &mut Pipeline, dims: TextureType) -> Self {
         // Create the framebuffer
         let fbo = unsafe {
             let mut fbo = 0;
@@ -45,24 +40,12 @@ impl PostProcessing {
         // Now attach the color texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(
-                gl::FRAMEBUFFER,
-                gl::COLOR_ATTACHMENT0,
-                gl::TEXTURE_2D,
-                pipeline.textures.get(texture).unwrap().oid,
-                0,
-            );
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, pipeline.textures.get(texture).unwrap().oid, 0);
             let attachements = vec![gl::COLOR_ATTACHMENT0];
-            gl::DrawBuffers(
-                attachements.len() as i32,
-                attachements.as_ptr() as *const u32,
-            );
+            gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
             // Check frame buffer state
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                panic!(
-                    "Framebuffer has failed initialization! Error: '{:#x}'",
-                    gl::CheckFramebufferStatus(gl::FRAMEBUFFER)
-                );
+                panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
             }
 
             // Unbind

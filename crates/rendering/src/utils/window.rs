@@ -30,12 +30,7 @@ impl Window {
         }
         let window = self.inner.as_ref().unwrap();
         if fullscreen {
-            let vm = window
-                .primary_monitor()
-                .unwrap()
-                .video_modes()
-                .next()
-                .unwrap();
+            let vm = window.primary_monitor().unwrap().video_modes().next().unwrap();
             window.set_fullscreen(Some(Fullscreen::Exclusive(vm)));
         } else {
             window.set_fullscreen(None);

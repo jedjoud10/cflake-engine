@@ -40,20 +40,13 @@ impl MarchingCubes {
         case_index
     }
     // Calculate the interpolated vertex data
-    fn get_interpolated_vertex(
-        &self,
-        voxels: &StoredVoxelData,
-        info: &IterInfo,
-        edge: EdgeInfo,
-    ) -> InterpolatedVertexData {
+    fn get_interpolated_vertex(&self, voxels: &StoredVoxelData, info: &IterInfo, edge: EdgeInfo) -> InterpolatedVertexData {
         // Do inverse linear interpolation to find the factor value
-        let value =
-            self.calc_interpolation(*voxels.density(edge.index1), *voxels.density(edge.index2));
+        let value = self.calc_interpolation(*voxels.density(edge.index1), *voxels.density(edge.index2));
         // Create the vertex
         let vedge1 = EDGE_TABLE[(edge.index as usize) * 2];
         let vedge2 = EDGE_TABLE[(edge.index as usize) * 2 + 1];
-        let mut vertex =
-            veclib::Vector3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
+        let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
         // Offset the vertex
         vertex += veclib::Vector3::<f32>::from(info.pos);
         // Get the normal
@@ -71,14 +64,7 @@ impl MarchingCubes {
         }
     }
     // Solve the marching cubes case and add the vertices to the mesh
-    fn solve_marching_cubes_case(
-        &self,
-        voxels: &StoredVoxelData,
-        mesh: &mut Mesh,
-        merger: &mut VertexMerger,
-        info: &IterInfo,
-        data: CubeData,
-    ) {
+    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, mesh: &mut Mesh, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
         // The vertex indices that are gonna be used for the skirts
         for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
@@ -133,10 +119,7 @@ impl MarchingCubes {
                 for z in 0..CHUNK_SIZE {
                     // Convert our 32x32x32 position into the 33x33x33 index, since they are different
                     let i = flatten((x, y, z));
-                    let info = IterInfo {
-                        i,
-                        pos: veclib::vec3(x, y, z),
-                    };
+                    let info = IterInfo { i, pos: veclib::vec3(x, y, z) };
 
                     // Generate the case index
                     let case = Self::generate_marching_cubes_case(voxels, &info);
@@ -162,11 +145,7 @@ impl MarchingCubes {
         // Then generate the mesh
         self.generate_mesh(voxels, &mut mesh);
         // Combine the mesh's custom vertex data with the mesh itself
-        println!(
-            "Main: {:.2}ms, verts: {}",
-            i.elapsed().as_secs_f32() * 1000.0,
-            mesh.vertices.len()
-        );
+        println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, mesh.vertices.len());
         mesh
     }
 }

@@ -1,6 +1,4 @@
-use super::{
-    registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection,
-};
+use super::{registry, Component, ComponentID, ComponentReadGuard, ComponentWriteGuard, ComponentsCollection};
 use crate::{entity::EntityID, utils::ComponentError};
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
@@ -51,10 +49,7 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self
-            .linked
-            .get(&cbitfield)
-            .ok_or_else(invalid_err_not_linked)?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 
@@ -74,10 +69,7 @@ impl LinkedComponents {
     {
         // Get the UnsafeCell
         let cbitfield = registry::get_component_bitfield::<T>();
-        let id = self
-            .linked
-            .get(&cbitfield)
-            .ok_or_else(invalid_err_not_linked)?;
+        let id = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let ordered_vec = self.components.read();
         let cell = ordered_vec.get(*id).ok_or_else(invalid_err)?;
 

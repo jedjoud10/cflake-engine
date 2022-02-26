@@ -21,9 +21,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group
-        .link(components::Camera::new(90.0, 2.0, 9000.0))
-        .unwrap();
+    group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
     group.link_default::<components::Transform>().unwrap();
     let entity = Entity::default();
     let _id = world.ecs.add_entity(entity, group).unwrap();
@@ -40,9 +38,7 @@ fn init(world: &mut World) {
     let mesh = assetc::load::<Mesh>("user/meshes/pickaxe.obj").unwrap();
     let mesh = pipec::construct(&pipeline, mesh).unwrap();
     let mut group = ComponentLinkingGroup::default();
-    group
-        .link(components::Renderer::new(RendererFlags::DEFAULT).with_mesh(mesh))
-        .unwrap();
+    group.link(components::Renderer::new(RendererFlags::DEFAULT).with_mesh(mesh)).unwrap();
     group.link_default::<components::Transform>().unwrap();
     world.ecs.add_entity(entity, group).unwrap();
 }
