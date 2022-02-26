@@ -6,7 +6,7 @@ use gui::GUIManager;
 use input::InputManager;
 use io::IOManager;
 use others::Time;
-use physics::PhysicsManager;
+use physics::PhysicsSimulation;
 use rendering::pipeline::PipelineContext;
 use std::sync::Arc;
 
@@ -22,7 +22,7 @@ pub struct World {
     pub pipeline: PipelineContext,
     pub state: WorldState,
     pub audio: AudioPlayer,
-    pub physics: PhysicsManager,
+    pub physics: PhysicsSimulation,
 }
 
 // World implementation
@@ -41,7 +41,7 @@ impl World {
             pipeline,
             state: WorldState::StartingUp,
             audio: Default::default(),
-            physics: PhysicsManager::default(),
+            physics: PhysicsSimulation::new(),
         };
         others::set_main_thread();
         // Just set the game settings and we are done

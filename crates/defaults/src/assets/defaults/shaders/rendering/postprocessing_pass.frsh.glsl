@@ -22,6 +22,6 @@ void main() {
     // A vignette effect
     float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
     float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);
-    float vignette_strength = (vignette_strength_x + vignette_strength_y) * 6.0; 
+    float vignette_strength = (vignette_strength_x + vignette_strength_y) * 2.0; 
     color = sampled_color * ((1-vignette_strength));
 }

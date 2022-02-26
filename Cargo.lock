@@ -1835,6 +1835,7 @@ name = "physics"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "bitfield",
  "enum-as-inner",
  "math",
  "rapier3d",

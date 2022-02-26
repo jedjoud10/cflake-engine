@@ -1,7 +1,7 @@
 use rapier3d::prelude::*;
 
 // Physics simulation
-pub(crate) struct PhysicsSimulation {
+pub struct PhysicsSimulation {
     pub islands: IslandManager,
     pub broad_phase: BroadPhase,
     pub narrow_phase: NarrowPhase,
@@ -17,7 +17,7 @@ pub(crate) struct PhysicsSimulation {
 
 impl PhysicsSimulation {
     // Create a new physics simulation from scratch
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             islands: IslandManager::new(),
             broad_phase: BroadPhase::new(),

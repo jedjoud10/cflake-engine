@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
+bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 math = { path = "../math" }
 rapier3d = "0.11.1"
 ahash = "0.7.6"
