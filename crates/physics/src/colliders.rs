@@ -1,4 +1,4 @@
-mod cuboid;
-mod sphere;
-pub use cuboid::*;
-pub use sphere::*;
+mod mesh;
+mod shared;
+pub use mesh::*;
+pub use shared::*;

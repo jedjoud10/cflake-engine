@@ -7,9 +7,10 @@ pub struct RigidBody {
 
     // Physics
     pub state: RigidBodyState,
-} 
+}
 
 // The state of the rigidbody, either Static or Dynamic
 pub enum RigidBodyState {
-    Static, Dynamic
+    Static,
+    Dynamic,
 }

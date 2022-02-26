@@ -7,6 +7,7 @@ use std::{
 };
 
 // This is a generic struct that hold an ID for a specific object stored in the multiple ShareableOrderedVecs in the pipeline
+// TODO: Find a better name for this
 pub struct ObjectID<T>
 where
     T: PipelineObject,

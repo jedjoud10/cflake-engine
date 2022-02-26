@@ -129,7 +129,7 @@ fn init(world: &mut World) {
             }),
             CSGOperation::Subtraction,
         )
-        .with_material(2),
+        .with_material(1),
     );
     terrain.edit(
         Edit::new(

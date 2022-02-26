@@ -13,7 +13,7 @@ use crate::logger::Logger;
 
 // Lets us save / load a file from the saved folder
 #[derive(Default)]
-pub struct Manager {
+pub struct IOManager {
     // The path where all the local data will be stored into
     pub local_path: Option<PathBuf>,
     // An arc containing all the logged messages
@@ -21,7 +21,7 @@ pub struct Manager {
     log_file_path: PathBuf,
 }
 
-impl Manager {
+impl IOManager {
     // Get a new copy of the saver loader
     pub fn new(author_name: &str, app_name: &str) -> Self {
         let old_path = format!("{}/{}/", author_name, app_name);
@@ -46,7 +46,7 @@ impl Manager {
         };
         log::set_boxed_logger(Box::new(logger)).unwrap();
         log::set_max_level(LevelFilter::Info);
-        Manager {
+        IOManager {
             local_path: Some(path.config_dir),
             messages,
             log_file_path,

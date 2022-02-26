@@ -1,5 +1,7 @@
 mod colliders;
+mod identifier;
+mod manager;
+mod rigidbody;
 mod state;
 mod surface;
-mod rigidbody;
-mod manager;
+pub use manager::*;

@@ -4,8 +4,9 @@ use ecs::ECSManager;
 use globals::GlobalsCollection;
 use gui::GUIManager;
 use input::InputManager;
-use io::Manager;
+use io::IOManager;
 use others::Time;
+use physics::PhysicsManager;
 use rendering::pipeline::PipelineContext;
 use std::sync::Arc;
 
@@ -16,17 +17,18 @@ pub struct World {
     pub gui: GUIManager,
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
-    pub io: Manager,
+    pub io: IOManager,
     pub settings: Settings,
     pub pipeline: PipelineContext,
     pub state: WorldState,
     pub audio: AudioPlayer,
+    pub physics: PhysicsManager,
 }
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(settings: Settings, io: io::Manager, pipeline: PipelineContext) -> Self {
+    pub fn new(settings: Settings, io: IOManager, pipeline: PipelineContext) -> Self {
         let gui = gui::GUIManager::new(&pipeline);
         let mut world = World {
             input: Default::default(),
@@ -39,6 +41,7 @@ impl World {
             pipeline,
             state: WorldState::StartingUp,
             audio: Default::default(),
+            physics: PhysicsManager::default(),
         };
         others::set_main_thread();
         // Just set the game settings and we are done
