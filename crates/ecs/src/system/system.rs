@@ -75,6 +75,7 @@ impl<World> System<World> {
     pub fn run_system(&self, ecs_manager: &ECSManager<World>) -> SystemExecutionData<World> {
         // Create the component queries
         let all_components = self.evn_run.map(|_| self.linked_components.clone());
+        let all_components_fixed = self.evn_run_fixed.map(|_| self.linked_components.clone());
 
         // Get the added components
         let added_components = self.evn_added_entity.map(|_| self.added.clone());
@@ -109,6 +110,12 @@ impl<World> System<World> {
                 self.evn_removed_entity,
                 EventKey::Query(ComponentQuery {
                     linked_components: removed_components,
+                }),
+            ),
+            run_fixed: (
+                self.evn_run_fixed,
+                EventKey::Query(ComponentQuery {
+                    linked_components: all_components_fixed,
                 }),
             ),
         }

@@ -1,7 +1,7 @@
 use world::World;
 use world::{ecs::event::EventKey, physics::rapier3d::na::Isometry};
 
-use super::{quat_to_rotation, vec3_to_translation, vec3_to_vector, vector_to_vec3};
+use super::{quat_to_rotation, vec3_to_translation, vec3_to_vector, vector_to_vec3, rotation_to_quat};
 
 // Run the physics simulation
 fn run(world: &mut World, mut data: EventKey) {
@@ -9,6 +9,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter() {
         // Check if we even need to update the position/rotation
+        /*
         if components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
             let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
             let transform = components.get::<crate::components::Transform>().unwrap();
@@ -29,6 +30,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
             }
         }
+        */
     }
 
     // Step the simulation once
@@ -44,6 +46,7 @@ fn run(world: &mut World, mut data: EventKey) {
             rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
             let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
             transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
+            transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
         }
     }
 }
@@ -56,6 +59,6 @@ pub fn system(world: &mut World) {
         .link::<crate::components::RigidBody>()
         .link::<crate::components::Collider>()
         .link::<crate::components::Transform>()
-        .with_run_event(run)
+        .with_run_fixed_event(run)
         .build();
 }

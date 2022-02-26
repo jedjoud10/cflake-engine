@@ -25,5 +25,8 @@ impl<World> SystemExecutionData<World> {
             run_system_evn(world, self.run.1);
         }
         // Run the fixed time event
+        if let Some(run_system_fixed_evn) = self.run_fixed.0 {
+            run_system_fixed_evn(world, self.run_fixed.1);
+        }
     }
 }

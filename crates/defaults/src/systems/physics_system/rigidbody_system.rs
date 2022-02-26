@@ -1,5 +1,5 @@
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
-use world::physics::rapier3d::na::{Isometry, Point3};
+use world::physics::rapier3d::na::{Isometry, Point3, UnitQuaternion};
 use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape};
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
@@ -48,7 +48,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)
             .position(Isometry {
-                rotation: quat_to_rotation(transform.rotation),
+                rotation: UnitQuaternion::default(),
                 translation: vec3_to_translation(transform.position),
             })
             .build();

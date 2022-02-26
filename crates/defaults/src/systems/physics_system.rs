@@ -20,7 +20,7 @@ pub fn quat_to_rotation(quat: veclib::Quaternion<f32>) -> rapier3d::prelude::Rot
     rotation
 }
 // Convert a Rapier3D rotation to a quaternion
-pub fn rotation_to_quat(quat: rapier3d::prelude::Rotation<f32>) -> veclib::Quaternion<f32> {
+pub fn rotation_to_quat(mut quat: rapier3d::prelude::Rotation<f32>) -> veclib::Quaternion<f32> {
     let mut bruh = veclib::Quaternion::<f32>::IDENTITY;
     bruh[0] = quat[0];
     bruh[1] = quat[1];

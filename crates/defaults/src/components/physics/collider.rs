@@ -24,7 +24,7 @@ impl Collider {
     pub fn new(_type: ColliderType) -> Self {
         Self {
             handle: ColliderHandle::invalid(),
-            restitution: 0.0,
+            restitution: 0.3,
             friction: ColliderBuilder::default_friction(),
             _type,
         }
