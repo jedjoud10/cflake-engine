@@ -4,15 +4,11 @@ use world::{ecs::event::EventKey, World};
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter_mut() {
-        let mut chunk = components
-            .get_mut::<crate::components::Chunk>()
-            .unwrap();
+        let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
         // Try to get the updated mesh ID
         let mesh_id = chunk.updated_mesh_id.take();
         if let Some(mesh_id) = mesh_id {
-            let mut renderer = components
-                .get_mut::<crate::components::Renderer>()
-                .unwrap();
+            let mut renderer = components.get_mut::<crate::components::Renderer>().unwrap();
             // Update the renderer
             renderer.update_mesh(&world.pipeline.read(), mesh_id);
         }

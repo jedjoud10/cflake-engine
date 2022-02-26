@@ -39,15 +39,9 @@ fn added_entities(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter_mut() {
         // Get the components
-        let rigidbody = components
-            .get::<crate::components::RigidBody>()
-            .unwrap();
-        let collider = components
-            .get::<crate::components::Collider>()
-            .unwrap();
-        let transform = components
-            .get::<crate::components::Transform>()
-            .unwrap();
+        let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
+        let collider = components.get::<crate::components::Collider>().unwrap();
+        let transform = components.get::<crate::components::Transform>().unwrap();
 
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)
@@ -64,15 +58,15 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         // Add the collider and rigidbody
         let sim = &mut world.physics;
         let rigidbody_handle = sim.bodies.insert(r_rigibody);
-        let collider_handle = sim.colliders.insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
+        let collider_handle =
+            sim.colliders
+                .insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
 
         // Set the handles in their respective components
         let rigidbody = components
             .get_mut::<crate::components::RigidBody>()
             .unwrap();
-        let collider = components
-            .get::<crate::components::Collider>()
-            .unwrap();
+        let collider = components.get::<crate::components::Collider>().unwrap();
     }
 }
 

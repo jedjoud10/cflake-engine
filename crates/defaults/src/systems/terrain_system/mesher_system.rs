@@ -39,9 +39,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 == ChunkGenerationState::EndVoxelDataGeneration(*id, true)
             {
                 // We have created voxel data for this chunk, and it is valid (it contains a surface)
-                let mut chunk = components
-                    .get_mut::<crate::components::Chunk>()
-                    .unwrap();
+                let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data;
                 let mesher = Mesher::new(
                     chunk.coords,
@@ -86,9 +84,7 @@ fn run(world: &mut World, mut data: EventKey) {
             } else if terrain.chunks_manager.current_chunk_state
                 == ChunkGenerationState::EndVoxelDataGeneration(*id, false)
             {
-                let chunk = components
-                    .get_mut::<crate::components::Chunk>()
-                    .unwrap();
+                let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 // Remove the chunk's renderer if it had one
                 if world
                     .ecs

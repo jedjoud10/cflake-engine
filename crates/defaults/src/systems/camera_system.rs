@@ -74,9 +74,7 @@ fn run(world: &mut World, mut data: EventKey) {
         transform.position += velocity;
         transform.rotation = new_rotation;
         let (position, rotation) = (transform.position, transform.rotation);
-        let mut camera = components
-            .get_mut::<crate::components::Camera>()
-            .unwrap();
+        let mut camera = components.get_mut::<crate::components::Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
         // And don't forget to update the camera matrices
         // Load the pipeline since we need to get the window settings
