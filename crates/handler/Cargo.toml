@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 glutin = "0.28.0"
-gl = "0.14.0"
 lazy_static = "1.4.0"
 spin_sleep = "1.0.0"
 defaults = { path = "../defaults" }

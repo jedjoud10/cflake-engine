@@ -4,9 +4,6 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-// include the OpenGL type aliases
-extern crate gl;
-
 pub use defaults;
 use glutin::{
     dpi::LogicalSize,
