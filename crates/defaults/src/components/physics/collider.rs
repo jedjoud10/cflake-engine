@@ -1,6 +1,6 @@
 use world::{
     ecs::component::Component,
-    math::shapes::ShapeType,
+    math::shapes::{ShapeType, Cuboid, Sphere},
     physics::rapier3d::prelude::{ColliderBuilder, ColliderHandle},
     rendering::{basics::mesh::Mesh, object::ObjectID},
 };
@@ -20,15 +20,48 @@ pub struct Collider {
 }
 
 impl Collider {
-    // Create a new collider
+    // Create a new collider with a specific collider type
     pub fn new(_type: ColliderType) -> Self {
         Self {
             handle: ColliderHandle::invalid(),
-            restitution: 0.3,
+            restitution: 0.0,
             friction: ColliderBuilder::default_friction(),
             _type,
         }
     }
+    
+    // Create a new collider with specific shapes
+    pub fn cuboid(size: veclib::Vector3<f32>) -> Self {
+        Self {
+            handle: ColliderHandle::invalid(),
+            restitution: 0.0,
+            friction: ColliderBuilder::default_friction(),
+            _type: ColliderType::Shape(ShapeType::Cuboid(Cuboid {
+                center: veclib::Vector3::ZERO,
+                size,
+            })),
+        }
+    }
+    pub fn sphere(radius: f32) -> Self {
+        Self {
+            handle: ColliderHandle::invalid(),
+            restitution: 0.0,
+            friction: ColliderBuilder::default_friction(),
+            _type: ColliderType::Shape(ShapeType::Sphere(Sphere {
+                center: veclib::Vector3::ZERO,
+                radius,
+            })),
+        }
+    }
+    pub fn mesh(mesh: ObjectID<Mesh>) -> Self {
+        Self {
+            handle: ColliderHandle::invalid(),
+            restitution: 0.0,
+            friction: ColliderBuilder::default_friction(),
+            _type: ColliderType::Mesh(mesh),
+        }
+    }
+    
     // With
     pub fn with_restitution(mut self, restitution: f32) -> Self {
         self.restitution = restitution;

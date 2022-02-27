@@ -1,6 +1,7 @@
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
-use world::physics::rapier3d::na::{Isometry, Point3};
-use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape};
+use world::physics::rapier3d;
+use world::physics::rapier3d::na::{Isometry, Point3, Point};
+use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape, MassProperties};
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
@@ -14,11 +15,12 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
         .positions
         .iter()
         // Scale the points by the scale matrix
-        .map(|vertex| scale_matrix.mul_point(vertex))
+        //.map(|vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
     let indices = mesh.indices.chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
-
+    dbg!(mesh.indices.len());
+    dbg!(mesh.vertices.len());
     // Done
     SharedShape::trimesh(vertices, indices)
 }
@@ -55,6 +57,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         let r_collider = ColliderBuilder::new(get_shared_shape(&pipeline, &transform.scale_matrix(), &collider))
             .friction(collider.friction)
             .restitution(collider.restitution)
+            //.mass_properties(MassProperties::new(rapier3d::prelude::Point::new(0.0, 0.0, 0.0), 10.0, rapier3d::na::zero()))
             .build();
 
         // Add the collider and rigidbody

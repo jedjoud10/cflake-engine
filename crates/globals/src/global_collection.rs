@@ -1,6 +1,6 @@
 use crate::{
     error::GlobalError,
-    global::{EnclosedGlobalComponent, Global, GlobalReadGuard, GlobalWriteGuard},
+    global::{EnclosedGlobalComponent, Global},
 };
 use ahash::AHashMap;
 use std::any::TypeId;
@@ -16,14 +16,14 @@ impl GlobalsCollection {
     // Since the normal components might be mutated in multiple threads, we cannot read from multiple components at the same time or we might cause UB.
     // However, global components will NEVER be mutated in multiple threads at the same time, so we can be 100% sure that we will never (hopefully) cause UB
     // Add a global component to the ECS manager
-    pub fn add_global<U: Global + 'static>(&mut self, sc: U) -> Result<(), GlobalError> {
+    pub fn add<U: Global + 'static>(&mut self, global: U) -> Result<(), GlobalError> {
         // UnsafeCell moment
-        let boxed = Box::new(sc);
+        let boxed = Box::new(global);
         self.globals.insert(TypeId::of::<U>(), boxed);
         Ok(())
     }
     // Get a reference to a specific global component
-    pub fn get_global<'a, U: Global + 'static>(&'a self) -> Result<GlobalReadGuard<'a, U>, GlobalError> {
+    pub fn get<U: Global + 'static>(&self) -> Result<&U, GlobalError> {
         // First, we gotta check if this component was mutably borrowed
         // Kill me
         let hashmap = &self.globals;
@@ -33,10 +33,10 @@ impl GlobalsCollection {
         // Magic
         let ptr = &*boxed.as_ref();
         let global = crate::registry::cast_global::<U>(ptr)?;
-        Ok(GlobalReadGuard::new(global))
+        Ok(global)
     }
     // Get a mutable reference to a specific global component
-    pub fn get_global_mut<'a, U: Global + 'static>(&'a mut self) -> Result<GlobalWriteGuard<'a, U>, GlobalError> {
+    pub fn get_mut<U: Global + 'static>(&mut self) -> Result<&mut U, GlobalError> {
         let hashmap = &mut self.globals;
         let boxed = hashmap
             .get_mut(&TypeId::of::<U>())
@@ -44,6 +44,6 @@ impl GlobalsCollection {
         // Magic
         let ptr = &mut *boxed.as_mut();
         let global = crate::registry::cast_global_mut::<U>(ptr)?;
-        Ok(GlobalWriteGuard::new(global))
+        Ok(global)
     }
 }

@@ -128,5 +128,5 @@ fn init(world: &mut World) {
         .with_material(2),
     );
 
-    world.globals.add_global(terrain).unwrap();
+    world.globals.add(terrain).unwrap();
 }

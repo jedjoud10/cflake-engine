@@ -179,8 +179,8 @@ impl PipelineObject for Mesh {
                 self.tris_count = self.indices.len() / 3;
                 self.vert_count = self.vertices.len();
                 if let UpdateFrequency::Static = self.update_frequency {
-                    self.vertices.reset();
-                    self.indices.drain(..);
+                    //self.vertices.reset();
+                    //self.indices.drain(..);
                 }
 
                 // Unbind

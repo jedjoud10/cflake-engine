@@ -124,7 +124,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     // Get the pipeline without angering the borrow checker
     let pipeline = world.pipeline.read();
-    let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
+    let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         if Instant::now().saturating_duration_since(world.time.current.begin_instant).as_millis() > 2 {
             return;

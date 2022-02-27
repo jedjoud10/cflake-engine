@@ -24,7 +24,7 @@ fn chunk_post_gen(_world: &mut World, _chunk: &Chunk, _data: &StoredVoxelData) {
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
-    let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
+    let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if Instant::now().saturating_duration_since(world.time.current.begin_instant).as_millis() > 2 {
         return;
     }

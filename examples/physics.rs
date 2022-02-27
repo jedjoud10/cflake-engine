@@ -41,11 +41,7 @@ fn init(world: &mut World) {
     group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
     // Add the collider
     group
-        .link(Collider::new(ColliderType::Shape(ShapeType::Cuboid(Cuboid {
-            center: veclib::Vector3::ZERO,
-            size: veclib::Vector3::new(50.0, 1.0, 50.0),
-        }))))
-        .unwrap();
+        .link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
     let entity = Entity::default();
     world.ecs.add_entity(entity, group).unwrap();
     for y in 0..5 {
@@ -60,10 +56,26 @@ fn init(world: &mut World) {
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
                 group
-                .link(Collider::new(ColliderType::Shape(ShapeType::Cuboid(Cuboid {
-                    center: veclib::Vector3::ZERO,
-                    size: veclib::Vector3::new(1.0, 1.0, 1.0),
-                }))))
+                .link(Collider::cuboid(veclib::Vector3::ONE))
+                .unwrap();
+                let entity = Entity::default();
+                world.ecs.add_entity(entity, group).unwrap();
+            }
+        }
+    }
+    for y in 0..5 {
+        for x in 0..15 {
+            for z in 0..5 {
+                // Create a sphere
+                let mut group = ComponentLinkingGroup::default();
+                group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
+                let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().sphere);
+                group.link(renderer).unwrap();
+                // Add the rigidbody
+                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
+                // Add the collider
+                group
+                .link(Collider::sphere(0.5))
                 .unwrap();
                 let entity = Entity::default();
                 world.ecs.add_entity(entity, group).unwrap();

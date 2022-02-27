@@ -9,7 +9,7 @@ fn run(world: &mut World, _data: EventKey) {
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
-        let data = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
+        let data = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
         ui.heading("World");
         if ui.button("Quit game").clicked() {
             *state = WorldState::Exit;
@@ -29,7 +29,7 @@ fn run(world: &mut World, _data: EventKey) {
         ui.label(format!("Entities: '{}'", world.ecs.count_entities()));
         ui.label(format!("Systems: '{}'", world.ecs.count_systems()));
         // Terrain
-        let terrain = world.globals.get_global_mut::<crate::globals::Terrain>();
+        let terrain = world.globals.get_mut::<crate::globals::Terrain>();
         if let Ok(terrain) = terrain {
             let octree = terrain.chunks_manager.octree.lock();
             ui.separator();

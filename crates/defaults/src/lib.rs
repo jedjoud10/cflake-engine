@@ -64,8 +64,9 @@ pub fn start_before_user_sytems(world: &mut World) {
     gui_system::system(world);
     audio_system::system(world);
 
-    // We gotta add the globa
-    world.globals.add_global(crate::globals::GlobalWorldData::default()).unwrap();
+    // We gotta add the default globals
+    world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
+    world.globals.add(crate::globals::Physics::default()).unwrap();
 }
 
 // Start the defaults systems that will be executed after the user systems 

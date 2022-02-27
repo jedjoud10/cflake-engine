@@ -3,11 +3,11 @@ use world::World;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
     // Camera values
-    let global = world.globals.get_global::<crate::globals::GlobalWorldData>().unwrap();
+    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
     let camera_position = global.camera_pos;
     let camera_forward = global.camera_forward;
     // Get the terrain global
-    if let Ok(mut terrain) = world.globals.get_global_mut::<crate::globals::Terrain>() {
+    if let Ok(mut terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
         let terrain = &mut *terrain;
         let chunks_to_regenerate = terrain.editing_manager.get_influenced_chunks(&terrain.chunks_manager.octree.lock().inner);

@@ -1,10 +1,18 @@
 use world::World;
+use world::physics::PHYSICS_TIME_STEP;
 use world::{ecs::event::EventKey, physics::rapier3d::na::Isometry};
 
 use super::{quat_to_rotation, vec3_to_translation, vec3_to_vector, vector_to_vec3, rotation_to_quat};
 
 // Run the physics simulation
 fn run(world: &mut World, mut data: EventKey) {
+    // Execute only if we need to
+    let physics = world.globals.get_mut::<crate::globals::Physics>().unwrap();
+    let current_time = world.time.elapsed;
+    if (current_time - physics.last_execution_time) > PHYSICS_TIME_STEP as f64 {
+        physics.last_execution_time = current_time;
+    } else { return; }
+
     // Update the position/rotation and velocity of each rigidbody since we might have externally updated them
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.write().iter() {

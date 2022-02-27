@@ -1,5 +1,8 @@
 use rapier3d::prelude::*;
 
+// Time step
+pub const PHYSICS_TIME_STEP: f32 = 1.0 / 75.0;
+
 // Physics simulation
 pub struct PhysicsSimulation {
     pub islands: IslandManager,
@@ -28,7 +31,10 @@ impl PhysicsSimulation {
             ccd_solver: CCDSolver::new(),
             query_pipeline: QueryPipeline::new(),
             physics_pipeline: PhysicsPipeline::new(),
-            integration_parameters: IntegrationParameters::default(),
+            integration_parameters: IntegrationParameters {
+                dt: PHYSICS_TIME_STEP,
+                ..Default::default()
+            },
             gravity: veclib::vec3(0.0, -9.81, 0.0),
         }
     }
