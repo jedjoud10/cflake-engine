@@ -72,7 +72,7 @@ pub struct Pipeline {
     // End Of Frame callbacks
     pub(crate) callbacks: PipelineEoFCallbacks,
 
-    pub time: (f64, f64),
+    pub time: (f64, f64, u64),
 }
 
 impl Pipeline {
@@ -398,7 +398,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 let pipeline_frame_instant = std::time::Instant::now();
                 let mut pipeline_ = pipeline.write();
                 let time = time_clone.lock();
-                pipeline_.time = *time;
+                pipeline_.time = (time.0, time.1, pipeline_.time.2 + 1);               
 
                 drop(time);
                 drop(pipeline_);
@@ -407,6 +407,9 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 // We render the scene here
                 let pipeline_ = pipeline.read();
                 let frame_debug_info = renderer.render_frame(&*pipeline_);
+                unsafe {
+                    gl::Finish();
+                }
                 let render_frame_duration = i.elapsed();
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();
@@ -421,6 +424,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 // Do not forget to switch buffers at the end of the frame
                 let i = std::time::Instant::now();
                 gl_context.swap_buffers().unwrap();
+                //eprintln!("Rendered frame {}", pipeline.time.2);
                 let swap_buffers_duration = i.elapsed();
 
                 let messages = rx.try_iter().collect::<Vec<PipelineTask>>();

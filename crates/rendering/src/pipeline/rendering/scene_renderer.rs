@@ -192,7 +192,7 @@ impl SceneRenderer {
             // Actually draw the mesh
             gl::BindVertexArray(mesh.vertex_array_object);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.buffers[0]);
-            gl::DrawElements(gl::TRIANGLES, mesh.tris_count as i32 * 3, gl::UNSIGNED_INT, null());
+            gl::DrawElements(gl::TRIANGLES, mesh.indices.len() as i32, gl::UNSIGNED_INT, null());
         }
     }
     // Prepare the FBO and clear the buffers
@@ -233,8 +233,8 @@ impl SceneRenderer {
             if let Ok(mesh) = result {
                 Self::render(mesh);
                 debug_info.draw_calls += 1;
-                debug_info.triangles += mesh.tris_count as u64;
-                debug_info.vertices += mesh.vert_count as u64;
+                debug_info.triangles += mesh.indices.len() as u64 / 3;
+                debug_info.vertices += mesh.vertices.len() as u64 / 3;
             }
         }
     }

@@ -75,7 +75,7 @@ fn init(world: &mut World) {
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
                 group
-                .link(Collider::sphere(0.5))
+                .link(Collider::sphere(0.5).with_friction(0.05).with_restitution(1.3))
                 .unwrap();
                 let entity = Entity::default();
                 world.ecs.add_entity(entity, group).unwrap();

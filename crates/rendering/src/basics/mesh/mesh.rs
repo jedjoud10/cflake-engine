@@ -35,10 +35,6 @@ pub struct Mesh {
 
     // Triangles
     pub indices: Vec<u32>,
-
-    // Keep track of the number of vertices and triangles since we might clear the CPU buffers
-    pub vert_count: usize,
-    pub tris_count: usize,
 }
 
 impl Default for Mesh {
@@ -49,8 +45,6 @@ impl Default for Mesh {
             vertices: Default::default(),
             update_frequency: UpdateFrequency::Static,
             indices: Default::default(),
-            vert_count: Default::default(),
-            tris_count: Default::default(),
         }
     }
 }
@@ -176,8 +170,6 @@ impl PipelineObject for Mesh {
                 }
 
                 // Clear the CPU buffers if we want to
-                self.tris_count = self.indices.len() / 3;
-                self.vert_count = self.vertices.len();
                 if let UpdateFrequency::Static = self.update_frequency {
                     //self.vertices.reset();
                     //self.indices.drain(..);

@@ -15,7 +15,7 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
         .positions
         .iter()
         // Scale the points by the scale matrix
-        //.map(|vertex| scale_matrix.mul_point(vertex))
+        .map(|vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
     let indices = mesh.indices.chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
