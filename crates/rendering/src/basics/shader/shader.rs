@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use getset::Getters;
 use gl::types::GLuint;
 use crate::basics::shader::query_shader_uniforms_definition_map;
 use crate::basics::uniforms::UniformsDefinitionMap;
@@ -6,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::CString;
 use std::ptr::null;
 
-use super::{load_includes, IncludeExpansionError};
+use super::{load_includes, IncludeExpansionError, ShaderProgram};
 
 // Shader source type
 pub(crate) enum ShaderSourceType {
@@ -24,24 +25,15 @@ pub(crate) struct ShaderSource {
     pub _type: ShaderSourceType,
 }
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
+#[derive(Getters)]
 pub struct Shader {
     // The OpenGL program linked to this shader
-    pub(crate) program: GLuint,
+    #[getset(get = "pub")]
+    pub(crate) program: ShaderProgram,
     // The updated and modified shader sources
+    #[getset(get = "pub")]
     pub(crate) sources: AHashMap<String, ShaderSource>,
-    // Uniforms definition m,ap
+    // Uniforms definition map
+    #[getset(get = "pub")]
     pub(crate) uniforms: UniformsDefinitionMap,
-}
-
-impl Shader {
-    // Creates a shader from it's corresponding shader settings
-    pub fn new(mut settings: ShaderSettings) -> Result<Self, IncludeExpansionError> {
-        // Create "self"
-        let mut shader = Self {
-            program: 0,
-            sources: HashMap::default(),
-        };
-        
-        Ok(shader)
-    }
 }

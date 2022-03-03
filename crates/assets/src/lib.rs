@@ -1,7 +1,5 @@
 // Export
 pub mod asset;
-pub mod command;
-pub use command as assetc;
 pub mod cacher;
 mod default;
 pub mod error;

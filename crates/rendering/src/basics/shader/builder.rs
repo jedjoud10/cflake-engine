@@ -1,9 +1,7 @@
 use std::{ffi::CString, ptr::null};
-
 use ahash::{AHashMap, AHashSet};
-
+use assets::Asset;
 use crate::{basics::shader::{ShaderSource, ShaderSourceType, query_shader_uniforms_definition_map, load_includes}, object::Builder, pipeline::ShaderKey};
-
 use super::Shader;
 
 // Shader builder
@@ -30,7 +28,7 @@ impl ShaderBuilder {
     pub fn with_source(mut self, path: &str) -> Self {
         // Load a shader source from scratch
         let metadata = assets::metadata::AssetMetadata::new(path).unwrap();
-        let text = assets::assetc::load::<String>(path).unwrap();
+        let text = String::load(path).unwrap();
         let extension = metadata.name.to_str().unwrap().to_string().split(".").map(|x| x.to_string()).collect::<Vec<_>>()[1..].join(".");
         self.sources.insert(
             path.to_string(),

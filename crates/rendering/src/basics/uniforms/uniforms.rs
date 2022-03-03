@@ -1,17 +1,16 @@
 use std::marker::PhantomData;
 
-use super::{ShaderUniformsSettings, UniformsDefinitionMap};
+use super::{UniformsDefinitionMap};
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
-    basics::texture::{Texture, TextureAccessType},
-    object::ObjectID,
-    pipeline::Pipeline,
+    basics::{texture::{Texture, TextureAccessType}, shader::ShaderProgram},
+    pipeline::{Pipeline, TextureKey, AtomicGroupKey, ShaderStorageKey},
 };
 
 // Struct that allows us to set the uniforms for a specific shader
 pub struct Uniforms<'a> {
     map: &'a UniformsDefinitionMap,
-    program: u32,
+    program: ShaderProgram,
     pipeline: &'a Pipeline,
     _phantom: PhantomData<*const Pipeline>,
 }
@@ -19,30 +18,18 @@ pub struct Uniforms<'a> {
 // Gotta change the place where this shit is in
 impl<'a> Uniforms<'a> {
     // Create a new uniforms setter using some shaderuniformssettings and a pipeline
-    pub(crate) fn new(settings: &'a ShaderUniformsSettings, pipeline: &'a Pipeline) -> Self {
-        let program = settings._type.get_program(pipeline);
-        let map = pipeline.cached.uniform_definitions.get(&program).unwrap();
-        Self {
-            map,
-            program,
-            pipeline,
-            _phantom: PhantomData::default(),
-        }
-    }
-    // Create some new uniforms using a mutable pipeline
-    // This should only be accessed by the EoF external callbacks
-    // This automatically binds the shader as well
-    pub fn using_mut_pipeline(settings: &'a ShaderUniformsSettings, pipeline: &'a mut Pipeline) -> Self {
-        let program = settings._type.get_program(pipeline);
-        let map = pipeline.cached.uniform_definitions.get(&program).unwrap();
-        let uniforms = Self {
+    pub(crate) fn new(program: ShaderProgram, map: &UniformsDefinitionMap, pipeline: &'a Pipeline, autobind: bool) -> Self {
+        let me = Self {
             map,
             program,
             pipeline,
             _phantom: PhantomData::default(),
         };
-        uniforms.bind_shader();
-        uniforms
+        // Auto bind
+        if autobind {
+            me.bind_shader();
+        }
+        me
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
@@ -50,7 +37,7 @@ impl<'a> Uniforms<'a> {
         self.map.get(name).unwrap_or(-1)
     }
     // Bind the shader for execution/rendering
-    pub(crate) fn bind_shader(&self) {
+    pub fn bind_shader(&self) {
         unsafe { gl::UseProgram(self.program) }
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.time.0 as f32);
@@ -164,12 +151,12 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
         }
     }
-    pub fn set_texture(&self, name: &str, texture_id: ObjectID<Texture>, active_texture_id: u32) {
+    pub fn set_texture(&self, name: &str, texture: TextureKey, active_texture_id: u32) {
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
-        let texture = if let Some(x) = self.pipeline.textures.get(texture_id) {
+        let texture = if let Some(x) = self.pipeline.textures.get(texture) {
             x
         } else {
             return;
@@ -180,13 +167,13 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
-    pub fn set_image(&self, name: &str, texture_id: ObjectID<Texture>, access: TextureAccessType) {
+    pub fn set_image(&self, name: &str, texture: TextureKey, access: TextureAccessType) {
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
         // Converstion from wrapper to actual OpenGL values
-        let texture = if let Some(x) = self.pipeline.textures.get(texture_id) {
+        let texture = if let Some(x) = self.pipeline.textures.get(texture) {
             x
         } else {
             return;
@@ -208,8 +195,8 @@ impl<'a> Uniforms<'a> {
             gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
         }
     }
-    pub fn set_atomic_group(&self, _name: &str, atomic_group_id: ObjectID<AtomicGroup>, clear: bool, binding: u32) {
-        let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group_id) {
+    pub fn set_atomic_group(&self, _name: &str, atomic_group: AtomicGroupKey, clear: bool, binding: u32) {
+        let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group) {
             x
         } else {
             return;
@@ -226,8 +213,8 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage(&self, _name: &str, shader_storage_id: ObjectID<ShaderStorage>, binding: u32) {
-        let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage_id) {
+    pub fn set_shader_storage(&self, _name: &str, shader_storage: ShaderStorageKey, binding: u32) {
+        let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage) {
             x
         } else {
             return;

@@ -5,28 +5,21 @@ use gl::types::GLuint;
 
 use crate::{
     basics::buffer_operation::BufferOperation,
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, OpenGLObjectNotInitialized, PipelineObject},
+    object::OpenGLObjectNotInitialized,
     pipeline::Pipeline,
 };
 const MAX_COUNTERS: usize = 4;
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct AtomicGroup {
     // The OpenGL ID for the atomic counter buffer
-    pub(crate) oid: GLuint,
+    pub(crate) buffer: GLuint,
     // Some predefined values that we can set before we execute the shader
     // This also stores the number of valid atomics that we have
     pub(crate) defaults: ArrayVec<u32, MAX_COUNTERS>,
 }
 
-impl Default for AtomicGroup {
-    fn default() -> Self {
-        let mut arrayvec = ArrayVec::<u32, MAX_COUNTERS>::new();
-        arrayvec.push(0);
-        Self { oid: 0, defaults: arrayvec }
-    }
-}
 impl PipelineObject for AtomicGroup {
     // Reserve an ID for this atomic group
     fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {

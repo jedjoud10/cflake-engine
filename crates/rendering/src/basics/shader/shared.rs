@@ -8,6 +8,7 @@ use std::{
 };
 
 use ahash::AHashMap;
+use assets::Asset;
 use gl::types::GLuint;
 
 use crate::basics::uniforms::UniformsDefinitionMap;
@@ -32,7 +33,7 @@ pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHash
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                assets::assetc::load::<String>(local_path)
+                String::load(local_path)
                     .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
@@ -238,3 +239,7 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
         }
     }
 }
+
+// A shader program that contains an OpenGL program ID
+#[derive(Clone, Copy)]
+pub struct ShaderProgram(pub GLuint);

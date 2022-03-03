@@ -1,17 +1,24 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
+use assets::Asset;
+use obj::TexturedVertex;
+use veclib::{vec3, vec2};
+
 use crate::{object::Builder, pipeline::MeshKey};
 
-use super::Mesh;
+use super::{Mesh, Vertices};
 
 // Mesh builder
+#[derive(Default)]
 pub struct MeshBuilder {
     inner: Mesh
 }
 
 impl MeshBuilder {
-    // Create a new mesh
-    pub fn new(mesh: Mesh) -> Self {
-        Self { inner: mesh }
+    // Create the mesh with a specific vertices
+    pub fn with_vertices(mut self, f: impl FnMut(&mut Vertices)) -> Self {
+        let vertices = &mut self.inner.vertices;
+        f(vertices);
+        self
     }
     // Combine a mesh with our internal one, and return the new mesh builder
     pub fn with_combined_mesh(mut self, other: Self) -> Self {
@@ -61,6 +68,26 @@ impl MeshBuilder {
 
         // Update our normals
         mesh.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
+    }
+}
+
+impl Asset for MeshBuilder {
+    fn load_raw(meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self> {
+        let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
+        // Generate the tangents
+        // Create the actual Mesh now
+        let mut mesh = Mesh::default();
+        for vertex in parsed_obj.vertices {
+            mesh.vertices
+                .builder()
+                .with_position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]))
+                .with_normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
+                .with_uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
+        }
+        mesh.indices = parsed_obj.indices;
+        Some(MeshBuilder {
+            inner: mesh
+        })
     }
 }
 

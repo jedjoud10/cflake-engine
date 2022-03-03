@@ -1,8 +1,4 @@
 use super::{material::Material, mesh::Mesh, uniforms::SetUniformsCallback};
-use crate::{
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
-    pipeline::Pipeline,
-};
 use bitflags::bitflags;
 bitflags! {
     pub struct RendererFlags: u8 {

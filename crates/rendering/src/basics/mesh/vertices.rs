@@ -21,7 +21,7 @@ impl Vertices {
     }
 
     // Reset all the buffers
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.positions.clear();
         self.normals.clear();
         self.tangents.clear();
@@ -36,7 +36,7 @@ impl Vertices {
     }
 
     // Create a vertex builder
-    pub fn add(&mut self) -> VertexBuilder {
+    pub fn builder(&mut self) -> VertexBuilder {
         VertexBuilder { vertices: self }
     }
 }
