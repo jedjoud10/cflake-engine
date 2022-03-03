@@ -10,19 +10,15 @@ use std::{
 use ahash::AHashMap;
 use gl::types::GLuint;
 
-use crate::{
-    basics::uniforms::{ShaderIDType, UniformsDefinitionMap},
-    object::GlTracker,
-    pipeline::Pipeline,
-};
+use crate::basics::uniforms::UniformsDefinitionMap;
 
 use super::{
-    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, ShaderInfoRead, UpdatedParameter},
-    IncludeExpansionError, ShaderSettings,
+    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
+    IncludeExpansionError, ShaderSource
 };
 
 // Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
+pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHashMap<String, String>, sources: &AHashMap<String, ShaderSource>, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
     for (_i, line) in lines.iter_mut().enumerate() {
@@ -51,8 +47,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             // Get the source
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
             let source_name = &c[2..(c.len() - 2)].to_string();
-            let source = settings
-                .external_code
+            let source = externals
                 .get(source_name)
                 .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
             *line = source.clone();
@@ -81,7 +76,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let x = settings.consts.get(const_name);
+            let x = consts.get(const_name);
             if let Some(x) = x {
                 *line = format(line, x);
                 Ok(())
@@ -123,17 +118,6 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefi
     } else {
         UniformsDefinitionMap::default()
     }
-}
-
-// Query some information about a shader, and then return the GlTracker
-pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: ShaderInfoRead) -> GlTracker {
-    GlTracker::fake(move || {
-        let program = identifier.get_program(pipeline);
-        let output_queried_resources = query_shader_info(program, settings);
-        // Finally update the mutex that holds the queried resources
-        let mut lock = read.inner.lock();
-        *lock = output_queried_resources;
-    })
 }
 
 // Query some information about a shader, and then return
