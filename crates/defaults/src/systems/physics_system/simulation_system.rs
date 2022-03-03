@@ -63,7 +63,8 @@ fn run(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .link::<crate::components::RigidBody>()
         .link::<crate::components::Collider>()
         .link::<crate::components::Transform>()

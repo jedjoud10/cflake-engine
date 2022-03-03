@@ -1,16 +1,22 @@
-use crate::component::Component;
+use crate::component::{Component, ComponentKey};
 use ahash::AHashMap;
 use bitfield::Bitfield;
+use slotmap::Key;
+use getset::Getters;
 // A simple entity in the world
+#[derive(Getters)]
 pub struct Entity {
-    // This entity's ID
-    pub(crate) id: Option<EntityID>,
+    // This entity's Key
+    #[getset(get = "pub")]
+    pub(crate) key: EntityKey,
 
     // Component Bitfield
+    #[getset(get = "pub")]
     pub(crate) cbitfield: Bitfield<u32>,
 
     // Our stored components
-    pub(crate) components: AHashMap<Bitfield<u32>, u64>,
+    #[getset(get = "pub")]
+    pub(crate) components: AHashMap<Bitfield<u32>, ComponentKey>,
 }
 
 // ECS time bois
@@ -18,7 +24,7 @@ impl Default for Entity {
     // Create a new default entity
     fn default() -> Self {
         Self {
-            id: None,
+            key: EntityKey::null(),
             cbitfield: Bitfield::default(),
             components: AHashMap::new(),
         }
@@ -34,12 +40,6 @@ impl Entity {
     }
 }
 
-// An EntityID that will be used to identify entities
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct EntityID(pub u64);
-
-impl std::fmt::Display for EntityID {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#X}", self.0)
-    }
+slotmap::new_key_type! {
+    pub struct EntityKey;
 }

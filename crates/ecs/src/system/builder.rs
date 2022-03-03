@@ -1,22 +1,21 @@
 use crate::{
     component::{registry, Component},
     event::EventKey,
-    ECSManager,
 };
 
-use super::System;
+use super::{System, SystemSet};
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, World> {
-    ecs_manager: &'a mut ECSManager<World>,
+    set: &'a mut SystemSet<World>,
     system: System<World>,
 }
 
 impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
-    pub(crate) fn new(ecs_manager: &'a mut ECSManager<World>) -> Self {
+    pub(crate) fn new(set: &'a mut SystemSet<World>) -> Self {
         Self {
-            ecs_manager,
+            set,
             system: System::default(),
         }
     }
@@ -48,6 +47,6 @@ impl<'a, World> SystemBuilder<'a, World> {
     }
     // Build this system and add it to the ECS manager
     pub fn build(self) {
-        self.ecs_manager.add_system(self.system)
+        self.set.add(self.system)
     }
 }

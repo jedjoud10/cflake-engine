@@ -1,10 +1,11 @@
 mod component;
 mod linked_components;
 mod query;
-mod query_guard;
+mod set;
 pub mod registry;
 pub use component::Component;
 pub use component::*;
 pub use ecs_derive::Component;
 pub use linked_components::*;
 pub use query::*;
+pub(crate) use set::*;

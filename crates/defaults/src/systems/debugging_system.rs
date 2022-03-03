@@ -25,9 +25,10 @@ fn run(world: &mut World, _data: EventKey) {
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
-        ui.label(format!("Component: '{}'", world.ecs.count_components()));
-        ui.label(format!("Entities: '{}'", world.ecs.count_entities()));
-        ui.label(format!("Systems: '{}'", world.ecs.count_systems()));
+        ui.label(format!("Component: '{}'", world.ecs.components.len()));
+        ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
+        ui.label(format!("Systems: '{}'", world.ecs.systems.inner().len()));
+        /*
         // Terrain
         let terrain = world.globals.get_mut::<crate::globals::Terrain>();
         if let Ok(terrain) = terrain {
@@ -42,6 +43,7 @@ fn run(world: &mut World, _data: EventKey) {
             ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
             ui.label(format!("Total Edits: '{}'", terrain.editing_manager.edits.len()));
         }
+        */
         // Rendering
         ui.separator();
         ui.heading("Rendering");
@@ -58,5 +60,5 @@ fn run(world: &mut World, _data: EventKey) {
 }
 // Create the debugging system
 pub fn system(world: &mut World) {
-    world.ecs.build_system().with_run_event(run).build();
+    world.ecs.systems.builder().with_run_event(run).build();
 }

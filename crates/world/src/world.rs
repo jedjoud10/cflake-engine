@@ -75,24 +75,22 @@ impl World {
         handler.sbarrier.wait();
         drop(time);
         drop(handler);
-        let system_count = self.ecs.count_systems();
+        let system_count = self.ecs.systems.inner().len();
         // Loop for every system and update it
         for system_index in 0..system_count {
             let execution_data = {
-                let system = &self.ecs.get_systems()[system_index];
+                let system = &self.ecs.systems.inner()[system_index];
                 system.run_system(&self.ecs)
             };
             // Actually execute the system now
             execution_data.run(self);
             {
                 // Clear
-                let system = &self.ecs.get_systems()[system_index];
+                let system = &self.ecs.systems.inner()[system_index];
                 system.clear();
                 self.time.update_current_frame_time();
             }
         }
-        // Finish update
-        self.ecs.finish_update();
     }
     // End frame update
     pub fn update_end(&mut self) {

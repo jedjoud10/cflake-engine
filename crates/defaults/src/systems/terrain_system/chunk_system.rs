@@ -1,6 +1,6 @@
 use crate::globals::ChunksManager;
 use world::{
-    ecs::{self, entity::EntityID, event::EventKey, ECSManager},
+    ecs::{self, entity::EntityKey, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
     World,

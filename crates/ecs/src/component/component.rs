@@ -1,22 +1,14 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use ordered_vec::simple::OrderedVec;
 use parking_lot::RwLock;
+use slotmap::SlotMap;
 use std::{any::Any, cell::UnsafeCell, sync::Arc};
 
-use crate::entity::EntityID;
+use crate::entity::EntityKey;
 
-// A ComponentID that will be used to identify components
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct ComponentID {
-    pub(crate) cbitfield: Bitfield<u32>,
-    pub(crate) idx: u64,
-}
-impl ComponentID {
-    // Create a new component ID
-    pub(crate) fn new(cbitfield: Bitfield<u32>, id: u64) -> Self {
-        Self { cbitfield, idx: id }
-    }
+slotmap::new_key_type! {
+    pub struct ComponentKey;
+    pub(crate) struct ComponentGroupKey;
 }
 
 // A component that can be accessed through multiple worker threads
@@ -27,14 +19,14 @@ pub trait Component: Sync {
 }
 
 // Main type because I don't want to type
-pub type ComponentsCollection = Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>;
+pub type Components = Arc<RwLock<SlotMap<ComponentKey, UnsafeCell<EnclosedComponent>>>>;
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
 
 // Component groups that we must remove
 pub(crate) struct ComponentGroupToRemove {
-    pub components: AHashMap<Bitfield<u32>, u64>,
+    pub components: AHashMap<Bitfield<u32>, ComponentKey>,
     pub counter: usize,
-    pub entity_id: EntityID,
+    pub key: EntityKey,
 }
 
 // Component ref guards. This can be used to detect whenever we mutate a component

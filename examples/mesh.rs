@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets::assetc,
     defaults::components,
@@ -42,3 +43,5 @@ fn init(world: &mut World) {
     group.link_default::<components::Transform>().unwrap();
     world.ecs.add_entity(entity, group).unwrap();
 }
+*/
+fn main() {}

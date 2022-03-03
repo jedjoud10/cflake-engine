@@ -6,9 +6,8 @@ use bitfield::Bitfield;
 use super::SystemExecutionData;
 use crate::{
     component::{ComponentQuery, LinkedComponents},
-    entity::EntityID,
     event::EventKey,
-    ECSManager,
+    ECSManager, entity::EntityKey,
 };
 
 pub(crate) type Event<World> = Option<fn(&mut World, EventKey)>;
@@ -22,10 +21,10 @@ pub struct System<World> {
     pub(crate) evn_added_entity: Event<World>,
     pub(crate) evn_removed_entity: Event<World>,
 
-    linked_components: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
+    linked_components: Rc<RefCell<AHashMap<EntityKey, LinkedComponents>>>,
     // Added, Removed
-    added: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
-    removed: Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>,
+    added: Rc<RefCell<AHashMap<EntityKey, LinkedComponents>>>,
+    removed: Rc<RefCell<AHashMap<EntityKey, LinkedComponents>>>,
 }
 
 impl<World> Default for System<World> {
@@ -50,25 +49,25 @@ impl<World> System<World> {
         cbitfield.contains(&self.cbitfield)
     }
     // Add an entity
-    pub(crate) fn add_entity(&self, id: EntityID, linked_components: LinkedComponents) {
+    pub(crate) fn add_entity(&self, key: EntityKey, linked_components: LinkedComponents) {
         let cloned = LinkedComponents {
             components: linked_components.components.clone(),
             mutated_components: linked_components.mutated_components.clone(),
             linked: linked_components.linked.clone(),
-            id: linked_components.id.clone(),
+            key,
         };
         let mut lock = self.linked_components.borrow_mut();
-        lock.insert(id, linked_components);
+        lock.insert(key, linked_components);
         let mut lock = self.added.borrow_mut();
-        lock.insert(id, cloned);
+        lock.insert(key, cloned);
     }
     // Remove an entity (It's cbitfield became innadequate for our system or the entity was removed from the world)
-    pub(crate) fn remove_entity(&self, id: EntityID, linked_components: LinkedComponents) {
+    pub(crate) fn remove_entity(&self, key: EntityKey, linked_components: LinkedComponents) {
         let mut lock = self.linked_components.borrow_mut();
-        if lock.contains_key(&id) {
-            lock.remove(&id);
+        if lock.contains_key(&key) {
+            lock.remove(&key);
             let mut removed_lock = self.removed.borrow_mut();
-            removed_lock.insert(id, linked_components);
+            removed_lock.insert(key, linked_components);
         }
     }
     // Create a SystemExecutionData that we can actually run at a later time
@@ -83,9 +82,9 @@ impl<World> System<World> {
         // Do a bit of decrementing
         let removed_components = {
             let removed = self.removed.borrow_mut();
-            let mut lock = ecs_manager.component_groups_to_remove.lock();
+            let mut lock = ecs_manager.components.to_remove.lock();
             for (_, components) in lock.iter_mut() {
-                if removed.contains_key(&components.entity_id) {
+                if removed.contains_key(&components.key) {
                     // Decrement
                     components.counter -= 1;
                 }

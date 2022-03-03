@@ -1,7 +1,6 @@
 use world::{
     ecs::{
         event::EventKey,
-        rayon::iter::{IntoParallelRefIterator, ParallelIterator},
     },
     rendering::{object::ObjectID, pipeline::pipec},
     World,
@@ -20,7 +19,7 @@ fn run(world: &mut World, mut data: EventKey) {
 
     let result = query
         .write()
-        .par_iter()
+        .iter()
         .filter_map(|(_, components)| {
             let renderer = components.get::<crate::components::Renderer>().unwrap();
             let transform = components.get::<crate::components::Transform>().unwrap();
@@ -89,7 +88,8 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .with_run_event(run)
         .with_added_entities_event(added_entities)
         .with_removed_entities_event(removed_entities)

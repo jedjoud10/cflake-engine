@@ -1,22 +1,23 @@
-use crate::entity::EntityID;
 use core::fmt;
+
+use crate::entity::EntityKey;
 
 // An error related to the entities
 #[derive(Debug)]
 pub struct EntityError {
     details: String,
-    id: EntityID,
+    key: EntityKey,
 }
 
 impl EntityError {
-    pub(crate) fn new(msg: String, id: EntityID) -> Self {
-        Self { details: msg, id }
+    pub(crate) fn new(msg: String, key: EntityKey) -> Self {
+        Self { details: msg, key }
     }
 }
 
 impl fmt::Display for EntityError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}. EntityID: {:?}", self.details, self.id)
+        write!(f, "{}. EntityKey: {:?}", self.details, self.key)
     }
 }
 
