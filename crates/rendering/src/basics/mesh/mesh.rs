@@ -1,7 +1,5 @@
 use super::Vertices;
 use crate::{
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, ObjectID, PipelineObject},
-    pipeline::Pipeline,
     utils::UpdateFrequency,
 };
 use assets::Asset;
@@ -13,10 +11,10 @@ use veclib::{vec2, vec3};
 // A simple mesh that holds vertex, normal, and color data
 pub struct Mesh {
     // Main IDs
-    pub vertex_array_object: GLuint,
+    pub(crate) vertex_array_object: GLuint,
 
     // Vertex attributes IDs
-    pub buffers: [GLuint; 6],
+    pub(crate) buffers: [GLuint; 6],
     /*
     pub element_buffer_object: u32,
 
@@ -31,7 +29,7 @@ pub struct Mesh {
     pub vertices: Vertices,
 
     // Update frequence
-    pub update_frequency: UpdateFrequency,
+    pub(crate) update_frequency: UpdateFrequency,
 
     // Triangles
     pub indices: Vec<u32>,
