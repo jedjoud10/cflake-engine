@@ -1,9 +1,8 @@
 use crate::{
     basics::{
         shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
-        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
+        uniforms::{ShaderUniformsSettings, Uniforms},
     },
-    object::{Construct, ConstructionTask, Deconstruct, DeconstructionTask, GlTracker, ObjectID, PipelineObject},
     pipeline::Pipeline,
 };
 use gl::types::GLuint;
