@@ -1,7 +1,9 @@
+// Default asset implementations
 impl crate::Asset for String {
-    fn load_raw(_meta: &crate::metadata::AssetMetadata, bytes: &[u8]) -> Option<String>
+    fn deserialize(self, _meta: &crate::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        String: Sized {
-        String::from_utf8(bytes.to_vec()).ok()
+        Self: Sized,
+    {
+        Self::from_utf8(bytes.to_vec()).ok()
     }
 }
