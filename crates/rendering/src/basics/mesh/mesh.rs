@@ -2,7 +2,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::object::OpenGLInitializer;
 
-use super::Vertices;
+use super::{Vertices, GeometryBuilder, Indices};
 use assets::Asset;
 use gl::types::GLuint;
 use obj::TexturedVertex;
@@ -33,7 +33,7 @@ pub struct Mesh {
 
     // Triangles
     #[getset(get = "pub")]
-    indices: Vec<u32>,
+    indices: Indices,
 }
 
 impl Asset for Mesh {
@@ -80,7 +80,7 @@ impl OpenGLInitializer for Mesh {
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (self.indices().len() * size_of::<u32>()) as isize,
-                self.indices().as_ptr() as *const c_void,
+                self.indices().indices.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
 
@@ -174,7 +174,6 @@ impl OpenGLInitializer for Mesh {
         }
     }
 }
-
 impl Drop for Mesh {
     fn drop(&mut self) {
         // Dispose of the OpenGL buffers
@@ -188,6 +187,22 @@ impl Drop for Mesh {
     }
 }
 
+impl Mesh {
+    // Create a geometry builder for an existing mesh
+    pub fn builder(&mut self) -> GeometryBuilder {
+        GeometryBuilder {
+            vertices: &mut self.vertices,
+            indices: &mut self.indices,
+        }
+    }
+    /*
+    // Apply the changes from a geometry builder to the mesh
+    pub fn apply<'a>(&'a mut self, builder: GeometryBuilder<'a>) {
+
+    }
+    */
+}
+
 /*
 
 // Create the mesh with a specific vertices
@@ -198,19 +213,7 @@ impl Drop for Mesh {
     }
     // Combine a mesh with our internal one, and return the new mesh builder
     pub fn with_combined_mesh(mut self, other: Self) -> Self {
-        let mut mesh = self.inner;
-        let other = other.inner;
-        let max_triangle_index: u32 = mesh.vertices.positions.len() as u32;
-        mesh.indices.extend(other.indices.into_iter().map(|mut x| {
-            x += max_triangle_index;
-            x
-        }));
-        mesh.vertices.positions.extend(other.vertices.positions.into_iter());
-        mesh.vertices.normals.extend(other.vertices.normals.into_iter());
-        mesh.vertices.uvs.extend(other.vertices.uvs.into_iter());
-        mesh.vertices.colors.extend(other.vertices.colors.into_iter());
-        mesh.vertices.tangents.extend(other.vertices.tangents.into_iter());
-        self
+        
     }
     // Procedurally generate the normals for this mesh
     pub fn with_generated_normals(mut self) {
@@ -246,3 +249,21 @@ impl Drop for Mesh {
         mesh.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
     }
     */
+
+impl Mesh {
+    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja. 
+    pub fn combine(mut self, other: Mesh) -> Mesh {
+        let max_triangle_index: u32 = self.vertices.positions.len() as u32;
+        // TODO: Implement basic iterator types (Iterator, IntoIter) for indices and vertices
+        self.indices.indices.extend(other.indices.indices.into_iter().map(|mut x| {
+            x += max_triangle_index;
+            x
+        }));
+        self.vertices.positions.extend(other.vertices.positions.into_iter());
+        self.vertices.normals.extend(other.vertices.normals.into_iter());
+        self.vertices.uvs.extend(other.vertices.uvs.into_iter());
+        self.vertices.colors.extend(other.vertices.colors.into_iter());
+        self.vertices.tangents.extend(other.vertices.tangents.into_iter());
+        self
+    }
+}

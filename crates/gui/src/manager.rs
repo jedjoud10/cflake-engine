@@ -1,6 +1,5 @@
 use crate::painter::Painter;
 use parking_lot::Mutex;
-use rendering::pipeline::{pipec, PipelineContext};
 use std::sync::Arc;
 
 // A simple manager
@@ -9,7 +8,7 @@ pub struct GUIManager {
     pub state: egui_winit::State,
 
     // This is an arc, but it should only be called on the render thread for rendering
-    pub painter: Arc<Mutex<Painter>>,
+    pub painter: Painter,
 }
 
 impl GUIManager {

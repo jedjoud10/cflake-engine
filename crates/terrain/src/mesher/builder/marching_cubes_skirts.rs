@@ -1,4 +1,4 @@
-use rendering::basics::mesh::Mesh;
+use rendering::basics::mesh::{Mesh, GeometryBuilder};
 
 use crate::{
     mesher::{
@@ -33,8 +33,9 @@ impl MarchingCubesSkirts {
         if !self.settings.skirts {
             return Mesh::default();
         }
-        // mesh builder data that stores the mesh along with it's custom vdata
+        // Geometry builder
         let mut mesh = Mesh::default();
+        let mut builder = mesh.builder();
         // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
@@ -50,17 +51,17 @@ impl MarchingCubesSkirts {
                 indexing_function,
                 transform_function,
             };
-            self.generate_skirt(voxels, &mut mesh, &skirt_settings);
+            self.generate_skirt(voxels, &mut builder, &skirt_settings);
 
             // Other side
             skirt_settings.flip = !flip;
             skirt_settings.slice_part = true;
-            self.generate_skirt(voxels, &mut mesh, &skirt_settings);
+            self.generate_skirt(voxels, &mut builder, &skirt_settings);
         }
         mesh
     }
     // Generate a whole skirt
-    fn generate_skirt(&self, voxels: &StoredVoxelData, mesh: &mut Mesh, skirt_settings: &SkirtSettings) {
+    fn generate_skirt(&self, voxels: &StoredVoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
         let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -79,7 +80,7 @@ impl MarchingCubesSkirts {
                 // Generate the case
                 if let Some(data) = self.generate_marching_squares_case(voxels, &info) {
                     // And solve the case
-                    Self::solve_marching_squares(mesh, &info, &data)
+                    Self::solve_marching_squares(builder, &info, &data)
                 }
             }
         }
@@ -157,7 +158,7 @@ impl MarchingCubesSkirts {
         })
     }
     // Solve a single marching squares case using a passed function for transforming the vertex position to world space
-    fn solve_marching_squares(mesh: &mut Mesh, info: &InterInfo, data: &SquareData) {
+    fn solve_marching_squares(builder: &mut GeometryBuilder, info: &InterInfo, data: &SquareData) {
         let mut vertices: [veclib::Vector3<f32>; 12] = [veclib::Vector3::ZERO; 12];
         let mut len: usize = 0;
         // Create the triangles from the marching squares case
@@ -190,13 +191,14 @@ impl MarchingCubesSkirts {
                 return;
             }
             // Vertex builder
-            mesh.indices.push(mesh.vertices.len() as u32);
-            mesh.vertices
-                .add()
-                .with_position(vertex)
-                .with_normal(data.normal)
-                .with_color(data.color)
-                .with_uv(veclib::Vector2::new(data.voxel_material, 0));
+            let mut ibuilder = builder.index_builder();
+            let mut vbuilder = builder.vertex_builder();
+            ibuilder.push(vbuilder.vertices.len() as u32);
+            vbuilder
+                .position(vertex)
+                .normal(data.normal)
+                .color(data.color)
+                .uv(veclib::Vector2::new(data.voxel_material, 0));
         }
     }
     // Create a marching squares triangle between 3 skirt voxels
