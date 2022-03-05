@@ -1,7 +1,8 @@
 mod error;
 mod shader;
 mod shared;
-mod builder;
+mod source;
+pub use source::*;
 pub use error::*;
 pub use shader::*;
 pub(crate) use shared::*;

@@ -7,16 +7,17 @@ use std::{
     ptr::null_mut,
 };
 
-use ahash::AHashMap;
-use assets::Asset;
+use ahash::{AHashMap, AHashSet};
+use getset::Getters;
 use gl::types::GLuint;
-
-use crate::basics::uniforms::UniformsDefinitionMap;
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
     IncludeExpansionError, ShaderSource
 };
+
+// Uniforms definition map
+pub type UniformsDefinitionMap = AHashMap<String, i32>;
 
 // Load the files that need to be included for this specific shader and return the included lines
 pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHashMap<String, String>, sources: &AHashMap<String, ShaderSource>, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
@@ -115,7 +116,7 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefi
                 Some((name.clone(), location))
             })
             .collect::<AHashMap<_, _>>();
-        UniformsDefinitionMap { mappings }
+        mappings
     } else {
         UniformsDefinitionMap::default()
     }
@@ -240,6 +241,18 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
     }
 }
 
-// A shader program that contains an OpenGL program ID
-#[derive(Clone, Copy)]
-pub struct ShaderProgram(pub GLuint);
+// Shader init settings (sources, additional code, consts)
+#[derive(Getters)]
+#[getset(get = "pub")]
+pub struct ShaderInitSettings {
+    externals: AHashMap<String, String>,
+    consts: AHashMap<String, String>,
+    sources: AHashSet<String>,
+}
+
+// A shader program that contains an OpenGL program ID and the shader definition map
+#[derive(Default, Clone)]
+pub struct ShaderProgram {
+    pub program: GLuint,
+    pub mappings: UniformsDefinitionMap,
+}

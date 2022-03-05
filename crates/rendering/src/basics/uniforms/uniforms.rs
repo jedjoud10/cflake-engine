@@ -1,29 +1,21 @@
-use std::marker::PhantomData;
-
-use super::{UniformsDefinitionMap};
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
-    basics::{texture::{Texture, TextureAccessType}, shader::ShaderProgram},
-    pipeline::{Pipeline, TextureKey, AtomicGroupKey, ShaderStorageKey},
+    basics::{texture::{Texture, TextureAccessType}, shader::ShaderProgram}, pipeline::{Pipeline, Handle},
 };
 
 // Struct that allows us to set the uniforms for a specific shader
 pub struct Uniforms<'a> {
-    map: &'a UniformsDefinitionMap,
-    program: ShaderProgram,
+    program: &'a ShaderProgram,
     pipeline: &'a Pipeline,
-    _phantom: PhantomData<*const Pipeline>,
 }
 
 // Gotta change the place where this shit is in
 impl<'a> Uniforms<'a> {
-    // Create a new uniforms setter using some shaderuniformssettings and a pipeline
-    pub(crate) fn new(program: ShaderProgram, map: &UniformsDefinitionMap, pipeline: &'a Pipeline, autobind: bool) -> Self {
+    // Create a uniforms setter using a shader program and the pipeline
+    pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline, autobind: bool) -> Self {
         let me = Self {
-            map,
             program,
             pipeline,
-            _phantom: PhantomData::default(),
         };
         // Auto bind
         if autobind {
@@ -34,7 +26,7 @@ impl<'a> Uniforms<'a> {
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
-        self.map.get(name).unwrap_or(-1)
+        self.program.mappings.get(name).unwrap_or(&-1)
     }
     // Bind the shader for execution/rendering
     pub fn bind_shader(&self) {
@@ -151,7 +143,7 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
         }
     }
-    pub fn set_texture(&self, name: &str, texture: TextureKey, active_texture_id: u32) {
+    pub fn set_texture(&self, name: &str, texture: Handle<Texture>, active_texture_id: u32) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -167,7 +159,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
-    pub fn set_image(&self, name: &str, texture: TextureKey, access: TextureAccessType) {
+    pub fn set_image(&self, name: &str, texture: Handle<Texture>, access: TextureAccessType) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -195,7 +187,7 @@ impl<'a> Uniforms<'a> {
             gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
         }
     }
-    pub fn set_atomic_group(&self, _name: &str, atomic_group: AtomicGroupKey, clear: bool, binding: u32) {
+    pub fn set_atomic_group(&self, _name: &str, atomic_group: Handle<AtomicGroup>, clear: bool, binding: u32) {
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group) {
             x
         } else {
@@ -213,7 +205,7 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage(&self, _name: &str, shader_storage: ShaderStorageKey, binding: u32) {
+    pub fn set_shader_storage(&self, _name: &str, shader_storage: Handle<ShaderStorage>, binding: u32) {
         let shader_storage = if let Some(x) = self.pipeline.shader_storages.get(shader_storage) {
             x
         } else {

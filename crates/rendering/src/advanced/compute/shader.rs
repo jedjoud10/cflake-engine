@@ -1,37 +1,34 @@
 use crate::{
     basics::{
-        shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSettings, ShaderSource},
-        uniforms::{ShaderUniformsSettings, Uniforms},
+        shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSource, ShaderProgram, ShaderInitSettings},
+        uniforms::Uniforms
     },
-    pipeline::Pipeline,
+    pipeline::Pipeline, object::OpenGLInitializer,
 };
+use ahash::AHashSet;
+use getset::Getters;
 use gl::types::GLuint;
 use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use super::ComputeShaderExecutionSettings;
 
 // A compute shader that can run parallel calculations on the GPU
+#[derive(Getters)]
 pub struct ComputeShader {
-    // The OpenGL program linked to this compute shader
-    pub(crate) program: GLuint,
-    // We only have one shader source since we are a compute shader
-    pub(crate) source: ShaderSource,
+    // The OpenGL program linked to this shader
+    #[getset(get = "pub")]
+    program: ShaderProgram,
+    // A single shader source
+    #[getset(get = "pub")]
+    source: Option<ShaderSource>,
+
+    // Init settings
+    #[getset(get = "pub")]
+    settings: ShaderInitSettings,
 }
-impl PipelineObject for ComputeShader {
-    // Reserve an ID for this compute shader
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)> {
-        Some((self, pipeline.compute_shaders.gen_id()))
-    }
-    // Send this compute shader to the pipeline for construction
-    fn send(self, id: ObjectID<Self>) -> ConstructionTask {
-        ConstructionTask::ComputeShader(Construct::<Self>(self, id))
-    }
-    // Create a deconstruction task
-    fn pull(id: ObjectID<Self>) -> DeconstructionTask {
-        DeconstructionTask::ComputeShader(Deconstruct::<Self>(id))
-    }
-    // Add the compute shader to our ordered vec
-    fn add(mut self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()> {
+
+impl OpenGLInitializer for ComputeShader {
+    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Actually compile the compute shader now
         println!("Compiling & Creating Compute Shader Source {}...", self.source.path);
         let shader_source_program = unsafe {
@@ -104,25 +101,17 @@ impl PipelineObject for ComputeShader {
             program
         };
         // Add the shader at the end
-        self.program = program;
-        // Add the compute shader
-        pipeline.compute_shaders.insert(id, self);
-        // And also get it's uniform definition map
-        let mappings = query_shader_uniforms_definition_map(program);
-        pipeline.cached.uniform_definitions.insert(program, mappings);
-
-        Some(())
-    }
-    // Remove the compute shader from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self> {
-        pipeline.compute_shaders.remove(id)
+        self.program = ShaderProgram {
+            program,
+            mappings: query_shader_uniforms_definition_map(program),
+        };
     }
 }
 
 impl ComputeShader {
-    // Creates a compute shader from it's corresponding shader settings
-    pub fn new(mut settings: ShaderSettings) -> Result<Self, IncludeExpansionError> {
-        let mut included_paths: HashSet<String> = HashSet::new();
+    // Creates a new compute shader using some shader init settings 
+    pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
+        let mut included_paths: AHashSet<String> = AHashSet::new();
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(&mut settings.sources);
         // Since this is a compute shader, we only have one source
@@ -133,8 +122,13 @@ impl ComputeShader {
             // We are still including paths
         }
         // Add this shader source to be generated as a subshader
-        Ok(Self { program: 0, source: source_data })
+        Ok(Self {
+            program: Default::default(),
+            source: Default::default(),
+            settings,
+        })
     }
+    /*
     // Run a compute shader, and return it's GlTracker
     pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
         // Create some shader uniforms settings that we can use
@@ -153,4 +147,5 @@ impl ComputeShader {
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
         })
     }
+    */
 }

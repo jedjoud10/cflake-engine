@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
-    object::OpenGLObjectNotInitialized,
+    object::{OpenGLObjectNotInitialized, OpenGLInitializer},
     pipeline::Pipeline,
     utils::*,
 };
@@ -39,7 +39,7 @@ pub struct Texture {
     #[getset(get = "pub")]
     ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
-    pub(crate) target: GLuint,
+    target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
     #[getset(get = "pub")]
@@ -47,22 +47,33 @@ pub struct Texture {
     // What kind of wrapping will we use for this texture
     #[getset(get = "pub")]
     wrap_mode: TextureWrapping,
+
     // The border colors
     #[getset(get = "pub")]
     border_colors: [veclib::Vector4<f32>; 4],
-    pub custom_params: SmallVec<[(GLuint, GLuint); 2]>,
+    #[getset(get = "pub")]
+    custom_params: SmallVec<[(GLuint, GLuint); 2]>,
+
     // The dimensions of the texture
     #[getset(get = "pub")]
     dimensions: TextureDimensions,
+
     // How we access this texture on the CPU
-    pub(crate) cpu_access: TextureAccessType,
+    #[getset(get = "pub")]
+    cpu_access: TextureAccessType,
     // Is this texture dynamic
-    pub(crate) dynamic_state: UpdateFrequency,
+    #[getset(get = "pub")]
+    update: UpdateFrequency,
+
     // And the corresponding upload / download PBOs,
-    pub(crate) write_pbo: Option<GLuint>,
-    pub(crate) read_pbo: Option<GLuint>,
+    #[getset(get = "pub")]
+    write_pbo: Option<GLuint>,
+    #[getset(get = "pub")]
+    read_pbo: Option<GLuint>,
+
     // Should we generate mipmaps for this texture
-    pub mipmaps: bool,
+    #[getset(get = "pub")]
+    mipmaps: bool,
 }
 
 impl Default for Texture {
@@ -82,7 +93,7 @@ impl Default for Texture {
             custom_params: SmallVec::default(),
             dimensions: TextureDimensions::Texture2D(0, 0),
             cpu_access: TextureAccessType::empty(),
-            dynamic_state: UpdateFrequency::Static,
+            update: UpdateFrequency::Static,
             write_pbo: None,
             read_pbo: None,
             mipmaps: false,
@@ -196,6 +207,193 @@ impl Texture {
         }
     }
     */
+}
+
+impl OpenGLInitializer for Texture {
+    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
+        self.ifd = get_ifd(self._format, self._type);
+        self.target = match self.dimensions {
+            TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
+            TextureDimensions::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+        fn guess_mipmap_levels(i: usize) -> usize {
+            let mut x: f32 = i as f32;
+            let mut num: usize = 0;
+            while x > 1.0 {
+                // Repeatedly divide by 2
+                x /= 2.0;
+                num += 1;
+            }
+            num
+        }
+
+        let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
+
+        let ifd = get_ifd(self._format, self._type);
+        let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
+
+        // Get the tex_type based on the TextureDimensionType
+        let tex_type = match self.dimensions {
+            TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
+            TextureDimensions::Texture2D(_, _) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3D(_, _, _) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+        };
+        let texel_count = self.count_pixels();
+
+        let mut oid: u32 = 0;
+        unsafe {
+            gl::GenTextures(1, &mut oid as *mut u32);
+            gl::BindTexture(tex_type, oid);
+            if texel_count > 0 {
+                match self.dimensions {
+                    TextureDimensions::Texture1D(width) => {
+                        gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a 2D texture
+                    TextureDimensions::Texture2D(width, height) => {
+                        gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a 3D texture
+                    TextureDimensions::Texture3D(width, height, depth) => {
+                        gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                    }
+                    // This is a texture array
+                    TextureDimensions::Texture2DArray(width, height, depth) => {
+                        gl::TexStorage3D(
+                            tex_type,
+                            guess_mipmap_levels(width.max(height) as usize) as i32,
+                            ifd.0 as u32,
+                            width as i32,
+                            height as i32,
+                            depth as i32,
+                        );
+                        // We might want to do mipmap
+                        for i in 0..depth {
+                            let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
+                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+                        }
+                    }
+                }
+            }
+            // Set the texture parameters for a normal texture
+            match self.filter {
+                TextureFilter::Linear => {
+                    // 'Linear' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                }
+                TextureFilter::Nearest => {
+                    // 'Nearest' filter
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                }
+            }
+        }
+
+        // The texture is already bound to the TEXTURE_2D
+        if self.mipmaps {
+            // Create the mipmaps
+            unsafe {
+                gl::GenerateMipmap(tex_type);
+                // Set the texture parameters for a mipmapped texture
+                match self.filter {
+                    TextureFilter::Linear => {
+                        // 'Linear' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                    }
+                    TextureFilter::Nearest => {
+                        // 'Nearest' filter
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
+                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                    }
+                }
+            }
+        }
+
+        // Create the Upload / Download PBOs if needed
+        if self.cpu_access.contains(TextureAccessType::READ) {
+            // Create a download PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
+                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
+            }
+            self.read_pbo = Some(pbo);
+        } else if self.cpu_access.contains(TextureAccessType::WRITE) {
+            // Create an upload PBO
+            let mut pbo = 0_u32;
+            unsafe {
+                gl::GenBuffers(1, &mut pbo);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
+                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+            }
+            self.write_pbo = Some(pbo);
+        }
+
+        // Set the wrap mode for the texture (Mipmapped or not)
+        let wrapping_mode = match self.wrap_mode {
+            TextureWrapping::ClampToEdge => gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder => gl::CLAMP_TO_BORDER,
+            TextureWrapping::Repeat => gl::REPEAT,
+            TextureWrapping::MirroredRepeat => gl::MIRRORED_REPEAT,
+        };
+        unsafe {
+            // Now set the actual wrapping mode in the opengl texture
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
+            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
+            // And also border colors
+            use veclib::Vector;
+            let ptr = self.border_colors.get(0).unwrap().as_ptr();
+            gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
+        }
+
+        // Set the custom parameter
+        for (name, param) in &self.custom_params {
+            unsafe {
+                gl::TexParameteri(tex_type, *name, *param as i32);
+            }
+        }
+
+        // Add the texture
+        self.oid = oid;
+        unsafe {
+            gl::BindTexture(tex_type, 0);
+        }
+    }
+}
+
+impl Asset for Texture {
+    fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    where
+        Self: Sized {
+        // Read bytes
+        pub fn read_bytes(bytes: &[u8]) -> (Vec<u8>, u16, u16) {
+            // Load this texture from the bytes
+            let image = image::load_from_memory(bytes).unwrap();
+            let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
+            // Flip
+            let image = image.flipv();
+            (image.to_bytes(), image.width() as u16, image.height() as u16)
+        }
+        // Load this texture from the bytes
+        let (bytes, width, height) = read_bytes(bytes);
+
+        // Return a texture with the default parameters
+        let builder = Self::default()
+            .with_bytes(bytes)
+            .with_dimensions(TextureDimensions::Texture2D(width, height))
+            .with_format(TextureFormat::RGBA8R)
+            .with_data_type(DataType::U8);
+        Some(builder)
+    }
 }
 
 impl Drop for Texture {
