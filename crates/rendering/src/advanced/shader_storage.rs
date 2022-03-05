@@ -1,3 +1,4 @@
+use getset::{MutGetters, Getters};
 use gl::types::GLuint;
 use std::{ffi::c_void, ptr::null, mem::size_of};
 
@@ -16,15 +17,11 @@ use crate::{
 use super::raw::dynamic_buffer::DynamicRawBuffer;
 
 // An OpenGL SSBO
+#[derive(Getters, MutGetters)]
 pub struct ShaderStorage<T> {
     // Backed by a dynamic raw buffer
+    #[getset(get = "pub", get_mut = "pub")]
     storage: DynamicRawBuffer<T>
-}
-
-// Getters and mut getters
-impl<T> ShaderStorage<T> {
-    pub fn storage(&self) -> &DynamicRawBuffer<T> { &self.storage }
-    pub fn storage_mut(&mut self) -> &mut DynamicRawBuffer<T> { &mut self.storage }
 }
 
 impl<T> ShaderStorage<T> {

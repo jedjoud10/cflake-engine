@@ -7,7 +7,9 @@ impl TextureBundler {
     // This will use the settings of the first texture in the array
     pub fn convert_texturearray(textures: &[Texture]) -> TextureBuilder {
         // We get the main dimensions from the first texture
-        let dimensions = textures.get(0).unwrap().dimensions().as_texture2d().unwrap();
+        let first = textures.get(0).unwrap();
+        let first_dimensions = first.dimensions();
+        let dimensions = first_dimensions.as_texture2d().unwrap();
         let (width, height) = (dimensions.x, dimensions.y);
 
         // Load the bytes

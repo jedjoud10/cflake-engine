@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 // Time info about the current frame
+#[derive(Clone, Copy)]
 pub struct FrameTimings {
     // How much time has elapsed in this frame
     pub begin_instant: Instant,
@@ -9,6 +10,7 @@ pub struct FrameTimings {
 }
 
 // Static time variables
+#[derive(Clone, Copy)]
 pub struct Time {
     // How much time has elapsed since the start of the game
     pub elapsed: f64,

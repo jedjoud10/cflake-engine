@@ -11,6 +11,7 @@ use crate::{
 };
 
 use assets::Asset;
+use getset::{CopyGetters, Getters};
 use gl::{
     self,
     types::{GLint, GLuint},
@@ -20,51 +21,48 @@ use smallvec::SmallVec;
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping};
 
 // A texture
+#[derive(CopyGetters, Getters)]
 pub struct Texture {
     // The OpenGL id for this texture
+    #[getset(get_copy = "pub(crate)")]
     oid: GLuint,
     // The bytes stored in this texture
+    #[getset(get = "pub")]
     bytes: Vec<u8>,
 
     // The internal format of the texture
+    #[getset(get_copy = "pub")]
     _format: TextureFormat,
     // The data type that this texture uses for storage
+    #[getset(get_copy = "pub")]
     _type: DataType,
     // Internal Format, Format, Data
+    #[getset(get_copy = "pub(crate)")]
     ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
+    #[getset(get_copy = "pub(crate)")]
     target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
+    #[getset(get_copy = "pub")]
     filter: TextureFilter,
     // What kind of wrapping will we use for this texture
+    #[getset(get_copy = "pub")]
     wrap_mode: TextureWrapping,
 
     // The border colors
+    #[getset(get = "pub")]
     custom_params: SmallVec<[(GLuint, GLuint); 2]>,
 
     // The dimensions of the texture
+    #[getset(get_copy = "pub")]
     dimensions: TextureDimensions,
 
     // TODO: Re-implement the texture download/upload buffers with dynamic/static/stream textures
 
     // Should we generate mipmaps for this texture
+    #[getset(get_copy = "pub")]
     mipmaps: bool,
-}
-
-// Getters and setters
-impl Texture {
-    pub(crate) fn oid(&self) -> GLuint { self.oid }
-    pub fn bytes(&self) -> &Vec<u8> { &self.bytes }
-    pub fn _format(&self) -> TextureFormat { self._format }
-    pub fn _type(&self) -> DataType { self._type }
-    pub(crate) fn ifd(&self) -> (GLint, GLuint, GLuint) { self.ifd }
-    pub(crate) fn target(&self) -> GLuint { self.target }
-    pub fn filter(&self) -> TextureFilter { self.filter }
-    pub fn wrap_mode(&self) -> TextureWrapping { self.wrap_mode }
-    pub fn custom_params(&self) -> &SmallVec<[(GLuint, GLuint); 2]> { &self.custom_params }
-    pub fn dimensions(&self) -> &TextureDimensions { &self.dimensions }
-    pub fn mipmaps(&self) -> bool { self.mipmaps }
 }
 
 impl Default for Texture {
@@ -131,18 +129,7 @@ impl Texture {
         // This is a normal texture getting resized
         unsafe {
             gl::BindTexture(self.target, self.oid);
-            match dims {
-                TextureDimensions::Texture1d(width) => {
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureDimensions::Texture2d(xy) => {
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, xy.x as i32, xy.y as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureDimensions::Texture3d(xyz) => {
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, xyz.x as i32, xyz.y as i32, xyz.z as i32, 0, ifd.1, ifd.2, null());
-                }
-                TextureDimensions::Texture2dArray(_) => todo!(),
-            }
+            init_contents(self.target, self.ifd, null(), self.dimensions);
         }
         Ok(())
     }
@@ -152,7 +139,7 @@ impl Texture {
         let pointer: *const c_void = self.bytes.as_ptr() as *const c_void;
         unsafe {
             gl::BindTexture(self.target, self.oid);
-            init_contents(self.target, self.ifd, pointer, self.dimensions)
+            update_contents(self.target, self.ifd, pointer, self.dimensions)
         }
         Ok(())
     }
@@ -226,6 +213,27 @@ unsafe fn init_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer: *
                 let localized_bytes = pointer.offset(i as isize * dims.y as isize * 4 * dims.x as isize) as *const c_void;
                 gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, dims.x as i32, dims.y as i32, 1, ifd.1, ifd.2, localized_bytes);
             }
+        }
+    }
+}
+
+// Update the contents of an already existing OpenGL texture
+unsafe fn update_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer: *const c_void, dimensions: TextureDimensions) {
+    match dimensions {
+        TextureDimensions::Texture1d(width) => {
+            gl::TexSubImage1D(target, 0, 0, width as i32, ifd.1, ifd.2, pointer);
+        }
+        // This is a 2D texture
+        TextureDimensions::Texture2d(dims) => {
+            gl::TexSubImage2D(target, 0, 0, 0, dims.x as i32, dims.y as i32, ifd.1, ifd.2, pointer);
+        }
+        // This is a 3D texture
+        TextureDimensions::Texture3d(dims) => {
+            gl::TexSubImage3D(target, 0, 0, 0, 0, dims.x as i32, dims.y as i32, dims.z as i32, ifd.1, ifd.2, pointer);
+        }
+        // This is a texture array
+        TextureDimensions::Texture2dArray(dims) => {
+            todo!()
         }
     }
 }

@@ -6,16 +6,20 @@ use crate::{
     pipeline::Pipeline, object::PipelineCollectionElement,
 };
 use ahash::{AHashSet, AHashMap};
+use getset::Getters;
 use gl::types::GLuint;
 use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use super::ComputeShaderExecutionSettings;
 
 // A compute shader that can run parallel calculations on the GPU
+#[derive(Getters)]
 pub struct ComputeShader {
     // The OpenGL program linked to this shader
+    #[getset(get = "pub")]
     program: ShaderProgram,
     // Init settings
+    #[getset(get = "pub")]
     settings: ShaderInitSettings,
 }
 

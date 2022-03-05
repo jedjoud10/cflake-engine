@@ -145,7 +145,7 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
         }
     }
-    pub fn set_texture(&mut self, name: &str, texture: Handle<Texture>, active_texture_id: u32) {
+    pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>, active_texture_id: u32) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -161,7 +161,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
-    pub fn set_image(&mut self, name: &str, texture: Handle<Texture>, access: TextureAccessType) {
+    pub fn set_image(&mut self, name: &str, texture: &Handle<Texture>, access: TextureAccessType) {
         let location = self.get_location(name);
         if location == -1 {
             return;

@@ -4,14 +4,16 @@ use crate::object::PipelineCollectionElement;
 
 use super::{Vertices, GeometryBuilder, Indices, VertexBuilder, IndexBuilder};
 use assets::Asset;
+use getset::Getters;
 use gl::types::GLuint;
 use obj::TexturedVertex;
 use veclib::{vec2, vec3};
 
 // A simple mesh that holds vertex, normal, and color data
-#[derive(Default)]
+#[derive(Default, Getters)]
 pub struct Mesh {
     // Main IDs
+    #[getset(get = "pub(crate)")]
     vao: GLuint,
 
     // Vertex attributes IDs
@@ -27,18 +29,13 @@ pub struct Mesh {
     pub uv_buf: u32,
     */
     // Store the vertices (in multiple bufer or in a single big buffer)
+    #[getset(get = "pub")]
     vertices: Vertices,
 
     // Triangles
+    #[getset(get = "pub")]
     indices: Indices,
 }
-
-// Getters, 
-impl Mesh {
-    pub(crate) fn vao(&self) -> GLuint { self.vao }
-    pub fn vertices(&self) -> &Vertices { &self.vertices }
-    pub fn indices(&self) -> &Indices { &self.indices }
-} 
 
 impl Asset for Mesh {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
@@ -84,7 +81,7 @@ impl PipelineCollectionElement for Mesh {
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (self.indices().len() * size_of::<u32>()) as isize,
-                self.indices().indices.as_ptr() as *const c_void,
+                self.indices().as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
 
@@ -210,8 +207,7 @@ impl Mesh {
     // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja. 
     pub fn combine(mut self, other: Mesh) -> Mesh {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
-        // TODO: Implement basic iterator types (Iterator, IntoIter) for indices and vertices
-        self.indices.indices.extend(other.indices.indices.into_iter().map(|mut x| {
+        self.indices.extend(other.indices.into_iter().map(|mut x| {
             x += max_triangle_index;
             x
         }));

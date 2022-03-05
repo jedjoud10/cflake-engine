@@ -1,24 +1,23 @@
+use getset::{Getters, CopyGetters};
 use gl::types::GLuint;
 use crate::{utils::UsageType, pipeline::Pipeline};
 use std::{ffi::c_void, mem::size_of, ptr::null, marker::PhantomData, ops::Range};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
+#[derive(Getters, CopyGetters)]
 pub struct DynamicRawBuffer<T> {
     // The OpenGL data for this buffer
+    #[getset(get_copy = "pub")]
     buffer: GLuint,
+    #[getset(get_copy = "pub")]
     _type: GLuint,
 
     // Other data
+    #[getset(get_copy = "pub")]
     usage: UsageType,
+    #[getset(get = "pub")]
     inner: Vec<T>,
     _phantom: PhantomData<*const ()>,
-}
-
-// Getters
-impl<T> DynamicRawBuffer<T> {
-    pub fn buffer(&self) -> GLuint { self.buffer }
-    pub fn usage(&self) -> UsageType { self.usage }
-    pub fn inner(&self) -> &Vec<T> { &self.inner }
 }
 
 // Creation

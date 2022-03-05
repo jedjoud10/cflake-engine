@@ -30,17 +30,9 @@ impl GUIManager {
         self.egui.begin_frame(raw_input);
     }
     // End frame
-    pub fn end_frame(&mut self) {
+    pub fn draw_frame(&mut self, pipeline: &mut Pipeline) {
         let (output, clipped_shapes) = self.egui.end_frame();
         let meshes = self.egui.tessellate(clipped_shapes);
-
-        // Draw
-
-        /*
-        // Set the values using the arc
-        painter.clipped_meshes = meshes;
-        painter.output = output;
-        painter.egui_font_image_arc = self.egui.font_image();
-        */
+        self.painter.draw_gui(pipeline, meshes, self.egui.font_image().as_ref(), output);
     }
 }

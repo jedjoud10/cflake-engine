@@ -9,6 +9,7 @@ use std::{
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
+use getset::{Getters, CopyGetters};
 use gl::types::GLuint;
 
 use crate::basics::shader::ShaderSourceType;
@@ -393,14 +394,10 @@ impl ShaderInitSettingsBuilder {
 }
 
 // A shader program that contains an OpenGL program ID and the shader definition map
-#[derive(Default, Clone)]
+#[derive(Getters, CopyGetters, Default, Clone)]
 pub struct ShaderProgram {
+    #[getset(get_copy = "pub")]
     program: GLuint,
+    #[getset(get = "pub")]
     mappings: UniformsDefinitionMap,
-}
-
-// Getters
-impl ShaderProgram {
-    pub fn program(&self) -> GLuint { self.program }
-    pub fn mappings(&self) -> &UniformsDefinitionMap { &self.mappings } 
 }

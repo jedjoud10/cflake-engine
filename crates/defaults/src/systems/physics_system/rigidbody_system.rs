@@ -11,16 +11,16 @@ use world::{ecs::event::EventKey, physics::rapier3d::prelude::ColliderBuilder};
 fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
     // Convert vertices and indices
     let vertices = mesh
-        .vertices
+        .vertices()
         .positions
         .iter()
         // Scale the points by the scale matrix
         .map(|vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
-    let indices = mesh.indices.chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
-    dbg!(mesh.indices.len());
-    dbg!(mesh.vertices.len());
+    let indices = mesh.indices().chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
+    dbg!(mesh.indices().len());
+    dbg!(mesh.vertices().len());
     // Done
     SharedShape::trimesh(vertices, indices)
 }
