@@ -24,7 +24,8 @@ use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDim
 #[derive(Getters)]
 pub struct Texture {
     // The OpenGL id for this texture
-    pub(crate) oid: GLuint,
+    #[getset(get = "pub(crate)")]
+    oid: GLuint,
     // The bytes stored in this texture
     #[getset(get = "pub")]
     bytes: Vec<u8>,
@@ -39,6 +40,7 @@ pub struct Texture {
     #[getset(get = "pub")]
     ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
+    #[getset(get = "pub(crate)")]
     target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
@@ -91,7 +93,7 @@ impl Default for Texture {
             wrap_mode: TextureWrapping::Repeat,
             border_colors: [veclib::Vector4::<f32>::ZERO; 4],
             custom_params: SmallVec::default(),
-            dimensions: TextureDimensions::Texture2D(0, 0),
+            dimensions: TextureDimensions::Texture2D(veclib::Vector2::ZERO),
             cpu_access: TextureAccessType::empty(),
             update: UpdateFrequency::Static,
             write_pbo: None,
@@ -214,9 +216,9 @@ impl OpenGLInitializer for Texture {
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.dimensions {
             TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
-            TextureDimensions::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureDimensions::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureDimensions::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+            TextureDimensions::Texture2D(_) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3D(_) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2DArray(_) => gl::TEXTURE_2D_ARRAY,
         };
         // Guess how many mipmap levels a texture with a specific maximum coordinate can have
         fn guess_mipmap_levels(i: usize) -> usize {
@@ -238,9 +240,9 @@ impl OpenGLInitializer for Texture {
         // Get the tex_type based on the TextureDimensionType
         let tex_type = match self.dimensions {
             TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
-            TextureDimensions::Texture2D(_, _) => gl::TEXTURE_2D,
-            TextureDimensions::Texture3D(_, _, _) => gl::TEXTURE_3D,
-            TextureDimensions::Texture2DArray(_, _, _) => gl::TEXTURE_2D_ARRAY,
+            TextureDimensions::Texture2D(_) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3D(_) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2DArray(_) => gl::TEXTURE_2D_ARRAY,
         };
         let texel_count = self.count_pixels();
 
@@ -254,27 +256,27 @@ impl OpenGLInitializer for Texture {
                         gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
                     }
                     // This is a 2D texture
-                    TextureDimensions::Texture2D(width, height) => {
-                        gl::TexImage2D(tex_type, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                    TextureDimensions::Texture2D(dims) => {
+                        gl::TexImage2D(tex_type, 0, ifd.0, dims.x as i32, dims.y as i32, 0, ifd.1, ifd.2, pointer);
                     }
                     // This is a 3D texture
-                    TextureDimensions::Texture3D(width, height, depth) => {
-                        gl::TexImage3D(tex_type, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                    TextureDimensions::Texture3D(dims) => {
+                        gl::TexImage3D(tex_type, 0, ifd.0, dims.x as i32, dims.y as i32, dims.z as i32, 0, ifd.1, ifd.2, pointer);
                     }
                     // This is a texture array
-                    TextureDimensions::Texture2DArray(width, height, depth) => {
+                    TextureDimensions::Texture2DArray(dims) => {
                         gl::TexStorage3D(
                             tex_type,
-                            guess_mipmap_levels(width.max(height) as usize) as i32,
+                            guess_mipmap_levels((dims.x).max(dims.y) as usize) as i32,
                             ifd.0 as u32,
-                            width as i32,
-                            height as i32,
-                            depth as i32,
+                            dims.x as i32,
+                            dims.y as i32,
+                            dims.z as i32,
                         );
                         // We might want to do mipmap
-                        for i in 0..depth {
-                            let localized_bytes = self.bytes[(i as usize * height as usize * 4 * width as usize)..self.bytes.len()].as_ptr() as *const c_void;
-                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, width as i32, height as i32, 1, ifd.1, ifd.2, localized_bytes);
+                        for i in 0..dims.z {
+                            let localized_bytes = self.bytes[(i as usize * dims.y as usize * 4 * dims.x as usize)..self.bytes.len()].as_ptr() as *const c_void;
+                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, dims.x as i32, dims.y as i32, 1, ifd.1, ifd.2, localized_bytes);
                         }
                     }
                 }
@@ -374,18 +376,15 @@ impl Asset for Texture {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized {
-        // Read bytes
-        pub fn read_bytes(bytes: &[u8]) -> (Vec<u8>, u16, u16) {
-            // Load this texture from the bytes
-            let image = image::load_from_memory(bytes).unwrap();
-            let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
-            // Flip
-            let image = image.flipv();
-            (image.to_bytes(), image.width() as u16, image.height() as u16)
-        }
         // Load this texture from the bytes
-        let (bytes, width, height) = read_bytes(bytes);
-
+        // Load this texture from the bytes
+        let image = image::load_from_memory(bytes).unwrap();
+        let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
+        // Flip
+        let image = image.flipv();
+        let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
+        None
+        /*
         // Return a texture with the default parameters
         let builder = Self::default()
             .with_bytes(bytes)
@@ -393,6 +392,7 @@ impl Asset for Texture {
             .with_format(TextureFormat::RGBA8R)
             .with_data_type(DataType::U8);
         Some(builder)
+        */
     }
 }
 

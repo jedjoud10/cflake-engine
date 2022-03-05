@@ -1,6 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use arrayvec::ArrayVec;
+use getset::Getters;
 use gl::types::GLuint;
 
 use crate::{
@@ -11,10 +12,11 @@ use crate::{
 
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
-#[derive(Default, Clone)]
+#[derive(Getters, Default, Clone)]
 pub struct AtomicGroup {
     // The OpenGL ID for the atomic counter buffer
-    pub(crate) buffer: GLuint,
+    #[getset(get = "pub(crate)")]
+    buffer: GLuint,
 }
 
 impl OpenGLInitializer for AtomicGroup {

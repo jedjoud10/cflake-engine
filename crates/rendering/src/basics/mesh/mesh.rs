@@ -44,6 +44,8 @@ impl Asset for Mesh {
         // Generate the tangents
         // Create the actual Mesh now
         let mut mesh = Mesh::default();
+        None
+        /*
         for vertex in parsed_obj.vertices {
             mesh.vertices
                 .builder()
@@ -53,6 +55,7 @@ impl Asset for Mesh {
         }
         mesh.indices = parsed_obj.indices;
         Some(mesh)
+        */
     }
 }
 
@@ -60,8 +63,7 @@ impl OpenGLInitializer for Mesh {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh
         if self.vertices().is_empty() { 
-            // We simply don't have any vertices to render
-            return Some(self);
+            return;
         } 
 
         unsafe {

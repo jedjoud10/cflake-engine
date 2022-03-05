@@ -11,6 +11,7 @@ pub enum TextureFilter {
 // Texture wrapping filters
 #[derive(Debug, Clone, Copy)]
 pub enum TextureWrapping {
+    // TODO: Border colors directly here
     ClampToEdge,
     ClampToBorder,
     Repeat,
@@ -24,12 +25,6 @@ pub enum TextureDimensions {
     Texture2D(veclib::Vector2<u16>),
     Texture3D(veclib::Vector3<u16>),
     Texture2DArray(veclib::Vector3<u16>),
-}
-
-impl Default for TextureDimensions {
-    fn default() -> Self {
-        Self::Texture2D(0, 0)
-    }
 }
 
 // How we can access the texture

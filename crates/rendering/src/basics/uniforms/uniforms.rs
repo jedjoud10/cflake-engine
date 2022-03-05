@@ -19,24 +19,26 @@ impl<'a> Uniforms<'a> {
         };
         // Auto bind
         if autobind {
-            me.bind_shader();
+            me.bind();
         }
         me
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
-        self.program.mappings.get(name).unwrap_or(&-1)
+        self.program.mappings.get(name).cloned().unwrap_or(-1)
     }
     // Bind the shader for execution/rendering
-    pub fn bind_shader(&self) {
-        unsafe { gl::UseProgram(self.program) }
+    pub fn bind(&self) {
+        unsafe { gl::UseProgram(self.program.program) }
+        /*
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.time.0 as f32);
         self.set_f32("_delta", self.pipeline.time.1 as f32);
         self.set_vec2i32("_resolution", self.pipeline.window.dimensions.into());
         let camera = &self.pipeline.camera;
         self.set_vec2f32("_nf_planes", camera.clip_planes);
+        */
     }
     // U32
     pub fn set_u32(&self, name: &str, val: u32) {
@@ -155,7 +157,7 @@ impl<'a> Uniforms<'a> {
         };
         unsafe {
             gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
-            gl::BindTexture(texture.target, texture.oid);
+            gl::BindTexture(*texture.target(), *texture.oid());
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
@@ -183,25 +185,20 @@ impl<'a> Uniforms<'a> {
             }
         };
         unsafe {
-            gl::BindTexture(texture.target, texture.oid);
-            gl::BindImageTexture(location as u32, texture.oid, 0, gl::FALSE, 0, new_access_type, (texture.ifd).0 as u32);
+            gl::BindTexture(*texture.target(), *texture.oid());
+            gl::BindImageTexture(location as u32, *texture.oid(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
-    pub fn set_atomic_group(&self, _name: &str, atomic_group: Handle<AtomicGroup>, clear: bool, binding: u32) {
+    pub fn set_atomic_group(&self, _name: &str, atomic_group: Handle<AtomicGroup>, binding: u32) {
         let atomic_group = if let Some(x) = self.pipeline.atomics.get(atomic_group) {
             x
         } else {
             return;
         };
 
-        // Clear if we want to
-        if clear {
-            atomic_group.clear_counters().unwrap();
-        }
-
         unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic_group.oid);
-            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic_group.oid);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, *atomic_group.buffer());
+            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, *atomic_group.buffer());
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
@@ -212,8 +209,8 @@ impl<'a> Uniforms<'a> {
             return;
         };
         unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.oid);
-            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.oid);
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, *shader_storage.buffer());
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, *shader_storage.buffer());
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
     }

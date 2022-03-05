@@ -25,14 +25,16 @@ impl Shader {
     // Creates a new shader using some shader init settings 
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and edit them
-        for (source_path, source_data) in settings.sources_mut().iter_mut() {
+        let mut sources = std::mem::take(settings.sources_mut());
+        for (_, source) in sources.iter_mut() {
             let mut included_paths: AHashSet<String> = AHashSet::new();
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while load_includes(&settings, &mut source_data.text_mut(), &mut included_paths)? {
+            while load_includes(&settings, &mut source.text_mut(), &mut included_paths)? {
                 // We are still including paths
             }
         }
+        *settings.sources_mut() = sources;
 
         // Add this shader source to be generated as a subshader
         Ok(Self {

@@ -18,6 +18,7 @@ use crate::{
 #[derive(Getters)]
 pub struct ShaderStorage {
     // The OpenGL name for the underlying buffer
+    #[getset(get = "pub(crate)")]
     buffer: GLuint,
     // How we access the shader storage
     #[getset(get = "pub")]

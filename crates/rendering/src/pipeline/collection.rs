@@ -29,7 +29,7 @@ impl<T> PipelineCollection<T> {
     
     // Insert an element to the collection, returning it's specific handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
-        let inner = self.inner.borrow_mut();
+        let mut inner = self.inner.borrow_mut();
         let key = inner.insert(value);
         Handle {
             inner: Some(self.inner.clone()),

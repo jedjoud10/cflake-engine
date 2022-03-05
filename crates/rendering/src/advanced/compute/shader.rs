@@ -33,14 +33,16 @@ impl OpenGLInitializer for ComputeShader {
 impl ComputeShader {
     // Creates a new compute shader using some shader init settings 
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
+        // Loop through the shader sources and edit them
+        let mut sources = std::mem::take(settings.sources_mut());
+        let (_, source) = sources.iter_mut().nth(0).unwrap();
         let mut included_paths: AHashSet<String> = AHashSet::new();
-        // Since this is a compute shader, we only have one source
         // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
         // Include the includables until they cannot be included
-        let (_, source) = settings.sources().iter_mut().nth(0).unwrap();
         while load_includes(&settings, &mut source.text_mut(), &mut included_paths)? {
             // We are still including paths
         }
+        *settings.sources_mut() = sources;
         // Add this shader source to be generated as a subshader
         Ok(Self {
             program: Default::default(),

@@ -14,9 +14,9 @@ pub struct AudioSource {
 
 // Each audio source is loadable
 impl assets::Asset for AudioSource {
-    fn load_raw(_meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<AudioSource>
+    fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        AudioSource: Sized {
+        Self: Sized {
         // Rodio moment
         let cursor = Cursor::new(bytes.to_vec());
         let read = Decoder::new(cursor).unwrap().buffered();

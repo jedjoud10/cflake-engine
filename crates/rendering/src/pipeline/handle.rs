@@ -32,10 +32,10 @@ impl<T> Clone for Handle<T> {
 impl<T> Drop for Handle<T> {
     // Remove the element if this is the last strong handle it has
     fn drop(&mut self) {
-        if let Some(inner) = self.inner {
+        if let Some(inner) = &self.inner {
             let strong_count = Rc::strong_count(&self.key);
             if strong_count == 0 {
-                let inner = inner.borrow_mut();
+                let mut inner = inner.borrow_mut();
                 inner.remove(*self.key).unwrap();
             }
         }
