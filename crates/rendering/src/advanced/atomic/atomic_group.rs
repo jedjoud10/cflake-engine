@@ -15,24 +15,21 @@ use crate::{
 pub struct AtomicGroup {
     // The OpenGL ID for the atomic counter buffer
     pub(crate) buffer: GLuint,
-    // Some predefined values that we can set before we execute the shader
-    pub(crate) defaults: ArrayVec<u32, 4>,
 }
 
 impl OpenGLInitializer for AtomicGroup {
     // Create the OpenGL buffers for this atomic group
     fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {
-        self.buffer = unsafe {
+        unsafe {
             // Create the OpenGL buffer
-            let mut buffer = 0u32;
-            gl::GenBuffers(1, &mut buffer);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
+            gl::GenBuffers(1, &mut self.buffer);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
 
             // Initialize it's data
             gl::BufferData(
                 gl::ATOMIC_COUNTER_BUFFER,
-                size_of::<u32>() as isize * self.defaults.len() as isize,
-                self.defaults.as_ptr() as *const c_void,
+                size_of::<u32>() as isize * 4,
+                null(),
                 gl::DYNAMIC_DRAW,
             );
 
@@ -43,12 +40,6 @@ impl OpenGLInitializer for AtomicGroup {
 }
 
 impl AtomicGroup {
-    // Create a new atomic counter with some predefined values
-    pub fn new(vals: &[u32]) -> Option<Self> {
-        let mut arrayvec = ArrayVec::<u32, 4>::new();
-        arrayvec.try_extend_from_slice(vals).ok()?;
-        Some(Self { buffer: 0, defaults: arrayvec })
-    }
     /*
     // Read/set the value of an atomic group
     pub fn buffer_operation(&self, op: BufferOperation) -> GlTracker {
@@ -76,19 +67,18 @@ impl AtomicGroup {
         }
     }
     */
-    // Clear the atomic group counters
-    pub(crate) fn clear_counters(&self) -> Result<(), OpenGLObjectNotInitialized> {
-        if self.buffer {
+    // Set the atomic group counters
+    pub fn set(&mut self, counters: &[u32; 4]) -> Result<(), OpenGLObjectNotInitialized> {
+        if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
         unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.oid);
-            let reset = self.defaults.as_ptr();
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
             gl::BufferSubData(
                 gl::ATOMIC_COUNTER_BUFFER,
                 0,
-                size_of::<u32>() as isize * self.defaults.len() as isize,
-                reset as *const c_void,
+                size_of::<u32>() as isize * 4,
+                counters.as_ptr() as *const c_void,
             );
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }

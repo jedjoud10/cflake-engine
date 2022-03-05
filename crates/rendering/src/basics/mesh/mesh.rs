@@ -10,7 +10,7 @@ use veclib::{vec2, vec3};
 use getset::Getters;
 
 // A simple mesh that holds vertex, normal, and color data
-#[derive(Getters)]
+#[derive(Default, Getters)]
 pub struct Mesh {
     // Main IDs
     pub(crate) vertex_array_object: GLuint,
@@ -181,9 +181,7 @@ impl Drop for Mesh {
             gl::DeleteBuffers(self.buffers.len() as i32, self.buffers.as_ptr());
 
             // Delete the vertex array
-            if gl::IsVertexArray(self.vertex_array_object) {
-                gl::DeleteVertexArrays(1, &self.vertex_array_object);
-            }
+            gl::DeleteVertexArrays(1, &self.vertex_array_object);
         }
     }
 }

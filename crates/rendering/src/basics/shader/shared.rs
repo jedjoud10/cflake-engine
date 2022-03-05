@@ -4,12 +4,14 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::null_mut,
+    ptr::{null_mut, null},
 };
 
 use ahash::{AHashMap, AHashSet};
-use getset::Getters;
+use getset::{Getters, MutGetters};
 use gl::types::GLuint;
+
+use crate::basics::shader::ShaderSourceType;
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
@@ -20,7 +22,7 @@ use super::{
 pub type UniformsDefinitionMap = AHashMap<String, i32>;
 
 // Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHashMap<String, String>, sources: &AHashMap<String, ShaderSource>, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
+pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, included_paths: &mut AHashSet<String>) -> Result<bool, IncludeExpansionError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
     for (_i, line) in lines.iter_mut().enumerate() {
@@ -34,7 +36,7 @@ pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHash
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                String::load(local_path)
+                assets::assetc::load(local_path)
                     .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
@@ -49,7 +51,8 @@ pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHash
             // Get the source
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
             let source_name = &c[2..(c.len() - 2)].to_string();
-            let source = externals
+            let source = settings
+                .externals()
                 .get(source_name)
                 .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
             *line = source.clone();
@@ -78,7 +81,7 @@ pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHash
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let x = consts.get(const_name);
+            let x = settings.consts().get(const_name);
             if let Some(x) = x {
                 *line = format(line, x);
                 Ok(())
@@ -98,6 +101,107 @@ pub(crate) fn load_includes(externals: &AHashMap<String, String>, consts: &AHash
         .iter()
         .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
     Ok(need_to_continue)
+}
+
+// Compile a whole shader using it's sources
+pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> ShaderProgram {
+    // Loop through all the subshaders and link them
+    // Extract the shader name
+    let shader_name = sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
+
+    // Actually compile the shader now
+    println!("Compiling & Creating Shader {}...", shader_name);
+    let program = unsafe {
+        let program = gl::CreateProgram();
+
+        // Create & compile the shader sources and link them
+        let programs: Vec<u32> = sources.iter().map(|(_path, data)| compile_source(data)).collect::<Vec<_>>();
+        // Link
+        for shader in programs.iter() {
+            gl::AttachShader(program, *shader)
+        }
+
+        // Finalize the shader and stuff
+        gl::LinkProgram(program);
+
+        // Check for any errors
+        let mut info_log_length: i32 = 0;
+        let info_log_length_ptr: *mut i32 = &mut info_log_length;
+        let mut result: i32 = 0;
+        let result_ptr: *mut i32 = &mut result;
+        gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+        gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
+        // Print any errors that might've happened while finalizing this shader
+        if info_log_length > 0 {
+            let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+            gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+            println!("Error while finalizing shader {}!:", shader_name);
+            let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+            let string = String::from_utf8(printable_log).unwrap();
+            println!("Error: \n{}", string);
+            panic!();
+        }
+        // Detach shaders
+        for shader in programs.iter() {
+            gl::DetachShader(program, *shader);
+        }
+        println!("Shader {} compiled and created succsessfully!", shader_name);
+        program
+    };
+    // Add the shader at the end
+    ShaderProgram {
+        program,
+        mappings: query_shader_uniforms_definition_map(program),
+    }
+}
+
+// Compile a shader source
+pub(crate) fn compile_source(source: &ShaderSource) -> GLuint {
+    println!("Compiling & Creating Shader Source {}...", source.file());            
+    let shader_type: u32 = match source._type() {
+        ShaderSourceType::Vertex => gl::VERTEX_SHADER,
+        ShaderSourceType::Fragment => gl::FRAGMENT_SHADER,
+        ShaderSourceType::Compute => gl::COMPUTE_SHADER, 
+    };
+    unsafe {
+        // Compiling the source
+        let program = gl::CreateShader(shader_type);
+
+        // Compile the shader
+        let cstring = CString::new(source.text().clone()).unwrap();
+        let shader_source: *const i8 = cstring.as_ptr();
+        gl::ShaderSource(program, 1, &shader_source, null());
+        gl::CompileShader(program);
+
+        // Check for any errors
+        let mut info_log_length: i32 = 0;
+        let info_log_length_ptr: *mut i32 = &mut info_log_length;
+        gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+        
+        // Print any errors that might've happened while compiling this shader source
+        if info_log_length > 0 {
+            let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+            gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+            println!("Error while compiling shader source {} of type {:?}!:", source.file(), source._type());
+            let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+            let string = String::from_utf8(printable_log).unwrap();
+
+            // Put the line count
+            let error_source_lines = source.text().lines().enumerate();
+            let error_source = error_source_lines
+                .into_iter()
+                .map(|(count, line)| format!("({}): {}", count + 1, line))
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            println!("{}", error_source);
+            println!("Error: \n{}", string);
+            panic!();
+        }
+
+        println!("Shader Source {} compiled succsessfully!", source.file());
+        program
+    }
 }
 
 // Get the uniform definition map from a shader using the query API
@@ -242,12 +346,14 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
 }
 
 // Shader init settings (sources, additional code, consts)
-#[derive(Getters)]
-#[getset(get = "pub")]
+#[derive(Getters, MutGetters)]
 pub struct ShaderInitSettings {
+    #[getset(get = "pub")]
     externals: AHashMap<String, String>,
+    #[getset(get = "pub")]
     consts: AHashMap<String, String>,
-    sources: AHashSet<String>,
+    #[getset(get = "pub", get_mut = "pub(crate)")]
+    sources: AHashMap<String, ShaderSource>,
 }
 
 // A shader program that contains an OpenGL program ID and the shader definition map

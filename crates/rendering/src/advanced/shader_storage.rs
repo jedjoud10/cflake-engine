@@ -1,6 +1,6 @@
 use getset::Getters;
 use gl::types::GLuint;
-use std::{ffi::c_void, ptr::null};
+use std::{ffi::c_void, ptr::null, mem::size_of};
 
 use crate::{
     basics::{
@@ -31,15 +31,10 @@ impl OpenGLInitializer for ShaderStorage {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the SSBO
         unsafe {
-            gl::GenBuffers(1, &mut self.oid);
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.oid);
-            // Get the default data if we need to
-            let data_ptr = if !self.bytes.is_empty() {
-                self.bytes.as_ptr() as *const c_void
-            } else {
-                null() as *const c_void
-            };
-            gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, data_ptr, self.usage.convert());
+            gl::GenBuffers(1, &mut self.buffer);
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.buffer);
+            gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, null(), self.usage.convert());
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
     }
 }
@@ -48,11 +43,11 @@ impl OpenGLInitializer for ShaderStorage {
 
 impl ShaderStorage {
     // Create a new empty shader storage
-    pub fn new(usage: UsageType, byte_size: usize) -> Self {
+    pub fn new<T: Sized>(usage: UsageType) -> Self {
         Self {
             buffer: 0,
             usage,
-            byte_size,
+            byte_size: size_of::<T>(),
         }
     }
     /*

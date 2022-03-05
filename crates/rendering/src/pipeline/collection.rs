@@ -15,14 +15,16 @@ pub struct PipelineCollection<T> {
 
 impl<T> PipelineCollection<T> {
     // Get an element
-    pub fn get(&self, handle: Handle<T>) -> Ref<Option<T>> {
+    pub fn get(&self, handle: Handle<T>) -> Option<Ref<T>> {
         let inner = self.inner.borrow();
-        Ref::map(inner, |slotmap| slotmap.get(handle.key))
+        if !inner.contains_key(*handle.key) { return None; }        
+        Some(Ref::map(inner, |slotmap| slotmap.get(*handle.key).unwrap()))
     }
     // Mutably get an element
-    pub fn get_mut(&self, handle: Handle<T>) -> RefMut<Option<T>> {
+    pub fn get_mut(&self, handle: Handle<T>) -> Option<RefMut<T>> {
         let inner = self.inner.borrow_mut();
-        RefMut::map(inner, |slotmap| slotmap.get(handle.key))
+        if !inner.contains_key(*handle.key) { return None; }
+        Some(RefMut::map(inner, |slotmap| slotmap.get_mut(*handle.key).unwrap()))
     }
     
     // Insert an element to the collection, returning it's specific handle
@@ -30,7 +32,7 @@ impl<T> PipelineCollection<T> {
         let inner = self.inner.borrow_mut();
         let key = inner.insert(value);
         Handle {
-            inner: self.inner.clone(),
+            inner: Some(self.inner.clone()),
             key: Rc::new(key),
         }
     }
