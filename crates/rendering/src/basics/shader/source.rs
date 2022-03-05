@@ -25,7 +25,7 @@ impl Default for ShaderSourceType {
 }
 
 // Shader source type
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ShaderSourceType {
     Vertex,
     Fragment,

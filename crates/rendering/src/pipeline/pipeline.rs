@@ -10,8 +10,6 @@ pub struct Pipeline {
     pub shaders: PipelineCollection< Shader>,
     pub compute_shaders: PipelineCollection<ComputeShader>,
     pub textures: PipelineCollection<Texture>,
-    pub atomics: PipelineCollection<AtomicGroup>,
-    pub shader_storages: PipelineCollection<ShaderStorage>,
 
     // TODO: Specifiy
     pub materials: PipelineCollection<Material>,

@@ -1,6 +1,5 @@
 use std::rc::Rc;
-use slotmap::Key;
-
+use slotmap::{Key, KeyData};
 use super::InnerPipelineCollection;
 
 // A unique pipeline collection key

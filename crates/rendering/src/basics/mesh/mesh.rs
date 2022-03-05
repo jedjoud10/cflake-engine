@@ -7,16 +7,15 @@ use assets::Asset;
 use gl::types::GLuint;
 use obj::TexturedVertex;
 use veclib::{vec2, vec3};
-use getset::Getters;
 
 // A simple mesh that holds vertex, normal, and color data
-#[derive(Default, Getters)]
+#[derive(Default)]
 pub struct Mesh {
     // Main IDs
-    pub(crate) vertex_array_object: GLuint,
+    vao: GLuint,
 
     // Vertex attributes IDs
-    pub(crate) buffers: [GLuint; 6],
+    buffers: [GLuint; 6],
     /*
     pub element_buffer_object: u32,
 
@@ -28,13 +27,18 @@ pub struct Mesh {
     pub uv_buf: u32,
     */
     // Store the vertices (in multiple bufer or in a single big buffer)
-    #[getset(get = "pub")]
     vertices: Vertices,
 
     // Triangles
-    #[getset(get = "pub")]
     indices: Indices,
 }
+
+// Getters, 
+impl Mesh {
+    pub(crate) fn vao(&self) -> GLuint { self.vao }
+    pub fn vertices(&self) -> &Vertices { &self.vertices }
+    pub fn indices(&self) -> &Indices { &self.indices }
+} 
 
 impl Asset for Mesh {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
@@ -68,8 +72,8 @@ impl PipelineCollectionElement for Mesh {
 
         unsafe {
             // Create the VAO
-            gl::GenVertexArrays(1, &mut self.vertex_array_object);
-            gl::BindVertexArray(self.vertex_array_object);
+            gl::GenVertexArrays(1, &mut self.vao);
+            gl::BindVertexArray(self.vao);
 
             // We can create all the buffers at once
             let mut buffers = [0_u32; 6];
@@ -181,7 +185,7 @@ impl PipelineCollectionElement for Mesh {
             gl::DeleteBuffers(self.buffers.len() as i32, self.buffers.as_ptr());
 
             // Delete the vertex array
-            gl::DeleteVertexArrays(1, &self.vertex_array_object);
+            gl::DeleteVertexArrays(1, &self.vao);
         }
     }
 }
@@ -202,31 +206,34 @@ impl Mesh {
     */
 }
 
-/*
-
-// Create the mesh with a specific vertices
-    pub fn with_vertices(mut self, f: impl FnMut(&mut Vertices)) -> Self {
-        let vertices = &mut self.inner.vertices;
-        f(vertices);
+impl Mesh {
+    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja. 
+    pub fn combine(mut self, other: Mesh) -> Mesh {
+        let max_triangle_index: u32 = self.vertices.positions.len() as u32;
+        // TODO: Implement basic iterator types (Iterator, IntoIter) for indices and vertices
+        self.indices.indices.extend(other.indices.indices.into_iter().map(|mut x| {
+            x += max_triangle_index;
+            x
+        }));
+        self.vertices.positions.extend(other.vertices.positions.into_iter());
+        self.vertices.normals.extend(other.vertices.normals.into_iter());
+        self.vertices.uvs.extend(other.vertices.uvs.into_iter());
+        self.vertices.colors.extend(other.vertices.colors.into_iter());
+        self.vertices.tangents.extend(other.vertices.tangents.into_iter());
         self
     }
-    // Combine a mesh with our internal one, and return the new mesh builder
-    pub fn with_combined_mesh(mut self, other: Self) -> Self {
-        
-    }
     // Procedurally generate the normals for this mesh
-    pub fn with_generated_normals(mut self) {
+    pub fn generate_normals(mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
-        let mut mesh = self.inner;
-        let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; mesh.vertices.positions.len()];
+        let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
         for i in 0..(self.indices.len() / 3) {
             // Calculate the face normal
-            let (i1, i2, i3) = (mesh.indices[i * 3], mesh.indices[i * 3 + 1], mesh.indices[i * 3 + 2]);
+            let (i1, i2, i3) = (self.indices[i * 3], self.indices[i * 3 + 1], self.indices[i * 3 + 2]);
             // Get the actual vertices
-            let a = mesh.vertices.positions.get(i1 as usize).unwrap();
-            let b = mesh.vertices.positions.get(i2 as usize).unwrap();
-            let c = mesh.vertices.positions.get(i3 as usize).unwrap();
+            let a = self.vertices.positions.get(i1 as usize).unwrap();
+            let b = self.vertices.positions.get(i2 as usize).unwrap();
+            let c = self.vertices.positions.get(i3 as usize).unwrap();
 
             // Calculate
             let d1 = b - a;
@@ -245,24 +252,6 @@ impl Mesh {
         }
 
         // Update our normals
-        mesh.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
-    }
-    */
-
-impl Mesh {
-    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja. 
-    pub fn combine(mut self, other: Mesh) -> Mesh {
-        let max_triangle_index: u32 = self.vertices.positions.len() as u32;
-        // TODO: Implement basic iterator types (Iterator, IntoIter) for indices and vertices
-        self.indices.indices.extend(other.indices.indices.into_iter().map(|mut x| {
-            x += max_triangle_index;
-            x
-        }));
-        self.vertices.positions.extend(other.vertices.positions.into_iter());
-        self.vertices.normals.extend(other.vertices.normals.into_iter());
-        self.vertices.uvs.extend(other.vertices.uvs.into_iter());
-        self.vertices.colors.extend(other.vertices.colors.into_iter());
-        self.vertices.tangents.extend(other.vertices.tangents.into_iter());
-        self
+        self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
     }
 }

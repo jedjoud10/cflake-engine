@@ -10,51 +10,28 @@ use crate::{
         },
     },
     pipeline::Pipeline,
-    utils::UsageType, object::PipelineCollectionElement,
+    utils::{UsageType, AccessType, UpdateFrequency}, object::PipelineCollectionElement,
 };
 
+use super::raw::dynamic_buffer::DynamicRawBuffer;
+
 // An OpenGL SSBO
-pub struct ShaderStorage {
-    // The OpenGL name for the underlying buffer
-    buffer: GLuint,
-    // How we access the shader storage
-    usage: UsageType,
-    // The size in bytes of the underlying data
-    byte_size: usize,
+pub struct ShaderStorage<T> {
+    // Backed by a dynamic raw buffer
+    storage: DynamicRawBuffer<T>
 }
 
-// Getters
-impl ShaderStorage {
-    pub(crate) fn buffer(&self) -> GLuint { self.buffer }
-    pub fn usage(&self) -> UsageType { self.usage }
-    pub fn byte_size(&self) -> usize { self.byte_size }
+// Getters and mut getters
+impl<T> ShaderStorage<T> {
+    pub fn storage(&self) -> &DynamicRawBuffer<T> { &self.storage }
+    pub fn storage_mut(&mut self) -> &mut DynamicRawBuffer<T> { &mut self.storage }
 }
 
-impl PipelineCollectionElement for ShaderStorage {
-    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
-        // Create the SSBO
-        unsafe {
-            gl::GenBuffers(1, &mut self.buffer);
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, self.buffer);
-            gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, null(), self.usage.convert());
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
-        }
-    }
-
-    fn disposed(self) {
-        todo!()
-    }
-}
-
-
-
-impl ShaderStorage {
+impl<T> ShaderStorage<T> {
     // Create a new empty shader storage
-    pub fn new<T: Sized>(usage: UsageType) -> Self {
+    pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {
-            buffer: 0,
-            usage,
-            byte_size: size_of::<T>(),
+            storage: DynamicRawBuffer::<T>::new(gl::SHADER_STORAGE_BUFFER, UsageType::new(AccessType::Draw, UpdateFrequency::Dynamic), _pipeline),
         }
     }
     /*

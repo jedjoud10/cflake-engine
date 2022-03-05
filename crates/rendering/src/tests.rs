@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::basics::{mesh::Mesh, shader::{ShaderInitSettingsBuilder, ShaderSource}, material::Material};
+    use crate::{basics::{mesh::Mesh, shader::{ShaderInitSettingsBuilder, ShaderSource, Directive}, material::{Material, MaterialTextures}}, pipeline::Handle};
 
     // Test mesh generation
     #[test]
@@ -19,12 +19,18 @@ pub mod tests {
     #[test]
     fn builder() {
         // Shader builder load thingy
-        let settings = ShaderInitSettingsBuilder::default().directive_const("lol", "bozo").build();
+        let settings = ShaderInitSettingsBuilder::default().directive("lol", Directive::Const("cock".to_string())).build();
     }
 
     // Material test
     #[test]
     fn material() {
-        let mat = Material::default().textures_mut().set_diffuse_map(todo!());
+        let mat = Material {
+            textures: MaterialTextures {
+                diffuse_map: Handle::default(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
     }
 }

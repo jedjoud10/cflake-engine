@@ -6,7 +6,7 @@ use std::{
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::Pipeline,
+    pipeline::{Pipeline, Handle},
     utils::*,
 };
 

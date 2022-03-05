@@ -366,10 +366,11 @@ pub struct ShaderInitSettings {
 impl ShaderInitSettings {
     pub fn directives(&self) -> &AHashMap<String, Directive> { &self.directives }
     pub fn sources(&self) -> &AHashMap<String, ShaderSource> { &self.sources }
-    pub fn sources_mut(&self) -> &mut AHashMap<String, ShaderSource> { &mut self.sources }
+    pub fn sources_mut(&mut self) -> &mut AHashMap<String, ShaderSource> { &mut self.sources }
 }
 
 // Shader init settings builder
+#[derive(Default)]
 pub struct ShaderInitSettingsBuilder {
     inner: ShaderInitSettings,
 }
