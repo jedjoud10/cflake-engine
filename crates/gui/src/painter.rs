@@ -4,7 +4,7 @@ use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings, ShaderInitSettingsBuilder},
-        texture::{Texture, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping},
+        texture::{Texture, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping, TextureBuilder},
         uniforms::Uniforms,
     },
     pipeline::{Pipeline, Handle},
@@ -37,20 +37,23 @@ impl Painter {
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipeline.shaders.insert(shader);
         // Load the egui font texture
-        let egui_font_texture = Texture::default()
-            .with_filter(TextureFilter::Linear)
-            .with_format(TextureFormat::RGBA8R)
-            .with_wrapping_mode(TextureWrapping::ClampToEdge)
-            .with_data_type(DataType::U8)
-            .with_mipmaps(false);
-        let egui_font_texture = pipec::construct(pipeline, egui_font_texture).unwrap();
+        let egui_font_texture = TextureBuilder::default()
+            .filter(TextureFilter::Linear)
+            ._format(TextureFormat::RGBA8R)
+            .wrap_mode(TextureWrapping::ClampToEdge {
+                border_color: veclib::Vector4::ZERO,
+            })
+            ._type(DataType::U8)
+            .mipmaps(true)
+            .build();
+        let egui_font_texture = pipeline.textures.insert(egui_font_texture);
         Self {
             shader,
             egui_font_texture,
             egui_font_image_arc: Default::default(),
             clipped_meshes: Default::default(),
             output: Default::default(),
-            buffers: Buffers::new(),
+            buffers: Buffers::new(pipeline),
             egui_font_texture_version: Default::default(),
         }
     }
@@ -142,7 +145,7 @@ impl Painter {
         // Update the OpenGL version
         let gl_tex = pipeline.textures.get_mut(self.egui_font_texture);
         if let Some(gl_tex) = gl_tex {
-            let dimensions = TextureDimensions::Texture2D(texture.width as u16, texture.height as u16);
+            let dimensions = TextureDimensions::Texture2d(texture.width as u16, texture.height as u16);
             gl_tex.update_size_fill(dimensions, bytes).unwrap();
             // Don't forget to update the version
             self.egui_font_texture_version = Some(texture.version);

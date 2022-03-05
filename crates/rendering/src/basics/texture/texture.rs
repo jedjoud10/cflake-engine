@@ -22,7 +22,7 @@ use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDim
 // A texture
 pub struct Texture {
     // The OpenGL id for this texture
-    glname: GLuint,
+    oid: GLuint,
     // The bytes stored in this texture
     bytes: Vec<u8>,
 
@@ -54,8 +54,8 @@ pub struct Texture {
 
 // Getters and setters
 impl Texture {
-    pub(crate) fn glname(&self) -> GLuint { self.glname }
-    pub fn bytes(&self) -> &Vec<u8> { self.bytes() }
+    pub(crate) fn oid(&self) -> GLuint { self.oid }
+    pub fn bytes(&self) -> &Vec<u8> { &self.bytes }
     pub fn _format(&self) -> TextureFormat { self._format }
     pub fn _type(&self) -> DataType { self._type }
     pub(crate) fn ifd(&self) -> (GLint, GLuint, GLuint) { self.ifd }
@@ -70,7 +70,7 @@ impl Texture {
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            glname: 0,
+            oid: 0,
             bytes: Vec::new(),
 
             _format: TextureFormat::RGBA8R,
@@ -81,91 +81,82 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
             custom_params: SmallVec::default(),
-            dimensions: TextureDimensions::Texture2D(veclib::Vector2::ZERO),
+            dimensions: TextureDimensions::Texture2d(veclib::Vector2::ZERO),
             mipmaps: false,
         }
     }
 }
-// Create a texture and send it to the pipeline so we can actually create it on the GPU
+
+// Builder
+#[derive(Default)]
+pub struct TextureBuilder {
+    inner: Texture
+}
+
+impl TextureBuilder {
+    // This burns my eyes
+    pub fn bytes(mut self, bytes: Vec<u8>) -> Self { self.inner.bytes = bytes; self }
+    pub fn _format(mut self, _format: TextureFormat) -> Self { self.inner._format = _format; self }
+    pub fn _type(mut self, _type: DataType) -> Self { self.inner._type = _type; self }
+    pub fn filter(mut self, filter: TextureFilter) -> Self { self.inner.filter = filter; self }
+    pub fn wrap_mode(mut self, wrapping: TextureWrapping) -> Self { self.inner.wrap_mode = wrapping; self }
+    pub fn custom_params(mut self, params: &[(GLuint, GLuint)]) -> Self { self.inner.custom_params = SmallVec::from_slice(params); self }
+    pub fn dimensions(mut self, dims: TextureDimensions) -> Self { self.inner.dimensions = dims; self }
+    pub fn mipmaps(mut self, enabled: bool) -> Self { self.inner.mipmaps = enabled; self }
+
+    // Build
+    pub fn build(self) -> Texture { self.inner }
+}
+
+
 impl Texture {
     // Count the numbers of pixels that this texture can contain
-    pub fn count_pixels(&self) -> usize {
+    pub fn count_texels(&self) -> usize {
         match self.dimensions {
-            TextureDimensions::Texture1D(x) => (x as usize),
-            TextureDimensions::Texture2D(xy) => (xy.x as usize * xy.y as usize),
-            TextureDimensions::Texture3D(xyz) => (xyz.x as usize * xyz.y as usize * xyz.z as usize),
-            TextureDimensions::Texture2DArray(xyz) => (xyz.x as usize * xyz.y as usize * xyz.z as usize),
+            TextureDimensions::Texture1d(x) => (x as usize),
+            TextureDimensions::Texture2d(xy) => (xy.x as usize * xy.y as usize),
+            TextureDimensions::Texture3d(xyz) => (xyz.x as usize * xyz.y as usize * xyz.z as usize),
+            TextureDimensions::Texture2dArray(xyz) => (xyz.x as usize * xyz.y as usize * xyz.z as usize),
         }
     }
-    /*
-    // Zip up all the pixel bytes from multiple textures
-    pub fn pack_bytes(textures: &[&Texture]) -> Option<Vec<u8>> {
-        // Load the bytes
-        let mut bytes: Vec<u8> = Vec::new();
-        let width = textures.get(0)?.dimensions.get_width();
-        let height = textures.get(0)?.dimensions.get_height();
-        for texture in textures {
-            // Check if we have the same settings
-            if texture.dimensions.get_height() != height || texture.dimensions.get_width() != width {
-                return None;
-            }
-            bytes.extend(texture.bytes.iter());
-        }
-        Some(bytes)
-    }
-    // Convert an array of CPU textures to a TextureArray
-    // This will use the settings of the first texture in the array
-    pub fn convert_texturearray(textures: Vec<&Texture>) -> Option<Texture> {
-        let width = textures.get(0)?.dimensions.get_width();
-        let height = textures.get(0)?.dimensions.get_height();
-        Some(Texture {
-            bytes: Self::pack_bytes(&textures)?,
-            dimensions: TextureDimensions::Texture2DArray(width, height, textures.len() as u16),
-            ..Texture::default()
-        })
-    }
-    // Convert an array of CPU textures to a 3D Texture
-    pub fn convert_3d(textures: Vec<&Texture>) -> Option<Texture> {
-        let width = textures.get(0)?.dimensions.get_width();
-        let height = textures.get(0)?.dimensions.get_height();
-        Some(Texture {
-            bytes: Self::pack_bytes(&textures)?,
-            dimensions: TextureDimensions::Texture3D(width, height, textures.len() as u16),
-            ..Texture::default()
-        })
-    }
-    
-    // Set the inner data of the texture, and resize it
-    pub fn update_size_fill(&mut self, tt: TextureDimensions, bytes: Vec<u8>) -> Result<(), OpenGLObjectNotInitialized> {
+    // Set some new dimensions for this texture
+    // This also clears the texture
+    pub fn set_dimensions(&mut self, dims: TextureDimensions) -> Result<(), OpenGLObjectNotInitialized> {
         if self.oid == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
-
-        let pointer: *const c_void = if !bytes.is_empty() { bytes.as_ptr() as *const c_void } else { null() };
-
         // Check if the current dimension type matches up with the new one
-        self.dimensions = tt;
+        self.dimensions = dims;
         let ifd = self.ifd;
         // This is a normal texture getting resized
         unsafe {
-            match tt {
-                TextureDimensions::Texture1D(width) => {
-                    gl::BindTexture(gl::TEXTURE_1D, self.oid);
-                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+            gl::BindTexture(self.target, self.oid);
+            match dims {
+                TextureDimensions::Texture1d(width) => {
+                    gl::TexImage1D(gl::TEXTURE_2D, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, null());
                 }
-                TextureDimensions::Texture2D(width, height) => {
-                    gl::BindTexture(gl::TEXTURE_2D, self.oid);
-                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, width as i32, height as i32, 0, ifd.1, ifd.2, pointer);
+                TextureDimensions::Texture2d(xy) => {
+                    gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0, xy.x as i32, xy.y as i32, 0, ifd.1, ifd.2, null());
                 }
-                TextureDimensions::Texture3D(width, height, depth) => {
-                    gl::BindTexture(gl::TEXTURE_3D, self.oid);
-                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, width as i32, height as i32, depth as i32, 0, ifd.1, ifd.2, pointer);
+                TextureDimensions::Texture3d(xyz) => {
+                    gl::TexImage3D(gl::TEXTURE_3D, 0, ifd.0, xyz.x as i32, xyz.y as i32, xyz.z as i32, 0, ifd.1, ifd.2, null());
                 }
-                TextureDimensions::Texture2DArray(_, _, _) => todo!(),
+                TextureDimensions::Texture2dArray(_) => todo!(),
             }
         }
         Ok(())
     }
+    // Set the texture's bytes (it's contents)
+    pub fn set_bytes(&mut self, bytes: Vec<u8>) -> Result<(), OpenGLObjectNotInitialized> {
+        self.bytes = bytes;
+        let pointer: *const c_void = self.bytes.as_ptr() as *const c_void;
+        unsafe {
+            gl::BindTexture(self.target, self.oid);
+            init_contents(self.target, self.ifd, pointer, self.dimensions)
+        }
+        Ok(())
+    }
+    /*
     // Read/write the bytes
     pub(crate) fn buffer_operation(&self, op: BufferOperation) -> GlTracker {
         match op {
@@ -195,136 +186,112 @@ impl Texture {
     */
 }
 
+// Initialize the contents of an OpenGL texture using it's dimensions and bytes
+unsafe fn init_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer: *const c_void, dimensions: TextureDimensions) {
+    // Guess how many mipmap levels a texture with a specific maximum coordinate can have
+    fn guess_mipmap_levels(i: usize) -> usize {
+        let mut x: f32 = i as f32;
+        let mut num: usize = 0;
+        while x > 1.0 {
+            // Repeatedly divide by 2
+            x /= 2.0;
+            num += 1;
+        }
+        num
+    }
+    match dimensions {
+        TextureDimensions::Texture1d(width) => {
+            gl::TexImage1D(target, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
+        }
+        // This is a 2D texture
+        TextureDimensions::Texture2d(dims) => {
+            gl::TexImage2D(target, 0, ifd.0, dims.x as i32, dims.y as i32, 0, ifd.1, ifd.2, pointer);
+        }
+        // This is a 3D texture
+        TextureDimensions::Texture3d(dims) => {
+            gl::TexImage3D(target, 0, ifd.0, dims.x as i32, dims.y as i32, dims.z as i32, 0, ifd.1, ifd.2, pointer);
+        }
+        // This is a texture array
+        TextureDimensions::Texture2dArray(dims) => {
+            gl::TexStorage3D(
+                target,
+                guess_mipmap_levels((dims.x).max(dims.y) as usize) as i32,
+                ifd.0 as u32,
+                dims.x as i32,
+                dims.y as i32,
+                dims.z as i32,
+            );
+            // We might want to do mipmap
+            for i in 0..dims.z {
+                let localized_bytes = pointer.offset(i as isize * dims.y as isize * 4 * dims.x as isize) as *const c_void;
+                gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, dims.x as i32, dims.y as i32, 1, ifd.1, ifd.2, localized_bytes);
+            }
+        }
+    }
+}
+
 impl PipelineCollectionElement for Texture {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.dimensions {
-            TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
-            TextureDimensions::Texture2D(_) => gl::TEXTURE_2D,
-            TextureDimensions::Texture3D(_) => gl::TEXTURE_3D,
-            TextureDimensions::Texture2DArray(_) => gl::TEXTURE_2D_ARRAY,
+            TextureDimensions::Texture1d(_) => gl::TEXTURE_1D,
+            TextureDimensions::Texture2d(_) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3d(_) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2dArray(_) => gl::TEXTURE_2D_ARRAY,
         };
-        // Guess how many mipmap levels a texture with a specific maximum coordinate can have
-        fn guess_mipmap_levels(i: usize) -> usize {
-            let mut x: f32 = i as f32;
-            let mut num: usize = 0;
-            while x > 1.0 {
-                // Repeatedly divide by 2
-                x /= 2.0;
-                num += 1;
-            }
-            num
-        }
-
         let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
 
         let ifd = get_ifd(self._format, self._type);
-        let bytes_count = calculate_size_bytes(&self._format, self.count_pixels());
-
         // Get the tex_type based on the TextureDimensionType
-        let tex_type = match self.dimensions {
-            TextureDimensions::Texture1D(_) => gl::TEXTURE_1D,
-            TextureDimensions::Texture2D(_) => gl::TEXTURE_2D,
-            TextureDimensions::Texture3D(_) => gl::TEXTURE_3D,
-            TextureDimensions::Texture2DArray(_) => gl::TEXTURE_2D_ARRAY,
+        let target = match self.dimensions {
+            TextureDimensions::Texture1d(_) => gl::TEXTURE_1D,
+            TextureDimensions::Texture2d(_) => gl::TEXTURE_2D,
+            TextureDimensions::Texture3d(_) => gl::TEXTURE_3D,
+            TextureDimensions::Texture2dArray(_) => gl::TEXTURE_2D_ARRAY,
         };
-        let texel_count = self.count_pixels();
-
-        let mut oid: u32 = 0;
         unsafe {
-            gl::GenTextures(1, &mut oid as *mut u32);
-            gl::BindTexture(tex_type, oid);
-            if texel_count > 0 {
-                match self.dimensions {
-                    TextureDimensions::Texture1D(width) => {
-                        gl::TexImage1D(tex_type, 0, ifd.0, width as i32, 0, ifd.1, ifd.2, pointer);
-                    }
-                    // This is a 2D texture
-                    TextureDimensions::Texture2D(dims) => {
-                        gl::TexImage2D(tex_type, 0, ifd.0, dims.x as i32, dims.y as i32, 0, ifd.1, ifd.2, pointer);
-                    }
-                    // This is a 3D texture
-                    TextureDimensions::Texture3D(dims) => {
-                        gl::TexImage3D(tex_type, 0, ifd.0, dims.x as i32, dims.y as i32, dims.z as i32, 0, ifd.1, ifd.2, pointer);
-                    }
-                    // This is a texture array
-                    TextureDimensions::Texture2DArray(dims) => {
-                        gl::TexStorage3D(
-                            tex_type,
-                            guess_mipmap_levels((dims.x).max(dims.y) as usize) as i32,
-                            ifd.0 as u32,
-                            dims.x as i32,
-                            dims.y as i32,
-                            dims.z as i32,
-                        );
-                        // We might want to do mipmap
-                        for i in 0..dims.z {
-                            let localized_bytes = self.bytes[(i as usize * dims.y as usize * 4 * dims.x as usize)..self.bytes.len()].as_ptr() as *const c_void;
-                            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, i as i32, dims.x as i32, dims.y as i32, 1, ifd.1, ifd.2, localized_bytes);
-                        }
-                    }
-                }
+            gl::GenTextures(1, &mut self.oid);
+            gl::BindTexture(target, self.oid);
+            // Set the texture contents
+            if !self.bytes.is_empty() {
+                init_contents(target, ifd, pointer, self.dimensions);
             }
             // Set the texture parameters for a normal texture
             match self.filter {
                 TextureFilter::Linear => {
                     // 'Linear' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                    gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                    gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
                 }
                 TextureFilter::Nearest => {
                     // 'Nearest' filter
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-                    gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                    gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+                    gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
                 }
             }
         }
 
-        // The texture is already bound to the TEXTURE_2D
+        // The texture is already bound
         if self.mipmaps {
-            // Create the mipmaps
             unsafe {
-                gl::GenerateMipmap(tex_type);
+                // Create the mipmaps
+                gl::GenerateMipmap(target);
                 // Set the texture parameters for a mipmapped texture
-                match self.filter {
+                let (min, mag) = match self.filter {
                     TextureFilter::Linear => {
+                        (gl::LINEAR_MIPMAP_LINEAR, gl::LINEAR)
                         // 'Linear' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
                     }
                     TextureFilter::Nearest => {
                         // 'Nearest' filter
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MIN_FILTER, gl::NEAREST_MIPMAP_NEAREST as i32);
-                        gl::TexParameteri(tex_type, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+                        (gl::NEAREST_MIPMAP_NEAREST, gl::NEAREST)
                     }
-                }
+                };
+                // Set
+                gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, min as i32);
+                gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, mag as i32);
             }
         }
-
-        // Create the Upload / Download PBOs if needed
-        /*
-        if self.cpu_access.contains(TextureAccessType::READ) {
-            // Create a download PBO
-            let mut pbo = 0_u32;
-            unsafe {
-                gl::GenBuffers(1, &mut pbo);
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_PACK_BUFFER, bytes_count as isize, null(), gl::STREAM_COPY);
-                gl::BindBuffer(gl::PIXEL_PACK_BUFFER, 0);
-            }
-            self.read_pbo = Some(pbo);
-        } else if self.cpu_access.contains(TextureAccessType::WRITE) {
-            // Create an upload PBO
-            let mut pbo = 0_u32;
-            unsafe {
-                gl::GenBuffers(1, &mut pbo);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
-                gl::BufferData(gl::PIXEL_UNPACK_BUFFER, bytes_count as isize, null(), gl::STREAM_DRAW);
-                gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
-            }
-            self.write_pbo = Some(pbo);
-        }
-        */
 
         // Set the wrap mode for the texture (Mipmapped or not)
         let wrapping_mode = match self.wrap_mode {
@@ -335,14 +302,14 @@ impl PipelineCollectionElement for Texture {
         };
         unsafe {
             // Now set the actual wrapping mode in the opengl texture
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
-            gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
+            gl::TexParameteri(target, gl::TEXTURE_WRAP_S, wrapping_mode as i32);
+            gl::TexParameteri(target, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
             // And also border colors
             use veclib::Vector;
             match self.wrap_mode {
                 TextureWrapping::ClampToBorder { border_color } | TextureWrapping::ClampToEdge { border_color } => {
                     let ptr = border_color.as_ptr();
-                    gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
+                    gl::TexParameterfv(target, gl::TEXTURE_BORDER_COLOR, ptr);
                 }
                 _ => {}
             }            
@@ -351,21 +318,18 @@ impl PipelineCollectionElement for Texture {
         // Set the custom parameter
         for (name, param) in &self.custom_params {
             unsafe {
-                gl::TexParameteri(tex_type, *name, *param as i32);
+                gl::TexParameteri(target, *name, *param as i32);
             }
         }
-
-        // Add the texture
-        self.glname = oid;
         unsafe {
-            gl::BindTexture(tex_type, 0);
+            gl::BindTexture(target, 0);
         }
     }
 
     fn disposed(self) {
         // Dispose of the OpenGL buffers
         unsafe {
-            gl::DeleteTextures(1, &self.glname);
+            gl::DeleteTextures(1, &self.oid);
         }
     }
 }

@@ -146,7 +146,7 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
 }
 
 // Calculate the size of a TextureFormat
-pub(crate) fn calculate_size_bytes(format: &TextureFormat, pixel_count: usize) -> usize {
+pub(crate) fn calculate_size_bytes(format: TextureFormat, pixel_count: usize) -> usize {
     let bytes_per_pixel = match format {
         TextureFormat::R8R | TextureFormat::R8RS | TextureFormat::R8I => size_of::<u8>(),
         TextureFormat::RG8R | TextureFormat::RG8RS | TextureFormat::RG8I => size_of::<u8>() * 2,

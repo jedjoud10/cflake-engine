@@ -16,7 +16,7 @@ pub struct DynamicRawBuffer<T> {
 
 // Getters
 impl<T> DynamicRawBuffer<T> {
-    pub(crate) fn buffer(&self) -> GLuint { self.buffer }
+    pub fn buffer(&self) -> GLuint { self.buffer }
     pub fn usage(&self) -> UsageType { self.usage }
     pub fn inner(&self) -> &Vec<T> { &self.inner }
 }

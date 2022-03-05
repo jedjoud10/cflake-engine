@@ -20,10 +20,11 @@ pub enum TextureWrapping {
 // Texture dimensions
 #[derive(EnumAsInner, Debug, Clone, Copy)]
 pub enum TextureDimensions {
-    Texture1D(u16),
-    Texture2D(veclib::Vector2<u16>),
-    Texture3D(veclib::Vector3<u16>),
-    Texture2DArray(veclib::Vector3<u16>),
+    // TODO: I hate this
+    Texture1d(u16),
+    Texture2d(veclib::Vector2<u16>),
+    Texture3d(veclib::Vector3<u16>),
+    Texture2dArray(veclib::Vector3<u16>),
 }
 
 // How we can access the texture

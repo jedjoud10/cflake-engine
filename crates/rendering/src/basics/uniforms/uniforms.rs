@@ -157,7 +157,7 @@ impl<'a> Uniforms<'a> {
         };
         unsafe {
             gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
-            gl::BindTexture(texture.target(), texture.glname());
+            gl::BindTexture(texture.target(), texture.oid());
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
@@ -185,8 +185,8 @@ impl<'a> Uniforms<'a> {
             }
         };
         unsafe {
-            gl::BindTexture(texture.target(), texture.glname());
-            gl::BindImageTexture(location as u32, texture.glname(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
+            gl::BindTexture(texture.target(), texture.oid());
+            gl::BindImageTexture(location as u32, texture.oid(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
     pub fn set_atomic_group(&mut self, _name: &str, atomic_group: &mut AtomicGroup, binding: u32) {
