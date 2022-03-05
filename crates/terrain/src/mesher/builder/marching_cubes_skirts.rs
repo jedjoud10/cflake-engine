@@ -190,11 +190,8 @@ impl MarchingCubesSkirts {
             if i == len {
                 return;
             }
-            // Vertex builder
-            let mut ibuilder = builder.index_builder();
-            let mut vbuilder = builder.vertex_builder();
-            ibuilder.push(vbuilder.vertices.len() as u32);
-            vbuilder
+            builder.index_builder.push(builder.vertex_builder.vertices.len() as u32);
+            builder.vertex_builder
                 .position(vertex)
                 .normal(data.normal)
                 .color(data.color)

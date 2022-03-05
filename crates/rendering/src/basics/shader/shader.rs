@@ -2,7 +2,7 @@ use ahash::{AHashMap, AHashSet};
 use getset::Getters;
 use gl::types::GLuint;
 use crate::basics::shader::{query_shader_uniforms_definition_map, ShaderSourceType, compile_source};
-use crate::object::OpenGLInitializer;
+use crate::object::OpenGLHandler;
 use super::{UniformsDefinitionMap, ShaderSource, ShaderInitSettings, compile_shader};
 use std::collections::{HashMap, HashSet};
 use std::ffi::CString;
@@ -44,10 +44,14 @@ impl Shader {
     }
 }
 
-impl OpenGLInitializer for Shader {
+impl OpenGLHandler for Shader {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Compiling
         self.program = Some(compile_shader(self.settings.sources_mut()));
+    }
+
+    fn disposed(self) {
+        todo!()
     }
 }
 /*

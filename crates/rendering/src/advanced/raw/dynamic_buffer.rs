@@ -61,3 +61,15 @@ impl<T> DynamicRawBuffer<T> {
         self.inner.is_empty()
     }
 }
+
+
+impl<T> Drop for DynamicRawBuffer<T> {
+    fn drop(&mut self) {
+        // Dispose of the OpenGL buffer
+        if self.buffer != 0 {
+            unsafe {
+                gl::DeleteBuffers(1, &mut self.buffer);
+            }
+        } 
+    }
+}

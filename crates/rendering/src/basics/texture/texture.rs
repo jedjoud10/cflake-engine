@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
-    object::{OpenGLObjectNotInitialized, OpenGLInitializer},
+    object::{OpenGLObjectNotInitialized, OpenGLHandler},
     pipeline::Pipeline,
     utils::*,
 };
@@ -211,7 +211,7 @@ impl Texture {
     */
 }
 
-impl OpenGLInitializer for Texture {
+impl OpenGLHandler for Texture {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.dimensions {
@@ -370,6 +370,19 @@ impl OpenGLInitializer for Texture {
             gl::BindTexture(tex_type, 0);
         }
     }
+
+    fn disposed(self) {
+        // Dispose of the OpenGL buffers
+        unsafe {
+            gl::DeleteTextures(1, &self.oid);
+            if let Some(x) = self.read_pbo {
+                gl::DeleteBuffers(1, &x)
+            }
+            if let Some(x) = self.write_pbo {
+                gl::DeleteBuffers(1, &x)
+            }
+        }
+    }
 }
 
 impl Asset for Texture {
@@ -393,20 +406,5 @@ impl Asset for Texture {
             .with_data_type(DataType::U8);
         Some(builder)
         */
-    }
-}
-
-impl Drop for Texture {
-    fn drop(&mut self) {
-        // Dispose of the OpenGL buffers
-        unsafe {
-            gl::DeleteTextures(1, &self.oid);
-            if let Some(x) = self.read_pbo {
-                gl::DeleteBuffers(1, &x)
-            }
-            if let Some(x) = self.write_pbo {
-                gl::DeleteBuffers(1, &x)
-            }
-        }
     }
 }

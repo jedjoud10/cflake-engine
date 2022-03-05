@@ -96,19 +96,16 @@ impl MarchingCubes {
                     },
                 );
                 // Then add it to the mesh
-                let mut ibuilder = builder.index_builder();
-                let mut vbuilder = builder.vertex_builder();
-                e.insert(vbuilder.vertices.len() as u16);
-                ibuilder.push(vbuilder.vertices.len() as u32);
-                vbuilder
+                e.insert(builder.vertex_builder.vertices.len() as u16);
+                builder.index_builder.push(builder.vertex_builder.vertices.len() as u32);
+                builder.vertex_builder
                     .position(interpolated.vertex)
                     .normal(interpolated.normal)
                     .color(interpolated.color)
                     .uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
-                let mut ibuilder = builder.index_builder();
-                ibuilder.push(merger[&edge_tuple] as u32);
+                builder.index_builder.push(merger[&edge_tuple] as u32);
             }
         }
     }

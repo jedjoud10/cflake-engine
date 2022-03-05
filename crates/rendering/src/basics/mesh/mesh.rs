@@ -1,8 +1,8 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use crate::object::OpenGLInitializer;
+use crate::object::OpenGLHandler;
 
-use super::{Vertices, GeometryBuilder, Indices};
+use super::{Vertices, GeometryBuilder, Indices, VertexBuilder, IndexBuilder};
 use assets::Asset;
 use gl::types::GLuint;
 use obj::TexturedVertex;
@@ -59,7 +59,7 @@ impl Asset for Mesh {
     }
 }
 
-impl OpenGLInitializer for Mesh {
+impl OpenGLHandler for Mesh {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh
         if self.vertices().is_empty() { 
@@ -173,10 +173,9 @@ impl OpenGLInitializer for Mesh {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
     }
-}
-impl Drop for Mesh {
-    fn drop(&mut self) {
-        // Dispose of the OpenGL buffers
+
+    // Dispose of the OpenGL buffers
+    fn disposed(self) {
         unsafe {
             // Delete the VBOs
             gl::DeleteBuffers(self.buffers.len() as i32, self.buffers.as_ptr());
@@ -191,8 +190,8 @@ impl Mesh {
     // Create a geometry builder for an existing mesh
     pub fn builder(&mut self) -> GeometryBuilder {
         GeometryBuilder {
-            vertices: &mut self.vertices,
-            indices: &mut self.indices,
+            vertex_builder: VertexBuilder { vertices: &mut self.vertices },
+            index_builder: IndexBuilder { indices: &mut self.indices },
         }
     }
     /*

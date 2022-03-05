@@ -6,7 +6,7 @@ use gl::types::GLuint;
 
 use crate::{
     basics::buffer_operation::BufferOperation,
-    object::{OpenGLObjectNotInitialized, OpenGLInitializer},
+    object::{OpenGLObjectNotInitialized, OpenGLHandler},
     pipeline::{Pipeline, PipelineCollection, Handle},
 };
 
@@ -19,7 +19,7 @@ pub struct AtomicGroup {
     buffer: GLuint,
 }
 
-impl OpenGLInitializer for AtomicGroup {
+impl OpenGLHandler for AtomicGroup {
     // Create the OpenGL buffers for this atomic group
     fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {
         unsafe {
@@ -37,6 +37,13 @@ impl OpenGLInitializer for AtomicGroup {
 
             // Unbind just in case
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+        }
+    }
+
+    // Dispose of the OpenGL buffers
+    fn disposed(mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &mut self.buffer);
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::{
         },
     },
     pipeline::Pipeline,
-    utils::UsageType, object::OpenGLInitializer,
+    utils::UsageType, object::OpenGLHandler,
 };
 
 // An OpenGL SSBO
@@ -28,7 +28,7 @@ pub struct ShaderStorage {
     byte_size: usize,
 }
 
-impl OpenGLInitializer for ShaderStorage {
+impl OpenGLHandler for ShaderStorage {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the SSBO
         unsafe {
@@ -37,6 +37,10 @@ impl OpenGLInitializer for ShaderStorage {
             gl::BufferData(gl::SHADER_STORAGE_BUFFER, self.byte_size as isize, null(), self.usage.convert());
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
+    }
+
+    fn disposed(self) {
+        todo!()
     }
 }
 
