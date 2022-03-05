@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::basics::mesh::Mesh;
+    use crate::basics::{mesh::Mesh, shader::{ShaderInitSettingsBuilder, ShaderSource}};
 
     // Test mesh generation
     #[test]
@@ -13,5 +13,12 @@ pub mod tests {
         vbuilder
             .position(veclib::Vector3::ONE)
             .color(veclib::Vector3::ZERO);
+    }
+
+    // Builder test
+    #[test]
+    fn builder() {
+        // Shader builder load thingy
+        let settings = ShaderInitSettingsBuilder::default().directive_const("lol", "bozo").build();
     }
 }

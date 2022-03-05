@@ -3,12 +3,11 @@ use std::sync::Arc;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
-        shader::{Shader, ShaderSettings},
+        shader::{Shader, ShaderInitSettings},
         texture::{Texture, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping},
-        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
+        uniforms::Uniforms,
     },
-    object::ObjectID,
-    pipeline::{pipec, Pipeline},
+    pipeline::{Pipeline, Handle},
     utils::DataType,
 };
 
@@ -17,9 +16,9 @@ use crate::buffers::Buffers;
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
     // Store everything we need to render the egui meshes
-    pub(crate) shader: ObjectID<Shader>,
-    pub(crate) egui_font_texture: ObjectID<Texture>,
-    pub(crate) egui_font_image_arc: Arc<FontImage>,
+    pub(crate) shader: Handle<Shader>,
+    pub(crate) egui_font_texture: Handle<Texture>,
+    pub(crate) egui_font_image_arc: FontImage,
     pub(crate) egui_font_texture_version: Option<u64>,
     pub(crate) clipped_meshes: Vec<ClippedMesh>,
     pub(crate) buffers: Buffers,
@@ -31,7 +30,7 @@ impl Painter {
     // This will be called on the render thread
     pub fn new(pipeline: &mut Pipeline) -> Self {
         // Load the GUI shader
-        let shader_settings = ShaderSettings::default()
+        let shader_settings = ShaderInitSettings::
             .source("defaults/shaders/gui/vert.vrsh.glsl")
             .source("defaults/shaders/gui/frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();

@@ -1,39 +1,22 @@
 use crate::painter::Painter;
 use parking_lot::Mutex;
+use rendering::pipeline::Pipeline;
 use std::sync::Arc;
 
 // A simple manager
 pub struct GUIManager {
     pub egui: egui::CtxRef,
     pub state: egui_winit::State,
-
-    // This is an arc, but it should only be called on the render thread for rendering
     pub painter: Painter,
 }
 
 impl GUIManager {
     // Create a new GUI manager
-    pub fn new(context: &PipelineContext) -> Self {
-        // Create an empty arc, and construct the painter on the render thread
-        let arc: Arc<Mutex<Option<Painter>>> = Arc::new(Mutex::new(None));
-        let cloned = arc.clone();
-        pipec::update_callback(&context.read(), move |pipeline, _| {
-            // Init on the render thread
-            *cloned.lock() = Some(Painter::new(pipeline));
-        });
-        // Flush
-        pipec::flush_and_execute(context);
-
-        // Extract
-        let painter = if let Ok(ok) = Arc::try_unwrap(arc) {
-            ok.into_inner().unwrap()
-        } else {
-            panic!("Could not get GUI Painter!");
-        };
+    pub fn new(pipeline: &mut Pipeline) -> Self {
         Self {
             egui: Default::default(),
             state: egui_winit::State::from_pixels_per_point(1.0),
-            painter: Arc::new(Mutex::new(painter)),
+            painter: Painter::new(pipeline),
         }
     }
     // We have received some events from glutin
@@ -49,11 +32,15 @@ impl GUIManager {
     // End frame
     pub fn end_frame(&mut self) {
         let (output, clipped_shapes) = self.egui.end_frame();
-        let mut painter = self.painter.lock();
         let meshes = self.egui.tessellate(clipped_shapes);
+
+        // Draw
+
+        /*
         // Set the values using the arc
         painter.clipped_meshes = meshes;
         painter.output = output;
         painter.egui_font_image_arc = self.egui.font_image();
+        */
     }
 }

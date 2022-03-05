@@ -2,7 +2,7 @@ use assets::Asset;
 use getset::{Getters, MutGetters};
 
 // A shader source that has been loaded from a shader file (.glsl)
-#[derive(Clone, Getters, MutGetters)]
+#[derive(Default, Clone, Getters, MutGetters)]
 pub struct ShaderSource {
     // File info
     #[getset(get = "pub")]
@@ -14,6 +14,12 @@ pub struct ShaderSource {
     _type: ShaderSourceType,
 }
 
+impl Default for ShaderSourceType {
+    fn default() -> Self {
+        Self::Vertex
+    }
+}
+
 // Shader source type
 #[derive(Clone, Debug)]
 pub enum ShaderSourceType {
@@ -21,7 +27,6 @@ pub enum ShaderSourceType {
     Fragment,
     Compute,
 }
-
 
 impl Asset for ShaderSource {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
