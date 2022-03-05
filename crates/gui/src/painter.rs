@@ -3,7 +3,7 @@ use std::sync::Arc;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
-        shader::{Shader, ShaderInitSettings},
+        shader::{Shader, ShaderInitSettings, ShaderInitSettingsBuilder},
         texture::{Texture, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping},
         uniforms::Uniforms,
     },
@@ -30,11 +30,12 @@ impl Painter {
     // This will be called on the render thread
     pub fn new(pipeline: &mut Pipeline) -> Self {
         // Load the GUI shader
-        let shader_settings = ShaderInitSettings::
+        let shader_settings = ShaderInitSettingsBuilder::default()
             .source("defaults/shaders/gui/vert.vrsh.glsl")
-            .source("defaults/shaders/gui/frag.frsh.glsl");
+            .source("defaults/shaders/gui/frag.frsh.glsl")
+            .build();
         let shader = Shader::new(shader_settings).unwrap();
-        let shader = pipec::construct(pipeline, shader).unwrap();
+        let shader = pipeline.shaders.insert(shader);
         // Load the egui font texture
         let egui_font_texture = Texture::default()
             .with_filter(TextureFilter::Linear)

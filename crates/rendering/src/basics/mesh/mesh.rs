@@ -1,6 +1,6 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use crate::object::OpenGLHandler;
+use crate::object::PipelineCollectionElement;
 
 use super::{Vertices, GeometryBuilder, Indices, VertexBuilder, IndexBuilder};
 use assets::Asset;
@@ -59,7 +59,7 @@ impl Asset for Mesh {
     }
 }
 
-impl OpenGLHandler for Mesh {
+impl PipelineCollectionElement for Mesh {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh
         if self.vertices().is_empty() { 

@@ -1,25 +1,38 @@
-use crate::{pipeline::*, basics::{uniforms::SetUniformsCallback, texture::Texture, shader::Shader}};
+use getset::{Getters, MutGetters, Setters};
+
+use crate::{pipeline::*, basics::{uniforms::SetUniformsCallback, texture::Texture, shader::Shader}, object::PipelineCollectionElement};
 
 // Material textures
-#[derive(Default)]
+#[derive(Default, Getters, MutGetters, Setters)]
+#[getset(get = "pub", get_mut = "pub", set = "pub")]
 pub struct MaterialTextures {
-    pub diffuse_map: Handle<Texture>,
-    pub normal_map: Handle<Texture>,
-    pub emissive_map: Handle<Texture>,
+    diffuse_map: Handle<Texture>,
+    normal_map: Handle<Texture>,
+    emissive_map: Handle<Texture>,
 }
 
 // A material that can have multiple parameters and such
+#[derive(Getters, MutGetters, Setters)]
+#[getset(get = "pub", get_mut = "pub", set = "pub")]
 pub struct Material {
     // Main settings
-    pub shader: Handle<Shader>,
-    pub(crate) uniforms: SetUniformsCallback,
+    shader: Handle<Shader>,
+    uniforms: SetUniformsCallback,
 
     // Actual parameters used for rendering
-    pub textures: MaterialTextures,
-    pub tint: veclib::Vector3<f32>,
-    pub normal_map_strength: f32,
-    pub emissive_map_strength: f32,
-    pub uv_scale: veclib::Vector2<f32>,
+    textures: MaterialTextures,
+    tint: veclib::Vector3<f32>,
+    normal_map_strength: f32,
+    emissive_map_strength: f32,
+    uv_scale: veclib::Vector2<f32>,
+}
+
+impl PipelineCollectionElement for Material {
+    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {
+    }
+
+    fn disposed(self) {
+    }
 }
 
 impl Default for Material {

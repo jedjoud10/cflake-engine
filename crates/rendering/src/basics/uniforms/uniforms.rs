@@ -157,7 +157,7 @@ impl<'a> Uniforms<'a> {
         };
         unsafe {
             gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
-            gl::BindTexture(*texture.target(), *texture.oid());
+            gl::BindTexture(*texture.target(), texture.oid());
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
@@ -185,8 +185,8 @@ impl<'a> Uniforms<'a> {
             }
         };
         unsafe {
-            gl::BindTexture(*texture.target(), *texture.oid());
-            gl::BindImageTexture(location as u32, *texture.oid(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
+            gl::BindTexture(*texture.target(), texture.oid());
+            gl::BindImageTexture(location as u32, texture.oid(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
     pub fn set_atomic_group(&self, _name: &str, atomic_group: Handle<AtomicGroup>, binding: u32) {
@@ -197,8 +197,8 @@ impl<'a> Uniforms<'a> {
         };
 
         unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, *atomic_group.buffer());
-            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, *atomic_group.buffer());
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic_group.buffer());
+            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic_group.buffer());
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
@@ -209,8 +209,8 @@ impl<'a> Uniforms<'a> {
             return;
         };
         unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, *shader_storage.buffer());
-            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, *shader_storage.buffer());
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.buffer());
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.buffer());
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
     }

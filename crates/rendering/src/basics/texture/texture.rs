@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
-    object::{OpenGLObjectNotInitialized, OpenGLHandler},
+    object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::Pipeline,
     utils::*,
 };
@@ -17,37 +17,37 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
-use getset::Getters;
+use getset::{Getters, CopyGetters};
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping};
 
 // A texture
-#[derive(Getters)]
+#[derive(Getters, CopyGetters)]
 pub struct Texture {
     // The OpenGL id for this texture
-    #[getset(get = "pub(crate)")]
+    #[getset(get_copy = "pub(crate)")]
     oid: GLuint,
     // The bytes stored in this texture
     #[getset(get = "pub")]
     bytes: Vec<u8>,
 
     // The internal format of the texture
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     _format: TextureFormat,
     // The data type that this texture uses for storage
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     _type: DataType,
     // Internal Format, Format, Data
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
     #[getset(get = "pub(crate)")]
     target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     filter: TextureFilter,
     // What kind of wrapping will we use for this texture
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     wrap_mode: TextureWrapping,
 
     // The border colors
@@ -61,20 +61,20 @@ pub struct Texture {
     dimensions: TextureDimensions,
 
     // How we access this texture on the CPU
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     cpu_access: TextureAccessType,
     // Is this texture dynamic
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     update: UpdateFrequency,
 
     // And the corresponding upload / download PBOs,
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     write_pbo: Option<GLuint>,
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     read_pbo: Option<GLuint>,
 
     // Should we generate mipmaps for this texture
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub")]
     mipmaps: bool,
 }
 
@@ -211,7 +211,7 @@ impl Texture {
     */
 }
 
-impl OpenGLHandler for Texture {
+impl PipelineCollectionElement for Texture {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.dimensions {

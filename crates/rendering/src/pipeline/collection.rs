@@ -2,18 +2,20 @@ use std::{rc::Rc, cell::{RefCell, Ref, RefMut}};
 
 use slotmap::SlotMap;
 
+use crate::object::PipelineCollectionElement;
+
 use super::{PipelineElemKey, Handle};
 
 // A pipeline collection that contains multiple elements of the same type
 // This can only be accessed on the main thread
 pub(crate) type InnerPipelineCollection<T> = Rc<RefCell<SlotMap<PipelineElemKey, T>>>;
 
-pub struct PipelineCollection<T> {
+pub struct PipelineCollection<T: PipelineCollectionElement> {
     // The inner storage
     inner: InnerPipelineCollection<T>,
 }
 
-impl<T> PipelineCollection<T> {
+impl<T: PipelineCollectionElement> PipelineCollection<T> {
     // Get an element
     pub fn get(&self, handle: Handle<T>) -> Option<Ref<T>> {
         let inner = self.inner.borrow();
@@ -31,6 +33,7 @@ impl<T> PipelineCollection<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         let mut inner = self.inner.borrow_mut();
         let key = inner.insert(value);
+        // Generate the OpenGL objects now
         Handle {
             inner: Some(self.inner.clone()),
             key: Rc::new(key),

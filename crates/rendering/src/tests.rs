@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::basics::{mesh::Mesh, shader::{ShaderInitSettingsBuilder, ShaderSource}};
+    use crate::basics::{mesh::Mesh, shader::{ShaderInitSettingsBuilder, ShaderSource}, material::Material};
 
     // Test mesh generation
     #[test]
@@ -20,5 +20,11 @@ pub mod tests {
     fn builder() {
         // Shader builder load thingy
         let settings = ShaderInitSettingsBuilder::default().directive_const("lol", "bozo").build();
+    }
+
+    // Material test
+    #[test]
+    fn material() {
+        let mat = Material::default().textures_mut().set_diffuse_map(todo!());
     }
 }

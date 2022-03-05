@@ -1,4 +1,4 @@
-use getset::Getters;
+use getset::{Getters, CopyGetters};
 use gl::types::GLuint;
 use std::{ffi::c_void, ptr::null, mem::size_of};
 
@@ -11,24 +11,24 @@ use crate::{
         },
     },
     pipeline::Pipeline,
-    utils::UsageType, object::OpenGLHandler,
+    utils::UsageType, object::PipelineCollectionElement,
 };
 
 // An OpenGL SSBO
-#[derive(Getters)]
+#[derive(CopyGetters)]
 pub struct ShaderStorage {
     // The OpenGL name for the underlying buffer
-    #[getset(get = "pub(crate)")]
+    #[getset(get_copy = "pub(crate)")]
     buffer: GLuint,
     // How we access the shader storage
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub(crate)")]
     usage: UsageType,
     // The size in bytes of the underlying data
-    #[getset(get = "pub")]
+    #[getset(get_copy = "pub(crate)")]
     byte_size: usize,
 }
 
-impl OpenGLHandler for ShaderStorage {
+impl PipelineCollectionElement for ShaderStorage {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the SSBO
         unsafe {
