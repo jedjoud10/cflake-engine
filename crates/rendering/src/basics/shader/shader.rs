@@ -1,5 +1,4 @@
 use ahash::{AHashMap, AHashSet};
-use getset::Getters;
 use gl::types::GLuint;
 use crate::basics::shader::{query_shader_uniforms_definition_map, ShaderSourceType, compile_source};
 use crate::object::PipelineCollectionElement;
@@ -11,14 +10,17 @@ use std::ptr::null;
 use super::{load_includes, IncludeExpansionError, ShaderProgram};
 
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
-#[derive(Getters)]
 pub struct Shader {
     // The OpenGL program linked to this shader
-    #[getset(get = "pub")]
-    program: Option<ShaderProgram>,
+    program: ShaderProgram,
     // Init settings
-    #[getset(get = "pub")]
     settings: ShaderInitSettings,
+}
+
+// Getters
+impl Shader {
+    fn program(&self) -> &ShaderProgram { &self.program }
+    fn settings(&self) -> &ShaderInitSettings { &self.settings }
 }
 
 impl Shader {
@@ -47,22 +49,10 @@ impl Shader {
 impl PipelineCollectionElement for Shader {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Compiling
-        self.program = Some(compile_shader(self.settings.sources_mut()));
+        self.program = compile_shader(self.settings.sources_mut());
     }
 
     fn disposed(self) {
         todo!()
     }
 }
-/*
-    // Load some external code that can be loading using specific include points
-    pub fn with_external(mut self, id: &str, string: String) -> Self {
-        self.external_code.insert(id.to_string(), string);
-        self
-    }
-    // Load some shader constants that can be loaded directly while compiling the shader
-    pub fn with_constant<T: ToString>(mut self, id: &str, val: T) -> Self {
-        self.consts.insert(id.to_string(), val.to_string());
-        self
-    }
-*/

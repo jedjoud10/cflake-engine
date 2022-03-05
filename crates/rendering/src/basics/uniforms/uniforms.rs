@@ -26,11 +26,11 @@ impl<'a> Uniforms<'a> {
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
-        self.program.mappings.get(name).cloned().unwrap_or(-1)
+        self.program.mappings().get(name).cloned().unwrap_or(-1)
     }
     // Bind the shader for execution/rendering
     pub fn bind(&self) {
-        unsafe { gl::UseProgram(self.program.program) }
+        unsafe { gl::UseProgram(self.program.program()) }
         /*
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.time.0 as f32);
@@ -157,7 +157,7 @@ impl<'a> Uniforms<'a> {
         };
         unsafe {
             gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
-            gl::BindTexture(*texture.target(), texture.oid());
+            gl::BindTexture(texture.target(), texture.glname());
             gl::Uniform1i(location, active_texture_id as i32);
         }
     }
@@ -185,8 +185,8 @@ impl<'a> Uniforms<'a> {
             }
         };
         unsafe {
-            gl::BindTexture(*texture.target(), texture.oid());
-            gl::BindImageTexture(location as u32, texture.oid(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
+            gl::BindTexture(texture.target(), texture.glname());
+            gl::BindImageTexture(location as u32, texture.glname(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
     pub fn set_atomic_group(&self, _name: &str, atomic_group: Handle<AtomicGroup>, binding: u32) {

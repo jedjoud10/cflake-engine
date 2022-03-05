@@ -1,17 +1,21 @@
 use assets::Asset;
-use getset::{Getters, MutGetters};
 
 // A shader source that has been loaded from a shader file (.glsl)
-#[derive(Default, Clone, Getters, MutGetters)]
+#[derive(Default, Clone,)]
 pub struct ShaderSource {
     // File info
-    #[getset(get = "pub")]
     file: String,
-    #[getset(get = "pub", get_mut = "pub(crate)")]
     text: String,
     // And a specific type just to help use
-    #[getset(get = "pub")]
     _type: ShaderSourceType,
+}
+
+// Getters and mut getters
+impl ShaderSource {
+    pub fn file(&self) -> &str { self.file.as_str() }
+    pub fn text(&self) -> &str { self.text.as_str() }
+    pub(crate) fn text_mut(&mut self) -> &mut String { &mut self.text }
+    pub fn _type(&self) -> ShaderSourceType { self._type }
 }
 
 impl Default for ShaderSourceType {

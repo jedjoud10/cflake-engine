@@ -6,27 +6,23 @@ use crate::{
     pipeline::Pipeline, object::PipelineCollectionElement,
 };
 use ahash::{AHashSet, AHashMap};
-use getset::Getters;
 use gl::types::GLuint;
 use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use super::ComputeShaderExecutionSettings;
 
 // A compute shader that can run parallel calculations on the GPU
-#[derive(Getters)]
 pub struct ComputeShader {
     // The OpenGL program linked to this shader
-    #[getset(get = "pub")]
-    program: Option<ShaderProgram>,
+    program: ShaderProgram,
     // Init settings
-    #[getset(get = "pub")]
     settings: ShaderInitSettings,
 }
 
 impl PipelineCollectionElement for ComputeShader {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Compiling
-        self.program = Some(compile_shader(self.settings.sources()));
+        self.program = compile_shader(self.settings.sources());
     }
 
     fn disposed(self) {

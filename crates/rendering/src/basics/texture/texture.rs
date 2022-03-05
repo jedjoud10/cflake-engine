@@ -17,71 +17,60 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
-use getset::{Getters, CopyGetters};
 use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping};
 
 // A texture
-#[derive(Getters, CopyGetters)]
 pub struct Texture {
     // The OpenGL id for this texture
-    #[getset(get_copy = "pub(crate)")]
-    oid: GLuint,
+    glname: GLuint,
     // The bytes stored in this texture
-    #[getset(get = "pub")]
     bytes: Vec<u8>,
 
     // The internal format of the texture
-    #[getset(get_copy = "pub")]
     _format: TextureFormat,
     // The data type that this texture uses for storage
-    #[getset(get_copy = "pub")]
     _type: DataType,
     // Internal Format, Format, Data
-    #[getset(get_copy = "pub")]
     ifd: (GLint, GLuint, GLuint),
     // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
-    #[getset(get = "pub(crate)")]
     target: GLuint,
 
     // Texture mag and min filters, either Nearest or Linear
-    #[getset(get_copy = "pub")]
     filter: TextureFilter,
     // What kind of wrapping will we use for this texture
-    #[getset(get_copy = "pub")]
     wrap_mode: TextureWrapping,
 
     // The border colors
-    #[getset(get = "pub")]
-    border_colors: [veclib::Vector4<f32>; 4],
-    #[getset(get = "pub")]
     custom_params: SmallVec<[(GLuint, GLuint); 2]>,
 
     // The dimensions of the texture
-    #[getset(get = "pub")]
     dimensions: TextureDimensions,
 
-    // How we access this texture on the CPU
-    #[getset(get_copy = "pub")]
-    cpu_access: TextureAccessType,
-    // Is this texture dynamic
-    #[getset(get_copy = "pub")]
-    update: UpdateFrequency,
-
-    // And the corresponding upload / download PBOs,
-    #[getset(get_copy = "pub")]
-    write_pbo: Option<GLuint>,
-    #[getset(get_copy = "pub")]
-    read_pbo: Option<GLuint>,
+    // TODO: Re-implement the texture download/upload buffers with dynamic/static/stream textures
 
     // Should we generate mipmaps for this texture
-    #[getset(get_copy = "pub")]
     mipmaps: bool,
+}
+
+// Getters and setters
+impl Texture {
+    pub(crate) fn glname(&self) -> GLuint { self.glname }
+    pub fn bytes(&self) -> &Vec<u8> { self.bytes() }
+    pub fn _format(&self) -> TextureFormat { self._format }
+    pub fn _type(&self) -> DataType { self._type }
+    pub(crate) fn ifd(&self) -> (GLint, GLuint, GLuint) { self.ifd }
+    pub(crate) fn target(&self) -> GLuint { self.target }
+    pub fn filter(&self) -> TextureFilter { self.filter }
+    pub fn wrap_mode(&self) -> TextureWrapping { self.wrap_mode }
+    pub fn custom_params(&self) -> &SmallVec<[(GLuint, GLuint); 2]> { &self.custom_params }
+    pub fn dimensions(&self) -> &TextureDimensions { &self.dimensions }
+    pub fn mipmaps(&self) -> bool { self.mipmaps }
 }
 
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            oid: 0,
+            glname: 0,
             bytes: Vec::new(),
 
             _format: TextureFormat::RGBA8R,
@@ -91,13 +80,8 @@ impl Default for Texture {
 
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapping::Repeat,
-            border_colors: [veclib::Vector4::<f32>::ZERO; 4],
             custom_params: SmallVec::default(),
             dimensions: TextureDimensions::Texture2D(veclib::Vector2::ZERO),
-            cpu_access: TextureAccessType::empty(),
-            update: UpdateFrequency::Static,
-            write_pbo: None,
-            read_pbo: None,
             mipmaps: false,
         }
     }
@@ -318,6 +302,7 @@ impl PipelineCollectionElement for Texture {
         }
 
         // Create the Upload / Download PBOs if needed
+        /*
         if self.cpu_access.contains(TextureAccessType::READ) {
             // Create a download PBO
             let mut pbo = 0_u32;
@@ -339,11 +324,12 @@ impl PipelineCollectionElement for Texture {
             }
             self.write_pbo = Some(pbo);
         }
+        */
 
         // Set the wrap mode for the texture (Mipmapped or not)
         let wrapping_mode = match self.wrap_mode {
-            TextureWrapping::ClampToEdge => gl::CLAMP_TO_EDGE,
-            TextureWrapping::ClampToBorder => gl::CLAMP_TO_BORDER,
+            TextureWrapping::ClampToEdge { border_color: _ } => gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder { border_color: _ } => gl::CLAMP_TO_BORDER,
             TextureWrapping::Repeat => gl::REPEAT,
             TextureWrapping::MirroredRepeat => gl::MIRRORED_REPEAT,
         };
@@ -353,8 +339,13 @@ impl PipelineCollectionElement for Texture {
             gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_T, wrapping_mode as i32);
             // And also border colors
             use veclib::Vector;
-            let ptr = self.border_colors.get(0).unwrap().as_ptr();
-            gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
+            match self.wrap_mode {
+                TextureWrapping::ClampToBorder { border_color } | TextureWrapping::ClampToEdge { border_color } => {
+                    let ptr = border_color.as_ptr();
+                    gl::TexParameterfv(tex_type, gl::TEXTURE_BORDER_COLOR, ptr);
+                }
+                _ => {}
+            }            
         }
 
         // Set the custom parameter
@@ -365,7 +356,7 @@ impl PipelineCollectionElement for Texture {
         }
 
         // Add the texture
-        self.oid = oid;
+        self.glname = oid;
         unsafe {
             gl::BindTexture(tex_type, 0);
         }
@@ -374,13 +365,7 @@ impl PipelineCollectionElement for Texture {
     fn disposed(self) {
         // Dispose of the OpenGL buffers
         unsafe {
-            gl::DeleteTextures(1, &self.oid);
-            if let Some(x) = self.read_pbo {
-                gl::DeleteBuffers(1, &x)
-            }
-            if let Some(x) = self.write_pbo {
-                gl::DeleteBuffers(1, &x)
-            }
+            gl::DeleteTextures(1, &self.glname);
         }
     }
 }

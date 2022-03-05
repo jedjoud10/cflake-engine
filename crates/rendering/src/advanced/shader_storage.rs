@@ -1,4 +1,3 @@
-use getset::{Getters, CopyGetters};
 use gl::types::GLuint;
 use std::{ffi::c_void, ptr::null, mem::size_of};
 
@@ -15,17 +14,20 @@ use crate::{
 };
 
 // An OpenGL SSBO
-#[derive(CopyGetters)]
 pub struct ShaderStorage {
     // The OpenGL name for the underlying buffer
-    #[getset(get_copy = "pub(crate)")]
     buffer: GLuint,
     // How we access the shader storage
-    #[getset(get_copy = "pub(crate)")]
     usage: UsageType,
     // The size in bytes of the underlying data
-    #[getset(get_copy = "pub(crate)")]
     byte_size: usize,
+}
+
+// Getters
+impl ShaderStorage {
+    pub(crate) fn buffer(&self) -> GLuint { self.buffer }
+    pub fn usage(&self) -> UsageType { self.usage }
+    pub fn byte_size(&self) -> usize { self.byte_size }
 }
 
 impl PipelineCollectionElement for ShaderStorage {

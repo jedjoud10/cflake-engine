@@ -8,7 +8,7 @@ use std::{
 };
 
 use ahash::{AHashMap, AHashSet};
-use getset::{Getters, MutGetters};
+use enum_as_inner::EnumAsInner;
 use gl::types::GLuint;
 
 use crate::basics::shader::ShaderSourceType;
@@ -52,9 +52,14 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
             let source_name = &c[2..(c.len() - 2)].to_string();
             let source = settings
-                .directive_externals()
+                .directives()
                 .get(source_name)
-                .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
+                .map(|directive| directive.as_external())
+                .flatten()
+                .ok_or(IncludeExpansionError::new(format!(
+                    "Tried to expand #include_custom, but the given source name '{}' is not valid!",
+                    source_name
+                )))?;
             *line = source.clone();
             break;
         }
@@ -80,17 +85,15 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             fn format(line: &str, val: &str) -> String {
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
+            // Expand
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let x = settings.directive_consts().get(const_name);
-            if let Some(x) = x {
-                *line = format(line, x);
-                Ok(())
-            } else {
-                Err(IncludeExpansionError::new(format!(
-                    "Tried to expand #constant, but the given const name '{}' is not valid!",
-                    const_name
-                )))
-            }?;
+            let _const_line = settings.directives().get(const_name).map(|directive| {
+                Some(format(line, directive.as_const()?.as_str()))
+            }).flatten();
+            *line = _const_line.ok_or(IncludeExpansionError::new(format!(
+                "Tried to expand #constant, but the given const name '{}' is not valid!",
+                const_name
+            )))?;            
             break;
         }
     }
@@ -150,7 +153,7 @@ pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> Shader
     };
     // Add the shader at the end
     ShaderProgram {
-        program,
+        program: program,
         mappings: query_shader_uniforms_definition_map(program),
     }
 }
@@ -345,54 +348,58 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
     }
 }
 
+// A single shader directive
+#[derive(EnumAsInner)]
+pub enum Directive {
+    Const(String),
+    External(String)
+}
+
 // Shader init settings (sources, additional code, consts)
-#[derive(Getters, MutGetters)]
+#[derive(Default)]
 pub struct ShaderInitSettings {
-    #[getset(get = "pub")]    
-    directive_externals: AHashMap<String, String>,
-    #[getset(get = "pub")]
-    directive_consts: AHashMap<String, String>,
-    #[getset(get = "pub", get_mut = "pub(crate)")]
+    directives: AHashMap<String, Directive>,
     sources: AHashMap<String, ShaderSource>,
+}
+
+// Getters and mut getters
+impl ShaderInitSettings {
+    pub fn directives(&self) -> &AHashMap<String, Directive> { &self.directives }
+    pub fn sources(&self) -> &AHashMap<String, ShaderSource> { &self.sources }
+    pub fn sources_mut(&self) -> &mut AHashMap<String, ShaderSource> { &mut self.sources }
 }
 
 // Shader init settings builder
-#[derive(Default)]
 pub struct ShaderInitSettingsBuilder {
-    directive_externals: AHashMap<String, String>,
-    directive_consts: AHashMap<String, String>,
-    sources: AHashMap<String, ShaderSource>,
+    inner: ShaderInitSettings,
 }
 
 impl ShaderInitSettingsBuilder {
-    // Add an external source
-    pub fn directive_external(mut self, name: &str, value: &str) -> Self {
-        self.directive_externals.insert(name.to_string(), value.to_string());
-        self
-    }
-    // Define a pragma const
-    pub fn directive_const(mut self, name: &str, value: &str) -> Self {
-        self.directive_consts.insert(name.to_string(), value.to_string());
+    // Add a shader directive
+    pub fn directive(mut self, name: &str, directive: Directive) -> Self {
+        self.inner.directives.insert(name.to_string(), directive);
         self
     }
     // Add a source
     pub fn source(mut self, path: &str) -> Self {
-        self.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
+        self.inner.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
         self
     }
     // Build
     pub fn build(self) -> ShaderInitSettings {
-        ShaderInitSettings {
-            directive_externals: self.directive_externals,
-            directive_consts: self.directive_consts,
-            sources: self.sources,
-        }
+        self.inner
     }
 }
 
 // A shader program that contains an OpenGL program ID and the shader definition map
 #[derive(Default, Clone)]
 pub struct ShaderProgram {
-    pub program: GLuint,
-    pub mappings: UniformsDefinitionMap,
+    program: GLuint,
+    mappings: UniformsDefinitionMap,
+}
+
+// Getters
+impl ShaderProgram {
+    pub fn program(&self) -> GLuint { self.program }
+    pub fn mappings(&self) -> &UniformsDefinitionMap { &self.mappings } 
 }

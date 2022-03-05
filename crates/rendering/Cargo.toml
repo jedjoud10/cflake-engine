@@ -9,7 +9,6 @@ edition = "2021"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 slotmap = "1.0.6"
-getset = "0.1.2"
 assets = { path = "../assets" }
 math = { path = "../math" }
 others = { path = "../others" }

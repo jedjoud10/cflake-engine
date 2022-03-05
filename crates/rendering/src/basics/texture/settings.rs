@@ -11,9 +11,8 @@ pub enum TextureFilter {
 // Texture wrapping filters
 #[derive(Debug, Clone, Copy)]
 pub enum TextureWrapping {
-    // TODO: Border colors directly here
-    ClampToEdge,
-    ClampToBorder,
+    ClampToEdge { border_color: veclib::Vector4<f32> },
+    ClampToBorder { border_color: veclib::Vector4<f32> },
     Repeat,
     MirroredRepeat,
 }
