@@ -1221,6 +1221,7 @@ version = "0.0.1"
 dependencies = [
  "ahash",
  "enum-as-inner",
+ "getset",
  "others",
  "slotmap",
  "veclib",

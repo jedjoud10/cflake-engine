@@ -13,6 +13,7 @@ use gl::types::GLuint;
 
 // Scene renderer that will render our world using deferred rendering
 // TODO: Document
+#[derive(Default)]
 pub struct SceneRenderer {
     // Frame buffer
     framebuffer: GLuint,
@@ -34,7 +35,7 @@ pub struct SceneRenderer {
 }
 impl SceneRenderer {
     // Initialize a new scene renderer
-    pub(crate) unsafe fn initialize(pipeline: &mut Pipeline) -> Self {
+    pub(crate) unsafe fn new(pipeline: &mut Pipeline) -> Self {
         println!("Initializing the scene renderer...");
         /* #region Quad */
         // Create the quad mesh that we will use to render the whole screen

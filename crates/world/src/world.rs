@@ -7,28 +7,35 @@ use input::InputManager;
 use io::IOManager;
 use others::Time;
 use physics::PhysicsSimulation;
-use rendering::pipeline::Pipeline;
-use std::sync::Arc;
+use rendering::pipeline::{Pipeline, SceneRenderer};
 
 // The whole world that stores our managers and data
 pub struct World {
+    // User
     pub input: InputManager,
-    pub time: Time,
+    pub io: IOManager,
+
+    // Rendering
+    pub pipeline: Pipeline,
+    pub renderer: SceneRenderer,
     pub gui: GUIManager,
+    
+    // Logic
+    pub state: WorldState,
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
-    pub io: IOManager,
-    pub settings: Settings,
-    pub pipeline: Pipeline,
-    pub state: WorldState,
-    pub audio: AudioPlayer,
     pub physics: PhysicsSimulation,
+    
+    // Other
+    pub time: Time,
+    pub settings: Settings,
+    pub audio: AudioPlayer,    
 }
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(settings: Settings, io: IOManager, mut pipeline: Pipeline) -> Self {
+    pub fn new(settings: Settings, io: IOManager, mut pipeline: Pipeline, renderer: SceneRenderer) -> Self {
         let gui = gui::GUIManager::new(&mut pipeline);
         let mut world = World {
             input: Default::default(),
@@ -39,6 +46,7 @@ impl World {
             io,
             settings: Default::default(),
             pipeline,
+            renderer,
             state: WorldState::StartingUp,
             audio: Default::default(),
             physics: PhysicsSimulation::new(),

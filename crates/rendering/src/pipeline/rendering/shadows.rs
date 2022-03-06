@@ -113,7 +113,7 @@ impl ShadowMapping {
             uniforms.set_mat44f32("lsm_matrix", lsm);
 
             // Render now
-            super::shared::render(&mesh);
+            super::common::render(&mesh);
         }
         Ok(())
     }

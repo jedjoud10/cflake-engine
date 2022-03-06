@@ -8,7 +8,7 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{PipelineCollection, PipelineSettings};
+use super::{PipelineCollection, PipelineSettings, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters)]
@@ -72,33 +72,38 @@ fn init_opengl(context: &WindowedContext<PossiblyCurrent>) {
     }
 }
 
+// Create a new pipeline and a linked scene renderer
+pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, settings: PipelineSettings) -> (Pipeline, SceneRenderer) {
+    let context = init_glutin_window(el, title, vsync);
+    // Initialize OpenGL
+    init_opengl(&context);
+    let mut pipeline = Pipeline {
+        meshes: Default::default(),
+        shaders: Default::default(),
+        compute_shaders: Default::default(),
+        textures: Default::default(),
+        materials: Default::default(),
+        time: Default::default(),
+        window: {
+            // Create a new window
+            let mut window = Window {
+                dimensions: DEFAULT_WINDOW_SIZE,
+                context,
+                fullscreen,
+            };
+            // Kinda useless since we already know our fullscreen state but we must update the glutin window
+            window.set_fullscreen(fullscreen);
+            window
+        },
+        settings,
+    };
+
+    // Create new scene renderer
+    let scene_renderer = unsafe { SceneRenderer::new(&mut pipeline) };
+    (pipeline, scene_renderer)
+}
+
 impl Pipeline {
-    // Create a new pipeline
-    pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, settings: PipelineSettings) -> Self {
-        let context = init_glutin_window(el, title, vsync);
-        // Initialize OpenGL
-        init_opengl(&context);
-        Self {
-            meshes: Default::default(),
-            shaders: Default::default(),
-            compute_shaders: Default::default(),
-            textures: Default::default(),
-            materials: Default::default(),
-            time: Default::default(),
-            window: {
-                // Create a new window
-                let mut window = Window {
-                    dimensions: DEFAULT_WINDOW_SIZE,
-                    context,
-                    fullscreen,
-                };
-                // Kinda useless since we already know our fullscreen state but we must update the glutin window
-                window.set_fullscreen(fullscreen);
-                window
-            },
-            settings,
-        }
-    }
     // Called at the start of the frame so we can clear buffers if we need to
     pub fn start_frame(&mut self) {
         unsafe {

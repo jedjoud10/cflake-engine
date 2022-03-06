@@ -1,8 +1,8 @@
 mod error;
 mod renderer;
 mod shadows;
-mod shared;
+mod common;
 pub use error::*;
 pub use renderer::*;
 pub use shadows::*;
-pub use shared::*;
+pub use common::*;

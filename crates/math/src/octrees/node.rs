@@ -1,5 +1,6 @@
 use super::HeuristicSettings;
-use slotmap::{Key, SlotMap};
+use getset::{Getters, CopyGetters, MutGetters};
+use slotmap::{Key};
 use std::{hash::Hash, mem::MaybeUninit};
 
 slotmap::new_key_type! {
@@ -7,21 +8,27 @@ slotmap::new_key_type! {
 }
 
 // Simple node in the octree
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Getters, CopyGetters, MutGetters)]
 pub struct Node {
-    pub position: veclib::Vector3<i64>,
-    pub half_extent: u64,
-    pub depth: u8,
+    #[getset(get_copy = "pub")]
+    position: veclib::Vector3<i64>,
+    #[getset(get_copy = "pub")]
+    half_extent: u64,
+    #[getset(get_copy = "pub")]
+    depth: u8,
     // Indexing stuff
-    pub parent_key: NodeKey,
-    pub key: NodeKey,
-    pub children_keys: Option<[NodeKey; 8]>,
+    #[getset(get_copy = "pub")]
+    parent: NodeKey,
+    #[getset(get_copy = "pub")]
+    key: NodeKey,
+    #[getset(get = "pub", get_mut = "pub(super)")]
+    children: Option<[NodeKey; 8]>,
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        self.center() == other.center() && self.children_keys.is_none() == other.children_keys.is_none() && self.depth == other.depth
+        self.center() == other.center() && self.children.is_none() == other.children.is_none() && self.depth == other.depth
     }
 }
 
@@ -29,13 +36,28 @@ impl Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.center().hash(state);
         self.depth.hash(state);
-        self.children_keys.is_none().hash(state);
+        self.children.is_none().hash(state);
     }
 }
 
 impl Eq for Node {}
 
 impl Node {
+    // Create a root node using the max size and depth
+    pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
+        // Get the maximum size of the root node
+        let full_extent = (2_u64.pow(depth as u32) * size as u64) as i64;
+        let position = veclib::Vector3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
+
+        Self {
+            position,
+            half_extent: full_extent as u64 / 2,
+            depth,
+            parent: NodeKey::null(),
+            key,
+            children: None,
+        }
+    }
     // Get the AABB from this octee node
     pub fn aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
@@ -73,9 +95,9 @@ impl Node {
                         depth: self.depth + 1,
 
                         // Index stuff
-                        parent_key: self.key,
+                        parent: self.key,
                         key: NodeKey::null(),
-                        children_keys: None,
+                        children: None,
                     };
                     unsafe {
                         children[i].as_mut_ptr().write(child);

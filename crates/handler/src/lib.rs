@@ -31,7 +31,7 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
 
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
     let shadows = config.shadow_resolution.convert();
-    let pipeline = Pipeline::new(
+    let (pipeline, renderer) =  rendering::pipeline::new(
         &event_loop,
         format!("'{}', by '{}'", app_name, author_name),
         config.vsync,
@@ -40,12 +40,11 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
             shadow_resolution: if shadows.0 == 0 { None } else { Some(shadows.0) },
         },
     );
-
     // Preload the assets if needed
     defaults::preload_default_assets();
 
     // Create the world
-    let mut world = World::new(config, io, pipeline);
+    let mut world = World::new(config, io, pipeline, renderer);
 
     // Calling the callback
     println!("Calling World Initialization callback");
