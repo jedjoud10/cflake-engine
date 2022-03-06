@@ -6,7 +6,6 @@ pub struct Camera {
     pub view_matrix: veclib::Matrix4x4<f32>,
     pub projection_matrix: veclib::Matrix4x4<f32>,
     pub horizontal_fov: f32,
-    pub aspect_ratio: f32,
     pub clip_planes: veclib::Vector2<f32>, // Near, far
 }
 
@@ -17,18 +16,17 @@ impl Camera {
         let mut camera = Self {
             view_matrix: veclib::Matrix4x4::IDENTITY,
             projection_matrix: veclib::Matrix4x4::IDENTITY,
-            aspect_ratio: DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32,
             horizontal_fov: fov,
             clip_planes: veclib::Vector2::new(clipn, clipf),
         };
-        camera.update_projection_matrix();
+        camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32);
         camera
     }
     // Update the projection matrix of this camera
-    pub fn update_projection_matrix(&mut self) {
+    pub fn update_projection_matrix(&mut self, aspect_ratio: f32) {
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (self.aspect_ratio))).atan();
-        self.projection_matrix = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, self.aspect_ratio, vertical_fov);
+        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan();
+        self.projection_matrix = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
     }
     // Calculate the view matrix using a rotation and a position
     pub fn calculate_view_matrix(position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) -> veclib::Matrix4x4<f32> {

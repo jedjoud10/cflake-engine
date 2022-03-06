@@ -63,10 +63,12 @@ fn run(world: &mut World, mut data: EventKey) {
         let (position, rotation) = (transform.position, transform.rotation);
         let mut camera = components.get_mut::<crate::components::Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
+
+        // Calculate aspect ratio
+        let ratio = world.pipeline.window.dimensions().x as f32 / world.pipeline.window.dimensions().y as f32;
+        
         // And don't forget to update the camera matrices
-        // Load the pipeline since we need to get the window settings
-        let pipeline = world.pipeline.read();
-        camera.update_aspect_ratio(pipeline.window.dimensions);
+        camera.update_projection_matrix(ratio);
         camera.update_view_matrix(position, new_rotation);
 
         use world::rendering::pipeline;
