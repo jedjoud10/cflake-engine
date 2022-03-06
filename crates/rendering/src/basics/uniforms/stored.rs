@@ -16,7 +16,7 @@ impl StoredUniforms {
 
     // Execute the stored uniforms
     pub fn execute(&self, uniforms: &mut Uniforms) {
-        if let Some(inner) = self.inner {
+        if let Some(inner) = &self.inner {
             inner(uniforms)
         }
     }

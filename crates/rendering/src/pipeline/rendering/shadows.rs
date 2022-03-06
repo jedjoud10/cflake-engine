@@ -79,11 +79,11 @@ impl ShadowMapping {
         }
     }
     // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) fn cast_shadows(
+    pub(crate) fn render_all_shadows(
         &mut self,
         models: &[ShadowedModel],
         light_quat: &veclib::Quaternion<f32>,
-        pipeline: &mut Pipeline,
+        pipeline: &Pipeline,
     ) -> Result<(), RenderingError> {
         unsafe {
             // Setup the shadow framebuffer

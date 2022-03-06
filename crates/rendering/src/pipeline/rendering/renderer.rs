@@ -1,4 +1,4 @@
-use super::{ShadowMapping, RenderingSettings};
+use super::{ShadowMapping, RenderingSettings, common};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -162,11 +162,18 @@ impl SceneRenderer {
     }
 
     // Render the whole scene
-    pub fn render(&self, pipeline: &Pipeline, settings: RenderingSettings) {
+    pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // Render normally
-        for rendered in settings.normal {
-            
+        for renderer in settings.normal {
+            common::render_model(&settings, renderer, pipeline)
         }
+
+        // Then render the shadows
+        self.shadow_mapping.as_mut().map(|mapping| {
+            // Get the directional sun light source first            
+            let quat = settings.lights.get(0).and_then(|light| light._type.as_directional());
+            quat.map(|quat| mapping.render_all_shadows(settings.shadowed, quat, pipeline));
+        });
     }
 
     /*

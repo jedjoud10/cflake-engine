@@ -1,8 +1,9 @@
+use crate::basics::lights::LightSource;
+
 use super::{ShadowedModel, RenderedModel};
 
 
 // Settings that tell us how we should render the scene
-#[derive(Clone)]
 pub struct RenderingSettings<'a, 'b> {
     // Normal objects
     pub normal: &'a [RenderedModel<'b>],
@@ -11,10 +12,12 @@ pub struct RenderingSettings<'a, 'b> {
 
     // Camera settings
     pub camera: RenderingCamera<'b>,
+
+    // Lights
+    pub lights: Vec<LightSource>,
 }
 
 // Camera rendering settings
-#[derive(Clone)]
 pub struct RenderingCamera<'b> {
     // Position and rotation
     pub position: &'b veclib::Vector3<f32>,

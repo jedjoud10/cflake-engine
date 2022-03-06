@@ -11,7 +11,7 @@ use veclib::vec2;
 
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture},
+    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture, lights::LightSource},
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 

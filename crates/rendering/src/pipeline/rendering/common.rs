@@ -17,7 +17,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 }
 
 // Render a model
-pub(crate) fn render_model(settings: RenderingSettings, renderer: RenderedModel, pipeline: &Pipeline) {
+pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
     // Fallback values
     fn fallback_material(pipeline: &Pipeline) -> Ref<Material> {
         pipeline.materials.get(&pipeline.defaults().material).unwrap()
