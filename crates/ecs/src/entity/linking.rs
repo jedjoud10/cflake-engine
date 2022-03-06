@@ -24,12 +24,12 @@ impl ComponentLinkingGroup {
         self.link(T::default())
     }
     // Link a component to this entity
-    pub fn link<T: Component + Send + Sync + 'static>(&mut self, default_state: T) -> Result<(), ComponentLinkingError> {
+    pub fn link<T: Component + Send + Sync + 'static>(&mut self, component: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();
         // Check if we have the component linked on this linking group
         if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
             // Add the local component to our hashmap
-            let boxed = Box::new(default_state);
+            let boxed = Box::new(component);
             e.insert(boxed);
         } else {
             // The component was already linked to the group

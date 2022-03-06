@@ -20,7 +20,7 @@ pub struct Material {
 }
 
 impl PipelineCollectionElement for Material {
-    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {}
+    fn added(&mut self, handle: &Handle<Self>) {}
 
     fn disposed(self) {}
 }

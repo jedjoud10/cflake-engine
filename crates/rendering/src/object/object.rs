@@ -7,6 +7,6 @@ where
     Self: Sized,
 {
     // Called whenever the element is added in it's corresponding PipelineCollection
-    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>);
+    fn added(&mut self, handle: &Handle<Self>);
     fn disposed(self);
 }

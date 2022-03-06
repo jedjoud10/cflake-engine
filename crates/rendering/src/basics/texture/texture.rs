@@ -270,7 +270,7 @@ unsafe fn update_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer:
 }
 
 impl PipelineCollectionElement for Texture {
-    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
         self.ifd = get_ifd(self._format, self._type);
         self.target = match self.dimensions {
             TextureDimensions::Texture1d(_) => gl::TEXTURE_1D,
@@ -384,9 +384,6 @@ impl Asset for Texture {
         // Flip
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
-        Some(TextureBuilder::default()
-            .bytes(bytes)
-            .dimensions(TextureDimensions::Texture2d(vec2(width, height)))
-            .build())
+        Some(TextureBuilder::default().bytes(bytes).dimensions(TextureDimensions::Texture2d(vec2(width, height))).build())
     }
 }

@@ -45,7 +45,7 @@ impl Shader {
 }
 
 impl PipelineCollectionElement for Shader {
-    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
         // Compiling
         self.program = compile_shader(self.settings.sources_mut());
     }

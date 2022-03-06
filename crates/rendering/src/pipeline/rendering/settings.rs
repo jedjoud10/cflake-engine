@@ -1,7 +1,4 @@
-use crate::basics::lights::LightSource;
-
-use super::{ShadowedModel, RenderedModel};
-
+use super::{RenderedModel, ShadowedModel};
 
 // Settings that tell us how we should render the scene
 pub struct RenderingSettings<'a, 'b> {
@@ -12,9 +9,6 @@ pub struct RenderingSettings<'a, 'b> {
 
     // Camera settings
     pub camera: RenderingCamera<'b>,
-
-    // Lights
-    pub lights: Vec<LightSource>,
 }
 
 // Camera rendering settings

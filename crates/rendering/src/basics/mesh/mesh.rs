@@ -63,7 +63,7 @@ impl Asset for Mesh {
 }
 
 impl PipelineCollectionElement for Mesh {
-    fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh
         if self.vertices().is_empty() {
             return;

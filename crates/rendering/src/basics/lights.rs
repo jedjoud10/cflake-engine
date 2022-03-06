@@ -1,2 +1,2 @@
-mod light_source;
-pub use light_source::*;
+mod common;
+pub use common::*;

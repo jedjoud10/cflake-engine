@@ -1,6 +1,4 @@
 use crate::object::PipelineCollectionElement;
-
-use super::InnerPipelineCollection;
 use bitfield::AtomicSparseBitfield;
 use parking_lot::Mutex;
 use slotmap::{Key, KeyData};
@@ -8,7 +6,7 @@ use std::{marker::PhantomData, rc::Rc, sync::Arc};
 
 // A unique pipeline collection key
 slotmap::new_key_type! {
-    pub(crate) struct PipelineElemKey;
+    pub struct PipelineElemKey;
 }
 
 // A strong handle to a pipeline object. If there are 0 strong handles, the pipeline object will be deallocated (totally not stolen from Bevy)

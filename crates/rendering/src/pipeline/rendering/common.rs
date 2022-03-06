@@ -1,6 +1,14 @@
-use std::{ptr::null, cell::Ref};
+use std::{cell::Ref, ptr::null};
 
-use crate::{basics::{mesh::Mesh, material::Material, shader::Shader, uniforms::{Uniforms, StoredUniforms}}, pipeline::{Handle, Pipeline}};
+use crate::{
+    basics::{
+        material::Material,
+        mesh::Mesh,
+        shader::Shader,
+        uniforms::{StoredUniforms, Uniforms},
+    },
+    pipeline::{Handle, Pipeline},
+};
 
 use super::RenderingSettings;
 
@@ -12,20 +20,20 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
         // Actually draw the mesh
         gl::BindVertexArray(mesh.vao());
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.buffers()[0]);
-        gl::DrawElements(gl::TRIANGLES, mesh.indices().len() as i32, gl::UNSIGNED_INT, null());    
+        gl::DrawElements(gl::TRIANGLES, mesh.indices().len() as i32, gl::UNSIGNED_INT, null());
     }
 }
 
 // Render a model
 pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
     // Fallback values
-    fn fallback_material(pipeline: &Pipeline) -> Ref<Material> {
+    fn fallback_material(pipeline: &Pipeline) -> &Material {
         pipeline.materials.get(&pipeline.defaults().material).unwrap()
     }
-    fn fallback_shader(pipeline: &Pipeline) -> Ref<Shader> {
+    fn fallback_shader(pipeline: &Pipeline) -> &Shader {
         pipeline.shaders.get(&pipeline.defaults().shader).unwrap()
     }
-    fn fallback_mesh(pipeline: &Pipeline) -> Ref<Mesh> {
+    fn fallback_mesh(pipeline: &Pipeline) -> &Mesh {
         pipeline.meshes.get(&pipeline.defaults().mesh).unwrap()
     }
 

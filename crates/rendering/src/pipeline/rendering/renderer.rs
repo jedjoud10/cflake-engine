@@ -1,4 +1,4 @@
-use super::{ShadowMapping, RenderingSettings, common};
+use super::{common, RenderingSettings, ShadowMapping};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -10,7 +10,6 @@ use crate::{
 };
 use assets::assetc;
 use gl::types::GLuint;
-
 
 // Scene renderer that will render our world using deferred rendering
 // TODO: Document
@@ -170,9 +169,17 @@ impl SceneRenderer {
 
         // Then render the shadows
         self.shadow_mapping.as_mut().map(|mapping| {
-            // Get the directional sun light source first            
-            let quat = settings.lights.get(0).and_then(|light| light._type.as_directional());
-            quat.map(|quat| mapping.render_all_shadows(settings.shadowed, quat, pipeline));
+            // The first directional light that we find will be used as the sunlight
+            let first = pipeline.lights
+                .iter()
+                .find(|(_, light)| 
+                    light._type
+                    .as_directional()
+                    .is_some())
+                .map(|(_, value)| value);
+            
+            let quat = first.map(|light| light.transform.rotation);
+            quat.map(|quat| mapping.render_all_shadows(settings.shadowed, &quat, pipeline));
         });
     }
 
@@ -226,7 +233,7 @@ impl SceneRenderer {
     }
     // Render a single renderer
     fn render(mesh: &Mesh) {}
-    
+
     // Called each frame, to render the world
     pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) -> FrameDebugInfo {
         // Prepare

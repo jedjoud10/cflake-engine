@@ -26,7 +26,7 @@ impl AtomicGroup {
 
 impl PipelineCollectionElement for AtomicGroup {
     // Create the OpenGL buffers for this atomic group
-    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {
+    fn added(&mut self, handle: &Handle<Self>) {
         unsafe {
             // Create the OpenGL buffer
             gl::GenBuffers(1, &mut self.buffer);

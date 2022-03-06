@@ -4,18 +4,18 @@ use glutin::{
     event::WindowEvent,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-    ContextBuilder, GlProfile, GlRequest, NotCurrent, PossiblyCurrent, WindowedContext,
+    ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext,
 };
 use others::Time;
 use veclib::vec2;
 
 use crate::{
-    advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
-    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture, lights::LightSource},
+    advanced::compute::ComputeShader,
+    basics::{lights::StoredLight, material::Material, mesh::Mesh, shader::Shader, texture::Texture},
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{PipelineCollection, PipelineSettings, SceneRenderer, DefaultElements};
+use super::{DefaultElements, PipelineCollection, PipelineSettings, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters)]
@@ -28,6 +28,7 @@ pub struct Pipeline {
 
     // Others
     pub materials: PipelineCollection<Material>,
+    pub lights: PipelineCollection<StoredLight>,
 
     // Window
     pub window: Window,
@@ -89,6 +90,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         compute_shaders: Default::default(),
         textures: Default::default(),
         materials: Default::default(),
+        lights: Default::default(),
         time: Default::default(),
         window: {
             // Create a new window

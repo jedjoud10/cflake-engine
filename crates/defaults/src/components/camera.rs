@@ -24,12 +24,6 @@ impl Camera {
         camera.update_projection_matrix();
         camera
     }
-    // Update the aspect ratio of this camera
-    pub fn update_aspect_ratio(&mut self, dims: veclib::Vector2<u16>) {
-        self.aspect_ratio = dims.x as f32 / dims.y as f32;
-        // Also update the projection matrix
-        self.update_projection_matrix();
-    }
     // Update the projection matrix of this camera
     pub fn update_projection_matrix(&mut self) {
         // Turn the horizontal fov into a vertical one

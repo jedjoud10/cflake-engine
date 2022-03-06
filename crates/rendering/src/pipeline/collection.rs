@@ -12,10 +12,9 @@ use parking_lot::Mutex;
 use slotmap::SlotMap;
 
 // A pipeline collection that contains multiple elements of the same type
-pub(crate) type InnerPipelineCollection<T> = Rc<RefCell<SlotMap<PipelineElemKey, T>>>;
 pub struct PipelineCollection<T: PipelineCollectionElement> {
     // The inner storage
-    inner: InnerPipelineCollection<T>,
+    inner: SlotMap<PipelineElemKey, T>,
     // Keep track of the elements that must be removed
     to_remove: Arc<Mutex<Vec<PipelineElemKey>>>,
 }
@@ -34,47 +33,42 @@ impl<T: PipelineCollectionElement> PipelineCollection<T> {
     pub fn dispose_dangling(&mut self) {
         let mut to_remove_locked = self.to_remove.lock();
         let to_remove = std::mem::take(&mut *to_remove_locked);
-        let mut inner = self.inner.borrow_mut();
         for key in to_remove {
             // Silently ignores elements that have already been removed
-            inner.remove(key);
+            self.inner.remove(key);
         }
+    }
+    // Iter
+    pub fn iter(&self) -> impl Iterator<Item = (PipelineElemKey, &T)> {
+        self.inner.iter()
+    }
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (PipelineElemKey, &mut T)> {
+        self.inner.iter_mut()
     }
     // Get an element
-    pub fn get(&self, handle: &Handle<T>) -> Option<Ref<T>> {
-        let inner = self.inner.borrow();
-        if !inner.contains_key(*handle.key) {
-            return None;
-        }
-        Some(Ref::map(inner, |slotmap| slotmap.get(*handle.key).unwrap()))
+    pub fn get(&self, handle: &Handle<T>) -> Option<&T> {
+        self.inner.get(*handle.key)
     }
     // Mutably get an element
-    pub fn get_mut(&self, handle: &Handle<T>) -> Option<RefMut<T>> {
-        let inner = self.inner.borrow_mut();
-        if !inner.contains_key(*handle.key) {
-            return None;
-        }
-        Some(RefMut::map(inner, |slotmap| slotmap.get_mut(*handle.key).unwrap()))
+    pub fn get_mut(&mut self, handle: &Handle<T>) -> Option<&mut T> {
+        self.inner.get_mut(*handle.key)
     }
     // Manually remove an element, though you should never do this since the Drop implementation on Handle<T> handles automatically removing unused elements
     pub fn remove(&mut self, handle: &Handle<T>) {
-        let mut inner = self.inner.borrow_mut();
         // Silently ignores elements that have already been removed
-        inner.remove(*handle.key);
+        self.inner.remove(*handle.key);
     }
     // Insert an element to the collection, returning it's specific handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
-        let inner_ = self.inner.clone();
-        let mut inner = inner_.borrow_mut();
-        let key = inner.insert(value);
+        let key = self.inner.insert(value);
         // Generate the OpenGL objects now
-        let elem = inner.get_mut(key).unwrap();
+        let elem = self.inner.get_mut(key).unwrap();
         let handle = Handle {
             key: Arc::new(key),
             to_remove: Some(self.to_remove.clone()),
             _phantom: PhantomData::default(),
         };
-        elem.added(self, handle.clone());
+        elem.added(&handle);
         handle
     }
 }

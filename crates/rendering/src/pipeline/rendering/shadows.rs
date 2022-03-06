@@ -79,12 +79,7 @@ impl ShadowMapping {
         }
     }
     // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) fn render_all_shadows(
-        &mut self,
-        models: &[ShadowedModel],
-        light_quat: &veclib::Quaternion<f32>,
-        pipeline: &Pipeline,
-    ) -> Result<(), RenderingError> {
+    pub(crate) fn render_all_shadows(&mut self, models: &[ShadowedModel], light_quat: &veclib::Quaternion<f32>, pipeline: &Pipeline) -> Result<(), RenderingError> {
         unsafe {
             // Setup the shadow framebuffer
             gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
@@ -114,7 +109,9 @@ impl ShadowMapping {
             uniforms.set_mat44f32("lsm_matrix", &lsm);
 
             // Render now
-            unsafe { super::common::render(&mesh); }
+            unsafe {
+                super::common::render(&mesh);
+            }
         }
         Ok(())
     }

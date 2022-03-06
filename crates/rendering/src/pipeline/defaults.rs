@@ -1,7 +1,13 @@
 use assets::assetc;
 use veclib::vec2;
 
-use crate::basics::{material::{Material, MaterialTextures}, mesh::{Mesh, Vertices}, texture::{Texture, TextureBuilder, TextureDimensions}, uniforms::StoredUniforms, shader::{Shader, ShaderInitSettings}};
+use crate::basics::{
+    material::{Material, MaterialTextures},
+    mesh::{Mesh, Vertices},
+    shader::{Shader, ShaderInitSettings},
+    texture::{Texture, TextureBuilder, TextureDimensions},
+    uniforms::StoredUniforms,
+};
 
 use super::{Handle, Pipeline};
 
@@ -13,13 +19,13 @@ pub struct DefaultElements {
     pub black: Handle<Texture>,
     pub missing: Handle<Texture>,
     pub normal_map: Handle<Texture>,
-    
+
     // Meshes
     pub mesh: Handle<Mesh>,
-    
+
     // Materials
     pub material: Handle<Material>,
-    
+
     // Default rendering shader
     pub shader: Handle<Shader>,
 }
@@ -27,7 +33,7 @@ pub struct DefaultElements {
 impl DefaultElements {
     // Load the default elements
     pub(crate) fn new(pipeline: &mut Pipeline) -> Self {
-        // Default textures that are created at runtime 
+        // Default textures that are created at runtime
         let white = TextureBuilder::default()
             .bytes(vec![255, 255, 255, 255])
             .dimensions(TextureDimensions::Texture2d(vec2(1, 1)))
@@ -45,7 +51,7 @@ impl DefaultElements {
             .dimensions(TextureDimensions::Texture2d(vec2(1, 1)))
             .build();
         let normal_map = pipeline.textures.insert(normal_map);
-            
+
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
         let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap()).build();
         let missing = pipeline.textures.insert(missing);
@@ -55,9 +61,11 @@ impl DefaultElements {
         let mesh = pipeline.meshes.insert(mesh);
 
         // Default rendering shader
-        let shader = Shader::new(ShaderInitSettings::default()
-            .source("defaults/shaders/rendering/default.vrsh.glsl")
-            .source("defaults/shaders/rendering/default.frsh.glsl"))
+        let shader = Shader::new(
+            ShaderInitSettings::default()
+                .source("defaults/shaders/rendering/default.vrsh.glsl")
+                .source("defaults/shaders/rendering/default.frsh.glsl"),
+        )
         .unwrap();
         let shader = pipeline.shaders.insert(shader);
 
@@ -72,7 +80,7 @@ impl DefaultElements {
             ..Default::default()
         };
         let material = pipeline.materials.insert(material);
-        
+
         Self {
             white,
             black,
