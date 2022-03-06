@@ -2,7 +2,7 @@ use world::{
     ecs::component::Component,
     math::shapes::{Cuboid, ShapeType, Sphere},
     physics::rapier3d::prelude::{ColliderBuilder, ColliderHandle},
-    rendering::{basics::mesh::Mesh, object::ObjectID},
+    rendering::{basics::mesh::Mesh, pipeline::Handle},
 };
 
 // Collider components
@@ -53,7 +53,7 @@ impl Collider {
             })),
         }
     }
-    pub fn mesh(mesh: ObjectID<Mesh>) -> Self {
+    pub fn mesh(mesh: Handle<Mesh>) -> Self {
         Self {
             handle: ColliderHandle::invalid(),
             restitution: 0.0,
@@ -76,5 +76,5 @@ impl Collider {
 // Collider type
 pub enum ColliderType {
     Shape(ShapeType),
-    Mesh(ObjectID<Mesh>),
+    Mesh(Handle<Mesh>),
 }

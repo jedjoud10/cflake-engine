@@ -3,7 +3,6 @@ use cflake_engine::{
     ecs::entity::{ComponentLinkingGroup, Entity},
     rendering::{
         basics::lights::{LightSource, LightSourceType},
-        pipeline::pipec,
     },
     veclib, World,
 };

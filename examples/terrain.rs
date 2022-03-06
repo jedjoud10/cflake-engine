@@ -1,3 +1,5 @@
+fn main() {}
+/*
 use cflake_engine::{
     assets::assetc,
     defaults::{
@@ -130,3 +132,4 @@ fn init(world: &mut World) {
 
     world.globals.add(terrain).unwrap();
 }
+*/

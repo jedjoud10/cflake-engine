@@ -1,5 +1,5 @@
 use getset::{Getters, MutGetters, CopyGetters};
-use glutin::window::Fullscreen;
+use glutin::{window::Fullscreen, ContextWrapper, PossiblyCurrent, WindowedContext};
 
 // Get the default width and height of the starting window
 pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
@@ -8,13 +8,11 @@ pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Window {
     #[getset(get_copy = "pub")]
-    dimensions: veclib::Vector2<u16>,
+    pub(crate) dimensions: veclib::Vector2<u16>,
     #[getset(get = "pub", get_mut = "pub")]
-    inner: glutin::window::Window,
+    pub(crate) context: WindowedContext<PossiblyCurrent>,
     #[getset(get_copy = "pub")]
-    pixels_per_point: f64,
-    #[getset(get_copy = "pub")]
-    fullscreen: bool,
+    pub(crate) fullscreen: bool,
 }
 
 impl Window {
@@ -22,12 +20,14 @@ impl Window {
     pub fn set_fullscreen(&mut self, fullscreen: bool) {
         if fullscreen {
             // Enable fullscreen
-            let vm = self.inner.primary_monitor().unwrap().video_modes().next().unwrap();
-            self.inner.set_fullscreen(Some(Fullscreen::Exclusive(vm)));
+            let vm = self.context.window().primary_monitor().unwrap().video_modes().next().unwrap();
+            self.context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
         } else {
             // Disable fullscreen
-            self.inner.set_fullscreen(None);
+            self.context.window().set_fullscreen(None);
         }
         self.fullscreen = fullscreen;
     }
+    // Calculate the pixels per point
+    pub fn pixels_per_point(&self) -> f64 { self.context.window().scale_factor() }
 }

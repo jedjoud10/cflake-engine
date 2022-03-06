@@ -615,6 +615,7 @@ name = "defaults"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "bitflags",
  "enum-as-inner",
  "parking_lot 0.12.0",
  "veclib",

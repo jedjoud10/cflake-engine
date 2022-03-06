@@ -1,4 +1,6 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc, marker::PhantomData};
+use bitfield::AtomicSparseBitfield;
+use parking_lot::Mutex;
 use slotmap::{Key, KeyData};
 use super::InnerPipelineCollection;
 
@@ -9,33 +11,40 @@ slotmap::new_key_type! {
 
 // A strong handle to a pipeline object. If there are 0 strong handles, the pipeline object will be deallocated (totally not stolen from Bevy)
 pub struct Handle<T> {
-    pub(crate) key: Rc<PipelineElemKey>,
-    pub(crate) inner: Option<InnerPipelineCollection<T>>,
+    pub(crate) key: Arc<PipelineElemKey>,
+    pub(crate) to_remove: Option<Arc<Mutex<Vec<PipelineElemKey>>>>,
+    pub(crate) _phantom: PhantomData<T>,
 }
 
 impl<T> Default for Handle<T> {
     fn default() -> Self {
         Self { 
-            key: Rc::new(PipelineElemKey::null()),
-            inner: None
+            key: Arc::new(PipelineElemKey::null()),
+            to_remove: None,
+            _phantom: PhantomData::default(),
         }
     }
 }
 
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        Self { inner: self.inner.clone(), key: self.key.clone() }
+        Self {
+            key: self.key.clone(),
+            to_remove: self.to_remove.clone(),
+            _phantom: PhantomData::default(),
+        }
     }
 }
 
 impl<T> Drop for Handle<T> {
     // Remove the element if this is the last strong handle it has
     fn drop(&mut self) {
-        if let Some(inner) = &self.inner {
-            let strong_count = Rc::strong_count(&self.key);
+        if let Some(to_remove) = &self.to_remove {
+            let strong_count = Arc::strong_count(&self.key);
             if strong_count == 0 {
-                let mut inner = inner.borrow_mut();
-                inner.remove(*self.key).unwrap();
+                // Remove the element that this Handle referred to
+                let mut inner = to_remove.lock();
+                inner.push(self.key.as_ref().clone());
             }
         }
     }

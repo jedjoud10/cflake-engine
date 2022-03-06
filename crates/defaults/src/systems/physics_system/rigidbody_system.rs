@@ -32,7 +32,7 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, 
             world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             world::math::shapes::ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(*mesh).unwrap()),
+        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, &pipeline.meshes.get(mesh).unwrap()),
     }
 }
 
@@ -40,7 +40,6 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, 
 fn added_entities(world: &mut World, mut data: EventKey) {
     // Add each rigidbody and it's corresponding collider
     let query = data.as_query_mut().unwrap();
-    let pipeline = world.pipeline.read();
     for (_, components) in query.iter_mut() {
         // Get the components
         let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
@@ -54,7 +53,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
                 translation: vec3_to_translation(transform.position),
             })
             .build();
-        let r_collider = ColliderBuilder::new(get_shared_shape(&pipeline, &transform.scale_matrix(), &collider))
+        let r_collider = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), &collider))
             .friction(collider.friction)
             .restitution(collider.restitution)
             //.mass_properties(MassProperties::new(rapier3d::prelude::Point::new(0.0, 0.0, 0.0), 10.0, rapier3d::na::zero()))

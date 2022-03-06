@@ -82,3 +82,4 @@ pub fn start_after_user_systems(world: &mut World) {
     terrain_system::mesh_update_system::system(world);
     terrain_system::editing_system::system(world);
     */
+}

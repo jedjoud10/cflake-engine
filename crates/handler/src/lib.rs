@@ -1,3 +1,4 @@
+use defaults::rendering::pipeline::Pipeline;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -14,26 +15,6 @@ use glutin::{
 use spin_sleep::LoopHelper;
 pub use world::*;
 
-// Initialize glutin and the window
-fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<NotCurrent> {
-    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
-        rendering::utils::DEFAULT_WINDOW_SIZE.x as u32,
-        rendering::utils::DEFAULT_WINDOW_SIZE.y as u32,
-    ));
-    let wc = ContextBuilder::new()
-        .with_double_buffer(Some(true))
-        .with_vsync(vsync)
-        .with_gl_profile(GlProfile::Core)
-        .with_gl_debug_flag(false)
-        .with_gl(GlRequest::Latest)
-        .build_windowed(wb, el)
-        .unwrap();
-    let window = wc.window();
-    window.set_cursor_grab(true).unwrap();
-    window.set_cursor_visible(false);
-    wc
-}
-
 // Start le engine
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
@@ -47,34 +28,17 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
 
     // Glutin stuff
     let event_loop = EventLoop::new();
-    let window_context = init_glutin_window(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync);
+
+    // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
+    let pipeline = Pipeline::new(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync, config.fullscreen);
 
     defaults::preload_default_assets();
-
-    // Set fullscreen if we want to
-    let window = window_context.window();
-    if config.fullscreen {
-        let vm = window.primary_monitor().unwrap().video_modes().next().unwrap();
-        window_context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
-    } else {
-        window_context.window().set_fullscreen(None);
-    }
 
     // Hehe multithreaded renering goes BRRRRRRRR
     let shadows = config.shadow_resolution.convert();
 
-    // Create some pipeline settings
-    let pipeline_settings = rendering::pipeline::PipelineSettings {
-        shadow_resolution: shadows.0,
-        shadow_bias: shadows.1,
-        vsync: config.vsync,
-    };
-
-    // A little trolling
-    let pipeline_data = rendering::pipeline::init_pipeline(pipeline_settings, window_context);
-
     // Create the world
-    let mut world = World::new(config, io, pipeline_data);
+    let mut world = World::new(config, io, pipeline);
 
     // Calling the callback
     println!("Calling World Initialization callback");
@@ -108,11 +72,8 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
         Event::MainEventsCleared => {
             // Update the delta time
             let delta = sleeper.loop_start_s();
-            // Update the timings
-            world.time.update(delta);
             // We can update the world now
-            world.update_start();
-            world.update_end();
+            world.update(delta);
 
             // If the world state is "exit", we must exit from the game
             if let WorldState::Exit = world.state {
@@ -140,14 +101,8 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
     }
 
     match event {
-        WindowEvent::ScaleFactorChanged { scale_factor, new_inner_size: _ } => {
-            let pipeline = world.pipeline.read();
-            pipec::update_callback(&pipeline, move |pipeline, _| {
-                pipeline.window.pixels_per_point = scale_factor;
-            });
-        }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        WindowEvent::Resized(size) => world.resize_window(veclib::vec2(size.width as u16, size.height as u16)),
+        WindowEvent::Resized(size) => world.pipeline.window.resize(sized),
         _ => (),
     }
 }
