@@ -61,7 +61,9 @@ impl LinkedComponents {
         let ptr = cell.get();
         let component = unsafe { &mut *ptr }.as_mut();
         let component = registry::cast_component_mut::<T>(component)?;
-        self.mutated_components.set(key.data().as_ffi() as usize, true);
+        // We only care about the index
+        let index = key.data().as_ffi() & 0xffff_ffff;
+        self.mutated_components.set(index as usize, true);
         Ok(component)
     }
     // Check if a specific component has been updated during this frame
@@ -73,7 +75,8 @@ impl LinkedComponents {
         let cbitfield = registry::get_component_bitfield::<T>();
         let key = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
 
-        // Now check if it has been mutated or not
-        Ok(self.mutated_components.get(key.data().as_ffi() as usize))
+        // We only care about the index
+        let index = key.data().as_ffi() & 0xffff_ffff;
+        Ok(self.mutated_components.get(index as usize))
     }
 }

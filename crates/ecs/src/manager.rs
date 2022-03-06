@@ -5,8 +5,9 @@ use std::{
 
 use crate::{
     component::ComponentSet,
-    entity::EntitySet,
+    entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityKey, EntitySet},
     system::{System, SystemSet, SystemSettings, Systems},
+    utils::{ComponentLinkingError, ComponentUnlinkError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -29,7 +30,8 @@ impl<World> Default for ECSManager<World> {
 // Global code for the Entities, Components, and Systems
 impl<World> ECSManager<World> {
     // Create the proper execution settings for systems, and return them
-    pub fn ready(&self) -> (Rc<RefCell<Vec<System<World>>>>, SystemSettings) {
+    pub fn ready(&mut self) -> (Rc<RefCell<Vec<System<World>>>>, SystemSettings) {
+        self.components.clear_for_next_frame().unwrap();
         (
             self.systems.inner.clone(),
             SystemSettings {
@@ -43,16 +45,25 @@ impl<World> ECSManager<World> {
             system.run_system(world, settings.clone());
         }
     }
-    // Run the systems in sync, but their component updates are not
-    // Used only for testing
-    #[allow(dead_code)]
-    pub(crate) fn run_systems(&self, world: &mut World) {
-        let (systems, settings) = self.ready();
-        Self::execute_systems(systems.borrow(), world, settings);
+
+    // Wrapper functions
+    // Entity adding/removing
+    pub fn add(&mut self, entity: Entity, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
+        let key = self.entities.add(entity)?;
+        // Then link
+        self.components
+            .link(key, &mut self.entities, &mut self.systems, group)
+            .map_err(|error| EntityError::new(error.details, key))?;
+        Ok(key)
     }
-    /* #endregion */
-    // Finish update of the ECS manager
-    pub fn finish_update(&mut self) {
-        self.components.clear().unwrap();
+    pub fn remove(&mut self, key: EntityKey) -> Result<(), EntityError> {
+        self.entities.remove(key, &mut self.components, &mut self.systems)
+    }
+    // Linking / unlinking
+    pub fn link(&mut self, key: EntityKey, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
+        self.components.link(key, &mut self.entities, &mut self.systems, group)
+    }
+    pub fn unlink_components(&mut self, key: EntityKey, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
+        self.components.unlink(key, &mut self.entities, &mut self.systems, group)
     }
 }

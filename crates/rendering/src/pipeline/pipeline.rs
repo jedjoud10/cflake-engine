@@ -407,9 +407,6 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 // We render the scene here
                 let pipeline_ = pipeline.read();
                 let frame_debug_info = renderer.render_frame(&*pipeline_);
-                unsafe {
-                    gl::Finish();
-                }
                 let render_frame_duration = i.elapsed();
                 // And we also sync at the end of each frame
                 ebarrier_clone.wait();

@@ -53,7 +53,7 @@ impl std::error::Error for ComponentError {
 // An error that might occur when trying to link component
 #[derive(Debug)]
 pub struct ComponentLinkingError {
-    details: String,
+    pub(crate) details: String,
 }
 
 impl ComponentLinkingError {

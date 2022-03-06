@@ -53,6 +53,14 @@ pub mod test {
         }
     }
 
+    // Run the systems in sync, but their component updates are not
+    // Used only for testing
+    fn run_systems(ecs: &mut ECSManager<World>, world: &mut World) {
+        ecs.components.clear_for_next_frame().unwrap();
+        let (systems, settings) = ecs.ready();
+        ECSManager::execute_systems(systems.borrow(), world, settings);
+    }
+
     #[test]
     // Simple test to test the ecs
     pub fn test() {
@@ -76,11 +84,9 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entities.get(key2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&mut world);
+        run_systems(&mut ecs, &mut world);
         ecs.entities.remove(key3, &mut ecs.components, &mut ecs.systems).unwrap();
-        ecs.finish_update();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
+        run_systems(&mut ecs, &mut world);
     }
     #[test]
     // Multithreaded stress test
@@ -115,7 +121,7 @@ pub mod test {
         }
         for _x in 0..10 {
             let i = std::time::Instant::now();
-            ecs.run_systems(&mut world);
+            run_systems(&mut ecs, &mut world);
             println!("Took {}µs to update", i.elapsed().as_micros())
         }
     }
@@ -140,7 +146,7 @@ pub mod test {
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
         assert_ne!(ecs.entities.get(key).unwrap().cbitfield, Bitfield::<u32>::default());
-        ecs.run_systems(&mut world);
+        run_systems(&mut ecs, &mut world);
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
@@ -195,11 +201,9 @@ pub mod test {
         group.link(Tagged::new("Some interesting tag")).unwrap();
         let key = ecs.entities.add(entity).unwrap();
         ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
+        run_systems(&mut ecs, &mut world);
         ecs.entities.remove(key, &mut ecs.components, &mut ecs.systems).unwrap();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
+        run_systems(&mut ecs, &mut world);
         // After this execution, the dangling components should have been removed
         //assert_eq!(ecs.components.(), 0);
     }

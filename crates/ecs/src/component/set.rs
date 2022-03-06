@@ -146,8 +146,8 @@ impl<World> ComponentSet<World> {
         });
         Ok(())
     }
-    // Called at the end of the frame to clear the per frame values
-    pub(crate) fn clear(&mut self) -> Result<(), ComponentError> {
+    // Called at the start of the frame
+    pub(crate) fn clear_for_next_frame(&mut self) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();

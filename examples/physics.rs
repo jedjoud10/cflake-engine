@@ -1,4 +1,3 @@
-/*
 use cflake_engine::{
     defaults::components::{Camera, Collider, ColliderType, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::{ComponentLinkingGroup, Entity},
@@ -24,7 +23,7 @@ fn init(world: &mut World) {
     group.link(Camera::new(90.0, 2.0, 9000.0)).unwrap();
     group.link_default::<Transform>().unwrap();
     let entity = Entity::default();
-    let _id = world.ecs.add_entity(entity, group).unwrap();
+    let _id = world.ecs.add(entity, group).unwrap();
     let pipeline = world.pipeline.read();
     // Create the directional light source
     let light = LightSource::new(LightSourceType::Directional {
@@ -44,7 +43,7 @@ fn init(world: &mut World) {
     group
         .link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
     let entity = Entity::default();
-    world.ecs.add_entity(entity, group).unwrap();
+    world.ecs.add(entity, group).unwrap();
     for y in 0..5 {
         for x in 0..15 {
             for z in 0..5 {
@@ -60,7 +59,7 @@ fn init(world: &mut World) {
                 .link(Collider::cuboid(veclib::Vector3::ONE))
                 .unwrap();
                 let entity = Entity::default();
-                world.ecs.add_entity(entity, group).unwrap();
+                world.ecs.add(entity, group).unwrap();
             }
         }
     }
@@ -79,11 +78,8 @@ fn init(world: &mut World) {
                 .link(Collider::sphere(0.5).with_friction(0.05).with_restitution(1.3))
                 .unwrap();
                 let entity = Entity::default();
-                world.ecs.add_entity(entity, group).unwrap();
+                world.ecs.add(entity, group).unwrap();
             }
         }
     }
 }
-
-*/
-fn main() {}

@@ -29,5 +29,5 @@ fn run(world: &mut World, _data: EventKey) {
 
 // Create the system
 pub fn system(world: &mut World) {
-    world.ecs.build_system().with_run_event(run).build();
+    world.ecs.systems.builder().with_run_event(run).build();
 }
