@@ -1,4 +1,3 @@
-use defaults::rendering::pipeline::pipec;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -148,7 +147,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
             });
         }
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        WindowEvent::Resized(size) => world.resize_window_event(veclib::vec2(size.width as u16, size.height as u16)),
+        WindowEvent::Resized(size) => world.resize_window(veclib::vec2(size.width as u16, size.height as u16)),
         _ => (),
     }
 }

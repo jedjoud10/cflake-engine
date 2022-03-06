@@ -4,25 +4,26 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::null_mut,
+    ptr::{null_mut, null},
 };
 
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
+use enum_as_inner::EnumAsInner;
+use getset::{Getters, CopyGetters};
 use gl::types::GLuint;
 
-use crate::{
-    basics::uniforms::{ShaderIDType, UniformsDefinitionMap},
-    object::GlTracker,
-    pipeline::Pipeline,
-};
+use crate::basics::shader::ShaderSourceType;
 
 use super::{
-    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, ShaderInfoRead, UpdatedParameter},
-    IncludeExpansionError, ShaderSettings,
+    info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
+    IncludeExpansionError, ShaderSource
 };
 
+// Uniforms definition map
+pub type UniformsDefinitionMap = AHashMap<String, i32>;
+
 // Load the files that need to be included for this specific shader and return the included lines
-pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, included_paths: &mut HashSet<String>) -> Result<bool, IncludeExpansionError> {
+pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, included_paths: &mut AHashSet<String>) -> Result<bool, IncludeExpansionError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
     for (_i, line) in lines.iter_mut().enumerate() {
@@ -36,7 +37,7 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                assets::assetc::load::<String>(local_path)
+                assets::assetc::load(local_path)
                     .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
@@ -52,9 +53,14 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             let c = line.split("#include_custom ").collect::<Vec<&str>>()[1];
             let source_name = &c[2..(c.len() - 2)].to_string();
             let source = settings
-                .external_code
+                .directives()
                 .get(source_name)
-                .unwrap_or_else(|| panic!("Tried to expand #include_custom, but the given source name '{}' is not valid!", source_name));
+                .map(|directive| directive.as_external())
+                .flatten()
+                .ok_or(IncludeExpansionError::new(format!(
+                    "Tried to expand #include_custom, but the given source name '{}' is not valid!",
+                    source_name
+                )))?;
             *line = source.clone();
             break;
         }
@@ -80,17 +86,15 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
             fn format(line: &str, val: &str) -> String {
                 format!("{}{};", line.trim().split("#constant").next().unwrap(), val)
             }
+            // Expand
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let x = settings.consts.get(const_name);
-            if let Some(x) = x {
-                *line = format(line, x);
-                Ok(())
-            } else {
-                Err(IncludeExpansionError::new(format!(
-                    "Tried to expand #constant, but the given const name '{}' is not valid!",
-                    const_name
-                )))
-            }?;
+            let _const_line = settings.directives().get(const_name).map(|directive| {
+                Some(format(line, directive.as_const()?.as_str()))
+            }).flatten();
+            *line = _const_line.ok_or(IncludeExpansionError::new(format!(
+                "Tried to expand #constant, but the given const name '{}' is not valid!",
+                const_name
+            )))?;            
             break;
         }
     }
@@ -101,6 +105,107 @@ pub(crate) fn load_includes(settings: &ShaderSettings, source: &mut String, incl
         .iter()
         .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
     Ok(need_to_continue)
+}
+
+// Compile a whole shader using it's sources
+pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> ShaderProgram {
+    // Loop through all the subshaders and link them
+    // Extract the shader name
+    let shader_name = sources.iter().map(|(name, _)| name.clone()).collect::<Vec<String>>().join("_");
+
+    // Actually compile the shader now
+    println!("Compiling & Creating Shader {}...", shader_name);
+    let program = unsafe {
+        let program = gl::CreateProgram();
+
+        // Create & compile the shader sources and link them
+        let programs: Vec<u32> = sources.iter().map(|(_path, data)| compile_source(data)).collect::<Vec<_>>();
+        // Link
+        for shader in programs.iter() {
+            gl::AttachShader(program, *shader)
+        }
+
+        // Finalize the shader and stuff
+        gl::LinkProgram(program);
+
+        // Check for any errors
+        let mut info_log_length: i32 = 0;
+        let info_log_length_ptr: *mut i32 = &mut info_log_length;
+        let mut result: i32 = 0;
+        let result_ptr: *mut i32 = &mut result;
+        gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+        gl::GetProgramiv(program, gl::LINK_STATUS, result_ptr);
+        // Print any errors that might've happened while finalizing this shader
+        if info_log_length > 0 {
+            let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+            gl::GetProgramInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+            println!("Error while finalizing shader {}!:", shader_name);
+            let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+            let string = String::from_utf8(printable_log).unwrap();
+            println!("Error: \n{}", string);
+            panic!();
+        }
+        // Detach shaders
+        for shader in programs.iter() {
+            gl::DetachShader(program, *shader);
+        }
+        println!("Shader {} compiled and created succsessfully!", shader_name);
+        program
+    };
+    // Add the shader at the end
+    ShaderProgram {
+        program: program,
+        mappings: query_shader_uniforms_definition_map(program),
+    }
+}
+
+// Compile a shader source
+pub(crate) fn compile_source(source: &ShaderSource) -> GLuint {
+    println!("Compiling & Creating Shader Source {}...", source.file());            
+    let shader_type: u32 = match source._type() {
+        ShaderSourceType::Vertex => gl::VERTEX_SHADER,
+        ShaderSourceType::Fragment => gl::FRAGMENT_SHADER,
+        ShaderSourceType::Compute => gl::COMPUTE_SHADER, 
+    };
+    unsafe {
+        // Compiling the source
+        let program = gl::CreateShader(shader_type);
+
+        // Compile the shader
+        let cstring = CString::new(source.text().clone()).unwrap();
+        let shader_source: *const i8 = cstring.as_ptr();
+        gl::ShaderSource(program, 1, &shader_source, null());
+        gl::CompileShader(program);
+
+        // Check for any errors
+        let mut info_log_length: i32 = 0;
+        let info_log_length_ptr: *mut i32 = &mut info_log_length;
+        gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
+        
+        // Print any errors that might've happened while compiling this shader source
+        if info_log_length > 0 {
+            let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
+            gl::GetShaderInfoLog(program, info_log_length, std::ptr::null_mut::<i32>(), log.as_mut_ptr());
+            println!("Error while compiling shader source {} of type {:?}!:", source.file(), source._type());
+            let printable_log: Vec<u8> = log.iter().map(|&c| c as u8).collect();
+            let string = String::from_utf8(printable_log).unwrap();
+
+            // Put the line count
+            let error_source_lines = source.text().lines().enumerate();
+            let error_source = error_source_lines
+                .into_iter()
+                .map(|(count, line)| format!("({}): {}", count + 1, line))
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            println!("{}", error_source);
+            println!("Error: \n{}", string);
+            panic!();
+        }
+
+        println!("Shader Source {} compiled succsessfully!", source.file());
+        program
+    }
 }
 
 // Get the uniform definition map from a shader using the query API
@@ -119,21 +224,10 @@ pub(crate) fn query_shader_uniforms_definition_map(program: u32) -> UniformsDefi
                 Some((name.clone(), location))
             })
             .collect::<AHashMap<_, _>>();
-        UniformsDefinitionMap { mappings }
+        mappings
     } else {
         UniformsDefinitionMap::default()
     }
-}
-
-// Query some information about a shader, and then return the GlTracker
-pub(crate) fn query_shader_info_tracked(pipeline: &Pipeline, identifier: ShaderIDType, settings: ShaderInfoQuerySettings, read: ShaderInfoRead) -> GlTracker {
-    GlTracker::fake(move || {
-        let program = identifier.get_program(pipeline);
-        let output_queried_resources = query_shader_info(program, settings);
-        // Finally update the mutex that holds the queried resources
-        let mut lock = read.inner.lock();
-        *lock = output_queried_resources;
-    })
 }
 
 // Query some information about a shader, and then return
@@ -253,4 +347,57 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
             res_all: output_queried_resources_all,
         }
     }
+}
+
+// A single shader directive
+#[derive(EnumAsInner)]
+pub enum Directive {
+    Const(String),
+    External(String)
+}
+
+// Shader init settings (sources, additional code, consts)
+#[derive(Default)]
+pub struct ShaderInitSettings {
+    directives: AHashMap<String, Directive>,
+    sources: AHashMap<String, ShaderSource>,
+}
+
+// Getters and mut getters
+impl ShaderInitSettings {
+    pub fn directives(&self) -> &AHashMap<String, Directive> { &self.directives }
+    pub fn sources(&self) -> &AHashMap<String, ShaderSource> { &self.sources }
+    pub fn sources_mut(&mut self) -> &mut AHashMap<String, ShaderSource> { &mut self.sources }
+}
+
+// Shader init settings builder
+#[derive(Default)]
+pub struct ShaderInitSettingsBuilder {
+    inner: ShaderInitSettings,
+}
+
+impl ShaderInitSettingsBuilder {
+    // Add a shader directive
+    pub fn directive(mut self, name: &str, directive: Directive) -> Self {
+        self.inner.directives.insert(name.to_string(), directive);
+        self
+    }
+    // Add a source
+    pub fn source(mut self, path: &str) -> Self {
+        self.inner.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
+        self
+    }
+    // Build
+    pub fn build(self) -> ShaderInitSettings {
+        self.inner
+    }
+}
+
+// A shader program that contains an OpenGL program ID and the shader definition map
+#[derive(Getters, CopyGetters, Default, Clone)]
+pub struct ShaderProgram {
+    #[getset(get_copy = "pub")]
+    program: GLuint,
+    #[getset(get = "pub")]
+    mappings: UniformsDefinitionMap,
 }

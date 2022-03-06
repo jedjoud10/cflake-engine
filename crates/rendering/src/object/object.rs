@@ -1,24 +1,9 @@
-use super::{ConstructionTask, DeconstructionTask, ObjectID};
-use crate::pipeline::Pipeline;
+use crate::pipeline::{PipelineCollection, Handle};
 
-// Trait that is implemented on PipelineObjects that can be created and deleted
-pub trait PipelineObject
-where
-    Self: Sized,
-{
-    // Reserve this object's ID, returning it's ID and itself
-    fn reserve(self, pipeline: &Pipeline) -> Option<(Self, ObjectID<Self>)>;
-
-    // Send this object to the pipeline so it can be constructed using the add() function
-    fn send(self, id: ObjectID<Self>) -> ConstructionTask;
-
-    // Create a deconstruction task so we can remove this object from the pipeline
-    fn pull(id: ObjectID<Self>) -> DeconstructionTask;
-
-    // Create this pipeline object using it's reserved object ID
-    // This automatically adds it to the pipeline
-    fn add(self, pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<()>;
-
-    // Delete this object, removing it from the pipeline
-    fn delete(pipeline: &mut Pipeline, id: ObjectID<Self>) -> Option<Self>;
+// An OpenGL trait that will be added to all the objects that actually create OpenGL objects upon their creation
+// This also executes some drop code that will dispose of the OpenGL memory that we have allocated
+pub trait PipelineCollectionElement where Self: Sized {
+    // Called whenever the element is added in it's corresponding PipelineCollection
+    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>);
+    fn disposed(self);
 }

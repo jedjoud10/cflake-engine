@@ -1,42 +1,45 @@
-use crate::object::{ObjectID, PipelineObject};
-use ordered_vec::shareable::ShareableOrderedVec;
+use std::{rc::Rc, cell::{RefCell, Ref, RefMut}, sync::Arc};
 
-// A collection that contains a specific type of pipeline object
-pub struct Collection<T: PipelineObject> {
-    inner: ShareableOrderedVec<T>,
+use parking_lot::Mutex;
+use slotmap::SlotMap;
+
+use crate::object::PipelineCollectionElement;
+
+use super::{PipelineElemKey, Handle};
+
+// A pipeline collection that contains multiple elements of the same type
+// This can only be accessed on the main thread
+// TODO: Remove the arc mutex, even though that's only needed so that ECS components can be compatible
+pub(crate) type InnerPipelineCollection<T> = Arc<Mutex<SlotMap<PipelineElemKey, T>>>;
+
+pub struct PipelineCollection<T: PipelineCollectionElement> {
+    // The inner storage
+    inner: InnerPipelineCollection<T>,
 }
 
-impl<T: PipelineObject> Default for Collection<T> {
-    fn default() -> Self {
-        Self { inner: Default::default() }
+impl<T: PipelineCollectionElement> PipelineCollection<T> {
+    // Get an element
+    pub fn get(&self, handle: &Handle<T>) -> Option<Ref<T>> {
+        let inner = self.inner.lock();
+        if !inner.contains_key(*handle.key) { return None; }        
+        Some(Ref::map(inner, |slotmap| slotmap.get(*handle.key).unwrap()))
+    }
+    // Mutably get an element
+    pub fn get_mut(&self, handle: &Handle<T>) -> Option<RefMut<T>> {
+        let inner = self.inner.lock();
+        if !inner.contains_key(*handle.key) { return None; }
+        Some(RefMut::map(inner, |slotmap| slotmap.get_mut(*handle.key).unwrap()))
+    }
+    
+    // Insert an element to the collection, returning it's specific handle
+    pub fn insert(&mut self, value: T) -> Handle<T> {
+        let mut inner = self.inner.borrow_mut();
+        let key = inner.insert(value);
+        // Generate the OpenGL objects now
+        Handle {
+            inner: Some(self.inner.clone()),
+            key: Rc::new(key),
+        }
     }
 }
 
-impl<T: PipelineObject> Collection<T> {
-    // Get and get mut
-    pub fn get(&self, id: ObjectID<T>) -> Option<&T> {
-        self.inner.get(id.get()?)
-    }
-    pub fn get_mut(&mut self, id: ObjectID<T>) -> Option<&mut T> {
-        self.inner.get_mut(id.get()?)
-    }
-    // Iterators
-    pub fn iter(&self) -> impl Iterator<Item = (u64, &T)> {
-        self.inner.iter()
-    }
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (u64, &mut T)> {
-        self.inner.iter_mut()
-    }
-    // Generate a unique ID for a new object
-    pub fn gen_id(&self) -> ObjectID<T> {
-        ObjectID::new(self.inner.get_next_id_increment())
-    }
-    // Insert and remove
-    pub fn insert(&mut self, id: ObjectID<T>, val: T) -> Option<()> {
-        self.inner.insert(id.get()?, val);
-        Some(())
-    }
-    pub fn remove(&mut self, id: ObjectID<T>) -> Option<T> {
-        self.inner.remove(id.get()?)
-    }
-}

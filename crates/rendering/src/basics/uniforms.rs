@@ -1,10 +1,6 @@
-mod callback;
-mod definition;
+mod stored;
 mod error;
-mod settings;
 mod uniforms;
-pub use callback::*;
-pub use definition::*;
+pub use stored::*;
 pub use error::*;
-pub use settings::*;
 pub use uniforms::Uniforms;

@@ -54,6 +54,9 @@ pub struct UsageType {
 }
 
 impl UsageType {
+    pub fn new(access: AccessType, frequency: UpdateFrequency) -> Self {
+        Self { access, frequency }
+    }
     // Convert this UsageType to a valid OpenGL enum
     pub fn convert(&self) -> GLuint {
         match self.access {
