@@ -17,13 +17,15 @@ use super::{RenderingError, ShadowedModel};
 pub struct ShadowMapping {
     // Shadow-casting
     framebuffer: GLuint,
-    depth_texture: Handle<Texture>,
+    pub(crate) depth_texture: Handle<Texture>,
     shader: Handle<Shader>,
+    
+    // Matrices
+    ortho: veclib::Matrix4x4<f32>,
+    pub(crate) lightspace: veclib::Matrix4x4<f32>,
+
     // Settings
     shadow_resolution: u16,
-    // Light
-    ortho_matrix: veclib::Matrix4x4<f32>,
-    lightspace_matrix: veclib::Matrix4x4<f32>,
 }
 impl ShadowMapping {
     // Initialize a new shadow mapper
@@ -72,30 +74,31 @@ impl ShadowMapping {
         Self {
             framebuffer: fbo,
             depth_texture: texture,
-            ortho_matrix,
+            ortho: ortho_matrix,
             shader,
             shadow_resolution,
-            lightspace_matrix: veclib::Matrix4x4::IDENTITY,
+            lightspace: veclib::Matrix4x4::IDENTITY,
         }
     }
-    // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) fn render_all_shadows(&mut self, models: &[ShadowedModel], light_quat: &veclib::Quaternion<f32>, pipeline: &Pipeline) -> Result<(), RenderingError> {
-        unsafe {
-            // Setup the shadow framebuffer
-            gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            gl::Clear(gl::DEPTH_BUFFER_BIT);
-        }
-
-        // Load the shader and it's uniforms
-        let shader = pipeline.shaders.get(&self.shader).unwrap();
-        let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
-
+    // Update the lightspace matrix
+    pub(crate) fn update_matrix(&mut self, light_quat: &veclib::Quaternion<f32>) {
         // Update the light view matrix
         let forward = light_quat.mul_point(veclib::Vector3::Z);
         let up = light_quat.mul_point(veclib::Vector3::Y);
         let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
-        self.lightspace_matrix = self.ortho_matrix * view_matrix;
+        let lightspace_matrix = self.ortho * view_matrix;
+    }
+    // Render the scene from the POV of the light source, so we can cast shadows
+    pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) -> Result<(), RenderingError> {
+        
+        // Setup the shadow framebuffer
+        gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+        gl::Clear(gl::DEPTH_BUFFER_BIT);        
+
+        // Load the shader and it's uniforms
+        let shader = pipeline.shaders.get(&self.shader).unwrap();
+        let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
 
         // Render all the models
         for model in models {
@@ -103,16 +106,19 @@ impl ShadowMapping {
             let mesh = pipeline.meshes.get(mesh).ok_or(RenderingError)?;
 
             // Calculate the light space matrix
-            let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *matrix;
+            let lsm: veclib::Matrix4x4<f32> = self.lightspace * *matrix;
 
             // Pass the light space matrix to the shader
             uniforms.set_mat44f32("lsm_matrix", &lsm);
 
             // Render now
-            unsafe {
-                super::common::render(&mesh);
-            }
+            super::common::render(&mesh);
         }
+
+        // Reset
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        
         Ok(())
     }
 }

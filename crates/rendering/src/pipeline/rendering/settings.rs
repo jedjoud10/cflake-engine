@@ -20,8 +20,7 @@ pub struct RenderingCamera<'b> {
     // View and projection matrices
     pub viewm: &'b veclib::Matrix4x4<f32>,
     pub projm: &'b veclib::Matrix4x4<f32>,
-    pub projm_viewm: &'b veclib::Matrix4x4<f32>,
-    pub forward: &'b veclib::Vector3<f32>,
+    pub projm_viewm: veclib::Matrix4x4<f32>,
 
     // Near-Far clip planes
     pub clip_planes: &'b veclib::Vector2<f32>,

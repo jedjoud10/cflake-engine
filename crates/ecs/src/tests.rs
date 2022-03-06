@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{registry, Component, ComponentFetcher},
+        component::{registry, Component, RefComponentFetcher},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
         event::EventKey,
         ECSManager,
@@ -228,9 +228,9 @@ pub mod test {
 
         let component_key = entity.get_linked::<Name>().unwrap();
         // Try to get it's Name component
-        let mut fetcher = ComponentFetcher::new(&mut ecs.components);
-        let component = fetcher.get_mut::<Name>(component_key).unwrap();
+        let fetcher = RefComponentFetcher::new(&mut ecs.components);
+        let component = fetcher.get::<Name>(component_key).unwrap();
         assert_eq!(component.name, "John".to_string());
-        assert!(fetcher.get_mut::<Tagged>(component_key).is_err());
+        assert!(fetcher.get::<Tagged>(component_key).is_err());
     } 
 }

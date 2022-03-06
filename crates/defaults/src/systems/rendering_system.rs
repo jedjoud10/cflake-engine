@@ -1,17 +1,29 @@
 use world::{
-    ecs::event::EventKey,
+    ecs::{event::EventKey, component::{RefComponentFetcher, ComponentKey}},
     rendering::{
-        basics::uniforms::StoredUniforms,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     },
     World,
 };
 
+// Get the camera transform and camera data
+fn get_camera(world: &World) -> (RefComponentFetcher, ComponentKey, ComponentKey) {
+    // Get the entity
+    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+    let camera_entity = world.ecs.entities.get(global.main_camera).unwrap();
+
+    // And fetch it's linked component keys
+    let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
+    let transform = camera_entity.get_linked::<crate::components::Camera>().unwrap();
+
+    // Then, we can fetch the actual components
+    let fetcher = RefComponentFetcher::new(&world.ecs.components);
+    (fetcher, camera, transform)
+}
+
 // The rendering system update loop
 fn run(world: &mut World, mut data: EventKey) {
     // Render the world
-    let renderer = &mut world.renderer;
-    let pipeline = &mut world.pipeline;
     let query = data.as_query_mut().unwrap();
 
     // Before we do anything, we must update each model matrix if it needs to be updated
@@ -54,15 +66,21 @@ fn run(world: &mut World, mut data: EventKey) {
         }
     }
 
+    // Fetch the camera component
+    let (fetcher, camera, transform) = get_camera(world);
+    let camera = fetcher.get::<crate::components::Camera>(camera).unwrap();
+    let transform = fetcher.get::<crate::components::Transform>(transform).unwrap();
+
     // Camera settings
     let camera = RenderingCamera {
-        position: todo!(),
-        rotation: todo!(),
-        viewm: todo!(),
-        projm: todo!(),
-        projm_viewm: todo!(),
-        forward: todo!(),
-        clip_planes: todo!(),
+        position: &transform.position,
+        rotation: &transform.rotation,
+        viewm: &camera.viewm,
+        projm: &camera.projm,
+        clip_planes: &camera.clip_planes,
+
+        // Math moment
+        projm_viewm: camera.projm * camera.viewm,
     };
 
     // Rendering settings
@@ -72,7 +90,10 @@ fn run(world: &mut World, mut data: EventKey) {
         camera: camera,
     };
 
+    
     // Render
+    let renderer = &world.renderer;
+    let pipeline = &world.pipeline;
     renderer.render(pipeline, settings);
 }
 

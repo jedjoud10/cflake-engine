@@ -3,8 +3,8 @@ use world::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
 #[derive(Component)]
 pub struct Camera {
-    pub view_matrix: veclib::Matrix4x4<f32>,
-    pub projection_matrix: veclib::Matrix4x4<f32>,
+    pub viewm: veclib::Matrix4x4<f32>,
+    pub projm: veclib::Matrix4x4<f32>,
     pub horizontal_fov: f32,
     pub clip_planes: veclib::Vector2<f32>, // Near, far
 }
@@ -14,8 +14,8 @@ impl Camera {
     // Create a new camera with a specified FOV and clip planes
     pub fn new(fov: f32, clipn: f32, clipf: f32) -> Self {
         let mut camera = Self {
-            view_matrix: veclib::Matrix4x4::IDENTITY,
-            projection_matrix: veclib::Matrix4x4::IDENTITY,
+            viewm: veclib::Matrix4x4::IDENTITY,
+            projm: veclib::Matrix4x4::IDENTITY,
             horizontal_fov: fov,
             clip_planes: veclib::Vector2::new(clipn, clipf),
         };
@@ -26,7 +26,7 @@ impl Camera {
     pub fn update_projection_matrix(&mut self, aspect_ratio: f32) {
         // Turn the horizontal fov into a vertical one
         let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan();
-        self.projection_matrix = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
+        self.projm = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
     }
     // Calculate the view matrix using a rotation and a position
     pub fn calculate_view_matrix(position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) -> veclib::Matrix4x4<f32> {
@@ -39,7 +39,7 @@ impl Camera {
     }
     // Update the view matrix using a rotation and a position
     pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
-        self.view_matrix = Self::calculate_view_matrix(position, rotation);
+        self.viewm = Self::calculate_view_matrix(position, rotation);
     }
 }
 

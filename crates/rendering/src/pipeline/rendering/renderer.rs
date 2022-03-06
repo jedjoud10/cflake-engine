@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping}, uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
     utils::DataType,
@@ -29,7 +29,7 @@ pub struct SceneRenderer {
     textures: [Handle<Texture>; 5],
 
     // Screen rendering
-    lighting_pass: Handle<Shader>,
+    lighting: Handle<Shader>,
     quad: Handle<Mesh>,
 
     // Others
@@ -130,7 +130,7 @@ impl SceneRenderer {
         Self {
             framebuffer,
             textures: textures.try_into().expect("Deferred textures count mismatch!"),
-            lighting_pass: shader,
+            lighting: shader,
             quad,
             sky_gradient,
             shadow_mapping,
@@ -154,214 +154,90 @@ impl SceneRenderer {
     }
 
     // Prepare the FBO and clear the buffers
-    pub(crate) unsafe fn prepare_for_rendering(&self, pipeline: &Pipeline) {
+    pub(crate) unsafe fn ready(&mut self, pipeline: &mut Pipeline) {
         gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+        // Update the lightspace matrix
+        self.shadow_mapping.as_mut().map(|mapping| {
+            // The first directional light that we find will be used as the sunlight
+            let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
+            let quat = first.map(|light| light.transform.rotation);
+
+            quat.as_ref().map(|quat| mapping.update_matrix(quat));
+        });
     }
 
     // Render the whole scene
-    pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
+    pub fn render(&self, pipeline: &Pipeline, settings: RenderingSettings) {
         // Render normally
         for renderer in settings.normal {
             common::render_model(&settings, renderer, pipeline)
         }
 
         // Then render the shadows
-        self.shadow_mapping.as_mut().map(|mapping| {
-            // The first directional light that we find will be used as the sunlight
-            let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
-
-            let quat = first.map(|light| light.transform.rotation);
-            quat.map(|quat| mapping.render_all_shadows(settings.shadowed, &quat, pipeline));
+        self.shadow_mapping.as_ref().map(|mapping| {
+            unsafe { mapping.render_all_shadows(settings.shadowed, pipeline); }
         });
+
+        // Render the deferred quad
+        unsafe { self.draw_deferred_quad(pipeline, settings); }
     }
 
-    /*
-    // Get the fallback, default texture IDs in case the provided ones are not valid
-    fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
-    }
-    fn get_normal_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.normal_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().normals_tex, ObjectID::new)
-    }
-    fn get_emissive_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
-        material.emissive_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().black, ObjectID::new)
-    }
-    // Setup uniforms for a specific renderer
-    fn configure_uniforms<'a>(&self, pipeline: &'a Pipeline, renderer: &Renderer, pj_matrix: &veclib::Matrix4x4<f32>) -> Result<&'a Mesh, RenderingError> {
-        // Pipeline data
-        let material = pipeline.materials.get(renderer.material);
-        // Load the default material if we don't have a valid one
-        let material = material
-            .or_else(|| {
-                let id = pipeline.defaults.as_ref().unwrap().material;
-                Some(pipeline.materials.get(id).unwrap())
-            })
-            .unwrap();
-
-        // The shader will always be valid
-        let shader = pipeline.shaders.get(material.shader).ok_or(RenderingError)?;
-        let mesh = pipeline.meshes.get(renderer.mesh).ok_or(RenderingError)?;
-        let mesh_matrix = &renderer.matrix;
-        let settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(shader.program));
-        let uniforms = Uniforms::new(&settings, pipeline);
-        // Bind first
-        uniforms.bind_shader();
-        // Then set the uniforms
-        uniforms.set_mat44f32("project_view_matrix", *pj_matrix);
-        uniforms.set_mat44f32("mesh_matrix", *mesh_matrix);
-        // Optional
-        material.uniforms.execute(&uniforms);
-        renderer.uniforms.execute(&uniforms);
-        // Textures might be not valid, so we fallback to the default ones just in case
-        uniforms.set_texture("diffuse_tex", Self::get_diffuse_map(pipeline, material), 0);
-        uniforms.set_texture("normals_tex", Self::get_normal_map(pipeline, material), 1);
-        uniforms.set_texture("emissive_tex", Self::get_emissive_map(pipeline, material), 2);
-        uniforms.set_vec3f32("tint", material.tint);
-        uniforms.set_f32("normals_strength", material.normal_map_strength);
-        uniforms.set_f32("emissive_strength", material.emissive_map_strength);
-        uniforms.set_vec2f32("uv_scale", material.uv_scale);
-
-        Ok(mesh)
-    }
-    // Render a single renderer
-    fn render(mesh: &Mesh) {}
-
-    // Called each frame, to render the world
-    pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) -> FrameDebugInfo {
-        // Prepare
-        let mut debug_info = FrameDebugInfo::default();
-        self.prepare_for_rendering(pipeline);
-        // Render normally
-        self.render_scene(pipeline, &mut debug_info);
-        // Then render the scene again so we can render shadows
-        self.shadow_mapping.as_mut().map(|shadow_mapping| {
-            Self::render_scene_shadow_maps(shadow_mapping, pipeline, &mut debug_info);
-        });
-        // Render the deferred quad and the post processing quad
-        self.draw_deferred_quad(pipeline);
-        self.draw_postprocessing_quad(pipeline);
-        debug_info
-    }
-    // Render the whole scene normally
-    fn render_scene(&mut self, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
-        let camera = &pipeline.camera;
-        let pj_matrix = camera.projm * camera.viewm;
-        for (_, renderer) in pipeline.renderers.iter() {
-            // Check if we are visible
-            if !renderer.flags.contains(RendererFlags::VISIBLE) {
-                continue;
-            }
-            let result = self.configure_uniforms(pipeline, renderer, &pj_matrix);
-            // The renderer might've failed setting it's uniforms
-            if let Ok(mesh) = result {
-                Self::render(mesh);
-                debug_info.draw_calls += 1;
-                debug_info.triangles += mesh.indices.len() as u64 / 3;
-                debug_info.vertices += mesh.vertices.len() as u64 / 3;
-            }
-        }
-    }
-    // Render the scene's shadow maps
-    fn render_scene_shadow_maps(shadow_mapping: &mut ShadowMapping, pipeline: &Pipeline, debug_info: &mut FrameDebugInfo) {
-        // Change the cull face for better depth
-        unsafe {
-            gl::CullFace(gl::FRONT);
-        }
-        // Bind VBO and set light source
-        shadow_mapping.bind_fbo(pipeline);
-        let directional_light_source = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun);
-        if let Some(light) = directional_light_source {
-            shadow_mapping.update_view_matrix(*light._type.as_directional().unwrap());
-        }
-
-        // Draw the renderers
-        for (_, renderer) in pipeline.renderers.iter().filter(|(_, renderer)| renderer.flags.contains(RendererFlags::SHADOW_CASTER)) {
-            let result = shadow_mapping.configure_uniforms(pipeline, renderer);
-            // The renderer might've failed setting it's uniforms
-            if let Ok(mesh) = result {
-                Self::render(mesh);
-                debug_info.shadow_draw_calls += 1;
-            }
-        }
-        // Reset
-        unsafe {
-            gl::CullFace(gl::BACK);
-        }
-    }
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
-    fn draw_deferred_quad(&mut self, pipeline: &Pipeline) {
-        unsafe {
-            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
-        }
-        // Get the pipeline data
-        let camera = &pipeline.camera;
+    unsafe fn draw_deferred_quad(&self, pipeline: &Pipeline, settings: RenderingSettings) {       
+        // We have a ton of uniforms to set        
+        let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, true);
 
-        // New uniforms
-        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass));
-        let uniforms = Uniforms::new(&settings, pipeline);
-        self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
+        // Try to get the sunlight direction
+        let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
+        let sunlight = first.map(|light| (light.transform.rotation.mul_point(veclib::Vector3::Z), light.strength));
 
-        // Draw the quad
-        let quad_mesh = pipeline.meshes.get(self.quad).unwrap();
-        unsafe {
-            // Draw to the postprocessing's framebuffer instead
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.postprocessing.framebuffer);
-            gl::Disable(gl::DEPTH_TEST);
-            Self::render(quad_mesh);
-        }
-    }
-    // Draw the postprocessing quad and render the color texture
-    fn draw_postprocessing_quad(&mut self, pipeline: &Pipeline) {
-        self.postprocessing.bind_fbo(pipeline, self);
+        // Default sunlight values
+        let sunlight = sunlight.unwrap_or((veclib::Vector3::ZERO, 1.0));
 
-        // Draw the quad
-        let quad_mesh = pipeline.meshes.get(self.quad).unwrap();
-        unsafe {
-            // Draw to the postprocessing's framebuffer instead
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            Self::render(quad_mesh);
-            gl::BindVertexArray(0);
-            gl::Enable(gl::DEPTH_TEST);
+        // Sunlight values
+        uniforms.set_vec3f32("sunlight_dir", sunlight.0);
+        uniforms.set_f32("sunlight_strength", sunlight.1);
+
+        // Sunlight shadow mapping
+        let default = veclib::Matrix4x4::<f32>::IDENTITY;
+        let matrix = self.shadow_mapping.as_ref().map(|mapping| &mapping.lightspace).unwrap_or(&default);
+        uniforms.set_mat44f32("lightspace_matrix", matrix);
+
+        // Set the camera matrices
+        let pr_m = *settings.camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&settings.camera.rotation));
+        uniforms.set_mat44f32("pr_matrix", &pr_m);
+        uniforms.set_mat44f32("pv_matrix", &(*settings.camera.projm * *settings.camera.viewm));
+        uniforms.set_vec2f32("nf_planes", *settings.camera.clip_planes);
+
+        // Also gotta set the deferred textures
+        // &str array because I am lazy
+        let names = [
+            "diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"
+        ];
+        // Set each texture
+        for ((i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
+            uniforms.set_texture(name, handle, i as u32);
         }
-    }
-    // Name is pretty self explanatory
-    fn bind_screen_quad_uniforms(&mut self, uniforms: Uniforms, pipeline: &Pipeline, camera: &Camera) {
-        uniforms.bind_shader();
-        // The first directional light source is always the sun's light source
-        let default = LightSource::new(LightSourceType::Directional {
-            quat: veclib::Quaternion::<f32>::IDENTITY,
-        });
-        let light = pipeline.light_sources.get(pipeline.defaults.as_ref().unwrap().sun).unwrap_or(&default);
-        let directional = light._type.as_directional().unwrap();
-        uniforms.set_vec3f32("sunlight_dir", directional.mul_point(veclib::Vector3::Z));
-        uniforms.set_f32("sunlight_strength", light.strength);
-        uniforms.set_mat44f32(
-            "lightspace_matrix",
-            self.shadow_mapping
-                .as_ref()
-                .map_or(veclib::Matrix4x4::default(), |shadow_mapping| shadow_mapping.lightspace_matrix),
-        );
-        let pr_m = camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&camera.rotation));
-        uniforms.set_mat44f32("pr_matrix", pr_m);
-        uniforms.set_mat44f32("pv_matrix", camera.projm * camera.viewm);
-        uniforms.set_vec2f32("nf_planes", camera.clip_planes);
-        // Also gotta set the one time uniforms
-        uniforms.set_texture("diffuse_texture", self.diffuse_texture, 0);
-        uniforms.set_texture("emissive_texture", self.emissive_texture, 1);
-        uniforms.set_texture("normals_texture", self.normals_texture, 2);
-        uniforms.set_texture("position_texture", self.position_texture, 3);
-        uniforms.set_texture("depth_texture", self.depth_texture, 4);
-        uniforms.set_texture("sky_gradient", self.sky_gradient, 5);
+
+        // Sky gradient texture
+        uniforms.set_texture("sky_gradient", &self.sky_gradient, 5);
 
         // If we have shadow mapping disabled we must use the default white texture
         let shadow_mapping_texture = self
             .shadow_mapping
             .as_ref()
-            .map_or(pipeline.defaults.as_ref().unwrap().white, |shadow_mapping| shadow_mapping.depth_texture);
+            .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
         uniforms.set_texture("shadow_map", shadow_mapping_texture, 6);
         uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
+
+        // Draw the quad
+        let quad_mesh = pipeline.meshes.get(&self.quad).unwrap();
+        // Draw to the deferred framebuffer instead
+        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+        gl::Disable(gl::DEPTH_TEST);
+        common::render(quad_mesh);
     }
-    */
 }

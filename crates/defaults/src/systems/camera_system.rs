@@ -54,7 +54,7 @@ fn run(world: &mut World, mut data: EventKey) {
     let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     for (&key, components) in query.iter_mut() {
         // If we are not the right camera, skip
-        if key != global.camera_entity_key {
+        if key != global.main_camera {
             continue;
         }
         let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
@@ -70,12 +70,6 @@ fn run(world: &mut World, mut data: EventKey) {
         // And don't forget to update the camera matrices
         camera.update_projection_matrix(ratio);
         camera.update_view_matrix(position, new_rotation);
-
-        // Since we are the main camera, we must update our position in the global
-        global.camera_pos = position;
-        global.camera_forward = forward;
-        global.camera_right = right;
-        global.camera_up = up;
     }
 }
 
@@ -85,7 +79,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
     // If there isn't a main camera assigned already, we can be the first one
     let query = data.as_query_mut().unwrap();
     if let Some((&key, _)) = query.iter().nth(0) {
-        global.camera_entity_key = key;
+        global.main_camera = key;
     }
 }
 

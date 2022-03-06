@@ -120,7 +120,7 @@ impl Pipeline {
     // Called at the start of the frame so we can clear buffers if we need to
     pub fn start_frame(&mut self, renderer: &mut SceneRenderer) {
         unsafe {
-            renderer.prepare_for_rendering(self);
+            renderer.ready(self);
         }
     }
     // Called at the end of the frame to ready the pipeline for the next frame
