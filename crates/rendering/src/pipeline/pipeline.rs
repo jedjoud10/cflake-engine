@@ -15,7 +15,7 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{PipelineCollection, PipelineSettings, SceneRenderer};
+use super::{PipelineCollection, PipelineSettings, SceneRenderer, DefaultElements};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters)]
@@ -37,6 +37,8 @@ pub struct Pipeline {
     // Settings
     #[getset(get = "pub")]
     settings: PipelineSettings,
+    #[getset(get = "pub")]
+    defaults: DefaultElements,
 }
 
 // Initialize glutin and the window
@@ -72,10 +74,7 @@ fn init_opengl(context: &WindowedContext<PossiblyCurrent>) {
         }
 
         gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
-        gl::ClearColor(0.0, 1.0, 0.0, 1.0);
-        gl::Enable(gl::DEPTH_TEST);
-        gl::Enable(gl::CULL_FACE);
-        gl::CullFace(gl::BACK);
+        SceneRenderer::init_opengl();
     }
 }
 
@@ -103,7 +102,12 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
             window
         },
         settings,
+        defaults: DefaultElements::default(),
     };
+
+    // Magic
+    let defaults = DefaultElements::new(&mut pipeline);
+    pipeline.defaults = defaults;
 
     // Create new scene renderer
     let scene_renderer = unsafe { SceneRenderer::new(&mut pipeline) };
@@ -112,9 +116,9 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
 
 impl Pipeline {
     // Called at the start of the frame so we can clear buffers if we need to
-    pub fn start_frame(&mut self) {
+    pub fn start_frame(&mut self, renderer: &mut SceneRenderer) {
         unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            renderer.prepare_for_rendering(self);
         }
     }
     // Called at the end of the frame to ready the pipeline for the next frame
@@ -131,7 +135,7 @@ impl Pipeline {
     // Handle window events
     pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
         match event {
-            WindowEvent::Resized(size) => renderer.resize(vec2(size.width as u16, size.height as u16)),
+            WindowEvent::Resized(size) => renderer.resize(vec2(size.width as u16, size.height as u16), self),
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             _ => {}
         }

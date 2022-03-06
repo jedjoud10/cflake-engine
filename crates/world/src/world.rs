@@ -63,7 +63,7 @@ impl World {
         self.time.update(delta);
 
         // Update game logic (this includes rendering the world)
-        self.pipeline.start_frame();
+        self.pipeline.start_frame(&mut self.renderer);
         self.time.update_current_frame_time();
         let (systems, settings) = self.ecs.ready();
         let systems = systems.borrow();

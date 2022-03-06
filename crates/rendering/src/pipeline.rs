@@ -3,6 +3,8 @@ mod handle;
 mod pipeline;
 mod rendering;
 mod settings;
+mod defaults;
+pub use defaults::*;
 pub use collection::*;
 pub use handle::*;
 pub use pipeline::*;

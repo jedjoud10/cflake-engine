@@ -136,7 +136,7 @@ impl<'a> Uniforms<'a> {
         self.set_vec3i32(name, vec3.into());
     }
     // Textures & others
-    pub fn set_mat44f32(&mut self, name: &str, matrix: veclib::Matrix4x4<f32>) {
+    pub fn set_mat44f32(&mut self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;

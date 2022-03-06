@@ -19,6 +19,7 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
+use veclib::vec2;
 
 // A texture
 #[derive(CopyGetters, Getters)]
@@ -291,9 +292,7 @@ impl PipelineCollectionElement for Texture {
             gl::GenTextures(1, &mut self.oid);
             gl::BindTexture(target, self.oid);
             // Set the texture contents
-            if !self.bytes.is_empty() {
-                init_contents(target, ifd, pointer, self.dimensions);
-            }
+            init_contents(target, ifd, pointer, self.dimensions);
             // Set the texture parameters for a normal texture
             match self.filter {
                 TextureFilter::Linear => {
@@ -380,21 +379,14 @@ impl Asset for Texture {
         Self: Sized,
     {
         // Load this texture from the bytes
-        // Load this texture from the bytes
         let image = image::load_from_memory(bytes).unwrap();
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
         // Flip
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
-        None
-        /*
-        // Return a texture with the default parameters
-        let builder = Self::default()
-            .with_bytes(bytes)
-            .with_dimensions(TextureDimensions::Texture2D(width, height))
-            .with_format(TextureFormat::RGBA8R)
-            .with_data_type(DataType::U8);
-        Some(builder)
-        */
+        Some(TextureBuilder::default()
+            .bytes(bytes)
+            .dimensions(TextureDimensions::Texture2d(vec2(width, height)))
+            .build())
     }
 }

@@ -25,6 +25,7 @@ pub struct AssetCacher {
 impl AssetCacher {
     // Cache an asset for later
     pub(crate) fn cache(&mut self, meta: AssetMetadata, bytes: Vec<u8>) {
+        println!("{:?}", meta);
         self.cached.insert(meta, bytes);
     }
     // Uncache a specific asset

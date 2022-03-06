@@ -1,4 +1,4 @@
-use super::ShadowMapping;
+use super::{ShadowMapping, RenderingSettings};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -11,6 +11,7 @@ use crate::{
 use assets::assetc;
 use gl::types::GLuint;
 
+
 // Scene renderer that will render our world using deferred rendering
 // TODO: Document
 #[derive(Default)]
@@ -19,11 +20,14 @@ pub struct SceneRenderer {
     framebuffer: GLuint,
 
     // Our deferred textures
+    /*
     diffuse_texture: Handle<Texture>,
     emissive_texture: Handle<Texture>,
     normals_texture: Handle<Texture>,
     position_texture: Handle<Texture>,
     depth_texture: Handle<Texture>,
+    */
+    textures: [Handle<Texture>; 5],
 
     // Screen rendering
     lighting_pass: Handle<Shader>,
@@ -33,6 +37,7 @@ pub struct SceneRenderer {
     sky_gradient: Handle<Texture>,
     shadow_mapping: Option<ShadowMapping>,
 }
+
 impl SceneRenderer {
     // Initialize a new scene renderer
     pub(crate) unsafe fn new(pipeline: &mut Pipeline) -> Self {
@@ -55,7 +60,7 @@ impl SceneRenderer {
         let settings = ShaderInitSettings::default()
             .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
-            .directive("shadow_bias", Directive::Const(String::new())); // TODO: FIX THIS
+            .directive("shadow_bias", Directive::Const(pipeline.settings().shadow_bias.to_string())); // TODO: FIX THIS
         let shader = pipeline.shaders.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
@@ -96,6 +101,9 @@ impl SceneRenderer {
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
             gl::BindTexture(texture.target(), texture.oid());
+            dbg!(attachement);
+            dbg!(texture.target());
+            dbg!(texture.oid());
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.oid(), 0);
         }
 
@@ -122,11 +130,7 @@ impl SceneRenderer {
         println!("Successfully initialized the RenderPipeline Renderer!");
         Self {
             framebuffer,
-            diffuse_texture: textures[0].clone(),
-            emissive_texture: textures[1].clone(),
-            normals_texture: textures[2].clone(),
-            position_texture: textures[3].clone(),
-            depth_texture: textures[4].clone(),
+            textures: textures.try_into().expect("Deferred textures count mismatch!"),
             lighting_pass: shader,
             quad,
             sky_gradient,
@@ -134,7 +138,37 @@ impl SceneRenderer {
         }
     }
     // Resize the renderer's textures
-    pub(crate) fn resize(&mut self, dimensions: veclib::Vector2<u16>) {}
+    pub(crate) fn resize(&mut self, dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
+        // Very simple since we use an array
+        for handle in self.textures.iter() {
+            let mut texture = pipeline.textures.get_mut(handle).unwrap();
+            texture.set_dimensions(TextureDimensions::Texture2d(dimensions)).unwrap();
+        }
+    }
+
+    // Init OpenGL
+    pub(crate) unsafe fn init_opengl() {
+        gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+        gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::CULL_FACE);
+        gl::CullFace(gl::BACK);
+    }
+
+    // Prepare the FBO and clear the buffers
+    pub(crate) unsafe fn prepare_for_rendering(&self, pipeline: &Pipeline) {
+        gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+    }
+
+    // Render the whole scene
+    pub fn render(&self, pipeline: &Pipeline, settings: RenderingSettings) {
+        // Render normally
+        for rendered in settings.normal {
+            
+        }
+    }
+
     /*
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
@@ -185,14 +219,7 @@ impl SceneRenderer {
     }
     // Render a single renderer
     fn render(mesh: &Mesh) {}
-    // Prepare the FBO and clear the buffers
-    fn prepare_for_rendering(&self, pipeline: &Pipeline) {
-        unsafe {
-            gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-    }
+    
     // Called each frame, to render the world
     pub(crate) fn render_frame(&mut self, pipeline: &Pipeline) -> FrameDebugInfo {
         // Prepare
@@ -327,24 +354,6 @@ impl SceneRenderer {
             .map_or(pipeline.defaults.as_ref().unwrap().white, |shadow_mapping| shadow_mapping.depth_texture);
         uniforms.set_texture("shadow_map", shadow_mapping_texture, 6);
         uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
-    }
-    // Update window
-    pub(crate) fn update_window_dimensions(&mut self, window_dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
-        // Update the size of each texture that is bound to the framebuffer
-        let dims = TextureType::Texture2D(window_dimensions.x, window_dimensions.y);
-        let diffuse_texture = pipeline.textures.get_mut(self.diffuse_texture).unwrap();
-        diffuse_texture.update_size_fill(dims, Vec::new()).unwrap();
-        let emissive_texture = pipeline.textures.get_mut(self.emissive_texture).unwrap();
-        emissive_texture.update_size_fill(dims, Vec::new()).unwrap();
-        let normals_texture = pipeline.textures.get_mut(self.normals_texture).unwrap();
-        normals_texture.update_size_fill(dims, Vec::new()).unwrap();
-        let position_texture = pipeline.textures.get_mut(self.position_texture).unwrap();
-        position_texture.update_size_fill(dims, Vec::new()).unwrap();
-        let depth_texture = pipeline.textures.get_mut(self.depth_texture).unwrap();
-        depth_texture.update_size_fill(dims, Vec::new()).unwrap();
-
-        // Don't forget the postprocessing color texture
-        self.postprocessing.resize_texture(dims, pipeline);
     }
     */
 }

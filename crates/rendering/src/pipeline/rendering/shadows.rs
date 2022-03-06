@@ -12,7 +12,7 @@ use crate::{
     pipeline::{Handle, Pipeline},
 };
 
-use super::RenderingError;
+use super::{RenderingError, ShadowedModel};
 #[derive(Default)]
 pub struct ShadowMapping {
     // Shadow-casting
@@ -81,7 +81,7 @@ impl ShadowMapping {
     // Render the scene from the POV of the light source, so we can cast shadows
     pub(crate) fn cast_shadows(
         &mut self,
-        models: &[(veclib::Matrix4x4<f32>, Handle<Mesh>)],
+        models: &[ShadowedModel],
         light_quat: &veclib::Quaternion<f32>,
         pipeline: &mut Pipeline,
     ) -> Result<(), RenderingError> {
@@ -103,17 +103,18 @@ impl ShadowMapping {
         self.lightspace_matrix = self.ortho_matrix * view_matrix;
 
         // Render all the models
-        for (matrix, mesh) in models {
+        for model in models {
+            let (mesh, matrix) = (model.mesh, model.matrix);
             let mesh = pipeline.meshes.get(mesh).ok_or(RenderingError)?;
 
             // Calculate the light space matrix
             let lsm: veclib::Matrix4x4<f32> = self.lightspace_matrix * *matrix;
 
             // Pass the light space matrix to the shader
-            uniforms.set_mat44f32("lsm_matrix", lsm);
+            uniforms.set_mat44f32("lsm_matrix", &lsm);
 
             // Render now
-            super::common::render(&mesh);
+            unsafe { super::common::render(&mesh); }
         }
         Ok(())
     }

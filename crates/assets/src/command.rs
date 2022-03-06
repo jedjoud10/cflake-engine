@@ -46,14 +46,3 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
 pub fn load<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {
     load_with(path, T::default())
 }
-
-// Specific cache commands
-pub mod caching {
-    use crate::{cacher::cacher, metadata::AssetMetadata};
-
-    // Un-cache an asset
-    pub fn uncache(path: &str) {
-        let mut cacher = cacher();
-        cacher.uncache(AssetMetadata::new(path).unwrap());
-    }
-}

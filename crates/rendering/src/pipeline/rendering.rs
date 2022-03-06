@@ -2,6 +2,8 @@ mod common;
 mod error;
 mod renderer;
 mod shadows;
+mod settings;
+pub use settings::*;
 pub use common::*;
 pub use error::*;
 pub use renderer::*;

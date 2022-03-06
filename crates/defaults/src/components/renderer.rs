@@ -11,7 +11,7 @@ pub struct Renderer {
 
     // Some rendering settings
     pub visible: bool,
-    pub shadow_caster: bool,
+    pub shadowed: bool,
 }
 
 impl Default for Renderer {
@@ -20,7 +20,7 @@ impl Default for Renderer {
             mesh: Default::default(),
             material: Default::default(),
             visible: true,
-            shadow_caster: true,
+            shadowed: true,
         }
     }
 }
