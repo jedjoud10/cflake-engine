@@ -30,11 +30,6 @@ impl<'a, World> SystemBuilder<'a, World> {
         self.system.evn_run = Some(evn);
         self
     }
-    // Set the "Run System Fixed" event of this system
-    pub fn with_run_fixed_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
-        self.system.evn_run_fixed = Some(evn);
-        self
-    }
     // Set the "Added Entity" event of this system
     pub fn with_added_entities_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
         self.system.evn_added_entity = Some(evn);

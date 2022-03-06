@@ -1,17 +1,17 @@
-use std::{marker::PhantomData, sync::Arc, cell::UnsafeCell};
+use std::{marker::PhantomData, sync::Arc, cell::{UnsafeCell, RefCell}, rc::Rc};
 use ahash::AHashMap;
 use bitfield::{Bitfield, AtomicSparseBitfield};
 use parking_lot::Mutex;
 use slotmap::SlotMap;
 
 use crate::{entity::{EntityKey, ComponentLinkingGroup, EntitySet, ComponentUnlinkGroup}, utils::{ComponentLinkingError, ComponentUnlinkError, ComponentError}, system::SystemSet};
-use super::{Components, LinkedComponents, ComponentKey, ComponentGroupToRemove, EnclosedComponent, ComponentGroupKey};
+use super::{Components, LinkedComponents, ComponentKey, ComponentGroupToRemove, EnclosedComponent, ComponentGroupKey, DanglingComponentsToRemove};
 
 // Component set
 pub struct ComponentSet<World> {
     pub(crate) components: Components,
     pub(crate) _phantom: PhantomData<World>,
-    pub(crate) to_remove: Mutex<SlotMap<ComponentGroupKey, ComponentGroupToRemove>>,
+    pub(crate) to_remove: DanglingComponentsToRemove,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
 }
 
@@ -53,7 +53,8 @@ impl<World> ComponentSet<World> {
         let entity = entities.get(key).unwrap();
         let linked = &entity.components;
         // Check if the linked entity is valid to be added into the systems
-        for system in systems.inner().iter() {
+        let systems = systems.inner().borrow();
+        for system in systems.iter() {
             // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
             if system.check_cbitfield(new) && !system.check_cbitfield(old) {
                 let linked = LinkedComponents {
@@ -80,7 +81,8 @@ impl<World> ComponentSet<World> {
         // Remove the entity from some systems if needed
         let old = entity.cbitfield;
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
-        systems.inner().iter().for_each(|system| {
+        let systems = systems.inner().borrow();
+        systems.iter().for_each(|system| {
             // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
             if system.check_cbitfield(old) && !system.check_cbitfield(new) {
                 system.remove_entity(
@@ -118,9 +120,8 @@ impl<World> ComponentSet<World> {
         drop(entity);
 
         // And finally remove the component group from it's systems
-        let mut lock = self.to_remove.lock();
+        let mut lock = self.to_remove.borrow_mut();
         let counter = systems
-            .inner()
             .iter()
             .filter(|system| {
                 // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
@@ -138,7 +139,7 @@ impl<World> ComponentSet<World> {
     pub(crate) fn clear(&mut self) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
-            let mut lock = self.to_remove.lock();
+            let mut lock = self.to_remove.borrow_mut();
             let indices = lock.iter().filter_map(|(_key, group)| if group.counter == 0 { Some(_key) } else { None }).collect::<Vec<_>>();
             let removed_groups = indices.into_iter().map(|x| lock.remove(x).unwrap()).collect::<Vec<ComponentGroupToRemove>>();
             removed_groups

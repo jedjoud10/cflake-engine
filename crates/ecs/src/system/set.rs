@@ -1,12 +1,16 @@
+use std::{rc::Rc, cell::RefCell};
+
 use super::{System, SystemBuilder};
 use getset::Getters;
 
+// Systems
+pub type Systems<World> = Rc<RefCell<Vec<System<World>>>>;
 
 // System set
 #[derive(Getters)]
 pub struct SystemSet<World> {
     #[getset(get = "pub")]
-    pub(crate) inner: Vec<System<World>>,
+    pub(crate) inner: Systems<World>,
 }
 
 impl<World> Default for SystemSet<World> {
@@ -22,6 +26,7 @@ impl<World> SystemSet<World> {
     }
     // Add a system to our current systems
     pub(crate) fn add(&mut self, system: System<World>) {
-        self.inner.push(system)
+        let mut borrowed = self.inner.borrow_mut();
+        borrowed.push(system)
     }
 }

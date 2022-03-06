@@ -1,4 +1,4 @@
-use super::{registry, Component, ComponentReadGuard, ComponentWriteGuard, Components, ComponentKey};
+use super::{registry, Component, Components, ComponentKey};
 use crate::{utils::ComponentError, entity::EntityKey};
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
@@ -30,7 +30,7 @@ fn invalid_err_not_linked() -> ComponentError {
 }
 impl LinkedComponents {
     // Get a reference to a specific linked component
-    pub fn get<T>(&self) -> Result<ComponentReadGuard<T>, ComponentError>
+    pub fn get<T>(&self) -> Result<&T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -44,13 +44,10 @@ impl LinkedComponents {
         let ptr = cell.get();
         let component = unsafe { &*ptr }.as_ref();
         let component = registry::cast_component::<T>(component)?;
-
-        // And now we've got a read guard!
-        let guard = ComponentReadGuard::new(component);
-        Ok(guard)
+        Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
-    pub fn get_mut<T>(&mut self) -> Result<ComponentWriteGuard<T>, ComponentError>
+    pub fn get_mut<T>(&mut self) -> Result<&mut T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
@@ -64,11 +61,8 @@ impl LinkedComponents {
         let ptr = cell.get();
         let component = unsafe { &mut *ptr }.as_mut();
         let component = registry::cast_component_mut::<T>(component)?;
-
-        // And now we've got a write guard!
-        let guard = ComponentWriteGuard::new(component);
         self.mutated_components.set(key.data().as_ffi() as usize, true);
-        Ok(guard)
+        Ok(component)
     }
     // Check if a specific component has been updated during this frame
     pub fn was_mutated<T>(&self) -> Result<bool, ComponentError>
