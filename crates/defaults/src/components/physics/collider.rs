@@ -1,6 +1,6 @@
 use world::{
     ecs::component::Component,
-    math::shapes::{ShapeType, Cuboid, Sphere},
+    math::shapes::{Cuboid, ShapeType, Sphere},
     physics::rapier3d::prelude::{ColliderBuilder, ColliderHandle},
     rendering::{basics::mesh::Mesh, object::ObjectID},
 };
@@ -29,7 +29,7 @@ impl Collider {
             _type,
         }
     }
-    
+
     // Create a new collider with specific shapes
     pub fn cuboid(size: veclib::Vector3<f32>) -> Self {
         Self {
@@ -61,7 +61,7 @@ impl Collider {
             _type: ColliderType::Mesh(mesh),
         }
     }
-    
+
     // With
     pub fn with_restitution(mut self, restitution: f32) -> Self {
         self.restitution = restitution;

@@ -4,7 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
 use parking_lot::Mutex;
 use world::{
-    ecs::entity::EntityID,
+    ecs::entity::EntityKey,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, object::ObjectID},
     terrain::ChunkCoords,
@@ -13,8 +13,8 @@ use world::{
 #[derive(EnumAsInner, Debug, PartialEq)]
 pub enum ChunkGenerationState {
     RequiresVoxelData,
-    BeginVoxelDataGeneration(EntityID),
-    EndVoxelDataGeneration(EntityID, bool),
+    BeginVoxelDataGeneration(EntityKey),
+    EndVoxelDataGeneration(EntityKey, bool),
 }
 
 impl Default for ChunkGenerationState {
@@ -27,10 +27,10 @@ impl Default for ChunkGenerationState {
 pub struct ChunksManager {
     // Chunk generation
     pub octree: Arc<Mutex<DiffOctree>>,
-    pub chunks: AHashMap<ChunkCoords, EntityID>,
+    pub chunks: AHashMap<ChunkCoords, EntityKey>,
     pub chunks_generating: AHashSet<ChunkCoords>,
-    pub priority_list: Vec<(EntityID, f32)>,
-    pub chunks_to_remove: Vec<EntityID>,
+    pub priority_list: Vec<(EntityKey, f32)>,
+    pub chunks_to_remove: Vec<EntityKey>,
     pub material: ObjectID<Material>,
 
     // The Entity ID of the chunk that we are generating

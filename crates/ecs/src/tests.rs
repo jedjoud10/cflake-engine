@@ -47,10 +47,18 @@ pub mod test {
     pub struct World;
     fn run_system(_world: &mut World, mut data: EventKey) {
         let query = data.as_query_mut().unwrap();
-        for (_, components) in query.write().iter_mut() {
+        for (_, components) in query.iter_mut() {
             let mut name = components.get_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         }
+    }
+
+    // Run the systems in sync, but their component updates are not
+    // Used only for testing
+    fn run_systems(ecs: &mut ECSManager<World>, world: &mut World) {
+        ecs.components.clear_for_next_frame().unwrap();
+        let (systems, settings) = ecs.ready();
+        ECSManager::execute_systems(systems.borrow(), world, settings);
     }
 
     #[test]
@@ -62,7 +70,7 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.build_system();
+        let builder = ecs.systems.builder();
         builder.link::<Name>().with_run_event(run_system).build();
 
         // Create a simple entity with that component
@@ -70,16 +78,15 @@ pub mod test {
         group.link(Name::new("Person")).unwrap();
         let entity = Entity::default();
         // The entity is not created yet, so it is null
-        let id2 = ecs.add_entity(entity, group).unwrap();
-        let id3 = id2;
+        let key2 = ecs.entities.add(entity).unwrap();
+        ecs.components.link(key2, &mut ecs.entities, &mut ecs.systems, group).unwrap();
+        let key3 = key2;
         // The ID is valid now
-        assert!(ecs.get_entity(&id2).is_ok());
+        assert!(ecs.entities.get(key2).is_ok());
         // Run the system for two frames
-        ecs.run_systems(&mut world);
-        ecs.remove_entity(id3).unwrap();
-        ecs.finish_update();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
+        run_systems(&mut ecs, &mut world);
+        ecs.entities.remove(key3, &mut ecs.components, &mut ecs.systems).unwrap();
+        run_systems(&mut ecs, &mut world);
     }
     #[test]
     // Multithreaded stress test
@@ -90,7 +97,7 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.build_system();
+        let builder = ecs.systems.builder();
         fn internal_run(_world: &mut World, _data: EventKey) {
             /*
             // Transform the _context to RefContext using some magic fuckery
@@ -109,11 +116,12 @@ pub mod test {
             group.link(Name::new("Person")).unwrap();
             let entity = Entity::default();
             // The entity is not created yet, so it is null
-            ecs.add_entity(entity, group).unwrap();
+            let key = ecs.entities.add(entity).unwrap();
+            ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
         }
         for _x in 0..10 {
             let i = std::time::Instant::now();
-            ecs.run_systems(&mut world);
+            run_systems(&mut ecs, &mut world);
             println!("Took {}µs to update", i.elapsed().as_micros())
         }
     }
@@ -125,24 +133,24 @@ pub mod test {
         let mut ecs = ECSManager::<World>::default();
 
         // Make a simple system
-        let builder = ecs.build_system();
+        let builder = ecs.systems.builder();
         builder.link::<Name>().with_run_event(run_system).build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
-        let id = ecs.add_entity(entity, ComponentLinkingGroup::default()).unwrap();
-        assert!(ecs.get_entity(&id).is_ok());
-        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
+        let key = ecs.entities.add(entity).unwrap();
+        assert!(ecs.entities.get(key).is_ok());
+        assert_eq!(ecs.entities.get(key).unwrap().cbitfield, Bitfield::<u32>::default());
         let mut group = ComponentLinkingGroup::default();
         group.link(Name::new("Person")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
-        ecs.link_components(id, group).unwrap();
-        assert_ne!(ecs.get_entity(&id).unwrap().cbitfield, Bitfield::<u32>::default());
-        ecs.run_systems(&mut world);
+        ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
+        assert_ne!(ecs.entities.get(key).unwrap().cbitfield, Bitfield::<u32>::default());
+        run_systems(&mut ecs, &mut world);
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
-        ecs.unlink_components(id, group).unwrap();
-        assert_eq!(ecs.get_entity(&id).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
+        ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
+        assert_eq!(ecs.entities.get(key).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
     }
     #[test]
     pub fn test_events() {
@@ -154,7 +162,7 @@ pub mod test {
         // Make a simple system
         fn internal_run(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let mut name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
@@ -163,7 +171,7 @@ pub mod test {
         }
         fn internal_remove_entity(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
@@ -171,32 +179,32 @@ pub mod test {
         }
         fn internal_add_entity(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
             }
         }
-        ecs.build_system()
+        ecs.systems
+            .builder()
             .link::<Name>()
             .with_run_event(internal_run)
             .with_removed_entities_event(internal_remove_entity)
             .with_added_entities_event(internal_add_entity)
             .build();
-        ecs.build_system().link::<Name>().link::<Tagged>().build();
+        ecs.systems.builder().link::<Name>().link::<Tagged>().build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
         let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
         group.link(Tagged::new("Some interesting tag")).unwrap();
-        let id = ecs.add_entity(entity, group).unwrap();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
-        ecs.remove_entity(id).unwrap();
-        ecs.run_systems(&mut world);
-        ecs.finish_update();
+        let key = ecs.entities.add(entity).unwrap();
+        ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
+        run_systems(&mut ecs, &mut world);
+        ecs.entities.remove(key, &mut ecs.components, &mut ecs.systems).unwrap();
+        run_systems(&mut ecs, &mut world);
         // After this execution, the dangling components should have been removed
-        assert_eq!(ecs.count_components(), 0);
+        //assert_eq!(ecs.components.(), 0);
     }
 }

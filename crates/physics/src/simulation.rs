@@ -40,8 +40,6 @@ impl PhysicsSimulation {
     }
     // Step once through the simulation
     pub fn step(&mut self) {
-
-
         // Convert gravity
         let gravity = Vector::new(self.gravity.x, self.gravity.y, self.gravity.z);
         let physics_hooks = ();

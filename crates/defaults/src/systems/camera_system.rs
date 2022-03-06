@@ -52,9 +52,9 @@ fn run(world: &mut World, mut data: EventKey) {
     }
     // Update the camera values now
     let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
-    for (&entity_id, components) in query.write().iter_mut() {
+    for (&key, components) in query.iter_mut() {
         // If we are not the right camera, skip
-        if Some(entity_id) != global.camera_entity_id {
+        if key != global.camera_entity_key {
             continue;
         }
         let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
@@ -94,8 +94,8 @@ fn added_entities(world: &mut World, mut data: EventKey) {
     let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the first one
     let query = data.as_query_mut().unwrap();
-    if let Some((entity_id, _)) = query.write().iter().nth(0) {
-        global.camera_entity_id.get_or_insert(*entity_id);
+    if let Some((&key, _)) = query.iter().nth(0) {
+        global.camera_entity_key = key;
     }
 }
 
@@ -104,11 +104,13 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
     let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If we remove the main camera, we must empty the camera entity ID
     let query = data.as_query_mut().unwrap();
-    for (&entity_id, _) in query.write().iter() {
-        if Some(entity_id) == global.camera_entity_id {
+    for (&entity_id, _) in query.iter() {
+        /*
+        if Some(entity_id) == global.camera_entity_key {
             // Take
-            global.camera_entity_id.take().unwrap();
+            global.camera_entity_key.take().unwrap();
         }
+        */
     }
 }
 
@@ -116,7 +118,8 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .with_run_event(run)
         .with_added_entities_event(added_entities)
         .with_removed_entities_event(removed_entities)

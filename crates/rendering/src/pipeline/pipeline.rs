@@ -20,7 +20,6 @@ pub struct Pipeline {
 
     // Window
     pub window: Window,
-
     // Timings
     #[getset(get = "pub")]
     time: Time,

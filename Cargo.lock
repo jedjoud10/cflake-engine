@@ -681,11 +681,11 @@ dependencies = [
  "bitfield",
  "ecs-derive",
  "enum-as-inner",
+ "getset",
  "lazy_static",
- "ordered_vec",
  "others",
  "parking_lot 0.12.0",
- "rayon",
+ "slotmap",
 ]
 
 [[package]]

@@ -1,13 +1,13 @@
 use crate::globals::ChunksManager;
 use world::{
-    ecs::{self, entity::EntityID, event::EventKey, ECSManager},
+    ecs::{self, entity::EntityKey, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
     World,
 };
 
 // Add a single chunk to the world
-fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
+fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
     let mut group = ecs::entity::ComponentLinkingGroup::default();
@@ -25,15 +25,15 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
-    let id = ecs.add_entity(entity, group).unwrap();
+    let id = ecs.add(entity, group).unwrap();
     (id, priority)
 }
 // Remove a single chunk
-fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityID) {
+fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityKey) {
     // Make sure that the chunk entity even exists
-    if ecs.get_entity(&id).is_ok() {
+    if ecs.entities.get(id).is_ok() {
         // Remove the chunk entity at that specific EntityID
-        ecs.remove_entity(id).unwrap();
+        ecs.remove(id).unwrap();
     }
 }
 
@@ -96,6 +96,6 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
 }
 // Create a chunk system
 pub fn system(world: &mut World) {
-    world.ecs.build_system().with_run_event(run).build();
+    world.ecs.systems.builder().with_run_event(run).build();
     world.input.bind_key_toggle(Keys::Y, "update_terrain");
 }

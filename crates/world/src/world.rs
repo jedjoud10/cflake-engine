@@ -47,33 +47,15 @@ impl World {
         world.settings = settings;
         println!("World init done!");
         world
-    }
-    // Update the ECS systems
-    fn update_ecs(&mut self) {
-        let system_count = self.ecs.count_systems();
-        // Loop for every system and update it
-        for system_index in 0..system_count {
-            let execution_data = {
-                let system = &self.ecs.get_systems()[system_index];
-                system.run_system(&self.ecs)
-            };
-            // Actually execute the system now
-            execution_data.run(self);
-            {
-                // Clear
-                let system = &self.ecs.get_systems()[system_index];
-                system.clear();
-                self.time.update_current_frame_time();
-            }
-        }
-        // Finish update
-        self.ecs.finish_update();
-    }
+    }    
     // Called each frame
     pub fn update(&mut self) {
         self.state = WorldState::Running;
         // Update game logic (this includes rendering the world)
-        self.update_ecs();
+        self.time.update_current_frame_time();
+        let (systems, settings) = self.ecs.ready();
+        let systems = systems.borrow();
+        ECSManager::<World>::execute_systems(systems, self, settings);
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

@@ -30,8 +30,8 @@ fn run(world: &mut World, mut data: EventKey) {
     }
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
-        for (id, components) in query.write().iter_mut() {
-            if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(*id, true) {
+        for (&id, components) in query.iter_mut() {
+            if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(id, true) {
                 // We have created voxel data for this chunk, and it is valid (it contains a surface)
                 let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data;
@@ -44,7 +44,7 @@ fn run(world: &mut World, mut data: EventKey) {
                     },
                 );
                 // Create a linking group that add the renderer (only once)
-                let chunk_entity = world.ecs.get_entity(id).unwrap();
+                let chunk_entity = world.ecs.entities.get(id).unwrap();
                 if !chunk_entity.is_component_linked::<crate::components::Renderer>() {
                     // Get the pipeline without angering the borrow checker
                     let pipeline = world.pipeline.read();
@@ -55,7 +55,7 @@ fn run(world: &mut World, mut data: EventKey) {
                     let mesh_id = pipec::construct(&pipeline, mesh).unwrap();
                     let group = create_chunk_renderer_linking_group(mesh_id, material);
                     // Link the group
-                    world.ecs.link_components(*id, group).unwrap();
+                    world.ecs.link(id, group).unwrap();
                 } else {
                     // The renderer is already linked, we just need to update the mesh
                     let pipeline = world.pipeline.read();
@@ -71,13 +71,13 @@ fn run(world: &mut World, mut data: EventKey) {
                 let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data.clone();
                 chunk_post_gen(world, &chunk, voxel_data);
                 return;
-            } else if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(*id, false) {
+            } else if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(id, false) {
                 let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 // Remove the chunk's renderer if it had one
-                if world.ecs.get_entity(id).unwrap().is_component_linked::<crate::components::Renderer>() {
+                if world.ecs.entities.get(id).unwrap().is_component_linked::<crate::components::Renderer>() {
                     let mut unlink_group = ComponentUnlinkGroup::default();
                     unlink_group.unlink::<crate::components::Renderer>().unwrap();
-                    world.ecs.unlink_components(*id, unlink_group).unwrap();
+                    world.ecs.unlink_components(id, unlink_group).unwrap();
                 }
 
                 // The chunk ID is the same, but we do not have a surface
@@ -106,7 +106,8 @@ fn create_chunk_renderer_linking_group(mesh_id: ObjectID<Mesh>, material: Object
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .with_run_event(run)
         .link::<crate::components::Transform>()
         .link::<crate::components::Chunk>()

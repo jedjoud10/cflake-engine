@@ -19,7 +19,7 @@ fn run(world: &mut World, _data: EventKey) {
 
 // Create a system that'll allow us to disable/enable fullscreen and vsync
 pub fn system(world: &mut World) {
-    world.ecs.build_system().with_run_event(run).build();
+    world.ecs.systems.builder().with_run_event(run).build();
     world.input.bind_key_toggle(Keys::F5, "toggle_fullscreen");
     world.input.bind_key_toggle(Keys::F2, "toggle_input");
 }

@@ -1,22 +1,19 @@
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use ordered_vec::simple::OrderedVec;
 use parking_lot::RwLock;
-use std::{any::Any, cell::UnsafeCell, sync::Arc};
+use slotmap::SlotMap;
+use std::{
+    any::Any,
+    cell::{RefCell, UnsafeCell},
+    rc::Rc,
+    sync::Arc,
+};
 
-use crate::entity::EntityID;
+use crate::entity::EntityKey;
 
-// A ComponentID that will be used to identify components
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct ComponentID {
-    pub(crate) cbitfield: Bitfield<u32>,
-    pub(crate) idx: u64,
-}
-impl ComponentID {
-    // Create a new component ID
-    pub(crate) fn new(cbitfield: Bitfield<u32>, id: u64) -> Self {
-        Self { cbitfield, idx: id }
-    }
+slotmap::new_key_type! {
+    pub struct ComponentKey;
+    pub(crate) struct ComponentGroupKey;
 }
 
 // A component that can be accessed through multiple worker threads
@@ -27,76 +24,13 @@ pub trait Component: Sync {
 }
 
 // Main type because I don't want to type
-pub type ComponentsCollection = Arc<RwLock<OrderedVec<UnsafeCell<EnclosedComponent>>>>;
+pub type Components = Arc<RwLock<SlotMap<ComponentKey, UnsafeCell<EnclosedComponent>>>>;
 pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
+pub(crate) type DanglingComponentsToRemove = Rc<RefCell<SlotMap<ComponentGroupKey, ComponentGroupToRemove>>>;
 
 // Component groups that we must remove
 pub(crate) struct ComponentGroupToRemove {
-    pub components: AHashMap<Bitfield<u32>, u64>,
+    pub components: AHashMap<Bitfield<u32>, ComponentKey>,
     pub counter: usize,
-    pub entity_id: EntityID,
-}
-
-// Component ref guards. This can be used to detect whenever we mutate a component
-pub struct ComponentReadGuard<'a, T>
-where
-    T: Component,
-{
-    borrow: &'a T,
-}
-
-impl<'a, T> ComponentReadGuard<'a, T>
-where
-    T: Component,
-{
-    pub fn new(borrow: &'a T) -> Self {
-        Self { borrow }
-    }
-}
-
-impl<'a, T> std::ops::Deref for ComponentReadGuard<'a, T>
-where
-    T: Component,
-{
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.borrow
-    }
-}
-// Component mut guard
-pub struct ComponentWriteGuard<'a, T>
-where
-    T: Component,
-{
-    borrow_mut: &'a mut T,
-}
-
-impl<'a, T> ComponentWriteGuard<'a, T>
-where
-    T: Component,
-{
-    pub fn new(borrow_mut: &'a mut T) -> Self {
-        Self { borrow_mut }
-    }
-}
-
-impl<'a, T> std::ops::Deref for ComponentWriteGuard<'a, T>
-where
-    T: Component,
-{
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.borrow_mut
-    }
-}
-
-impl<'a, T> std::ops::DerefMut for ComponentWriteGuard<'a, T>
-where
-    T: Component,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.borrow_mut
-    }
+    pub key: EntityKey,
 }

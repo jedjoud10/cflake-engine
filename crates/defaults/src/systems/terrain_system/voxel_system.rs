@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use world::{
-    ecs::{entity::EntityID, event::EventKey},
+    ecs::{entity::EntityKey, event::EventKey},
     rendering::{
         advanced::compute::ComputeShaderExecutionSettings,
         basics::{
@@ -18,7 +18,7 @@ use world::{
 use crate::globals::ChunkGenerationState;
 
 // Start generating the voxel data for a specific chunk
-fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityID) {
+fn start_generation(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, id: EntityKey) {
     let generator = &mut terrain.voxel_generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
@@ -148,7 +148,7 @@ fn run(world: &mut World, mut data: EventKey) {
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((entity_id, _)) = terrain.chunks_manager.priority_list.pop() {
-                let mut lock_ = query.write();
+                let mut lock_ = query;
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
@@ -165,7 +165,7 @@ fn run(world: &mut World, mut data: EventKey) {
             ) {
                 // We will now update the chunk data to store our new voxel data
                 if let ChunkGenerationState::BeginVoxelDataGeneration(id) = terrain.chunks_manager.current_chunk_state {
-                    let mut lock_ = query.write();
+                    let mut lock_ = query;
                     let components = lock_.get_mut(&id).unwrap();
                     // Get our chunk and set it's new data
                     let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
@@ -180,7 +180,8 @@ fn run(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .with_run_event(run)
         .link::<crate::components::Transform>()
         .link::<crate::components::Chunk>()
