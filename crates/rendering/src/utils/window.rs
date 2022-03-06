@@ -1,4 +1,4 @@
-use getset::{Getters, MutGetters, CopyGetters};
+use getset::{CopyGetters, Getters, MutGetters};
 use glutin::{window::Fullscreen, ContextWrapper, PossiblyCurrent, WindowedContext};
 
 // Get the default width and height of the starting window
@@ -29,5 +29,12 @@ impl Window {
         self.fullscreen = fullscreen;
     }
     // Calculate the pixels per point
-    pub fn pixels_per_point(&self) -> f64 { self.context.window().scale_factor() }
+    pub fn pixels_per_point(&self) -> f64 {
+        self.context.window().scale_factor()
+    }
+    // Update the deferred renderer's textures since we have resized the window
+    pub fn resized_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
+        self.dimensions = new_dimensions;
+        // Update textures
+    }
 }

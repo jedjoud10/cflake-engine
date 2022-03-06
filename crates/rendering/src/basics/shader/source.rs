@@ -1,7 +1,7 @@
 use assets::Asset;
 
 // A shader source that has been loaded from a shader file (.glsl)
-#[derive(Default, Clone,)]
+#[derive(Default, Clone)]
 pub struct ShaderSource {
     // File info
     file: String,
@@ -12,10 +12,18 @@ pub struct ShaderSource {
 
 // Getters and mut getters
 impl ShaderSource {
-    pub fn file(&self) -> &str { self.file.as_str() }
-    pub fn text(&self) -> &str { self.text.as_str() }
-    pub(crate) fn text_mut(&mut self) -> &mut String { &mut self.text }
-    pub fn _type(&self) -> ShaderSourceType { self._type }
+    pub fn file(&self) -> &str {
+        self.file.as_str()
+    }
+    pub fn text(&self) -> &str {
+        self.text.as_str()
+    }
+    pub(crate) fn text_mut(&mut self) -> &mut String {
+        &mut self.text
+    }
+    pub fn _type(&self) -> ShaderSourceType {
+        self._type
+    }
 }
 
 impl Default for ShaderSourceType {
@@ -35,7 +43,8 @@ pub enum ShaderSourceType {
 impl Asset for ShaderSource {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Load a shader source
         // Load a shader source from scratch
         let text = String::from_utf8(bytes.to_vec()).ok()?;

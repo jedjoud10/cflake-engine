@@ -1,8 +1,8 @@
-use std::{rc::Rc, sync::Arc, marker::PhantomData};
+use super::InnerPipelineCollection;
 use bitfield::AtomicSparseBitfield;
 use parking_lot::Mutex;
 use slotmap::{Key, KeyData};
-use super::InnerPipelineCollection;
+use std::{marker::PhantomData, rc::Rc, sync::Arc};
 
 // A unique pipeline collection key
 slotmap::new_key_type! {
@@ -18,7 +18,7 @@ pub struct Handle<T> {
 
 impl<T> Default for Handle<T> {
     fn default() -> Self {
-        Self { 
+        Self {
             key: Arc::new(PipelineElemKey::null()),
             to_remove: None,
             _phantom: PhantomData::default(),
@@ -49,4 +49,3 @@ impl<T> Drop for Handle<T> {
         }
     }
 }
-

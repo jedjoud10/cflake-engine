@@ -3,11 +3,11 @@ use std::sync::Arc;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
-        shader::{Shader, ShaderInitSettings, ShaderInitSettingsBuilder},
-        texture::{Texture, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping, TextureBuilder},
+        shader::{Shader, ShaderInitSettings},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapping},
         uniforms::Uniforms,
     },
-    pipeline::{Pipeline, Handle},
+    pipeline::{Handle, Pipeline},
     utils::DataType,
 };
 
@@ -27,19 +27,16 @@ impl Painter {
     // This will be called on the render thread
     pub fn new(pipeline: &mut Pipeline) -> Self {
         // Load the GUI shader
-        let shader_settings = ShaderInitSettingsBuilder::default()
+        let shader_settings = ShaderInitSettings::default()
             .source("defaults/shaders/gui/vert.vrsh.glsl")
-            .source("defaults/shaders/gui/frag.frsh.glsl")
-            .build();
+            .source("defaults/shaders/gui/frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipeline.shaders.insert(shader);
         // Load the egui font texture
         let egui_font_texture = TextureBuilder::default()
             .filter(TextureFilter::Linear)
             ._format(TextureFormat::RGBA8R)
-            .wrap_mode(TextureWrapping::ClampToEdge {
-                border_color: veclib::Vector4::ZERO,
-            })
+            .wrap_mode(TextureWrapping::ClampToEdge(None))
             ._type(DataType::U8)
             .mipmaps(true)
             .build();

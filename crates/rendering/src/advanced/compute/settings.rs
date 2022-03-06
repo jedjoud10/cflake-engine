@@ -11,9 +11,6 @@ pub struct ComputeShaderExecutionSettings {
 impl ComputeShaderExecutionSettings {
     // Create some new settings using the axii counts
     pub fn new(axii: veclib::Vector3<u16>, uniforms: StoredUniforms) -> Self {
-        Self {
-            axii,
-            uniforms,
-        }
+        Self { axii, uniforms }
     }
 }

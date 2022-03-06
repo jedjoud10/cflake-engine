@@ -1,7 +1,4 @@
-use world::{
-    ecs::event::EventKey,
-    World,
-};
+use world::{ecs::event::EventKey, World};
 
 // The rendering system update loop
 fn run(world: &mut World, mut data: EventKey) {
@@ -9,12 +6,10 @@ fn run(world: &mut World, mut data: EventKey) {
 }
 
 // An event fired whenever we add multiple new renderer entities
-fn added_entities(world: &mut World, mut data: EventKey) {
-}
+fn added_entities(world: &mut World, mut data: EventKey) {}
 
 // An event fired whenever we remove multiple renderer entities
-fn removed_entities(world: &mut World, mut data: EventKey) {
-}
+fn removed_entities(world: &mut World, mut data: EventKey) {}
 
 // Create the rendering system
 pub fn system(world: &mut World) {

@@ -1,9 +1,9 @@
+use super::{compile_shader, ShaderInitSettings, ShaderSource, UniformsDefinitionMap};
+use crate::basics::shader::{compile_source, query_shader_uniforms_definition_map, ShaderSourceType};
+use crate::object::PipelineCollectionElement;
 use ahash::{AHashMap, AHashSet};
 use getset::Getters;
 use gl::types::GLuint;
-use crate::basics::shader::{query_shader_uniforms_definition_map, ShaderSourceType, compile_source};
-use crate::object::PipelineCollectionElement;
-use super::{UniformsDefinitionMap, ShaderSource, ShaderInitSettings, compile_shader};
 use std::collections::{HashMap, HashSet};
 use std::ffi::CString;
 use std::ptr::null;
@@ -22,7 +22,7 @@ pub struct Shader {
 }
 
 impl Shader {
-    // Creates a new shader using some shader init settings 
+    // Creates a new shader using some shader init settings
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(settings.sources_mut());

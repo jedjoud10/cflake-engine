@@ -1,7 +1,7 @@
 use std::ops::{Index, IndexMut};
 
 // Mesh indices
-pub type Indices = Vec<u32>; 
+pub type Indices = Vec<u32>;
 // Index builder
 pub struct IndexBuilder<'a> {
     pub indices: &'a mut Vec<u32>,

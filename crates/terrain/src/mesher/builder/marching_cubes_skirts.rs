@@ -1,4 +1,4 @@
-use rendering::basics::mesh::{Mesh, GeometryBuilder};
+use rendering::basics::mesh::{GeometryModifier, Mesh};
 
 use crate::{
     mesher::{
@@ -35,7 +35,7 @@ impl MarchingCubesSkirts {
         }
         // Geometry builder
         let mut mesh = Mesh::default();
-        let mut builder = mesh.builder();
+        let mut builder = mesh.modifier();
         // Create the skirts in all 3 directions
         for direction in 0..3 {
             // Lookup table for axii directions
@@ -61,7 +61,7 @@ impl MarchingCubesSkirts {
         mesh
     }
     // Generate a whole skirt
-    fn generate_skirt(&self, voxels: &StoredVoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
+    fn generate_skirt(&self, voxels: &StoredVoxelData, builder: &mut GeometryModifier, skirt_settings: &SkirtSettings) {
         let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -158,7 +158,7 @@ impl MarchingCubesSkirts {
         })
     }
     // Solve a single marching squares case using a passed function for transforming the vertex position to world space
-    fn solve_marching_squares(builder: &mut GeometryBuilder, info: &InterInfo, data: &SquareData) {
+    fn solve_marching_squares(builder: &mut GeometryModifier, info: &InterInfo, data: &SquareData) {
         let mut vertices: [veclib::Vector3<f32>; 12] = [veclib::Vector3::ZERO; 12];
         let mut len: usize = 0;
         // Create the triangles from the marching squares case
@@ -191,7 +191,8 @@ impl MarchingCubesSkirts {
                 return;
             }
             builder.index_builder.push(builder.vertex_builder.vertices.len() as u32);
-            builder.vertex_builder
+            builder
+                .vertex_builder
                 .position(vertex)
                 .normal(data.normal)
                 .color(data.color)

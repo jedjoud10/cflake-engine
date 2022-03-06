@@ -1,7 +1,7 @@
-use getset::{Getters, CopyGetters};
+use crate::{pipeline::Pipeline, utils::UsageType};
+use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use crate::{utils::UsageType, pipeline::Pipeline};
-use std::{ffi::c_void, mem::size_of, ptr::null, marker::PhantomData, ops::Range};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of, ops::Range, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
 #[derive(Getters, CopyGetters)]
@@ -39,8 +39,14 @@ impl<T> DynamicRawBuffer<T> {
             gl::BindBuffer(_type, 0);
             oid
         };
-        Self { buffer: oid, _type, inner: vec, usage, _phantom: PhantomData::default() }
-    }    
+        Self {
+            buffer: oid,
+            _type,
+            inner: vec,
+            usage,
+            _phantom: PhantomData::default(),
+        }
+    }
 }
 
 // Allocation
@@ -69,12 +75,7 @@ impl<T> DynamicRawBuffer<T> {
             // Byte offset and byte size
             let byte_offset = start * size_of::<T>();
             let byte_size = (end - start) * size_of::<T>();
-            gl::BufferSubData(
-                self._type,
-                byte_offset as isize,
-                byte_size as isize,
-                self.inner.as_ptr() as *const c_void,
-            );
+            gl::BufferSubData(self._type, byte_offset as isize, byte_size as isize, self.inner.as_ptr() as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
     }
@@ -95,18 +96,19 @@ impl<T> DynamicRawBuffer<T> {
         self.inner.push(value);
         let new = self.inner.capacity();
         let index = self.inner.len() - 1;
-    
-        // Reallocate only if we exceed the old capacity 
+
+        // Reallocate only if we exceed the old capacity
         if new > old {
             self.reallocate();
         } else {
             // Otherwise, just update
-            self.update(index..(index+1))
+            self.update(index..(index + 1))
         }
     }
     // Pop a single element
     pub fn pop(&mut self) {
-        self.inner.pop();    }
+        self.inner.pop();
+    }
 
     // Length and is_empty
     pub fn len(&self) -> usize {
@@ -117,7 +119,6 @@ impl<T> DynamicRawBuffer<T> {
     }
 }
 
-
 impl<T> Drop for DynamicRawBuffer<T> {
     fn drop(&mut self) {
         // Dispose of the OpenGL buffer
@@ -125,6 +126,6 @@ impl<T> Drop for DynamicRawBuffer<T> {
             unsafe {
                 gl::DeleteBuffers(1, &mut self.buffer);
             }
-        } 
+        }
     }
 }

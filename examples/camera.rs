@@ -1,9 +1,7 @@
 use cflake_engine::{
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
-    rendering::{
-        basics::lights::{LightSource, LightSourceType},
-    },
+    rendering::basics::lights::{LightSource, LightSourceType},
     veclib, World,
 };
 // A game with a test camera
@@ -20,11 +18,9 @@ fn init(world: &mut World) {
     let entity = Entity::default();
     let _id = world.ecs.entities.add(entity).unwrap();
     world.ecs.components.link(_id, &mut world.ecs.entities, &mut world.ecs.systems, group).unwrap();
-    let pipeline = world.pipeline.read();
     // Create the directional light source
-    let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
-    })
-    .with_strength(1.0);
-    pipec::construct(&pipeline, light).unwrap();
+    let light = LightSource {
+        _type: LightSourceType::Directional(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians())),
+        ..Default::default()
+    };
 }

@@ -1,4 +1,4 @@
-use super::{Texture, TextureBuilder, TextureDimensions, calculate_size_bytes};
+use super::{calculate_size_bytes, Texture, TextureBuilder, TextureDimensions};
 
 // A texture bundler that creates a 2D texture array from a set of textures
 pub struct TextureBundler;

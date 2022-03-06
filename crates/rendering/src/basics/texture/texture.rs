@@ -6,10 +6,11 @@ use std::{
 use crate::{
     basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Pipeline, Handle},
+    pipeline::{Handle, Pipeline},
     utils::*,
 };
 
+use super::{get_ifd, TextureAccessType, TextureDimensions, TextureFilter, TextureFormat, TextureWrapping};
 use assets::Asset;
 use getset::{CopyGetters, Getters};
 use gl::{
@@ -18,7 +19,6 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
-use super::{get_ifd, TextureAccessType, TextureFilter, TextureFormat, TextureDimensions, TextureWrapping};
 
 // A texture
 #[derive(CopyGetters, Getters)]
@@ -88,24 +88,54 @@ impl Default for Texture {
 // Builder
 #[derive(Default)]
 pub struct TextureBuilder {
-    inner: Texture
+    inner: Texture,
 }
 
 impl TextureBuilder {
+    // Create a new builder from a texture
+    pub fn new(texture: Texture) -> Self {
+        Self { inner: texture }
+    }
+
     // This burns my eyes
-    pub fn bytes(mut self, bytes: Vec<u8>) -> Self { self.inner.bytes = bytes; self }
-    pub fn _format(mut self, _format: TextureFormat) -> Self { self.inner._format = _format; self }
-    pub fn _type(mut self, _type: DataType) -> Self { self.inner._type = _type; self }
-    pub fn filter(mut self, filter: TextureFilter) -> Self { self.inner.filter = filter; self }
-    pub fn wrap_mode(mut self, wrapping: TextureWrapping) -> Self { self.inner.wrap_mode = wrapping; self }
-    pub fn custom_params(mut self, params: &[(GLuint, GLuint)]) -> Self { self.inner.custom_params = SmallVec::from_slice(params); self }
-    pub fn dimensions(mut self, dims: TextureDimensions) -> Self { self.inner.dimensions = dims; self }
-    pub fn mipmaps(mut self, enabled: bool) -> Self { self.inner.mipmaps = enabled; self }
+    pub fn bytes(mut self, bytes: Vec<u8>) -> Self {
+        self.inner.bytes = bytes;
+        self
+    }
+    pub fn _format(mut self, _format: TextureFormat) -> Self {
+        self.inner._format = _format;
+        self
+    }
+    pub fn _type(mut self, _type: DataType) -> Self {
+        self.inner._type = _type;
+        self
+    }
+    pub fn filter(mut self, filter: TextureFilter) -> Self {
+        self.inner.filter = filter;
+        self
+    }
+    pub fn wrap_mode(mut self, wrapping: TextureWrapping) -> Self {
+        self.inner.wrap_mode = wrapping;
+        self
+    }
+    pub fn custom_params(mut self, params: &[(GLuint, GLuint)]) -> Self {
+        self.inner.custom_params = SmallVec::from_slice(params);
+        self
+    }
+    pub fn dimensions(mut self, dims: TextureDimensions) -> Self {
+        self.inner.dimensions = dims;
+        self
+    }
+    pub fn mipmaps(mut self, enabled: bool) -> Self {
+        self.inner.mipmaps = enabled;
+        self
+    }
 
     // Build
-    pub fn build(self) -> Texture { self.inner }
+    pub fn build(self) -> Texture {
+        self.inner
+    }
 }
-
 
 impl Texture {
     // Count the numbers of pixels that this texture can contain
@@ -303,8 +333,8 @@ impl PipelineCollectionElement for Texture {
 
         // Set the wrap mode for the texture (Mipmapped or not)
         let wrapping_mode = match self.wrap_mode {
-            TextureWrapping::ClampToEdge { border_color: _ } => gl::CLAMP_TO_EDGE,
-            TextureWrapping::ClampToBorder { border_color: _ } => gl::CLAMP_TO_BORDER,
+            TextureWrapping::ClampToEdge(_) => gl::CLAMP_TO_EDGE,
+            TextureWrapping::ClampToBorder(_) => gl::CLAMP_TO_BORDER,
             TextureWrapping::Repeat => gl::REPEAT,
             TextureWrapping::MirroredRepeat => gl::MIRRORED_REPEAT,
         };
@@ -315,12 +345,14 @@ impl PipelineCollectionElement for Texture {
             // And also border colors
             use veclib::Vector;
             match self.wrap_mode {
-                TextureWrapping::ClampToBorder { border_color } | TextureWrapping::ClampToEdge { border_color } => {
-                    let ptr = border_color.as_ptr();
-                    gl::TexParameterfv(target, gl::TEXTURE_BORDER_COLOR, ptr);
+                TextureWrapping::ClampToBorder(color) | TextureWrapping::ClampToEdge(color) => {
+                    if let Some(color) = color {
+                        let ptr = color.as_ptr();
+                        gl::TexParameterfv(target, gl::TEXTURE_BORDER_COLOR, ptr);
+                    }
                 }
                 _ => {}
-            }            
+            }
         }
 
         // Set the custom parameter
@@ -345,7 +377,8 @@ impl PipelineCollectionElement for Texture {
 impl Asset for Texture {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         // Load this texture from the bytes
         // Load this texture from the bytes
         let image = image::load_from_memory(bytes).unwrap();

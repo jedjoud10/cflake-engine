@@ -1,144 +1,138 @@
-use super::super::{settings::PipelineSettings, FrameDebugInfo, InternalPipeline, Pipeline};
-use super::postprocessing::PostProcessing;
-use super::{error::*, shadows::ShadowMapping};
-use crate::pipeline::camera::Camera;
+use super::ShadowMapping;
 use crate::{
     basics::{
-        lights::{LightSource, LightSourceType},
-        material::Material,
         mesh::{Mesh, Vertices},
-        renderer::{Renderer, RendererFlags},
-        shader::{Shader, ShaderSettings},
-        texture::{Texture, TextureFormat, TextureType},
-        uniforms::{ShaderIDType, ShaderUniformsSettings, Uniforms},
+        shader::{Directive, Shader, ShaderInitSettings},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping},
     },
-    object::ObjectID,
-    pipeline::pipec,
+    pipeline::{Handle, Pipeline},
     utils::DataType,
 };
+use assets::assetc;
 use gl::types::GLuint;
-use std::ptr::null;
 
-// Pipeline renderer that will render our world
-#[derive(Default)]
+// Scene renderer that will render our world using deferred rendering
+// TODO: Document
 pub struct SceneRenderer {
+    // Frame buffer
     framebuffer: GLuint,
 
     // Our deferred textures
-    pub(crate) diffuse_texture: ObjectID<Texture>,
-    pub(crate) emissive_texture: ObjectID<Texture>,
-    pub(crate) normals_texture: ObjectID<Texture>,
-    pub(crate) position_texture: ObjectID<Texture>,
-    pub(crate) depth_texture: ObjectID<Texture>,
+    diffuse_texture: Handle<Texture>,
+    emissive_texture: Handle<Texture>,
+    normals_texture: Handle<Texture>,
+    position_texture: Handle<Texture>,
+    depth_texture: Handle<Texture>,
 
     // Screen rendering
-    lighting_pass_screenshader: ObjectID<Shader>,
-    quad_mesh: ObjectID<Mesh>,
+    lighting_pass: Handle<Shader>,
+    quad: Handle<Mesh>,
 
     // Others
-    sky_gradient: ObjectID<Texture>,
+    sky_gradient: Handle<Texture>,
     shadow_mapping: Option<ShadowMapping>,
-    postprocessing: PostProcessing,
 }
 impl SceneRenderer {
-    // Initialize this new pipeline renderer
-    pub(crate) fn initialize(&mut self, pipeline_settings: PipelineSettings, internal: &mut InternalPipeline, pipeline: &mut Pipeline) {
-        println!("Initializing the pipeline renderer...");
+    // Initialize a new scene renderer
+    pub(crate) unsafe fn initialize(pipeline: &mut Pipeline) -> Self {
+        println!("Initializing the scene renderer...");
+        /* #region Quad */
         // Create the quad mesh that we will use to render the whole screen
         use veclib::{vec2, vec3};
-        let quad = Mesh {
-            vertices: Vertices {
+        let quad = Mesh::new(
+            Vertices {
                 positions: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
                 uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
                 ..Default::default()
             },
-            indices: vec![0, 1, 2, 0, 3, 1],
-            ..Default::default()
-        };
-        // Load the quad mesh
-        self.quad_mesh = pipec::construct(pipeline, quad).unwrap();
-        println!("Quad mesh {:?}", self.quad_mesh);
-
+            vec![0, 1, 2, 0, 3, 1],
+        );
+        let quad = pipeline.meshes.insert(quad);
+        /* #endregion */
+        /* #region Lighting Shader */
         // Load the lighting pass shader
-        let settings = ShaderSettings::default()
+        let settings = ShaderInitSettings::default()
             .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
-            .shader_constant("shadow_bias", pipeline_settings.shadow_bias);
-        self.lighting_pass_screenshader = pipec::construct(pipeline, Shader::new(settings).unwrap()).unwrap();
+            .directive("shadow_bias", Directive::Const(String::new())); // TODO: FIX THIS
+        let shader = pipeline.shaders.insert(Shader::new(settings).unwrap());
+        /* #endregion */
         /* #region Deferred renderer init */
-        // Local function for binding a texture to a specific frame buffer attachement
-        let dims = TextureType::Texture2D(pipeline.window.dimensions.x, pipeline.window.dimensions.y);
-        unsafe {
-            gl::GenFramebuffers(1, &mut self.framebuffer);
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-            // Create the diffuse render texture
-            self.diffuse_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8R)).unwrap();
-            // Create the emissive render texture
-            self.emissive_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
-            // Create the normals render texture
-            self.normals_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB8RS)).unwrap();
-            // Create the position render texture
-            self.position_texture = pipec::construct(pipeline, Texture::default().with_dimensions(dims).with_format(TextureFormat::RGB32F)).unwrap();
-            // Create the depth render texture
-            self.depth_texture = pipec::construct(
-                pipeline,
-                Texture::default()
-                    .with_dimensions(dims)
-                    .with_format(TextureFormat::DepthComponent32)
-                    .with_data_type(DataType::F32),
-            )
-            .unwrap();
+        let dimensions = TextureDimensions::Texture2d(pipeline.window.dimensions);
 
-            // Now bind the attachememnts
-            fn bind_attachement(attachement: u32, texture: &ObjectID<Texture>, pipeline: &Pipeline) -> Option<()> {
-                // Get the textures from the GPUObjectID
-                let texture = pipeline.textures.get(*texture)?;
-                unsafe {
-                    gl::BindTexture(texture.target, texture.oid);
-                    gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target, texture.oid, 0);
-                }
-                Some(())
-            }
-            // Flush
-            pipeline.flush(internal, self);
-            bind_attachement(gl::COLOR_ATTACHMENT0, &self.diffuse_texture, pipeline).unwrap();
-            bind_attachement(gl::COLOR_ATTACHMENT1, &self.emissive_texture, pipeline).unwrap();
-            bind_attachement(gl::COLOR_ATTACHMENT2, &self.normals_texture, pipeline).unwrap();
-            bind_attachement(gl::COLOR_ATTACHMENT3, &self.position_texture, pipeline).unwrap();
-            bind_attachement(gl::DEPTH_ATTACHMENT, &self.depth_texture, pipeline).unwrap();
-            let attachements = vec![gl::COLOR_ATTACHMENT0, gl::COLOR_ATTACHMENT1, gl::COLOR_ATTACHMENT2, gl::COLOR_ATTACHMENT3];
-            gl::DrawBuffers(attachements.len() as i32, attachements.as_ptr() as *const u32);
+        // Since we use deferred rendering, we must create a new framebuffer for this renderer
+        let mut framebuffer = 0;
+        gl::GenFramebuffers(1, &mut framebuffer);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
+        // Create the textures now
+        let texture_formats = [
+            TextureFormat::RGB8R,
+            TextureFormat::RGB32F,
+            TextureFormat::RGB8RS,
+            TextureFormat::RGB32F,
+            TextureFormat::DepthComponent32,
+        ];
+        let texture_types = [DataType::U8, DataType::U8, DataType::U8, DataType::U8, DataType::F32];
+        // Create all the textures at once
+        let textures = texture_formats
+            .into_iter()
+            .zip(texture_types.into_iter())
+            .map(|(_format, _type)| {
+                pipeline
+                    .textures
+                    .insert(TextureBuilder::default().dimensions(dimensions)._format(_format)._type(_type).build())
+            })
+            .collect::<Vec<Handle<Texture>>>();
 
-            // Check frame buffer state
-            if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
-            }
-
-            // Unbind
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+        // Now bind the texture attachememnts
+        let attachements = [
+            gl::COLOR_ATTACHMENT0,
+            gl::COLOR_ATTACHMENT1,
+            gl::COLOR_ATTACHMENT2,
+            gl::COLOR_ATTACHMENT3,
+            gl::DEPTH_ATTACHMENT,
+        ];
+        for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
+            let texture = pipeline.textures.get(handle).unwrap();
+            gl::BindTexture(texture.target(), texture.oid());
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.oid(), 0);
         }
+
+        // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT
+        gl::DrawBuffers(attachements.len() as i32 - 1, attachements.as_ptr() as *const u32);
+
+        // Check frame buffer state
+        if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
+            panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
+        }
+
+        // Unbind
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         /* #endregion */
         /* #region Others */
-        self.shadow_mapping = if pipeline_settings.shadow_resolution != 0 {
-            Some(ShadowMapping::new(self, pipeline_settings.shadow_resolution, internal, pipeline))
-        } else {
-            None
-        };
-        self.postprocessing = PostProcessing::new(self, internal, pipeline, dims);
-        // Load sky gradient texture
-        self.sky_gradient = pipec::construct(
-            pipeline,
-            assets::assetc::load::<Texture>("defaults/textures/sky_gradient.png")
-                .unwrap()
-                .with_wrapping_mode(crate::basics::texture::TextureWrapping::ClampToEdge),
-        )
-        .unwrap();
-        /* #endregion */
+        let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
 
-        // We must always flush to make sure we execute the tasks internally
-        pipeline.flush(internal, self);
+        // Load the default sky gradient texture
+        let sky_gradient = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/sky_gradient.png").unwrap())
+            .wrap_mode(TextureWrapping::ClampToBorder(None))
+            .build();
+        let sky_gradient = pipeline.textures.insert(sky_gradient);
+        /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
+        Self {
+            framebuffer,
+            diffuse_texture: textures[0].clone(),
+            emissive_texture: textures[1].clone(),
+            normals_texture: textures[2].clone(),
+            position_texture: textures[3].clone(),
+            depth_texture: textures[4].clone(),
+            lighting_pass: shader,
+            quad,
+            sky_gradient,
+            shadow_mapping,
+        }
     }
+    /*
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {
         material.diffuse_map.get().map_or_else(|| pipeline.defaults.as_ref().unwrap().white, ObjectID::new)
@@ -187,9 +181,7 @@ impl SceneRenderer {
         Ok(mesh)
     }
     // Render a single renderer
-    fn render(mesh: &Mesh) {
-        
-    }
+    fn render(mesh: &Mesh) {}
     // Prepare the FBO and clear the buffers
     fn prepare_for_rendering(&self, pipeline: &Pipeline) {
         unsafe {
@@ -269,12 +261,12 @@ impl SceneRenderer {
         let camera = &pipeline.camera;
 
         // New uniforms
-        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass_screenshader));
+        let settings = ShaderUniformsSettings::new(ShaderIDType::ObjectID(self.lighting_pass));
         let uniforms = Uniforms::new(&settings, pipeline);
         self.bind_screen_quad_uniforms(uniforms, pipeline, camera);
 
         // Draw the quad
-        let quad_mesh = pipeline.meshes.get(self.quad_mesh).unwrap();
+        let quad_mesh = pipeline.meshes.get(self.quad).unwrap();
         unsafe {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.postprocessing.framebuffer);
@@ -287,7 +279,7 @@ impl SceneRenderer {
         self.postprocessing.bind_fbo(pipeline, self);
 
         // Draw the quad
-        let quad_mesh = pipeline.meshes.get(self.quad_mesh).unwrap();
+        let quad_mesh = pipeline.meshes.get(self.quad).unwrap();
         unsafe {
             // Draw to the postprocessing's framebuffer instead
             gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -351,4 +343,5 @@ impl SceneRenderer {
         // Don't forget the postprocessing color texture
         self.postprocessing.resize_texture(dims, pipeline);
     }
+    */
 }

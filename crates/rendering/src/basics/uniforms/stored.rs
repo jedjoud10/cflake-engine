@@ -11,8 +11,6 @@ pub struct StoredUniforms {
 impl StoredUniforms {
     // Create a new callback using a closure
     pub fn new<F: Fn(&mut Uniforms) + Sync + Send + 'static>(closure: F) -> Self {
-        Self {
-            inner: Some(Box::new(closure)),
-        }
+        Self { inner: Some(Box::new(closure)) }
     }
 }

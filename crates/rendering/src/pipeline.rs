@@ -1,6 +1,10 @@
-mod pipeline;
 mod collection;
 mod handle;
-pub use handle::*;
+mod pipeline;
+mod rendering;
+mod settings;
 pub use collection::*;
+pub use handle::*;
 pub use pipeline::*;
+pub use rendering::*;
+pub use settings::*;

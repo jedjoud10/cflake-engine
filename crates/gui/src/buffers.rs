@@ -3,7 +3,8 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use gl::types::GLuint;
 use rendering::{
     advanced::raw::dynamic_buffer::DynamicRawBuffer,
-    utils::{AccessType::Draw, UpdateFrequency::Stream, UsageType}, pipeline::Pipeline,
+    pipeline::Pipeline,
+    utils::{AccessType::Draw, UpdateFrequency::Stream, UsageType},
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh

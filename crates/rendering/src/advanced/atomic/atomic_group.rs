@@ -6,7 +6,7 @@ use gl::types::GLuint;
 use crate::{
     basics::buffer_operation::BufferOperation,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Pipeline, PipelineCollection, Handle},
+    pipeline::{Handle, Pipeline, PipelineCollection},
 };
 
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
@@ -19,7 +19,9 @@ pub struct AtomicGroup {
 
 // Getters
 impl AtomicGroup {
-    pub(crate) fn buffer(&self) -> GLuint { self.buffer }
+    pub(crate) fn buffer(&self) -> GLuint {
+        self.buffer
+    }
 }
 
 impl PipelineCollectionElement for AtomicGroup {
@@ -31,12 +33,7 @@ impl PipelineCollectionElement for AtomicGroup {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
 
             // Initialize it's data
-            gl::BufferData(
-                gl::ATOMIC_COUNTER_BUFFER,
-                size_of::<u32>() as isize * 4,
-                null(),
-                gl::DYNAMIC_DRAW,
-            );
+            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<u32>() as isize * 4, null(), gl::DYNAMIC_DRAW);
 
             // Unbind just in case
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
@@ -86,12 +83,7 @@ impl AtomicGroup {
         }
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
-            gl::BufferSubData(
-                gl::ATOMIC_COUNTER_BUFFER,
-                0,
-                size_of::<u32>() as isize * 4,
-                counters.as_ptr() as *const c_void,
-            );
+            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<u32>() as isize * 4, counters.as_ptr() as *const c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
         Ok(())

@@ -1,18 +1,21 @@
 use getset::Getters;
-use glutin::{event_loop::EventLoop, ContextBuilder, window::WindowBuilder, WindowedContext, dpi::LogicalSize, NotCurrent, PossiblyCurrent, GlProfile, GlRequest};
+use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest, NotCurrent, PossiblyCurrent, WindowedContext};
 use others::Time;
 
-use crate::{basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture}, advanced::{compute::ComputeShader, atomic::AtomicGroup, shader_storage::ShaderStorage}, utils::{Window, DEFAULT_WINDOW_SIZE}};
+use crate::{
+    advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
+    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture},
+    utils::{Window, DEFAULT_WINDOW_SIZE},
+};
 
-use super::PipelineCollection;
-
+use super::{PipelineCollection, PipelineSettings};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
     pub meshes: PipelineCollection<Mesh>,
-    pub shaders: PipelineCollection< Shader>,
+    pub shaders: PipelineCollection<Shader>,
     pub compute_shaders: PipelineCollection<ComputeShader>,
     pub textures: PipelineCollection<Texture>,
 
@@ -24,14 +27,17 @@ pub struct Pipeline {
     // Timings
     #[getset(get = "pub")]
     time: Time,
+    // Settings
+    #[getset(get = "pub")]
+    settings: PipelineSettings,
 }
 
 // Initialize glutin and the window
 fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<PossiblyCurrent> {
-    let wb = WindowBuilder::new().with_resizable(true).with_title(title).with_inner_size(LogicalSize::new(
-        DEFAULT_WINDOW_SIZE.x as u32,
-        DEFAULT_WINDOW_SIZE.y as u32,
-    ));
+    let wb = WindowBuilder::new()
+        .with_resizable(true)
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(DEFAULT_WINDOW_SIZE.x as u32, DEFAULT_WINDOW_SIZE.y as u32));
     let wc = ContextBuilder::new()
         .with_double_buffer(Some(true))
         .with_vsync(vsync)
@@ -48,10 +54,30 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
     wc
 }
 
+// Initialize OpenGL
+fn init_opengl(context: &WindowedContext<PossiblyCurrent>) {
+    unsafe {
+        gl::load_with(|x| context.get_proc_address(x));
+
+        // Check if the gl viewport is ok
+        if !gl::Viewport::is_loaded() {
+            panic!()
+        }
+
+        gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
+        gl::ClearColor(0.0, 1.0, 0.0, 1.0);
+        gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::CULL_FACE);
+        gl::CullFace(gl::BACK);
+    }
+}
+
 impl Pipeline {
     // Create a new pipeline
-    pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool) -> Self {
+    pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, settings: PipelineSettings) -> Self {
         let context = init_glutin_window(el, title, vsync);
+        // Initialize OpenGL
+        init_opengl(&context);
         Self {
             meshes: Default::default(),
             shaders: Default::default(),
@@ -70,6 +96,13 @@ impl Pipeline {
                 window.set_fullscreen(fullscreen);
                 window
             },
+            settings,
+        }
+    }
+    // Called at the start of the frame so we can clear buffers if we need to
+    pub fn start_frame(&mut self) {
+        unsafe {
+            gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
     // Called at the end of the frame to ready the pipeline for the next frame
@@ -79,5 +112,8 @@ impl Pipeline {
         self.compute_shaders.dispose_dangling();
         self.textures.dispose_dangling();
         self.materials.dispose_dangling();
+
+        // Swap the back and front buffers, so we can show the screen something
+        self.window.context().swap_buffers().unwrap();
     }
 }

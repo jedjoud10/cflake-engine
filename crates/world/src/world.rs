@@ -47,17 +47,22 @@ impl World {
         world.settings = settings;
         println!("World init done!");
         world
-    }    
+    }
     // Called each frame
     pub fn update(&mut self, delta: f64) {
         self.state = WorldState::Running;
         // Update the timings
         self.time.update(delta);
+
         // Update game logic (this includes rendering the world)
+        self.pipeline.start_frame();
         self.time.update_current_frame_time();
         let (systems, settings) = self.ecs.ready();
         let systems = systems.borrow();
         ECSManager::<World>::execute_systems(systems, self, settings);
+
+        // Late update
+        self.pipeline.end_frame();
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

@@ -1,5 +1,9 @@
-use crate::{pipeline::*, basics::{uniforms::StoredUniforms, texture::Texture, shader::Shader}, object::PipelineCollectionElement};
 use super::MaterialTextures;
+use crate::{
+    basics::{shader::Shader, texture::Texture, uniforms::StoredUniforms},
+    object::PipelineCollectionElement,
+    pipeline::*,
+};
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -15,13 +19,10 @@ pub struct Material {
     pub uv_scale: veclib::Vector2<f32>,
 }
 
-
 impl PipelineCollectionElement for Material {
-    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {
-    }
+    fn added(&mut self, collection: &mut PipelineCollection<Self>, handle: Handle<Self>) {}
 
-    fn disposed(self) {
-    }
+    fn disposed(self) {}
 }
 
 impl Default for Material {

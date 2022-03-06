@@ -16,11 +16,11 @@ pub struct Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        Self { 
+        Self {
             mesh: Default::default(),
             material: Default::default(),
             visible: true,
-            shadow_caster: true
+            shadow_caster: true,
         }
     }
 }

@@ -1,6 +1,6 @@
-use getset::{MutGetters, Getters};
+use getset::{Getters, MutGetters};
 use gl::types::GLuint;
-use std::{ffi::c_void, ptr::null, mem::size_of};
+use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::{
     basics::{
@@ -10,8 +10,9 @@ use crate::{
             query_shader_info,
         },
     },
+    object::PipelineCollectionElement,
     pipeline::Pipeline,
-    utils::{UsageType, AccessType, UpdateFrequency}, object::PipelineCollectionElement,
+    utils::{AccessType, UpdateFrequency, UsageType},
 };
 
 use super::raw::dynamic_buffer::DynamicRawBuffer;
@@ -21,7 +22,7 @@ use super::raw::dynamic_buffer::DynamicRawBuffer;
 pub struct ShaderStorage<T> {
     // Backed by a dynamic raw buffer
     #[getset(get = "pub", get_mut = "pub")]
-    storage: DynamicRawBuffer<T>
+    storage: DynamicRawBuffer<T>,
 }
 
 impl<T> ShaderStorage<T> {

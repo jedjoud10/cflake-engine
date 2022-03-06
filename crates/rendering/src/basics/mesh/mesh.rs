@@ -2,21 +2,22 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::object::PipelineCollectionElement;
 
-use super::{Vertices, GeometryBuilder, Indices, VertexBuilder, IndexBuilder};
+use super::{GeometryModifier, IndexBuilder, Indices, VertexBuilder, Vertices};
 use assets::Asset;
-use getset::Getters;
+use getset::{CopyGetters, Getters, Setters};
 use gl::types::GLuint;
 use obj::TexturedVertex;
 use veclib::{vec2, vec3};
 
 // A simple mesh that holds vertex, normal, and color data
-#[derive(Default, Getters)]
+#[derive(Default, Getters, CopyGetters, Setters)]
 pub struct Mesh {
     // Main IDs
-    #[getset(get = "pub(crate)")]
+    #[getset(get_copy = "pub(crate)")]
     vao: GLuint,
 
     // Vertex attributes IDs
+    #[getset(get = "pub(crate)", set = "pub(super)")]
     buffers: [GLuint; 6],
     /*
     pub element_buffer_object: u32,
@@ -29,18 +30,19 @@ pub struct Mesh {
     pub uv_buf: u32,
     */
     // Store the vertices (in multiple bufer or in a single big buffer)
-    #[getset(get = "pub")]
+    #[getset(get = "pub", set = "pub(super)")]
     vertices: Vertices,
 
     // Triangles
-    #[getset(get = "pub")]
+    #[getset(get = "pub", set = "pub(super)")]
     indices: Indices,
 }
 
 impl Asset for Mesh {
     fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
         // Generate the tangents
         // Create the actual Mesh now
@@ -63,9 +65,9 @@ impl Asset for Mesh {
 impl PipelineCollectionElement for Mesh {
     fn added(&mut self, collection: &mut crate::pipeline::PipelineCollection<Self>, handle: crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh
-        if self.vertices().is_empty() { 
+        if self.vertices().is_empty() {
             return;
-        } 
+        }
 
         unsafe {
             // Create the VAO
@@ -188,9 +190,9 @@ impl PipelineCollectionElement for Mesh {
 }
 
 impl Mesh {
-    // Create a geometry builder for an existing mesh
-    pub fn builder(&mut self) -> GeometryBuilder {
-        GeometryBuilder {
+    // Create a geometry modifier for an existing mesh
+    pub fn modifier(&mut self) -> GeometryModifier {
+        GeometryModifier {
             vertex_builder: VertexBuilder { vertices: &mut self.vertices },
             index_builder: IndexBuilder { indices: &mut self.indices },
         }
@@ -204,7 +206,15 @@ impl Mesh {
 }
 
 impl Mesh {
-    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja. 
+    // Create a new mesh using raw vertices and indices
+    pub fn new(vertices: Vertices, indices: Indices) -> Self {
+        Self {
+            vertices,
+            indices,
+            ..Default::default()
+        }
+    }
+    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja.
     pub fn combine(mut self, other: Mesh) -> Mesh {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
         self.indices.extend(other.indices.into_iter().map(|mut x| {

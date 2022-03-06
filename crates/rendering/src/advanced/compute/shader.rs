@@ -1,11 +1,12 @@
 use crate::{
     basics::{
-        shader::{load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderSource, ShaderProgram, ShaderInitSettings, compile_shader},
-        uniforms::Uniforms
+        shader::{compile_shader, load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderInitSettings, ShaderProgram, ShaderSource},
+        uniforms::Uniforms,
     },
-    pipeline::Pipeline, object::PipelineCollectionElement,
+    object::PipelineCollectionElement,
+    pipeline::Pipeline,
 };
-use ahash::{AHashSet, AHashMap};
+use ahash::{AHashMap, AHashSet};
 use getset::Getters;
 use gl::types::GLuint;
 use std::{collections::HashSet, ffi::CString, ptr::null};
@@ -35,7 +36,7 @@ impl PipelineCollectionElement for ComputeShader {
 }
 
 impl ComputeShader {
-    // Creates a new compute shader using some shader init settings 
+    // Creates a new compute shader using some shader init settings
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(settings.sources_mut());

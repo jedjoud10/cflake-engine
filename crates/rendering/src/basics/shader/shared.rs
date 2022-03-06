@@ -4,19 +4,19 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::{null_mut, null},
+    ptr::{null, null_mut},
 };
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
-use getset::{Getters, CopyGetters};
+use getset::{CopyGetters, Getters, MutGetters};
 use gl::types::GLuint;
 
 use crate::basics::shader::ShaderSourceType;
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
-    IncludeExpansionError, ShaderSource
+    IncludeExpansionError, ShaderSource,
 };
 
 // Uniforms definition map
@@ -88,13 +88,15 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             }
             // Expand
             let const_name = line.split("#constant ").collect::<Vec<&str>>()[1];
-            let _const_line = settings.directives().get(const_name).map(|directive| {
-                Some(format(line, directive.as_const()?.as_str()))
-            }).flatten();
+            let _const_line = settings
+                .directives()
+                .get(const_name)
+                .map(|directive| Some(format(line, directive.as_const()?.as_str())))
+                .flatten();
             *line = _const_line.ok_or(IncludeExpansionError::new(format!(
                 "Tried to expand #constant, but the given const name '{}' is not valid!",
                 const_name
-            )))?;            
+            )))?;
             break;
         }
     }
@@ -161,11 +163,11 @@ pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> Shader
 
 // Compile a shader source
 pub(crate) fn compile_source(source: &ShaderSource) -> GLuint {
-    println!("Compiling & Creating Shader Source {}...", source.file());            
+    println!("Compiling & Creating Shader Source {}...", source.file());
     let shader_type: u32 = match source._type() {
         ShaderSourceType::Vertex => gl::VERTEX_SHADER,
         ShaderSourceType::Fragment => gl::FRAGMENT_SHADER,
-        ShaderSourceType::Compute => gl::COMPUTE_SHADER, 
+        ShaderSourceType::Compute => gl::COMPUTE_SHADER,
     };
     unsafe {
         // Compiling the source
@@ -181,7 +183,7 @@ pub(crate) fn compile_source(source: &ShaderSource) -> GLuint {
         let mut info_log_length: i32 = 0;
         let info_log_length_ptr: *mut i32 = &mut info_log_length;
         gl::GetShaderiv(program, gl::INFO_LOG_LENGTH, info_log_length_ptr);
-        
+
         // Print any errors that might've happened while compiling this shader source
         if info_log_length > 0 {
             let mut log: Vec<i8> = vec![0; info_log_length as usize + 1];
@@ -353,43 +355,28 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
 #[derive(EnumAsInner)]
 pub enum Directive {
     Const(String),
-    External(String)
+    External(String),
 }
 
 // Shader init settings (sources, additional code, consts)
-#[derive(Default)]
+#[derive(Getters, MutGetters, Default)]
 pub struct ShaderInitSettings {
+    #[getset(get = "pub")]
     directives: AHashMap<String, Directive>,
+    #[getset(get = "pub", get_mut = "pub(crate)")]
     sources: AHashMap<String, ShaderSource>,
 }
 
-// Getters and mut getters
 impl ShaderInitSettings {
-    pub fn directives(&self) -> &AHashMap<String, Directive> { &self.directives }
-    pub fn sources(&self) -> &AHashMap<String, ShaderSource> { &self.sources }
-    pub fn sources_mut(&mut self) -> &mut AHashMap<String, ShaderSource> { &mut self.sources }
-}
-
-// Shader init settings builder
-#[derive(Default)]
-pub struct ShaderInitSettingsBuilder {
-    inner: ShaderInitSettings,
-}
-
-impl ShaderInitSettingsBuilder {
     // Add a shader directive
     pub fn directive(mut self, name: &str, directive: Directive) -> Self {
-        self.inner.directives.insert(name.to_string(), directive);
+        self.directives.insert(name.to_string(), directive);
         self
     }
     // Add a source
     pub fn source(mut self, path: &str) -> Self {
-        self.inner.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
+        self.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
         self
-    }
-    // Build
-    pub fn build(self) -> ShaderInitSettings {
-        self.inner
     }
 }
 

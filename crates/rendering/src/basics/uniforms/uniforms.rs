@@ -1,6 +1,10 @@
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
-    basics::{texture::{Texture, TextureAccessType}, shader::ShaderProgram}, pipeline::{Pipeline, Handle},
+    basics::{
+        shader::ShaderProgram,
+        texture::{Texture, TextureAccessType},
+    },
+    pipeline::{Handle, Pipeline},
 };
 
 // Struct that allows us to set the uniforms for a specific shader
@@ -13,10 +17,7 @@ pub struct Uniforms<'a> {
 impl<'a> Uniforms<'a> {
     // Create a uniforms setter using a shader program and the pipeline
     pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline, autobind: bool) -> Self {
-        let mut me = Self {
-            program,
-            pipeline,
-        };
+        let mut me = Self { program, pipeline };
         // Auto bind
         if autobind {
             me.bind();

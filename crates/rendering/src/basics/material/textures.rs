@@ -1,4 +1,4 @@
-use crate::{pipeline::Handle, basics::texture::Texture};
+use crate::{basics::texture::Texture, pipeline::Handle};
 
 // Material textures
 #[derive(Default)]

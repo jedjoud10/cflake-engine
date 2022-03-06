@@ -1,4 +1,4 @@
-use defaults::rendering::pipeline::Pipeline;
+use defaults::rendering::pipeline::{Pipeline, PipelineSettings};
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -30,12 +30,19 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     let event_loop = EventLoop::new();
 
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
-    let pipeline = Pipeline::new(&event_loop, format!("'{}', by '{}'", app_name, author_name), config.vsync, config.fullscreen);
-
-    defaults::preload_default_assets();
-
-    // Hehe multithreaded renering goes BRRRRRRRR
     let shadows = config.shadow_resolution.convert();
+    let pipeline = Pipeline::new(
+        &event_loop,
+        format!("'{}', by '{}'", app_name, author_name),
+        config.vsync,
+        config.fullscreen,
+        PipelineSettings {
+            shadow_resolution: if shadows.0 == 0 { None } else { Some(shadows.0) },
+        },
+    );
+
+    // Preload the assets if needed
+    defaults::preload_default_assets();
 
     // Create the world
     let mut world = World::new(config, io, pipeline);
@@ -102,7 +109,7 @@ fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut
 
     match event {
         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        WindowEvent::Resized(size) => world.pipeline.window.resize(sized),
+        WindowEvent::Resized(size) => world.pipeline.window.resized_event(veclib::vec2(size.width as u16, size.height as u16)),
         _ => (),
     }
 }
