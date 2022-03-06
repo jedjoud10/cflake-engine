@@ -66,22 +66,10 @@ fn run(world: &mut World, mut data: EventKey) {
 
         // Calculate aspect ratio
         let ratio = world.pipeline.window.dimensions().x as f32 / world.pipeline.window.dimensions().y as f32;
-        
+
         // And don't forget to update the camera matrices
         camera.update_projection_matrix(ratio);
         camera.update_view_matrix(position, new_rotation);
-
-        use world::rendering::pipeline;
-        let pipeline_camera = world::rendering::pipeline::camera::Camera {
-            position,
-            rotation,
-            forward,
-            viewm: camera.view_matrix,
-            projm: camera.projection_matrix,
-            clip_planes: camera.clip_planes,
-        };
-        pipeline::pipec::update_callback(&pipeline, |pipeline, _| pipeline.set_internal_camera(pipeline_camera));
-        drop(pipeline);
 
         // Since we are the main camera, we must update our position in the global
         global.camera_pos = position;

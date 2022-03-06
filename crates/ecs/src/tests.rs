@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{registry, Component},
+        component::{registry, Component, ComponentFetcher},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
         event::EventKey,
         ECSManager,
@@ -48,7 +48,7 @@ pub mod test {
     fn run_system(_world: &mut World, mut data: EventKey) {
         let query = data.as_query_mut().unwrap();
         for (_, components) in query.iter_mut() {
-            let mut name = components.get_mut::<Name>().unwrap();
+            let name = components.get_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         }
     }
@@ -163,7 +163,7 @@ pub mod test {
         fn internal_run(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
             for (_, components) in query.iter_mut() {
-                let mut name = components.get_mut::<Name>().unwrap();
+                let name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
                 *name = Name::new("Bob");
@@ -204,7 +204,33 @@ pub mod test {
         run_systems(&mut ecs, &mut world);
         ecs.entities.remove(key, &mut ecs.components, &mut ecs.systems).unwrap();
         run_systems(&mut ecs, &mut world);
-        // After this execution, the dangling components should have been removed
-        //assert_eq!(ecs.components.(), 0);
     }
+
+    // Test the component fetcher
+    #[test]
+    pub fn fetcher() {
+        // Also create the context
+        let _world = World;
+        // Create the main ECS manager
+        let mut ecs = ECSManager::<World>::default();
+
+        // Create a new entity
+        let entity = Entity::default();
+        let mut group = ComponentLinkingGroup::default();
+        group.link::<Name>(Name::new("John")).unwrap();
+        // Since the entity isn't in the manager, it doesn't contain the linked component yet
+        let entity_key = ecs.add(entity, group).unwrap();
+        let entity = ecs.entities.get_mut(entity_key).unwrap();
+        assert!(entity.get_linked::<Name>().is_some());
+        assert!(entity.is_linked::<Name>());
+        assert!(entity.get_linked::<Tagged>().is_none());
+        assert!(!entity.is_linked::<Tagged>());
+
+        let component_key = entity.get_linked::<Name>().unwrap();
+        // Try to get it's Name component
+        let mut fetcher = ComponentFetcher::new(&mut ecs.components);
+        let component = fetcher.get_mut::<Name>(component_key).unwrap();
+        assert_eq!(component.name, "John".to_string());
+        assert!(fetcher.get_mut::<Tagged>(component_key).is_err());
+    } 
 }

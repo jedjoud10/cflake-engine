@@ -8,7 +8,7 @@ use world::rendering::pipeline::Handle;
 pub struct Light {
     // TODO: Fix duplicate code
     pub(crate) handle: Handle<StoredLight>,
-    
+
     pub _type: LightSourceType,
     pub strength: f32,
     pub color: veclib::Vector3<f32>,

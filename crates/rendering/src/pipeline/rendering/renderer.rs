@@ -170,14 +170,8 @@ impl SceneRenderer {
         // Then render the shadows
         self.shadow_mapping.as_mut().map(|mapping| {
             // The first directional light that we find will be used as the sunlight
-            let first = pipeline.lights
-                .iter()
-                .find(|(_, light)| 
-                    light._type
-                    .as_directional()
-                    .is_some())
-                .map(|(_, value)| value);
-            
+            let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
+
             let quat = first.map(|light| light.transform.rotation);
             quat.map(|quat| mapping.render_all_shadows(settings.shadowed, &quat, pipeline));
         });

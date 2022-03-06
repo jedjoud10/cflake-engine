@@ -33,10 +33,15 @@ impl Default for Entity {
 
 impl Entity {
     // Check if we have a component linked onto this entity
-    pub fn is_component_linked<T: Component + 'static>(&self) -> bool {
-        // Get the cbitfield of the component
+    pub fn is_linked<T: Component + 'static>(&self) -> bool {
         let cbitfield = crate::component::registry::get_component_bitfield::<T>();
         self.cbitfield.contains(&cbitfield)
+    }
+    // Get a linked component key
+    pub fn get_linked<T: Component + 'static>(&self) -> Option<ComponentKey> {
+        // Get the cbitfield of the component
+        let cbitfield = crate::component::registry::get_component_bitfield::<T>();
+        self.components.get(&cbitfield).cloned()
     }
 }
 

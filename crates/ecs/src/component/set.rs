@@ -1,15 +1,12 @@
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
-use parking_lot::Mutex;
-use slotmap::SlotMap;
+use slotmap::Key;
 use std::{
-    cell::{RefCell, UnsafeCell},
-    marker::PhantomData,
-    rc::Rc,
+    cell::UnsafeCell,
     sync::Arc,
 };
 
-use super::{ComponentGroupKey, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
+use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
     system::SystemSet,
@@ -17,27 +14,30 @@ use crate::{
 };
 
 // Component set
-pub struct ComponentSet<World> {
+pub struct ComponentSet {
     components: Components,
-    _phantom: PhantomData<World>,
     pub(crate) to_remove: DanglingComponentsToRemove,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
 }
 
-impl<World> Default for ComponentSet<World> {
+impl Default for ComponentSet {
     fn default() -> Self {
         Self {
             components: Default::default(),
-            _phantom: Default::default(),
             to_remove: Default::default(),
             mutated_components: Default::default(),
         }
     }
 }
 
-impl<World> ComponentSet<World> {
+// Errors
+fn invalid_err() -> ComponentError {
+    ComponentError::new("Component could not be fetched!".to_string())
+}
+
+impl ComponentSet {
     // Link some components to an entity
-    pub fn link(&mut self, key: EntityKey, entities: &mut EntitySet<World>, systems: &mut SystemSet<World>, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
+    pub fn link<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         for (cbitfield, boxed) in group.linked_components {
             let (ckey, _ptr) = self.add(boxed, cbitfield);
             let entity = entities.get_mut(key).unwrap();
@@ -78,7 +78,7 @@ impl<World> ComponentSet<World> {
         Ok(())
     }
     // Unlink some components from an entity
-    pub fn unlink(&mut self, key: EntityKey, entities: &mut EntitySet<World>, systems: &mut SystemSet<World>, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
+    pub fn unlink<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
         // Check if the entity even have these components
         let entity = entities.get(key).unwrap();
         let valid = entity.cbitfield.contains(&group.removal_cbitfield);
@@ -189,5 +189,39 @@ impl<World> ComponentSet<World> {
     // Count the number of valid components in the ECS manager
     pub fn len(&self) -> usize {
         self.components.read().len()
+    }
+
+    // Get a single component (should not be multithreaded!)
+    pub fn get<T>(&self, key: ComponentKey) -> Result<&T, ComponentError>
+    where
+        T: Component + Send + Sync + 'static,
+    {
+        // Read directly
+        let map = self.components.read();
+        let cell = map.get(key).ok_or_else(invalid_err)?;
+
+        // Then get it's pointer and do black magic
+        let ptr = cell.get();
+        let component = unsafe { &*ptr }.as_ref();
+        let component = registry::cast_component::<T>(component)?;
+        Ok(component)
+    }
+    // Get a single component mutably (should not be multithreaded!)
+    pub fn get_mut<T>(&mut self, key: ComponentKey) -> Result<&mut T, ComponentError>
+    where
+        T: Component + Send + Sync + 'static,
+    {
+        // Read directly
+        let map = self.components.read();
+        let cell = map.get(key).ok_or_else(invalid_err)?;
+
+        // Then get it's pointer and do black magic
+        let ptr = cell.get();
+        let component = unsafe { &mut *ptr }.as_mut();
+        let component = registry::cast_component_mut::<T>(component)?;
+        // We only care about the index
+        let index = key.data().as_ffi() & 0xffff_ffff;
+        self.mutated_components.set(index as usize, true);
+        Ok(component)
     }
 }

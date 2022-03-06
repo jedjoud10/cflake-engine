@@ -6,14 +6,14 @@ use std::{
 use crate::{
     component::ComponentSet,
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityKey, EntitySet},
-    system::{System, SystemSet, SystemSettings, Systems},
+    system::{System, SystemSet, SystemSettings},
     utils::{ComponentLinkingError, ComponentUnlinkError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
 pub struct ECSManager<World> {
-    pub entities: EntitySet<World>,
-    pub components: ComponentSet<World>,
+    pub entities: EntitySet,
+    pub components: ComponentSet,
     pub systems: SystemSet<World>,
 }
 

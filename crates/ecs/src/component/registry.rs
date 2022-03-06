@@ -20,15 +20,14 @@ lazy_static! {
 // Register a specific component
 pub fn register_component<T: Component + Sized + 'static>() -> Bitfield<u32> {
     // Register the component
-    let mut rc = REGISTERED_COMPONENTS.write().unwrap();
+    let mut lock = REGISTERED_COMPONENTS.write().unwrap();
     // Make a copy of the id before the bit shift
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
 
     let component_id = Bitfield::<u32>::from_num(id);
-    rc.insert(TypeId::of::<T>(), component_id);
+    lock.insert(TypeId::of::<T>(), component_id);
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
-    println!("{:?} {}", TypeId::of::<T>(), component_id);
     // Return the component ID before the bit shift
     component_id
 }
@@ -36,8 +35,8 @@ pub fn register_component<T: Component + Sized + 'static>() -> Bitfield<u32> {
 pub fn get_component_bitfield<T: Component + 'static>() -> Bitfield<u32> {
     if is_component_registered::<T>() {
         // Simple read
-        let rc = REGISTERED_COMPONENTS.read().unwrap();
-        rc[&TypeId::of::<T>()]
+        let lock = REGISTERED_COMPONENTS.read().unwrap();
+        lock[&TypeId::of::<T>()]
     } else {
         // Register if it wasn't registered yet
         register_component::<T>()
@@ -45,8 +44,8 @@ pub fn get_component_bitfield<T: Component + 'static>() -> Bitfield<u32> {
 }
 // Checks if a specific component is registered
 pub fn is_component_registered<T: Component + 'static>() -> bool {
-    let rc = REGISTERED_COMPONENTS.read().unwrap();
-    rc.contains_key(&TypeId::of::<T>())
+    let lock = REGISTERED_COMPONENTS.read().unwrap();
+    lock.contains_key(&TypeId::of::<T>())
 }
 // Cast a boxed component to a reference of that component
 pub(crate) fn cast_component<T>(component: &dyn Component) -> Result<&T, ComponentError>

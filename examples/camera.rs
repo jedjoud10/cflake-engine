@@ -21,7 +21,7 @@ fn init(world: &mut World) {
     let _id = world.ecs.entities.add(entity).unwrap();
     world.ecs.components.link(_id, &mut world.ecs.entities, &mut world.ecs.systems, group).unwrap();
     // Create the directional light source
-    let light = components::Light { ..Default::default() };
+    let light = components::Light::default();
     let light_transform = components::Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();

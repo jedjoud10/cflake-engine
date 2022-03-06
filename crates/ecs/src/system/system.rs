@@ -1,13 +1,12 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{ComponentQuery, DanglingComponentsToRemove, LinkedComponents},
+    component::{ComponentQuery, LinkedComponents},
     entity::EntityKey,
     event::EventKey,
-    ECSManager,
 };
 
 use super::SystemSettings;

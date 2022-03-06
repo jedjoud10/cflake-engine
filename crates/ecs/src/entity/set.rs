@@ -2,26 +2,21 @@ use super::{ComponentUnlinkGroup, Entity, EntityKey};
 use crate::{component::ComponentSet, system::SystemSet, utils::EntityError};
 use getset::Getters;
 use slotmap::SlotMap;
-use std::marker::PhantomData;
 
 // Entity set
 #[derive(Getters)]
-pub struct EntitySet<World> {
+pub struct EntitySet {
     #[getset(get = "pub")]
     pub(crate) inner: SlotMap<EntityKey, Entity>,
-    pub(crate) _phantom: PhantomData<World>,
 }
 
-impl<World> Default for EntitySet<World> {
+impl Default for EntitySet {
     fn default() -> Self {
-        Self {
-            inner: Default::default(),
-            _phantom: Default::default(),
-        }
+        Self { inner: Default::default() }
     }
 }
 
-impl<World> EntitySet<World> {
+impl EntitySet {
     // Get an entity
     pub fn get(&self, key: EntityKey) -> Result<&Entity, EntityError> {
         self.inner.get(key).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), key))
@@ -40,7 +35,7 @@ impl<World> EntitySet<World> {
         Ok(key)
     }
     // Remove an entity, but keep it's components alive until all systems have been notified
-    pub fn remove(&mut self, key: EntityKey, components: &mut ComponentSet<World>, systems: &mut SystemSet<World>) -> Result<(), EntityError> {
+    pub fn remove<World>(&mut self, key: EntityKey, components: &mut ComponentSet, systems: &mut SystemSet<World>) -> Result<(), EntityError> {
         let entity = self.inner.get(key).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), key))?;
         let group = ComponentUnlinkGroup::unlink_all_from_entity(entity);
         // Unlink all of the entity's components
