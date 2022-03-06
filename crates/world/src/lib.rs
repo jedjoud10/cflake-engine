@@ -7,7 +7,6 @@ pub use state::*;
 pub use world::*;
 
 pub use ::bitfield;
-pub use ::ordered_vec;
 pub use ::veclib;
 pub use assets;
 pub use audio;

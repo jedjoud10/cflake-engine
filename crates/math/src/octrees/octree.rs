@@ -1,12 +1,14 @@
-use super::{node::Node, HeuristicSettings};
-use ordered_vec::simple::UnversionnedOrderedVec;
+use slotmap::{Key, SlotMap};
+
+use super::{node::Node, HeuristicSettings, NodeKey};
 
 // A simple octree, no incremental generation what so ever
 pub struct Octree {
     // The old target point
     pub target: Option<veclib::Vector3<f32>>,
     // The total nodes in the octree
-    pub nodes: UnversionnedOrderedVec<Node>,
+    pub nodes: SlotMap<NodeKey, Node>,
+    pub root: NodeKey,
     // The depth of the tree
     pub depth: u8,
     // The size factor for each node, should be a power of two
@@ -25,8 +27,8 @@ impl Octree {
     // Create a new octree with a specific depth
     pub fn new(depth: u8, size: u64, hsettings: HeuristicSettings) -> Self {
         // Create the root node
-        let mut nodes = UnversionnedOrderedVec::default();
-        nodes.push_shove({
+        let mut nodes = SlotMap::<NodeKey, Node>::default();
+        let root = nodes.insert_with_key(|key| {
             // Get the maximum size of the root node
             let root_size = (2_u64.pow(depth as u32) * size as u64) as i64;
             let root_position = veclib::Vector3::<i64>::new(-(root_size / 2), -(root_size / 2), -(root_size / 2));
@@ -35,14 +37,15 @@ impl Octree {
                 position: root_position,
                 half_extent: (root_size / 2) as u64,
                 depth: 0,
-                parent_index: 0,
-                index: 0,
-                children_indices: None,
+                parent_key: NodeKey::null(),
+                key,
+                children_keys: None,
             }
         });
         Self {
             target: None,
             nodes,
+            root,
             size,
             depth,
             hsettings,
@@ -51,7 +54,7 @@ impl Octree {
 
     // Get the root node of this octree
     pub fn get_root_node(&self) -> &Node {
-        self.nodes.get(0).unwrap()
+        self.nodes.get(self.root).unwrap()
     }
     // Generate an octree from a root and a target point
     pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<()> {
@@ -62,20 +65,29 @@ impl Octree {
                 return None;
             }
         }
-        // Clear all the nodes other than the root node
-        self.nodes.my_drain(|idx, _| idx > 0).for_each(drop);
+        // Reset the tree
+        self.nodes.retain(|key, _| key == self.root);
         // The nodes that must be evaluated
-        let mut pending_nodes: Vec<Node> = vec![self.get_root_node().clone()];
+        let mut pending_nodes: Vec<NodeKey> = vec![self.root];
         // Evaluate each node
         while !pending_nodes.is_empty() {
             // Get the current pending node
-            let mut octree_node = pending_nodes[0].clone();
+            let key = pending_nodes[0].clone();
+            let octree_node = self.nodes.get_mut(key).unwrap();
 
             // If the node contains the position, subdivide it
             if octree_node.can_subdivide(&target, self.depth, &self.hsettings) {
-                // Add each child node, but also update the parent's child link id
-                let nodes_to_push = octree_node.subdivide(&mut self.nodes);
-                pending_nodes.extend(nodes_to_push.clone());
+                // Subidivide
+                let subdivided = octree_node.subdivide();
+                drop(octree_node);
+
+                // Insert the new nodes into the tree
+                let mut children_keys = [NodeKey::null(); 8];
+                for (i, node) in subdivided.into_iter().enumerate() {
+                    children_keys[i] = self.nodes.insert(node);
+                }
+                self.nodes.get_mut(key).unwrap().children_keys = Some(children_keys.clone());
+                pending_nodes.extend(children_keys);
             }
 
             // Don't cause an infinite loop
@@ -97,7 +109,7 @@ impl Octree {
 
             // If the node function is true, we recursively iterate through the children
             if function(octree_node) {
-                if let Some(children) = &octree_node.children_indices {
+                if let Some(children) = &octree_node.children_keys {
                     // Add the children if we have them
                     for child_id in children {
                         pending_nodes.push(self.nodes.get(*child_id).unwrap())
