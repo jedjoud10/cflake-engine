@@ -2,7 +2,12 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 use parking_lot::RwLock;
 use slotmap::SlotMap;
-use std::{any::Any, cell::{UnsafeCell, RefCell}, sync::Arc, rc::Rc};
+use std::{
+    any::Any,
+    cell::{RefCell, UnsafeCell},
+    rc::Rc,
+    sync::Arc,
+};
 
 use crate::entity::EntityKey;
 

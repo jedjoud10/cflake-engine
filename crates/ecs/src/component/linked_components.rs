@@ -1,10 +1,10 @@
-use super::{registry, Component, Components, ComponentKey};
-use crate::{utils::ComponentError, entity::EntityKey};
+use super::{registry, Component, ComponentKey, Components};
+use crate::{entity::EntityKey, utils::ComponentError};
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
+use getset::Getters;
 use slotmap::Key;
 use std::sync::Arc;
-use getset::Getters;
 
 // Some linked components that we can mutate or read from in each system
 // These components are stored on the main thread however

@@ -52,7 +52,7 @@ fn run(world: &mut World, mut data: EventKey) {
     }
     // Update the camera values now
     let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
-    for (&key, components) in query.write().iter_mut() {
+    for (&key, components) in query.iter_mut() {
         // If we are not the right camera, skip
         if key != global.camera_entity_key {
             continue;
@@ -94,7 +94,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
     let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the first one
     let query = data.as_query_mut().unwrap();
-    if let Some((&key, _)) = query.write().iter().nth(0) {
+    if let Some((&key, _)) = query.iter().nth(0) {
         global.camera_entity_key = key;
     }
 }
@@ -104,7 +104,7 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
     let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If we remove the main camera, we must empty the camera entity ID
     let query = data.as_query_mut().unwrap();
-    for (&entity_id, _) in query.write().iter() {
+    for (&entity_id, _) in query.iter() {
         /*
         if Some(entity_id) == global.camera_entity_key {
             // Take

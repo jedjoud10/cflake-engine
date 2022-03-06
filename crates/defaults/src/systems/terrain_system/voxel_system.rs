@@ -148,7 +148,7 @@ fn run(world: &mut World, mut data: EventKey) {
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((entity_id, _)) = terrain.chunks_manager.priority_list.pop() {
-                let mut lock_ = query.write();
+                let mut lock_ = query;
                 let components = lock_.get_mut(&entity_id).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
                 let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
@@ -165,7 +165,7 @@ fn run(world: &mut World, mut data: EventKey) {
             ) {
                 // We will now update the chunk data to store our new voxel data
                 if let ChunkGenerationState::BeginVoxelDataGeneration(id) = terrain.chunks_manager.current_chunk_state {
-                    let mut lock_ = query.write();
+                    let mut lock_ = query;
                     let components = lock_.get_mut(&id).unwrap();
                     // Get our chunk and set it's new data
                     let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();

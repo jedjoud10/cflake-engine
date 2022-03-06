@@ -30,7 +30,7 @@ fn run(world: &mut World, mut data: EventKey) {
     }
     if let Ok(mut terrain) = terrain {
         // For each chunk that has a valid voxel data, we must create it's mesh
-        for (id, components) in query.write().iter_mut() {
+        for (id, components) in query.iter_mut() {
             if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(*id, true) {
                 // We have created voxel data for this chunk, and it is valid (it contains a surface)
                 let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();

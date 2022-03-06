@@ -1,23 +1,32 @@
-use std::{marker::PhantomData, sync::Arc, cell::{UnsafeCell, RefCell}, rc::Rc};
 use ahash::AHashMap;
-use bitfield::{Bitfield, AtomicSparseBitfield};
+use bitfield::{AtomicSparseBitfield, Bitfield};
 use parking_lot::Mutex;
 use slotmap::SlotMap;
+use std::{
+    cell::{RefCell, UnsafeCell},
+    marker::PhantomData,
+    rc::Rc,
+    sync::Arc,
+};
 
-use crate::{entity::{EntityKey, ComponentLinkingGroup, EntitySet, ComponentUnlinkGroup}, utils::{ComponentLinkingError, ComponentUnlinkError, ComponentError}, system::SystemSet};
-use super::{Components, LinkedComponents, ComponentKey, ComponentGroupToRemove, EnclosedComponent, ComponentGroupKey, DanglingComponentsToRemove};
+use super::{ComponentGroupKey, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
+use crate::{
+    entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
+    system::SystemSet,
+    utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError},
+};
 
 // Component set
 pub struct ComponentSet<World> {
-    pub(crate) components: Components,
-    pub(crate) _phantom: PhantomData<World>,
+    components: Components,
+    _phantom: PhantomData<World>,
     pub(crate) to_remove: DanglingComponentsToRemove,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
 }
 
 impl<World> Default for ComponentSet<World> {
     fn default() -> Self {
-        Self { 
+        Self {
             components: Default::default(),
             _phantom: Default::default(),
             to_remove: Default::default(),
@@ -102,13 +111,15 @@ impl<World> ComponentSet<World> {
         let components_elems = entity
             .components
             .iter()
-            .filter_map(|(cbitfield, ckey)| {
-                if group.removal_cbitfield.contains(cbitfield) {
-                    Some((*cbitfield, *ckey))
-                } else {
-                    None
-                }
-            })
+            .filter_map(
+                |(cbitfield, ckey)| {
+                    if group.removal_cbitfield.contains(cbitfield) {
+                        Some((*cbitfield, *ckey))
+                    } else {
+                        None
+                    }
+                },
+            )
             .collect::<Vec<_>>();
 
         // We shall remove
@@ -134,13 +145,16 @@ impl<World> ComponentSet<World> {
             key,
         });
         Ok(())
-    }    
+    }
     // Called at the end of the frame to clear the per frame values
     pub(crate) fn clear(&mut self) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();
-            let indices = lock.iter().filter_map(|(_key, group)| if group.counter == 0 { Some(_key) } else { None }).collect::<Vec<_>>();
+            let indices = lock
+                .iter()
+                .filter_map(|(_key, group)| if group.counter == 0 { Some(_key) } else { None })
+                .collect::<Vec<_>>();
             let removed_groups = indices.into_iter().map(|x| lock.remove(x).unwrap()).collect::<Vec<ComponentGroupToRemove>>();
             removed_groups
         };
@@ -151,9 +165,9 @@ impl<World> ComponentSet<World> {
             }
         }
         // Also clear the bitfield indicating which components have been mutated
-        self.mutated_components.clear();        
+        self.mutated_components.clear();
         Ok(())
-    }    
+    }
     // Add a specific linked componment to the component manager. Return the said component's ID
     fn add(&mut self, boxed: EnclosedComponent, _: Bitfield<u32>) -> (ComponentKey, *mut EnclosedComponent) {
         // UnsafeCell moment

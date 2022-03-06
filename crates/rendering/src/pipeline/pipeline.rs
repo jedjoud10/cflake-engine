@@ -398,7 +398,7 @@ pub fn init_pipeline(pipeline_settings: PipelineSettings, window: glutin::Window
                 let pipeline_frame_instant = std::time::Instant::now();
                 let mut pipeline_ = pipeline.write();
                 let time = time_clone.lock();
-                pipeline_.time = (time.0, time.1, pipeline_.time.2 + 1);               
+                pipeline_.time = (time.0, time.1, pipeline_.time.2 + 1);
 
                 drop(time);
                 drop(pipeline_);

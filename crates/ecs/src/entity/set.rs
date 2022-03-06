@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
-use slotmap::SlotMap;
-use crate::{utils::EntityError, component::ComponentSet, system::SystemSet};
-use super::{EntityKey, Entity, ComponentUnlinkGroup};
+use super::{ComponentUnlinkGroup, Entity, EntityKey};
+use crate::{component::ComponentSet, system::SystemSet, utils::EntityError};
 use getset::Getters;
+use slotmap::SlotMap;
+use std::marker::PhantomData;
 
 // Entity set
 #[derive(Getters)]
@@ -14,13 +14,13 @@ pub struct EntitySet<World> {
 
 impl<World> Default for EntitySet<World> {
     fn default() -> Self {
-        Self { 
+        Self {
             inner: Default::default(),
-            _phantom: Default::default()
+            _phantom: Default::default(),
         }
     }
 }
- 
+
 impl<World> EntitySet<World> {
     // Get an entity
     pub fn get(&self, key: EntityKey) -> Result<&Entity, EntityError> {

@@ -47,7 +47,7 @@ pub mod test {
     pub struct World;
     fn run_system(_world: &mut World, mut data: EventKey) {
         let query = data.as_query_mut().unwrap();
-        for (_, components) in query.write().iter_mut() {
+        for (_, components) in query.iter_mut() {
             let mut name = components.get_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         }
@@ -156,7 +156,7 @@ pub mod test {
         // Make a simple system
         fn internal_run(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let mut name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Run");
                 assert_eq!(*name.name, "John".to_string());
@@ -165,7 +165,7 @@ pub mod test {
         }
         fn internal_remove_entity(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Remove Entity Run");
                 assert_eq!(*name.name, "Bob".to_string());
@@ -173,13 +173,14 @@ pub mod test {
         }
         fn internal_add_entity(_world: &mut World, mut data: EventKey) {
             let query = data.as_query_mut().unwrap();
-            for (_, components) in query.write().iter_mut() {
+            for (_, components) in query.iter_mut() {
                 let name = components.get_mut::<Name>().unwrap();
                 dbg!("Internal Add Entity Run");
                 assert_eq!(*name.name, "John".to_string());
             }
         }
-        ecs.systems.builder()
+        ecs.systems
+            .builder()
             .link::<Name>()
             .with_run_event(internal_run)
             .with_removed_entities_event(internal_remove_entity)

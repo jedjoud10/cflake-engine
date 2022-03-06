@@ -1,7 +1,5 @@
 use world::{
-    ecs::{
-        event::EventKey,
-    },
+    ecs::event::EventKey,
     rendering::{object::ObjectID, pipeline::pipec},
     World,
 };
@@ -18,7 +16,6 @@ fn run(world: &mut World, mut data: EventKey) {
     }
 
     let result = query
-        .write()
         .iter()
         .filter_map(|(_, components)| {
             let renderer = components.get::<crate::components::Renderer>().unwrap();
@@ -52,7 +49,7 @@ fn run(world: &mut World, mut data: EventKey) {
 fn added_entities(world: &mut World, mut data: EventKey) {
     // For each renderer, we must create it's pipeline renderer construction task
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.write().iter_mut() {
+    for (_, components) in query.iter_mut() {
         // Get the pipeline first
         let pipeline = world.pipeline.read();
 
@@ -70,7 +67,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
 fn removed_entities(world: &mut World, mut data: EventKey) {
     // For each renderer, we must dispose of it's GPU renderer
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.write().iter_mut() {
+    for (_, components) in query.iter_mut() {
         // Get the pipeline first
         let pipeline = world.pipeline.read();
 

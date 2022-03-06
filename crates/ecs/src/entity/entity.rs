@@ -1,8 +1,8 @@
 use crate::component::{Component, ComponentKey};
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use slotmap::Key;
 use getset::Getters;
+use slotmap::Key;
 // A simple entity in the world
 #[derive(Getters)]
 pub struct Entity {

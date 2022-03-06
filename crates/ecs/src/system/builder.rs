@@ -14,10 +14,7 @@ pub struct SystemBuilder<'a, World> {
 impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
     pub(crate) fn new(set: &'a mut SystemSet<World>) -> Self {
-        Self {
-            set,
-            system: System::default(),
-        }
+        Self { set, system: System::default() }
     }
     // Link a component to this system
     pub fn link<U: Component + 'static>(mut self) -> Self {

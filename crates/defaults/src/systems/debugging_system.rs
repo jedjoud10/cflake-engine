@@ -23,11 +23,13 @@ fn run(world: &mut World, _data: EventKey) {
         ui.label(format!("Delta: {:.3}", world.time.delta));
         ui.label(format!("FPS: {:.1}", 1.0 / world.time.delta));
         // ECS
+        /*
         ui.separator();
         ui.heading("Entity Component Systems");
         ui.label(format!("Component: '{}'", world.ecs.components.len()));
         ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
         ui.label(format!("Systems: '{}'", world.ecs.systems.inner().len()));
+        */
         /*
         // Terrain
         let terrain = world.globals.get_mut::<crate::globals::Terrain>();

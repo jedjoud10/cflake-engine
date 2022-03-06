@@ -4,9 +4,10 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{ComponentQuery, LinkedComponents, DanglingComponentsToRemove},
+    component::{ComponentQuery, DanglingComponentsToRemove, LinkedComponents},
+    entity::EntityKey,
     event::EventKey,
-    ECSManager, entity::EntityKey,
+    ECSManager,
 };
 
 use super::SystemSettings;
@@ -75,11 +76,8 @@ impl<World> System<World> {
         let linked_components = self.evn_run.map(|_| self.linked_components.borrow_mut());
 
         // Get the added components
-        let mut borrowed = self.added.borrow_mut();
-        let taken = std::mem::take(&mut *borrowed);
-        // I hate this
-        let rc = Rc::new(RefCell::new(taken));
-        let added_components = self.evn_added_entity.map(|_| rc.borrow_mut());
+        let mut borrowed_added_components = self.added.borrow_mut();
+        let added_components = self.evn_added_entity.map(|_| &mut borrowed_added_components);
 
         // Do a bit of decrementing
         let removed = self.removed.borrow_mut();
@@ -91,21 +89,43 @@ impl<World> System<World> {
             }
         }
         // Trolling purposes
-        let mut borrowed = removed;
-        let taken = std::mem::take(&mut *borrowed);
-        // I hate this
-        let rc = Rc::new(RefCell::new(taken));
-        let removed_components = self.evn_removed_entity.map(|_| rc.borrow_mut());
+        let mut borrowed_removed_components = removed;
+        let removed_components = self.evn_removed_entity.map(|_| &mut borrowed_removed_components);
 
         // Run the "Added Entity" and "Removed Entity" events first, then we can run the "Run System" event
-        if let Some(evn_added_entity) = self.evn_added_entity {
-            evn_added_entity(world, EventKey::Query(ComponentQuery { linked_components: added_components }));
+        if let (Some(evn_added_entity), Some(added_components)) = (self.evn_added_entity, added_components) {
+            evn_added_entity(
+                world,
+                EventKey::Query(ComponentQuery {
+                    linked_components: added_components,
+                }),
+            );
         }
-        if let Some(evn_removed_entity) = self.evn_removed_entity {
-            evn_removed_entity(world, EventKey::Query(ComponentQuery { linked_components: removed_components }));
+        if let (Some(evn_removed_entity), Some(removed_components)) = (self.evn_removed_entity, removed_components) {
+            evn_removed_entity(
+                world,
+                EventKey::Query(ComponentQuery {
+                    linked_components: removed_components,
+                }),
+            );
         }
         if let Some(run_system_evn) = self.evn_run {
-            run_system_evn(world, EventKey::Query(ComponentQuery { linked_components }));
+            // If we don't have any components, we can still execute the event
+            let mut default = AHashMap::<EntityKey, LinkedComponents>::default();
+            if let Some(mut linked_components) = linked_components {
+                run_system_evn(
+                    world,
+                    EventKey::Query(ComponentQuery {
+                        linked_components: &mut linked_components,
+                    }),
+                );
+            } else {
+                run_system_evn(world, EventKey::Query(ComponentQuery { linked_components: &mut default }));
+            }
         }
+
+        // Clear at the end (I use clear and not std::mem::take because it would avoid making more heap allocations in the future)
+        borrowed_added_components.clear();
+        borrowed_removed_components.clear();
     }
 }

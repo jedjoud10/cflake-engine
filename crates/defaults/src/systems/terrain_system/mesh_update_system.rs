@@ -3,7 +3,7 @@ use world::{ecs::event::EventKey, World};
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.write().iter_mut() {
+    for (_, components) in query.iter_mut() {
         let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
         // Try to get the updated mesh ID
         let mesh_id = chunk.updated_mesh_id.take();

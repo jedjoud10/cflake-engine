@@ -43,7 +43,7 @@ impl World {
             audio: Default::default(),
             physics: PhysicsSimulation::new(),
         };
-        others::set_main_thread();
+        //others::set_main_thread();
         // Just set the game settings and we are done
         world.settings = settings;
         println!("World init done!");
@@ -75,6 +75,11 @@ impl World {
         handler.sbarrier.wait();
         drop(time);
         drop(handler);
+        self.time.update_current_frame_time();
+        let (systems, settings) = self.ecs.ready();
+        let systems = systems.borrow();
+        ECSManager::<World>::execute_systems(systems, self, settings);
+        /*
         let system_count = self.ecs.systems.inner().len();
         // Loop for every system and update it
         for system_index in 0..system_count {
@@ -88,9 +93,9 @@ impl World {
                 // Clear
                 let system = &self.ecs.systems.inner()[system_index];
                 system.clear();
-                self.time.update_current_frame_time();
             }
         }
+        */
     }
     // End frame update
     pub fn update_end(&mut self) {

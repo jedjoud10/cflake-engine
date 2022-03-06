@@ -1,8 +1,8 @@
 mod component;
 mod linked_components;
 mod query;
-mod set;
 pub mod registry;
+mod set;
 pub use component::Component;
 pub use component::*;
 pub use ecs_derive::Component;

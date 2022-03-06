@@ -1,8 +1,8 @@
-use world::World;
 use world::physics::PHYSICS_TIME_STEP;
+use world::World;
 use world::{ecs::event::EventKey, physics::rapier3d::na::Isometry};
 
-use super::{quat_to_rotation, vec3_to_translation, vec3_to_vector, vector_to_vec3, rotation_to_quat};
+use super::{quat_to_rotation, rotation_to_quat, vec3_to_translation, vec3_to_vector, vector_to_vec3};
 
 // Run the physics simulation
 fn run(world: &mut World, mut data: EventKey) {
@@ -11,11 +11,13 @@ fn run(world: &mut World, mut data: EventKey) {
     let current_time = world.time.elapsed;
     if (current_time - physics.last_execution_time) > PHYSICS_TIME_STEP as f64 {
         physics.last_execution_time = current_time;
-    } else { return; }
+    } else {
+        return;
+    }
 
     // Update the position/rotation and velocity of each rigidbody since we might have externally updated them
     let query = data.as_query_mut().unwrap();
-    for (_, components) in query.write().iter() {
+    for (_, components) in query.iter() {
         // Check if we even need to update the position/rotation
         if components.was_mutated::<crate::components::Transform>().unwrap_or_default() {
             let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
@@ -43,7 +45,7 @@ fn run(world: &mut World, mut data: EventKey) {
     world.physics.step();
 
     // After each step, we must update the components with their new values
-    for (_, components) in query.write().iter_mut() {
+    for (_, components) in query.iter_mut() {
         // Get the handle only
         let handle = components.get_mut::<crate::components::RigidBody>().unwrap().handle;
         if let Some(r_rigidbody) = world.physics.bodies.get(handle) {
@@ -68,6 +70,6 @@ pub fn system(world: &mut World) {
         .link::<crate::components::RigidBody>()
         .link::<crate::components::Collider>()
         .link::<crate::components::Transform>()
-        .with_run_fixed_event(run)
+        .with_run_event(run)
         .build();
 }

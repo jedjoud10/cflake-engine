@@ -1,7 +1,7 @@
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 use world::physics::rapier3d;
-use world::physics::rapier3d::na::{Isometry, Point3, Point};
-use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape, MassProperties};
+use world::physics::rapier3d::na::{Isometry, Point, Point3};
+use world::physics::rapier3d::prelude::{MassProperties, RigidBodyBuilder, SharedShape};
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
@@ -41,7 +41,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
     // Add each rigidbody and it's corresponding collider
     let query = data.as_query_mut().unwrap();
     let pipeline = world.pipeline.read();
-    for (_, components) in query.write().iter_mut() {
+    for (_, components) in query.iter_mut() {
         // Get the components
         let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
         let collider = components.get::<crate::components::Collider>().unwrap();
