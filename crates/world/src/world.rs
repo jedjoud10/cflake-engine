@@ -79,23 +79,6 @@ impl World {
         let (systems, settings) = self.ecs.ready();
         let systems = systems.borrow();
         ECSManager::<World>::execute_systems(systems, self, settings);
-        /*
-        let system_count = self.ecs.systems.inner().len();
-        // Loop for every system and update it
-        for system_index in 0..system_count {
-            let execution_data = {
-                let system = &self.ecs.systems.inner()[system_index];
-                system.run_system(&self.ecs)
-            };
-            // Actually execute the system now
-            execution_data.run(self);
-            {
-                // Clear
-                let system = &self.ecs.systems.inner()[system_index];
-                system.clear();
-            }
-        }
-        */
     }
     // End frame update
     pub fn update_end(&mut self) {
