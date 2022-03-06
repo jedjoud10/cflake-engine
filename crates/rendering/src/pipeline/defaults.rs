@@ -47,7 +47,7 @@ impl DefaultElements {
         let normal_map = pipeline.textures.insert(normal_map);
             
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = TextureBuilder::new(assetc::load::<Texture>("default/textures/missing.png").unwrap()).build();
+        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap()).build();
         let missing = pipeline.textures.insert(missing);
 
         // Default mesh
@@ -56,8 +56,8 @@ impl DefaultElements {
 
         // Default rendering shader
         let shader = Shader::new(ShaderInitSettings::default()
-            .source("default/shaders/rendering/default.vrsh.glsl")
-            .source("default/shaders/rendering/default.frsh.glsl"))
+            .source("defaults/shaders/rendering/default.vrsh.glsl")
+            .source("defaults/shaders/rendering/default.frsh.glsl"))
         .unwrap();
         let shader = pipeline.shaders.insert(shader);
 

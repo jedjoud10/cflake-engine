@@ -50,7 +50,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
     persistent!("./assets/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
     // Textures
-    persistent!("./assets/defaults/textures/missing_texture.png");
+    persistent!("./assets/defaults/textures/missing.png");
     persistent!("./assets/defaults/textures/sky_gradient.png");
 
     println!("Finished pre-loading default assets!");

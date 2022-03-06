@@ -2,7 +2,7 @@ use cflake_engine::{
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
     rendering::basics::lights::{LightSource, LightSourceType},
-    veclib, World,
+    veclib, World, assets,
 };
 // A game with a test camera
 fn main() {
@@ -11,6 +11,7 @@ fn main() {
 // Init the simple camera
 fn init(world: &mut World) {
     // ----Start the world----
+    assets::init!("/examples/assets/");
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
     group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
