@@ -1,4 +1,4 @@
-use getset::{Getters, CopyGetters};
+use getset::{CopyGetters, Getters};
 use slotmap::{Key, SlotMap};
 
 use super::{node::Node, HeuristicSettings, NodeKey};

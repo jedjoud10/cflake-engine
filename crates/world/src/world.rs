@@ -19,17 +19,17 @@ pub struct World {
     pub pipeline: Pipeline,
     pub renderer: SceneRenderer,
     pub gui: GUIManager,
-    
+
     // Logic
     pub state: WorldState,
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
     pub physics: PhysicsSimulation,
-    
+
     // Other
     pub time: Time,
     pub settings: Settings,
-    pub audio: AudioPlayer,    
+    pub audio: AudioPlayer,
 }
 
 // World implementation

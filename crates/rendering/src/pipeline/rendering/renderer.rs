@@ -133,6 +133,8 @@ impl SceneRenderer {
             shadow_mapping,
         }
     }
+    // Resize the renderer's textures
+    pub(crate) fn resize(&mut self, dimensions: veclib::Vector2<u16>) {}
     /*
     // Get the fallback, default texture IDs in case the provided ones are not valid
     fn get_diffuse_map(pipeline: &Pipeline, material: &Material) -> ObjectID<Texture> {

@@ -1,6 +1,6 @@
 use super::HeuristicSettings;
-use getset::{Getters, CopyGetters, MutGetters};
-use slotmap::{Key};
+use getset::{CopyGetters, Getters, MutGetters};
+use slotmap::Key;
 use std::{hash::Hash, mem::MaybeUninit};
 
 slotmap::new_key_type! {

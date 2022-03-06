@@ -1,6 +1,13 @@
 use getset::Getters;
-use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest, NotCurrent, PossiblyCurrent, WindowedContext};
+use glutin::{
+    dpi::LogicalSize,
+    event::WindowEvent,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+    ContextBuilder, GlProfile, GlRequest, NotCurrent, PossiblyCurrent, WindowedContext,
+};
 use others::Time;
+use veclib::vec2;
 
 use crate::{
     advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
@@ -120,5 +127,13 @@ impl Pipeline {
 
         // Swap the back and front buffers, so we can show the screen something
         self.window.context().swap_buffers().unwrap();
+    }
+    // Handle window events
+    pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
+        match event {
+            WindowEvent::Resized(size) => renderer.resize(vec2(size.width as u16, size.height as u16)),
+            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            _ => {}
+        }
     }
 }

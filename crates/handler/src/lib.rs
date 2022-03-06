@@ -31,7 +31,7 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
 
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
     let shadows = config.shadow_resolution.convert();
-    let (pipeline, renderer) =  rendering::pipeline::new(
+    let (pipeline, renderer) = rendering::pipeline::new(
         &event_loop,
         format!("'{}', by '{}'", app_name, author_name),
         config.vsync,
@@ -71,7 +71,10 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
 fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
     match event {
         // Window events
-        Event::WindowEvent { window_id: _, event } => handle_window_event(event, world, control_flow),
+        Event::WindowEvent { window_id: _, event } => {
+            world.gui.receive_event(&event);
+            world.pipeline.handle_window_event(&mut world.renderer, event, control_flow);
+        }
         // Device event
         Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),
         // Loop events
@@ -95,20 +98,6 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
             world.destroy();
         }
 
-        _ => (),
-    }
-}
-
-// Handle the window events
-fn handle_window_event(event: WindowEvent, world: &mut World, control_flow: &mut ControlFlow) {
-    // GUI
-    if !world.input.accepts_input {
-        world.gui.receive_event(&event);
-    }
-
-    match event {
-        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-        WindowEvent::Resized(size) => world.pipeline.window.resized_event(veclib::vec2(size.width as u16, size.height as u16)),
         _ => (),
     }
 }

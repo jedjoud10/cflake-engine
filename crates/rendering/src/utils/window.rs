@@ -1,6 +1,8 @@
 use getset::{CopyGetters, Getters, MutGetters};
 use glutin::{window::Fullscreen, ContextWrapper, PossiblyCurrent, WindowedContext};
 
+use crate::pipeline::SceneRenderer;
+
 // Get the default width and height of the starting window
 pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);
 
@@ -31,10 +33,5 @@ impl Window {
     // Calculate the pixels per point
     pub fn pixels_per_point(&self) -> f64 {
         self.context.window().scale_factor()
-    }
-    // Update the deferred renderer's textures since we have resized the window
-    pub fn resized_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
-        self.dimensions = new_dimensions;
-        // Update textures
     }
 }
