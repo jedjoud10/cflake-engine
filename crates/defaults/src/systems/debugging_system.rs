@@ -5,7 +5,6 @@ fn run(world: &mut World, _data: EventKey) {
     // Check if we need to debug
     let gui = &world.gui.egui;
     let state = &mut world.state;
-    let pipeline = world.pipeline.read();
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
@@ -14,8 +13,8 @@ fn run(world: &mut World, _data: EventKey) {
         if ui.button("Quit game").clicked() {
             *state = WorldState::Exit;
         }
-        ui.label(format!("Camera Pos: '{}'", (data.camera_pos * 10.0).round() / 10.0));
-        ui.label(format!("Camera Dir: '{}'", (data.camera_forward * 10.0).round() / 10.0));
+        //ui.label(format!("Camera Pos: '{}'", (data.camera_pos * 10.0).round() / 10.0));
+        //ui.label(format!("Camera Dir: '{}'", (data.camera_forward * 10.0).round() / 10.0));
         // Timings
         ui.separator();
         ui.heading("Timings");
@@ -49,15 +48,6 @@ fn run(world: &mut World, _data: EventKey) {
         // Rendering
         ui.separator();
         ui.heading("Rendering");
-        let debuginfo = pipeline.debugging.lock();
-        ui.label(format!("Draw Calls: '{}'", debuginfo.draw_calls));
-        ui.label(format!("Shadow Draw Calls: '{}'", debuginfo.shadow_draw_calls));
-        ui.label(format!("Triangles: '{}k'", debuginfo.triangles / 1000));
-        ui.label(format!("Vertices: '{}k'", debuginfo.vertices / 1000));
-        ui.label(format!("Whole Frame Time: '{:.1}'", debuginfo.whole_frame));
-        ui.label(format!("Render Frame Time: '{:.1}'", debuginfo.render_frame));
-        ui.label(format!("EoF Callbacks Execution Time: '{:.1}'", debuginfo.eof_callbacks_execution));
-        ui.label(format!("Swap Buffers Time: '{:.1}'", debuginfo.swap_buffers));
     });
 }
 // Create the debugging system

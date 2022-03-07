@@ -80,21 +80,22 @@ fn run(world: &mut World, mut data: EventKey) {
 
         // Camera settings
         let camera = RenderingCamera {
-            position: &transform.position,
-            rotation: &transform.rotation,
-            viewm: &camera.viewm,
-            projm: &camera.projm,
-            clip_planes: &camera.clip_planes,
+            position: transform.position,
+            rotation: transform.rotation,
+            viewm: camera.viewm,
+            projm: camera.projm,
+            clip_planes: camera.clip_planes,
 
             // Math moment
             projm_viewm: camera.projm * camera.viewm,
         };
 
+        world.pipeline.camera = camera;
+
         // Rendering settings
         let settings = RenderingSettings {
             normal: models.as_slice(),
             shadowed: shadowed.as_slice(),
-            camera: camera,
         };
 
         // Render

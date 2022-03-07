@@ -6,22 +6,20 @@ pub struct RenderingSettings<'a, 'b> {
     pub normal: &'a [RenderedModel<'b>],
     // Shadowed objects
     pub shadowed: &'a [ShadowedModel<'b>],
-
-    // Camera settings
-    pub camera: RenderingCamera<'b>,
 }
 
 // Camera rendering settings
-pub struct RenderingCamera<'b> {
+#[derive(Default)]
+pub struct RenderingCamera {
     // Position and rotation
-    pub position: &'b veclib::Vector3<f32>,
-    pub rotation: &'b veclib::Quaternion<f32>,
+    pub position: veclib::Vector3<f32>,
+    pub rotation: veclib::Quaternion<f32>,
 
     // View and projection matrices
-    pub viewm: &'b veclib::Matrix4x4<f32>,
-    pub projm: &'b veclib::Matrix4x4<f32>,
+    pub viewm: veclib::Matrix4x4<f32>,
+    pub projm: veclib::Matrix4x4<f32>,
     pub projm_viewm: veclib::Matrix4x4<f32>,
 
     // Near-Far clip planes
-    pub clip_planes: &'b veclib::Vector2<f32>,
+    pub clip_planes: veclib::Vector2<f32>,
 }

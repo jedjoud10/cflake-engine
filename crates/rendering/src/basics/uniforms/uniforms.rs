@@ -32,14 +32,10 @@ impl<'a> Uniforms<'a> {
     // Bind the shader for execution/rendering
     pub fn bind(&mut self) {
         unsafe { gl::UseProgram(self.program.program()) }
-        /*
         // Set some global uniforms while we're at it
-        self.set_f32("_time", self.pipeline.time.0 as f32);
-        self.set_f32("_delta", self.pipeline.time.1 as f32);
+        self.set_f32("_time", self.pipeline.time().elapsed as f32);
+        self.set_f32("_delta", self.pipeline.time().delta as f32);
         self.set_vec2i32("_resolution", self.pipeline.window.dimensions.into());
-        let camera = &mut self.pipeline.camera;
-        self.set_vec2f32("_nf_planes", camera.clip_planes);
-        */
     }
     // U32
     pub fn set_u32(&mut self, name: &str, val: u32) {

@@ -49,7 +49,7 @@ pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedMode
     let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
 
     // And set them
-    uniforms.set_mat44f32("project_view_matrix", &settings.camera.projm_viewm);
+    uniforms.set_mat44f32("project_view_matrix", &pipeline.camera.projm_viewm);
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
     // Optional
     material.uniforms.execute(&mut uniforms);

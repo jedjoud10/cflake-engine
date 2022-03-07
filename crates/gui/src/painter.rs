@@ -38,7 +38,7 @@ impl Painter {
             ._format(TextureFormat::RGBA8R)
             .wrap_mode(TextureWrapping::ClampToEdge(None))
             ._type(DataType::U8)
-            .mipmaps(true)
+            .mipmaps(false)
             .build();
         let egui_font_texture = pipeline.textures.insert(egui_font_texture);
         Self {
@@ -91,7 +91,7 @@ impl Painter {
 
         // Update the OpenGL version
         let gl_tex = pipeline.textures.get_mut(&self.gl_font_texture);
-        if let Some(mut gl_tex) = gl_tex {
+        if let Some(gl_tex) = gl_tex {
             let dimensions = TextureDimensions::Texture2d(veclib::Vector2::new(image.width as u16, image.height as u16));
             gl_tex.set_dimensions(dimensions).unwrap();
             gl_tex.set_bytes(bytes).unwrap();

@@ -208,10 +208,10 @@ impl SceneRenderer {
         uniforms.set_mat44f32("lightspace_matrix", matrix);
 
         // Set the camera matrices
-        let pr_m = *settings.camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&settings.camera.rotation));
+        let pr_m = pipeline.camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&pipeline.camera.rotation));
         uniforms.set_mat44f32("pr_matrix", &pr_m);
-        uniforms.set_mat44f32("pv_matrix", &(*settings.camera.projm * *settings.camera.viewm));
-        uniforms.set_vec2f32("nf_planes", *settings.camera.clip_planes);
+        uniforms.set_mat44f32("pv_matrix", &(pipeline.camera.projm * pipeline.camera.viewm));
+        uniforms.set_vec2f32("nf_planes", pipeline.camera.clip_planes);
 
         // Also gotta set the deferred textures
         // &str array because I am lazy

@@ -1,4 +1,4 @@
-use getset::Getters;
+use getset::{Getters, Setters};
 use glutin::{
     dpi::LogicalSize,
     event::WindowEvent,
@@ -15,10 +15,10 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, PipelineCollection, PipelineSettings, SceneRenderer};
+use super::{DefaultElements, PipelineCollection, PipelineSettings, SceneRenderer, RenderingCamera};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
-#[derive(Getters)]
+#[derive(Getters, Setters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
     pub meshes: PipelineCollection<Mesh>,
@@ -40,6 +40,7 @@ pub struct Pipeline {
     settings: PipelineSettings,
     #[getset(get = "pub")]
     defaults: DefaultElements,
+    pub camera: RenderingCamera
 }
 
 // Initialize glutin and the window
@@ -92,6 +93,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         materials: Default::default(),
         lights: Default::default(),
         time: Default::default(),
+        camera: Default::default(),
         window: {
             // Create a new window
             let mut window = Window {
