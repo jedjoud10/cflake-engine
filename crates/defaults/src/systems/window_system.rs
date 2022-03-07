@@ -12,7 +12,6 @@ fn run(world: &mut World, _data: EventKey) {
         let var = world.input.map_toggled("toggle_input");
         world.pipeline.window.context().window().set_cursor_grab(!var).unwrap();
         world.pipeline.window.context().window().set_cursor_visible(var);
-        world.input.accepts_input = !var;
     }
 }
 

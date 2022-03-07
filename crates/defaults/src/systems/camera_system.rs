@@ -51,7 +51,7 @@ fn run(world: &mut World, mut data: EventKey) {
         velocity += -up * speed;
     }
     // Update the camera values now
-    let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
+    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
     for (&key, components) in query.iter_mut() {
         // If we are not the right camera, skip
         if key != global.main_camera {
@@ -60,7 +60,7 @@ fn run(world: &mut World, mut data: EventKey) {
         let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
-        let (position, rotation) = (transform.position, transform.rotation);
+        let (position, _rotation) = (transform.position, transform.rotation);
         let mut camera = components.get_mut::<crate::components::Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
 

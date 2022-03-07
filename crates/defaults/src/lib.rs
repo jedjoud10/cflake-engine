@@ -58,7 +58,7 @@ pub fn preload_default_assets() {
 // Start the default systems that will be executed before the user systems
 pub fn start_before_user_sytems(world: &mut World) {
     // Engine defaults
-    //camera_system::system(world);
+    camera_system::system(world);
     //debugging_system::system(world);
     window_system::system(world);
     //gui_system::system(world);

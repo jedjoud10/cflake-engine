@@ -100,9 +100,6 @@ impl SceneRenderer {
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
             gl::BindTexture(texture.target(), texture.oid());
-            dbg!(attachement);
-            dbg!(texture.target());
-            dbg!(texture.oid());
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.oid(), 0);
         }
 
@@ -122,7 +119,8 @@ impl SceneRenderer {
 
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/sky_gradient.png").unwrap())
-            .wrap_mode(TextureWrapping::ClampToBorder(None))
+            .wrap_mode(TextureWrapping::ClampToEdge(None))
+            .mipmaps(false)
             .build();
         let sky_gradient = pipeline.textures.insert(sky_gradient);
         /* #endregion */
@@ -137,11 +135,11 @@ impl SceneRenderer {
         }
     }
     // Resize the renderer's textures
-    pub(crate) fn resize(&mut self, dimensions: veclib::Vector2<u16>, pipeline: &mut Pipeline) {
+    pub(crate) fn resize(&mut self, pipeline: &mut Pipeline) {
         // Very simple since we use an array
         for handle in self.textures.iter() {
-            let mut texture = pipeline.textures.get_mut(handle).unwrap();
-            texture.set_dimensions(TextureDimensions::Texture2d(dimensions)).unwrap();
+            let texture = pipeline.textures.get_mut(handle).unwrap();
+            texture.set_dimensions(TextureDimensions::Texture2d(pipeline.window.dimensions())).unwrap();
         }
     }
 
@@ -178,7 +176,7 @@ impl SceneRenderer {
 
         // Then render the shadows
         self.shadow_mapping.as_ref().map(|mapping| {
-            unsafe { mapping.render_all_shadows(settings.shadowed, pipeline); }
+            unsafe { mapping.render_all_shadows(settings.shadowed, pipeline).unwrap(); }
         });
 
         // Render the deferred quad
@@ -236,8 +234,10 @@ impl SceneRenderer {
         // Draw the quad
         let quad_mesh = pipeline.meshes.get(&self.quad).unwrap();
         // Draw to the deferred framebuffer instead
-        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         gl::Disable(gl::DEPTH_TEST);
         common::render(quad_mesh);
+        gl::Enable(gl::DEPTH_TEST);
+        gl::BindVertexArray(0);
     }
 }

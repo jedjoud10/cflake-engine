@@ -17,8 +17,6 @@ pub struct InputManager {
     // Mouse
     last_mouse_pos: veclib::Vector2<f64>,
     last_mouse_scroll: f64,
-    // Do we accept input currently?
-    pub accepts_input: bool,
 }
 
 impl Default for InputManager {
@@ -29,7 +27,6 @@ impl Default for InputManager {
             keys: multimap,
             last_mouse_pos: Default::default(),
             last_mouse_scroll: Default::default(),
-            accepts_input: true,
         }
     }
 }
@@ -37,19 +34,13 @@ impl Default for InputManager {
 impl InputManager {
     // Called whenever the mouse position changes
     pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f64>) {
-        if !self.accepts_input {
-            return;
-        }
         self.last_mouse_pos += delta;
     }
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
-        if !self.accepts_input {
-            return;
-        }
         self.last_mouse_scroll += scroll_delta;
     }
-    // This should be ran at the start of every frame, before we poll any glfw events
+    // This should be ran at the end of every frame
     pub fn late_update(&mut self, _delta_time: f32) {
         for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
             // Reset the map state if needed

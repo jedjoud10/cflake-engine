@@ -22,6 +22,8 @@ pub struct DefaultElements {
 
     // Meshes
     pub mesh: Handle<Mesh>,
+    pub cube: Handle<Mesh>,
+    pub sphere: Handle<Mesh>,
 
     // Materials
     pub material: Handle<Material>,
@@ -60,6 +62,11 @@ impl DefaultElements {
         let mesh = Mesh::default();
         let mesh = pipeline.meshes.insert(mesh);
 
+        // Load the default cube and sphere
+        let cube = pipeline.meshes.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
+        let sphere = pipeline.meshes.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
+
+
         // Default rendering shader
         let shader = Shader::new(
             ShaderInitSettings::default()
@@ -87,6 +94,8 @@ impl DefaultElements {
             missing,
             normal_map,
             mesh,
+            cube,
+            sphere,
             material,
             shader,
         }

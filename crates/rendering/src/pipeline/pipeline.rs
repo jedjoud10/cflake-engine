@@ -137,7 +137,10 @@ impl Pipeline {
     // Handle window events
     pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
         match event {
-            WindowEvent::Resized(size) => renderer.resize(vec2(size.width as u16, size.height as u16), self),
+            WindowEvent::Resized(size) => {
+                self.window.dimensions = vec2(size.width as u16, size.height as u16);
+                renderer.resize(self)
+            },
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             _ => {}
         }

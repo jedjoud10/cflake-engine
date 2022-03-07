@@ -61,16 +61,17 @@ impl World {
         self.state = WorldState::Running;
         // Update the timings
         self.time.update(delta);
-
+        
         // Update game logic (this includes rendering the world)
         self.pipeline.start_frame(&mut self.renderer);
         self.time.update_current_frame_time();
         let (systems, settings) = self.ecs.ready();
         let systems = systems.borrow();
         ECSManager::<World>::execute_systems(systems, self, settings);
-
+        
         // Late update
         self.pipeline.end_frame();
+        self.input.late_update(delta as f32);
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

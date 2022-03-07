@@ -4,7 +4,7 @@
 #include "defaults/shaders/rendering/sun.func.glsl"
 #include "defaults/shaders/rendering/shadow_calculations.func.glsl"
 #include "defaults/shaders/rendering/lighting.func.glsl"
-layout(location = 0) out vec3 color;
+out vec4 color;
 uniform sampler2D diffuse_texture; // 0
 uniform sampler2D emissive_texture; // 1
 uniform sampler2D normals_texture; // 2
@@ -35,13 +35,14 @@ void main() {
 	vec3 pixel_dir = normalize((inverse(pr_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
 
 	// Get fragment depth
+	vec3 final_color = vec3(0, 0, 0);
 	float odepth = texture(depth_texture, uvs).x;
 	// Depth test with the sky
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
-		color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
-		color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 1024), 0) * sun_strength_factor;
+		final_color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
+		final_color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 1024), 0) * sun_strength_factor;
 	} else {
 		float in_shadow = 0.0;
 		if (shadows_enabled) {
@@ -49,7 +50,8 @@ void main() {
 			in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
 		}
 		// Calculate lighting
-		vec3 frag_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
-		color = frag_color;
+		final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 	}
+
+	color = vec4(final_color, 1.0);
 }

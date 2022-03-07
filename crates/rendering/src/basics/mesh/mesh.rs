@@ -47,18 +47,15 @@ impl Asset for Mesh {
         // Generate the tangents
         // Create the actual Mesh now
         let mut mesh = Mesh::default();
-        None
-        /*
+        let mut builder = mesh.modifier().vertex_builder;
         for vertex in parsed_obj.vertices {
-            mesh.vertices
-                .builder()
-                .with_position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]))
-                .with_normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
-                .with_uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
+            builder
+                .position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]))
+                .normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
+                .uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
         mesh.indices = parsed_obj.indices;
         Some(mesh)
-        */
     }
 }
 

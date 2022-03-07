@@ -7,18 +7,18 @@ use world::{
 };
 
 // Get the camera transform and camera data
-fn get_camera(world: &World) -> (RefComponentFetcher, ComponentKey, ComponentKey) {
+fn get_camera(world: &World) -> Option<(RefComponentFetcher, ComponentKey, ComponentKey)> {
     // Get the entity
     let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-    let camera_entity = world.ecs.entities.get(global.main_camera).unwrap();
+    world.ecs.entities.get(global.main_camera).map(|camera_entity| {
+        // And fetch it's linked component keys
+        let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
+        let transform = camera_entity.get_linked::<crate::components::Transform>().unwrap();
 
-    // And fetch it's linked component keys
-    let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
-    let transform = camera_entity.get_linked::<crate::components::Camera>().unwrap();
-
-    // Then, we can fetch the actual components
-    let fetcher = RefComponentFetcher::new(&world.ecs.components);
-    (fetcher, camera, transform)
+        // Then, we can fetch the actual components
+        let fetcher = RefComponentFetcher::new(&world.ecs.components);
+        (fetcher, camera, transform)
+    }).ok()
 }
 
 // The rendering system update loop
@@ -67,34 +67,37 @@ fn run(world: &mut World, mut data: EventKey) {
     }
 
     // Fetch the camera component
-    let (fetcher, camera, transform) = get_camera(world);
-    let camera = fetcher.get::<crate::components::Camera>(camera).unwrap();
-    let transform = fetcher.get::<crate::components::Transform>(transform).unwrap();
+    let camera_data = get_camera(world);
+    if let Some((fetcher, camera, transform)) = camera_data {
 
-    // Camera settings
-    let camera = RenderingCamera {
-        position: &transform.position,
-        rotation: &transform.rotation,
-        viewm: &camera.viewm,
-        projm: &camera.projm,
-        clip_planes: &camera.clip_planes,
+        let camera = fetcher.get::<crate::components::Camera>(camera).unwrap();
+        let transform = fetcher.get::<crate::components::Transform>(transform).unwrap();
+        
+        // Camera settings
+        let camera = RenderingCamera {
+            position: &transform.position,
+            rotation: &transform.rotation,
+            viewm: &camera.viewm,
+            projm: &camera.projm,
+            clip_planes: &camera.clip_planes,
 
-        // Math moment
-        projm_viewm: camera.projm * camera.viewm,
-    };
+            // Math moment
+            projm_viewm: camera.projm * camera.viewm,
+        };
 
-    // Rendering settings
-    let settings = RenderingSettings {
-        normal: models.as_slice(),
-        shadowed: shadowed.as_slice(),
-        camera: camera,
-    };
+        // Rendering settings
+        let settings = RenderingSettings {
+            normal: models.as_slice(),
+            shadowed: shadowed.as_slice(),
+            camera: camera,
+        };
 
-    
-    // Render
-    let renderer = &world.renderer;
-    let pipeline = &world.pipeline;
-    renderer.render(pipeline, settings);
+
+        // Render
+        let renderer = &world.renderer;
+        let pipeline = &world.pipeline;
+        renderer.render(pipeline, settings);
+    }
 }
 
 // An event fired whenever we add multiple new renderer entities

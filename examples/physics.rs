@@ -1,15 +1,8 @@
-fn main() {}
-/*
 use cflake_engine::{
     defaults::components::{Camera, Collider, ColliderType, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::{ComponentLinkingGroup, Entity},
     math::shapes::{Cuboid, ShapeType},
     rendering::{
-        basics::{
-            lights::{LightSource, LightSourceType},
-            renderer::RendererFlags,
-        },
-        pipeline::pipec,
     },
     veclib, World,
 };
@@ -26,18 +19,14 @@ fn init(world: &mut World) {
     group.link_default::<Transform>().unwrap();
     let entity = Entity::default();
     let _id = world.ecs.add(entity, group).unwrap();
-    let pipeline = world.pipeline.read();
-    // Create the directional light source
-    let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-15f32.to_radians()),
-    })
-    .with_strength(1.0);
-    pipec::construct(&pipeline, light).unwrap();
 
     // Create a flat surface
     let mut group = ComponentLinkingGroup::default();
     group.link(Transform::default().with_scale(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
-    let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().cube);
+    let renderer = Renderer {
+        mesh: world.pipeline.defaults().cube.clone(),
+        ..Default::default()
+    };
     group.link(renderer).unwrap();
     // Add the rigidbody
     group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
@@ -52,7 +41,10 @@ fn init(world: &mut World) {
                 // Create a cube
                 let mut group = ComponentLinkingGroup::default();
                 group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
-                let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().cube);
+                let renderer = Renderer {
+                    mesh: world.pipeline.defaults().cube.clone(),
+                    ..Default::default()
+                };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
@@ -71,7 +63,10 @@ fn init(world: &mut World) {
                 // Create a sphere
                 let mut group = ComponentLinkingGroup::default();
                 group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
-                let renderer = Renderer::new(RendererFlags::DEFAULT).with_mesh(pipeline.defaults.as_ref().unwrap().sphere);
+                let renderer = Renderer {
+                    mesh: world.pipeline.defaults().sphere.clone(),
+                    ..Default::default()
+                };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
@@ -85,4 +80,3 @@ fn init(world: &mut World) {
         }
     }
 }
-*/
