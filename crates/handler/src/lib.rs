@@ -1,4 +1,4 @@
-use defaults::rendering::pipeline::{Pipeline, PipelineSettings};
+use defaults::rendering::pipeline::PipelineSettings;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -6,11 +6,8 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 pub use defaults;
 use glutin::{
-    dpi::LogicalSize,
-    event::{DeviceEvent, Event, WindowEvent},
+    event::{DeviceEvent, Event},
     event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, WindowBuilder},
-    ContextBuilder, GlProfile, GlRequest, NotCurrent, WindowedContext,
 };
 use spin_sleep::LoopHelper;
 pub use world::*;

@@ -15,7 +15,7 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, PipelineCollection, PipelineSettings, SceneRenderer, RenderingCamera};
+use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, Setters)]
@@ -40,7 +40,7 @@ pub struct Pipeline {
     settings: PipelineSettings,
     #[getset(get = "pub")]
     defaults: DefaultElements,
-    pub camera: RenderingCamera
+    pub camera: RenderingCamera,
 }
 
 // Initialize glutin and the window

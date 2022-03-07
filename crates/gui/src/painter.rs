@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
@@ -102,7 +100,7 @@ impl Painter {
         }
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, font_image: &FontImage, output: Output) {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, font_image: &FontImage, _output: Output) {
         // No need to draw if we don't have any meshes or if our shader is invalid
         if clipped_meshes.is_empty() || pipeline.shaders.get(&self.shader).is_none() {
             return;

@@ -1,8 +1,6 @@
 use cflake_engine::{
-    
-    defaults::components::{Camera, Collider, ColliderType, Light, Renderer, RigidBody, RigidBodyType, Transform},
+    defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::{ComponentLinkingGroup, Entity},
-    math::shapes::{Cuboid, ShapeType},
     veclib, World,
 };
 // A game with a test camera

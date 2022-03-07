@@ -1,7 +1,7 @@
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
-use world::physics::rapier3d;
-use world::physics::rapier3d::na::{Isometry, Point, Point3};
-use world::physics::rapier3d::prelude::{MassProperties, RigidBodyBuilder, SharedShape};
+
+use world::physics::rapier3d::na::{Isometry, Point3};
+use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape};
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
@@ -32,7 +32,7 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, 
             world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             world::math::shapes::ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, &pipeline.meshes.get(mesh).unwrap()),
+        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
     }
 }
 
@@ -53,7 +53,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
                 translation: vec3_to_translation(transform.position),
             })
             .build();
-        let r_collider = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), &collider))
+        let r_collider = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), collider))
             .friction(collider.friction)
             .restitution(collider.restitution)
             //.mass_properties(MassProperties::new(rapier3d::prelude::Point::new(0.0, 0.0, 0.0), 10.0, rapier3d::na::zero()))

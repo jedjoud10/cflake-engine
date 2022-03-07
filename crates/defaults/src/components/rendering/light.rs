@@ -1,7 +1,6 @@
 use world::ecs::component::Component;
 use world::rendering::basics::lights::{LightSourceType, StoredLight};
-use world::rendering::basics::material::Material;
-use world::rendering::basics::mesh::Mesh;
+
 use world::rendering::pipeline::Handle;
 // A light component
 #[derive(Component)]

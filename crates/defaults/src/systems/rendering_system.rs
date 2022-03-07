@@ -106,10 +106,10 @@ fn run(world: &mut World, mut data: EventKey) {
 }
 
 // An event fired whenever we add multiple new renderer entities
-fn added_entities(world: &mut World, mut data: EventKey) {}
+fn added_entities(_world: &mut World, _data: EventKey) {}
 
 // An event fired whenever we remove multiple renderer entities
-fn removed_entities(world: &mut World, mut data: EventKey) {}
+fn removed_entities(_world: &mut World, _data: EventKey) {}
 
 // Create the rendering system
 pub fn system(world: &mut World) {

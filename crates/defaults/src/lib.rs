@@ -60,7 +60,7 @@ pub fn start_before_user_sytems(world: &mut World) {
     // Engine defaults
     camera_system::system(world);
     debugging_system::system(world);
-    window_system::system(world);    
+    window_system::system(world);
     audio_system::system(world);
 
     // We gotta add the default globals

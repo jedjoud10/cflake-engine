@@ -136,11 +136,7 @@ impl ComponentSet {
                 system.check_cbitfield(old) && !system.check_cbitfield(new)
             })
             .count();
-        lock.insert(ComponentGroupToRemove {
-            components: components.clone(),
-            counter,
-            key,
-        });
+        lock.insert(ComponentGroupToRemove { components, counter, key });
         Ok(())
     }
     // Called at the start of the frame
@@ -152,8 +148,8 @@ impl ComponentSet {
                 .iter()
                 .filter_map(|(_key, group)| if group.counter == 0 { Some(_key) } else { None })
                 .collect::<Vec<_>>();
-            let removed_groups = indices.into_iter().map(|x| lock.remove(x).unwrap()).collect::<Vec<ComponentGroupToRemove>>();
-            removed_groups
+
+            indices.into_iter().map(|x| lock.remove(x).unwrap()).collect::<Vec<ComponentGroupToRemove>>()
         };
         // Remove the dangling components
         for group in removed_groups {

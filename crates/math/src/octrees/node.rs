@@ -106,7 +106,7 @@ impl Node {
                 }
             }
         }
-        let result = unsafe { std::mem::transmute::<[MaybeUninit<Node>; 8], [Node; 8]>(children) };
-        result
+
+        unsafe { std::mem::transmute::<[MaybeUninit<Node>; 8], [Node; 8]>(children) }
     }
 }

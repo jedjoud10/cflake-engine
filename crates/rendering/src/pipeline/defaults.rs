@@ -55,7 +55,9 @@ impl DefaultElements {
         let normal_map = pipeline.textures.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap()).filter(TextureFilter::Nearest).build();
+        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap())
+            .filter(TextureFilter::Nearest)
+            .build();
         let missing = pipeline.textures.insert(missing);
 
         // Default mesh

@@ -1,7 +1,6 @@
 use crate::painter::Painter;
-use parking_lot::Mutex;
+
 use rendering::pipeline::Pipeline;
-use std::sync::Arc;
 
 // A simple manager
 pub struct GUIManager {

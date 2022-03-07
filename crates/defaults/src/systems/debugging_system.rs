@@ -1,4 +1,4 @@
-use world::{ecs::event::EventKey, gui::egui, terrain, World, WorldState};
+use world::{ecs::event::EventKey, gui::egui, World, WorldState};
 
 // The debugging system's update loop
 fn run(world: &mut World, _data: EventKey) {
@@ -8,7 +8,7 @@ fn run(world: &mut World, _data: EventKey) {
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
-        let data = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+        let _data = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
         ui.heading("World");
         if ui.button("Quit game").clicked() {
             *state = WorldState::Exit;
@@ -22,13 +22,13 @@ fn run(world: &mut World, _data: EventKey) {
         ui.label(format!("Delta: {:.3}", world.time.delta));
         ui.label(format!("FPS: {:.1}", 1.0 / world.time.delta));
         // ECS
-        /*
         ui.separator();
         ui.heading("Entity Component Systems");
         ui.label(format!("Component: '{}'", world.ecs.components.len()));
         ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
-        ui.label(format!("Systems: '{}'", world.ecs.systems.inner().len()));
-        */
+        ui.label(format!("Systems: '{}'", world.ecs.systems.inner().borrow().len()));
+        /*
+         */
         /*
         // Terrain
         let terrain = world.globals.get_mut::<crate::globals::Terrain>();

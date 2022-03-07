@@ -1,17 +1,11 @@
 use world::{
-    ecs::{
-        component::{ComponentKey, RefComponentFetcher},
-        event::EventKey,
-    },
-    rendering::{
-        basics::lights::{StoredLight, StoredLightTransform},
-        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
-    },
+    ecs::event::EventKey,
+    rendering::basics::lights::{StoredLight, StoredLightTransform},
     World,
 };
 
 // The lights system update loop
-fn run(world: &mut World, mut data: EventKey) {
+fn run(world: &mut World, data: EventKey) {
     // Update all the light sources
     let query = data.as_query().unwrap();
     for (_, components) in query.iter() {
@@ -53,7 +47,7 @@ fn added_entities(world: &mut World, mut data: EventKey) {
 }
 
 // An event fired whenever we remove multiple light sources
-fn removed_entities(world: &mut World, mut data: EventKey) {
+fn removed_entities(_world: &mut World, _data: EventKey) {
     // The light would automatically get removed from the pipeline since the Handle<StoredLight> would get dropped
 }
 

@@ -80,7 +80,7 @@ impl Octree {
                 for (i, node) in subdivided.into_iter().enumerate() {
                     children_keys[i] = self.nodes.insert(node);
                 }
-                *self.nodes.get_mut(key).unwrap().children_mut() = Some(children_keys.clone());
+                *self.nodes.get_mut(key).unwrap().children_mut() = Some(children_keys);
                 pending_nodes.extend(children_keys);
             }
         }

@@ -4,7 +4,7 @@ use world::World;
 // Update the position of the left and right ears
 fn run(world: &mut World, _data: EventKey) {
     // Global
-    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+    let _global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
     // Update the positions
     /*
     world
