@@ -1,18 +1,16 @@
-use crate::{advanced::tracker::MaybeGlTracker, object::OpenGLObjectNotInitialized};
-
-// Writable
+use crate::{object::OpenGLObjectNotInitialized, pipeline::Pipeline};
+// Write the stored Rust data into the OpenGL buffer
 pub trait Writable
 where
     Self: Sized,
 {
-    type Data;
-    fn glwrite(&mut self, input: Self::Data) -> MaybeGlTracker<Self, ()>;
+    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized>;
 }
-// Readable
+// Read back the OpenGL data from the driver and insert it into the Rust
 pub trait Readable
 where
     Self: Sized,
 {
     type Data;
-    fn glread(&mut self) -> MaybeGlTracker<Self, Self::Data>;
+    fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized>;
 }

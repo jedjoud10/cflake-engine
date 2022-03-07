@@ -55,8 +55,8 @@ impl Buffers {
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
-        self.vertices.set_inner(vertices);
-        self.indices.set_inner(indices);
+        self.vertices.set_inner(&vertices);
+        self.indices.set_inner(&indices);
     }
     // And draw
     pub fn draw(&mut self) {

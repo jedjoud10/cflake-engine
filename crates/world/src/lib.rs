@@ -4,13 +4,12 @@ mod state;
 mod world;
 pub use settings::*;
 pub use state::*;
-pub use world::*;
+pub use self::world::*;
 
 pub use ::bitfield;
 pub use ::veclib;
 pub use assets;
 pub use audio;
-pub use core;
 pub use ecs;
 pub use globals;
 pub use gui;

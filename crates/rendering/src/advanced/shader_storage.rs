@@ -3,16 +3,16 @@ use gl::types::GLuint;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::{
-    basics::shader::{
+    basics::{shader::{
         info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
         query_shader_info,
-    },
+    }, bufop::Writable},
     object::PipelineCollectionElement,
     pipeline::Pipeline,
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
-use super::raw::dynamic_buffer::DynamicRawBuffer;
+use super::{raw::dynamic_buffer::DynamicRawBuffer};
 
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
@@ -26,7 +26,7 @@ impl<T> ShaderStorage<T> {
     // Create a new empty shader storage
     pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {
-            storage: DynamicRawBuffer::<T>::new(gl::SHADER_STORAGE_BUFFER, UsageType::new(AccessType::Draw, UpdateFrequency::Dynamic), _pipeline),
+            storage: DynamicRawBuffer::<T>::new(gl::SHADER_STORAGE_BUFFER, usage, _pipeline),
         }
     }
     /*

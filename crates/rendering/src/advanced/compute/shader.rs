@@ -3,7 +3,7 @@ use crate::{
         shader::{compile_shader, load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderInitSettings, ShaderProgram, ShaderSource},
         uniforms::Uniforms,
     },
-    object::PipelineCollectionElement,
+    object::{PipelineCollectionElement, OpenGLObjectNotInitialized},
     pipeline::Pipeline,
 };
 use ahash::{AHashMap, AHashSet};
@@ -74,4 +74,25 @@ impl ComputeShader {
         })
     }
     */
+
+    // Execute a compute shader
+    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> Result<(), OpenGLObjectNotInitialized> {
+        // Check validity
+        if self.program().program() == 0 {
+            return Err(OpenGLObjectNotInitialized);
+        }
+
+        // Run
+        unsafe {
+            let axii = settings.axii;
+            
+            // Uniforms
+            let mut uniforms = Uniforms::new(self.program(), pipeline, true);
+            settings.uniforms.execute(&mut uniforms);
+            gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
+            gl::Finish()
+        }
+
+        Ok(())
+    }
 }

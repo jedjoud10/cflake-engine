@@ -5,7 +5,6 @@ use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 
 use crate::{
-    advanced::tracker::{GlTracker, MaybeGlTracker},
     basics::bufop::{Readable, Writable},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline, PipelineCollection},
@@ -50,40 +49,36 @@ impl PipelineCollectionElement for AtomicGroup {
 }
 
 impl Writable for AtomicGroup {
-    type Data = AtomicArray;
-
-    fn glwrite(&mut self, input: Self::Data) -> MaybeGlTracker<Self, ()> {
+    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
         if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
-        // Write to the atomic counter
-        Ok(GlTracker::new(|| unsafe {
+        unsafe { 
             // Set the values
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
             gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_ptr() as *mut c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-            &()
-        }))
+            Ok(())
+        }
     }
 }
 
 impl Readable for AtomicGroup {
     type Data = AtomicArray;
 
-    fn glread(&mut self) -> MaybeGlTracker<Self, Self::Data> {
+    fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
         // Check validity
         if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
-        // Read the atomic counter
-        Ok(GlTracker::new(|| unsafe {
+        unsafe { 
             // Read the values
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
             gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_mut_ptr() as *mut c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
             // Success
-            &self.array
-        }))
+            Ok(&self.array)
+        }
     }
 }

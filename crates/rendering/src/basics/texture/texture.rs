@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::{
-    advanced::tracker::GlTracker,
     basics::{bufop::Readable, texture::calculate_size_bytes},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline},

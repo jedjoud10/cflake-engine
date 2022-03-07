@@ -8,5 +8,5 @@ pub use collection::*;
 pub use defaults::*;
 pub use handle::*;
 pub use pipeline::*;
-pub use rendering::*;
+pub use self::rendering::*;
 pub use settings::*;

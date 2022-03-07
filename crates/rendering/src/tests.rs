@@ -4,9 +4,9 @@ pub mod tests {
         basics::{
             material::{Material, MaterialTextures},
             mesh::Mesh,
-            shader::{Directive, ShaderInitSettings, ShaderSource},
+            shader::{Directive, ShaderInitSettings, ShaderSource}, bufop::Readable,
         },
-        pipeline::Handle,
+        pipeline::Handle, advanced::atomic::AtomicGroup,
     };
 
     // Test mesh generation
