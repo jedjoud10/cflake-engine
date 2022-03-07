@@ -4,97 +4,90 @@ use world::{
     rendering::{
         advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
         basics::{
-            buffer_operation::ReadBytes,
-            shader::ShaderSettings,
-            uniforms::{SetUniformsCallback, ShaderIDType},
+            shader::{
+                info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
+                Directive, ShaderInitSettings, query_info,
+            },
+            uniforms::StoredUniforms,
         },
-        object::{ObjectID, ReservedTrackedID},
-        pipeline::{pipec, Pipeline},
+        pipeline::{Handle, Pipeline},
         utils::{AccessType, UpdateFrequency, UsageType},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
 
-#[derive(Default)]
 pub struct VoxelGenerator {
     // Voxel Generation
-    pub compute_shader: ObjectID<ComputeShader>,
-    pub second_compute_shader: ObjectID<ComputeShader>,
-    pub atomics: ObjectID<AtomicGroup>,
+    pub compute_shader: Handle<ComputeShader>,
+    pub second_compute_shader: Handle<ComputeShader>,
+    pub atomics: AtomicGroup,
     // Our 2 shader storages (for voxel generation)
-    pub shader_storage_arbitrary_voxels: ObjectID<ShaderStorage>,
-    pub shader_storage_final_voxels: ObjectID<ShaderStorage>,
+    pub shader_storage_arbitrary_voxels: ShaderStorage<u8>,
+    pub shader_storage_final_voxels: ShaderStorage<PackedVoxel>,
     // And another voxel storage for edits
-    pub shader_storage_edits: ObjectID<ShaderStorage>,
+    pub shader_storage_edits: ShaderStorage<PackedEdit>,
     pub packed_edits_update: Option<Vec<PackedEdit>>,
     pub packed_edits_num: usize,
-    // Some CPU side objects that let us retrieve the GPU data
-    pub pending_reads: Option<(ReadBytes, ReadBytes)>,
-    // The IDs of the generation tasks
-    pub compute_id: ReservedTrackedID,
-    pub compute_id2: ReservedTrackedID,
-    pub read_counters: ReservedTrackedID,
-    pub read_final_voxels: ReservedTrackedID,
-    pub write_packed_edits: ReservedTrackedID,
     // And the voxel data for said chunk
     pub packed_chunk_voxel_data: PackedVoxelData,
     pub stored_chunk_voxel_data: StoredVoxelData,
     // Some uniforms
-    pub uniforms: Option<SetUniformsCallback>,
+    pub uniforms: Option<StoredUniforms>,
 }
 
 impl VoxelGenerator {
     // Create a new voxel generator
-    pub fn new(voxel_src_path: &str, uniforms: Option<SetUniformsCallback>, pipeline: &Pipeline) -> Self {
+    pub(crate) fn new(voxel_src_path: &str, uniforms: Option<StoredUniforms>, pipeline: &mut Pipeline) -> Self {
         // Load the first pass compute shader
         let voxel_src_path = format!(r#"#include "{}""#, voxel_src_path);
-        let settings = ShaderSettings::default()
+        let settings = ShaderInitSettings::default()
             .source(world::terrain::DEFAULT_TERRAIN_BASE_COMPUTE_SHADER)
-            .external_code("voxel_include_path", voxel_src_path.clone())
-            .shader_constant("chunk_size", CHUNK_SIZE);
-
+            .directive("voxel_include_path", Directive::External(voxel_src_path.to_string()))
+            .directive("chunk_size", Directive::Const(CHUNK_SIZE.to_string()));
         let base_compute = ComputeShader::new(settings).unwrap();
-        let base_compute = pipec::construct(pipeline, base_compute).unwrap();
+        let base_compute = pipeline.compute_shaders.insert(base_compute);
 
         // Load the second pass compute shader
-        let settings = ShaderSettings::default()
+        let settings = ShaderInitSettings::default()
             .source(world::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
-            .external_code("voxel_include_path", voxel_src_path)
-            .shader_constant("chunk_size", CHUNK_SIZE);
+            .directive("voxel_include_path", Directive::External(voxel_src_path.to_string()))
+            .directive("chunk_size", Directive::Const(CHUNK_SIZE.to_string()));
         let second_compute = ComputeShader::new(settings).unwrap();
-        let second_compute = pipec::construct(pipeline, second_compute).unwrap();
+        let second_compute = pipeline.compute_shaders.insert(second_compute);
+        let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
 
         // Also construct the atomics
-        let atomics = pipec::construct(pipeline, AtomicGroup::new(&[0, 0]).unwrap()).unwrap();
+        let atomics = AtomicGroup::new(pipeline);
+
+        // Get the size of each arbitrary voxel
+        let mut settings = ShaderInfoQuerySettings::default();
+        let resource = Resource {
+            res: QueryResource::ShaderStorageBlock,
+            name: "arbitrary_voxels".to_string(),
+        };
+        settings.query(resource.clone(), vec![QueryParameter::ByteSize]);
+
+        // Query
+        let shader_info = query_info(second_compute_program, pipeline, settings).unwrap();
+
+        // Read back the byte size
+        let byte_size = shader_info.get(&resource).unwrap().get(0).unwrap().as_byte_size().unwrap();
+
+        let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 
         // Load the shader storage
-        let shader_storage_arbitrary_voxels = ShaderStorage::new_using_block(
-            UsageType {
-                access: AccessType::Pass,
-                frequency: UpdateFrequency::Stream,
-            },
-            ShaderIDType::ComputeObjectID(second_compute),
-            "arbitrary_voxels",
-            (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2),
-        );
-        let shader_storage_arbitrary_voxels = pipec::construct(pipeline, shader_storage_arbitrary_voxels).unwrap();
+        let shader_storage_arbitrary_voxels =
+            ShaderStorage::<u8>::with_capacity(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), arbitrary_voxels_size, pipeline);
 
         let final_voxels_size = ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
-        let shader_storage_final_voxels = ShaderStorage::new(
-            UsageType {
-                access: AccessType::Read,
-                frequency: UpdateFrequency::Stream,
-            },
-            final_voxels_size,
+        let shader_storage_final_voxels = ShaderStorage::<PackedVoxel>::with_capacity(
+            UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream),
+            final_voxels_size * size_of::<PackedVoxel>(),
+            pipeline,
         );
-        let shader_storage_final_voxels = pipec::construct(pipeline, shader_storage_final_voxels).unwrap();
 
         // Create a new dynamic shader storage for our terrain edits
-        let shader_storage_edits = ShaderStorage::new_dynamic(UsageType {
-            access: AccessType::Draw,
-            frequency: UpdateFrequency::Stream,
-        });
-        let shader_storage_edits = pipec::construct(pipeline, shader_storage_edits).unwrap();
+        let shader_storage_edits = ShaderStorage::new(UsageType::new(AccessType::ClientToServer, UpdateFrequency::Stream), pipeline);
 
         Self {
             compute_shader: base_compute,
@@ -104,7 +97,10 @@ impl VoxelGenerator {
             shader_storage_arbitrary_voxels,
             shader_storage_final_voxels,
             uniforms,
-            ..Default::default()
+            packed_edits_update: None,
+            packed_edits_num: 0,
+            packed_chunk_voxel_data: PackedVoxelData::default(),
+            stored_chunk_voxel_data: StoredVoxelData::default(),
         }
     }
 }

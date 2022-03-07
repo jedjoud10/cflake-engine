@@ -3,7 +3,7 @@ use crate::{
         shader::{compile_shader, load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderInitSettings, ShaderProgram, ShaderSource},
         uniforms::Uniforms,
     },
-    object::{PipelineCollectionElement, OpenGLObjectNotInitialized},
+    object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::Pipeline,
 };
 use ahash::{AHashMap, AHashSet};
@@ -85,7 +85,7 @@ impl ComputeShader {
         // Run
         unsafe {
             let axii = settings.axii;
-            
+
             // Uniforms
             let mut uniforms = Uniforms::new(self.program(), pipeline, true);
             settings.uniforms.execute(&mut uniforms);

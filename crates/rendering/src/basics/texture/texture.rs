@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    basics::{bufop::Readable, texture::calculate_size_bytes},
+    basics::texture::calculate_size_bytes,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline},
     utils::*,

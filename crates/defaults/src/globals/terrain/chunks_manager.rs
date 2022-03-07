@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,
-    rendering::{basics::material::Material, object::ObjectID},
+    rendering::{basics::material::Material, pipeline::Handle},
     terrain::ChunkCoords,
 };
 // Generation state of the current chunk
@@ -31,7 +31,7 @@ pub struct ChunksManager {
     pub chunks_generating: AHashSet<ChunkCoords>,
     pub priority_list: Vec<(EntityKey, f32)>,
     pub chunks_to_remove: Vec<EntityKey>,
-    pub material: ObjectID<Material>,
+    pub material: Handle<Material>,
 
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation

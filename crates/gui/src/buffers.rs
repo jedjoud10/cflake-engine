@@ -4,7 +4,7 @@ use gl::types::GLuint;
 use rendering::{
     advanced::raw::dynamic_buffer::DynamicRawBuffer,
     pipeline::Pipeline,
-    utils::{AccessType::Draw, UpdateFrequency::Stream, UsageType},
+    utils::{AccessType::ClientToServer, UpdateFrequency::Stream, UsageType},
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
@@ -29,7 +29,10 @@ impl Buffers {
         }
 
         // Also generate the buffers
-        const USAGE_TYPE: UsageType = UsageType { access: Draw, frequency: Stream };
+        const USAGE_TYPE: UsageType = UsageType {
+            access: ClientToServer,
+            frequency: Stream,
+        };
         // Dynamic raw buffers
         let indices = DynamicRawBuffer::<u32>::new(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
         let vertices = DynamicRawBuffer::<egui::epaint::Vertex>::new(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
@@ -55,8 +58,8 @@ impl Buffers {
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
-        self.vertices.set_inner(&vertices);
-        self.indices.set_inner(&indices);
+        self.vertices.set_inner(vertices);
+        self.indices.set_inner(indices);
     }
     // And draw
     pub fn draw(&mut self) {

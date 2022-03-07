@@ -31,7 +31,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain global
-    pub fn new(settings: TerrainSettings, pipeline: &Pipeline) -> Self {
+    pub fn new(settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
             chunks_manager: ChunksManager {
                 octree: Arc::new(Mutex::new(DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings))),

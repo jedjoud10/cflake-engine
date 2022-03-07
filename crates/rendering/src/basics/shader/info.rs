@@ -108,7 +108,7 @@ impl ShaderInfoRead {
 
 // Some shader info that we queried from the pipeline
 #[derive(Default, Clone)]
-pub(crate) struct ShaderInfo {
+pub struct ShaderInfo {
     // The updated resources
     pub(crate) res: AHashMap<Resource, Vec<UpdatedParameter>>,
     // The updated unique resources
@@ -118,11 +118,11 @@ pub(crate) struct ShaderInfo {
 impl ShaderInfo {
     // Get the updated query parameters of a specific resource
     #[allow(dead_code)]
-    pub(crate) fn get(&self, res: &Resource) -> Option<&Vec<UpdatedParameter>> {
+    pub fn get(&self, res: &Resource) -> Option<&Vec<UpdatedParameter>> {
         self.res.get(res)
     }
     // Get all the updated query parameter
-    pub(crate) fn get_all(&self, unique_resource: &QueryResource) -> Option<&Vec<(String, Vec<UpdatedParameter>)>> {
+    pub fn get_all(&self, unique_resource: &QueryResource) -> Option<&Vec<(String, Vec<UpdatedParameter>)>> {
         self.res_all.get(unique_resource)
     }
 }

@@ -1,4 +1,13 @@
-use crate::{pipeline::Pipeline, utils::UsageType, basics::bufop::{Writable, Readable}, object::OpenGLObjectNotInitialized};
+use crate::{
+    basics::bufop::GLBufferOperations,
+    object::OpenGLObjectNotInitialized,
+    pipeline::Pipeline,
+    utils::{
+        AccessType::ServerToClient,
+        UpdateFrequency::{Dynamic, Static},
+        UsageType,
+    },
+};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ops::Range, ptr::null};
@@ -18,6 +27,18 @@ pub struct DynamicRawBuffer<T> {
     #[getset(get = "pub")]
     inner: Vec<T>,
     _phantom: PhantomData<*const ()>,
+}
+
+impl<T> Default for DynamicRawBuffer<T> {
+    fn default() -> Self {
+        Self {
+            buffer: Default::default(),
+            _type: Default::default(),
+            usage: UsageType::new(ServerToClient, Dynamic),
+            inner: Default::default(),
+            _phantom: Default::default(),
+        }
+    }
 }
 
 // Creation
@@ -92,20 +113,10 @@ impl<T> DynamicRawBuffer<T> {
 // Push, set, pop, len
 impl<T> DynamicRawBuffer<T> {
     // Set the contents of the dynamic raw buffer from an already allocated vector
-    pub fn set_inner(&mut self, vec: &[T]) where T: Clone {
-        // Completely reallocate
-        let old = self.inner.capacity();
-        self.inner.clear();
-        self.inner.extend_from_slice(vec);
-        let new = self.inner.capacity();       
-        
-        // Reallocate only if we exceed the old capacity
-        if new > old {
-            self.reallocate();
-        } else {
-            // Otherwise, just update
-            self.update_all()
-        }
+    pub fn set_inner(&mut self, vec: Vec<T>) {
+        // New reallocation
+        self.inner = vec;
+        self.reallocate();
     }
 
     // Push a single element
@@ -136,18 +147,7 @@ impl<T> DynamicRawBuffer<T> {
     }
 }
 
-impl<T> Writable for DynamicRawBuffer<T> {
-    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        self.update_all();
-        Ok(())
-    }
-}
-
-impl<T> Readable for DynamicRawBuffer<T> {
+impl<T> GLBufferOperations for DynamicRawBuffer<T> {
     type Data = Vec<T>;
 
     fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
@@ -156,6 +156,22 @@ impl<T> Readable for DynamicRawBuffer<T> {
             return Err(OpenGLObjectNotInitialized);
         }
         Ok(&self.inner)
+    }
+    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized> {
+        // Check validity
+        if self.buffer == 0 {
+            return Err(OpenGLObjectNotInitialized);
+        }
+        self.update_all();
+        Ok(())
+    }
+    fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized> {
+        // Check validity
+        if self.buffer == 0 {
+            return Err(OpenGLObjectNotInitialized);
+        }
+        self.set_inner(data);
+        Ok(())
     }
 }
 

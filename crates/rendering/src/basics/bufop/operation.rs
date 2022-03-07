@@ -1,16 +1,11 @@
 use crate::{object::OpenGLObjectNotInitialized, pipeline::Pipeline};
-// Write the stored Rust data into the OpenGL buffer
-pub trait Writable
-where
-    Self: Sized,
-{
-    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized>;
-}
-// Read back the OpenGL data from the driver and insert it into the Rust
-pub trait Readable
+// OpenGL buffer ops
+pub trait GLBufferOperations
 where
     Self: Sized,
 {
     type Data;
+    fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized>;
+    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized>;
     fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized>;
 }

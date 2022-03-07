@@ -12,7 +12,7 @@ use enum_as_inner::EnumAsInner;
 use getset::{CopyGetters, Getters, MutGetters};
 use gl::types::GLuint;
 
-use crate::basics::shader::ShaderSourceType;
+use crate::{basics::shader::ShaderSourceType, object::OpenGLObjectNotInitialized, pipeline::Pipeline};
 
 use super::{
     info::{QueryParameter, QueryResource, Resource, ShaderInfo, ShaderInfoQuerySettings, UpdatedParameter},
@@ -349,6 +349,15 @@ pub(crate) fn query_shader_info(program: GLuint, settings: ShaderInfoQuerySettin
             res_all: output_queried_resources_all,
         }
     }
+}
+
+// Querry shader info
+pub fn query_info(program: &ShaderProgram, _pipeline: &Pipeline, settings: ShaderInfoQuerySettings) -> Result<ShaderInfo, OpenGLObjectNotInitialized> {
+    // Check validity
+    if program.program() == 0 {
+        return Err(OpenGLObjectNotInitialized);
+    }
+    Ok(query_shader_info(program.program(), settings))
 }
 
 // A single shader directive
