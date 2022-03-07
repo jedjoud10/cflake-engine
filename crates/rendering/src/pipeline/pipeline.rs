@@ -130,6 +130,7 @@ impl Pipeline {
         self.compute_shaders.dispose_dangling();
         self.textures.dispose_dangling();
         self.materials.dispose_dangling();
+        self.lights.dispose_dangling();
 
         // Swap the back and front buffers, so we can show the screen something
         self.window.context().swap_buffers().unwrap();
@@ -140,7 +141,7 @@ impl Pipeline {
             WindowEvent::Resized(size) => {
                 self.window.dimensions = vec2(size.width as u16, size.height as u16);
                 renderer.resize(self)
-            },
+            }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             _ => {}
         }

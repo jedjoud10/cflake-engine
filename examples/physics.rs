@@ -1,9 +1,8 @@
 use cflake_engine::{
-    defaults::components::{Camera, Collider, ColliderType, Renderer, RigidBody, RigidBodyType, Transform},
+    
+    defaults::components::{Camera, Collider, ColliderType, Light, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::{ComponentLinkingGroup, Entity},
     math::shapes::{Cuboid, ShapeType},
-    rendering::{
-    },
     veclib, World,
 };
 // A game with a test camera
@@ -20,6 +19,15 @@ fn init(world: &mut World) {
     let entity = Entity::default();
     let _id = world.ecs.add(entity, group).unwrap();
 
+    // Create the directional light source
+    let light = Light::default();
+    let light_transform = Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
+    // And add it to the world as an entity
+    let mut group = ComponentLinkingGroup::default();
+    group.link(light_transform).unwrap();
+    group.link(light).unwrap();
+    world.ecs.add(Entity::default(), group).unwrap();
+
     // Create a flat surface
     let mut group = ComponentLinkingGroup::default();
     group.link(Transform::default().with_scale(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
@@ -31,8 +39,7 @@ fn init(world: &mut World) {
     // Add the rigidbody
     group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
     // Add the collider
-    group
-        .link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
+    group.link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
     let entity = Entity::default();
     world.ecs.add(entity, group).unwrap();
     for y in 0..5 {
@@ -40,7 +47,13 @@ fn init(world: &mut World) {
             for z in 0..5 {
                 // Create a cube
                 let mut group = ComponentLinkingGroup::default();
-                group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
+                group
+                    .link(
+                        Transform::default()
+                            .with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3))
+                            .with_scale(veclib::vec3(1.0, 1.0, 1.0)),
+                    )
+                    .unwrap();
                 let renderer = Renderer {
                     mesh: world.pipeline.defaults().cube.clone(),
                     ..Default::default()
@@ -49,9 +62,7 @@ fn init(world: &mut World) {
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
-                group
-                .link(Collider::cuboid(veclib::Vector3::ONE))
-                .unwrap();
+                group.link(Collider::cuboid(veclib::Vector3::ONE)).unwrap();
                 let entity = Entity::default();
                 world.ecs.add(entity, group).unwrap();
             }
@@ -62,7 +73,13 @@ fn init(world: &mut World) {
             for z in 0..5 {
                 // Create a sphere
                 let mut group = ComponentLinkingGroup::default();
-                group.link(Transform::default().with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3)).with_scale(veclib::vec3(1.0, 1.0, 1.0))).unwrap();
+                group
+                    .link(
+                        Transform::default()
+                            .with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3))
+                            .with_scale(veclib::vec3(1.0, 1.0, 1.0)),
+                    )
+                    .unwrap();
                 let renderer = Renderer {
                     mesh: world.pipeline.defaults().sphere.clone(),
                     ..Default::default()
@@ -71,9 +88,7 @@ fn init(world: &mut World) {
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
-                group
-                .link(Collider::sphere(0.5).with_friction(0.05).with_restitution(1.3))
-                .unwrap();
+                group.link(Collider::sphere(0.5).with_friction(0.05).with_restitution(1.3)).unwrap();
                 let entity = Entity::default();
                 world.ecs.add(entity, group).unwrap();
             }

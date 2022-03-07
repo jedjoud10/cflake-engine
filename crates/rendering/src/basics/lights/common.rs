@@ -2,7 +2,7 @@ use crate::{object::PipelineCollectionElement, pipeline::Pipeline};
 use enum_as_inner::EnumAsInner;
 
 // A light type
-#[derive(EnumAsInner)]
+#[derive(Clone, EnumAsInner)]
 pub enum LightSourceType {
     // TODO: Aeaea
     Directional,

@@ -1,10 +1,7 @@
 use ahash::AHashMap;
 use bitfield::{AtomicSparseBitfield, Bitfield};
 use slotmap::Key;
-use std::{
-    cell::UnsafeCell,
-    sync::Arc,
-};
+use std::{cell::UnsafeCell, sync::Arc};
 
 use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{

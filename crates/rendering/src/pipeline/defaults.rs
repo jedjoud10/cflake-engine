@@ -5,7 +5,7 @@ use crate::basics::{
     material::{Material, MaterialTextures},
     mesh::{Mesh, Vertices},
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, TextureBuilder, TextureDimensions},
+    texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter},
     uniforms::StoredUniforms,
 };
 
@@ -55,7 +55,7 @@ impl DefaultElements {
         let normal_map = pipeline.textures.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap()).build();
+        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap()).filter(TextureFilter::Nearest).build();
         let missing = pipeline.textures.insert(missing);
 
         // Default mesh
@@ -65,7 +65,6 @@ impl DefaultElements {
         // Load the default cube and sphere
         let cube = pipeline.meshes.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
         let sphere = pipeline.meshes.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
-
 
         // Default rendering shader
         let shader = Shader::new(

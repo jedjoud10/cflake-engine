@@ -1,8 +1,9 @@
 use world::{
-    ecs::{event::EventKey, component::{RefComponentFetcher, ComponentKey}},
-    rendering::{
-        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
+    ecs::{
+        component::{ComponentKey, RefComponentFetcher},
+        event::EventKey,
     },
+    rendering::pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     World,
 };
 
@@ -10,15 +11,20 @@ use world::{
 fn get_camera(world: &World) -> Option<(RefComponentFetcher, ComponentKey, ComponentKey)> {
     // Get the entity
     let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-    world.ecs.entities.get(global.main_camera).map(|camera_entity| {
-        // And fetch it's linked component keys
-        let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
-        let transform = camera_entity.get_linked::<crate::components::Transform>().unwrap();
+    world
+        .ecs
+        .entities
+        .get(global.main_camera)
+        .map(|camera_entity| {
+            // And fetch it's linked component keys
+            let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
+            let transform = camera_entity.get_linked::<crate::components::Transform>().unwrap();
 
-        // Then, we can fetch the actual components
-        let fetcher = RefComponentFetcher::new(&world.ecs.components);
-        (fetcher, camera, transform)
-    }).ok()
+            // Then, we can fetch the actual components
+            let fetcher = RefComponentFetcher::new(&world.ecs.components);
+            (fetcher, camera, transform)
+        })
+        .ok()
 }
 
 // The rendering system update loop
@@ -69,10 +75,9 @@ fn run(world: &mut World, mut data: EventKey) {
     // Fetch the camera component
     let camera_data = get_camera(world);
     if let Some((fetcher, camera, transform)) = camera_data {
-
         let camera = fetcher.get::<crate::components::Camera>(camera).unwrap();
         let transform = fetcher.get::<crate::components::Transform>(transform).unwrap();
-        
+
         // Camera settings
         let camera = RenderingCamera {
             position: &transform.position,
@@ -91,7 +96,6 @@ fn run(world: &mut World, mut data: EventKey) {
             shadowed: shadowed.as_slice(),
             camera: camera,
         };
-
 
         // Render
         let renderer = &world.renderer;

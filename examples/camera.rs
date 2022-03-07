@@ -27,4 +27,5 @@ fn init(world: &mut World) {
     let mut group = ComponentLinkingGroup::default();
     group.link(light_transform).unwrap();
     group.link(light).unwrap();
+    world.ecs.add(Entity::default(), group).unwrap();
 }

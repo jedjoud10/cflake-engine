@@ -384,6 +384,12 @@ impl Asset for Texture {
         // Flip
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
-        Some(TextureBuilder::default().bytes(bytes).dimensions(TextureDimensions::Texture2d(vec2(width, height))).build())
+        Some(
+            TextureBuilder::default()
+                .bytes(bytes)
+                .dimensions(TextureDimensions::Texture2d(vec2(width, height)))
+                .mipmaps(true)
+                .build(),
+        )
     }
 }

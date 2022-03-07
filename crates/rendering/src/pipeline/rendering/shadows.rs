@@ -19,7 +19,7 @@ pub struct ShadowMapping {
     framebuffer: GLuint,
     pub(crate) depth_texture: Handle<Texture>,
     shader: Handle<Shader>,
-    
+
     // Matrices
     ortho: veclib::Matrix4x4<f32>,
     pub(crate) lightspace: veclib::Matrix4x4<f32>,
@@ -57,7 +57,7 @@ impl ShadowMapping {
         }
 
         // Create the orthographic matrix
-        const DIMS: f32 = 800.0;
+        const DIMS: f32 = 200.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
@@ -87,14 +87,14 @@ impl ShadowMapping {
         let up = light_quat.mul_point(veclib::Vector3::Y);
         let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
         let lightspace_matrix = self.ortho * view_matrix;
+        self.lightspace = lightspace_matrix;
     }
     // Render the scene from the POV of the light source, so we can cast shadows
     pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) -> Result<(), RenderingError> {
-        
         // Setup the shadow framebuffer
         gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-        gl::Clear(gl::DEPTH_BUFFER_BIT);        
+        gl::Clear(gl::DEPTH_BUFFER_BIT);
 
         // Load the shader and it's uniforms
         let shader = pipeline.shaders.get(&self.shader).unwrap();
@@ -118,7 +118,7 @@ impl ShadowMapping {
         // Reset
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
-        
+
         Ok(())
     }
 }

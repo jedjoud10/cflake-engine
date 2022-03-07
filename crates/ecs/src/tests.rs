@@ -232,5 +232,5 @@ pub mod test {
         let component = fetcher.get::<Name>(component_key).unwrap();
         assert_eq!(component.name, "John".to_string());
         assert!(fetcher.get::<Tagged>(component_key).is_err());
-    } 
+    }
 }

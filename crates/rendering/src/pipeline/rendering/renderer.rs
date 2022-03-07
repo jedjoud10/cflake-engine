@@ -3,7 +3,8 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping}, uniforms::Uniforms,
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping},
+        uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
     utils::DataType,
@@ -175,17 +176,19 @@ impl SceneRenderer {
         }
 
         // Then render the shadows
-        self.shadow_mapping.as_ref().map(|mapping| {
-            unsafe { mapping.render_all_shadows(settings.shadowed, pipeline).unwrap(); }
+        self.shadow_mapping.as_ref().map(|mapping| unsafe {
+            mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
         });
 
         // Render the deferred quad
-        unsafe { self.draw_deferred_quad(pipeline, settings); }
+        unsafe {
+            self.draw_deferred_quad(pipeline, settings);
+        }
     }
 
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
-    unsafe fn draw_deferred_quad(&self, pipeline: &Pipeline, settings: RenderingSettings) {       
-        // We have a ton of uniforms to set        
+    unsafe fn draw_deferred_quad(&self, pipeline: &Pipeline, settings: RenderingSettings) {
+        // We have a ton of uniforms to set
         let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, true);
 
         // Try to get the sunlight direction
@@ -212,9 +215,7 @@ impl SceneRenderer {
 
         // Also gotta set the deferred textures
         // &str array because I am lazy
-        let names = [
-            "diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"
-        ];
+        let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
         // Set each texture
         for ((i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
             uniforms.set_texture(name, handle, i as u32);
