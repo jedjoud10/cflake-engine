@@ -3,12 +3,9 @@ use gl::types::GLuint;
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::{
-    basics::{
-        buffer_operation::BufferOperation,
-        shader::{
-            info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
-            query_shader_info,
-        },
+    basics::shader::{
+        info::{QueryParameter, QueryResource::ShaderStorageBlock, Resource, ShaderInfoQuerySettings},
+        query_shader_info,
     },
     object::PipelineCollectionElement,
     pipeline::Pipeline,

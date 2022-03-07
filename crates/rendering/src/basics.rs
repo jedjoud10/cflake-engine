@@ -1,4 +1,4 @@
-pub mod buffer_operation;
+pub mod bufop;
 pub mod lights;
 pub mod material;
 pub mod mesh;

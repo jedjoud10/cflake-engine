@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::{
-    basics::{buffer_operation::BufferOperation, texture::calculate_size_bytes},
+    advanced::tracker::GlTracker,
+    basics::{bufop::Readable, texture::calculate_size_bytes},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline},
     utils::*,
@@ -26,7 +27,7 @@ use veclib::vec2;
 pub struct Texture {
     // The OpenGL id for this texture
     #[getset(get_copy = "pub(crate)")]
-    oid: GLuint,
+    buffer: GLuint,
     // The bytes stored in this texture
     #[getset(get = "pub")]
     bytes: Vec<u8>,
@@ -69,7 +70,7 @@ pub struct Texture {
 impl Default for Texture {
     fn default() -> Self {
         Self {
-            oid: 0,
+            buffer: 0,
             bytes: Vec::new(),
 
             _format: TextureFormat::RGBA8R,
@@ -151,7 +152,7 @@ impl Texture {
     // Set some new dimensions for this texture
     // This also clears the texture
     pub fn set_dimensions(&mut self, dims: TextureDimensions) -> Result<(), OpenGLObjectNotInitialized> {
-        if self.oid == 0 {
+        if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
         // Check if the current dimension type matches up with the new one
@@ -159,7 +160,7 @@ impl Texture {
         let ifd = self.ifd;
         // This is a normal texture getting resized
         unsafe {
-            gl::BindTexture(self.target, self.oid);
+            gl::BindTexture(self.target, self.buffer);
             init_contents(self.target, self.ifd, null(), self.dimensions);
         }
         Ok(())
@@ -169,7 +170,7 @@ impl Texture {
         self.bytes = bytes;
         let pointer: *const c_void = self.bytes.as_ptr() as *const c_void;
         unsafe {
-            gl::BindTexture(self.target, self.oid);
+            gl::BindTexture(self.target, self.buffer);
             update_contents(self.target, self.ifd, pointer, self.dimensions)
         }
         Ok(())
@@ -289,8 +290,8 @@ impl PipelineCollectionElement for Texture {
             TextureDimensions::Texture2dArray(_) => gl::TEXTURE_2D_ARRAY,
         };
         unsafe {
-            gl::GenTextures(1, &mut self.oid);
-            gl::BindTexture(target, self.oid);
+            gl::GenTextures(1, &mut self.buffer);
+            gl::BindTexture(target, self.buffer);
             // Set the texture contents
             init_contents(target, ifd, pointer, self.dimensions);
             // Set the texture parameters for a normal texture
@@ -368,7 +369,7 @@ impl PipelineCollectionElement for Texture {
     fn disposed(self) {
         // Dispose of the OpenGL buffers
         unsafe {
-            gl::DeleteTextures(1, &self.oid);
+            gl::DeleteTextures(1, &self.buffer);
         }
     }
 }

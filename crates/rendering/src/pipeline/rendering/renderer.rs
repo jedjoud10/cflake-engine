@@ -100,8 +100,8 @@ impl SceneRenderer {
         ];
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
-            gl::BindTexture(texture.target(), texture.oid());
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.oid(), 0);
+            gl::BindTexture(texture.target(), texture.buffer());
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.buffer(), 0);
         }
 
         // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT

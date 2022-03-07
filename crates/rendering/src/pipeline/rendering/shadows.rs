@@ -49,7 +49,7 @@ impl ShadowMapping {
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().oid(), 0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().buffer(), 0);
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind

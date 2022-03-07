@@ -2,7 +2,8 @@ use cflake_engine::{
     assets::{self, assetc},
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
-    veclib, World, rendering::basics::mesh::Mesh,
+    rendering::basics::mesh::Mesh,
+    veclib, World,
 };
 // A game with a test camera
 fn main() {
@@ -31,10 +32,12 @@ fn init(world: &mut World) {
     // Le axe
     let entity = Entity::default();
     let mut group = ComponentLinkingGroup::default();
-    group.link(components::Renderer {
-        mesh: world.pipeline.defaults().sphere.clone(),
-        ..Default::default()
-    }).unwrap();
+    group
+        .link(components::Renderer {
+            mesh: world.pipeline.defaults().sphere.clone(),
+            ..Default::default()
+        })
+        .unwrap();
     group.link_default::<components::Transform>().unwrap();
     world.ecs.add(entity, group).unwrap();
 }
