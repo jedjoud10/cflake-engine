@@ -40,8 +40,8 @@ fn init(world: &mut World) {
     group.link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
     let entity = Entity::default();
     world.ecs.add(entity, group).unwrap();
-    for y in 0..5 {
-        for x in 0..15 {
+    for y in 0..20 {
+        for x in 0..5 {
             for z in 0..5 {
                 // Create a cube
                 let mut group = ComponentLinkingGroup::default();
@@ -66,15 +66,15 @@ fn init(world: &mut World) {
             }
         }
     }
-    for y in 0..5 {
-        for x in 0..15 {
+    for y in 0..20 {
+        for x in 0..5 {
             for z in 0..5 {
                 // Create a sphere
                 let mut group = ComponentLinkingGroup::default();
                 group
                     .link(
                         Transform::default()
-                            .with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3))
+                            .with_position(veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 50.0, z as f32 * 0.3))
                             .with_scale(veclib::vec3(1.0, 1.0, 1.0)),
                     )
                     .unwrap();
