@@ -25,7 +25,7 @@ fn chunk_post_gen(_world: &mut World, _chunk: &Chunk, _data: &StoredVoxelData) {
 fn run(world: &mut World, mut data: EventKey) {
     let query = data.as_query_mut().unwrap();
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
-    if Instant::now().saturating_duration_since(world.time.current.begin_instant).as_millis() > 2 {
+    if Instant::now().saturating_duration_since(world.time.current.begin_instant).as_millis() > 1 {
         return;
     }
     if let Ok(mut terrain) = terrain {
@@ -33,7 +33,7 @@ fn run(world: &mut World, mut data: EventKey) {
         for (&key, components) in query.iter_mut() {
             if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(key, true) {
                 // We have created voxel data for this chunk, and it is valid (it contains a surface)
-                let mut chunk = components.get_mut::<crate::components::Chunk>().unwrap();
+                let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data;
                 let mesher = Mesher::new(
                     chunk.coords,
@@ -100,6 +100,7 @@ fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Mate
         .link(crate::components::Renderer {
             mesh,
             material,
+            shadowed: false,
             ..Default::default()
         })
         .unwrap();

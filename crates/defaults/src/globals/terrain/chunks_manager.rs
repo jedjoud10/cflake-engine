@@ -13,7 +13,7 @@ use world::{
 #[derive(EnumAsInner, Debug, PartialEq)]
 pub enum ChunkGenerationState {
     RequiresVoxelData,
-    BeginVoxelDataGeneration(EntityKey),
+    FetchShaderStorages(EntityKey, ChunkCoords),
     EndVoxelDataGeneration(EntityKey, bool),
 }
 

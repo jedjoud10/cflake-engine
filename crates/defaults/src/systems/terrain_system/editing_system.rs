@@ -3,7 +3,7 @@ use world::World;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
     // Get the terrain global
-    if let Ok(mut terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
+    if let Ok(terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
         let terrain = &mut *terrain;
         let chunks_to_regenerate = terrain.editing_manager.get_influenced_chunks(&terrain.chunks_manager.octree.lock().inner);

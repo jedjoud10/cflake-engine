@@ -1,6 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use crate::{bounds::aabb::AABB, shapes::Sphere, octrees::{Octree, HeuristicSettings}};
+    use crate::{
+        bounds::aabb::AABB,
+        octrees::{HeuristicSettings, Octree},
+        shapes::Sphere,
+    };
 
     // AABB sphere
     #[test]

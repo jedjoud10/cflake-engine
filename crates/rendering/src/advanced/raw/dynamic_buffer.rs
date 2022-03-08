@@ -10,7 +10,13 @@ use crate::{
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::{size_of, MaybeUninit}, ops::Range, ptr::null};
+use std::{
+    ffi::c_void,
+    marker::PhantomData,
+    mem::{size_of, MaybeUninit},
+    ops::Range,
+    ptr::null,
+};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
 #[derive(Getters, CopyGetters)]
@@ -60,7 +66,10 @@ impl<T> DynamicRawBuffer<T> {
     }
     // Create a new dynamic raw buffer with a specified length
     // TODO: FIX THEIS
-    pub fn with_length(_type: u32, length: usize, usage: UsageType, _pipeline: &Pipeline) -> Self where T: Copy + Default {
+    pub fn with_length(_type: u32, length: usize, usage: UsageType, _pipeline: &Pipeline) -> Self
+    where
+        T: Copy + Default,
+    {
         let vec = vec![T::default(); length];
         let oid = unsafe {
             let mut oid = 0;

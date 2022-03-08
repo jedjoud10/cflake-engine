@@ -7,7 +7,8 @@ use gl::types::GLuint;
 use crate::{
     basics::bufop::GLBufferOperations,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Handle, Pipeline, PipelineCollection}, utils::UsageType,
+    pipeline::{Handle, Pipeline, PipelineCollection},
+    utils::UsageType,
 };
 
 // Le array

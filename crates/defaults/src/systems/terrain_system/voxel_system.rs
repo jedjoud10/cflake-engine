@@ -7,15 +7,15 @@ use world::{
         advanced::compute::ComputeShaderExecutionSettings,
         basics::{
             bufop::GLBufferOperations,
-            uniforms::{StoredUniforms, Uniforms},
+            uniforms::{Uniforms},
         },
         pipeline::Pipeline,
     },
-    terrain::{PackedVoxel, CHUNK_SIZE},
+    terrain::{CHUNK_SIZE, ChunkCoords},
     World,
 };
 
-// Not asynchronous
+// Simply run the compute shaders for now
 fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, key: EntityKey) {
     let generator = &mut terrain.voxel_generator;
     // Create the compute shader execution settings and execute the compute shader
@@ -32,7 +32,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // Now we can execute the compute shader and the read bytes command
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS));
     let compute = pipeline.compute_shaders.get(&generator.compute_shader).unwrap();
-    compute.run(pipeline, settings, uniforms).unwrap();
+    compute.run(pipeline, settings, uniforms, false).unwrap();
 
     // Set the uniforms for the second compute shader
     let program = pipeline.compute_shaders.get(&generator.second_compute_shader).unwrap().program();
@@ -48,21 +48,23 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2));
     let compute = pipeline.compute_shaders.get(&generator.second_compute_shader).unwrap();
-    compute.run(pipeline, settings, uniforms).unwrap();
-    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::BeginVoxelDataGeneration(key);
+    compute.run(pipeline, settings, uniforms, false).unwrap();
+    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
+}
 
+// Then, a frame later, fetch the buffer data
+fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
     // READ
     // Get the valid counters
+    let generator = &mut terrain.voxel_generator;
     let read_counters = generator.atomics.glread().unwrap();
-    dbg!(read_counters);
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
-    let id = *terrain.chunks_manager.current_chunk_state.as_begin_voxel_data_generation().unwrap();
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
-        terrain.chunks_manager.chunks_generating.remove(&chunk.coords);
+        terrain.chunks_manager.chunks_generating.remove(&coords);
         // Switch states
-        terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, false);
+        terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false);
         return;
     }
 
@@ -76,7 +78,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     generator.stored_chunk_voxel_data.store(&generator.packed_chunk_voxel_data);
 
     // Switch states
-    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(id, true);
+    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
 }
 
 // The voxel systems' update loop
@@ -98,19 +100,21 @@ fn run(world: &mut World, mut data: EventKey) {
             // Send a task to read the final voxel shader values
             terrain.voxel_generator.shader_storage_edits.storage_mut().glset(edits).unwrap();
         }
-        // For each chunk in the ter
+        // For each chunk in the terrain
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
-            if let Some((entity_id, _)) = terrain.chunks_manager.priority_list.pop() {
+            if let Some((key, _)) = terrain.chunks_manager.priority_list.pop() {
                 let lock_ = query;
-                let components = lock_.get_mut(&entity_id).unwrap();
+                let components = lock_.get_mut(&key).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
                 let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
-                generate(&mut *terrain, &world.pipeline, &mut *chunk, entity_id);
-                dbg!();
+                generate(terrain, &world.pipeline, chunk, key);
             }
+        } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.chunks_manager.current_chunk_state {
+            // We should fetch the shader storages now
+            fetch_buffers(terrain, key, coords);
         }
     }
 }

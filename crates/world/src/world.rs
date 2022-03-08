@@ -61,7 +61,6 @@ impl World {
         self.state = WorldState::Running;
         // Update the timings
         self.time.update(delta);
-        self.time.update_current_frame_time();
 
         // Update game logic (this includes rendering the world)
         self.pipeline.start_frame(&mut self.renderer);

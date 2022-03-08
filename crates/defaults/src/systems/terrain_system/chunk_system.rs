@@ -47,14 +47,14 @@ fn run(world: &mut World, _data: EventKey) {
         let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
         let fetcher = RefComponentFetcher::new(&world.ecs.components);
         let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
-        (component.position, component.rotation_matrix().mul_point(&veclib::Vector3::Z))
+        (component.position, component.forward())
     };
     let terrain_ = world.globals.get_mut::<crate::globals::Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {
         // No need to update the terrain
         return;
     }
-    let mut terrain = terrain_.unwrap();
+    let terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
     let handler = &mut terrain.chunks_manager;
     update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
@@ -66,7 +66,6 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
         let octree_ = handler.octree.clone();
         let mut octree = octree_.lock();
         if let Some((added, removed)) = octree.update(camera_position) {
-            dbg!(added.len());
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them
             for node in removed {

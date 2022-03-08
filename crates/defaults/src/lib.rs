@@ -78,7 +78,7 @@ pub fn start_after_user_systems(world: &mut World) {
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
     terrain_system::editing_system::system(world);
-    
+
     rendering_system::system(world);
     gui_system::system(world);
 }

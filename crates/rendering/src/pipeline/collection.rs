@@ -35,7 +35,7 @@ impl<T: PipelineCollectionElement> PipelineCollection<T> {
         let to_remove = std::mem::take(&mut *to_remove_locked);
         for key in to_remove {
             // Silently ignores elements that have already been removed
-            self.inner.remove(key);
+            if let Some(removed) = self.inner.remove(key) { removed.disposed() }
         }
     }
     // Iter
@@ -56,7 +56,9 @@ impl<T: PipelineCollectionElement> PipelineCollection<T> {
     // Manually remove an element, though you should never do this since the Drop implementation on Handle<T> handles automatically removing unused elements
     pub fn remove(&mut self, handle: &Handle<T>) {
         // Silently ignores elements that have already been removed
-        self.inner.remove(*handle.key);
+        let removed = self.inner.remove(*handle.key);
+        // Remember to dispose
+        if let Some(removed) = removed { removed.disposed() }
     }
     // Insert an element to the collection, returning it's specific handle
     pub fn insert(&mut self, value: T) -> Handle<T> {

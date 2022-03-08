@@ -47,7 +47,7 @@ impl<T: PipelineCollectionElement> Drop for Handle<T> {
     fn drop(&mut self) {
         if let Some(to_remove) = &self.to_remove {
             let strong_count = Arc::strong_count(&self.key);
-            if strong_count == 0 {
+            if strong_count == 1 {
                 // Remove the element that this Handle referred to
                 let mut inner = to_remove.lock();
                 inner.push(self.key.as_ref().clone());

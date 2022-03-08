@@ -53,4 +53,14 @@ impl Transform {
     pub fn scale_matrix(&self) -> veclib::Matrix4x4<f32> {
         veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
+    // Calculate the forward, up, and right vectors
+    pub fn forward(&self) -> veclib::Vector3<f32> {
+        self.rotation_matrix().mul_point(&veclib::Vector3::Z)
+    }
+    pub fn up(&self) -> veclib::Vector3<f32> {
+        self.rotation_matrix().mul_point(&veclib::Vector3::Y)
+    }
+    pub fn right(&self) -> veclib::Vector3<f32> {
+        self.rotation_matrix().mul_point(&veclib::Vector3::X)
+    }
 }
