@@ -14,8 +14,8 @@ pub fn preload_default_assets() {
     println!("Pre-loading default assets...");
     // Rendering
     persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/passthrough.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/postprocessing_pass.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/shadow.vrsh.glsl");
@@ -50,7 +50,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/voxel_terrain/terrain.frsh.glsl");
     persistent!("./assets/defaults/shaders/voxel_terrain/terrain.vrsh.glsl");
     // Textures
-    persistent!("./assets/defaults/textures/missing_texture.png");
+    persistent!("./assets/defaults/textures/missing.png");
     persistent!("./assets/defaults/textures/sky_gradient.png");
 
     println!("Finished pre-loading default assets!");
@@ -61,7 +61,6 @@ pub fn start_before_user_sytems(world: &mut World) {
     camera_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
-    gui_system::system(world);
     audio_system::system(world);
 
     // We gotta add the default globals
@@ -69,16 +68,17 @@ pub fn start_before_user_sytems(world: &mut World) {
     world.globals.add(crate::globals::Physics::default()).unwrap();
 }
 
-// Start the defaults systems that will be executed after the user systems 
+// Start the defaults systems that will be executed after the user systems
 pub fn start_after_user_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
-    rendering_system::system(world);
-
+    light_system::system(world);
     // Terrain
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
-    terrain_system::mesh_update_system::system(world);
     terrain_system::editing_system::system(world);
+
+    rendering_system::system(world);
+    gui_system::system(world);
 }

@@ -1,14 +1,11 @@
-use world::{rendering::pipeline::pipec, World};
+use world::{ecs::event::EventKey, World};
+
+// The lights system update loop
+fn run(world: &mut World, _data: EventKey) {
+    world.gui.draw_frame(&mut world.pipeline);
+}
 
 // Create the GUI system
 pub fn system(world: &mut World) {
-    world.ecs.build_system().build();
-    // We must create the pipeline End of Frame callback and tell it to render our GUI
-    let painter = world.gui.painter.clone();
-    let pipeline = world.pipeline.read();
-    pipec::add_end_of_frame_callback(&pipeline, move |pipeline, _| {
-        // Draw the GUI
-        let mut painter = painter.lock();
-        painter.draw_gui(pipeline);
-    });
+    world.ecs.systems.builder().with_run_event(run).build();
 }

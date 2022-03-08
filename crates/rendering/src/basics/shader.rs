@@ -1,7 +1,9 @@
+mod common;
 mod error;
 mod shader;
-mod shared;
+mod source;
+pub use common::*;
 pub use error::*;
 pub use shader::*;
-pub(crate) use shared::*;
+pub use source::*;
 pub mod info;

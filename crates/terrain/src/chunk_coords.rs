@@ -14,10 +14,10 @@ impl ChunkCoords {
     // New from chunk coords
     pub fn new(octree_node: &Node) -> Self {
         Self {
-            position: octree_node.position,
+            position: octree_node.position(),
             center: octree_node.center(),
-            size: octree_node.half_extent * 2,
-            depth: octree_node.depth,
+            size: octree_node.half_extent() * 2,
+            depth: octree_node.depth(),
         }
     }
 }

@@ -1,5 +1,10 @@
-pub mod error;
-pub mod postprocessing;
-pub mod scene_renderer;
-pub mod shadow_mapping;
-pub use scene_renderer::*;
+mod common;
+mod error;
+mod renderer;
+mod settings;
+mod shadows;
+pub use common::*;
+pub use error::*;
+pub use renderer::*;
+pub use settings::*;
+pub use shadows::*;

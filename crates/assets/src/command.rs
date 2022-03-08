@@ -35,7 +35,10 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
         cached
     } else {
         // Cache the bytes
-        let asset_dir_path = cacher.get_user_assets_path().to_path_buf();
+        let asset_dir_path = cacher
+            .get_user_assets_path()
+            .ok_or(AssetLoadError::new("The asset cacher was not initialized!"))?
+            .to_path_buf();
         cacher.cache(meta.clone(), read_bytes(path, asset_dir_path)?);
         cacher.try_load(&meta).unwrap()
     };
@@ -45,15 +48,4 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
 // Load an asset (By creating a default version of it)
 pub fn load<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {
     load_with(path, T::default())
-}
-
-// Specific cache commands
-pub mod caching {
-    use crate::{cacher::cacher, metadata::AssetMetadata};
-
-    // Un-cache an asset
-    pub fn uncache(path: &str) {
-        let mut cacher = cacher();
-        cacher.uncache(AssetMetadata::new(path).unwrap());
-    }
 }

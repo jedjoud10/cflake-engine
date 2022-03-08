@@ -1,6 +1,6 @@
+mod physics;
 mod terrain;
 mod world;
-mod physics;
+pub use self::terrain::*;
 pub use self::world::*;
-pub use terrain::*;
 pub use physics::*;

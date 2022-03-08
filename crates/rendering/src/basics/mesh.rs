@@ -1,6 +1,8 @@
+mod geometry;
+mod indices;
 mod mesh;
-mod vertex;
 mod vertices;
+pub use geometry::*;
+pub use indices::*;
 pub use mesh::*;
-pub use vertex::*;
 pub use vertices::*;

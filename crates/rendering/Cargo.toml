@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+getset = "0.1.2"
+slotmap = "1.0.6"
 assets = { path = "../assets" }
 math = { path = "../math" }
 others = { path = "../others" }

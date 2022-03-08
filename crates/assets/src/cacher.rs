@@ -41,11 +41,12 @@ impl AssetCacher {
         self.asset_dir.get_or_insert_with(|| Path::new(path).to_path_buf());
     }
     // Get the path that contains all the user assets
-    pub fn get_user_assets_path(&self) -> &Path {
-        self.asset_dir.as_ref().unwrap()
+    pub fn get_user_assets_path(&self) -> Option<&PathBuf> {
+        self.asset_dir.as_ref()
     }
     // Cache a persistent asset
     pub fn cache_persistent(&mut self, path: &str, bytes: Vec<u8>) -> &[u8] {
+        println!("{:?}", path);
         let path = path.split("assets/").last().unwrap();
         let meta = AssetMetadata::new(path).unwrap();
         self.cached.entry(meta).or_insert(bytes)

@@ -7,29 +7,36 @@ use input::InputManager;
 use io::IOManager;
 use others::Time;
 use physics::PhysicsSimulation;
-use rendering::pipeline::PipelineContext;
-use std::sync::Arc;
+use rendering::pipeline::{Pipeline, SceneRenderer};
 
 // The whole world that stores our managers and data
 pub struct World {
+    // User
     pub input: InputManager,
-    pub time: Time,
+    pub io: IOManager,
+
+    // Rendering
+    pub pipeline: Pipeline,
+    pub renderer: SceneRenderer,
     pub gui: GUIManager,
+
+    // Logic
+    pub state: WorldState,
     pub ecs: ECSManager<Self>,
     pub globals: GlobalsCollection,
-    pub io: IOManager,
-    pub settings: Settings,
-    pub pipeline: PipelineContext,
-    pub state: WorldState,
-    pub audio: AudioPlayer,
     pub physics: PhysicsSimulation,
+
+    // Other
+    pub time: Time,
+    pub settings: Settings,
+    pub audio: AudioPlayer,
 }
 
 // World implementation
 impl World {
     // Create a new world
-    pub fn new(settings: Settings, io: IOManager, pipeline: PipelineContext) -> Self {
-        let gui = gui::GUIManager::new(&pipeline);
+    pub fn new(settings: Settings, io: IOManager, mut pipeline: Pipeline, renderer: SceneRenderer) -> Self {
+        let gui = gui::GUIManager::new(&mut pipeline);
         let mut world = World {
             input: Default::default(),
             time: Default::default(),
@@ -39,88 +46,36 @@ impl World {
             io,
             settings: Default::default(),
             pipeline,
+            renderer,
             state: WorldState::StartingUp,
             audio: Default::default(),
             physics: PhysicsSimulation::new(),
         };
-        others::set_main_thread();
         // Just set the game settings and we are done
         world.settings = settings;
         println!("World init done!");
         world
     }
-    // Resize window event
-    pub fn resize_window_event(&mut self, new_dimensions: veclib::Vector2<u16>) {
-        let pipeline = self.pipeline.read();
-        rendering::pipeline::pipec::update_callback(&pipeline, move |pipeline, renderer| {
-            pipeline.update_window_dimensions(renderer, new_dimensions);
-        });
-    }
-    // Begin frame update. We also get the Arc<RwLock<World>> so we can pass it to the systems
-    pub fn update_start(&mut self) {
+    // Called each frame
+    pub fn update(&mut self, delta: f64) {
         self.state = WorldState::Running;
-        // Handle GUI begin frame
-        {
-            let pipeline = self.pipeline.read();
-            let window = &pipeline.window;
-            self.gui.begin_frame(window.inner.as_ref().unwrap());
-        }
+        // Update the timings
+        self.time.update(delta);
 
-        // While we do world logic, start rendering the frame on the other thread
-        // Update the timings then we can start rendering
-        let handler = self.pipeline.handler.as_ref().unwrap().lock();
-        let mut time = handler.time.lock();
-        time.0 = self.time.elapsed;
-        time.1 = self.time.delta;
-        handler.sbarrier.wait();
-        drop(time);
-        drop(handler);
-        let system_count = self.ecs.count_systems();
-        // Loop for every system and update it
-        for system_index in 0..system_count {
-            let execution_data = {
-                let system = &self.ecs.get_systems()[system_index];
-                system.run_system(&self.ecs)
-            };
-            // Actually execute the system now
-            execution_data.run(self);
-            {
-                // Clear
-                let system = &self.ecs.get_systems()[system_index];
-                system.clear();
-                self.time.update_current_frame_time();
-            }
-        }
-        // Finish update
-        self.ecs.finish_update();
-    }
-    // End frame update
-    pub fn update_end(&mut self) {
-        // Handle GUI end frame
-        self.gui.end_frame();
+        // Update game logic (this includes rendering the world)
+        self.pipeline.start_frame(&mut self.renderer);
+        self.gui.begin_frame(self.pipeline.window.context().window());
 
-        // End the frame
-        {
-            let delta = self.time.delta as f32;
-            self.input.late_update(delta);
-            let handler = &self.pipeline.handler.as_ref().unwrap().lock();
-            handler.ebarrier.wait();
-        }
+        let (systems, settings) = self.ecs.ready();
+        let systems = systems.borrow();
+        ECSManager::<World>::execute_systems(systems, self, settings);
+
+        // Late update
+        self.pipeline.end_frame();
+        self.input.late_update(delta as f32);
     }
     // We must destroy the world
     pub fn destroy(&mut self) {
-        // We update the pipeline's shutdown atomic, telling it to shutdown
-        //let pipeline = self.pipeline.read().unwrap();
-        let handler = Arc::try_unwrap(self.pipeline.handler.take().unwrap());
-        if let Ok(handler) = handler {
-            let handler = handler.into_inner();
-            // Run the render thread loop for one last time
-            handler.sbarrier.wait();
-            handler.eatomic.store(true, std::sync::atomic::Ordering::Relaxed);
-            handler.ebarrier.wait();
-            // Join the render thread now
-            handler.handle.join().unwrap();
-        }
         // Quit the saver loader
         self.io.quit();
     }

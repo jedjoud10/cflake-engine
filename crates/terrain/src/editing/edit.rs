@@ -1,4 +1,4 @@
-use math::{csg::CSGOperation, shapes::ShapeType};
+use math::{csg::CSGOperation, shapes::{ShapeType, Sphere, Cuboid}};
 
 // A single terrain edit
 #[derive(Clone)]
@@ -12,6 +12,19 @@ pub struct Edit {
     pub operation: CSGOperation,
 }
 
+impl Default for Edit {
+    fn default() -> Self {
+        Self { 
+            shape: ShapeType::Sphere(Sphere {
+                center: veclib::Vector3::ZERO, radius: 10.0,
+            }),
+            material: Default::default(),
+            color: veclib::Vector3::ONE * 255,
+            operation: CSGOperation::Union,
+        }
+    }
+}
+
 impl Edit {
     // Create a new edit
     pub fn new(shape: ShapeType, operation: CSGOperation) -> Self {
@@ -22,13 +35,28 @@ impl Edit {
             operation,
         }
     }
-    // Parameters
-    pub fn with_material(mut self, material: u8) -> Self {
-        self.material = Some(material);
-        self
+    // Create a new sphere edit
+    pub fn sphere(center: veclib::Vector3<f32>, radius: f32, operation: CSGOperation, material: Option<u8>) -> Self {
+        Self {
+            shape: ShapeType::Sphere(Sphere {
+                center,
+                radius,
+            }),
+            operation,
+            material,
+            ..Default::default()
+        }
     }
-    pub fn with_color(mut self, color: veclib::Vector3<u8>) -> Self {
-        self.color = color;
-        self
+    // Create a new cuboid edit
+    pub fn cuboid(center: veclib::Vector3<f32>, size: veclib::Vector3<f32>, operation: CSGOperation, material: Option<u8>) -> Self {
+        Self {
+            shape: ShapeType::Cuboid(Cuboid {
+                center,
+                size,
+            }),
+            operation,
+            material,
+            ..Default::default()
+        }
     }
 }

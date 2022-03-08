@@ -1,10 +1,10 @@
+mod common;
 mod cuboid;
 mod plane;
 mod segment;
-mod shared;
 mod sphere;
+pub use common::*;
 pub use cuboid::*;
 pub use plane::*;
 pub use segment::*;
-pub use shared::*;
 pub use sphere::*;

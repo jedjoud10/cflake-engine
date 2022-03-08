@@ -34,9 +34,9 @@ impl DataType {
 // How we will access a buffer object
 #[derive(Debug, Clone, Copy)]
 pub enum AccessType {
-    Draw,
-    Read,
-    Pass,
+    ClientToServer,
+    ServerToClient,
+    ServerToServer,
 }
 // How frequently we will update the data of a buffer object
 #[derive(Debug, Clone, Copy)]
@@ -54,20 +54,23 @@ pub struct UsageType {
 }
 
 impl UsageType {
+    pub fn new(access: AccessType, frequency: UpdateFrequency) -> Self {
+        Self { access, frequency }
+    }
     // Convert this UsageType to a valid OpenGL enum
     pub fn convert(&self) -> GLuint {
         match self.access {
-            AccessType::Draw => match self.frequency {
+            AccessType::ClientToServer => match self.frequency {
                 UpdateFrequency::Static => gl::STATIC_DRAW,
                 UpdateFrequency::Dynamic => gl::DYNAMIC_DRAW,
                 UpdateFrequency::Stream => gl::STREAM_DRAW,
             },
-            AccessType::Read => match self.frequency {
+            AccessType::ServerToClient => match self.frequency {
                 UpdateFrequency::Static => gl::STATIC_READ,
                 UpdateFrequency::Dynamic => gl::DYNAMIC_READ,
                 UpdateFrequency::Stream => gl::STREAM_READ,
             },
-            AccessType::Pass => match self.frequency {
+            AccessType::ServerToServer => match self.frequency {
                 UpdateFrequency::Static => gl::STATIC_COPY,
                 UpdateFrequency::Dynamic => gl::DYNAMIC_COPY,
                 UpdateFrequency::Stream => gl::STREAM_COPY,

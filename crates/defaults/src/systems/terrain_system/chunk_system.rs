@@ -1,13 +1,13 @@
 use crate::globals::ChunksManager;
 use world::{
-    ecs::{self, entity::EntityID, event::EventKey, ECSManager},
+    ecs::{self, component::RefComponentFetcher, entity::EntityKey, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
     World,
 };
 
 // Add a single chunk to the world
-fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityID, f32) {
+fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
     let entity = ecs::entity::Entity::default();
     let mut group = ecs::entity::ComponentLinkingGroup::default();
@@ -20,20 +20,20 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     group.link::<crate::components::Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
-    let chunk = crate::components::Chunk { coords, updated_mesh_id: None };
+    let chunk = crate::components::Chunk { coords };
     let priority = crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
-    let id = ecs.add_entity(entity, group).unwrap();
+    let id = ecs.add(entity, group).unwrap();
     (id, priority)
 }
 // Remove a single chunk
-fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityID) {
+fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityKey) {
     // Make sure that the chunk entity even exists
-    if ecs.get_entity(&id).is_ok() {
+    if ecs.entities.get(id).is_ok() {
         // Remove the chunk entity at that specific EntityID
-        ecs.remove_entity(id).unwrap();
+        ecs.remove(id).unwrap();
     }
 }
 
@@ -42,15 +42,19 @@ fn run(world: &mut World, _data: EventKey) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let cam = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-        (cam.camera_pos, cam.camera_forward)
+        let camkey = world.globals.get::<crate::globals::GlobalWorldData>().unwrap().main_camera;
+        let camera = world.ecs.entities.get(camkey).unwrap();
+        let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
+        let fetcher = RefComponentFetcher::new(&world.ecs.components);
+        let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
+        (component.position, component.forward())
     };
     let terrain_ = world.globals.get_mut::<crate::globals::Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {
         // No need to update the terrain
         return;
     }
-    let mut terrain = terrain_.unwrap();
+    let terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
     let handler = &mut terrain.chunks_manager;
     update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
@@ -73,10 +77,10 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
 
             // Only add the chunks that are leaf nodes in the octree
             for node in added {
-                if node.children_indices.is_none() {
+                if node.children().is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size, coords);
+                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size(), coords);
                     handler.priority_list.push((id, priority));
                     handler.chunks.insert(coords, id);
                     handler.chunks_generating.insert(coords);
@@ -96,6 +100,6 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
 }
 // Create a chunk system
 pub fn system(world: &mut World) {
-    world.ecs.build_system().with_run_event(run).build();
+    world.ecs.systems.builder().with_run_event(run).build();
     world.input.bind_key_toggle(Keys::Y, "update_terrain");
 }

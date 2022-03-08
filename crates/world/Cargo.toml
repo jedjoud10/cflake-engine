@@ -14,7 +14,6 @@ itertools = "0.10.3"
 lazy_static = "1.4.0"
 crossbeam-channel = "0.5.1"
 veclib = { git = "https://github.com/jedjoud10/veclib" }
-ordered_vec = { git = "https://github.com/jedjoud10/ordered_vec" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 input = { path = "../input" }
 physics = { path = "../physics" }

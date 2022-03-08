@@ -1,8 +1,8 @@
 use world::{
     ecs::component::Component,
-    math::shapes::{ShapeType, Cuboid, Sphere},
+    math::shapes::{Cuboid, ShapeType, Sphere},
     physics::rapier3d::prelude::{ColliderBuilder, ColliderHandle},
-    rendering::{basics::mesh::Mesh, object::ObjectID},
+    rendering::{basics::mesh::Mesh, pipeline::Handle},
 };
 
 // Collider components
@@ -29,7 +29,7 @@ impl Collider {
             _type,
         }
     }
-    
+
     // Create a new collider with specific shapes
     pub fn cuboid(size: veclib::Vector3<f32>) -> Self {
         Self {
@@ -53,7 +53,7 @@ impl Collider {
             })),
         }
     }
-    pub fn mesh(mesh: ObjectID<Mesh>) -> Self {
+    pub fn mesh(mesh: Handle<Mesh>) -> Self {
         Self {
             handle: ColliderHandle::invalid(),
             restitution: 0.0,
@@ -61,7 +61,7 @@ impl Collider {
             _type: ColliderType::Mesh(mesh),
         }
     }
-    
+
     // With
     pub fn with_restitution(mut self, restitution: f32) -> Self {
         self.restitution = restitution;
@@ -76,5 +76,5 @@ impl Collider {
 // Collider type
 pub enum ColliderType {
     Shape(ShapeType),
-    Mesh(ObjectID<Mesh>),
+    Mesh(Handle<Mesh>),
 }

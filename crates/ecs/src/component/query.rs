@@ -1,32 +1,26 @@
-use super::{
-    query_guard::{MutComponentQuery, RefComponentQuery},
-    LinkedComponents,
-};
-use crate::entity::EntityID;
+use super::LinkedComponents;
+use crate::entity::EntityKey;
 use ahash::AHashMap;
-use std::{cell::RefCell, rc::Rc};
-
+use std::ops::{Deref, DerefMut};
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
 // The components get mutated in parallel, though the system is NOT stored on another thread
-pub struct ComponentQuery {
+type LinkedComponentsMap = AHashMap<EntityKey, LinkedComponents>;
+pub struct ComponentQuery<'a> {
     // The actual components
-    pub(crate) linked_components: Option<Rc<RefCell<AHashMap<EntityID, LinkedComponents>>>>,
+    pub(crate) linked_components: &'a mut LinkedComponentsMap,
 }
 
-impl ComponentQuery {
-    // Count the number of linked components that we have
-    pub fn get_entity_count(&self) -> usize {
-        let len = self.linked_components.as_ref().map(|x| x.borrow().len());
-        len.unwrap_or_default()
+impl<'a> Deref for ComponentQuery<'a> {
+    type Target = LinkedComponentsMap;
+
+    fn deref(&self) -> &Self::Target {
+        self.linked_components
     }
-    // Lock the component query, returning a ComponentQueryGuard that we can use to iterate over the components
-    pub fn write(&mut self) -> MutComponentQuery {
-        let locked = self.linked_components.as_ref().unwrap().borrow_mut();
-        MutComponentQuery { inner: locked }
-    }
-    pub fn read(&self) -> RefComponentQuery {
-        let locked = self.linked_components.as_ref().unwrap().borrow();
-        RefComponentQuery { inner: locked }
+}
+
+impl<'a> DerefMut for ComponentQuery<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.linked_components
     }
 }

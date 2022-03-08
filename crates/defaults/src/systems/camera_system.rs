@@ -51,64 +51,50 @@ fn run(world: &mut World, mut data: EventKey) {
         velocity += -up * speed;
     }
     // Update the camera values now
-    let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
-    for (&entity_id, components) in query.write().iter_mut() {
+    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+    for (&key, components) in query.iter_mut() {
         // If we are not the right camera, skip
-        if Some(entity_id) != global.camera_entity_id {
+        if key != global.main_camera {
             continue;
         }
         let mut transform = components.get_mut::<crate::components::Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
-        let (position, rotation) = (transform.position, transform.rotation);
+        let (position, _rotation) = (transform.position, transform.rotation);
         let mut camera = components.get_mut::<crate::components::Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
+
+        // Calculate aspect ratio
+        let ratio = world.pipeline.window.dimensions().x as f32 / world.pipeline.window.dimensions().y as f32;
+
         // And don't forget to update the camera matrices
-        // Load the pipeline since we need to get the window settings
-        let pipeline = world.pipeline.read();
-        camera.update_aspect_ratio(pipeline.window.dimensions);
+        camera.update_projection_matrix(ratio);
         camera.update_view_matrix(position, new_rotation);
-
-        use world::rendering::pipeline;
-        let pipeline_camera = world::rendering::pipeline::camera::Camera {
-            position,
-            rotation,
-            forward,
-            viewm: camera.view_matrix,
-            projm: camera.projection_matrix,
-            clip_planes: camera.clip_planes,
-        };
-        pipeline::pipec::update_callback(&pipeline, |pipeline, _| pipeline.set_internal_camera(pipeline_camera));
-        drop(pipeline);
-
-        // Since we are the main camera, we must update our position in the global
-        global.camera_pos = position;
-        global.camera_forward = forward;
-        global.camera_right = right;
-        global.camera_up = up;
     }
 }
 
 // When we add new cameras
 fn added_entities(world: &mut World, mut data: EventKey) {
-    let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
+    let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the first one
     let query = data.as_query_mut().unwrap();
-    if let Some((entity_id, _)) = query.write().iter().nth(0) {
-        global.camera_entity_id.get_or_insert(*entity_id);
+    if let Some((&key, _)) = query.iter().next() {
+        global.main_camera = key;
     }
 }
 
 // When we remove old cameras
 fn removed_entities(world: &mut World, mut data: EventKey) {
-    let mut global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
+    let _global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
     // If we remove the main camera, we must empty the camera entity ID
     let query = data.as_query_mut().unwrap();
-    for (&entity_id, _) in query.write().iter() {
-        if Some(entity_id) == global.camera_entity_id {
+    for (&_entity_id, _) in query.iter() {
+        /*
+        if Some(entity_id) == global.camera_entity_key {
             // Take
-            global.camera_entity_id.take().unwrap();
+            global.camera_entity_key.take().unwrap();
         }
+        */
     }
 }
 
@@ -116,7 +102,8 @@ fn removed_entities(world: &mut World, mut data: EventKey) {
 pub fn system(world: &mut World) {
     world
         .ecs
-        .build_system()
+        .systems
+        .builder()
         .with_run_event(run)
         .with_added_entities_event(added_entities)
         .with_removed_entities_event(removed_entities)
