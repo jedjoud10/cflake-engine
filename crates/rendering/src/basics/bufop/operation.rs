@@ -6,6 +6,5 @@ where
 {
     type Data;
     fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized>;
-    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized>;
     fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized>;
 }

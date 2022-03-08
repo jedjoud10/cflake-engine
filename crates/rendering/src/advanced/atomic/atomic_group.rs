@@ -49,19 +49,6 @@ impl AtomicGroup {
 
 impl GLBufferOperations for AtomicGroup {
     type Data = AtomicArray;
-    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        unsafe {
-            // Set the values
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
-            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_ptr() as *mut c_void);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-            Ok(())
-        }
-    }
     fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
         // Check validity
         if self.buffer == 0 {
@@ -83,7 +70,12 @@ impl GLBufferOperations for AtomicGroup {
             return Err(OpenGLObjectNotInitialized);
         }
         self.array = data;
-        self.glupdate()?;
-        Ok(())
+        unsafe {
+            // Set the values
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
+            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_ptr() as *mut c_void);
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
+            Ok(())
+        }
     }
 }

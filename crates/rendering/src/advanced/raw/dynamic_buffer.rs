@@ -136,8 +136,17 @@ impl<T> DynamicRawBuffer<T> {
     // Set the contents of the dynamic raw buffer from an already allocated vector
     pub fn set_inner(&mut self, vec: Vec<T>) {
         // New reallocation
+        let old = self.inner.capacity();
+        let new = vec.capacity();
         self.inner = vec;
-        self.reallocate();
+
+        if new <= old {
+            // If we already have a buffer allocated, no need to reallocate
+            self.update_all();
+        } else {
+            // We must reallocate
+            self.reallocate();
+        }
     }
 
     // Push a single element
@@ -184,14 +193,6 @@ impl<T> GLBufferOperations for DynamicRawBuffer<T> {
             gl::BindBuffer(self._type, 0);
         }
         Ok(&self.inner)
-    }
-    fn glupdate(&mut self) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        self.update_all();
-        Ok(())
     }
     fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
