@@ -96,14 +96,7 @@ fn run(world: &mut World, mut data: EventKey) {
         // Update the packed edits on the GPU
         if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {
             // Send a task to read the final voxel shader values
-            /*
-            let write_bytes = WriteBytes::new(edits);
-            pipec::tracked_task(
-                &pipeline,
-                TrackedTask::ShaderStorageOp(terrain.voxel_generator.shader_storage_edits, BufferOperation::Write(write_bytes)),
-                terrain.voxel_generator.write_packed_edits,
-            );
-            */
+            terrain.voxel_generator.shader_storage_edits.storage_mut().glset(edits).unwrap();
         }
         // For each chunk in the ter
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {

@@ -168,6 +168,8 @@ impl ComponentSet {
         let cell = UnsafeCell::new(boxed);
         let ptr = cell.get();
         let key = components.insert(cell);
+        let index = key.data().as_ffi() & 0xffff_ffff;
+        self.mutated_components.set(index as usize, true);
         (key, ptr)
     }
     // Remove a specified component from the list

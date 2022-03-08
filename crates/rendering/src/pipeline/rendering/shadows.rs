@@ -57,7 +57,7 @@ impl ShadowMapping {
         }
 
         // Create the orthographic matrix
-        const DIMS: f32 = 200.0;
+        const DIMS: f32 = 800.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
         let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);

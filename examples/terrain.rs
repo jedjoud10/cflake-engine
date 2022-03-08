@@ -51,7 +51,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     let light = Light::default();
-    let light_transform = Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
+    let light_transform = Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()));
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();
     group.link(light_transform).unwrap();
@@ -106,9 +106,8 @@ fn init(world: &mut World) {
         heuristic_settings: heuristic,
         ..Default::default()
     };
-    let terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
-    world.globals.add(terrain).unwrap();
-    /*
+    let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
+    //world.globals.add(terrain).unwrap();
     // Big sphere
     terrain.edit(
         Edit::new(
@@ -133,5 +132,4 @@ fn init(world: &mut World) {
     );
 
     world.globals.add(terrain).unwrap();
-    */
 }
