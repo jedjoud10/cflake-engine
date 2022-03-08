@@ -87,6 +87,10 @@ impl<World> System<World> {
                 components.counter -= 1;
             }
         }
+
+        // The code trolled me on the March 7, 2022, at 7:43pm
+        drop(lock);
+
         // Trolling purposes
         let mut borrowed_removed_components = removed;
         let removed_components = self.evn_removed_entity.map(|_| &mut borrowed_removed_components);

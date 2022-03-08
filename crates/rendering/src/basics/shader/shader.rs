@@ -1,7 +1,7 @@
-use super::info::{ShaderInfoQuerySettings, ShaderInfo};
-use super::{compile_shader, ShaderInitSettings, ShaderSource, UniformsDefinitionMap, query_shader_info};
+use super::info::{ShaderInfo, ShaderInfoQuerySettings};
+use super::{compile_shader, query_shader_info, ShaderInitSettings, ShaderSource, UniformsDefinitionMap};
 use crate::basics::shader::{compile_source, query_shader_uniforms_definition_map, ShaderSourceType};
-use crate::object::{PipelineCollectionElement, OpenGLObjectNotInitialized};
+use crate::object::{OpenGLObjectNotInitialized, PipelineCollectionElement};
 use crate::pipeline::Pipeline;
 use ahash::{AHashMap, AHashSet};
 use getset::Getters;

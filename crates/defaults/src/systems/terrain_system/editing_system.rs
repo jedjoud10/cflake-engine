@@ -2,10 +2,6 @@ use world::ecs::event::EventKey;
 use world::World;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
-    // Camera values
-    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-    let camera_position = global.camera_pos;
-    let camera_forward = global.camera_forward;
     // Get the terrain global
     if let Ok(mut terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
@@ -14,7 +10,7 @@ fn run(world: &mut World, _data: EventKey) {
         if !chunks_to_regenerate.is_empty() {
             // Regenerate the specified chunks
             for coords in chunks_to_regenerate {
-                terrain.regenerate_chunk(coords, camera_position, camera_forward);
+                terrain.regenerate_chunk(coords);
             }
             // Also set the packed edits since we will need to update them on the GPU
             let packed = terrain.editing_manager.convert();

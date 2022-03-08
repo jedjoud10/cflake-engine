@@ -52,7 +52,7 @@ impl Node {
         Self {
             position,
             half_extent: full_extent as u64 / 2,
-            depth,
+            depth: 0,
             parent: NodeKey::null(),
             key,
             children: None,

@@ -6,7 +6,7 @@ use world::{
         basics::{
             shader::{
                 info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
-                Directive, ShaderInitSettings, query_info,
+                query_info, Directive, ShaderInitSettings,
             },
             uniforms::StoredUniforms,
         },
@@ -57,7 +57,7 @@ impl VoxelGenerator {
         let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
 
         // Also construct the atomics
-        let atomics = AtomicGroup::new(pipeline);
+        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream), pipeline);
 
         // Get the size of each arbitrary voxel
         let mut settings = ShaderInfoQuerySettings::default();
@@ -77,12 +77,11 @@ impl VoxelGenerator {
 
         // Load the shader storage
         let shader_storage_arbitrary_voxels =
-            ShaderStorage::<u8>::with_capacity(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), arbitrary_voxels_size, pipeline);
+            ShaderStorage::<u8>::with_length(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), arbitrary_voxels_size, pipeline);
 
-        let final_voxels_size = ((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) * size_of::<PackedVoxel>();
-        let shader_storage_final_voxels = ShaderStorage::<PackedVoxel>::with_capacity(
+        let shader_storage_final_voxels = ShaderStorage::<PackedVoxel>::with_length(
             UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream),
-            final_voxels_size * size_of::<PackedVoxel>(),
+            (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1),
             pipeline,
         );
 

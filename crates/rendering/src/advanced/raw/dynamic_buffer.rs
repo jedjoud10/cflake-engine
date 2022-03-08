@@ -10,7 +10,7 @@ use crate::{
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::size_of, ops::Range, ptr::null};
+use std::{ffi::c_void, marker::PhantomData, mem::{size_of, MaybeUninit}, ops::Range, ptr::null};
 
 // A dynamic OpenGL buffer that automatically reallocates it's size when we add too many elements to it
 #[derive(Getters, CopyGetters)]
@@ -45,17 +45,29 @@ impl<T> Default for DynamicRawBuffer<T> {
 impl<T> DynamicRawBuffer<T> {
     // Create the dynamic raw buffer
     pub fn new(_type: u32, usage: UsageType, _pipeline: &Pipeline) -> Self {
-        Self::with_capacity(_type, 0, usage, _pipeline)
+        let oid = unsafe {
+            let mut oid = 0;
+            gl::GenBuffers(1, &mut oid);
+            oid
+        };
+        Self {
+            buffer: oid,
+            _type,
+            usage,
+            inner: Default::default(),
+            _phantom: PhantomData::default(),
+        }
     }
-    // Create a new dynamic raw buffer with a specified capacity
-    pub fn with_capacity(_type: u32, capacity: usize, usage: UsageType, _pipeline: &Pipeline) -> Self {
-        let vec = Vec::<T>::with_capacity(capacity);
+    // Create a new dynamic raw buffer with a specified length
+    // TODO: FIX THEIS
+    pub fn with_length(_type: u32, length: usize, usage: UsageType, _pipeline: &Pipeline) -> Self where T: Copy + Default {
+        let vec = vec![T::default(); length];
         let oid = unsafe {
             let mut oid = 0;
             gl::GenBuffers(1, &mut oid);
             gl::BindBuffer(_type, oid);
-            if capacity != 0 {
-                gl::BufferData(_type, (size_of::<T>() * capacity) as isize, null(), usage.convert());
+            if length != 0 {
+                gl::BufferData(_type, (size_of::<T>() * length) as isize, null(), usage.convert());
             }
             gl::BindBuffer(_type, 0);
             oid
@@ -154,6 +166,13 @@ impl<T> GLBufferOperations for DynamicRawBuffer<T> {
         // Check validity
         if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
+        }
+        unsafe {
+            gl::BindBuffer(self._type, self.buffer);
+            // Byte size
+            let byte_size = self.inner.len() * size_of::<T>();
+            gl::GetBufferSubData(self._type, 0, byte_size as isize, self.inner.as_mut_ptr() as *mut c_void);
+            gl::BindBuffer(self._type, 0);
         }
         Ok(&self.inner)
     }

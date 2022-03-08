@@ -47,15 +47,14 @@ impl Terrain {
         self.editing_manager.edit(edit);
     }
     // Force the re-generation of a specific chunk
-    pub fn regenerate_chunk(&mut self, coords: ChunkCoords, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>) -> Option<()> {
+    pub fn regenerate_chunk(&mut self, coords: ChunkCoords) -> Option<()> {
         // Check if the chunk is valid first
         if self.chunks_manager.chunks.contains_key(&coords) {
             // Regenerate
             if self.chunks_manager.chunks_generating.insert(coords) {
                 // First time we queue this chunk for generation
                 let id = self.chunks_manager.chunks.get(&coords)?;
-                let priority = crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
-                self.chunks_manager.priority_list.push((*id, priority));
+                self.chunks_manager.priority_list.push((*id, 0.0));
             } else {
                 // Already queued for generation
             }

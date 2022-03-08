@@ -28,9 +28,9 @@ impl<T> ShaderStorage<T> {
         }
     }
     // Create a new shader storage using some preallocated capacity
-    pub fn with_capacity(usage: UsageType, capacity: usize, _pipeline: &Pipeline) -> Self {
+    pub fn with_length(usage: UsageType, length: usize, _pipeline: &Pipeline) -> Self where T: Default + Copy {
         Self {
-            storage: DynamicRawBuffer::<T>::with_capacity(gl::SHADER_STORAGE_BUFFER, capacity, usage, _pipeline),
+            storage: DynamicRawBuffer::<T>::with_length(gl::SHADER_STORAGE_BUFFER, length, usage, _pipeline),
         }
     }
 }

@@ -1,9 +1,7 @@
-fn main() {}
-/*
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components,
+        components::{self, Transform, Light},
         globals::{self, TerrainSettings},
     },
     ecs::entity::{ComponentLinkingGroup, Entity},
@@ -14,12 +12,9 @@ use cflake_engine::{
     },
     rendering::{
         basics::{
-            lights::{LightSource, LightSourceType},
             material::Material,
-            shader::{Shader, ShaderSettings},
             texture::{Texture, TextureFilter},
         },
-        pipeline::pipec,
     },
     terrain::editing::Edit,
     veclib::{self, vec3},
@@ -53,15 +48,19 @@ fn init(world: &mut World) {
     group.link_default::<components::Transform>().unwrap();
     let entity = Entity::default();
     let _id = world.ecs.add(entity, group).unwrap();
-    let pipeline = world.pipeline.read();
+
     // Create the directional light source
-    let light = LightSource::new(LightSourceType::Directional {
-        quat: veclib::Quaternion::<f32>::from_x_angle(-45f32.to_radians()),
-    })
-    .with_strength(1.3);
-    pipec::construct(&pipeline, light).unwrap();
+    let light = Light::default();
+    let light_transform = Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
+    // And add it to the world as an entity
+    let mut group = ComponentLinkingGroup::default();
+    group.link(light_transform).unwrap();
+    group.link(light).unwrap();
+    world.ecs.add(Entity::default(), group).unwrap();
+
     // Load a terrain material
     // Load the shader first
+    /*
     let settings = ShaderSettings::default()
         .source("defaults/shaders/voxel_terrain/terrain.vrsh.glsl")
         .source("defaults/shaders/voxel_terrain/terrain.frsh.glsl");
@@ -93,20 +92,23 @@ fn init(world: &mut World) {
         .with_uv_scale(veclib::Vector2::ONE * 0.03)
         .with_shader(shader);
     let material = pipec::construct(&pipeline, material).unwrap();
+    */
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
-            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target) / (node.half_extent as f32 * 2.0);
+            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target) / (node.half_extent() as f32 * 2.0);
             dist < 1.2
         })
         .with_threshold(64.0);
     // Create some terrain settings
-    let terrain_settings = TerrainSettings::default()
-        .with_depth(5)
-        .with_material(material)
-        .with_heuristic(heuristic)
-        .with_voxel_src("user/shaders/voxel_terrain/voxel.func.glsl");
-    let mut terrain = globals::Terrain::new(terrain_settings, &pipeline);
-
+    let terrain_settings = TerrainSettings {
+        voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
+        depth: 5,
+        heuristic_settings: heuristic,
+        ..Default::default()
+    };
+    let terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
+    world.globals.add(terrain).unwrap();
+    /*
     // Big sphere
     terrain.edit(
         Edit::new(
@@ -131,5 +133,5 @@ fn init(world: &mut World) {
     );
 
     world.globals.add(terrain).unwrap();
+    */
 }
-*/

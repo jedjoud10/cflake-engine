@@ -75,12 +75,9 @@ pub fn start_after_user_systems(world: &mut World) {
     light_system::system(world);
     rendering_system::system(world);
     gui_system::system(world);
-    /*
     // Terrain
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
-    terrain_system::mesh_update_system::system(world);
     terrain_system::editing_system::system(world);
-    */
 }

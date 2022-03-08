@@ -1,6 +1,6 @@
 use crate::globals::ChunksManager;
 use world::{
-    ecs::{self, entity::EntityKey, event::EventKey, ECSManager},
+    ecs::{self, component::RefComponentFetcher, entity::EntityKey, event::EventKey, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
     World,
@@ -20,7 +20,7 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     group.link::<crate::components::Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
-    let chunk = crate::components::Chunk { coords, updated_mesh_id: None };
+    let chunk = crate::components::Chunk { coords };
     let priority = crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
@@ -42,8 +42,12 @@ fn run(world: &mut World, _data: EventKey) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let cam = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-        (cam.camera_pos, cam.camera_forward)
+        let camkey = world.globals.get::<crate::globals::GlobalWorldData>().unwrap().main_camera;
+        let camera = world.ecs.entities.get(camkey).unwrap();
+        let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
+        let fetcher = RefComponentFetcher::new(&world.ecs.components);
+        let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
+        (component.position, component.rotation_matrix().mul_point(&veclib::Vector3::Z))
     };
     let terrain_ = world.globals.get_mut::<crate::globals::Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {
@@ -62,6 +66,7 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
         let octree_ = handler.octree.clone();
         let mut octree = octree_.lock();
         if let Some((added, removed)) = octree.update(camera_position) {
+            dbg!(added.len());
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them
             for node in removed {
@@ -73,10 +78,10 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
 
             // Only add the chunks that are leaf nodes in the octree
             for node in added {
-                if node.children_indices.is_none() {
+                if node.children().is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size, coords);
+                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size(), coords);
                     handler.priority_list.push((id, priority));
                     handler.chunks.insert(coords, id);
                     handler.chunks_generating.insert(coords);

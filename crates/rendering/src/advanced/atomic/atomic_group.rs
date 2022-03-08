@@ -7,7 +7,7 @@ use gl::types::GLuint;
 use crate::{
     basics::bufop::GLBufferOperations,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Handle, Pipeline, PipelineCollection},
+    pipeline::{Handle, Pipeline, PipelineCollection}, utils::UsageType,
 };
 
 // Le array
@@ -26,7 +26,7 @@ pub struct AtomicGroup {
 
 impl AtomicGroup {
     // New
-    pub fn new(_pipeline: &Pipeline) -> Self {
+    pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         let mut buffer = 0;
         unsafe {
             // Create the OpenGL buffer
@@ -34,7 +34,7 @@ impl AtomicGroup {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buffer);
 
             // Initialize it's data
-            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<AtomicArray>() as isize, null(), gl::DYNAMIC_DRAW);
+            gl::BufferData(gl::ATOMIC_COUNTER_BUFFER, size_of::<AtomicArray>() as isize, null(), usage.convert());
 
             // Unbind just in case
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
@@ -68,6 +68,7 @@ impl GLBufferOperations for AtomicGroup {
         }
         unsafe {
             // Read the values
+            gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
             gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_mut_ptr() as *mut c_void);
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
@@ -81,7 +82,7 @@ impl GLBufferOperations for AtomicGroup {
             return Err(OpenGLObjectNotInitialized);
         }
         self.array = data;
-        self.glupdate();
+        self.glupdate()?;
         Ok(())
     }
 }

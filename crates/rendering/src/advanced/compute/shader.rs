@@ -76,7 +76,7 @@ impl ComputeShader {
     */
 
     // Execute a compute shader
-    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> Result<(), OpenGLObjectNotInitialized> {
+    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, mut uniforms: Uniforms) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
         if self.program().program() == 0 {
             return Err(OpenGLObjectNotInitialized);
@@ -88,7 +88,8 @@ impl ComputeShader {
 
             // Uniforms
             let mut uniforms = Uniforms::new(self.program(), pipeline, true);
-            settings.uniforms.execute(&mut uniforms);
+            uniforms.bind();
+            gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
             gl::Finish()
         }

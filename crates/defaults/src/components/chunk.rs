@@ -8,7 +8,6 @@ use world::{
 #[derive(Component)]
 pub struct Chunk {
     pub coords: ChunkCoords,
-    pub(crate) updated_mesh_id: Handle<Mesh>,
 }
 
 impl Chunk {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{bounds::aabb::AABB, shapes::Sphere};
+    use crate::{bounds::aabb::AABB, shapes::Sphere, octrees::{Octree, HeuristicSettings}};
 
     // AABB sphere
     #[test]
@@ -32,5 +32,12 @@ mod tests {
             max: veclib::Vector3::ONE * 20.0,
         };
         assert!(crate::intersection::aabb_sphere(&aabb, &sphere));
+    }
+    // Octree
+    #[test]
+    pub fn octree() {
+        let mut octree = Octree::new(5, 32, HeuristicSettings::default());
+        octree.update(veclib::Vector3::ZERO);
+        assert_eq!(octree.nodes().len(), 33);
     }
 }
