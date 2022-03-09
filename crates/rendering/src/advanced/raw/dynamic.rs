@@ -44,7 +44,7 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
     fn read(&mut self, output: &mut [E]) {
         // Map the buffer
         let ptr = unsafe {
-            let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::MAP_READ_BIT);
+            let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::READ_ONLY);
             // Check validity
             if ptr.is_null() {
                 panic!()

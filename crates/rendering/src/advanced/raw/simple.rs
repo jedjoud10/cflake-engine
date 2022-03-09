@@ -27,31 +27,35 @@ impl<E> Buffer<E> for SimpleBuffer<E> {
     }
     // Read directly from the OpenGL buffer
     fn read(&mut self, output: &mut [E]) {
+        /*
         // Map the buffer
         let ptr = unsafe {
-            let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::MAP_READ_BIT);
+            let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::READ_ONLY);
             // Check validity
             if ptr.is_null() {
                 panic!()
             }
             ptr
         };
+        /*
         // Read the whole buffer slice from the pointer
         let len = self.storage.len() * size_of::<E>();
 
         // Then copy to output
         unsafe { std::ptr::copy(ptr as *const E, output.as_mut_ptr(), len) }
 
-        // We can unmap the buffer now
+            // We can unmap the buffer now
+            */
         unsafe {
             let result = gl::UnmapNamedBuffer(self.storage.buffer());
         }
+        */
     }
     // Simple write
     fn write(&mut self, vec: Vec<E>) {
         // Panic if the sizes don't match
         if self.storage.len() != vec.len() {
-            panic!()
+            panic!("Length mismatch, src length is '{}', new vec length is '{}'", self.storage.len(), vec.len());
         }
         self.storage.update(&vec);
     }

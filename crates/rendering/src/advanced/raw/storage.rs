@@ -4,7 +4,7 @@ use crate::{
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::size_of};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Raw OpenGL storage
 #[derive(Getters, CopyGetters)]
@@ -46,21 +46,23 @@ impl<E> Storage<E> {
     // Update the buffer
     pub(crate) fn update(&mut self, vec: &Vec<E>) {
         // Check if we need to reallocate
+        self.len = vec.len();
         if vec.capacity() > self.capacity {
             // Completely reallocate
             self.reallocate(vec);
+            dbg!(vec.capacity());
         } else {
             // Update subdata
             self.update_subdata(vec);
-        }
-        self.len = vec.len();
+        }        
     }
     // Completely reallocate
     pub(crate) fn reallocate(&mut self, vec: &Vec<E>) {
         self.capacity = vec.capacity();
+        self.len = vec.len();
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferData(self._type, (size_of::<E>() * vec.capacity()) as isize, vec.as_ptr() as *const c_void, self.usage.convert());
+            gl::BufferData(self._type, (vec.capacity() * size_of::<E>()) as isize, vec.as_ptr() as *const c_void, self.usage.convert());
             gl::BindBuffer(self._type, 0);
         }
     }
@@ -68,8 +70,8 @@ impl<E> Storage<E> {
     pub(crate) fn update_subdata(&mut self, vec: &Vec<E>) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            let byte_size = vec.len() * size_of::<E>();
-            gl::BufferSubData(self._type, 0, byte_size as isize, vec.as_ptr() as *const c_void);
+            gl::BufferSubData(self._type, 0, (self.capacity * size_of::<E>()) as isize, null());
+            gl::BufferSubData(self._type, 0, (vec.len() * size_of::<E>()) as isize, vec.as_ptr() as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
     }
