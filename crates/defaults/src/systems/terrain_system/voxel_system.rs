@@ -3,15 +3,8 @@ use std::time::Instant;
 use crate::globals::ChunkGenerationState;
 use world::{
     ecs::{entity::EntityKey, event::EventKey},
-    rendering::{
-        advanced::compute::ComputeShaderExecutionSettings,
-        basics::{
-            bufop::GLBufferOperations,
-            uniforms::{Uniforms},
-        },
-        pipeline::Pipeline,
-    },
-    terrain::{CHUNK_SIZE, ChunkCoords},
+    rendering::{advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer}, basics::uniforms::Uniforms, pipeline::Pipeline},
+    terrain::{ChunkCoords, CHUNK_SIZE},
     World,
 };
 
@@ -43,7 +36,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     uniforms.set_i32("node_size", chunk.coords.size as i32);
 
     // Clear the atomics then set them
-    generator.atomics.glset([0, 0, 0, 0]).unwrap();
+    generator.atomics.set([0, 0, 0, 0]);
     uniforms.set_atomic_group("_", &mut generator.atomics, 0);
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2));
@@ -57,7 +50,7 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
     // READ
     // Get the valid counters
     let generator = &mut terrain.voxel_generator;
-    let read_counters = generator.atomics.glread().unwrap();
+    let read_counters = generator.atomics.get();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
     if positive == 0 || negative == 0 {
@@ -70,11 +63,8 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
 
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut generator.packed_chunk_voxel_data.0;
-    let arr = allocated_packed_voxels.as_mut_slice();
-
     // READ
-    let data = generator.shader_storage_final_voxels.storage_mut().glread().unwrap();
-    arr.clone_from_slice(&data);
+    generator.shader_storage_final_voxels.storage_mut().read(allocated_packed_voxels.as_mut_slice());
     generator.stored_chunk_voxel_data.store(&generator.packed_chunk_voxel_data);
 
     // Switch states
@@ -98,7 +88,7 @@ fn run(world: &mut World, mut data: EventKey) {
         // Update the packed edits on the GPU
         if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {
             // Send a task to read the final voxel shader values
-            terrain.voxel_generator.shader_storage_edits.storage_mut().glset(edits).unwrap();
+            terrain.voxel_generator.shader_storage_edits.storage_mut().write(edits);
         }
         // For each chunk in the terrain
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {

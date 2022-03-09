@@ -88,7 +88,7 @@ fn init(world: &mut World) {
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
             let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target) / (node.half_extent() as f32 * 2.0);
-            dist < 1.2         
+            dist < 1.2
         })
         .with_threshold(64.0);
     // Create some terrain settings

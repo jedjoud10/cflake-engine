@@ -1,4 +1,8 @@
-use world::{ecs::{event::EventKey, component::RefComponentFetcher}, gui::egui, World, WorldState, terrain};
+use world::{
+    ecs::{component::RefComponentFetcher, event::EventKey},
+    gui::egui,
+    terrain, World, WorldState,
+};
 
 // The debugging system's update loop
 fn run(world: &mut World, _data: EventKey) {
@@ -18,7 +22,7 @@ fn run(world: &mut World, _data: EventKey) {
         let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
         let fetcher = RefComponentFetcher::new(&world.ecs.components);
         let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
-        
+
         ui.label(format!("Camera Pos: '{}'", (component.position * 10.0).round() / 10.0));
         ui.label(format!("Camera Dir: '{}'", (component.forward() * 10.0).round() / 10.0));
         // Timings

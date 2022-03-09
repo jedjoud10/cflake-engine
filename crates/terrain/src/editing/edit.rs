@@ -1,4 +1,7 @@
-use math::{csg::CSGOperation, shapes::{ShapeType, Sphere, Cuboid}};
+use math::{
+    csg::CSGOperation,
+    shapes::{Cuboid, ShapeType, Sphere},
+};
 
 // A single terrain edit
 #[derive(Clone)]
@@ -14,9 +17,10 @@ pub struct Edit {
 
 impl Default for Edit {
     fn default() -> Self {
-        Self { 
+        Self {
             shape: ShapeType::Sphere(Sphere {
-                center: veclib::Vector3::ZERO, radius: 10.0,
+                center: veclib::Vector3::ZERO,
+                radius: 10.0,
             }),
             material: Default::default(),
             color: veclib::Vector3::ONE * 255,
@@ -38,10 +42,7 @@ impl Edit {
     // Create a new sphere edit
     pub fn sphere(center: veclib::Vector3<f32>, radius: f32, operation: CSGOperation, material: Option<u8>) -> Self {
         Self {
-            shape: ShapeType::Sphere(Sphere {
-                center,
-                radius,
-            }),
+            shape: ShapeType::Sphere(Sphere { center, radius }),
             operation,
             material,
             ..Default::default()
@@ -50,10 +51,7 @@ impl Edit {
     // Create a new cuboid edit
     pub fn cuboid(center: veclib::Vector3<f32>, size: veclib::Vector3<f32>, operation: CSGOperation, material: Option<u8>) -> Self {
         Self {
-            shape: ShapeType::Cuboid(Cuboid {
-                center,
-                size,
-            }),
+            shape: ShapeType::Cuboid(Cuboid { center, size }),
             operation,
             material,
             ..Default::default()

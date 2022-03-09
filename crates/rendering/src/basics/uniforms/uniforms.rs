@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage},
+    advanced::{atomic::AtomicGroup, raw::Buffer, shader_storage::ShaderStorage},
     basics::{
         shader::ShaderProgram,
         texture::{Texture, TextureAccessType},
@@ -186,10 +186,10 @@ impl<'a> Uniforms<'a> {
             gl::BindImageTexture(location as u32, texture.buffer(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
-    pub fn set_atomic_group(&mut self, _name: &str, atomic_group: &mut AtomicGroup, binding: u32) {
+    pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {
         unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic_group.buffer());
-            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic_group.buffer());
+            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.storage().storage().buffer());
+            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic.storage().storage().buffer());
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }

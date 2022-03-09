@@ -1,7 +1,10 @@
-use std::{marker::PhantomData, mem::size_of, ffi::c_void};
-use getset::{Getters, CopyGetters};
+use crate::{
+    pipeline::Pipeline,
+    utils::{AccessType, UsageType},
+};
+use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use crate::{utils::{UsageType, AccessType}, pipeline::Pipeline};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of};
 
 // Raw OpenGL storage
 #[derive(Getters, CopyGetters)]
@@ -54,15 +57,10 @@ impl<E> Storage<E> {
     }
     // Completely reallocate
     pub(crate) fn reallocate(&mut self, vec: &Vec<E>) {
-        self.capacity = vec.capacity();        
+        self.capacity = vec.capacity();
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferData(
-                self._type,
-                (size_of::<E>() * vec.capacity()) as isize,
-                vec.as_ptr() as *const c_void,
-                self.usage.convert(),
-            );
+            gl::BufferData(self._type, (size_of::<E>() * vec.capacity()) as isize, vec.as_ptr() as *const c_void, self.usage.convert());
             gl::BindBuffer(self._type, 0);
         }
     }
@@ -116,5 +114,3 @@ impl<T> GLBufferOperations for DynamicRawBuffer<T> {
     }
 }
 */
-
-

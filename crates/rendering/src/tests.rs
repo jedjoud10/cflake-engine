@@ -1,12 +1,15 @@
 #[cfg(test)]
 pub mod tests {
     use crate::{
+        advanced::atomic::AtomicGroup,
         basics::{
+            mapper::MappableGLBuffer,
             material::{Material, MaterialTextures},
             mesh::Mesh,
-            shader::{Directive, ShaderInitSettings}, mapper::MappableGLBuffer,
+            shader::{Directive, ShaderInitSettings},
         },
-        pipeline::Handle, advanced::atomic::AtomicGroup, utils::{UsageType, AccessType, UpdateFrequency},
+        pipeline::Handle,
+        utils::{AccessType, UpdateFrequency, UsageType},
     };
 
     // Test mesh generation
@@ -37,12 +40,5 @@ pub mod tests {
             },
             ..Default::default()
         };
-    }
-
-    // A
-    fn test() {
-        let atomic = AtomicGroup::new(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), todo!());
-        let mut write = atomic.map_writer();
-        write.write([0, 0, 0, 0]);
     }
 }

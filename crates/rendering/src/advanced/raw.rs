@@ -1,5 +1,5 @@
-pub mod dynamic;
-pub mod storage;
-pub mod simple;
 mod buffer;
+pub mod dynamic;
+pub mod simple;
+pub mod storage;
 pub use buffer::*;

@@ -2,7 +2,12 @@ use std::mem::size_of;
 
 use world::{
     rendering::{
-        advanced::{atomic::AtomicGroup, compute::ComputeShader, shader_storage::ShaderStorage},
+        advanced::{
+            atomic::AtomicGroup,
+            compute::ComputeShader,
+            raw::{dynamic::DynamicBuffer, simple::SimpleBuffer},
+            shader_storage::ShaderStorage,
+        },
         basics::{
             shader::{
                 info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
@@ -22,10 +27,10 @@ pub struct VoxelGenerator {
     pub second_compute_shader: Handle<ComputeShader>,
     pub atomics: AtomicGroup,
     // Our 2 shader storages (for voxel generation)
-    pub shader_storage_arbitrary_voxels: ShaderStorage<u8>,
-    pub shader_storage_final_voxels: ShaderStorage<PackedVoxel>,
+    pub shader_storage_arbitrary_voxels: ShaderStorage<SimpleBuffer<u8>, u8>,
+    pub shader_storage_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>, PackedVoxel>,
     // And another voxel storage for edits
-    pub shader_storage_edits: ShaderStorage<PackedEdit>,
+    pub shader_storage_edits: ShaderStorage<DynamicBuffer<PackedEdit>, PackedEdit>,
     pub packed_edits_update: Option<Vec<PackedEdit>>,
     pub packed_edits_num: usize,
     // And the voxel data for said chunk
@@ -75,18 +80,17 @@ impl VoxelGenerator {
 
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 
-        // Load the shader storage
-        let shader_storage_arbitrary_voxels =
-            ShaderStorage::<u8>::with_length(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), arbitrary_voxels_size, pipeline);
+        // Usage
+        let usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream);
+        let usage2 = UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream);
+        let usage3 = UsageType::new(AccessType::ClientToServer, UpdateFrequency::Dynamic);
 
-        let shader_storage_final_voxels = ShaderStorage::<PackedVoxel>::with_length(
-            UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream),
-            (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1),
-            pipeline,
-        );
+        // Load the shader storage
+        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>, u8>::new(Vec::with_capacity(arbitrary_voxels_size), usage, pipeline);
+        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>, PackedVoxel>::new(Vec::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)), usage2, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
-        let shader_storage_edits = ShaderStorage::new(UsageType::new(AccessType::ClientToServer, UpdateFrequency::Stream), pipeline);
+        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>, PackedEdit>::new(Vec::default(), usage3, pipeline);
 
         Self {
             compute_shader: base_compute,

@@ -1,4 +1,10 @@
-use std::{ffi::c_void, marker::PhantomData, ptr::{write, write_unaligned}, mem::ManuallyDrop, intrinsics::copy_nonoverlapping};
+use std::{
+    ffi::c_void,
+    intrinsics::copy_nonoverlapping,
+    marker::PhantomData,
+    mem::ManuallyDrop,
+    ptr::{write, write_unaligned},
+};
 
 use gl::types::GLuint;
 
@@ -11,7 +17,7 @@ pub struct MappedBufferWriter<'a, Buffer: MappableGLBuffer<Storage>, Storage> {
     storage: PhantomData<&'a mut Storage>,
 }
 
-// A buffer mapper that can read data from an OpenGL buffer 
+// A buffer mapper that can read data from an OpenGL buffer
 pub struct MappedBufferReader<'a, Buffer: MappableGLBuffer<Storage>, Storage> {
     _type: GLuint,
     buffer: GLuint,
@@ -36,7 +42,7 @@ impl<'a, Buffer: MappableGLBuffer<Storage>, Storage> MappedBufferWriter<'a, Buff
     pub fn write(self, value: Storage) {
         unsafe {
             /*
-            // Get the mapped OpenGL pointer 
+            // Get the mapped OpenGL pointer
             let ptr = gl::MapBuffer(self._type, gl::MAP_WRITE_BIT);
             // We must not run the drop
             let mut value = ManuallyDrop::new(value);
@@ -48,10 +54,13 @@ impl<'a, Buffer: MappableGLBuffer<Storage>, Storage> MappedBufferWriter<'a, Buff
         }
     }
     //Store the new value into Self if we implement StorableBuffer, then write to the OpenGL buffer
-    pub fn store_then_write(self, value: Storage) where Buffer: StorableGLBuffer<Storage> {
+    pub fn store_then_write(self, value: Storage)
+    where
+        Buffer: StorableGLBuffer<Storage>,
+    {
         unsafe {
             /*
-            // Get the mapped OpenGL pointer 
+            // Get the mapped OpenGL pointer
             let ptr = gl::MapBuffer(self._type, gl::MAP_WRITE_BIT);
             self.caller.store(value);
             // Convert le pointer first
@@ -80,9 +89,11 @@ impl<'a, Buffer, Storage> MappedBufferReader<'a, Buffer, Storage> {
 }
 */
 
-
 // A mappable buffer that we can write/read to
-pub trait MappableGLBuffer<GLStorage> where Self: Sized {
+pub trait MappableGLBuffer<GLStorage>
+where
+    Self: Sized,
+{
     // Create a MappedBufferReader
     fn map_reader<'a>(&'a self) -> MappedBufferReader<'a, Self, GLStorage>;
     // Create a MappedBufferWriter
@@ -91,7 +102,10 @@ pub trait MappableGLBuffer<GLStorage> where Self: Sized {
 
 // A buffer that stores a copy of it's underlying Storage on the Rust side
 // This doubles memory usage for said buffer, but we can modify the buffer without having to allocate the Storage again
-pub trait StorableGLBuffer<GLStorage> where Self: Sized {
+pub trait StorableGLBuffer<GLStorage>
+where
+    Self: Sized,
+{
     // Get the underlying stored GLStorage
     fn get_inner_glstorage(&self) -> &GLStorage;
     // Store a new value into the buffer

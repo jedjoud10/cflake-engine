@@ -91,9 +91,11 @@ impl ComputeShader {
             let mut uniforms = Uniforms::new(self.program(), pipeline, true);
             gl::Flush();
             uniforms.bind();
-            if flush_and_barrier { gl::MemoryBarrier(gl::ALL_BARRIER_BITS); }
+            if flush_and_barrier {
+                gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+            }
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-            if flush_and_barrier { 
+            if flush_and_barrier {
                 gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
                 gl::Finish()
             }

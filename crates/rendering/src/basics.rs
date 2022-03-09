@@ -1,5 +1,5 @@
-pub mod mapper;
 pub mod lights;
+pub mod mapper;
 pub mod material;
 pub mod mesh;
 pub mod renderer;
