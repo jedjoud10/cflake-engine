@@ -1,4 +1,4 @@
-pub mod bufop;
+pub mod mapper;
 pub mod lights;
 pub mod material;
 pub mod mesh;

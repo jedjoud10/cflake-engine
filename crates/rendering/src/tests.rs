@@ -4,9 +4,9 @@ pub mod tests {
         basics::{
             material::{Material, MaterialTextures},
             mesh::Mesh,
-            shader::{Directive, ShaderInitSettings},
+            shader::{Directive, ShaderInitSettings}, mapper::MappableGLBuffer,
         },
-        pipeline::Handle,
+        pipeline::Handle, advanced::atomic::AtomicGroup, utils::{UsageType, AccessType, UpdateFrequency},
     };
 
     // Test mesh generation
@@ -37,5 +37,12 @@ pub mod tests {
             },
             ..Default::default()
         };
+    }
+
+    // A
+    fn test() {
+        let atomic = AtomicGroup::new(UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream), todo!());
+        let mut write = atomic.map_writer();
+        write.write([0, 0, 0, 0]);
     }
 }

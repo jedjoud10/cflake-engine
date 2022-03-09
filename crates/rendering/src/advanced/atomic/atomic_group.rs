@@ -5,10 +5,9 @@ use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 
 use crate::{
-    basics::bufop::GLBufferOperations,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline, PipelineCollection},
-    utils::UsageType,
+    utils::UsageType, basics::mapper::{MappableGLBuffer, MappedBufferReader, MappedBufferWriter},
 };
 
 // Le array
@@ -47,6 +46,17 @@ impl AtomicGroup {
     }
 }
 
+impl MappableGLBuffer<AtomicArray> for AtomicGroup {
+    fn map_reader<'a>(&'a self) -> MappedBufferReader<'a, Self, AtomicArray> {
+        todo!()
+    }
+
+    fn map_writer<'a>(&'a mut self) -> MappedBufferWriter<'a, Self, AtomicArray> {
+        MappedBufferWriter::new(self, gl::ATOMIC_COUNTER_BUFFER, self.buffer, size_of::<AtomicArray>())
+    }
+}
+
+/*
 impl GLBufferOperations for AtomicGroup {
     type Data = AtomicArray;
     fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
@@ -79,3 +89,4 @@ impl GLBufferOperations for AtomicGroup {
         }
     }
 }
+*/

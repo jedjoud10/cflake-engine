@@ -193,10 +193,10 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage<T>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<T>, binding: u32) {
+    pub fn set_shader_storage<Buffer: crate::advanced::raw::Buffer<Element>, Element>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer, Element>, binding: u32) {
         unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().buffer());
-            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().buffer());
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().buffer());
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().storage().buffer());
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
     }

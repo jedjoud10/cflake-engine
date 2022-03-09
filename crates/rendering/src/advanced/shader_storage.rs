@@ -1,41 +1,19 @@
 use getset::{Getters, MutGetters};
 use gl::types::GLuint;
-use std::{ffi::c_void, mem::size_of, ptr::null};
-
+use std::{ffi::c_void, mem::size_of, ptr::null, marker::PhantomData};
 use crate::{pipeline::Pipeline, utils::UsageType};
-
-use super::raw::dynamic_buffer::DynamicRawBuffer;
-
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
-pub struct ShaderStorage<T> {
-    // Backed by a dynamic raw buffer
+pub struct ShaderStorage<Buffer: super::raw::Buffer<E>, E> {
     #[getset(get = "pub", get_mut = "pub")]
-    storage: DynamicRawBuffer<T>,
+    storage: Buffer,
+    _phantom: PhantomData<E>,
 }
 
-impl<T> Default for ShaderStorage<T> {
-    fn default() -> Self {
-        Self { storage: Default::default() }
+impl<Buffer: super::raw::Buffer<E>, E> ShaderStorage<Buffer, E> {
+    // Create a new shader storage
+    pub fn new(vec: Vec<E>, _type: u32, usage: UsageType, _pipeline: &Pipeline) -> Self {
+        let buffer = Buffer::new(vec, _type, usage, _pipeline);
+        Self { storage: buffer, _phantom: PhantomData::default() }
     }
 }
-
-impl<T> ShaderStorage<T> {
-    // Create a new empty shader storage
-    pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
-        Self {
-            storage: DynamicRawBuffer::<T>::new(gl::SHADER_STORAGE_BUFFER, usage, _pipeline),
-        }
-    }
-    // Create a new shader storage using some preallocated capacity
-    pub fn with_length(usage: UsageType, length: usize, _pipeline: &Pipeline) -> Self
-    where
-        T: Default + Copy,
-    {
-        Self {
-            storage: DynamicRawBuffer::<T>::with_length(gl::SHADER_STORAGE_BUFFER, length, usage, _pipeline),
-        }
-    }
-}
-
-// TODO: Drop with disposal of GL data

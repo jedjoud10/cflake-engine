@@ -2,7 +2,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use gl::types::GLuint;
 use rendering::{
-    advanced::raw::dynamic_buffer::DynamicRawBuffer,
+    advanced::raw::{dynamic::DynamicBuffer, Buffer},
     pipeline::Pipeline,
     utils::{AccessType::ClientToServer, UpdateFrequency::Stream, UsageType},
 };
@@ -13,8 +13,8 @@ pub(crate) struct Buffers {
     pub(crate) vao: GLuint,
 
     // No optimizations yet
-    pub(crate) indices: DynamicRawBuffer<u32>,
-    pub(crate) vertices: DynamicRawBuffer<egui::epaint::Vertex>,
+    pub(crate) indices: DynamicBuffer<u32>,
+    pub(crate) vertices: DynamicBuffer<egui::epaint::Vertex>,
 }
 
 impl Buffers {
@@ -34,13 +34,13 @@ impl Buffers {
             frequency: Stream,
         };
         // Dynamic raw buffers
-        let indices = DynamicRawBuffer::<u32>::new(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
-        let vertices = DynamicRawBuffer::<egui::epaint::Vertex>::new(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
+        let indices = DynamicBuffer::<u32>::new(Vec::default(), gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
+        let vertices = DynamicBuffer::<egui::epaint::Vertex>::new(Vec::default(), gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
 
         // Bind the vertex attributes
         unsafe {
             const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertices.buffer());
+            gl::BindBuffer(gl::ARRAY_BUFFER, vertices.storage().buffer());
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
             gl::EnableVertexAttribArray(1);
@@ -65,7 +65,7 @@ impl Buffers {
     pub fn draw(&mut self) {
         unsafe {
             // Le drawing
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indices.buffer());
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indices.storage().buffer());
             gl::DrawElements(gl::TRIANGLES, self.indices.len() as i32, gl::UNSIGNED_INT, null());
         }
     }
