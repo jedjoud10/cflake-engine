@@ -28,7 +28,7 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
         &self.storage
     }
     // Create a dynamic buffer
-    fn new(vec: Vec<E>, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
+    fn new_raw(cap: usize, len: usize, ptr: *const E, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Dynamic buffer cannot be for buffers that have an AccessType of ServerToClient or ServerToServer, because we don't know when we have update the buffer on the GPU
         match usage.access {
             AccessType::ServerToServer | AccessType::ServerToClient => panic!(),
@@ -36,8 +36,20 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
         }
         let mut storage = Storage::new(_type, usage, _pipeline);
         // Fill the storage
-        storage.reallocate(&vec);
-        Self { storage, inner: vec }
+        storage.reallocate(ptr, cap);
+        Self { storage, inner: {
+            let mut vec = Vec::with_capacity(cap);
+            
+            // Fill if possible
+            if !ptr.is_null() && len > 0{
+                unsafe { 
+                    let slice = std::slice::from_raw_parts(ptr, len);
+                    std::ptr::copy(slice.as_ptr(), vec.as_mut_ptr(), len);
+                };
+            }
+            
+            vec
+        }}
     }
     // Read from the dynamic buffer
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that

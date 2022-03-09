@@ -54,27 +54,6 @@ impl ComputeShader {
             settings,
         })
     }
-    /*
-    // Run a compute shader, and return it's GlTracker
-    pub(crate) fn compute_run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings) -> GlTracker {
-        // Create some shader uniforms settings that we can use
-        let uniform_settings = ShaderUniformsSettings::new(ShaderIDType::OpenGLID(self.program));
-        let uniforms = Uniforms::new(&uniform_settings, pipeline);
-        // Dispatch the compute shader for execution
-        let axii = settings.axii;
-
-        // Create the GlTracker and send the DispatchCompute command
-        GlTracker::new(|| unsafe {
-            uniforms.bind_shader();
-            // Execute the uniforms
-            for x in settings.callbacks {
-                x.execute(&uniforms);
-            }
-            gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-        })
-    }
-    */
-
     // Execute a compute shader
     pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, mut uniforms: Uniforms, flush_and_barrier: bool) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
@@ -89,7 +68,6 @@ impl ComputeShader {
             // Uniforms
             // TODO: FIX THIS
             let mut uniforms = Uniforms::new(self.program(), pipeline, true);
-            gl::Flush();
             uniforms.bind();
             if flush_and_barrier {
                 gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
@@ -97,7 +75,6 @@ impl ComputeShader {
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
             if flush_and_barrier {
                 gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-                gl::Finish()
             }
         }
 

@@ -43,10 +43,19 @@ impl<E> Storage<E> {
             len: 0,
         }
     }
+    // Initialize the raw storage with some empty data
+    pub(crate) fn init(&mut self, cap: usize, len: usize, ptr: *const E) {
+        self.len = len;
+        self.capacity = cap;
+        self.reallocate(ptr, cap);
+    }
     // Update the buffer
     pub(crate) fn update(&mut self, vec: &Vec<E>) {
         // Check if we need to reallocate
         self.len = vec.len();
+        // I hate this
+        self.reallocate(vec.as_ptr(), vec.capacity());
+        /*
         if vec.capacity() > self.capacity {
             // Completely reallocate
             self.reallocate(vec);
@@ -55,23 +64,22 @@ impl<E> Storage<E> {
             // Update subdata
             self.update_subdata(vec);
         }        
+        */
     }
     // Completely reallocate
-    pub(crate) fn reallocate(&mut self, vec: &Vec<E>) {
-        self.capacity = vec.capacity();
-        self.len = vec.len();
+    pub(crate) fn reallocate(&mut self, ptr: *const E, cap: usize) {
+        self.capacity = cap;
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferData(self._type, (vec.capacity() * size_of::<E>()) as isize, vec.as_ptr() as *const c_void, self.usage.convert());
+            gl::BufferData(self._type, (cap * size_of::<E>()) as isize, ptr as *const c_void, self.usage.convert());
             gl::BindBuffer(self._type, 0);
         }
     }
     // Update subdata
-    pub(crate) fn update_subdata(&mut self, vec: &Vec<E>) {
+    pub(crate) fn update_subdata(&mut self, ptr: *const E, len: usize) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(self._type, 0, (self.capacity * size_of::<E>()) as isize, null());
-            gl::BufferSubData(self._type, 0, (vec.len() * size_of::<E>()) as isize, vec.as_ptr() as *const c_void);
+            gl::BufferSubData(self._type, 0, (len * size_of::<E>()) as isize, ptr as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
     }

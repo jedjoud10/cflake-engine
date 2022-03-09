@@ -21,6 +21,26 @@ uniform vec2 nf_planes;
 uniform bool shadows_enabled;
 in vec2 uvs;
 
+// Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
+vec3 aces(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+float aces(float x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+
 void main() {
 	ivec2 pixel = ivec2(uvs * _resolution);
 	// Sample the textures
@@ -53,5 +73,9 @@ void main() {
 		final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 	}
 
-	color = vec4(final_color, 1.0);
+	// A vignette effect
+    float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
+    float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);
+    float vignette_strength = (vignette_strength_x + vignette_strength_y) * 3.0; 
+	color = vec4(mix(aces(final_color), final_color, 0.5), 1.0) * (1-vignette_strength);
 }

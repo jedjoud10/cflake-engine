@@ -53,14 +53,13 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
     let read_counters = generator.atomics.get();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
-    if positive == 0 || negative == 0 || true {
+    if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.chunks_manager.chunks_generating.remove(&coords);
         // Switch states
         terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false);
         return;
     }
-    /*
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut generator.packed_chunk_voxel_data.0;
     // READ
@@ -69,7 +68,6 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
 
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
-    */
 }
 
 // The voxel systems' update loop
@@ -89,7 +87,7 @@ fn run(world: &mut World, mut data: EventKey) {
         // Update the packed edits on the GPU
         if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {
             // Send a task to read the final voxel shader values
-            //terrain.voxel_generator.shader_storage_edits.storage_mut().write(edits);
+            terrain.voxel_generator.shader_storage_edits.storage_mut().write(edits);
         }
         // For each chunk in the terrain
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {

@@ -62,7 +62,7 @@ impl VoxelGenerator {
         let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
 
         // Also construct the atomics
-        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream), pipeline);
+        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::Dynamic), pipeline);
 
         // Get the size of each arbitrary voxel
         let mut settings = ShaderInfoQuerySettings::default();
@@ -81,13 +81,13 @@ impl VoxelGenerator {
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 
         // Usage
-        let usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::Stream);
-        let usage2 = UsageType::new(AccessType::ServerToClient, UpdateFrequency::Stream);
+        let usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::Dynamic);
+        let usage2 = UsageType::new(AccessType::ServerToClient, UpdateFrequency::Dynamic);
         let usage3 = UsageType::new(AccessType::ClientToServer, UpdateFrequency::Dynamic);
 
         // Load the shader storage
-        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>, u8>::new(Vec::with_capacity(arbitrary_voxels_size), usage, pipeline);
-        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>, PackedVoxel>::new(Vec::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)), usage2, pipeline);
+        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>, u8>::with_len(arbitrary_voxels_size, usage, pipeline);
+        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>, PackedVoxel>::with_len((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), usage2, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
         let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>, PackedEdit>::new(Vec::default(), usage3, pipeline);

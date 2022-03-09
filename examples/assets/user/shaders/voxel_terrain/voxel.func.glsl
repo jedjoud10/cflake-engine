@@ -18,7 +18,7 @@ Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
     for (int i = 0; i < 6; i++) {
         noise += abs(snoise(pos * 0.0008 * vec3(1, 0.2, 1.0) * pow(1.7, i) + 4.0595)) * pow(0.43, i);
     }
-    return Voxel(noise * 300 + pos.y, 255, vec3(1.0));
+    return Voxel(snoise(pos * 0.002) * 300 + pos.y, 255, vec3(1.0));
 }
 
 // Modify the voxel after we get it's normal

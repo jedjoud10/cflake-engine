@@ -100,7 +100,6 @@ fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Mate
         .link(crate::components::Renderer {
             mesh,
             material,
-            shadowed: false,
             ..Default::default()
         })
         .unwrap();

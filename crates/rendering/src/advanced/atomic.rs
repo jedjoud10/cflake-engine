@@ -29,7 +29,7 @@ impl AtomicGroup {
     // New empty atomic group
     pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {
-            storage: SimpleBuffer::new(Vec::from(AtomicArray::default()), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline),
+            storage: SimpleBuffer::with_len(4, gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline),
         }
     }
     // Wrapper functions around the inner storage
