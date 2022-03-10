@@ -8,7 +8,7 @@ use math::{octrees::Octree, shapes::ShapeType};
 pub struct EditingManager {
     // New edits and total edits
     new_edits: Vec<Edit>,
-    pub edits: Vec<Edit>,
+    edits: Vec<Edit>,
 }
 
 impl EditingManager {

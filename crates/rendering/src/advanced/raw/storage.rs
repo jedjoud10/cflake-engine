@@ -39,7 +39,11 @@ impl<Element> Storage<Element> {
             ReallocationType::StaticallyAllocated => unsafe {
                 // Single allocation
                 gl::BindBuffer(_type, buffer);
-                let bits = gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT;
+                let bits = match usage.access {
+                    AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
+                    AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
+                    AccessType::ServerToServer => gl::MAP_READ_BIT,
+                };
                 gl::BufferStorage(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
             },
             ReallocationType::DynamicallyAllocated => unsafe {

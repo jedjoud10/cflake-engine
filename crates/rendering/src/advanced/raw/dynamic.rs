@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem::size_of};
+use std::{marker::PhantomData, mem::{size_of, MaybeUninit}};
 
 use getset::Getters;
 use gl::types::GLuint;
@@ -36,7 +36,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
             _ => (),
         }
         // Init and fill
-        let mut storage = Storage::new(cap, len, ptr, _type, usage);
+        let storage = Storage::new(cap, len, ptr, _type, usage);
 
         Self {
             storage,

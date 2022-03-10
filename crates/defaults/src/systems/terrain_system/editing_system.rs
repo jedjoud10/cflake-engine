@@ -16,7 +16,6 @@ fn run(world: &mut World, _data: EventKey) {
             // Also set the packed edits since we will need to update them on the GPU
             let packed = terrain.editing_manager.convert();
             terrain.voxel_generator.ssbo_edits.storage_mut().write(&packed);
-        } else {
         }
         terrain.chunks_manager.update_priorities();
     }

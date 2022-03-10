@@ -1,4 +1,4 @@
-use std::{ffi::c_void, mem::size_of, ptr::null};
+use std::{ffi::c_void, mem::{size_of, MaybeUninit}, ptr::null};
 
 use arrayvec::ArrayVec;
 use getset::{CopyGetters, Getters};
@@ -28,8 +28,9 @@ pub struct AtomicGroup {
 impl AtomicGroup {
     // New empty atomic group
     pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
+        let arr = AtomicArray::default();
         Self {
-            storage: unsafe { SimpleBuffer::new_raw(ATOMIC_COUNTERS_NUM, ATOMIC_COUNTERS_NUM, null(), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline) },
+            storage: unsafe { SimpleBuffer::new_raw(ATOMIC_COUNTERS_NUM, ATOMIC_COUNTERS_NUM, arr.as_ptr(), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline) },
         }
     }
     // Wrapper functions around the inner storage
@@ -37,11 +38,14 @@ impl AtomicGroup {
     // Set the atomic group's values
     pub fn set(&mut self, arr: AtomicArray) {
         self.storage.write(&arr);
+        unsafe {
+            //gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
+        }
     }
     // Read the atomic group's values
     pub fn get(&mut self) -> AtomicArray {
         unsafe {
-            gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
+            //gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
         }
         let mut output = AtomicArray::default();
         self.storage.read(&mut output);

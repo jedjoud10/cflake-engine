@@ -2,7 +2,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 
 use crate::{object::PipelineCollectionElement, advanced::raw::storage::Storage, utils::{UsageType, AccessType, UpdateFrequency, ReallocationType}};
 
-use super::{IndexBuilder, Indices, VertexBuilder, Vertices, MeshBuffers};
+use super::{IndexBuilder, Indices, VertexBuilder, Vertices, MeshBuffers, GeometryBuilder};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
@@ -50,18 +50,15 @@ impl Asset for Mesh {
         let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
         // Generate the tangents
         // Create the actual Mesh now
-        let mut mesh = Mesh::default();
-        /*
-        let mut builder = mesh.modifier().vertex_builder;
+        let mut builder = GeometryBuilder::default();
+        let vertices = &mut builder.vertices;
         for vertex in parsed_obj.vertices {
-            builder
-                .position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]))
-                .normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
-                .uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
+            vertices.position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]));
+            vertices.normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8));
+            vertices.uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
-        */
-        mesh.indices = parsed_obj.indices;
-        Some(mesh)
+        builder.indices.indices = parsed_obj.indices;
+        Some(builder.build())
     }
 }
 

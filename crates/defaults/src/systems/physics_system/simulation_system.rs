@@ -15,7 +15,7 @@ fn run(world: &mut World, mut data: EventKey) {
         return;
     }
 
-    // Update the position/rotation and velocity of each rigidbody since we might have externally updated them
+    // Update the position/rotation and attributes of each rigidbody since we might have externally updated them
     let query = data.as_query_mut().unwrap();
     for (_, components) in query.iter() {
         // Check if we even need to update the position/rotation
@@ -31,7 +31,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 r_rigidbody.set_position(isometry, true);
             }
         }
-        // Check if we even need to update the velocity
+        // Check if we even need to update the attributes
         if components.was_mutated::<crate::components::RigidBody>().unwrap_or_default() {
             let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
             // Update the Rapier3D rigibody

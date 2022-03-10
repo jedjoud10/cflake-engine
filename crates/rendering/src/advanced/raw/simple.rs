@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem::size_of, ptr::null};
+use std::{marker::PhantomData, mem::{size_of, MaybeUninit}, ptr::null};
 
 use super::{storage::Storage, Buffer};
 use crate::{pipeline::Pipeline, utils::UsageType};
@@ -23,7 +23,7 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Init and fill
-        let mut storage = Storage::new(len, len, ptr, _type, usage);
+        let storage = Storage::new(len, len, ptr, _type, usage);
         Self { storage }
     }
     // Read directly from the OpenGL buffer

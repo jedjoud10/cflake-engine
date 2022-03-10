@@ -7,6 +7,8 @@ use std::{
     mem::{size_of, MaybeUninit},
     ptr::null,
 };
+
+use super::raw::dynamic::DynamicBuffer;
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
 pub struct ShaderStorage<Buffer: super::raw::Buffer> {

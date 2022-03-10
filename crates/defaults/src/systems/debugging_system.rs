@@ -49,7 +49,6 @@ fn run(world: &mut World, _data: EventKey) {
             ui.label(format!("Chunks: '{}'", terrain.chunks_manager.chunks.len()));
             ui.label(format!("Pending Generation: '{}'", terrain.chunks_manager.chunks_generating.len()));
             ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
-            ui.label(format!("Total Edits: '{}'", terrain.editing_manager.edits.len()));
         }
     });
 }
