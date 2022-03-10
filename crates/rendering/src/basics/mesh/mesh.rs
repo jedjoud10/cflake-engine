@@ -1,12 +1,14 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use crate::object::PipelineCollectionElement;
+use crate::{object::PipelineCollectionElement, advanced::raw::storage::Storage, utils::{UsageType, AccessType, UpdateFrequency, ReallocationType}};
 
-use super::{GeometryModifier, IndexBuilder, Indices, VertexBuilder, Vertices};
+use super::{IndexBuilder, Indices, VertexBuilder, Vertices, MeshBuffers};
+use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
 use gl::types::GLuint;
 use obj::TexturedVertex;
+use smallvec::SmallVec;
 use veclib::{vec2, vec3};
 
 // A simple mesh that holds vertex, normal, and color data
@@ -16,9 +18,10 @@ pub struct Mesh {
     #[getset(get_copy = "pub(crate)")]
     vao: GLuint,
 
-    // Vertex attributes IDs
-    #[getset(get = "pub(crate)", set = "pub(super)")]
-    buffers: [GLuint; 6],
+    // Buffers
+    #[getset(get = "pub", get_mut = "pub")]
+    buffers: Option<MeshBuffers>,
+
     /*
     pub element_buffer_object: u32,
 
@@ -29,11 +32,12 @@ pub struct Mesh {
     pub color_buf: u32,
     pub uv_buf: u32,
     */
-    // Store the vertices (in multiple bufer or in a single big buffer)
+
+    // Store the vertices
     #[getset(get = "pub", set = "pub(super)")]
     vertices: Vertices,
 
-    // Triangles
+    // And indices
     #[getset(get = "pub", set = "pub(super)")]
     indices: Indices,
 }
@@ -47,6 +51,7 @@ impl Asset for Mesh {
         // Generate the tangents
         // Create the actual Mesh now
         let mut mesh = Mesh::default();
+        /*
         let mut builder = mesh.modifier().vertex_builder;
         for vertex in parsed_obj.vertices {
             builder
@@ -54,120 +59,101 @@ impl Asset for Mesh {
                 .normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8))
                 .uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
+        */
         mesh.indices = parsed_obj.indices;
         Some(mesh)
     }
 }
 
 impl PipelineCollectionElement for Mesh {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
-        // Create the OpenGL mesh
-        if self.vertices().is_empty() {
-            return;
-        }
-
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {        
+        // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO
             gl::GenVertexArrays(1, &mut self.vao);
             gl::BindVertexArray(self.vao);
 
-            // We can create all the buffers at once
-            let mut buffers = [0_u32; 6];
-            gl::GenBuffers(1, buffers.as_mut_ptr());
+            // Usage
+            let usage = UsageType {
+                access: AccessType::ClientToServer,
+                frequency: UpdateFrequency::WriteOnceReadMany,
+                reallocation: ReallocationType::StaticallyAllocated,
+            };
+
+            // All the buffers
+            let mut buffers = ArrayVec::<GLuint, 6>::default();
 
             // Create the EBO
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffers[0]);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (self.indices().len() * size_of::<u32>()) as isize,
-                self.indices().as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
+            let indices = Storage::<u32>::new(self.indices().len(), self.indices().len(), self.indices().as_ptr(), gl::ELEMENT_ARRAY_BUFFER, usage);
+            buffers.push(indices.buffer());
 
-            gl::GenBuffers(5, buffers.as_mut_ptr().add(1));
-            // Normal, fallback
-            // Create the vertex buffer and populate it
-            gl::BindBuffer(gl::ARRAY_BUFFER, buffers[1]);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.vertices.positions.len() * size_of::<f32>() * 3) as isize,
-                self.vertices.positions.as_ptr() as *const c_void,
-                gl::STATIC_DRAW,
-            );
+            // Positions
+            let positions = Storage::<veclib::Vector3<f32>>::new(self.vertices().len(), self.vertices().len(), self.vertices.positions.as_ptr(), gl::ARRAY_BUFFER, usage);
+            buffers.push(positions.buffer());
 
             // Vertex attrib array
+            gl::BindBuffer(gl::ARRAY_BUFFER, positions.buffer());
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             // Vertex normals attribute
-            if !self.vertices.normals.is_empty() {
+            let normals = if !self.vertices.normals.is_empty() {
                 // Vertex normals buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[2]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.vertices.normals.len() * size_of::<i8>() * 3) as isize,
-                    self.vertices.normals.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
+                let normals = Storage::<veclib::Vector3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(normals.buffer());
                 gl::EnableVertexAttribArray(1);
                 gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
+                Some(normals)
             } else {
                 gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
-            }
+                None
+            };
 
-            if !self.vertices.tangents.is_empty() {
-                // And it's brother, the tangent buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[3]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.vertices.tangents.len() * size_of::<i8>() * 4) as isize,
-                    self.vertices.tangents.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
-                // Tangent attribute
+            let tangents = if !self.vertices.tangents.is_empty() {
+                // Vertex tangents buffer 
+                let tangents = Storage::<veclib::Vector4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(tangents.buffer());
                 gl::EnableVertexAttribArray(2);
                 gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
+                Some(tangents)
             } else {
                 gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
-            }
+                None
+            };
 
-            if !self.vertices.uvs.is_empty() {
-                // The texture coordinates buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[4]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.vertices.uvs.len() * size_of::<u8>() * 2) as isize,
-                    self.vertices.uvs.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
-                // UV attribute
+            let uvs = if !self.vertices.uvs.is_empty() {
+                // Vertex texture coordinates buffer
+                let uvs = Storage::<veclib::Vector2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(uvs.buffer());
                 gl::EnableVertexAttribArray(3);
                 gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                Some(uvs)
             } else {
                 gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
-            }
+                None
+            };
 
-            if !self.vertices.colors.is_empty() {
+            let colors = if !self.vertices.colors.is_empty() {
                 // Vertex colors buffer
-                gl::BindBuffer(gl::ARRAY_BUFFER, buffers[5]);
-                gl::BufferData(
-                    gl::ARRAY_BUFFER,
-                    (self.vertices.colors.len() * size_of::<u8>() * 3) as isize,
-                    self.vertices.colors.as_ptr() as *const c_void,
-                    gl::STATIC_DRAW,
-                );
-
-                // Vertex colors attribute
+                let colors = Storage::<veclib::Vector3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(colors.buffer());
                 gl::EnableVertexAttribArray(4);
                 gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
+                Some(colors)
             } else {
                 gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
-            }
+                None
+            };
             // Unbind
-            self.buffers = buffers;
+            self.buffers = Some(MeshBuffers {
+                inner: buffers,
+                indices,
+                positions,
+                normals,
+                tangents,
+                colors,
+                uvs,
+            });
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -177,29 +163,10 @@ impl PipelineCollectionElement for Mesh {
     // Dispose of the OpenGL buffers
     fn disposed(self) {
         unsafe {
-            // Delete the VBOs
-            gl::DeleteBuffers(self.buffers.len() as i32, self.buffers.as_ptr());
-
             // Delete the vertex array
             gl::DeleteVertexArrays(1, &self.vao);
         }
     }
-}
-
-impl Mesh {
-    // Create a geometry modifier for an existing mesh
-    pub fn modifier(&mut self) -> GeometryModifier {
-        GeometryModifier {
-            vertex_builder: VertexBuilder { vertices: &mut self.vertices },
-            index_builder: IndexBuilder { indices: &mut self.indices },
-        }
-    }
-    /*
-    // Apply the changes from a geometry builder to the mesh
-    pub fn apply<'a>(&'a mut self, builder: GeometryBuilder<'a>) {
-
-    }
-    */
 }
 
 impl Mesh {

@@ -953,7 +953,6 @@ dependencies = [
  "assets",
  "egui",
  "egui-winit",
- "gl",
  "math",
  "parking_lot 0.12.0",
  "rendering",

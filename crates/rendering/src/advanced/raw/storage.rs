@@ -27,39 +27,34 @@ pub struct Storage<Element> {
 
 // Creation
 impl<Element> Storage<Element> {
-    // Create the raw storage
-    pub fn new(_type: u32, usage: UsageType, _pipeline: &Pipeline) -> Self {
-        let oid = unsafe {
-            let mut oid = 0;
-            gl::GenBuffers(1, &mut oid);
-            oid
+    // Create the raw storage, and possibly initialize it
+    pub(crate) fn new(cap: usize, len: usize, ptr: *const Element, _type: u32, usage: UsageType) -> Self {
+        let buffer = unsafe {
+            let mut buffer = 0;
+            gl::GenBuffers(1, &mut buffer);
+            buffer
         };
-        Self {
-            buffer: oid,
-            _type,
-            usage,
-            _phantom: PhantomData::default(),
-            capacity: 0,
-            len: 0,
-        }
-    }
-    // Initialize the raw storage with some empty data
-    pub(crate) fn init(&mut self, cap: usize, len: usize, ptr: *const Element) {
-        self.len = len;
-        self.capacity = cap;
         // If we will allocate the buffer once, make it immutable
-        match self.usage.reallocation {
+        match usage.reallocation {
             ReallocationType::StaticallyAllocated => unsafe {
                 // Single allocation
-                gl::BindBuffer(self._type, self.buffer);
+                gl::BindBuffer(_type, buffer);
                 let bits = gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT;
-                gl::BufferStorage(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
+                gl::BufferStorage(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
             },
             ReallocationType::DynamicallyAllocated => unsafe {
                 // Can have multiple allocations
-                gl::BindBuffer(self._type, self.buffer);
-                gl::BufferData(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, self.usage.convert());
+                gl::BindBuffer(_type, buffer);
+                gl::BufferData(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, usage.convert());
             },
+        }
+        Self {
+            buffer,
+            _type,
+            usage,
+            _phantom: PhantomData::default(),
+            capacity: cap,
+            len,
         }
     }
     // Update the buffer
@@ -103,32 +98,3 @@ impl<Element> Drop for Storage<Element> {
         }
     }
 }
-
-/*
-impl<T> GLBufferOperations for DynamicRawBuffer<T> {
-    type Data = Vec<T>;
-
-    fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        unsafe {
-            gl::BindBuffer(self._type, self.buffer);
-            // Byte size
-            let byte_size = self.inner.len() * size_of::<T>();
-            gl::GetBufferSubData(self._type, 0, byte_size as isize, self.inner.as_mut_ptr() as *mut c_void);
-            gl::BindBuffer(self._type, 0);
-        }
-        Ok(&self.inner)
-    }
-    fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        self.set_inner(data);
-        Ok(())
-    }
-}
-*/

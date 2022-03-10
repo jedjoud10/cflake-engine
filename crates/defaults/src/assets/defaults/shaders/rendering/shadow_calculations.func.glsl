@@ -29,5 +29,6 @@ float calculate_shadows(vec3 position, vec3 normal, vec3 light_dir, mat4 lightsp
     }
     // Average
     accumulated_shadow /= 9.0;
+    accumulated_shadow = round(accumulated_shadow);
     return accumulated_shadow;
 }

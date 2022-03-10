@@ -35,18 +35,21 @@ impl<Element> Buffer for DynamicBuffer<Element> {
             AccessType::ServerToServer | AccessType::ServerToClient => panic!(),
             _ => (),
         }
-        let mut storage = Storage::new(_type, usage, _pipeline);
-        // Fill the storage
-        storage.init(cap, len, ptr);
-        Self { storage, inner: {
-            let mut vec = Vec::with_capacity(cap);            
-            // Fill if possible
-            if !ptr.is_null() && len > 0 {
-                let slice = std::slice::from_raw_parts(ptr, len);
-                std::ptr::copy(slice.as_ptr(), vec.as_mut_ptr(), len);
-            }           
-            vec
-        }}
+        // Init and fill
+        let mut storage = Storage::new(cap, len, ptr, _type, usage);
+
+        Self {
+            storage,
+            inner: {
+                let mut vec = Vec::with_capacity(cap);
+                // Fill if possible
+                if !ptr.is_null() && len > 0 {
+                    let slice = std::slice::from_raw_parts(ptr, len);
+                    std::ptr::copy(slice.as_ptr(), vec.as_mut_ptr(), len);
+                }
+                vec
+            },
+        }
     }
     // Read from the dynamic buffer
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that
@@ -76,12 +79,14 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     }
     // Simple write
     // The push and pop commands automatically write to the buffer as well
-    fn write(&mut self, buf: &[Element]) where Element: Copy {
+    fn write(&mut self, buf: &[Element])
+    where
+        Element: Copy,
+    {
         self.inner.clear();
         self.inner.extend_from_slice(buf);
         self.storage.update(self.inner.as_ptr(), self.capacity(), self.len());
     }
-
 }
 
 // Push, set, pop, len

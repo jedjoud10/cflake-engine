@@ -22,9 +22,8 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     }
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
-        let mut storage = Storage::new(_type, usage, _pipeline);
-        // Fill the storage
-        storage.init(len, len, ptr);
+        // Init and fill
+        let mut storage = Storage::new(len, len, ptr, _type, usage);
         Self { storage }
     }
     // Read directly from the OpenGL buffer
@@ -51,7 +50,10 @@ impl<Element> Buffer for SimpleBuffer<Element> {
         }
     }
     // Simple write
-    fn write(&mut self, buf: &[Element]) where Element: Copy {
+    fn write(&mut self, buf: &[Element])
+    where
+        Element: Copy,
+    {
         // Panic if the sizes don't match
         if self.storage.len() != buf.len() {
             panic!("Length mismatch, src length is '{}', new vec length is '{}'", self.storage.len(), buf.len());
@@ -60,8 +62,6 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     }
     // With capacity (also set the buffer's length)
     fn with_capacity(capacity: usize, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
-        unsafe {
-            Self::new_raw(capacity, capacity, null(), _type, usage, _pipeline)
-        }
+        unsafe { Self::new_raw(capacity, capacity, null(), _type, usage, _pipeline) }
     }
 }

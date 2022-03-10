@@ -5,7 +5,6 @@ use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 
 use crate::{
-    basics::mapper::{MappableGLBuffer, MappedBufferReader, MappedBufferWriter},
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::{Handle, Pipeline, PipelineCollection},
     utils::UsageType,

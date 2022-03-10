@@ -1,7 +1,4 @@
-use world::{
-    ecs::component::Component,
-    terrain::ChunkCoords,
-};
+use world::{ecs::component::Component, terrain::ChunkCoords};
 
 // A component that will be added to chunk entities
 #[derive(Component)]

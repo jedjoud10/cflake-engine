@@ -16,6 +16,10 @@ pub struct Handle<T: PipelineCollectionElement> {
     pub(crate) _phantom: PhantomData<T>,
 }
 
+// Sad
+unsafe impl<T: PipelineCollectionElement> Send for Handle<T> {}
+unsafe impl<T: PipelineCollectionElement> Sync for Handle<T> {}
+
 impl<T: PipelineCollectionElement> std::fmt::Debug for Handle<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Handle").field("key", &self.key).finish()

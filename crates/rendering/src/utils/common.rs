@@ -66,7 +66,7 @@ pub struct UsageType {
 
 impl Default for UsageType {
     fn default() -> Self {
-        Self { 
+        Self {
             access: AccessType::ClientToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
             reallocation: ReallocationType::DynamicallyAllocated,

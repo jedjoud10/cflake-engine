@@ -3,7 +3,11 @@ use std::time::Instant;
 use crate::globals::ChunkGenerationState;
 use world::{
     ecs::{entity::EntityKey, event::EventKey},
-    rendering::{advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer}, basics::uniforms::Uniforms, pipeline::Pipeline},
+    rendering::{
+        advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer},
+        basics::uniforms::Uniforms,
+        pipeline::Pipeline,
+    },
     terrain::{ChunkCoords, CHUNK_SIZE},
     World,
 };

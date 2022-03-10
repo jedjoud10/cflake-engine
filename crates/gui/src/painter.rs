@@ -8,7 +8,7 @@ use rendering::{
     pipeline::{Handle, Pipeline},
     utils::DataType,
 };
-
+use rendering::gl;
 use crate::buffers::Buffers;
 
 // Painter that will draw the egui elements onto the screen

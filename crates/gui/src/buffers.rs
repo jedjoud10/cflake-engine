@@ -1,10 +1,16 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use gl::types::GLuint;
+use rendering::gl::types::GLuint;
+use rendering::gl;
 use rendering::{
     advanced::raw::{dynamic::DynamicBuffer, Buffer},
     pipeline::Pipeline,
-    utils::{AccessType::ClientToServer, UpdateFrequency::{WriteOnceReadSometimes, WriteManyReadMany}, UsageType, ReallocationType::DynamicallyAllocated},
+    utils::{
+        AccessType::ClientToServer,
+        ReallocationType::DynamicallyAllocated,
+        UpdateFrequency::{WriteManyReadMany},
+        UsageType,
+    },
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh

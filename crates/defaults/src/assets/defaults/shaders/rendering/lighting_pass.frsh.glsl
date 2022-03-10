@@ -77,5 +77,5 @@ void main() {
     float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
     float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);
     float vignette_strength = (vignette_strength_x + vignette_strength_y) * 3.0; 
-	color = vec4(mix(aces(final_color), final_color, 0.5), 1.0) * (1-vignette_strength);
+	color = vec4(mix(aces(final_color), final_color, 0.2), 1.0) * (1-vignette_strength);
 }

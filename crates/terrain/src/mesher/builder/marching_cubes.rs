@@ -7,7 +7,7 @@ use crate::{
     ChunkCoords, StoredVoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::basics::mesh::{GeometryModifier, Mesh};
+use rendering::basics::mesh::{GeometryBuilder, Mesh};
 use std::collections::hash_map::Entry;
 
 // Struct that contains everything related to the marching cubes mesh generation
@@ -64,7 +64,7 @@ impl MarchingCubes {
         }
     }
     // Solve the marching cubes case and add the vertices to the mesh
-    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, builder: &mut GeometryModifier, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
+    fn solve_marching_cubes_case(&self, voxels: &StoredVoxelData, builder: &mut GeometryBuilder, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
         // The vertex indices that are gonna be used for the skirts
         for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
@@ -96,22 +96,22 @@ impl MarchingCubes {
                     },
                 );
                 // Then add it to the mesh
-                e.insert(builder.vertex_builder.vertices.len() as u16);
-                builder.index_builder.push(builder.vertex_builder.vertices.len() as u32);
-                builder
-                    .vertex_builder
-                    .position(interpolated.vertex)
-                    .normal(interpolated.normal)
-                    .color(interpolated.color)
-                    .uv(veclib::Vector2::new(data.voxel_material, 0));
+                let verts = &mut builder.vertices;
+                let tris = &mut builder.indices;
+                e.insert(verts.vertices.len() as u16);
+                tris.push(verts.vertices.len() as u32);
+                verts.position(interpolated.vertex);
+                verts.normal(interpolated.normal);
+                verts.color(interpolated.color);
+                verts.uv(veclib::Vector2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
-                builder.index_builder.push(merger[&edge_tuple] as u32);
+                builder.indices.push(merger[&edge_tuple] as u32);
             }
         }
     }
     // Generate the mesh
-    fn generate_mesh(&self, voxels: &StoredVoxelData, builder: &mut GeometryModifier) {
+    fn generate_mesh(&self, voxels: &StoredVoxelData, builder: &mut GeometryBuilder) {
         // Use vertex merging
         let mut merger = VertexMerger::default();
         for x in 0..CHUNK_SIZE {
@@ -141,11 +141,11 @@ impl MarchingCubes {
     pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Mesh {
         let i = std::time::Instant::now();
         // Mesh builder
-        let mut mesh = Mesh::default();
-        let mut builder = mesh.modifier();
+        let mut builder = GeometryBuilder::default();
         // Then generate the mesh
         self.generate_mesh(voxels, &mut builder);
         // Combine the mesh's custom vertex data with the mesh itself
+        let mesh = builder.build();
         println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, mesh.vertices().len());
         mesh
     }

@@ -32,31 +32,27 @@ impl Vertices {
     }
 }
 
+#[derive(Default)]
 // A vertex builder that helps us create multiple vertices and add them to the mesh
-pub struct VertexBuilder<'a> {
-    pub vertices: &'a mut Vertices,
+pub struct VertexBuilder {
+    pub vertices: Vertices,
 }
 
-impl<'a> VertexBuilder<'a> {
+impl VertexBuilder {
     // Le builder pattern
-    pub fn position<'b>(&'b mut self, position: veclib::Vector3<f32>) -> &'b mut VertexBuilder<'a> {
+    pub fn position(&mut self, position: veclib::Vector3<f32>) {
         self.vertices.positions.push(position);
-        self
     }
-    pub fn normal<'b>(&'b mut self, normal: veclib::Vector3<i8>) -> &'b mut VertexBuilder<'a> {
+    pub fn normal(&mut self, normal: veclib::Vector3<i8>) {
         self.vertices.normals.push(normal);
-        self
     }
-    pub fn tangent<'b>(&'b mut self, tangent: veclib::Vector4<i8>) -> &'b mut VertexBuilder<'a> {
+    pub fn tangent(&mut self, tangent: veclib::Vector4<i8>) {
         self.vertices.tangents.push(tangent);
-        self
     }
-    pub fn uv<'b>(&'b mut self, uv: veclib::Vector2<u8>) -> &'b mut VertexBuilder<'a> {
+    pub fn uv(&mut self, uv: veclib::Vector2<u8>) {
         self.vertices.uvs.push(uv);
-        self
     }
-    pub fn color<'b>(&'b mut self, color: veclib::Vector3<u8>) -> &'b mut VertexBuilder<'a> {
+    pub fn color(&mut self, color: veclib::Vector3<u8>) {
         self.vertices.colors.push(color);
-        self
     }
 }

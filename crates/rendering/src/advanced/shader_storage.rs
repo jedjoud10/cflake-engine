@@ -1,7 +1,12 @@
 use crate::{pipeline::Pipeline, utils::UsageType};
 use getset::{Getters, MutGetters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::{size_of, MaybeUninit}, ptr::null};
+use std::{
+    ffi::c_void,
+    marker::PhantomData,
+    mem::{size_of, MaybeUninit},
+    ptr::null,
+};
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
 pub struct ShaderStorage<Buffer: super::raw::Buffer> {
@@ -13,7 +18,7 @@ impl<Buffer: super::raw::Buffer> ShaderStorage<Buffer> {
     // Create a new empty shader storage
     pub fn new_empty(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {
-            storage: Buffer::empty(gl::SHADER_STORAGE_BUFFER, usage, _pipeline)
+            storage: Buffer::empty(gl::SHADER_STORAGE_BUFFER, usage, _pipeline),
         }
     }
     // Create a new shader storage from raw data

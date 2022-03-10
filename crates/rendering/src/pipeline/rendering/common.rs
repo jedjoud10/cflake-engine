@@ -19,7 +19,8 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
     if mesh.vao() != 0 {
         // Actually draw the mesh
         gl::BindVertexArray(mesh.vao());
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.buffers()[0]);
+        let indices = mesh.buffers().as_ref().unwrap().indices().buffer();
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, indices);
         gl::DrawElements(gl::TRIANGLES, mesh.indices().len() as i32, gl::UNSIGNED_INT, null());
     }
 }
@@ -32,9 +33,6 @@ pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedMode
     }
     fn fallback_shader(pipeline: &Pipeline) -> &Shader {
         pipeline.shaders.get(&pipeline.defaults().shader).unwrap()
-    }
-    fn fallback_mesh(pipeline: &Pipeline) -> &Mesh {
-        pipeline.meshes.get(&pipeline.defaults().mesh).unwrap()
     }
 
     // Render the mesh

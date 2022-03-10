@@ -1,6 +1,6 @@
 use world::ecs::event::EventKey;
-use world::World;
 use world::rendering::advanced::raw::Buffer;
+use world::World;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
     // Get the terrain global

@@ -3,11 +3,12 @@ use std::ops::{Index, IndexMut};
 // Mesh indices
 pub type Indices = Vec<u32>;
 // Index builder
-pub struct IndexBuilder<'a> {
-    pub indices: &'a mut Vec<u32>,
+#[derive(Default)]
+pub struct IndexBuilder {
+    pub indices: Vec<u32>,
 }
 
-impl<'a> IndexBuilder<'a> {
+impl IndexBuilder {
     // Add a single index
     pub fn push(&mut self, index: u32) {
         self.indices.push(index);

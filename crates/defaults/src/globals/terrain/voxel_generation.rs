@@ -16,7 +16,7 @@ use world::{
             uniforms::StoredUniforms,
         },
         pipeline::{Handle, Pipeline},
-        utils::{AccessType, UpdateFrequency, UsageType, ReallocationType},
+        utils::{AccessType, ReallocationType, UpdateFrequency, UsageType},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
