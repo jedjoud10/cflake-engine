@@ -41,9 +41,9 @@ pub enum AccessType {
 // How frequently we will update the data of a buffer object
 #[derive(Debug, Clone, Copy)]
 pub enum UpdateFrequency {
-    Static,
-    Dynamic,
-    Stream,
+    WriteOnceReadMany,
+    WriteManyReadMany,
+    WriteOnceReadSometimes,
 }
 
 // How we will use a buffer
@@ -54,6 +54,7 @@ pub struct UsageType {
 }
 
 impl UsageType {
+    // Create a new usage type
     pub fn new(access: AccessType, frequency: UpdateFrequency) -> Self {
         Self { access, frequency }
     }
@@ -61,19 +62,19 @@ impl UsageType {
     pub fn convert(&self) -> GLuint {
         match self.access {
             AccessType::ClientToServer => match self.frequency {
-                UpdateFrequency::Static => gl::STATIC_DRAW,
-                UpdateFrequency::Dynamic => gl::DYNAMIC_DRAW,
-                UpdateFrequency::Stream => gl::STREAM_DRAW,
+                UpdateFrequency::WriteOnceReadMany => gl::STATIC_DRAW,
+                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_DRAW,
+                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_DRAW,
             },
             AccessType::ServerToClient => match self.frequency {
-                UpdateFrequency::Static => gl::STATIC_READ,
-                UpdateFrequency::Dynamic => gl::DYNAMIC_READ,
-                UpdateFrequency::Stream => gl::STREAM_READ,
+                UpdateFrequency::WriteOnceReadMany => gl::STATIC_READ,
+                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_READ,
+                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_READ,
             },
             AccessType::ServerToServer => match self.frequency {
-                UpdateFrequency::Static => gl::STATIC_COPY,
-                UpdateFrequency::Dynamic => gl::DYNAMIC_COPY,
-                UpdateFrequency::Stream => gl::STREAM_COPY,
+                UpdateFrequency::WriteOnceReadMany => gl::STATIC_COPY,
+                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_COPY,
+                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_COPY,
             },
         }
     }

@@ -40,7 +40,7 @@ fn run(world: &mut World, _data: EventKey) {
         // Terrain
         let terrain = world.globals.get_mut::<crate::globals::Terrain>();
         if let Ok(terrain) = terrain {
-            let octree = terrain.chunks_manager.octree.lock();
+            let octree = &terrain.chunks_manager.octree;
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = terrain::CHUNK_SIZE));

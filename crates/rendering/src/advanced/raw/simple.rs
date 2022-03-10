@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem::size_of};
+use std::{marker::PhantomData, mem::size_of, ptr::null};
 
 use super::{storage::Storage, Buffer};
 use crate::{pipeline::Pipeline, utils::UsageType};
@@ -8,26 +8,27 @@ use gl::types::GLuint;
 // A simple buffer that just holds an OpenGL buffer, but doesn't hold any data by itself
 // Can be useful when all we need to do is update some already preallocated buffers
 #[derive(Getters)]
-pub struct SimpleBuffer<E> {
+pub struct SimpleBuffer<Element> {
     // Storage
-    storage: Storage<E>,
+    storage: Storage<Element>,
 }
 
 // Creation
-impl<E> Buffer<E> for SimpleBuffer<E> {
+impl<Element> Buffer for SimpleBuffer<Element> {
+    type Element = Element;
     // Storage
-    fn storage(&self) -> &Storage<E> {
+    fn storage(&self) -> &Storage<Element> {
         &self.storage
     }
     // Create a simple buffer THAT CANNOT CHANGE SIZE
-    fn new_raw(_cap: usize, len: usize, ptr: *const E, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
+    unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         let mut storage = Storage::new(_type, usage, _pipeline);
         // Fill the storage
         storage.init(len, len, ptr);
         Self { storage }
     }
     // Read directly from the OpenGL buffer
-    fn read(&mut self, output: &mut [E]) {
+    fn read(&mut self, output: &mut [Element]) {
         // Map the buffer
         let ptr = unsafe {
             gl::BindBuffer(self.storage._type(), self.storage.buffer());
@@ -42,7 +43,7 @@ impl<E> Buffer<E> for SimpleBuffer<E> {
         let len = self.storage.len();
 
         // Then copy to output
-        unsafe { std::ptr::copy(ptr as *const E, output.as_mut_ptr(), len) }
+        unsafe { std::ptr::copy(ptr as *const Element, output.as_mut_ptr(), len) }
 
         // We can unmap the buffer now
         unsafe {
@@ -50,11 +51,17 @@ impl<E> Buffer<E> for SimpleBuffer<E> {
         }
     }
     // Simple write
-    fn write(&mut self, vec: Vec<E>) {
+    fn write(&mut self, buf: &[Element]) where Element: Copy {
         // Panic if the sizes don't match
-        if self.storage.len() != vec.len() {
-            panic!("Length mismatch, src length is '{}', new vec length is '{}'", self.storage.len(), vec.len());
+        if self.storage.len() != buf.len() {
+            panic!("Length mismatch, src length is '{}', new vec length is '{}'", self.storage.len(), buf.len());
         }
-        self.storage.update(&vec);
+        self.storage.update(buf.as_ptr(), buf.len(), buf.len());
+    }
+    // With capacity (also set the buffer's length)
+    fn with_capacity(capacity: usize, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
+        unsafe {
+            Self::new_raw(capacity, capacity, null(), _type, usage, _pipeline)
+        }
     }
 }

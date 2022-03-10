@@ -4,7 +4,7 @@ use gl::types::GLuint;
 use rendering::{
     advanced::raw::{dynamic::DynamicBuffer, Buffer},
     pipeline::Pipeline,
-    utils::{AccessType::ClientToServer, UpdateFrequency::{Stream, Dynamic}, UsageType},
+    utils::{AccessType::ClientToServer, UpdateFrequency::{WriteOnceReadSometimes, WriteManyReadMany}, UsageType},
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
@@ -31,11 +31,11 @@ impl Buffers {
         // Also generate the buffers
         const USAGE_TYPE: UsageType = UsageType {
             access: ClientToServer,
-            frequency: Dynamic,
+            frequency: WriteManyReadMany,
         };
         // Dynamic raw buffers
-        let indices = DynamicBuffer::<u32>::new_raw(0, 0, null(), gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
-        let vertices = DynamicBuffer::<egui::epaint::Vertex>::new_raw(0, 0, null(), gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
+        let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
+        let vertices = DynamicBuffer::<egui::epaint::Vertex>::empty(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
 
         // Bind the vertex attributes
         unsafe {
@@ -59,8 +59,8 @@ impl Buffers {
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
         // For some reason we MUST reallocate the vertex and index buffer, unless we want to get weird ass GUI
-        self.vertices.write(vertices);
-        self.indices.write(indices);
+        self.vertices.write(&vertices);
+        self.indices.write(&indices);
     }
     // And draw
     pub fn draw(&mut self) {

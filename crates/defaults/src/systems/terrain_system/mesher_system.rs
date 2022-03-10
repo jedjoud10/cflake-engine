@@ -34,7 +34,7 @@ fn run(world: &mut World, mut data: EventKey) {
             if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(key, true) {
                 // We have created voxel data for this chunk, and it is valid (it contains a surface)
                 let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
-                let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data;
+                let voxel_data = &terrain.voxel_generator.stored;
                 let mesher = Mesher::new(
                     chunk.coords,
                     voxel_data,
@@ -67,7 +67,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 terrain.chunks_manager.chunks_generating.remove(&chunk.coords);
                 // Switch states
                 terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-                let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data.clone();
+                let voxel_data = &terrain.voxel_generator.stored.clone();
                 chunk_post_gen(world, &chunk, voxel_data);
                 return;
             } else if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::EndVoxelDataGeneration(key, false) {
@@ -82,7 +82,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 // The chunk ID is the same, but we do not have a surface
                 // We still gotta update the current chunk state though
                 terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-                let voxel_data = &terrain.voxel_generator.stored_chunk_voxel_data.clone();
+                let voxel_data = &terrain.voxel_generator.stored.clone();
                 chunk_post_gen(world, &chunk, voxel_data);
                 return;
             } else {

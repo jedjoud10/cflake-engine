@@ -1,12 +1,13 @@
 use world::ecs::event::EventKey;
 use world::World;
+use world::rendering::advanced::raw::Buffer;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: EventKey) {
     // Get the terrain global
     if let Ok(terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
         let terrain = &mut *terrain;
-        let chunks_to_regenerate = terrain.editing_manager.get_influenced_chunks(&terrain.chunks_manager.octree.lock().inner);
+        let chunks_to_regenerate = terrain.editing_manager.get_influenced_chunks(&terrain.chunks_manager.octree.inner);
         if !chunks_to_regenerate.is_empty() {
             // Regenerate the specified chunks
             for coords in chunks_to_regenerate {
@@ -14,10 +15,8 @@ fn run(world: &mut World, _data: EventKey) {
             }
             // Also set the packed edits since we will need to update them on the GPU
             let packed = terrain.editing_manager.convert();
-            terrain.voxel_generator.packed_edits_num = packed.len();
-            terrain.voxel_generator.packed_edits_update = Some(packed);
+            terrain.voxel_generator.ssbo_edits.storage_mut().write(&packed);
         } else {
-            terrain.voxel_generator.packed_edits_update = None;
         }
         terrain.chunks_manager.update_priorities();
     }

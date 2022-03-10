@@ -1,4 +1,4 @@
-mod main_types;
+mod common;
 mod window;
-pub use main_types::*;
+pub use common::*;
 pub use window::*;

@@ -1,4 +1,4 @@
-use std::mem::size_of;
+use std::mem::{size_of, MaybeUninit};
 
 use world::{
     rendering::{
@@ -23,19 +23,17 @@ use world::{
 
 pub struct VoxelGenerator {
     // Voxel Generation
-    pub compute_shader: Handle<ComputeShader>,
-    pub second_compute_shader: Handle<ComputeShader>,
+    pub primary_compute: Handle<ComputeShader>,
+    pub secondary_compute: Handle<ComputeShader>,
     pub atomics: AtomicGroup,
     // Our 2 shader storages (for voxel generation)
-    pub shader_storage_arbitrary_voxels: ShaderStorage<SimpleBuffer<u8>, u8>,
-    pub shader_storage_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>, PackedVoxel>,
+    pub ssbo_voxels: ShaderStorage<SimpleBuffer<u8>>,
+    pub ssbo_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>>,
     // And another voxel storage for edits
-    pub shader_storage_edits: ShaderStorage<DynamicBuffer<PackedEdit>, PackedEdit>,
-    pub packed_edits_update: Option<Vec<PackedEdit>>,
-    pub packed_edits_num: usize,
+    pub ssbo_edits: ShaderStorage<DynamicBuffer<PackedEdit>>,
     // And the voxel data for said chunk
-    pub packed_chunk_voxel_data: PackedVoxelData,
-    pub stored_chunk_voxel_data: StoredVoxelData,
+    pub packed: PackedVoxelData,
+    pub stored: StoredVoxelData,
     // Some uniforms
     pub uniforms: Option<StoredUniforms>,
 }
@@ -62,7 +60,7 @@ impl VoxelGenerator {
         let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
 
         // Also construct the atomics
-        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::Dynamic), pipeline);
+        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::WriteManyReadMany), pipeline);
 
         // Get the size of each arbitrary voxel
         let mut settings = ShaderInfoQuerySettings::default();
@@ -79,31 +77,28 @@ impl VoxelGenerator {
         let byte_size = shader_info.get(&resource).unwrap().get(0).unwrap().as_byte_size().unwrap();
 
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
-
         // Usage
-        let usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::Dynamic);
-        let usage2 = UsageType::new(AccessType::ServerToClient, UpdateFrequency::Dynamic);
-        let usage3 = UsageType::new(AccessType::ClientToServer, UpdateFrequency::Dynamic);
+        let arbitrary_voxels_usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::WriteManyReadMany);
+        let final_voxels_usage = UsageType::new(AccessType::ServerToClient, UpdateFrequency::WriteManyReadMany);
+        let edits_usage = UsageType::new(AccessType::ClientToServer, UpdateFrequency::WriteManyReadMany);
 
         // Load the shader storage
-        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>, u8>::with_len(arbitrary_voxels_size, usage, pipeline);
-        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>, PackedVoxel>::with_len((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), usage2, pipeline);
+        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, arbitrary_voxels_usage, pipeline);
+        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), final_voxels_usage, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
-        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>, PackedEdit>::new(Vec::default(), usage3, pipeline);
+        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), edits_usage, pipeline);
 
         Self {
-            compute_shader: base_compute,
-            second_compute_shader: second_compute,
+            primary_compute: base_compute,
+            secondary_compute: second_compute,
             atomics,
-            shader_storage_edits,
-            shader_storage_arbitrary_voxels,
-            shader_storage_final_voxels,
+            ssbo_edits: shader_storage_edits,
+            ssbo_voxels: shader_storage_arbitrary_voxels,
+            ssbo_final_voxels: shader_storage_final_voxels,
             uniforms,
-            packed_edits_update: None,
-            packed_edits_num: 0,
-            packed_chunk_voxel_data: PackedVoxelData::default(),
-            stored_chunk_voxel_data: StoredVoxelData::default(),
+            packed: PackedVoxelData::default(),
+            stored: StoredVoxelData::default(),
         }
     }
 }

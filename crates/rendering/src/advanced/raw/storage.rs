@@ -8,7 +8,7 @@ use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Raw OpenGL storage
 #[derive(Getters, CopyGetters)]
-pub struct Storage<E> {
+pub struct Storage<Element> {
     // The OpenGL data for this buffer
     #[getset(get_copy = "pub")]
     buffer: GLuint,
@@ -18,7 +18,7 @@ pub struct Storage<E> {
     // Other data
     #[getset(get_copy = "pub")]
     usage: UsageType,
-    _phantom: PhantomData<*const E>,
+    _phantom: PhantomData<*const Element>,
     #[getset(get_copy = "pub")]
     capacity: usize,
     #[getset(get_copy = "pub")]
@@ -26,7 +26,7 @@ pub struct Storage<E> {
 }
 
 // Creation
-impl<E> Storage<E> {
+impl<Element> Storage<Element> {
     // Create the raw storage
     pub fn new(_type: u32, usage: UsageType, _pipeline: &Pipeline) -> Self {
         let oid = unsafe {
@@ -44,17 +44,17 @@ impl<E> Storage<E> {
         }
     }
     // Initialize the raw storage with some empty data
-    pub(crate) fn init(&mut self, cap: usize, len: usize, ptr: *const E) {
+    pub(crate) fn init(&mut self, cap: usize, len: usize, ptr: *const Element) {
         self.len = len;
         self.capacity = cap;
         self.reallocate(ptr, cap);
     }
     // Update the buffer
-    pub(crate) fn update(&mut self, vec: &Vec<E>) {
+    pub(crate) fn update(&mut self, ptr: *const Element, cap: usize, len: usize) {
         // Check if we need to reallocate
-        self.len = vec.len();
+        self.len = len;
         // I hate this
-        self.reallocate(vec.as_ptr(), vec.capacity());
+        self.reallocate(ptr, cap);
         /*
         if vec.capacity() > self.capacity {
             // Completely reallocate
@@ -67,25 +67,25 @@ impl<E> Storage<E> {
         */
     }
     // Completely reallocate
-    pub(crate) fn reallocate(&mut self, ptr: *const E, cap: usize) {
+    pub(crate) fn reallocate(&mut self, ptr: *const Element, cap: usize) {
         self.capacity = cap;
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferData(self._type, (cap * size_of::<E>()) as isize, ptr as *const c_void, self.usage.convert());
+            gl::BufferData(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, self.usage.convert());
             gl::BindBuffer(self._type, 0);
         }
     }
     // Update subdata
-    pub(crate) fn update_subdata(&mut self, ptr: *const E, len: usize) {
+    pub(crate) fn update_subdata(&mut self, ptr: *const Element, len: usize) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(self._type, 0, (len * size_of::<E>()) as isize, ptr as *const c_void);
+            gl::BufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, ptr as *const c_void);
             gl::BindBuffer(self._type, 0);
         }
     }
 }
 
-impl<E> Drop for Storage<E> {
+impl<Element> Drop for Storage<Element> {
     fn drop(&mut self) {
         // Dispose of the OpenGL buffer
         if self.buffer != 0 {

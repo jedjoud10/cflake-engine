@@ -63,8 +63,7 @@ fn run(world: &mut World, _data: EventKey) {
 // Update the terrain
 fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_forward: veclib::Vector3<f32>) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
-        let octree_ = handler.octree.clone();
-        let mut octree = octree_.lock();
+        let octree = &mut handler.octree;
         if let Some((added, removed)) = octree.update(camera_position) {
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them

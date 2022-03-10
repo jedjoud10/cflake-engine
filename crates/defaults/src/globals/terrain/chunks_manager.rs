@@ -26,7 +26,7 @@ impl Default for ChunkGenerationState {
 #[derive(Default)]
 pub struct ChunksManager {
     // Chunk generation
-    pub octree: Arc<Mutex<DiffOctree>>,
+    pub octree: DiffOctree,
     pub chunks: AHashMap<ChunkCoords, EntityKey>,
     pub chunks_generating: AHashSet<ChunkCoords>,
     pub priority_list: Vec<(EntityKey, f32)>,

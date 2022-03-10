@@ -15,23 +15,23 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
     const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
     // Set the uniforms for the first compute shader
-    let program = pipeline.compute_shaders.get(&generator.compute_shader).unwrap().program();
+    let program = pipeline.compute_shaders.get(&generator.primary_compute).unwrap().program();
     let mut uniforms = Uniforms::new(program, pipeline, true);
-    uniforms.set_shader_storage("arbitrary_voxels", &mut generator.shader_storage_arbitrary_voxels, 0);
-    uniforms.set_shader_storage("terrain_edits", &mut generator.shader_storage_edits, 1);
+    uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
+    uniforms.set_shader_storage("terrain_edits", &mut generator.ssbo_edits, 1);
     uniforms.set_vec3f32("node_pos", chunk.coords.position.into());
     uniforms.set_i32("node_size", chunk.coords.size as i32);
-    uniforms.set_u32("num_terrain_edits", generator.packed_edits_num as u32);
+    uniforms.set_u32("num_terrain_edits", generator.ssbo_edits.storage().len() as u32);
     // Now we can execute the compute shader and the read bytes command
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS));
-    let compute = pipeline.compute_shaders.get(&generator.compute_shader).unwrap();
+    let compute = pipeline.compute_shaders.get(&generator.primary_compute).unwrap();
     compute.run(pipeline, settings, uniforms, false).unwrap();
 
     // Set the uniforms for the second compute shader
-    let program = pipeline.compute_shaders.get(&generator.second_compute_shader).unwrap().program();
+    let program = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap().program();
     let mut uniforms = Uniforms::new(program, pipeline, true);
-    uniforms.set_shader_storage("arbitrary_voxels", &mut generator.shader_storage_arbitrary_voxels, 0);
-    uniforms.set_shader_storage("output_voxels", &mut generator.shader_storage_final_voxels, 1);
+    uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
+    uniforms.set_shader_storage("output_voxels", &mut generator.ssbo_final_voxels, 1);
     uniforms.set_vec3f32("node_pos", chunk.coords.position.into());
     uniforms.set_i32("node_size", chunk.coords.size as i32);
 
@@ -40,7 +40,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     uniforms.set_atomic_group("_", &mut generator.atomics, 0);
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2));
-    let compute = pipeline.compute_shaders.get(&generator.second_compute_shader).unwrap();
+    let compute = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap();
     compute.run(pipeline, settings, uniforms, false).unwrap();
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
 }
@@ -61,10 +61,10 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
         return;
     }
     // We can read from the SSBO now
-    let allocated_packed_voxels = &mut generator.packed_chunk_voxel_data.0;
+    let allocated_packed_voxels = &mut generator.packed.0;
     // READ
-    generator.shader_storage_final_voxels.storage_mut().read(allocated_packed_voxels.as_mut_slice());
-    generator.stored_chunk_voxel_data.store(&generator.packed_chunk_voxel_data);
+    generator.ssbo_final_voxels.storage_mut().read(allocated_packed_voxels.as_mut_slice());
+    generator.stored.store(&generator.packed);
 
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
@@ -82,12 +82,6 @@ fn run(world: &mut World, mut data: EventKey) {
         // The edit system didn't pack the edits yet, we must skip
         if terrain.editing_manager.is_pending() {
             return;
-        }
-
-        // Update the packed edits on the GPU
-        if let Some(edits) = terrain.voxel_generator.packed_edits_update.take() {
-            // Send a task to read the final voxel shader values
-            terrain.voxel_generator.shader_storage_edits.storage_mut().write(edits);
         }
         // For each chunk in the terrain
         if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {

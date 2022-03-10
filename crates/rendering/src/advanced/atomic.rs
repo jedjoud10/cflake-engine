@@ -14,7 +14,8 @@ use crate::{
 use super::raw::{simple::SimpleBuffer, Buffer};
 
 // Le array
-pub type AtomicArray = [u32; 4];
+pub const ATOMIC_COUNTERS_NUM: usize = 4;
+pub type AtomicArray = [u32; ATOMIC_COUNTERS_NUM];
 
 // A simple atomic counter that we can use inside OpenGL fragment and compute shaders, if possible
 // This can store multiple atomic counters in a single buffer, thus making it a group
@@ -29,55 +30,22 @@ impl AtomicGroup {
     // New empty atomic group
     pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {
-            storage: SimpleBuffer::with_len(4, gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline),
+            storage: unsafe { SimpleBuffer::new_raw(ATOMIC_COUNTERS_NUM, ATOMIC_COUNTERS_NUM, null(), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline) },
         }
     }
     // Wrapper functions around the inner storage
 
     // Set the atomic group's values
     pub fn set(&mut self, arr: AtomicArray) {
-        // TODO: Remove this vector allocation
-        self.storage.write(Vec::from(arr));
+        self.storage.write(&arr);
     }
     // Read the atomic group's values
     pub fn get(&mut self) -> AtomicArray {
+        unsafe {
+            gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
+        }
         let mut output = AtomicArray::default();
         self.storage.read(&mut output);
         output
     }
 }
-
-/*
-impl GLBufferOperations for AtomicGroup {
-    type Data = AtomicArray;
-    fn glread(&mut self) -> Result<&Self::Data, OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        unsafe {
-            // Read the values
-            gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
-            gl::GetBufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_mut_ptr() as *mut c_void);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-            // Success
-            Ok(&self.array)
-        }
-    }
-    fn glset(&mut self, data: Self::Data) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.buffer == 0 {
-            return Err(OpenGLObjectNotInitialized);
-        }
-        self.array = data;
-        unsafe {
-            // Set the values
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, self.buffer);
-            gl::BufferSubData(gl::ATOMIC_COUNTER_BUFFER, 0, size_of::<AtomicArray>() as isize, self.array.as_ptr() as *mut c_void);
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-            Ok(())
-        }
-    }
-}
-*/

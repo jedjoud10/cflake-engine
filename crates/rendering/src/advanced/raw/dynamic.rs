@@ -13,22 +13,23 @@ use super::{storage::Storage, Buffer};
 // A dynamic buffer that can change in size
 // This keeps a Rust copy of the data, so we can add/remove elements to it without the need of reallocating everytime
 #[derive(Getters)]
-pub struct DynamicBuffer<E> {
+pub struct DynamicBuffer<Element> {
     // Storage
-    storage: Storage<E>,
+    storage: Storage<Element>,
     // Rust vector
     #[getset(get = "pub")]
-    inner: Vec<E>,
+    inner: Vec<Element>,
 }
 
 // Creation
-impl<E> Buffer<E> for DynamicBuffer<E> {
+impl<Element> Buffer for DynamicBuffer<Element> {
+    type Element = Element;
     // Storage
-    fn storage(&self) -> &Storage<E> {
+    fn storage(&self) -> &Storage<Element> {
         &self.storage
     }
     // Create a dynamic buffer
-    fn new_raw(cap: usize, len: usize, ptr: *const E, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
+    unsafe fn new_raw(cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Dynamic buffer cannot be for buffers that have an AccessType of ServerToClient or ServerToServer, because we don't know when we have update the buffer on the GPU
         match usage.access {
             AccessType::ServerToServer | AccessType::ServerToClient => panic!(),
@@ -36,24 +37,20 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
         }
         let mut storage = Storage::new(_type, usage, _pipeline);
         // Fill the storage
-        storage.reallocate(ptr, cap);
+        storage.init(cap, len, ptr);
         Self { storage, inner: {
-            let mut vec = Vec::with_capacity(cap);
-            
+            let mut vec = Vec::with_capacity(cap);            
             // Fill if possible
-            if !ptr.is_null() && len > 0{
-                unsafe { 
-                    let slice = std::slice::from_raw_parts(ptr, len);
-                    std::ptr::copy(slice.as_ptr(), vec.as_mut_ptr(), len);
-                };
-            }
-            
+            if !ptr.is_null() && len > 0 {
+                let slice = std::slice::from_raw_parts(ptr, len);
+                std::ptr::copy(slice.as_ptr(), vec.as_mut_ptr(), len);
+            }           
             vec
         }}
     }
     // Read from the dynamic buffer
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that
-    fn read(&mut self, output: &mut [E]) {
+    fn read(&mut self, output: &mut [Element]) {
         // Map the buffer
         let ptr = unsafe {
             let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::READ_ONLY);
@@ -64,13 +61,13 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
             ptr
         };
         // Read the whole buffer slice from the pointer
-        let len = self.inner.len() * size_of::<E>();
+        let len = self.inner.len() * size_of::<Element>();
 
         // Store internally first
-        unsafe { std::ptr::copy(ptr as *const E, self.inner.as_mut_ptr(), len) }
+        unsafe { std::ptr::copy(ptr as *const Element, self.inner.as_mut_ptr(), len) }
 
         // Then copy to output
-        unsafe { std::ptr::copy(ptr as *const E, output.as_mut_ptr(), len) }
+        unsafe { std::ptr::copy(ptr as *const Element, output.as_mut_ptr(), len) }
 
         // We can unmap the buffer now
         unsafe {
@@ -79,23 +76,29 @@ impl<E> Buffer<E> for DynamicBuffer<E> {
     }
     // Simple write
     // The push and pop commands automatically write to the buffer as well
-    fn write(&mut self, vec: Vec<E>) {
-        self.inner = vec;
-        self.storage.update(&self.inner);
+    fn write(&mut self, buf: &[Element]) where Element: Copy {
+        self.inner.clear();
+        self.inner.extend_from_slice(buf);
+        self.storage.update(self.inner.as_ptr(), self.capacity(), self.len());
     }
+
 }
 
 // Push, set, pop, len
-impl<E> DynamicBuffer<E> {
+impl<Element> DynamicBuffer<Element> {
     // Push a single element
-    pub fn push(&mut self, value: E) {
+    pub fn push(&mut self, value: Element) {
         self.inner.push(value);
-        self.storage.update(&self.inner);
+        self.storage.update(self.inner.as_ptr(), self.capacity(), self.len());
     }
     // Pop a single element
     pub fn pop(&mut self) {
         self.inner.pop();
-        // Popping won'E deallocate, so we don'E have to do anything
+        // Popping won't deallocate, so we don't have to do anything
+    }
+    // Capacity
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
     }
     // Length and is_empty
     pub fn len(&self) -> usize {

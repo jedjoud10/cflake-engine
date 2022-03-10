@@ -34,7 +34,7 @@ impl Terrain {
     pub fn new(settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
             chunks_manager: ChunksManager {
-                octree: Arc::new(Mutex::new(DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings))),
+                octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
                 material: settings.material,
                 ..Default::default()
             },
