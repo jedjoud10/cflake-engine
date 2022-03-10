@@ -1,6 +1,6 @@
 use crate::{
     pipeline::Pipeline,
-    utils::{AccessType, UsageType},
+    utils::{AccessType, UsageType, UpdateFrequency, ReallocationType},
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
@@ -47,40 +47,49 @@ impl<Element> Storage<Element> {
     pub(crate) fn init(&mut self, cap: usize, len: usize, ptr: *const Element) {
         self.len = len;
         self.capacity = cap;
-        self.reallocate(ptr, cap);
+        // If we will allocate the buffer once, make it immutable
+        match self.usage.reallocation {
+            ReallocationType::StaticallyAllocated => unsafe {
+                // Single allocation
+                gl::BindBuffer(self._type, self.buffer);
+                let bits = gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT;
+                gl::BufferStorage(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
+            },
+            ReallocationType::DynamicallyAllocated => unsafe {
+                // Can have multiple allocations
+                gl::BindBuffer(self._type, self.buffer);
+                gl::BufferData(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, self.usage.convert());
+            },
+        }
     }
     // Update the buffer
-    pub(crate) fn update(&mut self, ptr: *const Element, cap: usize, len: usize) {
+    pub fn update(&mut self, ptr: *const Element, cap: usize, len: usize) {
         // Check if we need to reallocate
         self.len = len;
-        // I hate this
-        self.reallocate(ptr, cap);
-        /*
-        if vec.capacity() > self.capacity {
-            // Completely reallocate
-            self.reallocate(vec);
-            dbg!(vec.capacity());
+        if cap > self.capacity {
+            // Check if we can reallocate first
+            if let ReallocationType::StaticallyAllocated = self.usage.reallocation { panic!() }
+
+            // Reallocate
+            self.capacity = cap;
+            self.reallocate(ptr, cap);
         } else {
             // Update subdata
-            self.update_subdata(vec);
-        }        
-        */
+            self.update_subdata(ptr, len);
+        }
     }
     // Completely reallocate
-    pub(crate) fn reallocate(&mut self, ptr: *const Element, cap: usize) {
-        self.capacity = cap;
+    fn reallocate(&mut self, ptr: *const Element, cap: usize) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
             gl::BufferData(self._type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, self.usage.convert());
-            gl::BindBuffer(self._type, 0);
         }
     }
     // Update subdata
-    pub(crate) fn update_subdata(&mut self, ptr: *const Element, len: usize) {
+    fn update_subdata(&mut self, ptr: *const Element, len: usize) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
             gl::BufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, ptr as *const c_void);
-            gl::BindBuffer(self._type, 0);
         }
     }
 }
@@ -88,10 +97,9 @@ impl<Element> Storage<Element> {
 impl<Element> Drop for Storage<Element> {
     fn drop(&mut self) {
         // Dispose of the OpenGL buffer
-        if self.buffer != 0 {
-            unsafe {
-                gl::DeleteBuffers(1, &mut self.buffer);
-            }
+        unsafe {
+            // The buffer should always be valid
+            gl::DeleteBuffers(1, &mut self.buffer);
         }
     }
 }

@@ -16,7 +16,7 @@ use world::{
             uniforms::StoredUniforms,
         },
         pipeline::{Handle, Pipeline},
-        utils::{AccessType, UpdateFrequency, UsageType},
+        utils::{AccessType, UpdateFrequency, UsageType, ReallocationType},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
@@ -59,8 +59,25 @@ impl VoxelGenerator {
         let second_compute = pipeline.compute_shaders.insert(second_compute);
         let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
 
+        // Usage types
+        let readback = UsageType {
+            access: AccessType::ServerToClient,
+            frequency: UpdateFrequency::WriteManyReadMany,
+            reallocation: ReallocationType::StaticallyAllocated,
+        };
+        let passthrough = UsageType {
+            access: AccessType::ServerToServer,
+            frequency: UpdateFrequency::WriteManyReadMany,
+            reallocation: ReallocationType::StaticallyAllocated,
+        };
+        let write = UsageType {
+            access: AccessType::ClientToServer,
+            frequency: UpdateFrequency::WriteManyReadMany,
+            reallocation: ReallocationType::DynamicallyAllocated,
+        };
+
         // Also construct the atomics
-        let atomics = AtomicGroup::new(UsageType::new(AccessType::ServerToClient, UpdateFrequency::WriteManyReadMany), pipeline);
+        let atomics = AtomicGroup::new(readback, pipeline);
 
         // Get the size of each arbitrary voxel
         let mut settings = ShaderInfoQuerySettings::default();
@@ -77,17 +94,13 @@ impl VoxelGenerator {
         let byte_size = shader_info.get(&resource).unwrap().get(0).unwrap().as_byte_size().unwrap();
 
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
-        // Usage
-        let arbitrary_voxels_usage = UsageType::new(AccessType::ServerToServer, UpdateFrequency::WriteManyReadMany);
-        let final_voxels_usage = UsageType::new(AccessType::ServerToClient, UpdateFrequency::WriteManyReadMany);
-        let edits_usage = UsageType::new(AccessType::ClientToServer, UpdateFrequency::WriteManyReadMany);
 
         // Load the shader storage
-        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, arbitrary_voxels_usage, pipeline);
-        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), final_voxels_usage, pipeline);
+        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, passthrough, pipeline);
+        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), readback, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
-        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), edits_usage, pipeline);
+        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), write, pipeline);
 
         Self {
             primary_compute: base_compute,

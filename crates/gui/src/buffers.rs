@@ -4,7 +4,7 @@ use gl::types::GLuint;
 use rendering::{
     advanced::raw::{dynamic::DynamicBuffer, Buffer},
     pipeline::Pipeline,
-    utils::{AccessType::ClientToServer, UpdateFrequency::{WriteOnceReadSometimes, WriteManyReadMany}, UsageType},
+    utils::{AccessType::ClientToServer, UpdateFrequency::{WriteOnceReadSometimes, WriteManyReadMany}, UsageType, ReallocationType::DynamicallyAllocated},
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
@@ -32,6 +32,7 @@ impl Buffers {
         const USAGE_TYPE: UsageType = UsageType {
             access: ClientToServer,
             frequency: WriteManyReadMany,
+            reallocation: DynamicallyAllocated,
         };
         // Dynamic raw buffers
         let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
@@ -58,7 +59,6 @@ impl Buffers {
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
-        // For some reason we MUST reallocate the vertex and index buffer, unless we want to get weird ass GUI
         self.vertices.write(&vertices);
         self.indices.write(&indices);
     }

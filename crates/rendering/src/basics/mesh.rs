@@ -1,7 +1,9 @@
 mod geometry;
 mod indices;
 mod mesh;
+mod buffers;
 mod vertices;
+pub use buffers::*;
 pub use geometry::*;
 pub use indices::*;
 pub use mesh::*;

@@ -1,7 +1,7 @@
-use gl::types::GLuint;
+use gl::{types::GLuint, FramebufferParameteri};
 
 // Simple main OpenGL types
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub enum DataType {
     // 8 bit
     U8,
@@ -32,32 +32,49 @@ impl DataType {
 }
 
 // How we will access a buffer object
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum AccessType {
     ClientToServer,
     ServerToClient,
     ServerToServer,
 }
 // How frequently we will update the data of a buffer object
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum UpdateFrequency {
     WriteOnceReadMany,
     WriteManyReadMany,
     WriteOnceReadSometimes,
 }
 
+// The mutability of an OpenGL buffer
+#[derive(Clone, Copy)]
+pub enum ReallocationType {
+    // Static storage cannot be reallocated
+    StaticallyAllocated,
+
+    // Dynamic storage can be reallocated
+    DynamicallyAllocated,
+}
+
 // How we will use a buffer
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct UsageType {
     pub access: AccessType,
     pub frequency: UpdateFrequency,
+    pub reallocation: ReallocationType,
+}
+
+impl Default for UsageType {
+    fn default() -> Self {
+        Self { 
+            access: AccessType::ClientToServer,
+            frequency: UpdateFrequency::WriteManyReadMany,
+            reallocation: ReallocationType::DynamicallyAllocated,
+        }
+    }
 }
 
 impl UsageType {
-    // Create a new usage type
-    pub fn new(access: AccessType, frequency: UpdateFrequency) -> Self {
-        Self { access, frequency }
-    }
     // Convert this UsageType to a valid OpenGL enum
     pub fn convert(&self) -> GLuint {
         match self.access {
