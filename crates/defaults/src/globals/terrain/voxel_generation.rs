@@ -13,7 +13,6 @@ use world::{
                 info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
                 query_info, Directive, ShaderInitSettings,
             },
-            uniforms::StoredUniforms,
         },
         pipeline::{Handle, Pipeline},
         utils::{AccessType, ReallocationType, UpdateFrequency, UsageType},
@@ -34,13 +33,11 @@ pub struct VoxelGenerator {
     // And the voxel data for said chunk
     pub packed: PackedVoxelData,
     pub stored: StoredVoxelData,
-    // Some uniforms
-    pub uniforms: Option<StoredUniforms>,
 }
 
 impl VoxelGenerator {
     // Create a new voxel generator
-    pub(crate) fn new(voxel_src_path: &str, uniforms: Option<StoredUniforms>, pipeline: &mut Pipeline) -> Self {
+    pub(crate) fn new(voxel_src_path: &str, pipeline: &mut Pipeline) -> Self {
         // Load the first pass compute shader
         let voxel_src_path = format!(r#"#include "{}""#, voxel_src_path);
         let settings = ShaderInitSettings::default()
@@ -96,20 +93,19 @@ impl VoxelGenerator {
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 
         // Load the shader storage
-        let shader_storage_arbitrary_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, passthrough, pipeline);
-        let shader_storage_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), readback, pipeline);
+        let ssbo_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, passthrough, pipeline);
+        let ssbo_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), readback, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
-        let shader_storage_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), write, pipeline);
+        let ssbo_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), write, pipeline);
 
         Self {
             primary_compute: base_compute,
             secondary_compute: second_compute,
             atomics,
-            ssbo_edits: shader_storage_edits,
-            ssbo_voxels: shader_storage_arbitrary_voxels,
-            ssbo_final_voxels: shader_storage_final_voxels,
-            uniforms,
+            ssbo_edits,
+            ssbo_voxels,
+            ssbo_final_voxels,
             packed: PackedVoxelData::default(),
             stored: StoredVoxelData::default(),
         }

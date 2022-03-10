@@ -5,7 +5,7 @@ use crate::{
         material::Material,
         mesh::Mesh,
         shader::Shader,
-        uniforms::{StoredUniforms, Uniforms},
+        uniforms::{Uniforms},
     },
     pipeline::{Handle, Pipeline},
 };
@@ -49,9 +49,6 @@ pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedMode
     // And set them
     uniforms.set_mat44f32("project_view_matrix", &pipeline.camera.projm_viewm);
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
-    // Optional
-    material.uniforms.execute(&mut uniforms);
-    renderer.uniforms.execute(&mut uniforms);
     // Textures might be not valid, so we fallback to the default ones just in case
     uniforms.set_texture("diffuse_tex", &material.textures.diffuse_map, 0);
     uniforms.set_texture("normals_tex", &material.textures.normal_map, 1);
@@ -75,9 +72,6 @@ pub struct RenderedModel<'b> {
 
     // Used for rendering
     pub material: &'b Handle<Material>,
-
-    // Extra uniforms if we want
-    pub uniforms: &'b StoredUniforms,
 }
 
 // A shadowed object that we will render

@@ -6,7 +6,6 @@ use crate::basics::{
     mesh::{Mesh, Vertices},
     shader::{Shader, ShaderInitSettings},
     texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter},
-    uniforms::StoredUniforms,
 };
 
 use super::{Handle, Pipeline};

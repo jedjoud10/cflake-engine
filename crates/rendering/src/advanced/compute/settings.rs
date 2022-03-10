@@ -1,5 +1,3 @@
-use crate::basics::uniforms::StoredUniforms;
-
 // Some compute shader settings that we can use whenever we want to execute a compute shader
 pub struct ComputeShaderExecutionSettings {
     // We must know the axii groups

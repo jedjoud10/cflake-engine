@@ -10,22 +10,22 @@ handler = { path = "crates/handler" }
 
 [workspace]
 members = [
-    #"crates/assets",
-    #"crates/audio",
-    #"crates/world",
-    #"crates/defaults",
-    #"crates/ecs",    
-    #"crates/handler",
-    #"crates/gui",
-    #"crates/globals",
-    #"crates/input",
-    #"crates/io",
-    #"crates/math",
-    #"crates/network",
-    #"crates/others",
-    #"crates/physics",
+    "crates/assets",
+    "crates/audio",
+    "crates/world",
+    "crates/defaults",
+    "crates/ecs",    
+    "crates/handler",
+    "crates/gui",
+    "crates/globals",
+    "crates/input",
+    "crates/io",
+    "crates/math",
+    "crates/network",
+    "crates/others",
+    "crates/physics",
     "crates/rendering",
-    #"crates/terrain",
+    "crates/terrain",
 ]
 
 [profile.dev]

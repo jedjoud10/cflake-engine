@@ -1,7 +1,6 @@
 use world::ecs::component::Component;
 use world::rendering::basics::material::Material;
 use world::rendering::basics::mesh::Mesh;
-use world::rendering::basics::uniforms::StoredUniforms;
 use world::rendering::pipeline::Handle;
 // A renderer component
 #[derive(Component)]
@@ -16,7 +15,6 @@ pub struct Renderer {
     // Some rendering settings
     pub visible: bool,
     pub shadowed: bool,
-    pub uniforms: StoredUniforms,
 }
 
 impl Default for Renderer {
@@ -27,7 +25,6 @@ impl Default for Renderer {
             matrix: Default::default(),
             visible: true,
             shadowed: true,
-            uniforms: Default::default(),
         }
     }
 }

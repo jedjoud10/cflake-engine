@@ -1,6 +1,6 @@
 use super::MaterialTextures;
 use crate::{
-    basics::{shader::Shader, texture::Texture, uniforms::StoredUniforms},
+    basics::{shader::Shader, texture::Texture},
     object::PipelineCollectionElement,
     pipeline::*,
 };
@@ -9,7 +9,6 @@ use crate::{
 pub struct Material {
     // Main settings
     pub shader: Handle<Shader>,
-    pub uniforms: StoredUniforms,
 
     // Actual parameters used for rendering
     pub textures: MaterialTextures,
@@ -29,7 +28,6 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             shader: Default::default(),
-            uniforms: Default::default(),
             textures: Default::default(),
             tint: veclib::Vector3::ONE,
             normal_map_strength: 1.0,

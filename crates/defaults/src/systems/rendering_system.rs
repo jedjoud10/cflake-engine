@@ -55,7 +55,6 @@ fn run(world: &mut World, mut data: EventKey) {
             mesh: &renderer.mesh,
             matrix: &renderer.matrix,
             material: &renderer.material,
-            uniforms: &renderer.uniforms,
         });
     }
 

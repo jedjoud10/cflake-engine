@@ -1,6 +1,6 @@
 mod error;
-mod stored;
 mod uniforms;
+mod block;
+pub use block::*;
 pub use error::*;
-pub use stored::*;
 pub use uniforms::Uniforms;
