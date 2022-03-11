@@ -1,11 +1,7 @@
-use world::{
-    ecs::{component::RefComponentFetcher, event::EventKey},
-    gui::egui,
-    terrain, World, WorldState,
-};
+use world::{ecs::component::ComponentQuerySet, gui::egui, terrain, World, WorldState};
 
 // The debugging system's update loop
-fn run(world: &mut World, _data: EventKey) {
+fn run(world: &mut World, _data: ComponentQuerySet) {
     // Check if we need to debug
     let gui = &world.gui.egui;
     let state = &mut world.state;
@@ -17,14 +13,6 @@ fn run(world: &mut World, _data: EventKey) {
         if ui.button("Quit game").clicked() {
             *state = WorldState::Exit;
         }
-        let camkey = world.globals.get::<crate::globals::GlobalWorldData>().unwrap().main_camera;
-        let camera = world.ecs.entities.get(camkey).unwrap();
-        let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
-        let fetcher = RefComponentFetcher::new(&world.ecs.components);
-        let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
-
-        ui.label(format!("Camera Pos: '{}'", (component.position * 10.0).round() / 10.0));
-        ui.label(format!("Camera Dir: '{}'", (component.forward() * 10.0).round() / 10.0));
         // Timings
         ui.separator();
         ui.heading("Timings");
@@ -54,5 +42,5 @@ fn run(world: &mut World, _data: EventKey) {
 }
 // Create the debugging system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder().with_run_event(run).build();
+    world.ecs.systems.builder().event(run).build();
 }

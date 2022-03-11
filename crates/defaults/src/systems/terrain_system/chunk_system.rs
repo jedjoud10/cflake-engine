@@ -1,6 +1,6 @@
-use crate::globals::ChunksManager;
+use crate::{globals::{ChunksManager, self}, components::{Transform, Camera}};
 use world::{
-    ecs::{self, component::RefComponentFetcher, entity::EntityKey, event::EventKey, ECSManager},
+    ecs::{self, entity::EntityKey, component::{ComponentQuerySet, ComponentQueryParameters}, ECSManager},
     input::Keys,
     terrain::ChunkCoords,
     World,
@@ -16,8 +16,8 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     // Transform
     let position = veclib::Vector3::<f32>::from(coords.position);
     let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
-    let transform = crate::components::Transform::default().with_position(position).with_scale(scale);
-    group.link::<crate::components::Transform>(transform).unwrap();
+    let transform = Transform::default().with_position(position).with_scale(scale);
+    group.link::<Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
     let chunk = crate::components::Chunk { coords };
@@ -38,18 +38,16 @@ fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityKey) {
 }
 
 // The chunk systems' update loop
-fn run(world: &mut World, _data: EventKey) {
+fn run(world: &mut World, data: ComponentQuerySet) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let camkey = world.globals.get::<crate::globals::GlobalWorldData>().unwrap().main_camera;
-        let camera = world.ecs.entities.get(camkey).unwrap();
-        let component_key = camera.get_linked::<crate::components::Transform>().unwrap();
-        let fetcher = RefComponentFetcher::new(&world.ecs.components);
-        let component = fetcher.get::<crate::components::Transform>(component_key).unwrap();
-        (component.position, component.forward())
+        let camkey = world.globals.get::<globals::GlobalWorldData>().unwrap().main_camera;
+        let camquery = data.get(0).unwrap();
+        let transform = camquery.all.get(&camkey).unwrap().get::<Transform>().unwrap();
+        (transform.position, transform.forward())
     };
-    let terrain_ = world.globals.get_mut::<crate::globals::Terrain>();
+    let terrain_ = world.globals.get_mut::<globals::Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {
         // No need to update the terrain
         return;
@@ -99,6 +97,12 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<
 }
 // Create a chunk system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder().with_run_event(run).build();
+    world
+        .ecs
+        .systems
+        .builder()
+        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
+        .event(run)
+        .build();
     world.input.bind_key_toggle(Keys::Y, "update_terrain");
 }

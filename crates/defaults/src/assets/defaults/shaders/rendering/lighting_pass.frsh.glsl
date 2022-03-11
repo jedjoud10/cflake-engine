@@ -55,5 +55,5 @@ void main() {
 		final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 	}
 
-	color = vec4(pixel_dir, 1.0);
+	color = vec4(post_rendering(uvs, final_color), 1.0);
 }
