@@ -7,7 +7,7 @@ use world::{
     World,
 };
 
-use crate::components::{Light, Transform, Camera, Renderer};
+use crate::components::{Camera, Light, Renderer, Transform};
 
 // Get the camera transform and camera data
 fn get_camera(world: &World) -> Option<(RefComponentFetcher, ComponentKey, ComponentKey)> {
@@ -95,7 +95,6 @@ fn run(world: &mut World, mut data: EventKey) {
         // Get all the lights that are in the world
         let fetcher = RefComponentFetcher::new(&world.ecs.components);
         let lights = fetcher.get_all::<Light>().unwrap();
-
 
         // Rendering settings
         let settings = RenderingSettings {

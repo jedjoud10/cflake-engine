@@ -50,7 +50,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 }
 
 // Then, a frame later, fetch the buffer data
-fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {    
+fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
     // READ
     // Get the valid counters
     let generator = &mut terrain.voxel_generator;

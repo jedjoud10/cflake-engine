@@ -2,7 +2,8 @@ use cflake_engine::{
     assets,
     defaults::components,
     ecs::entity::{ComponentLinkingGroup, Entity},
-    veclib, World, rendering::basics::lights::{LightType::Directional, LightParameters},
+    rendering::basics::lights::{LightParameters, LightType::Directional},
+    veclib, World,
 };
 // A game with a test camera
 fn main() {

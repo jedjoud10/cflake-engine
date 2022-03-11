@@ -1,15 +1,15 @@
+use crate::buffers::Buffers;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
+use rendering::gl;
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
     utils::DataType,
 };
-use rendering::gl;
-use crate::buffers::Buffers;
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {

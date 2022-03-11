@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{registry, Component, RefComponentFetcher},
+        component::{registry, Component, RefComponentFetcher, ComponentQueryParameters},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
         event::EventKey,
         ECSManager,
@@ -46,8 +46,8 @@ pub mod test {
     // A test world
     pub struct World;
     fn run_system(_world: &mut World, mut data: EventKey) {
-        let query = data.as_query_mut().unwrap();
-        for (_, components) in query.iter_mut() {
+        let query = data.as_queries_mut().unwrap();
+        for (_, components) in query.get(0).all.iter_mut() {
             let name = components.get_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         }
@@ -71,7 +71,9 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.systems.builder();
-        builder.link::<Name>().with_run_event(run_system).build();
+
+        let params = ComponentQueryParameters::default().link::<Name>();
+        builder.query(params).with_run_event(run_system).build();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::default();
@@ -107,7 +109,8 @@ pub mod test {
             });
             */
         }
-        builder.link::<Name>().with_run_event(internal_run).build();
+        let params = ComponentQueryParameters::default().link::<Name>();
+        builder.query(params).with_run_event(internal_run).build();
 
         // Create 10k entities
         for _x in 0..10_000 {
@@ -134,7 +137,8 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.systems.builder();
-        builder.link::<Name>().with_run_event(run_system).build();
+        let params = ComponentQueryParameters::default().link::<Name>();
+        builder.query(params).with_run_event(run_system).build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
@@ -152,60 +156,6 @@ pub mod test {
         ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
         assert_eq!(ecs.entities.get(key).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
     }
-    #[test]
-    pub fn test_events() {
-        // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::default();
-        // Also create the context
-        let mut world = World;
-
-        // Make a simple system
-        fn internal_run(_world: &mut World, mut data: EventKey) {
-            let query = data.as_query_mut().unwrap();
-            for (_, components) in query.iter_mut() {
-                let name = components.get_mut::<Name>().unwrap();
-                dbg!("Internal Run");
-                assert_eq!(*name.name, "John".to_string());
-                *name = Name::new("Bob");
-            }
-        }
-        fn internal_remove_entity(_world: &mut World, mut data: EventKey) {
-            let query = data.as_query_mut().unwrap();
-            for (_, components) in query.iter_mut() {
-                let name = components.get_mut::<Name>().unwrap();
-                dbg!("Internal Remove Entity Run");
-                assert_eq!(*name.name, "Bob".to_string());
-            }
-        }
-        fn internal_add_entity(_world: &mut World, mut data: EventKey) {
-            let query = data.as_query_mut().unwrap();
-            for (_, components) in query.iter_mut() {
-                let name = components.get_mut::<Name>().unwrap();
-                dbg!("Internal Add Entity Run");
-                assert_eq!(*name.name, "John".to_string());
-            }
-        }
-        ecs.systems
-            .builder()
-            .link::<Name>()
-            .with_run_event(internal_run)
-            .with_removed_entities_event(internal_remove_entity)
-            .with_added_entities_event(internal_add_entity)
-            .build();
-        ecs.systems.builder().link::<Name>().link::<Tagged>().build();
-
-        // Add a new entity and play with it's components
-        let entity = Entity::default();
-        let mut group = ComponentLinkingGroup::default();
-        group.link::<Name>(Name::new("John")).unwrap();
-        group.link(Tagged::new("Some interesting tag")).unwrap();
-        let key = ecs.entities.add(entity).unwrap();
-        ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
-        run_systems(&mut ecs, &mut world);
-        ecs.entities.remove(key, &mut ecs.components, &mut ecs.systems).unwrap();
-        run_systems(&mut ecs, &mut world);
-    }
-
     // Test the component fetcher
     #[test]
     pub fn fetcher() {

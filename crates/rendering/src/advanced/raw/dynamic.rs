@@ -1,4 +1,7 @@
-use std::{marker::PhantomData, mem::{size_of, MaybeUninit}};
+use std::{
+    marker::PhantomData,
+    mem::{size_of, MaybeUninit},
+};
 
 use getset::Getters;
 use gl::types::GLuint;
@@ -55,9 +58,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that
     fn read(&mut self, output: &mut [Element]) {
         // Store internally first
-        unsafe {
-            self.storage.read_subdata(self.inner.as_mut_ptr(), self.storage().len(), 0)
-        }
+        unsafe { self.storage.read_subdata(self.inner.as_mut_ptr(), self.storage().len(), 0) }
 
         // Then copy to output
         unsafe { std::ptr::copy(self.inner.as_ptr() as *const Element, output.as_mut_ptr(), self.storage().len()) }

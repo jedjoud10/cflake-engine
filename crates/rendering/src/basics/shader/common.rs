@@ -1,10 +1,11 @@
 // Some shared code between the normal shaders and the compute shaders
 
 use std::{
+    cell::RefCell,
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::{null, null_mut}, cell::RefCell,
+    ptr::{null, null_mut},
 };
 
 use ahash::{AHashMap, AHashSet};
@@ -21,7 +22,6 @@ use super::{
 
 // Uniforms definition map
 pub type UniformsDefinitionMap = AHashMap<String, i32>;
-
 
 // Used texture units
 pub type UsedTextureUnits = RefCell<AHashMap<String, usize>>;

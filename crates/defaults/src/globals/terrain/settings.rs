@@ -1,9 +1,6 @@
 use world::{
     math::octrees::HeuristicSettings,
-    rendering::{
-        basics::{material::Material},
-        pipeline::Handle,
-    },
+    rendering::{basics::material::Material, pipeline::Handle},
 };
 
 // Terrain settings for simplicity

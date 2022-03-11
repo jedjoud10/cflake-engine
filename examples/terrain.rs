@@ -10,11 +10,12 @@ use cflake_engine::{
         octrees::HeuristicSettings,
         shapes::{Cuboid, ShapeType, Sphere},
     },
-    rendering::{basics::{
+    rendering::basics::{
+        lights::{LightParameters, LightType::Directional},
         material::{Material, MaterialTextures},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureBundler, TextureFilter, TextureLayout}, lights::{LightType::Directional, LightParameters},
-    }},
+        texture::{Texture, TextureBuilder, TextureBundler, TextureFilter, TextureLayout},
+    },
     terrain::editing::Edit,
     veclib::{self, vec3},
     World,

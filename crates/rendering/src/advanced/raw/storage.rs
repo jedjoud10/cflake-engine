@@ -1,6 +1,6 @@
 use crate::{
     pipeline::Pipeline,
-    utils::{AccessType, UsageType, UpdateFrequency},
+    utils::{AccessType, UpdateFrequency, UsageType},
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
@@ -66,7 +66,9 @@ impl<Element> Storage<Element> {
         self.len = len;
         if cap > self.capacity {
             // Check if we can reallocate first
-            if !self.usage.dynamic { panic!() }
+            if !self.usage.dynamic {
+                panic!()
+            }
 
             // Reallocate
             self.capacity = cap;

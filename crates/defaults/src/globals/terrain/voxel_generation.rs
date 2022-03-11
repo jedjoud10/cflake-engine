@@ -8,11 +8,9 @@ use world::{
             raw::{dynamic::DynamicBuffer, simple::SimpleBuffer},
             shader_storage::ShaderStorage,
         },
-        basics::{
-            shader::{
-                info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
-                query_info, Directive, ShaderInitSettings,
-            },
+        basics::shader::{
+            info::{QueryParameter, QueryResource, Resource, ShaderInfoQuerySettings},
+            query_info, Directive, ShaderInitSettings,
         },
         pipeline::{Handle, Pipeline},
         utils::{AccessType, UpdateFrequency, UsageType},

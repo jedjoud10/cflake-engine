@@ -53,7 +53,7 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
         defaults::start_after_user_systems(&mut world);
         init_world(&mut world);
     }
-    
+
     // Post-init
     world.pipeline.post_init();
 

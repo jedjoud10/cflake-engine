@@ -10,7 +10,7 @@ use crate::{
     utils::*,
 };
 
-use super::{get_ifd, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout};
+use super::{get_ifd, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode};
 use assets::Asset;
 use getset::{CopyGetters, Getters};
 use gl::{
@@ -140,7 +140,9 @@ impl Texture {
     // Set some new dimensions for this texture
     // This also clears the texture
     pub fn set_dimensions(&mut self, dims: TextureDimensions) -> Result<(), OpenGLObjectNotInitialized> {
-        if !self.layout.resizable { panic!() }
+        if !self.layout.resizable {
+            panic!()
+        }
         if self.buffer == 0 {
             return Err(OpenGLObjectNotInitialized);
         }
@@ -187,12 +189,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
         // Static
         match dimensions {
             TextureDimensions::Texture1d(width) => {
-                gl::TexStorage1D(
-                    target, 
-                    guess_mipmap_levels(width), 
-                    ifd.0 as u32, 
-                    width as i32, 
-                );
+                gl::TexStorage1D(target, guess_mipmap_levels(width), ifd.0 as u32, width as i32);
                 if !pointer.is_null() {
                     // Set a sub-image
                     gl::TexSubImage1D(target, 0, 0, width as i32, ifd.1, ifd.2, pointer);
@@ -200,13 +197,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
             }
             // This is a 2D texture
             TextureDimensions::Texture2d(dims) => {
-                gl::TexStorage2D(
-                    target, 
-                    guess_mipmap_levels((dims.x).max(dims.y)), 
-                    ifd.0 as u32, 
-                    dims.x as i32, 
-                    dims.y as i32,
-                );
+                gl::TexStorage2D(target, guess_mipmap_levels((dims.x).max(dims.y)), ifd.0 as u32, dims.x as i32, dims.y as i32);
                 if !pointer.is_null() {
                     // Set a sub-image
                     gl::TexSubImage2D(target, 0, 0, 0, dims.x as i32, dims.y as i32, ifd.1, ifd.2, pointer);
@@ -215,7 +206,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
             // This is a 3D texture
             TextureDimensions::Texture3d(dims) => {
                 gl::TexStorage3D(
-                    target, 
+                    target,
                     guess_mipmap_levels((dims.x).max(dims.y).max(dims.z)),
                     ifd.0 as u32,
                     dims.x as i32,
@@ -232,14 +223,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
             }
             // This is a texture array
             TextureDimensions::Texture2dArray(dims) => {
-                gl::TexStorage3D(
-                    target,
-                    guess_mipmap_levels((dims.x).max(dims.y)),
-                    ifd.0 as u32,
-                    dims.x as i32,
-                    dims.y as i32,
-                    dims.z as i32,
-                );
+                gl::TexStorage3D(target, guess_mipmap_levels((dims.x).max(dims.y)), ifd.0 as u32, dims.x as i32, dims.y as i32, dims.z as i32);
                 // Set each sub-image
                 for i in 0..dims.z {
                     let localized_bytes = pointer.offset(i as isize * dims.y as isize * 4 * dims.x as isize) as *const c_void;
@@ -266,7 +250,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
                 gl::TexImage3D(target, 0, ifd.0, dims.x as i32, dims.y as i32, dims.z as i32, 0, ifd.1, ifd.2, pointer);
             }
         }
-    }    
+    }
 }
 
 // Update the contents of an already existing OpenGL texture
@@ -302,7 +286,7 @@ impl PipelineCollectionElement for Texture {
         };
         // Get the pointer to the bytes data
         let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
-        
+
         // Create the texture and bind it
         unsafe {
             gl::GenTextures(1, &mut self.buffer);
@@ -315,7 +299,7 @@ impl PipelineCollectionElement for Texture {
         if self.mipmaps {
             unsafe {
                 // Create the mipmaps
-                gl::GenerateMipmap(self.target);                
+                gl::GenerateMipmap(self.target);
             }
         }
 

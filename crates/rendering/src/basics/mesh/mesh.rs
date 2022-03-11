@@ -1,8 +1,12 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use crate::{object::PipelineCollectionElement, advanced::raw::storage::Storage, utils::{UsageType, AccessType, UpdateFrequency}};
+use crate::{
+    advanced::raw::storage::Storage,
+    object::PipelineCollectionElement,
+    utils::{AccessType, UpdateFrequency, UsageType},
+};
 
-use super::{IndexBuilder, Indices, VertexBuilder, Vertices, MeshBuffers, GeometryBuilder};
+use super::{GeometryBuilder, IndexBuilder, Indices, MeshBuffers, VertexBuilder, Vertices};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
@@ -32,7 +36,6 @@ pub struct Mesh {
     pub color_buf: u32,
     pub uv_buf: u32,
     */
-
     // Store the vertices
     #[getset(get = "pub", set = "pub(super)")]
     vertices: Vertices,
@@ -63,7 +66,7 @@ impl Asset for Mesh {
 }
 
 impl PipelineCollectionElement for Mesh {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {        
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO
@@ -107,7 +110,7 @@ impl PipelineCollectionElement for Mesh {
             };
 
             let tangents = if !self.vertices.tangents.is_empty() {
-                // Vertex tangents buffer 
+                // Vertex tangents buffer
                 let tangents = Storage::<veclib::Vector4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(tangents.buffer());
                 gl::EnableVertexAttribArray(2);

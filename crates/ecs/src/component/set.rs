@@ -73,8 +73,8 @@ impl ComponentSet {
                     };
                     subsystem.add(key, linked);
                 }
-            }      
-            */      
+            }
+            */
         }
         Ok(())
     }
