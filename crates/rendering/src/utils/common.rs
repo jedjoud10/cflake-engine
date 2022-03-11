@@ -46,22 +46,12 @@ pub enum UpdateFrequency {
     WriteOnceReadSometimes,
 }
 
-// The mutability of an OpenGL buffer
-#[derive(Clone, Copy)]
-pub enum ReallocationType {
-    // Static storage cannot be reallocated
-    StaticallyAllocated,
-
-    // Dynamic storage can be reallocated
-    DynamicallyAllocated,
-}
-
 // How we will use a buffer
 #[derive(Clone, Copy)]
 pub struct UsageType {
     pub access: AccessType,
     pub frequency: UpdateFrequency,
-    pub reallocation: ReallocationType,
+    pub dynamic: bool,
 }
 
 impl Default for UsageType {
@@ -69,7 +59,7 @@ impl Default for UsageType {
         Self {
             access: AccessType::ClientToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
-            reallocation: ReallocationType::DynamicallyAllocated,
+            dynamic: true,
         }
     }
 }

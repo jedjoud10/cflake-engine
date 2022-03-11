@@ -2,6 +2,8 @@ mod bundler;
 mod format;
 mod settings;
 mod texture;
+mod layout;
+pub use layout::*;
 pub use bundler::*;
 pub use format::*;
 pub use settings::*;

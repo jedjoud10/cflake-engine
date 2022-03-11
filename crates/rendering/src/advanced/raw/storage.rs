@@ -1,6 +1,6 @@
 use crate::{
     pipeline::Pipeline,
-    utils::{AccessType, UsageType, UpdateFrequency, ReallocationType},
+    utils::{AccessType, UsageType, UpdateFrequency},
 };
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
@@ -35,8 +35,12 @@ impl<Element> Storage<Element> {
             buffer
         };
         // If we will allocate the buffer once, make it immutable
-        match usage.reallocation {
-            ReallocationType::StaticallyAllocated => unsafe {
+        unsafe {
+            if usage.dynamic {
+                // Can have multiple allocations
+                gl::BindBuffer(_type, buffer);
+                gl::BufferData(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, usage.convert());
+            } else {
                 // Single allocation
                 gl::BindBuffer(_type, buffer);
                 let bits = match usage.access {
@@ -45,12 +49,7 @@ impl<Element> Storage<Element> {
                     AccessType::ServerToServer => gl::MAP_READ_BIT,
                 };
                 gl::BufferStorage(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
-            },
-            ReallocationType::DynamicallyAllocated => unsafe {
-                // Can have multiple allocations
-                gl::BindBuffer(_type, buffer);
-                gl::BufferData(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, usage.convert());
-            },
+            }
         }
         Self {
             buffer,
@@ -67,7 +66,7 @@ impl<Element> Storage<Element> {
         self.len = len;
         if cap > self.capacity {
             // Check if we can reallocate first
-            if let ReallocationType::StaticallyAllocated = self.usage.reallocation { panic!() }
+            if !self.usage.dynamic { panic!() }
 
             // Reallocate
             self.capacity = cap;

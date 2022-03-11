@@ -2,7 +2,7 @@ use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapping},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -33,9 +33,12 @@ impl Painter {
         // Load the egui font texture
         let egui_font_texture = TextureBuilder::default()
             .filter(TextureFilter::Linear)
-            ._format(TextureFormat::RGBA8R)
-            .wrap_mode(TextureWrapping::ClampToEdge(None))
-            ._type(DataType::U8)
+            .layout(TextureLayout {
+                data_type: DataType::U8,
+                internal_format: TextureFormat::RGBA8R,
+                resizable: true,
+            })
+            .wrap_mode(TextureWrapMode::ClampToEdge(None))
             .mipmaps(false)
             .build();
         let egui_font_texture = pipeline.textures.insert(egui_font_texture);

@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapping},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapMode, TextureLayout},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -83,10 +83,17 @@ impl SceneRenderer {
         let textures = texture_formats
             .into_iter()
             .zip(texture_types.into_iter())
-            .map(|(_format, _type)| {
+            .map(|(internal_format, data_type)| {
+                // Create a texture layout
+                let layout = TextureLayout {
+                    data_type,
+                    internal_format,
+                    resizable: true,
+                };
+                
                 pipeline
                     .textures
-                    .insert(TextureBuilder::default().dimensions(dimensions)._format(_format)._type(_type).build())
+                    .insert(TextureBuilder::default().dimensions(dimensions).layout(layout).build())
             })
             .collect::<Vec<Handle<Texture>>>();
 
@@ -120,7 +127,7 @@ impl SceneRenderer {
 
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/sky_gradient.png").unwrap())
-            .wrap_mode(TextureWrapping::ClampToEdge(None))
+            .wrap_mode(TextureWrapMode::ClampToEdge(None))
             .mipmaps(false)
             .build();
         let sky_gradient = pipeline.textures.insert(sky_gradient);

@@ -1,6 +1,6 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use crate::{object::PipelineCollectionElement, advanced::raw::storage::Storage, utils::{UsageType, AccessType, UpdateFrequency, ReallocationType}};
+use crate::{object::PipelineCollectionElement, advanced::raw::storage::Storage, utils::{UsageType, AccessType, UpdateFrequency}};
 
 use super::{IndexBuilder, Indices, VertexBuilder, Vertices, MeshBuffers, GeometryBuilder};
 use arrayvec::ArrayVec;
@@ -74,7 +74,7 @@ impl PipelineCollectionElement for Mesh {
             let usage = UsageType {
                 access: AccessType::ClientToServer,
                 frequency: UpdateFrequency::WriteOnceReadMany,
-                reallocation: ReallocationType::StaticallyAllocated,
+                dynamic: false,
             };
 
             // All the buffers

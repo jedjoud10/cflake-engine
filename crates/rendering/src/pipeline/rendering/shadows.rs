@@ -6,10 +6,10 @@ use crate::{
     basics::{
         mesh::Mesh,
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapping},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout},
         uniforms::Uniforms,
     },
-    pipeline::{Handle, Pipeline},
+    pipeline::{Handle, Pipeline}, utils::DataType,
 };
 
 use super::{RenderingError, ShadowedModel};
@@ -41,9 +41,13 @@ impl ShadowMapping {
         let texture = TextureBuilder::default()
             .dimensions(TextureDimensions::Texture2d(veclib::vec2(shadow_resolution.max(1), shadow_resolution.max(1))))
             .filter(TextureFilter::Linear)
-            .wrap_mode(TextureWrapping::ClampToBorder(Some(veclib::Vector4::<f32>::ONE)))
+            .wrap_mode(TextureWrapMode::ClampToBorder(Some(veclib::Vector4::<f32>::ONE)))
             .custom_params(&[(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)])
-            ._format(TextureFormat::DepthComponent16)
+            .layout(TextureLayout {
+                data_type: DataType::U8,
+                internal_format: TextureFormat::DepthComponent16,
+                resizable: false,
+            })
             .build();
         let texture = pipeline.textures.insert(texture);
         // Now attach the depth texture

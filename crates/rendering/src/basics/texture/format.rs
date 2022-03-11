@@ -4,6 +4,8 @@ use gl::types::{GLint, GLuint};
 
 use crate::utils::DataType;
 
+use super::TextureLayout;
+
 // The texture format
 #[derive(Clone, Copy, Debug)]
 pub enum TextureFormat {
@@ -55,8 +57,8 @@ pub enum TextureFormat {
 }
 
 // Get the IFD from a simple TextureFormat and DataType
-pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
-    let internal_format = match tf {
+pub fn get_ifd(layout: TextureLayout) -> (GLint, GLuint, GLuint) {
+    let internal_format = match layout.internal_format {
         // Red
         TextureFormat::R8R => gl::R8,
         TextureFormat::R8RS => gl::R8_SNORM,
@@ -98,7 +100,7 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
         TextureFormat::DepthComponent24 => gl::DEPTH_COMPONENT24,
         TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT32,
     };
-    let format = match tf {
+    let format = match layout.internal_format {
         TextureFormat::R8R
         | TextureFormat::R16R
         | TextureFormat::R8RS
@@ -133,7 +135,7 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
         | TextureFormat::RGBA32F => gl::RGBA,
         TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
     };
-    let data_type = match dt {
+    let data_type = match layout.data_type {
         DataType::U8 => gl::UNSIGNED_BYTE,
         DataType::I8 => gl::BYTE,
         DataType::U16 => gl::UNSIGNED_SHORT,
@@ -145,9 +147,9 @@ pub fn get_ifd(tf: TextureFormat, dt: DataType) -> (GLint, GLuint, GLuint) {
     (internal_format as i32, format as u32, data_type as u32)
 }
 
-// Calculate the size of a TextureFormat
-pub(crate) fn calculate_size_bytes(format: TextureFormat, pixel_count: usize) -> usize {
-    let bytes_per_pixel = match format {
+// Calculate the byte size for a single texel
+pub fn convert_format_to_texel_byte_size(format: TextureFormat) -> usize {
+    match format {
         TextureFormat::R8R | TextureFormat::R8RS | TextureFormat::R8I => size_of::<u8>(),
         TextureFormat::RG8R | TextureFormat::RG8RS | TextureFormat::RG8I => size_of::<u8>() * 2,
         TextureFormat::RGB8R | TextureFormat::RGB8RS | TextureFormat::RGB8I => size_of::<u8>() * 3,
@@ -164,6 +166,10 @@ pub(crate) fn calculate_size_bytes(format: TextureFormat, pixel_count: usize) ->
         TextureFormat::RGBA32I | TextureFormat::RGBA32F => size_of::<u32>() * 4,
 
         TextureFormat::DepthComponent24 => 6,
-    };
-    bytes_per_pixel * pixel_count
+    }
+}
+
+// Calculate the size of a TextureFormat
+pub(crate) fn calculate_total_texture_byte_size(format: TextureFormat, pixel_count: usize) -> usize {
+    convert_format_to_texel_byte_size(format) * pixel_count
 }

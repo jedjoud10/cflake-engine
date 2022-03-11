@@ -15,7 +15,7 @@ use world::{
             },
         },
         pipeline::{Handle, Pipeline},
-        utils::{AccessType, ReallocationType, UpdateFrequency, UsageType},
+        utils::{AccessType, UpdateFrequency, UsageType},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
@@ -60,17 +60,17 @@ impl VoxelGenerator {
         let readback = UsageType {
             access: AccessType::ServerToClient,
             frequency: UpdateFrequency::WriteManyReadMany,
-            reallocation: ReallocationType::StaticallyAllocated,
+            dynamic: false,
         };
         let passthrough = UsageType {
             access: AccessType::ServerToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
-            reallocation: ReallocationType::StaticallyAllocated,
+            dynamic: false,
         };
         let write = UsageType {
             access: AccessType::ClientToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
-            reallocation: ReallocationType::DynamicallyAllocated,
+            dynamic: true,
         };
 
         // Also construct the atomics

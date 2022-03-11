@@ -1,4 +1,4 @@
-use super::{calculate_size_bytes, Texture, TextureBuilder, TextureDimensions};
+use super::{calculate_total_texture_byte_size, Texture, TextureBuilder, TextureDimensions};
 
 // A texture bundler that creates a 2D texture array from a set of textures
 pub struct TextureBundler;
@@ -13,7 +13,7 @@ impl TextureBundler {
         let (width, height) = (dimensions.x, dimensions.y);
 
         // Load the bytes
-        let mut bytes: Vec<u8> = Vec::with_capacity(calculate_size_bytes(textures[0]._format(), textures[0].count_texels()));
+        let mut bytes: Vec<u8> = Vec::with_capacity(calculate_total_texture_byte_size(textures[0].layout().internal_format, textures[0].count_texels()));
         for texture in textures {
             // Check if we have the same settings
             if texture.dimensions().as_texture2d().unwrap().x != width || texture.dimensions().as_texture2d().unwrap().y != height {
@@ -22,9 +22,9 @@ impl TextureBundler {
             bytes.extend(texture.bytes().iter());
         }
         TextureBuilder::default()
-            ._format(textures[0]._format())
-            ._type(textures[0]._type())
+            .layout(textures[0].layout())
             .bytes(bytes)
+            .layout(textures[0].layout())
             .custom_params(textures[0].custom_params())
             .dimensions(TextureDimensions::Texture2dArray(veclib::Vector3::new(width, height, textures.len() as u16)))
             .filter(textures[0].filter())

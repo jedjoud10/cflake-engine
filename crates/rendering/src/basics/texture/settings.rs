@@ -10,7 +10,7 @@ pub enum TextureFilter {
 
 // Texture wrapping filters
 #[derive(Debug, Clone, Copy)]
-pub enum TextureWrapping {
+pub enum TextureWrapMode {
     ClampToEdge(Option<veclib::Vector4<f32>>),
     ClampToBorder(Option<veclib::Vector4<f32>>),
     Repeat,

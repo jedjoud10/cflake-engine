@@ -7,7 +7,6 @@ use rendering::{
     pipeline::Pipeline,
     utils::{
         AccessType::ClientToServer,
-        ReallocationType::DynamicallyAllocated,
         UpdateFrequency::{WriteManyReadMany},
         UsageType,
     },
@@ -38,7 +37,7 @@ impl Buffers {
         const USAGE_TYPE: UsageType = UsageType {
             access: ClientToServer,
             frequency: WriteManyReadMany,
-            reallocation: DynamicallyAllocated,
+            dynamic: true,
         };
         // Dynamic raw buffers
         let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
