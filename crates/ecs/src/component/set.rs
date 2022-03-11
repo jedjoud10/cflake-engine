@@ -58,19 +58,23 @@ impl ComponentSet {
 
         let entity = entities.get(key).unwrap();
         let linked = &entity.components;
-        // Check if the linked entity is valid to be added into the systems
+        // Check if the linked entity is valid to be added into the subsystems
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            // If the entity wasn't inside the system before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the system
-            if system.check_cbitfield(new) && !system.check_cbitfield(old) {
-                let linked = LinkedComponents {
-                    key,
-                    linked: linked.clone(),
-                    mutated_components: self.mutated_components.clone(),
-                    components: components.clone(),
-                };
-                system.add_entity(key, linked);
-            }
+            /*
+            for subsystem in system.subsystems.iter() {
+                // If the entity wasn't inside the subsystem before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the subsystem
+                if subsystem.check(new) && !subsystem.check(old) {
+                    let linked = LinkedComponents {
+                        key,
+                        linked: linked.clone(),
+                        mutated_components: self.mutated_components.clone(),
+                        components: components.clone(),
+                    };
+                    subsystem.add(key, linked);
+                }
+            }      
+            */      
         }
         Ok(())
     }
@@ -88,20 +92,24 @@ impl ComponentSet {
         let old = entity.cbitfield;
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
         let systems = systems.inner().borrow();
-        systems.iter().for_each(|system| {
-            // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
-            if system.check_cbitfield(old) && !system.check_cbitfield(new) {
-                system.remove_entity(
-                    key,
-                    LinkedComponents {
+        for system in systems.iter() {
+            /*
+            for subsystem in system.subsystems.iter() {
+                // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
+                if subsystem.check(old) && !subsystem.check(new) {
+                    subsystem.remove(
                         key,
-                        linked: entity.components.clone(),
-                        mutated_components: self.mutated_components.clone(),
-                        components: self.components.clone(),
-                    },
-                );
+                        LinkedComponents {
+                            key,
+                            linked: entity.components.clone(),
+                            mutated_components: self.mutated_components.clone(),
+                            components: self.components.clone(),
+                        },
+                    );
+                }
             }
-        });
+            */
+        }
         // Update the entity's components
         let entity = entities.get_mut(key).unwrap();
         // Dear god
@@ -127,16 +135,19 @@ impl ComponentSet {
         }
         drop(entity);
 
-        // And finally remove the component group from it's systems
+        // And finally remove the component group from the required subsystems
         let mut lock = self.to_remove.borrow_mut();
+        /*
         let counter = systems
             .iter()
-            .filter(|system| {
-                // If the entity was inside the system before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the system
-                system.check_cbitfield(old) && !system.check_cbitfield(new)
+            .flat_map(|systems| systems.subsystems)
+            .filter(|subsystem| {
+                // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
+                subsystem.check(old) && !subsystem.check(new)
             })
             .count();
-        lock.insert(ComponentGroupToRemove { components, counter, key });
+            lock.insert(ComponentGroupToRemove { components, counter, key });
+            */
         Ok(())
     }
     // Called at the start of the frame
@@ -218,18 +229,5 @@ impl ComponentSet {
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
         Ok(component)
-    }
-    // Get all the components of a specific type
-    pub fn get_all<T>(&self) -> Result<Vec<&T>, ComponentError> 
-    where 
-        T: Component + Send + Sync + 'static,
-    {
-        // Loop through all the components
-        let map = self.components.read();
-        let ptrs = map.iter().map(|(_key, cell)| cell.get());
-        let components = ptrs.map(|ptr| unsafe { &mut *ptr }.as_mut());
-        let components = components.filter_map(|component| registry::cast_component::<T>(component).ok());
-        let components = components.collect::<Vec<&T>>();
-        Ok(components)
     }
 }

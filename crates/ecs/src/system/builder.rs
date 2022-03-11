@@ -1,9 +1,9 @@
 use crate::{
-    component::{registry, Component},
+    component::{registry, Component, ComponentQueryParameters},
     event::EventKey,
 };
 
-use super::{System, SystemSet};
+use super::{System, SystemSet, SubSystem};
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, World> {
@@ -15,11 +15,10 @@ impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
     pub(crate) fn new(set: &'a mut SystemSet<World>) -> Self {
         Self { set, system: System::default() }
-    }
-    // Link a component to this system
-    pub fn link<U: Component + 'static>(mut self) -> Self {
-        let c = registry::get_component_bitfield::<U>();
-        self.system.cbitfield = self.system.cbitfield.add(&c);
+    }    
+    // Add a subsystem with specific component query parameters
+    pub fn subsystem(mut self, params: ComponentQueryParameters) -> Self {
+        //self.system.subsystems.push(SubSystem::new(params));
         self
     }
     // Set the "Run System" event of this system

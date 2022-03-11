@@ -26,13 +26,6 @@ impl<'a> RefComponentFetcher<'a> {
     {
         self.set.get(key)
     }
-    // Get all the components of a specific type
-    pub fn get_all<T>(&self) -> Result<Vec<&T>, ComponentError> 
-    where 
-        T: Component + Send + Sync + 'static,
-    {
-        self.set.get_all()
-    }
 }
 
 // Mutable component fetcher so we can mutate each component if we want to
