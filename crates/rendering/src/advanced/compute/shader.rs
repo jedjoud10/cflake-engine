@@ -69,13 +69,10 @@ impl ComputeShader {
             // TODO: FIX THIS
             let mut uniforms = Uniforms::new(self.program(), pipeline, true);
             uniforms.bind();
-            if flush_and_barrier {
-                gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-            }
+            //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-            if flush_and_barrier {
-                gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-            }
+            gl::Finish();
+            //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
         }
 
         Ok(())

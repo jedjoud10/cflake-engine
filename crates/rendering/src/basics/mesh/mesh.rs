@@ -175,7 +175,7 @@ impl Mesh {
             ..Default::default()
         }
     }
-    // Créer un nouveaux Mesh en combinant deux Meshs qui existent déja.
+    // Créer un nouveau mesh en combinant deux meshs qui existent déja.
     pub fn combine(mut self, other: Mesh) -> Mesh {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
         self.indices.extend(other.indices.into_iter().map(|mut x| {

@@ -28,25 +28,8 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     }
     // Read directly from the OpenGL buffer
     fn read(&mut self, output: &mut [Element]) {
-        // Map the buffer
-        let ptr = unsafe {
-            gl::BindBuffer(self.storage._type(), self.storage.buffer());
-            let ptr = gl::MapBuffer(self.storage._type(), gl::READ_ONLY);
-            // Check validity
-            if ptr.is_null() {
-                panic!()
-            }
-            ptr
-        };
-        // Read the whole buffer slice from the pointer
-        let len = self.storage.len();
-
-        // Then copy to output
-        unsafe { std::ptr::copy(ptr as *const Element, output.as_mut_ptr(), len) }
-
-        // We can unmap the buffer now
         unsafe {
-            let result = gl::UnmapBuffer(self.storage._type());
+            self.storage.read_subdata(output.as_mut_ptr(), self.storage().len(), 0)
         }
     }
     // Simple write

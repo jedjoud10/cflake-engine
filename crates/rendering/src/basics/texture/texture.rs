@@ -10,7 +10,7 @@ use crate::{
     utils::*,
 };
 
-use super::{get_ifd, TextureAccessType, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout};
+use super::{get_ifd, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout};
 use assets::Asset;
 use getset::{CopyGetters, Getters};
 use gl::{
@@ -64,17 +64,11 @@ pub struct Texture {
 
 impl Default for Texture {
     fn default() -> Self {
-        let layout = TextureLayout {
-            data_type: DataType::U8,
-            internal_format: TextureFormat::RGBA8R,
-            resizable: true,
-        };
-
         Self {
             buffer: 0,
             bytes: Vec::new(),
-            layout,
-            ifd: get_ifd(layout),
+            layout: TextureLayout::default(),
+            ifd: get_ifd(TextureLayout::default()),
             target: gl::TEXTURE_2D,
 
             filter: TextureFilter::Linear,

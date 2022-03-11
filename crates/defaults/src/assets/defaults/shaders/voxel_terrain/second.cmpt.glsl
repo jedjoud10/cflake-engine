@@ -15,8 +15,8 @@ layout(std430, binding = 1) writeonly buffer output_voxels
 {   
     PackedVoxel packed_voxels[];
 };
-layout(location = 2) uniform vec3 node_pos;
-layout(location = 3) uniform int node_size;
+uniform vec3 node_pos;
+uniform int node_size;
 
 void main() {
     // Get the pixel coord

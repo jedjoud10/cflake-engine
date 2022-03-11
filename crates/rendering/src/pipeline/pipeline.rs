@@ -119,6 +119,12 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
 }
 
 impl Pipeline {
+    // Post-init event
+    pub fn post_init(&mut self) {
+        unsafe {
+            gl::Finish();
+        }
+    }
     // Called at the start of the frame so we can clear buffers if we need to
     pub fn start_frame(&mut self, renderer: &mut SceneRenderer) {
         unsafe {

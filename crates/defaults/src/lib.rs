@@ -23,6 +23,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/shadow_calculations.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/screen_space_reflections.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/post.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
     // Meshes

@@ -4,7 +4,7 @@ use std::{
     collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
-    ptr::{null, null_mut},
+    ptr::{null, null_mut}, cell::RefCell,
 };
 
 use ahash::{AHashMap, AHashSet};
@@ -21,6 +21,10 @@ use super::{
 
 // Uniforms definition map
 pub type UniformsDefinitionMap = AHashMap<String, i32>;
+
+
+// Used texture units
+pub type UsedTextureUnits = RefCell<AHashMap<String, usize>>;
 
 // Load the files that need to be included for this specific shader and return the included lines
 pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, included_paths: &mut AHashSet<String>) -> Result<bool, IncludeExpansionError> {
@@ -158,6 +162,7 @@ pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> Shader
     ShaderProgram {
         program: program,
         mappings: query_shader_uniforms_definition_map(program),
+        used_texture_units: Default::default(),
     }
 }
 
@@ -396,4 +401,6 @@ pub struct ShaderProgram {
     program: GLuint,
     #[getset(get = "pub")]
     mappings: UniformsDefinitionMap,
+    #[getset(get = "pub(crate)")]
+    used_texture_units: UsedTextureUnits,
 }

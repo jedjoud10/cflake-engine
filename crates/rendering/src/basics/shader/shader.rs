@@ -53,6 +53,8 @@ impl PipelineCollectionElement for Shader {
     }
 
     fn disposed(self) {
-        todo!()
+        unsafe {
+            gl::DeleteProgram(self.program.program());
+        }
     }
 }

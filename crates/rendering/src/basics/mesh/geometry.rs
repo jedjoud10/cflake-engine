@@ -5,10 +5,6 @@ use super::{IndexBuilder, Indices, Mesh, VertexBuilder, Vertices};
 pub struct GeometryBuilder {
     pub vertices: VertexBuilder,
     pub indices: IndexBuilder,
-    /*
-    pub vertex_builder: VertexBuilder<'a>,
-    pub index_builder: IndexBuilder<'a>,
-    */
 }
 
 impl GeometryBuilder {

@@ -115,7 +115,7 @@ impl Painter {
         let shader = pipeline.shaders.get(&self.shader).unwrap();
         let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
         // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature
-        uniforms.set_texture("u_sampler", &self.gl_font_texture, 0);
+        uniforms.set_texture("u_sampler", &self.gl_font_texture);
         drop(shader);
 
         // OpenGL settings

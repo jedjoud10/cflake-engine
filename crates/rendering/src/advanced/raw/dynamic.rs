@@ -54,28 +54,13 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     // Read from the dynamic buffer
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that
     fn read(&mut self, output: &mut [Element]) {
-        // Map the buffer
-        let ptr = unsafe {
-            let ptr = gl::MapNamedBuffer(self.storage.buffer(), gl::READ_ONLY);
-            // Check validity
-            if ptr.is_null() {
-                panic!()
-            }
-            ptr
-        };
-        // Read the whole buffer slice from the pointer
-        let len = self.inner.len() * size_of::<Element>();
-
         // Store internally first
-        unsafe { std::ptr::copy(ptr as *const Element, self.inner.as_mut_ptr(), len) }
+        unsafe {
+            self.storage.read_subdata(self.inner.as_mut_ptr(), self.storage().len(), 0)
+        }
 
         // Then copy to output
-        unsafe { std::ptr::copy(ptr as *const Element, output.as_mut_ptr(), len) }
-
-        // We can unmap the buffer now
-        unsafe {
-            let result = gl::UnmapNamedBuffer(self.storage.buffer());
-        }
+        unsafe { std::ptr::copy(self.inner.as_ptr() as *const Element, output.as_mut_ptr(), self.storage().len()) }
     }
     // Simple write
     // The push and pop commands automatically write to the buffer as well

@@ -225,18 +225,18 @@ impl SceneRenderer {
         let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
         // Set each texture
         for ((i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
-            uniforms.set_texture(name, handle, i as u32);
+            uniforms.set_texture(name, handle);
         }
 
         // Sky gradient texture
-        uniforms.set_texture("sky_gradient", &self.sky_gradient, 5);
+        uniforms.set_texture("sky_gradient", &self.sky_gradient);
 
         // If we have shadow mapping disabled we must use the default white texture
         let shadow_mapping_texture = self
             .shadow_mapping
             .as_ref()
             .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
-        uniforms.set_texture("shadow_map", shadow_mapping_texture, 6);
+        uniforms.set_texture("shadow_map", shadow_mapping_texture);
         uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
 
         // Draw the quad

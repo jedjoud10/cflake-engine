@@ -50,10 +50,11 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 }
 
 // Then, a frame later, fetch the buffer data
-fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
+fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {    
     // READ
     // Get the valid counters
     let generator = &mut terrain.voxel_generator;
+    let i = std::time::Instant::now();
     let read_counters = generator.atomics.get();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
@@ -72,6 +73,7 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
 
     // Switch states
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
+    println!("Took {}ms to read buffers", i.elapsed().as_millis());
 }
 
 // The voxel systems' update loop
@@ -97,7 +99,9 @@ fn run(world: &mut World, mut data: EventKey) {
                 let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
+                let i = std::time::Instant::now();
                 generate(terrain, &world.pipeline, chunk, key);
+                println!("Took {}ms to execute compute shaders", i.elapsed().as_millis());
             }
         } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.chunks_manager.current_chunk_state {
             // We should fetch the shader storages now

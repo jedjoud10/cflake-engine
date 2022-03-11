@@ -90,6 +90,24 @@ impl<Element> Storage<Element> {
             gl::BufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, ptr as *const c_void);
         }
     }
+    // Read subdata
+    pub(crate) unsafe fn read_subdata(&self, output: *mut Element, len: usize, offset: usize) {
+        // Map the buffer
+        let ptr = {
+            gl::BindBuffer(self._type, self.buffer);
+            let ptr = gl::MapBuffer(self._type, gl::READ_ONLY);
+            // Check validity
+            if ptr.is_null() {
+                panic!()
+            }
+            ptr
+        };
+        // Then copy to output
+        std::ptr::copy(ptr as *const Element, output, len);
+
+        // We can unmap the buffer now
+        let result = gl::UnmapBuffer(self._type);
+    }
 }
 
 impl<Element> Drop for Storage<Element> {

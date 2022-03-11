@@ -26,12 +26,3 @@ pub enum TextureDimensions {
     Texture3d(veclib::Vector3<u16>),
     Texture2dArray(veclib::Vector3<u16>),
 }
-
-// How we can access the texture
-// We will make an Upload and Download PBO for each case
-bitflags! {
-    pub struct TextureAccessType: u8 {
-        const READ = 0b00000001;
-        const WRITE = 0b00000010;
-    }
-}

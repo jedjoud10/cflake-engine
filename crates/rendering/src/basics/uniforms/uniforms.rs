@@ -2,7 +2,7 @@ use crate::{
     advanced::{atomic::AtomicGroup, raw::Buffer, shader_storage::ShaderStorage},
     basics::{
         shader::ShaderProgram,
-        texture::{Texture, TextureAccessType},
+        texture::{Texture},
     },
     pipeline::{Handle, Pipeline},
 };
@@ -142,48 +142,27 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
         }
     }
-    pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>, active_texture_id: u32) {
+    pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
-        let texture = if let Some(x) = self.pipeline.textures.get(texture) {
-            x
-        } else {
-            return;
-        };
-        unsafe {
-            gl::ActiveTexture(active_texture_id + gl::TEXTURE0);
-            gl::BindTexture(texture.target(), texture.buffer());
-            gl::Uniform1i(location, active_texture_id as i32);
+        let texture = self.pipeline.textures.get(texture).unwrap();
+        // Get the active texture ID from the program
+        let mut used_texture_units = self.program.used_texture_units().borrow_mut(); 
+        if !used_texture_units.contains_key(name) {
+            // Never existed before, add it
+            let len = used_texture_units.len();
+            used_texture_units.insert(name.to_string(), len);
         }
-    }
-    pub fn set_image(&mut self, name: &str, texture: &Handle<Texture>, access: TextureAccessType) {
-        let location = self.get_location(name);
-        if location == -1 {
-            return;
-        }
-        // Converstion from wrapper to actual OpenGL values
-        let texture = if let Some(x) = self.pipeline.textures.get(texture) {
-            x
-        } else {
-            return;
-        };
-        let new_access_type: u32 = {
-            if access.is_all() {
-                gl::READ_WRITE
-            } else if access.contains(TextureAccessType::READ) {
-                gl::READ_ONLY
-            } else if access.contains(TextureAccessType::WRITE) {
-                gl::WRITE_ONLY
-            } else {
-                println!("Image access type is neither READ or WRITE!");
-                panic!()
+
+        // Set
+        if let Some(&offset) = used_texture_units.get(name) {
+            unsafe {
+                gl::ActiveTexture(offset as u32 + gl::TEXTURE0);
+                gl::BindTexture(texture.target(), texture.buffer());
+                gl::Uniform1i(location, offset as i32);
             }
-        };
-        unsafe {
-            gl::BindTexture(texture.target(), texture.buffer());
-            gl::BindImageTexture(location as u32, texture.buffer(), 0, gl::FALSE, 0, new_access_type, (texture.ifd()).0 as u32);
         }
     }
     pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {
