@@ -1,11 +1,16 @@
+use crate::basics::lights::{LightType, LightParameters, LightTransform};
+
 use super::{RenderedModel, ShadowedModel};
 
 // Settings that tell us how we should render the scene
-pub struct RenderingSettings<'a, 'b> {
+pub struct RenderingSettings<'scene, 'object> {
     // Normal objects
-    pub normal: &'a [RenderedModel<'b>],
+    pub normal: &'scene [RenderedModel<'object>],
     // Shadowed objects
-    pub shadowed: &'a [ShadowedModel<'b>],
+    pub shadowed: &'scene [ShadowedModel<'object>],
+
+    // All the light sources
+    pub lights: &'scene [(&'object LightType, LightTransform<'object>)],
 }
 
 // Camera rendering settings

@@ -1,31 +1,38 @@
 use crate::{object::PipelineCollectionElement, pipeline::Pipeline};
 use enum_as_inner::EnumAsInner;
 
-// A light type
-#[derive(Clone, EnumAsInner)]
-pub enum LightSourceType {
-    // TODO: Aeaea
-    Directional,
-    Point,
-    Area,
-}
-
-// Light transform
-pub struct StoredLightTransform {
-    pub position: veclib::Vector3<f32>,
-    pub rotation: veclib::Quaternion<f32>,
-}
-
-// Light source that we will render
-pub struct StoredLight {
-    pub _type: LightSourceType,
-    pub transform: StoredLightTransform,
+// Light source parameters
+pub struct LightParameters {
     pub strength: f32,
     pub color: veclib::Vector3<f32>,
 }
 
-impl PipelineCollectionElement for StoredLight {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {}
+impl Default for LightParameters {
+    fn default() -> Self {
+        Self { 
+            strength: 1.0,
+            color: veclib::Vector3::ONE,
+        }
+    }
+}
 
-    fn disposed(self) {}
+// Light transform
+pub struct LightTransform<'object> {
+    pub position: &'object veclib::Vector3<f32>,
+    pub rotation: &'object veclib::Quaternion<f32>,
+}
+
+// A light type
+#[derive(EnumAsInner)]
+pub enum LightType {
+    // Directional light, like the sun
+    Directional {
+        params: LightParameters,
+    },
+    // Point light, like a lamp
+    // TODO: Add support for point lights in shader
+    Point {
+        params: LightParameters,
+        radius: f32,
+    },    
 }

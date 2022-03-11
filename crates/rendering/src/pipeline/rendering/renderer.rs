@@ -160,31 +160,36 @@ impl SceneRenderer {
     }
 
     // Prepare the FBO and clear the buffers
-    pub(crate) unsafe fn ready(&mut self, pipeline: &mut Pipeline) {
+    pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
         gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
-        // Update the lightspace matrix
-        self.shadow_mapping.as_mut().map(|mapping| {
-            // The first directional light that we find will be used as the sunlight
-            let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
-            let quat = first.map(|light| light.transform.rotation);
-
-            quat.as_ref().map(|quat| mapping.update_matrix(quat));
-        });
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);        
     }
 
     // Render the whole scene
-    pub fn render(&self, pipeline: &Pipeline, settings: RenderingSettings) {
+    pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // Render normally
         for renderer in settings.normal {
             common::render_model(&settings, renderer, pipeline)
         }
 
         // Then render the shadows
-        self.shadow_mapping.as_ref().map(|mapping| unsafe {
-            mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
+        self.shadow_mapping.as_mut().map(|mapping| unsafe {
+            // Update the lightspace matrix
+            // The first directional light that we find will be used as the sunlight
+            let first = settings
+                .lights
+                .iter()
+                .find_map(|(_type, params)|
+                    _type.as_directional().map(|_type| (_type, params))    
+                );
+
+            if let Some((parameters, transform)) = first {
+                // Only render directional shadow map if we have a sun
+                mapping.update_matrix(transform.rotation);
+                // Then render shadows
+                mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
+            }
         });
 
         // Render the deferred quad
@@ -199,8 +204,13 @@ impl SceneRenderer {
         let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, true);
 
         // Try to get the sunlight direction
-        let first = pipeline.lights.iter().find(|(_, light)| light._type.as_directional().is_some()).map(|(_, value)| value);
-        let sunlight = first.map(|light| (light.transform.rotation.mul_point(veclib::Vector3::Z), light.strength));
+        let first = settings
+                .lights
+                .iter()
+                .find_map(|(_type, params)|
+                    _type.as_directional().map(|_type| (_type, params))    
+                );
+        let sunlight = first.map(|(params, transform)| (transform.rotation.mul_point(veclib::Vector3::Z), params.strength));
 
         // Default sunlight values
         let sunlight = sunlight.unwrap_or((veclib::Vector3::ZERO, 1.0));

@@ -20,7 +20,6 @@ pub enum TextureWrapMode {
 // Texture dimensions
 #[derive(EnumAsInner, Debug, Clone, Copy)]
 pub enum TextureDimensions {
-    // TODO: I hate this
     Texture1d(u16),
     Texture2d(veclib::Vector2<u16>),
     Texture3d(veclib::Vector3<u16>),

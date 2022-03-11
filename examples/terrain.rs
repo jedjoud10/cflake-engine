@@ -13,7 +13,7 @@ use cflake_engine::{
     rendering::{basics::{
         material::{Material, MaterialTextures},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureBundler, TextureFilter, TextureLayout},
+        texture::{Texture, TextureBuilder, TextureBundler, TextureFilter, TextureLayout}, lights::{LightType::Directional, LightParameters},
     }},
     terrain::editing::Edit,
     veclib::{self, vec3},
@@ -49,8 +49,12 @@ fn init(world: &mut World) {
     let _id = world.ecs.add(entity, group).unwrap();
 
     // Create the directional light source
-    let light = Light::default();
-    let light_transform = Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()));
+    let light = components::Light {
+        light: Directional {
+            params: LightParameters::default(),
+        },
+    };
+    let light_transform = components::Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();
     group.link(light_transform).unwrap();
@@ -70,14 +74,8 @@ fn init(world: &mut World) {
     let texture_norm_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
     let texture_diff_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).mipmaps(true).layout(TextureLayout {
-        resizable: true,
-        ..Default::default()
-    });
-    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).mipmaps(true).layout(TextureLayout {
-        resizable: true,
-        ..Default::default()
-    });
+    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).mipmaps(true);
+    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).mipmaps(true);
     let diffuse = world.pipeline.textures.insert(diffuse.build());
     let normals = world.pipeline.textures.insert(normals.build());
     let material = Material {
@@ -107,8 +105,8 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
-    //terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 500.0, CSGOperation::Union, Some(1)));
+    terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 500.0, CSGOperation::Union, Some(1)));
     // Pillar
-    //terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(400.0, 600.0, 400.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(400.0, 600.0, 400.0), CSGOperation::Subtraction, Some(2)));
     world.globals.add(terrain).unwrap();
 }

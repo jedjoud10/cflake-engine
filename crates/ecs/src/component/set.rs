@@ -186,7 +186,7 @@ impl ComponentSet {
         self.components.read().len()
     }
 
-    // Get a single component (should not be multithreaded!)
+    // Get a single component
     pub fn get<T>(&self, key: ComponentKey) -> Result<&T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
@@ -201,7 +201,7 @@ impl ComponentSet {
         let component = registry::cast_component::<T>(component)?;
         Ok(component)
     }
-    // Get a single component mutably (should not be multithreaded!)
+    // Get a single component mutably
     pub fn get_mut<T>(&mut self, key: ComponentKey) -> Result<&mut T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
@@ -218,5 +218,18 @@ impl ComponentSet {
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
         Ok(component)
+    }
+    // Get all the components of a specific type
+    pub fn get_all<T>(&self) -> Result<Vec<&T>, ComponentError> 
+    where 
+        T: Component + Send + Sync + 'static,
+    {
+        // Loop through all the components
+        let map = self.components.read();
+        let ptrs = map.iter().map(|(_key, cell)| cell.get());
+        let components = ptrs.map(|ptr| unsafe { &mut *ptr }.as_mut());
+        let components = components.filter_map(|component| registry::cast_component::<T>(component).ok());
+        let components = components.collect::<Vec<&T>>();
+        Ok(components)
     }
 }

@@ -11,7 +11,7 @@ use veclib::vec2;
 
 use crate::{
     advanced::compute::ComputeShader,
-    basics::{lights::StoredLight, material::Material, mesh::Mesh, shader::Shader, texture::Texture},
+    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture},
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
@@ -28,7 +28,6 @@ pub struct Pipeline {
 
     // Others
     pub materials: PipelineCollection<Material>,
-    pub lights: PipelineCollection<StoredLight>,
 
     // Window
     pub window: Window,
@@ -91,7 +90,6 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         compute_shaders: Default::default(),
         textures: Default::default(),
         materials: Default::default(),
-        lights: Default::default(),
         time: Default::default(),
         camera: Default::default(),
         window: {
@@ -128,7 +126,7 @@ impl Pipeline {
     // Called at the start of the frame so we can clear buffers if we need to
     pub fn start_frame(&mut self, renderer: &mut SceneRenderer) {
         unsafe {
-            renderer.ready(self);
+            renderer.start_frame(self);
         }
     }
     // Called at the end of the frame to ready the pipeline for the next frame
@@ -138,7 +136,6 @@ impl Pipeline {
         self.compute_shaders.dispose_dangling();
         self.textures.dispose_dangling();
         self.materials.dispose_dangling();
-        self.lights.dispose_dangling();
 
         // Swap the back and front buffers, so we can show the screen something
         self.window.context().swap_buffers().unwrap();

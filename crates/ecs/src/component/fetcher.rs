@@ -19,12 +19,19 @@ impl<'a> RefComponentFetcher<'a> {
             _phantom: Default::default(),
         }
     }
-    // Get a single component (should not be multithreaded!)
+    // Get a single component
     pub fn get<T>(&self, key: ComponentKey) -> Result<&T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
     {
         self.set.get(key)
+    }
+    // Get all the components of a specific type
+    pub fn get_all<T>(&self) -> Result<Vec<&T>, ComponentError> 
+    where 
+        T: Component + Send + Sync + 'static,
+    {
+        self.set.get_all()
     }
 }
 

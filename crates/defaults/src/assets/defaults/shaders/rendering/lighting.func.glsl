@@ -11,15 +11,15 @@ vec3 compute_lighting(
     sampler2D sky_texture,
     float time_of_day) {       	
 	// Calculate the diffuse lighting
-	float light_val = max(dot(normal, normalize(sunlight_dir)), 0) * sunlight_strength * 1.1; 
+	float light_val = max(dot(normal, normalize(sunlight_dir)), 0) * sunlight_strength * 1.3; 
 
 	// Used for ambient lighting
-	float ambient_lighting_strength = 0.14;
+	float ambient_lighting_strength = 0.05;
 	float sky_light_val = dot(normal, vec3(0, 1, 0)); 
 	vec3 ambient_lighting_color = calculate_sky_color(sky_texture, normal, sky_light_val, time_of_day);
 
 	// Add everything
-	vec3 ambient_lighting = (ambient_lighting_color + diffuse) * ambient_lighting_strength;
+	vec3 ambient_lighting = diffuse * 0.1 + ambient_lighting_color * ambient_lighting_strength;
 	vec3 color = ambient_lighting;
 	color += (1 - in_shadow) * (diffuse * light_val);
 	

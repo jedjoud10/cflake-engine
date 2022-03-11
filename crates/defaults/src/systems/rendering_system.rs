@@ -7,6 +7,8 @@ use world::{
     World,
 };
 
+use crate::components::{Light, Transform, Camera, Renderer};
+
 // Get the camera transform and camera data
 fn get_camera(world: &World) -> Option<(RefComponentFetcher, ComponentKey, ComponentKey)> {
     // Get the entity
@@ -17,8 +19,8 @@ fn get_camera(world: &World) -> Option<(RefComponentFetcher, ComponentKey, Compo
         .get(global.main_camera)
         .map(|camera_entity| {
             // And fetch it's linked component keys
-            let camera = camera_entity.get_linked::<crate::components::Camera>().unwrap();
-            let transform = camera_entity.get_linked::<crate::components::Transform>().unwrap();
+            let camera = camera_entity.get_linked::<Camera>().unwrap();
+            let transform = camera_entity.get_linked::<Transform>().unwrap();
 
             // Then, we can fetch the actual components
             let fetcher = RefComponentFetcher::new(&world.ecs.components);
@@ -35,10 +37,10 @@ fn run(world: &mut World, mut data: EventKey) {
     // Before we do anything, we must update each model matrix if it needs to be updated
     for (_, components) in query.iter_mut() {
         // Only update if we need to
-        if components.was_mutated::<crate::components::Transform>().unwrap_or_default() || components.was_mutated::<crate::components::Renderer>().unwrap_or_default() {
-            let transform = components.get::<crate::components::Transform>().unwrap();
+        if components.was_mutated::<Transform>().unwrap_or_default() || components.was_mutated::<Renderer>().unwrap_or_default() {
+            let transform = components.get::<Transform>().unwrap();
             let matrix = transform.transform_matrix();
-            let renderer = components.get_mut::<crate::components::Renderer>().unwrap();
+            let renderer = components.get_mut::<Renderer>().unwrap();
             renderer.matrix = matrix;
         }
     }
@@ -50,7 +52,7 @@ fn run(world: &mut World, mut data: EventKey) {
     // Add the normal models
     for (_, components) in query.iter() {
         // We do a bit of borrowing
-        let renderer = components.get::<crate::components::Renderer>().unwrap();
+        let renderer = components.get::<Renderer>().unwrap();
         models.push(RenderedModel {
             mesh: &renderer.mesh,
             matrix: &renderer.matrix,
@@ -61,7 +63,7 @@ fn run(world: &mut World, mut data: EventKey) {
     // Add the shadowed models
     for (_, components) in query.iter() {
         // We do a bit of borrowing
-        let renderer = components.get::<crate::components::Renderer>().unwrap();
+        let renderer = components.get::<Renderer>().unwrap();
         // Only if this is shadowed
         if renderer.shadowed {
             shadowed.push(ShadowedModel {
@@ -74,8 +76,8 @@ fn run(world: &mut World, mut data: EventKey) {
     // Fetch the camera component
     let camera_data = get_camera(world);
     if let Some((fetcher, camera, transform)) = camera_data {
-        let camera = fetcher.get::<crate::components::Camera>(camera).unwrap();
-        let transform = fetcher.get::<crate::components::Transform>(transform).unwrap();
+        let camera = fetcher.get::<Camera>(camera).unwrap();
+        let transform = fetcher.get::<Transform>(transform).unwrap();
 
         // Camera settings
         let camera = RenderingCamera {
@@ -88,13 +90,18 @@ fn run(world: &mut World, mut data: EventKey) {
             // Math moment
             projm_viewm: camera.projm * camera.viewm,
         };
-
         world.pipeline.camera = camera;
+
+        // Get all the lights that are in the world
+        let fetcher = RefComponentFetcher::new(&world.ecs.components);
+        let lights = fetcher.get_all::<Light>().unwrap();
+
 
         // Rendering settings
         let settings = RenderingSettings {
             normal: models.as_slice(),
             shadowed: shadowed.as_slice(),
+            lights: lights,
         };
 
         // Render
@@ -119,7 +126,7 @@ pub fn system(world: &mut World) {
         .with_run_event(run)
         .with_added_entities_event(added_entities)
         .with_removed_entities_event(removed_entities)
-        .link::<crate::components::Renderer>()
-        .link::<crate::components::Transform>()
+        .link::<Renderer>()
+        .link::<Transform>()
         .build();
 }

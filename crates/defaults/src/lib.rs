@@ -73,7 +73,6 @@ pub fn start_before_user_sytems(world: &mut World) {
 pub fn start_after_user_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
-    light_system::system(world);
     // Terrain
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
