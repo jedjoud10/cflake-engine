@@ -6,11 +6,10 @@ use bitfield::Bitfield;
 use crate::{
     component::{ComponentQuerySet, LinkedComponents, ComponentQuery},
     entity::EntityKey,
-    event::EventKey,
 };
 
 use super::{SubSystem, SystemSettings};
-pub(crate) type Event<World> = Option<fn(&mut World, EventKey)>;
+pub(crate) type Event<World> = Option<fn(&mut World, ComponentQuerySet)>;
 // A system that contains multiple subsystems, each with their own component queries
 pub struct System<World> {
     // Subsystems
@@ -64,15 +63,14 @@ impl<World> System<World> {
                     }
                 })
                 .collect::<Vec<_>>();
-            run_system_evn(world, EventKey::Queries(ComponentQuerySet { queries }));
+            run_system_evn(world, queries);
 
             // Clear
-            /*
-            for mut query in queries {
-                query.delta.added.clear();
-                query.delta.added.clear();
+            for query in self.subsystems.iter() {
+                let mut borrowed = query.borrow_mut();
+                borrowed.delta.added.clear();
+                borrowed.delta.removed.clear();
             }
-            */
         }
     }
 }

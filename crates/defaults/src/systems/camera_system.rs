@@ -4,7 +4,7 @@ use world::World;
 
 // The camera system update loop
 fn run(world: &mut World, mut data: EventKey) {
-    let query = data.as_query_mut().unwrap();
+    let query = data.as_queries().unwrap();
     // Rotate the camera around
     let mouse_pos = *world.input.get_mouse_position();
     const SENSIVITY: f32 = 0.0007;

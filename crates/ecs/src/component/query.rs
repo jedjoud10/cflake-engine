@@ -40,14 +40,4 @@ pub struct ComponentQuery<'a> {
 }
 
 // A component query set that contains multiple queries that can be fetched from the subsystems of a specific system
-pub struct ComponentQuerySet<'subsystem> {
-    // Total
-    pub(crate) queries: Vec<ComponentQuery<'subsystem>>,
-}
-
-impl<'subsystem> ComponentQuerySet<'subsystem> {
-    // Get a specific component query using it's subsystem index
-    pub fn get(&mut self, index: usize) -> &mut ComponentQuery<'subsystem> {
-        self.queries.get_mut(index).unwrap()
-    }
-}
+pub type ComponentQuerySet<'subsystem> = Vec<ComponentQuery<'subsystem>>;

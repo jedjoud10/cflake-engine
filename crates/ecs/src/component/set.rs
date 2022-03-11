@@ -31,6 +31,12 @@ impl Default for ComponentSet {
 fn invalid_err() -> ComponentError {
     ComponentError::new("Component could not be fetched!".to_string())
 }
+fn borrow_err_linking() -> ComponentLinkingError {
+    ComponentLinkingError::new("Cannot modify the delta state of a system that is currently running!".to_string())
+}
+fn borrow_err_unlinking() -> ComponentUnlinkError {
+    ComponentUnlinkError::new("Cannot modify the delta state of a system that is currently running!".to_string())
+}
 
 impl ComponentSet {
     // Link some components to an entity
@@ -61,20 +67,19 @@ impl ComponentSet {
         // Check if the linked entity is valid to be added into the subsystems
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            /*
             for subsystem in system.subsystems.iter() {
+                let mut borrowed = subsystem.try_borrow_mut().map_err(|_| borrow_err_linking())?;
                 // If the entity wasn't inside the subsystem before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the subsystem
-                if subsystem.check(new) && !subsystem.check(old) {
+                if borrowed.check(new) && !borrowed.check(old) {
                     let linked = LinkedComponents {
                         key,
                         linked: linked.clone(),
                         mutated_components: self.mutated_components.clone(),
                         components: components.clone(),
                     };
-                    subsystem.add(key, linked);
+                    borrowed.add(key, linked);
                 }
             }
-            */
         }
         Ok(())
     }
@@ -93,11 +98,11 @@ impl ComponentSet {
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            /*
             for subsystem in system.subsystems.iter() {
+                let mut borrowed = subsystem.try_borrow_mut().map_err(|_| borrow_err_unlinking())?;
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                if subsystem.check(old) && !subsystem.check(new) {
-                    subsystem.remove(
+                if borrowed.check(old) && !borrowed.check(new) {
+                    borrowed.remove(
                         key,
                         LinkedComponents {
                             key,
@@ -108,7 +113,6 @@ impl ComponentSet {
                     );
                 }
             }
-            */
         }
         // Update the entity's components
         let entity = entities.get_mut(key).unwrap();
@@ -137,17 +141,17 @@ impl ComponentSet {
 
         // And finally remove the component group from the required subsystems
         let mut lock = self.to_remove.borrow_mut();
-        /*
         let counter = systems
             .iter()
-            .flat_map(|systems| systems.subsystems)
-            .filter(|subsystem| {
+            .flat_map(|systems| &systems.subsystems)
+            .filter(|&subsystem| {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                subsystem.check(old) && !subsystem.check(new)
+                let borrowed = subsystem.borrow();
+                borrowed.check(old) && !borrowed.check(new)
             })
             .count();
-            lock.insert(ComponentGroupToRemove { components, counter, key });
-            */
+        // Add the removal group
+        lock.insert(ComponentGroupToRemove { components, counter, key });
         Ok(())
     }
     // Called at the start of the frame

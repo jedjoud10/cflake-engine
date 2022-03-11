@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 
 use crate::{
-    component::{registry, Component, ComponentQueryParameters},
-    event::EventKey,
+    component::{registry, Component, ComponentQueryParameters, ComponentQuerySet},
 };
 
 use super::{SubSystem, System, SystemSet};
@@ -24,7 +23,7 @@ impl<'a, World> SystemBuilder<'a, World> {
         self
     }
     // Set the "Run System" event of this system
-    pub fn with_run_event(mut self, evn: fn(&mut World, EventKey)) -> Self {
+    pub fn event(mut self, evn: fn(&mut World, ComponentQuerySet)) -> Self {
         self.system.evn_run = Some(evn);
         self
     }

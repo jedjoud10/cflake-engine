@@ -1,12 +1,12 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{registry, Component, RefComponentFetcher, ComponentQueryParameters},
+        component::{registry, Component, ComponentQueryParameters, ComponentQuerySet},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
-        event::EventKey,
         ECSManager,
     };
     use bitfield::Bitfield;
+    use slotmap::Key;
     // A name component that can be added to named entities
     #[derive(Component)]
     pub struct Name {
@@ -45,9 +45,8 @@ pub mod test {
 
     // A test world
     pub struct World;
-    fn run_system(_world: &mut World, mut data: EventKey) {
-        let query = data.as_queries_mut().unwrap();
-        for (_, components) in query.get(0).all.iter_mut() {
+    fn run_system(_world: &mut World, mut data: ComponentQuerySet) {
+        for (_, components) in data[0].all.iter_mut() {
             let name = components.get_mut::<Name>().unwrap();
             *name = Name::new("Bob");
         }
@@ -55,7 +54,7 @@ pub mod test {
 
     // Run the systems in sync, but their component updates are not
     // Used only for testing
-    fn run_systems(ecs: &mut ECSManager<World>, world: &mut World) {
+    fn run_systems<W>(ecs: &mut ECSManager<W>, world: &mut W) {
         ecs.components.clear_for_next_frame().unwrap();
         let (systems, settings) = ecs.ready();
         ECSManager::execute_systems(systems.borrow(), world, settings);
@@ -73,7 +72,7 @@ pub mod test {
         let builder = ecs.systems.builder();
 
         let params = ComponentQueryParameters::default().link::<Name>();
-        builder.query(params).with_run_event(run_system).build();
+        builder.query(params).event(run_system).build();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::default();
@@ -100,17 +99,10 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.systems.builder();
-        fn internal_run(_world: &mut World, _data: EventKey) {
-            /*
-            // Transform the _context to RefContext using some magic fuckery
-            components.update_all_threaded(|components| {
-                let mut name = components.component_mut::<Name>().unwrap();
-                *name = Name::new("Bob");
-            });
-            */
+        fn run_internally(_world: &mut World, _data: ComponentQuerySet) {
         }
         let params = ComponentQueryParameters::default().link::<Name>();
-        builder.query(params).with_run_event(internal_run).build();
+        builder.query(params).event(run_internally).build();
 
         // Create 10k entities
         for _x in 0..10_000 {
@@ -138,7 +130,7 @@ pub mod test {
         // Make a simple system
         let builder = ecs.systems.builder();
         let params = ComponentQueryParameters::default().link::<Name>();
-        builder.query(params).with_run_event(run_system).build();
+        builder.query(params).event(run_system).build();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
@@ -156,31 +148,64 @@ pub mod test {
         ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
         assert_eq!(ecs.entities.get(key).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
     }
-    // Test the component fetcher
+    // Test multiple queries
     #[test]
-    pub fn fetcher() {
+    pub fn queries() {
         // Also create the context
-        let _world = World;
+        let mut world = 0;
         // Create the main ECS manager
-        let mut ecs = ECSManager::<World>::default();
+        let mut ecs = ECSManager::<i32>::default();
+
+        let builder = ecs.systems.builder();
+
+        fn run_internally(_world: &mut i32, mut data: ComponentQuerySet) {
+            let query1 = &data[0];
+            let query2 = &data[1];
+            let len1 = query1.all.len();
+            let len2 = query2.all.len();
+            if *_world == 0 {
+                assert_eq!(len1, 1);
+                assert_eq!(len2, 1);
+                assert_eq!(query1.delta.added.len(), 1);
+                assert_eq!(query2.delta.added.len(), 1);
+            } else if *_world == 1 {
+                assert_eq!(len1, 1);
+                assert_eq!(len2, 1);
+                assert_eq!(query1.delta.added.len(), 0);
+                assert_eq!(query2.delta.added.len(), 0);
+            } else if *_world == 2 {
+                assert_eq!(len1, 0);
+                assert_eq!(len2, 0);
+                assert_eq!(query1.delta.removed.len(), 1);
+                assert_eq!(query2.delta.removed.len(), 1);
+                assert_eq!(query1.delta.added.len(), 0);
+                assert_eq!(query2.delta.added.len(), 0);
+            }
+            *_world += 1;
+        } 
+
+        // Query 1
+        let params = ComponentQueryParameters::default().link::<Name>();
+        // Query 2
+        let params2 = ComponentQueryParameters::default().link::<Tagged>();
+        builder.query(params).query(params2).event(run_internally).build();
 
         // Create a new entity
         let entity = Entity::default();
         let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
-        // Since the entity isn't in the manager, it doesn't contain the linked component yet
+        group.link::<Tagged>(Tagged::new("Person")).unwrap();
         let entity_key = ecs.add(entity, group).unwrap();
-        let entity = ecs.entities.get_mut(entity_key).unwrap();
-        assert!(entity.get_linked::<Name>().is_some());
-        assert!(entity.is_linked::<Name>());
-        assert!(entity.get_linked::<Tagged>().is_none());
-        assert!(!entity.is_linked::<Tagged>());
-
-        let component_key = entity.get_linked::<Name>().unwrap();
-        // Try to get it's Name component
-        let fetcher = RefComponentFetcher::new(&mut ecs.components);
-        let component = fetcher.get::<Name>(component_key).unwrap();
-        assert_eq!(component.name, "John".to_string());
-        assert!(fetcher.get::<Tagged>(component_key).is_err());
+        assert!(!entity_key.is_null());
+        let systems = ecs.systems.inner.borrow();
+        let system = systems.get(0).unwrap();
+        assert_eq!(system.subsystems.len(), 2);
+        drop(systems);
+        // Step 1
+        run_systems(&mut ecs, &mut world);        
+        // Step 2 (systems actually store the entity's components)
+        run_systems(&mut ecs, &mut world);   
+        ecs.remove(entity_key).unwrap();
+        run_systems(&mut ecs, &mut world); 
     }
 }
