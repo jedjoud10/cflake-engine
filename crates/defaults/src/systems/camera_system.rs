@@ -1,10 +1,18 @@
-use world::ecs::event::EventKey;
+use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
 use world::input::Keys;
 use world::World;
 
 // The camera system update loop
-fn run(world: &mut World, mut data: EventKey) {
-    let query = data.as_queries().unwrap();
+fn run(world: &mut World, mut data: ComponentQuerySet) {
+    let query = data.get_mut(0).unwrap();
+
+    // Set the main camera entity key in the world global
+    let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
+    // If there isn't a main camera assigned already, we can be the main one
+    if let Some((&key, _)) = query.delta.added.iter().next() {
+        global.main_camera = key;
+    }
+
     // Rotate the camera around
     let mouse_pos = *world.input.get_mouse_position();
     const SENSIVITY: f32 = 0.0007;
@@ -52,7 +60,7 @@ fn run(world: &mut World, mut data: EventKey) {
     }
     // Update the camera values now
     let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
-    for (&key, components) in query.iter_mut() {
+    for (&key, components) in query.all.iter_mut() {
         // If we are not the right camera, skip
         if key != global.main_camera {
             continue;
@@ -73,42 +81,18 @@ fn run(world: &mut World, mut data: EventKey) {
     }
 }
 
-// When we add new cameras
-fn added_entities(world: &mut World, mut data: EventKey) {
-    let global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
-    // If there isn't a main camera assigned already, we can be the first one
-    let query = data.as_query_mut().unwrap();
-    if let Some((&key, _)) = query.iter().next() {
-        global.main_camera = key;
-    }
-}
-
-// When we remove old cameras
-fn removed_entities(world: &mut World, mut data: EventKey) {
-    let _global = world.globals.get_mut::<crate::globals::GlobalWorldData>().unwrap();
-    // If we remove the main camera, we must empty the camera entity ID
-    let query = data.as_query_mut().unwrap();
-    for (&_entity_id, _) in query.iter() {
-        /*
-        if Some(entity_id) == global.camera_entity_key {
-            // Take
-            global.camera_entity_key.take().unwrap();
-        }
-        */
-    }
-}
-
 // Create the camera system
 pub fn system(world: &mut World) {
     world
         .ecs
         .systems
         .builder()
-        .with_run_event(run)
-        .with_added_entities_event(added_entities)
-        .with_removed_entities_event(removed_entities)
-        .link::<crate::components::Camera>()
-        .link::<crate::components::Transform>()
+        .event(run)
+        .query(
+            ComponentQueryParameters::default()
+                .link::<crate::components::Camera>()
+                .link::<crate::components::Transform>(),
+        )
         .build();
     world.input.bind_key(Keys::W, "camera_forward");
     world.input.bind_key(Keys::S, "camera_backwards");

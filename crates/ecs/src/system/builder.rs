@@ -1,8 +1,6 @@
 use std::cell::RefCell;
 
-use crate::{
-    component::{registry, Component, ComponentQueryParameters, ComponentQuerySet},
-};
+use crate::component::{registry, Component, ComponentQueryParameters, ComponentQuerySet};
 
 use super::{SubSystem, System, SystemSet};
 

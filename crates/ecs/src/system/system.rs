@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{ComponentQuerySet, LinkedComponents, ComponentQuery},
+    component::{ComponentQuery, ComponentQuerySet, LinkedComponents},
     entity::EntityKey,
 };
 
@@ -57,10 +57,7 @@ impl<World> System<World> {
                     // Splitting
                     let borrowed = x.borrow_mut();
                     let (delta, all) = RefMut::map_split(borrowed, |borrowed| (&mut borrowed.delta, &mut borrowed.all));
-                    ComponentQuery {
-                        all,
-                        delta,
-                    }
+                    ComponentQuery { all, delta }
                 })
                 .collect::<Vec<_>>();
             run_system_evn(world, queries);

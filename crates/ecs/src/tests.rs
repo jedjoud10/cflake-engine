@@ -99,8 +99,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.systems.builder();
-        fn run_internally(_world: &mut World, _data: ComponentQuerySet) {
-        }
+        fn run_internally(_world: &mut World, _data: ComponentQuerySet) {}
         let params = ComponentQueryParameters::default().link::<Name>();
         builder.query(params).event(run_internally).build();
 
@@ -182,7 +181,7 @@ pub mod test {
                 assert_eq!(query2.delta.added.len(), 0);
             }
             *_world += 1;
-        } 
+        }
 
         // Query 1
         let params = ComponentQueryParameters::default().link::<Name>();
@@ -202,10 +201,10 @@ pub mod test {
         assert_eq!(system.subsystems.len(), 2);
         drop(systems);
         // Step 1
-        run_systems(&mut ecs, &mut world);        
+        run_systems(&mut ecs, &mut world);
         // Step 2 (systems actually store the entity's components)
-        run_systems(&mut ecs, &mut world);   
+        run_systems(&mut ecs, &mut world);
         ecs.remove(entity_key).unwrap();
-        run_systems(&mut ecs, &mut world); 
+        run_systems(&mut ecs, &mut world);
     }
 }
