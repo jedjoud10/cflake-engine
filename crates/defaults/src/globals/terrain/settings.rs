@@ -3,8 +3,6 @@ use world::{
     rendering::{basics::material::Material, pipeline::Handle},
 };
 
-use super::ChunkPostGenerationEvent;
-
 // Terrain settings for simplicity
 pub struct TerrainSettings {
     // Voxel gen
@@ -13,9 +11,6 @@ pub struct TerrainSettings {
     // Octree gen
     pub depth: u8,
     pub heuristic_settings: HeuristicSettings,
-
-    // Chunk generation event
-    pub event: ChunkPostGenerationEvent,
 
     // Mesh generator
     pub material: Handle<Material>,
@@ -27,7 +22,6 @@ impl Default for TerrainSettings {
             voxel_src_path: world::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
             depth: 4,
             heuristic_settings: Default::default(),
-            event: None,
             material: Default::default(),
         }
     }

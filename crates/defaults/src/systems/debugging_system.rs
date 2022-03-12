@@ -28,15 +28,15 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         // Terrain
         let terrain = world.globals.get_mut::<crate::globals::Terrain>();
         if let Ok(terrain) = terrain {
-            let octree = &terrain.chunks_manager.octree;
+            let octree = &terrain.manager.octree;
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = terrain::CHUNK_SIZE));
             ui.label(format!("Terrain Octree Depth: '{}'", octree.inner.depth()));
             ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = octree.inner.get_root_node().half_extent() * 2));
-            ui.label(format!("Chunks: '{}'", terrain.chunks_manager.chunks.len()));
-            ui.label(format!("Pending Generation: '{}'", terrain.chunks_manager.chunks_generating.len()));
-            ui.label(format!("Pending Deletion: '{}'", terrain.chunks_manager.chunks_to_remove.len()));
+            ui.label(format!("Chunks: '{}'", terrain.manager.chunks.len()));
+            ui.label(format!("Pending Generation: '{}'", terrain.manager.chunks_generating.len()));
+            ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
         }
     });
 }

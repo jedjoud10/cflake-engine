@@ -6,14 +6,14 @@ use crate::{
     utils::{AccessType, UsageType},
 };
 
-use super::{storage::Storage, Buffer};
+use super::{storage::TypedStorage, Buffer};
 
 // A dynamic buffer that can change in size
 // This keeps a Rust copy of the data, so we can add/remove elements to it without the need of reallocating everytime
 #[derive(Getters)]
 pub struct DynamicBuffer<Element> {
     // Storage
-    storage: Storage<Element>,
+    storage: TypedStorage<Element>,
     // Rust vector
     #[getset(get = "pub")]
     inner: Vec<Element>,
@@ -22,8 +22,10 @@ pub struct DynamicBuffer<Element> {
 // Creation
 impl<Element> Buffer for DynamicBuffer<Element> {
     type Element = Element;
+    // Buffer
+    fn buffer(&self) -> GLuint { self.storage.buffer() }
     // Storage
-    fn storage(&self) -> &Storage<Element> {
+    fn storage(&self) -> &TypedStorage<Element> {
         &self.storage
     }
     // Create a dynamic buffer
@@ -34,7 +36,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
             _ => (),
         }
         // Init and fill
-        let storage = Storage::new(cap, len, ptr, _type, usage);
+        let storage = TypedStorage::new(cap, len, ptr, _type, usage);
 
         Self {
             storage,
@@ -53,7 +55,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     // This will actually read from the OpenGL buffer, then store it internally, and return a reference to that
     fn read(&mut self, output: &mut [Element]) {
         // Store internally first
-        unsafe { self.storage.read_subdata(self.inner.as_mut_ptr(), self.storage().len(), 0) }
+        unsafe { self.storage.read(self.inner.as_mut_ptr(), self.storage().len(), 0) }
 
         // Then copy to output
         unsafe { std::ptr::copy(self.inner.as_ptr() as *const Element, output.as_mut_ptr(), self.storage().len()) }
@@ -66,7 +68,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     {
         self.inner.clear();
         self.inner.extend_from_slice(buf);
-        self.storage.update(self.inner.as_ptr(), self.capacity(), self.len());
+        unsafe { self.storage.update(self.inner.as_ptr(), self.capacity(), self.len()); }
     }
 }
 

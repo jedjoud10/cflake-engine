@@ -1,3 +1,4 @@
+use getset::Getters;
 use world::{
     rendering::{
         advanced::{
@@ -16,19 +17,21 @@ use world::{
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
 };
 
+#[derive(Getters)]
+#[getset(get = "pub")]
 pub struct VoxelGenerator {
     // Voxel Generation
-    pub primary_compute: Handle<ComputeShader>,
-    pub secondary_compute: Handle<ComputeShader>,
-    pub atomics: AtomicGroup,
+    pub(crate) primary_compute: Handle<ComputeShader>,
+    pub(crate) secondary_compute: Handle<ComputeShader>,
+    pub(crate) atomics: AtomicGroup,
     // Our 2 shader storages (for voxel generation)
-    pub ssbo_voxels: ShaderStorage<SimpleBuffer<u8>>,
-    pub ssbo_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>>,
+    pub(crate) ssbo_voxels: ShaderStorage<SimpleBuffer<u8>>,
+    pub(crate) ssbo_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>>,
     // And another voxel storage for edits
-    pub ssbo_edits: ShaderStorage<DynamicBuffer<PackedEdit>>,
+    pub(crate) ssbo_edits: ShaderStorage<DynamicBuffer<PackedEdit>>,
     // And the voxel data for said chunk
-    pub packed: PackedVoxelData,
-    pub stored: StoredVoxelData,
+    pub(crate) packed: PackedVoxelData,
+    pub(crate) stored: StoredVoxelData,
 }
 
 impl VoxelGenerator {

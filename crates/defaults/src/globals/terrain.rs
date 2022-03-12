@@ -19,40 +19,38 @@ pub use voxel_generation::*;
 #[derive(Global)]
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
-    // Handler for our chunks
-    pub(crate) chunks_manager: ChunksManager,
-    // Handler for our voxel generation
-    pub(crate) voxel_generator: VoxelGenerator,
-    // Terrain edits manager
-    pub(crate) editing_manager: EditingManager,
+    // Managers
+    pub manager: ChunksManager,
+    pub generator: VoxelGenerator,
+    pub editer: EditingManager,
 }
 
 impl Terrain {
     // Create a new terrain global
     pub fn new(settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
-            chunks_manager: ChunksManager {
+            manager: ChunksManager {
                 octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
                 material: settings.material,
                 ..Default::default()
             },
-            voxel_generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
-            editing_manager: EditingManager::default(),
+            generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
+            editer: EditingManager::default(),
         }
     }
     // Add a terrain edit
     pub fn edit(&mut self, edit: Edit) {
-        self.editing_manager.edit(edit);
+        self.editer.edit(edit);
     }
     // Force the re-generation of a specific chunk
     pub fn regenerate_chunk(&mut self, coords: ChunkCoords) -> Option<()> {
         // Check if the chunk is valid first
-        if self.chunks_manager.chunks.contains_key(&coords) {
+        if self.manager.chunks.contains_key(&coords) {
             // Regenerate
-            if self.chunks_manager.chunks_generating.insert(coords) {
+            if self.manager.chunks_generating.insert(coords) {
                 // First time we queue this chunk for generation
-                let id = self.chunks_manager.chunks.get(&coords)?;
-                self.chunks_manager.priority_list.push((*id, 0.0));
+                let id = self.manager.chunks.get(&coords)?;
+                self.manager.priority_list.push((*id, 0.0));
             } else {
                 // Already queued for generation
             }

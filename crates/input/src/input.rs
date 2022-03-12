@@ -1,4 +1,5 @@
 use ahash::{AHashMap, RandomState};
+use getset::{Getters, CopyGetters};
 use multimap::MultiMap;
 
 use super::{Keys, State};
@@ -7,16 +8,25 @@ use crate::{ButtonState, MapState, ToggleState};
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
 // Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
+#[derive(Getters, CopyGetters)]
 pub struct InputManager {
     // "debug_map" -> State: "Pressed"
+    #[getset(get = "pub")]
     maps: AHashMap<String, (MapState, bool)>,
 
     // "W" -> ["forward_map", "launch_map"]
+    #[getset(get = "pub")]
     keys: MultiMap<Keys, String, RandomState>,
 
     // Mouse
-    last_mouse_pos: veclib::Vector2<f64>,
-    last_mouse_scroll: f64,
+    #[getset(get_copy = "pub")]
+    mouse_pos: veclib::Vector2<f32>,
+    #[getset(get_copy = "pub")]
+    mouse_pos_delta: veclib::Vector2<f32>,
+    #[getset(get_copy = "pub")]
+    mouse_scroll_delta: f32,
+    #[getset(get_copy = "pub")]
+    mouse_scroll: f32,
 }
 
 impl Default for InputManager {
@@ -25,23 +35,27 @@ impl Default for InputManager {
         Self {
             maps: Default::default(),
             keys: multimap,
-            last_mouse_pos: Default::default(),
-            last_mouse_scroll: Default::default(),
+            mouse_pos: Default::default(),
+            mouse_pos_delta: Default::default(),
+            mouse_scroll: Default::default(),
+            mouse_scroll_delta: Default::default(),
         }
     }
 }
 
 impl InputManager {
     // Called whenever the mouse position changes
-    pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f64>) {
-        self.last_mouse_pos += delta;
+    pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f32>) {
+        self.mouse_pos += delta;
+        self.mouse_pos_delta = delta;
     }
     // Called whenever the mous scroll changes
-    pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f64) {
-        self.last_mouse_scroll += scroll_delta;
+    pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f32) {
+        self.mouse_scroll += scroll_delta;
+        self.mouse_scroll_delta = scroll_delta;
     }
     // This should be ran at the end of every frame
-    pub fn late_update(&mut self, _delta_time: f32) {
+    pub fn late_update(&mut self) {
         for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
             // Reset the map state if needed
             *changed = false;
@@ -53,14 +67,6 @@ impl InputManager {
                 }
             }
         }
-    }
-    // Get the accumulated mouse position
-    pub fn get_mouse_position(&self) -> &veclib::Vector2<f64> {
-        &self.last_mouse_pos
-    }
-    // Get the accumulated mouse scroll
-    pub fn get_mouse_scroll(&self) -> &f64 {
-        &self.last_mouse_scroll
     }
     // When we receive a key event from winit
     pub fn receive_key_event(&mut self, key: Keys, state: State) -> Option<()> {

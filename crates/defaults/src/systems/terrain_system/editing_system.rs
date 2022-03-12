@@ -7,17 +7,17 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
     if let Ok(terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
         let terrain = &mut *terrain;
-        let chunks_to_regenerate = terrain.editing_manager.get_influenced_chunks(&terrain.chunks_manager.octree.inner);
+        let chunks_to_regenerate = terrain.editer.get_influenced_chunks(&terrain.manager.octree.inner);
         if !chunks_to_regenerate.is_empty() {
             // Regenerate the specified chunks
             for coords in chunks_to_regenerate {
                 terrain.regenerate_chunk(coords);
             }
             // Also set the packed edits since we will need to update them on the GPU
-            let packed = terrain.editing_manager.convert();
-            terrain.voxel_generator.ssbo_edits.storage_mut().write(&packed);
+            let packed = terrain.editer.convert();
+            terrain.generator.ssbo_edits.storage_mut().write(&packed);
         }
-        terrain.chunks_manager.update_priorities();
+        terrain.manager.update_priorities();
     }
 }
 

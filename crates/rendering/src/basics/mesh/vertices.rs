@@ -17,19 +17,6 @@ impl Vertices {
     pub fn is_empty(&self) -> bool {
         self.positions.is_empty()
     }
-    // Reset all the buffers
-    pub(crate) fn reset(&mut self) {
-        self.positions.clear();
-        self.normals.clear();
-        self.tangents.clear();
-        self.uvs.clear();
-        self.colors.clear();
-        self.positions.shrink_to_fit();
-        self.normals.shrink_to_fit();
-        self.tangents.shrink_to_fit();
-        self.uvs.shrink_to_fit();
-        self.colors.shrink_to_fit();
-    }
 }
 
 #[derive(Default)]

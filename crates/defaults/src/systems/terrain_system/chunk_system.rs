@@ -65,7 +65,7 @@ fn run(world: &mut World, data: ComponentQuerySet) {
     }
     let terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
-    let handler = &mut terrain.chunks_manager;
+    let handler = &mut terrain.manager;
     update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
 }
 

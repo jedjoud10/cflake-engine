@@ -10,7 +10,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let query = data.get_mut(0).unwrap();
 
     // Rotate the camera around
-    let mouse_pos = *world.input.get_mouse_position();
+    let mouse_pos = world.input.mouse_pos();
     const SENSIVITY: f32 = 0.0007;
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
@@ -24,7 +24,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
 
     // Custom speed
-    let original_speed = 0.1 + (*world.input.get_mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
+    let original_speed = 0.1 + (world.input.mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
     let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
     let fov_delta = if world.input.map_held("camera_zoom") {
         1.0

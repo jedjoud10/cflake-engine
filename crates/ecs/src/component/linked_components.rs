@@ -52,6 +52,7 @@ impl LinkedComponents {
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
+    // This mutation can be detected using was_mutated
     pub fn get_mut<T>(&mut self) -> Result<&mut T, ComponentError>
     where
         T: Component + Send + Sync + 'static,
@@ -69,6 +70,24 @@ impl LinkedComponents {
         // We only care about the index
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
+        Ok(component)
+    }
+    // Get a mutable reference to a specific linked entity components struct
+    // This won't update the mutated_components bitfield
+    pub fn get_mut_silent<T>(&mut self) -> Result<&mut T, ComponentError>
+    where
+        T: Component + Send + Sync + 'static,
+    {
+        // Get the UnsafeCell
+        let cbitfield = registry::get_component_bitfield::<T>();
+        let key = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
+        let map = self.components.read();
+        let cell = map.get(*key).ok_or_else(invalid_err)?;
+
+        // Then get it's pointer and do black magic
+        let ptr = cell.get();
+        let component = unsafe { &mut *ptr }.as_mut();
+        let component = registry::cast_component_mut::<T>(component)?;
         Ok(component)
     }
     // Check if a specific component has been updated during this frame

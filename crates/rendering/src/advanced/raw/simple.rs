@@ -1,6 +1,6 @@
 use std::ptr::null;
 
-use super::{storage::Storage, Buffer};
+use super::{storage::TypedStorage, Buffer};
 use crate::{pipeline::Pipeline, utils::UsageType};
 use getset::Getters;
 use gl::types::GLuint;
@@ -10,25 +10,27 @@ use gl::types::GLuint;
 #[derive(Getters)]
 pub struct SimpleBuffer<Element> {
     // Storage
-    storage: Storage<Element>,
+    storage: TypedStorage<Element>,
 }
 
 // Creation
 impl<Element> Buffer for SimpleBuffer<Element> {
     type Element = Element;
+    // Buffer
+    fn buffer(&self) -> GLuint { self.storage.buffer() }
     // Storage
-    fn storage(&self) -> &Storage<Element> {
+    fn storage(&self) -> &TypedStorage<Element> {
         &self.storage
     }
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Init and fill
-        let storage = Storage::new(len, len, ptr, _type, usage);
+        let storage = TypedStorage::new(len, len, ptr, _type, usage);
         Self { storage }
     }
     // Read directly from the OpenGL buffer
     fn read(&mut self, output: &mut [Element]) {
-        unsafe { self.storage.read_subdata(output.as_mut_ptr(), self.storage().len(), 0) }
+        self.storage.read(output.as_mut_ptr(), self.storage().len(), 0)
     }
     // Simple write
     fn write(&mut self, buf: &[Element])

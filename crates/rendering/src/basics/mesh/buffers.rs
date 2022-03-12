@@ -2,7 +2,7 @@ use arrayvec::ArrayVec;
 use getset::Getters;
 use gl::types::GLuint;
 
-use crate::advanced::raw::storage::Storage;
+use crate::advanced::raw::storage::TypedStorage;
 
 // Mesh buffers
 #[derive(Getters)]
@@ -12,14 +12,14 @@ pub struct MeshBuffers {
     pub(crate) inner: ArrayVec<GLuint, 6>,
 
     // Required
-    pub(crate) indices: Storage<u32>,
-    pub(crate) positions: Storage<veclib::Vector3<f32>>,
+    pub(crate) indices: TypedStorage<u32>,
+    pub(crate) positions: TypedStorage<veclib::Vector3<f32>>,
 
     // Optional
-    pub(crate) normals: Option<Storage<veclib::Vector3<i8>>>,
-    pub(crate) tangents: Option<Storage<veclib::Vector4<i8>>>,
-    pub(crate) colors: Option<Storage<veclib::Vector3<u8>>>,
-    pub(crate) uvs: Option<Storage<veclib::Vector2<u8>>>,
+    pub(crate) normals: Option<TypedStorage<veclib::Vector3<i8>>>,
+    pub(crate) tangents: Option<TypedStorage<veclib::Vector4<i8>>>,
+    pub(crate) colors: Option<TypedStorage<veclib::Vector3<u8>>>,
+    pub(crate) uvs: Option<TypedStorage<veclib::Vector2<u8>>>,
     /*
     pub element_buffer_object: u32,
 

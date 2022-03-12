@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::{
     components::{Chunk, Renderer, Transform, Collider, ColliderGeometry, RigidBody},
-    globals::{ChunkGenerationState, ChunkPostGenerationEvent},
+    globals::ChunkGenerationState,
 };
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
 use world::{
@@ -27,14 +27,14 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     }
     if let Ok(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
-        if let ChunkGenerationState::EndVoxelDataGeneration(key, true) = terrain.chunks_manager.current_chunk_state {
+        if let ChunkGenerationState::EndVoxelDataGeneration(key, true) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
             let coords = linked.get_mut::<Chunk>().unwrap().coords;
             // Either way, we're going to be updating/generating the mesh so might as well make the mesher now
             let mesher = Mesher::new(
                 coords,
-                &terrain.voxel_generator.stored,
+                &terrain.generator.stored,
                 MesherSettings {
                     interpolation: true,
                     skirts: true,
@@ -47,7 +47,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
             if !linked.is_linked::<Renderer>() {
                 // Generate the new component and link it
-                let group = create_chunk_renderer_linking_group(mesh, terrain.chunks_manager.material.clone());
+                let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone());
                 world.ecs.link(key, group).unwrap();
             } else {
                 // The renderer is already linked, we just need to update the mesh
@@ -57,15 +57,10 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             }
 
             // We have created voxel data for this chunk, and it is valid (it contains a surface)
-            terrain.chunks_manager.chunks_generating.remove(&coords);
+            terrain.manager.chunks_generating.remove(&coords);
             // Switch states
-            terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let voxel_data = &terrain.voxel_generator.stored.clone();
-            let event: ChunkPostGenerationEvent  = terrain.chunks_manager.post_generation_event.clone();
-            if let Some(event) = event {
-                event(world, cloned, voxel_data)
-            }
-        } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
+            terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
+        } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
             let _chunk = linked.get_mut::<Chunk>().unwrap();
@@ -78,7 +73,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
             // The chunk ID is the same, but we do not have a surface
             // We still gotta update the current chunk state though
-            terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
+            terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
         }
     }
 }

@@ -621,6 +621,7 @@ dependencies = [
  "ahash",
  "bitflags",
  "enum-as-inner",
+ "getset",
  "parking_lot 0.12.0",
  "rapier3d",
  "veclib",
@@ -1029,6 +1030,7 @@ name = "input"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "getset",
  "glutin",
  "multimap",
  "veclib",

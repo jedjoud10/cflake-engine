@@ -1,17 +1,15 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, rc::Rc};
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
 
+use getset::Getters;
 use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,
     rendering::{basics::{material::Material, mesh::Mesh}, pipeline::Handle},
     terrain::{ChunkCoords, StoredVoxelData}, World,
 };
-
-// Chunk generation event
-pub type ChunkPostGenerationEvent = Option<fn(&mut World, Handle<Mesh>, &StoredVoxelData)>;
 
 // Generation state of the current chunk
 #[derive(EnumAsInner, Debug, PartialEq)]
@@ -27,20 +25,20 @@ impl Default for ChunkGenerationState {
     }
 }
 
-#[derive(Default)]
+#[derive(Getters, Default)]
+#[getset(get = "pub")]
 pub struct ChunksManager {
     // Chunk generation
-    pub octree: DiffOctree,
-    pub chunks: AHashMap<ChunkCoords, EntityKey>,
-    pub chunks_generating: AHashSet<ChunkCoords>,
-    pub priority_list: Vec<(EntityKey, f32)>,
-    pub chunks_to_remove: Vec<EntityKey>,
-    pub material: Handle<Material>,
-    pub post_generation_event: ChunkPostGenerationEvent,
+    pub(crate) octree: DiffOctree,
+    pub(crate) chunks: AHashMap<ChunkCoords, EntityKey>,
+    pub(crate) chunks_generating: AHashSet<ChunkCoords>,
+    pub(crate) priority_list: Vec<(EntityKey, f32)>,
+    pub(crate) chunks_to_remove: Vec<EntityKey>,
+    pub(crate) material: Handle<Material>,
 
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation
-    pub current_chunk_state: ChunkGenerationState,
+    pub(crate) current_chunk_state: ChunkGenerationState,
 }
 
 impl ChunksManager {

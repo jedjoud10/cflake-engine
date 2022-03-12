@@ -2,7 +2,7 @@ use world::ecs::component::ComponentQueryParameters;
 use world::physics::PHYSICS_TIME_STEP;
 use world::World;
 use world::ecs::component::ComponentQuerySet;
-use rapier3d::na::Isometry;
+use rapier3d::{na::Isometry, prelude::RigidBodyForces};
 
 use crate::components::{Collider, RigidBody, Transform};
 
@@ -32,9 +32,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             };
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
-                // TODO: Fix wake_up
-                r_rigidbody.set_position(isometry, false);
-                // TODO: Rigidbody forces
+                r_rigidbody.set_position(isometry, true);
             }
         }
         // Check if we even need to update the attributes
@@ -42,13 +40,21 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             let rigidbody = components.get::<RigidBody>().unwrap();
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
-                r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), false);
-                r_rigidbody.set_angvel(vec3_to_vector(rigidbody.angular_velocity), false);
+                r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
+                r_rigidbody.set_angvel(vec3_to_vector(rigidbody.angular_velocity), true);
+                r_rigidbody.apply_force(vec3_to_vector(rigidbody.force), true);
             }
         }
         // Check if we even need to update the collider
         if components.was_mutated::<Collider>().unwrap_or_default() {
-            
+            let collider = components.get::<Collider>().unwrap();
+            // Update the Rapier3D collider
+            if let Some(r_collider) = world.physics.colliders.get_mut(collider.handle) {
+                r_collider.set_friction(collider.material.friction);
+                r_collider.set_restitution(collider.material.restitution);
+                r_collider.set_friction_combine_rule(collider.material.friction_combine_rule);
+                r_collider.set_restitution_combine_rule(collider.material.restitution_combine_rule);
+            }
         }
     }
 
@@ -58,11 +64,11 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // After each step, we must update the components with their new values
     for (_, components) in query.iter_mut() {
         // Get the handle only
-        let handle = components.get_mut::<RigidBody>().unwrap().handle;
+        let handle = components.get::<RigidBody>().unwrap().handle;
         if let Some(r_rigidbody) = world.physics.bodies.get(handle) {
             if !r_rigidbody.is_sleeping() {
                 // Update the components
-                let mut rigidbody = components.get_mut::<RigidBody>().unwrap();
+                let mut rigidbody = components.get_mut_silent::<RigidBody>().unwrap();
                 rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
                 rigidbody.angular_velocity = vector_to_vec3(*r_rigidbody.angvel());
                 let mut transform = components.get_mut::<Transform>().unwrap();

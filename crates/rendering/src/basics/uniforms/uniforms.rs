@@ -171,8 +171,8 @@ impl<'a> Uniforms<'a> {
     }
     pub fn set_shader_storage<Buffer: crate::advanced::raw::Buffer>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer>, binding: u32) {
         unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().buffer());
-            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().storage().buffer());
+            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().raw().buffer());
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().storage().raw().buffer());
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
         }
     }

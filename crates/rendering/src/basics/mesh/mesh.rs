@@ -1,7 +1,7 @@
 use std::ptr::null;
 
 use crate::{
-    advanced::raw::storage::Storage,
+    advanced::raw::storage::TypedStorage,
     object::PipelineCollectionElement,
     utils::{AccessType, UpdateFrequency, UsageType},
 };
@@ -84,23 +84,23 @@ impl PipelineCollectionElement for Mesh {
             let mut buffers = ArrayVec::<GLuint, 6>::default();
 
             // Create the EBO
-            let indices = Storage::<u32>::new(self.indices().len(), self.indices().len(), self.indices().as_ptr(), gl::ELEMENT_ARRAY_BUFFER, usage);
-            buffers.push(indices.buffer());
+            let indices = TypedStorage::<u32>::new(self.indices().len(), self.indices().len(), self.indices().as_ptr(), gl::ELEMENT_ARRAY_BUFFER, usage);
+            buffers.push(indices.raw().buffer());
 
             // Positions
-            let positions = Storage::<veclib::Vector3<f32>>::new(self.vertices().len(), self.vertices().len(), self.vertices.positions.as_ptr(), gl::ARRAY_BUFFER, usage);
-            buffers.push(positions.buffer());
+            let positions = TypedStorage::<veclib::Vector3<f32>>::new(self.vertices().len(), self.vertices().len(), self.vertices.positions.as_ptr(), gl::ARRAY_BUFFER, usage);
+            buffers.push(positions.raw().buffer());
 
             // Vertex attrib array
-            gl::BindBuffer(gl::ARRAY_BUFFER, positions.buffer());
+            gl::BindBuffer(gl::ARRAY_BUFFER, positions.raw().buffer());
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             // Vertex normals attribute
             let normals = if !self.vertices.normals.is_empty() {
                 // Vertex normals buffer
-                let normals = Storage::<veclib::Vector3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
-                buffers.push(normals.buffer());
+                let normals = TypedStorage::<veclib::Vector3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(normals.raw().buffer());
                 gl::EnableVertexAttribArray(1);
                 gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
                 Some(normals)
@@ -111,8 +111,8 @@ impl PipelineCollectionElement for Mesh {
 
             let tangents = if !self.vertices.tangents.is_empty() {
                 // Vertex tangents buffer
-                let tangents = Storage::<veclib::Vector4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
-                buffers.push(tangents.buffer());
+                let tangents = TypedStorage::<veclib::Vector4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(tangents.raw().buffer());
                 gl::EnableVertexAttribArray(2);
                 gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
                 Some(tangents)
@@ -123,8 +123,8 @@ impl PipelineCollectionElement for Mesh {
 
             let uvs = if !self.vertices.uvs.is_empty() {
                 // Vertex texture coordinates buffer
-                let uvs = Storage::<veclib::Vector2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
-                buffers.push(uvs.buffer());
+                let uvs = TypedStorage::<veclib::Vector2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(uvs.raw().buffer());
                 gl::EnableVertexAttribArray(3);
                 gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 Some(uvs)
@@ -135,8 +135,8 @@ impl PipelineCollectionElement for Mesh {
 
             let colors = if !self.vertices.colors.is_empty() {
                 // Vertex colors buffer
-                let colors = Storage::<veclib::Vector3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
-                buffers.push(colors.buffer());
+                let colors = TypedStorage::<veclib::Vector3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
+                buffers.push(colors.raw().buffer());
                 gl::EnableVertexAttribArray(4);
                 gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 Some(colors)

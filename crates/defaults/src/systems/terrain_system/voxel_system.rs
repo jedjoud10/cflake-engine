@@ -20,7 +20,7 @@ use world::{
 
 // Simply run the compute shaders for now
 fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut Chunk, key: EntityKey) {
-    let generator = &mut terrain.voxel_generator;
+    let generator = &mut terrain.generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
     const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
@@ -56,23 +56,23 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
     println!("Took {}ms to execute compute shader #2", i.elapsed().as_millis());
-    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
+    terrain.manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
 }
 
 // Then, a frame later, fetch the buffer data
 fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
     // READ
     // Get the valid counters
-    let generator = &mut terrain.voxel_generator;
+    let generator = &mut terrain.generator;
     let i = std::time::Instant::now();
     let read_counters = generator.atomics.get();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
     if positive == 0 || negative == 0 {
         // We must manually remove this chunk since we will never be able to generate it's mesh
-        terrain.chunks_manager.chunks_generating.remove(&coords);
+        terrain.manager.chunks_generating.remove(&coords);
         // Switch states
-        terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false);
+        terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false);
         return;
     }
     // We can read from the SSBO now
@@ -82,7 +82,7 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
     generator.stored.store(&generator.packed);
 
     // Switch states
-    terrain.chunks_manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
+    terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
     println!("Took {}ms to read buffers", i.elapsed().as_millis());
 }
 
@@ -96,13 +96,13 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             return;
         }
         // The edit system didn't pack the edits yet, we must skip
-        if terrain.editing_manager.is_pending() {
+        if terrain.editer.is_pending() {
             return;
         }
         // For each chunk in the terrain
-        if terrain.chunks_manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
+        if terrain.manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
-            if let Some((key, _)) = terrain.chunks_manager.priority_list.pop() {
+            if let Some((key, _)) = terrain.manager.priority_list.pop() {
                 let lock_ = query;
                 let components = lock_.get_mut(&key).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
@@ -111,7 +111,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 // We must start generating the voxel data for this chunk
                 generate(terrain, &world.pipeline, chunk, key);
             }
-        } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.chunks_manager.current_chunk_state {
+        } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.manager.current_chunk_state {
             // We should fetch the shader storages now
             fetch_buffers(terrain, key, coords);
         }

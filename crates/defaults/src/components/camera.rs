@@ -28,18 +28,14 @@ impl Camera {
         let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan();
         self.projm = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
     }
-    // Calculate the view matrix using a rotation and a position
-    pub fn calculate_view_matrix(position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) -> veclib::Matrix4x4<f32> {
+    // Update the view matrix using a rotation and a position
+    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
         let rotation_matrix = veclib::Matrix4x4::<f32>::from_quaternion(&rotation);
         let mut forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0));
         forward_vector.normalize();
         let mut up_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
         up_vector.normalize();
-        veclib::Matrix4x4::<f32>::look_at(&position, &up_vector, &(forward_vector + position))
-    }
-    // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
-        self.viewm = Self::calculate_view_matrix(position, rotation);
+        self.viewm = veclib::Matrix4x4::<f32>::look_at(&position, &up_vector, &(forward_vector + position));
     }
 }
 
