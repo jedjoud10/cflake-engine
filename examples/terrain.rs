@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Transform, ColliderGeometry, Collider, RigidBody, RigidBodyType, Renderer, ColliderMaterial},
+        components::{self, Transform},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -107,59 +107,8 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
-    //terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 500.0, CSGOperation::Union, Some(1)));
+    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
     // Pillar
-    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(100.0, 20.0, 100.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 50.0, CSGOperation::Union, Some(1)));
     world.globals.add(terrain).unwrap();
-
-    for y in 0..20 {
-        for x in 0..5 {
-            for z in 0..5 {
-                // Create a cube
-                let mut group = ComponentLinkingGroup::default();
-                group
-                    .link(Transform {
-                        position: veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3),
-                        scale: veclib::vec3(4.0, 4.0, 4.0),
-                        ..Default::default()
-                    })
-                    .unwrap();
-                let renderer = Renderer {
-                    mesh: world.pipeline.defaults().cube.clone(),
-                    ..Default::default()
-                };
-                group.link(renderer).unwrap();
-                // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
-                // Add the collider
-                group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::ONE * 4.0), ColliderMaterial::new(10.0, 0.0))).unwrap();
-                world.ecs.add(group).unwrap();
-            }
-        }
-    }
-    for y in 0..20 {
-        for x in 0..5 {
-            for z in 0..5 {
-                // Create a sphere
-                let mut group = ComponentLinkingGroup::default();
-                group
-                    .link(Transform {
-                        position: veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 50.0, z as f32 * 0.3),
-                        scale: veclib::vec3(1.0, 1.0, 1.0),
-                        ..Default::default()
-                    })
-                    .unwrap();
-                let renderer = Renderer {
-                    mesh: world.pipeline.defaults().sphere.clone(),
-                    ..Default::default()
-                };
-                group.link(renderer).unwrap();
-                // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
-                // Add the collider
-                group.link(Collider::new(ColliderGeometry::sphere(0.5), ColliderMaterial::new(10.0, 0.0))).unwrap();
-                world.ecs.add(group).unwrap();
-            }
-        }
-    }
 }

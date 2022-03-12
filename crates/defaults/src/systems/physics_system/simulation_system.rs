@@ -32,7 +32,9 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             };
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
-                r_rigidbody.set_position(isometry, true);
+                // TODO: Fix wake_up
+                r_rigidbody.set_position(isometry, false);
+                // TODO: Rigidbody forces
             }
         }
         // Check if we even need to update the attributes
@@ -40,8 +42,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             let rigidbody = components.get::<RigidBody>().unwrap();
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
-                r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
-                r_rigidbody.set_angvel(vec3_to_vector(rigidbody.angular_velocity), true);
+                r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), false);
+                r_rigidbody.set_angvel(vec3_to_vector(rigidbody.angular_velocity), false);
             }
         }
         // Check if we even need to update the collider
