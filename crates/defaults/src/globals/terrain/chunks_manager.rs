@@ -6,9 +6,13 @@ use enum_as_inner::EnumAsInner;
 use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,
-    rendering::{basics::material::Material, pipeline::Handle},
-    terrain::ChunkCoords,
+    rendering::{basics::{material::Material, mesh::Mesh}, pipeline::Handle},
+    terrain::{ChunkCoords, StoredVoxelData}, World,
 };
+
+// Chunk generation event
+pub type ChunkGenerationEvent = Option<fn(&mut World, Handle<Mesh>, &StoredVoxelData)>;
+
 // Generation state of the current chunk
 #[derive(EnumAsInner, Debug, PartialEq)]
 pub enum ChunkGenerationState {
@@ -32,6 +36,7 @@ pub struct ChunksManager {
     pub priority_list: Vec<(EntityKey, f32)>,
     pub chunks_to_remove: Vec<EntityKey>,
     pub material: Handle<Material>,
+    pub event: ChunkGenerationEvent,
 
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation

@@ -17,10 +17,6 @@ use world::{
     World,
 };
 
-// A post generation event that will be called after the generation of a specific chunk
-fn chunk_post_gen(world: &mut World, handle: Handle<Mesh>, chunk: &Chunk, data: &StoredVoxelData) {
-}
-
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     let query = &mut data.get_mut(0).unwrap().all;
@@ -64,7 +60,10 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
-            chunk_post_gen(world, cloned, linked.get_mut::<Chunk>().unwrap(), voxel_data);
+            let event  = terrain.chunks_manager.event.clone();
+            if let Some(event) = event {
+                event(world, cloned, voxel_data)
+            }
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
@@ -79,8 +78,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // The chunk ID is the same, but we do not have a surface
             // We still gotta update the current chunk state though
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let voxel_data = &terrain.voxel_generator.stored.clone();
-            chunk_post_gen(world, Handle::default(), linked.get_mut::<Chunk>().unwrap(), voxel_data);
         }
     }
 }
