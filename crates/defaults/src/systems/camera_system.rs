@@ -42,10 +42,6 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(
-            ComponentQueryParameters::default()
-                .link::<Camera>()
-                .link::<Transform>(),
-        )
+        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
         .build();
 }

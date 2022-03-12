@@ -21,8 +21,6 @@ use cflake_engine::{
     World,
 };
 
-
-
 // A game with some test terrain
 fn main() {
     cflake_engine::start("DevJed", "cflake-engine-example-terrain", init, cflake_engine::defaults::systems::flycam_system::system)
