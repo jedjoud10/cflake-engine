@@ -2,7 +2,7 @@ use arrayvec::ArrayVec;
 use getset::Getters;
 use gl::types::GLuint;
 
-use crate::advanced::raw::storage::TypedStorage;
+use crate::advanced::storages::TypedStorage;
 
 // Mesh buffers
 #[derive(Getters)]

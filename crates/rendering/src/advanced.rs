@@ -1,4 +1,4 @@
 pub mod atomic;
 pub mod compute;
-pub mod raw;
+pub mod storages;
 pub mod shader_storage;

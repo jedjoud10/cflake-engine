@@ -1,5 +1,5 @@
 use world::ecs::component::ComponentQuerySet;
-use world::rendering::advanced::raw::Buffer;
+use world::rendering::advanced::storages::Buffer;
 use world::World;
 // A system that will handle terrain edits
 fn run(world: &mut World, _data: ComponentQuerySet) {

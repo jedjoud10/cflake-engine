@@ -5,12 +5,12 @@ use std::mem::MaybeUninit;
 
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
-pub struct ShaderStorage<Buffer: super::raw::Buffer> {
+pub struct ShaderStorage<Buffer: super::storages::Buffer> {
     #[getset(get = "pub", get_mut = "pub")]
     storage: Buffer,
 }
 
-impl<Buffer: super::raw::Buffer> ShaderStorage<Buffer> {
+impl<Buffer: super::storages::Buffer> ShaderStorage<Buffer> {
     // Create a new empty shader storage
     pub fn new_empty(usage: UsageType, _pipeline: &Pipeline) -> Self {
         Self {

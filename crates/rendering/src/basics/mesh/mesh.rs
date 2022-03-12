@@ -1,7 +1,7 @@
 use std::ptr::null;
 
 use crate::{
-    advanced::raw::storage::TypedStorage,
+    advanced::storages::TypedStorage,
     object::PipelineCollectionElement,
     utils::{AccessType, UpdateFrequency, UsageType},
 };

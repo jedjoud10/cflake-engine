@@ -4,7 +4,7 @@ use world::{
         advanced::{
             atomic::AtomicGroup,
             compute::ComputeShader,
-            raw::{dynamic::DynamicBuffer, simple::SimpleBuffer},
+            storages::{DynamicBuffer, StaticBuffer},
             shader_storage::ShaderStorage,
         },
         basics::shader::{
@@ -25,8 +25,8 @@ pub struct VoxelGenerator {
     pub(crate) secondary_compute: Handle<ComputeShader>,
     pub(crate) atomics: AtomicGroup,
     // Our 2 shader storages (for voxel generation)
-    pub(crate) ssbo_voxels: ShaderStorage<SimpleBuffer<u8>>,
-    pub(crate) ssbo_final_voxels: ShaderStorage<SimpleBuffer<PackedVoxel>>,
+    pub(crate) ssbo_voxels: ShaderStorage<StaticBuffer<u8>>,
+    pub(crate) ssbo_final_voxels: ShaderStorage<StaticBuffer<PackedVoxel>>,
     // And another voxel storage for edits
     pub(crate) ssbo_edits: ShaderStorage<DynamicBuffer<PackedEdit>>,
     // And the voxel data for said chunk
@@ -92,8 +92,8 @@ impl VoxelGenerator {
         let arbitrary_voxels_size = byte_size.next_power_of_two() * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 
         // Load the shader storage
-        let ssbo_voxels = ShaderStorage::<SimpleBuffer<u8>>::with_capacity(arbitrary_voxels_size, passthrough, pipeline);
-        let ssbo_final_voxels = ShaderStorage::<SimpleBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), readback, pipeline);
+        let ssbo_voxels = ShaderStorage::<StaticBuffer<u8>>::with_capacity(arbitrary_voxels_size, passthrough, pipeline);
+        let ssbo_final_voxels = ShaderStorage::<StaticBuffer<PackedVoxel>>::with_capacity((CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1), readback, pipeline);
 
         // Create a new dynamic shader storage for our terrain edits
         let ssbo_edits = ShaderStorage::<DynamicBuffer<PackedEdit>>::new(Vec::default(), write, pipeline);

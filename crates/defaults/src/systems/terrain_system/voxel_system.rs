@@ -10,7 +10,7 @@ use world::{
         entity::EntityKey,
     },
     rendering::{
-        advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer},
+        advanced::{compute::ComputeShaderExecutionSettings, storages::Buffer},
         basics::uniforms::Uniforms,
         pipeline::Pipeline,
     },

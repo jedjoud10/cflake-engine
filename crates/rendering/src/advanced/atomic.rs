@@ -2,7 +2,7 @@ use getset::{CopyGetters, Getters};
 
 use crate::{pipeline::Pipeline, utils::UsageType};
 
-use super::raw::{simple::SimpleBuffer, Buffer};
+use super::storages::{StaticBuffer, Buffer};
 
 // Le array
 pub const ATOMIC_COUNTERS_NUM: usize = 4;
@@ -14,7 +14,7 @@ pub type AtomicArray = [u32; ATOMIC_COUNTERS_NUM];
 pub struct AtomicGroup {
     // Backed by a simple buffer
     #[getset(get = "pub")]
-    storage: SimpleBuffer<u32>,
+    storage: StaticBuffer<u32>,
 }
 
 impl AtomicGroup {
@@ -22,7 +22,7 @@ impl AtomicGroup {
     pub fn new(usage: UsageType, _pipeline: &Pipeline) -> Self {
         let arr = AtomicArray::default();
         Self {
-            storage: unsafe { SimpleBuffer::new_raw(ATOMIC_COUNTERS_NUM, ATOMIC_COUNTERS_NUM, arr.as_ptr(), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline) },
+            storage: unsafe { StaticBuffer::new_raw(ATOMIC_COUNTERS_NUM, ATOMIC_COUNTERS_NUM, arr.as_ptr(), gl::ATOMIC_COUNTER_BUFFER, usage, _pipeline) },
         }
     }
     // Wrapper functions around the inner storage

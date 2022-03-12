@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{atomic::AtomicGroup, raw::Buffer, shader_storage::ShaderStorage},
+    advanced::{atomic::AtomicGroup, storages::Buffer, shader_storage::ShaderStorage},
     basics::{shader::ShaderProgram, texture::Texture},
     pipeline::{Handle, Pipeline},
 };
@@ -169,7 +169,7 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
-    pub fn set_shader_storage<Buffer: crate::advanced::raw::Buffer>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer>, binding: u32) {
+    pub fn set_shader_storage<Buffer: crate::advanced::storages::Buffer>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer>, binding: u32) {
         unsafe {
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().raw().buffer());
             gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().storage().raw().buffer());
