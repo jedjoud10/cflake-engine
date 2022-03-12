@@ -98,7 +98,7 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .query(ComponentQueryParameters::default().link::<Transform>().link::<Chunk>())
-        .query(ComponentQueryParameters::default().link::<Transform>().link::<Renderer>())
+        .query(ComponentQueryParameters::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
         .event(run)
         .build()
 }

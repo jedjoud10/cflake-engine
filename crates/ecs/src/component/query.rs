@@ -36,7 +36,7 @@ impl ComponentQueryParameters {
 // A single component query that contains the added/removed components, alongside all the components
 pub struct ComponentQuery<'a> {
     pub all: RefMut<'a, LinkedComponentsMap>,
-    pub delta: RefMut<'a, LinkedComponentsDelta>,
+    pub delta: &'a mut LinkedComponentsDelta,
 }
 
 // A component query set that contains multiple queries that can be fetched from the subsystems of a specific system

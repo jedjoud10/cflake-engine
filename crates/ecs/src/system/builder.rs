@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 
+use bitfield::Bitfield;
+
 use crate::component::{registry, Component, ComponentQueryParameters, ComponentQuerySet};
 
 use super::{SubSystem, System, SystemSet};
@@ -17,7 +19,7 @@ impl<'a, World> SystemBuilder<'a, World> {
     }
     // Add a subsystem with specific component query parameters
     pub fn query(mut self, params: ComponentQueryParameters) -> Self {
-        self.system.subsystems.push(RefCell::new(SubSystem::new(params)));
+        self.system.subsystems.push((SubSystem::default(), params.cbitfield));
         self
     }
     // Set the "Run System" event of this system

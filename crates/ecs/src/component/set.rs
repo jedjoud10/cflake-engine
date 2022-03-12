@@ -6,7 +6,7 @@ use std::{cell::UnsafeCell, sync::Arc};
 use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
-    system::SystemSet,
+    system::{SystemSet, SubSystem},
     utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError},
 };
 
@@ -67,16 +67,16 @@ impl ComponentSet {
         // Check if the linked entity is valid to be added into the subsystems
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            for subsystem in system.subsystems.iter() {
-                let mut borrowed = subsystem.try_borrow_mut().map_err(|_| borrow_err_linking())?;
+            for (subsystem, cbitfield) in system.subsystems.iter() {
                 // If the entity wasn't inside the subsystem before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the subsystem
-                if borrowed.check(new) && !borrowed.check(old) {
+                if SubSystem::check(cbitfield, new) && !SubSystem::check(cbitfield, old) {
                     let linked = LinkedComponents {
                         key,
                         linked: linked.clone(),
                         mutated_components: self.mutated_components.clone(),
                         components: components.clone(),
                     };
+                    let mut borrowed = subsystem;
                     borrowed.add(key, linked);
                 }
             }
@@ -98,10 +98,10 @@ impl ComponentSet {
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            for subsystem in system.subsystems.iter() {
-                let mut borrowed = subsystem.try_borrow_mut().map_err(|_| borrow_err_unlinking())?;
+            for (subsystem, cbitfield) in system.subsystems.iter() {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                if borrowed.check(old) && !borrowed.check(new) {
+                if SubSystem::check(cbitfield, old) && !SubSystem::check(cbitfield, new) {
+                    let mut borrowed = subsystem;
                     borrowed.remove(
                         key,
                         LinkedComponents {
@@ -144,10 +144,9 @@ impl ComponentSet {
         let counter = systems
             .iter()
             .flat_map(|systems| &systems.subsystems)
-            .filter(|&subsystem| {
+            .filter(|(_, cbitfield)| {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                let borrowed = subsystem.borrow();
-                borrowed.check(old) && !borrowed.check(new)
+                SubSystem::check(cbitfield, old) && !SubSystem::check(cbitfield, new)
             })
             .count();
         // Add the removal group

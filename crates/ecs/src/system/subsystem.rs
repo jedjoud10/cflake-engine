@@ -4,44 +4,28 @@ use crate::{
 };
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 
 // A subsystem can only contain a single component query and a single cbitfield
+#[derive(Default)]
 pub struct SubSystem {
-    pub(crate) cbitfield: Bitfield<u32>,
-    pub(super) all: LinkedComponentsMap,
-    pub(super) delta: LinkedComponentsDelta,
+    pub(super) all: Rc<RefCell<LinkedComponentsMap>>,
+    pub(super) delta: Rc<RefCell<LinkedComponentsDelta>>,
 }
 
 impl SubSystem {
-    // Create a new subsystem using some query parameters
-    pub(crate) fn new(params: ComponentQueryParameters) -> Self {
-        Self {
-            cbitfield: params.cbitfield,
-            all: Default::default(),
-            delta: Default::default(),
-        }
-    }
     // Check if an entity validates our cbitfield
-    pub(crate) fn check(&self, cbitfield: Bitfield<u32>) -> bool {
-        cbitfield.contains(&self.cbitfield)
+    pub(crate) fn check(subsystem: &Bitfield<u32>, cbitfield: Bitfield<u32>) -> bool {
+        cbitfield.contains(subsystem)
     }
     // Add an entity
-    pub(crate) fn add(&mut self, key: EntityKey, linked_components: LinkedComponents) {
-        let cloned = LinkedComponents {
-            components: linked_components.components.clone(),
-            mutated_components: linked_components.mutated_components.clone(),
-            linked: linked_components.linked.clone(),
-            key,
-        };
-        self.all.insert(key, linked_components);
-        self.delta.added.insert(key, cloned);
+    pub(crate) fn add(&self, key: EntityKey, linked: LinkedComponents) {
+        self.delta.borrow_mut().added.insert(key, linked);
     }
     // Remove an entity
-    pub(crate) fn remove(&mut self, key: EntityKey, linked_components: LinkedComponents) {
-        if self.all.contains_key(&key) {
-            self.all.remove(&key);
-            self.delta.removed.insert(key, linked_components);
+    pub(crate) fn remove(&self, key: EntityKey, linked_components: LinkedComponents) {
+        if self.all.borrow().contains_key(&key) | self.delta.borrow().added.contains_key(&key) {            
+            self.delta.borrow_mut().removed.insert(key, linked_components);
         }
     }
 }

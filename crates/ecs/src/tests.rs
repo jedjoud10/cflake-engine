@@ -163,8 +163,8 @@ pub mod test {
             let len1 = query1.all.len();
             let len2 = query2.all.len();
             if *_world == 0 {
-                assert_eq!(len1, 1);
-                assert_eq!(len2, 1);
+                assert_eq!(len1, 0);
+                assert_eq!(len2, 0);
                 assert_eq!(query1.delta.added.len(), 1);
                 assert_eq!(query2.delta.added.len(), 1);
             } else if *_world == 1 {
@@ -200,9 +200,9 @@ pub mod test {
         let system = systems.get(0).unwrap();
         assert_eq!(system.subsystems.len(), 2);
         drop(systems);
-        // Step 1
+
+        // Steps
         run_systems(&mut ecs, &mut world);
-        // Step 2 (systems actually store the entity's components)
         run_systems(&mut ecs, &mut world);
         ecs.remove(entity_key).unwrap();
         run_systems(&mut ecs, &mut world);
