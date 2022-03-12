@@ -55,7 +55,7 @@ fn init(world: &mut World) {
             params: LightParameters::default(),
         },
     };
-    let light_transform = components::Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()));
+    let light_transform = components::Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()));
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();
     group.link(light_transform).unwrap();

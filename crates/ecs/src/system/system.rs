@@ -12,9 +12,7 @@ use super::{SubSystem, SystemSettings};
 pub(crate) type Event<World> = Option<fn(&mut World, ComponentQuerySet)>;
 // A system that contains multiple subsystems, each with their own component queries
 pub struct System<World> {
-    // Subsystems
-    pub(crate) subsystems: Vec<(SubSystem, Bitfield<u32>)>,
-    // Events
+    pub(crate) subsystems: Vec<SubSystem>,
     pub(crate) evn_run: Event<World>,
 }
 
@@ -35,9 +33,8 @@ impl<World> System<World> {
         let mut lock = settings.to_remove.borrow_mut();
         for (_, components) in lock.iter_mut() {
             // Check subsystems
-            for (subsystem, _) in self.subsystems.iter() {
-                let borrowed = subsystem;
-                if borrowed.delta.borrow().removed.contains_key(&components.key) {
+            for subsystem in self.subsystems.iter() {
+                if subsystem.delta.borrow().removed.contains_key(&components.key) {
                     // Decrement
                     components.counter -= 1;
                 }
@@ -49,15 +46,19 @@ impl<World> System<World> {
 
         // Get the deltas
         let mut deltas = {
-            self.subsystems.iter().map(|(subsystem, _)| {
+            self.subsystems.iter().map(|subsystem| {
                 let mut delta = subsystem.delta.borrow_mut();
-                let added = std::mem::take(&mut delta.added);
+                let mut added = std::mem::take(&mut delta.added);
                 let removed = std::mem::take(&mut delta.removed);
+                
                 // Apply the deltas as soon as possible
                 let mut all = subsystem.all.borrow_mut();
+                
+                // Do this so we don't need to clone anything in the next step for unused entities
                 for (key, _) in removed.iter() {
-                    all.remove(key);
+                    added.remove(key);
                 }
+
                 // Add
                 for (key, components) in added.iter() {
                     all.insert(*key, LinkedComponents {
@@ -67,6 +68,14 @@ impl<World> System<World> {
                         key: components.key.clone(),
                     });
                 }
+
+                // Remove
+                for (key, _) in removed.iter() {
+                    all.remove(key);
+                    added.remove(key);
+                }
+
+                // Output
                 LinkedComponentsDelta {
                     added,
                     removed,
@@ -81,11 +90,7 @@ impl<World> System<World> {
                 .subsystems
                 .iter()
                 .zip(deltas.iter_mut())
-                .map(|((subsystem, _), deltas)| {
-                    // Splitting
-                    let borrowed = subsystem;
-                    ComponentQuery { all: borrowed.all.borrow_mut(), delta: deltas }
-                })
+                .map(|(subsystem, delta)| ComponentQuery { all: subsystem.all.borrow_mut(), delta })
                 .collect::<Vec<_>>();
             run_system_evn(world, queries);
         }

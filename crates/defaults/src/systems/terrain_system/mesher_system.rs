@@ -59,6 +59,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
+
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
@@ -74,6 +75,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // We still gotta update the current chunk state though
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
+            
         }
     }
 }

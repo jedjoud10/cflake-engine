@@ -12,6 +12,7 @@ use crate::{
 
 // Component set
 pub struct ComponentSet {
+    // TODO: Use custom storage
     components: Components,
     pub(crate) to_remove: DanglingComponentsToRemove,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
@@ -30,12 +31,6 @@ impl Default for ComponentSet {
 // Errors
 fn invalid_err() -> ComponentError {
     ComponentError::new("Component could not be fetched!".to_string())
-}
-fn borrow_err_linking() -> ComponentLinkingError {
-    ComponentLinkingError::new("Cannot modify the delta state of a system that is currently running!".to_string())
-}
-fn borrow_err_unlinking() -> ComponentUnlinkError {
-    ComponentUnlinkError::new("Cannot modify the delta state of a system that is currently running!".to_string())
 }
 
 impl ComponentSet {
@@ -67,17 +62,16 @@ impl ComponentSet {
         // Check if the linked entity is valid to be added into the subsystems
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            for (subsystem, cbitfield) in system.subsystems.iter() {
+            for subsystem in system.subsystems.iter() {
                 // If the entity wasn't inside the subsystem before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the subsystem
-                if SubSystem::check(cbitfield, new) && !SubSystem::check(cbitfield, old) {
+                if subsystem.check(new) && !subsystem.check(old) {
                     let linked = LinkedComponents {
                         key,
                         linked: linked.clone(),
                         mutated_components: self.mutated_components.clone(),
                         components: components.clone(),
                     };
-                    let mut borrowed = subsystem;
-                    borrowed.add(key, linked);
+                    subsystem.add(key, linked);
                 }
             }
         }
@@ -98,11 +92,10 @@ impl ComponentSet {
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            for (subsystem, cbitfield) in system.subsystems.iter() {
+            for subsystem in system.subsystems.iter() {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                if SubSystem::check(cbitfield, old) && !SubSystem::check(cbitfield, new) {
-                    let mut borrowed = subsystem;
-                    borrowed.remove(
+                if subsystem.check(old) && !subsystem.check(new) {
+                    subsystem.remove(
                         key,
                         LinkedComponents {
                             key,
@@ -116,7 +109,7 @@ impl ComponentSet {
         }
         // Update the entity's components
         let entity = entities.get_mut(key).unwrap();
-        // Dear god
+        // Get the component keys that we must remove
         let components_elems = entity
             .components
             .iter()
@@ -144,9 +137,9 @@ impl ComponentSet {
         let counter = systems
             .iter()
             .flat_map(|systems| &systems.subsystems)
-            .filter(|(_, cbitfield)| {
+            .filter(|subsystem| {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
-                SubSystem::check(cbitfield, old) && !SubSystem::check(cbitfield, new)
+                subsystem.check(old) && !subsystem.check(new)
             })
             .count();
         // Add the removal group
@@ -154,7 +147,7 @@ impl ComponentSet {
         Ok(())
     }
     // Called at the start of the frame
-    pub(crate) fn clear_for_next_frame(&mut self) -> Result<(), ComponentError> {
+    pub(crate) fn ready_for_frame(&mut self) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();

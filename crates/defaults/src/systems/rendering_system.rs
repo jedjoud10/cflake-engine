@@ -1,7 +1,7 @@
-use crate::components::{Camera, Light, Renderer, Transform};
+use crate::components::{Camera, Renderer, Transform, Light};
 use world::{
-    ecs::component::{ComponentKey, ComponentQueryParameters, ComponentQuerySet},
-    rendering::pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
+    ecs::component::{ComponentQueryParameters, ComponentQuerySet},
+    rendering::{pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel}, basics::lights::LightTransform},
     World,
 };
 
@@ -26,12 +26,12 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             projm_viewm: camera.projm * camera.viewm,
         }
     });
-
+    
     // If there isn't a camera, no need to render anything
     if camera.is_none() {
         return;
     }
-    let camera = camera.unwrap();
+    world.pipeline.camera = camera.unwrap();
 
     // Render the world
     let query = data.get_mut(0).unwrap();
@@ -52,6 +52,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(query.all.len());
 
     // Add the normal models
+    let query = data.get(0).unwrap();
     for (_, components) in query.all.iter() {
         // We do a bit of borrowing
         let renderer = components.get::<Renderer>().unwrap();
@@ -75,13 +76,27 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         }
     }
 
-    world.pipeline.camera = camera;
+    // Get the lights
+    let query = data.get(2).unwrap();
+    let lights = query.all.iter().map(|(_, linked)| {
+        // Get the linked components
+        let light = linked.get::<Light>().unwrap();
+        let transform = linked.get::<Transform>().unwrap();
+        
+        // Convert
+        (&light.light, LightTransform {
+            position: &transform.position,
+            rotation: &transform.rotation,
+        })
+    }).collect::<Vec<_>>();
+
+
 
     // Rendering settings
     let settings = RenderingSettings {
         normal: models.as_slice(),
         shadowed: shadowed.as_slice(),
-        lights: &[],
+        lights: &lights,
     };
 
     // Render
@@ -99,5 +114,6 @@ pub fn system(world: &mut World) {
         .event(run)
         .query(ComponentQueryParameters::default().link::<Renderer>().link::<Transform>())
         .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
+        .query(ComponentQueryParameters::default().link::<Light>().link::<Transform>())
         .build();
 }

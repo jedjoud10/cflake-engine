@@ -55,7 +55,7 @@ pub mod test {
     // Run the systems in sync, but their component updates are not
     // Used only for testing
     fn run_systems<W>(ecs: &mut ECSManager<W>, world: &mut W) {
-        ecs.components.clear_for_next_frame().unwrap();
+        ecs.components.ready_for_frame().unwrap();
         let (systems, settings) = ecs.ready();
         ECSManager::execute_systems(systems.borrow(), world, settings);
     }
