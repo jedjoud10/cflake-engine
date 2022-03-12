@@ -31,7 +31,7 @@ impl<World> Default for ECSManager<World> {
 impl<World> ECSManager<World> {
     // Create the proper execution settings for systems, and return them
     pub fn ready(&mut self) -> (Rc<RefCell<Vec<System<World>>>>, SystemSettings) {
-        self.components.clear_for_next_frame().unwrap();
+        self.components.ready_for_frame().unwrap();
         (
             self.systems.inner.clone(),
             SystemSettings {
@@ -48,8 +48,8 @@ impl<World> ECSManager<World> {
 
     // Wrapper functions
     // Entity adding/removing
-    pub fn add(&mut self, entity: Entity, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
-        let key = self.entities.add(entity)?;
+    pub fn add(&mut self, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
+        let key = self.entities.add(Entity::default())?;
         // Then link
         self.components
             .link(key, &mut self.entities, &mut self.systems, group)

@@ -1,4 +1,8 @@
-use std::{marker::PhantomData, mem::{size_of, MaybeUninit}, ptr::null};
+use std::{
+    marker::PhantomData,
+    mem::{size_of, MaybeUninit},
+    ptr::null,
+};
 
 use super::{storage::Storage, Buffer};
 use crate::{pipeline::Pipeline, utils::UsageType};
@@ -28,9 +32,7 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     }
     // Read directly from the OpenGL buffer
     fn read(&mut self, output: &mut [Element]) {
-        unsafe {
-            self.storage.read_subdata(output.as_mut_ptr(), self.storage().len(), 0)
-        }
+        unsafe { self.storage.read_subdata(output.as_mut_ptr(), self.storage().len(), 0) }
     }
     // Simple write
     fn write(&mut self, buf: &[Element])

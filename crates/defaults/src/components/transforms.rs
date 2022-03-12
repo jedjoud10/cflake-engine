@@ -18,25 +18,6 @@ impl Default for Transform {
     }
 }
 
-// Transform creation
-impl Transform {
-    // With position
-    pub fn with_position(mut self, position: veclib::Vector3<f32>) -> Self {
-        self.position = position;
-        self
-    }
-    // With rotation
-    pub fn with_rotation(mut self, rotation: veclib::Quaternion<f32>) -> Self {
-        self.rotation = rotation;
-        self
-    }
-    // With scale
-    pub fn with_scale(mut self, scale: veclib::Vector3<f32>) -> Self {
-        self.scale = scale;
-        self
-    }
-}
-
 impl Transform {
     // Calculate the transform matrix and return it
     pub fn transform_matrix(&self) -> veclib::Matrix4x4<f32> {

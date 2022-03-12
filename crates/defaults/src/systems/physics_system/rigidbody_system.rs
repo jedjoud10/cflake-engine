@@ -1,11 +1,13 @@
+use crate::components::{Collider, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 
+use world::ecs::component::ComponentQueryParameters;
 use world::physics::rapier3d::na::{Isometry, Point3};
 use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape};
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
-use world::{ecs::event::EventKey, physics::rapier3d::prelude::ColliderBuilder};
+use world::{ecs::component::ComponentQuerySet, physics::rapier3d::prelude::ColliderBuilder};
 
 // Convert a rendering mesh to it's SharedShape counterpart
 fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
@@ -26,7 +28,7 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
 }
 
 // Get the Rapier3D shared shape from a collider components
-fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &crate::components::Collider) -> SharedShape {
+fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &Collider) -> SharedShape {
     match &collider._type {
         crate::components::ColliderType::Shape(shape) => match shape {
             world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
@@ -37,13 +39,13 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, 
 }
 
 // Whenever we add a rigidbody that has a collider attached to it, we must add them to the Rapier3D simulation
-fn added_entities(world: &mut World, mut data: EventKey) {
+fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Add each rigidbody and it's corresponding collider
-    let query = data.as_query_mut().unwrap();
+    let query = &mut data.get_mut(0).unwrap().delta.added;
     for (_, components) in query.iter_mut() {
         // Get the components
-        let rigidbody = components.get::<crate::components::RigidBody>().unwrap();
-        let collider = components.get::<crate::components::Collider>().unwrap();
+        let rigidbody = components.get::<RigidBody>().unwrap();
+        let collider = components.get::<Collider>().unwrap();
         let transform = components.get::<crate::components::Transform>().unwrap();
 
         // Transform to Rapier3D collider and rigibody
@@ -65,9 +67,9 @@ fn added_entities(world: &mut World, mut data: EventKey) {
         let collider_handle = sim.colliders.insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
 
         // Set the handles in their respective components
-        let mut rigidbody = components.get_mut::<crate::components::RigidBody>().unwrap();
+        let mut rigidbody = components.get_mut::<RigidBody>().unwrap();
         rigidbody.handle = rigidbody_handle;
-        let mut collider = components.get_mut::<crate::components::Collider>().unwrap();
+        let mut collider = components.get_mut::<Collider>().unwrap();
         collider.handle = collider_handle;
     }
 }
@@ -78,9 +80,7 @@ pub fn system(world: &mut World) {
         .ecs
         .systems
         .builder()
-        .link::<crate::components::RigidBody>()
-        .link::<crate::components::Collider>()
-        .link::<crate::components::Transform>()
-        .with_added_entities_event(added_entities)
+        .event(run)
+        .query(ComponentQueryParameters::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
         .build();
 }

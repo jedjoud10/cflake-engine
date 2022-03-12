@@ -64,6 +64,12 @@ pub fn start_before_user_sytems(world: &mut World) {
     window_system::system(world);
     audio_system::system(world);
 
+    // Terrain
+    terrain_system::chunk_system::system(world);
+    terrain_system::voxel_system::system(world);
+    terrain_system::mesher_system::system(world);
+    terrain_system::editing_system::system(world);
+
     // We gotta add the default globals
     world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
     world.globals.add(crate::globals::Physics::default()).unwrap();
@@ -73,11 +79,6 @@ pub fn start_before_user_sytems(world: &mut World) {
 pub fn start_after_user_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
-    // Terrain
-    terrain_system::chunk_system::system(world);
-    terrain_system::voxel_system::system(world);
-    terrain_system::mesher_system::system(world);
-    terrain_system::editing_system::system(world);
 
     rendering_system::system(world);
     gui_system::system(world);

@@ -1,4 +1,8 @@
-use std::{ffi::c_void, mem::{size_of, MaybeUninit}, ptr::null};
+use std::{
+    ffi::c_void,
+    mem::{size_of, MaybeUninit},
+    ptr::null,
+};
 
 use arrayvec::ArrayVec;
 use getset::{CopyGetters, Getters};

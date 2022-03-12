@@ -6,10 +6,11 @@ use crate::{
     basics::{
         mesh::Mesh,
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureWrapMode, TextureLayout},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
         uniforms::Uniforms,
     },
-    pipeline::{Handle, Pipeline}, utils::DataType,
+    pipeline::{Handle, Pipeline},
+    utils::DataType,
 };
 
 use super::{RenderingError, ShadowedModel};

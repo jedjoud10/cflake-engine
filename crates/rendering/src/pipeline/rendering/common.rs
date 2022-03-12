@@ -1,12 +1,7 @@
 use std::{cell::Ref, ptr::null};
 
 use crate::{
-    basics::{
-        material::Material,
-        mesh::Mesh,
-        shader::Shader,
-        uniforms::{Uniforms},
-    },
+    basics::{material::Material, mesh::Mesh, shader::Shader, uniforms::Uniforms},
     pipeline::{Handle, Pipeline},
 };
 

@@ -1,5 +1,4 @@
 mod component;
-mod fetcher;
 mod linked_components;
 mod query;
 pub mod registry;
@@ -7,7 +6,6 @@ mod set;
 pub use component::Component;
 pub use component::*;
 pub use ecs_derive::Component;
-pub use fetcher::*;
 pub use linked_components::*;
 pub use query::*;
 pub(crate) use set::*;

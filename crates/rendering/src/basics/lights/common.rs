@@ -9,7 +9,7 @@ pub struct LightParameters {
 
 impl Default for LightParameters {
     fn default() -> Self {
-        Self { 
+        Self {
             strength: 1.0,
             color: veclib::Vector3::ONE,
         }
@@ -26,13 +26,8 @@ pub struct LightTransform<'object> {
 #[derive(EnumAsInner)]
 pub enum LightType {
     // Directional light, like the sun
-    Directional {
-        params: LightParameters,
-    },
+    Directional { params: LightParameters },
     // Point light, like a lamp
     // TODO: Add support for point lights in shader
-    Point {
-        params: LightParameters,
-        radius: f32,
-    },    
+    Point { params: LightParameters, radius: f32 },
 }

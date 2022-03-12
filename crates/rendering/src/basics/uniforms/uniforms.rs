@@ -1,9 +1,6 @@
 use crate::{
     advanced::{atomic::AtomicGroup, raw::Buffer, shader_storage::ShaderStorage},
-    basics::{
-        shader::ShaderProgram,
-        texture::{Texture},
-    },
+    basics::{shader::ShaderProgram, texture::Texture},
     pipeline::{Handle, Pipeline},
 };
 
@@ -149,7 +146,7 @@ impl<'a> Uniforms<'a> {
         }
         let texture = self.pipeline.textures.get(texture).unwrap();
         // Get the active texture ID from the program
-        let mut used_texture_units = self.program.used_texture_units().borrow_mut(); 
+        let mut used_texture_units = self.program.used_texture_units().borrow_mut();
         if !used_texture_units.contains_key(name) {
             // Never existed before, add it
             let len = used_texture_units.len();

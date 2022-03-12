@@ -1,5 +1,5 @@
-use crate::utils::DataType;
 use super::TextureFormat;
+use crate::utils::DataType;
 
 // Texture layout
 #[derive(Clone, Copy)]
@@ -15,6 +15,6 @@ impl Default for TextureLayout {
             data_type: DataType::U8,
             internal_format: TextureFormat::RGBA8R,
             resizable: true,
-        }    
+        }
     }
 }

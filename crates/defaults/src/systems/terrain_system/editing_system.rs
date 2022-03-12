@@ -1,8 +1,8 @@
-use world::ecs::event::EventKey;
+use world::ecs::component::ComponentQuerySet;
 use world::rendering::advanced::raw::Buffer;
 use world::World;
 // A system that will handle terrain edits
-fn run(world: &mut World, _data: EventKey) {
+fn run(world: &mut World, _data: ComponentQuerySet) {
     // Get the terrain global
     if let Ok(terrain) = world.globals.get_mut::<crate::globals::Terrain>() {
         // Editing manager
@@ -23,5 +23,5 @@ fn run(world: &mut World, _data: EventKey) {
 
 // Create the system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder().with_run_event(run).build();
+    world.ecs.systems.builder().event(run).build();
 }

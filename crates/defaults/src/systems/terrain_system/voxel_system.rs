@@ -1,8 +1,14 @@
 use std::time::Instant;
 
-use crate::globals::ChunkGenerationState;
+use crate::{
+    components::{Chunk, Transform},
+    globals::ChunkGenerationState,
+};
 use world::{
-    ecs::{entity::EntityKey, event::EventKey},
+    ecs::{
+        component::{ComponentQueryParameters, ComponentQuerySet},
+        entity::EntityKey,
+    },
     rendering::{
         advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer},
         basics::uniforms::Uniforms,
@@ -13,7 +19,7 @@ use world::{
 };
 
 // Simply run the compute shaders for now
-fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut crate::components::Chunk, key: EntityKey) {
+fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut Chunk, key: EntityKey) {
     let generator = &mut terrain.voxel_generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
@@ -50,7 +56,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 }
 
 // Then, a frame later, fetch the buffer data
-fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {    
+fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
     // READ
     // Get the valid counters
     let generator = &mut terrain.voxel_generator;
@@ -77,8 +83,8 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
 }
 
 // The voxel systems' update loop
-fn run(world: &mut World, mut data: EventKey) {
-    let query = data.as_query_mut().unwrap();
+fn run(world: &mut World, mut data: ComponentQuerySet) {
+    let query = &mut data.get_mut(0).unwrap().all;
     // Get the pipeline without angering the borrow checker
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if let Ok(terrain) = terrain {
@@ -96,7 +102,7 @@ fn run(world: &mut World, mut data: EventKey) {
                 let lock_ = query;
                 let components = lock_.get_mut(&key).unwrap();
                 // We break out at the first chunk if we start generating it's voxel data
-                let chunk = components.get_mut::<crate::components::Chunk>().unwrap();
+                let chunk = components.get_mut::<Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
                 let i = std::time::Instant::now();
@@ -116,8 +122,7 @@ pub fn system(world: &mut World) {
         .ecs
         .systems
         .builder()
-        .with_run_event(run)
-        .link::<crate::components::Transform>()
-        .link::<crate::components::Chunk>()
+        .event(run)
+        .query(ComponentQueryParameters::default().link::<Transform>().link::<Chunk>())
         .build();
 }

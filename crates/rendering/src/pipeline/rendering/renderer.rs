@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureWrapMode, TextureLayout},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureLayout, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -90,10 +90,8 @@ impl SceneRenderer {
                     internal_format,
                     resizable: true,
                 };
-                
-                pipeline
-                    .textures
-                    .insert(TextureBuilder::default().dimensions(dimensions).layout(layout).build())
+
+                pipeline.textures.insert(TextureBuilder::default().dimensions(dimensions).layout(layout).build())
             })
             .collect::<Vec<Handle<Texture>>>();
 
@@ -163,7 +161,7 @@ impl SceneRenderer {
     pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
         gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);        
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
 
     // Render the whole scene
@@ -177,12 +175,7 @@ impl SceneRenderer {
         self.shadow_mapping.as_mut().map(|mapping| unsafe {
             // Update the lightspace matrix
             // The first directional light that we find will be used as the sunlight
-            let first = settings
-                .lights
-                .iter()
-                .find_map(|(_type, params)|
-                    _type.as_directional().map(|_type| (_type, params))    
-                );
+            let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
 
             if let Some((parameters, transform)) = first {
                 // Only render directional shadow map if we have a sun
@@ -204,12 +197,7 @@ impl SceneRenderer {
         let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, true);
 
         // Try to get the sunlight direction
-        let first = settings
-                .lights
-                .iter()
-                .find_map(|(_type, params)|
-                    _type.as_directional().map(|_type| (_type, params))    
-                );
+        let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
         let sunlight = first.map(|(params, transform)| (transform.rotation.mul_point(veclib::Vector3::Z), params.strength));
 
         // Default sunlight values

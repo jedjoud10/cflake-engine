@@ -18,11 +18,6 @@ pub struct ComponentLinkingGroup {
 
 // Linking methods
 impl ComponentLinkingGroup {
-    // Link a component to this entity and automatically set it to the default variable
-    pub fn link_default<T: Component + Send + Sync + Default + 'static>(&mut self) -> Result<(), ComponentLinkingError> {
-        // Simple wrapper around the default link component
-        self.link(T::default())
-    }
     // Link a component to this entity
     pub fn link<T: Component + Send + Sync + 'static>(&mut self, component: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get_component_bitfield::<T>();

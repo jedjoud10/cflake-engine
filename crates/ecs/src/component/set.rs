@@ -6,12 +6,13 @@ use std::{cell::UnsafeCell, sync::Arc};
 use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
-    system::SystemSet,
+    system::{SubSystem, SystemSet},
     utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError},
 };
 
 // Component set
 pub struct ComponentSet {
+    // TODO: Use custom storage
     components: Components,
     pub(crate) to_remove: DanglingComponentsToRemove,
     pub(crate) mutated_components: Arc<AtomicSparseBitfield>,
@@ -36,7 +37,7 @@ impl ComponentSet {
     // Link some components to an entity
     pub fn link<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         for (cbitfield, boxed) in group.linked_components {
-            let (ckey, _ptr) = self.add(boxed, cbitfield);
+            let (ckey, _ptr) = self.add(boxed);
             let entity = entities.get_mut(key).unwrap();
             entity.components.insert(cbitfield, ckey);
         }
@@ -61,7 +62,6 @@ impl ComponentSet {
         // Check if the linked entity is valid to be added into the subsystems
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            /*
             for subsystem in system.subsystems.iter() {
                 // If the entity wasn't inside the subsystem before we changed it's cbitfield, and it became valid afterwards, that means that we must add the entity to the subsystem
                 if subsystem.check(new) && !subsystem.check(old) {
@@ -73,8 +73,7 @@ impl ComponentSet {
                     };
                     subsystem.add(key, linked);
                 }
-            }      
-            */      
+            }
         }
         Ok(())
     }
@@ -93,7 +92,6 @@ impl ComponentSet {
         let new = entity.cbitfield.remove(&group.removal_cbitfield).unwrap();
         let systems = systems.inner().borrow();
         for system in systems.iter() {
-            /*
             for subsystem in system.subsystems.iter() {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
                 if subsystem.check(old) && !subsystem.check(new) {
@@ -108,11 +106,10 @@ impl ComponentSet {
                     );
                 }
             }
-            */
         }
         // Update the entity's components
         let entity = entities.get_mut(key).unwrap();
-        // Dear god
+        // Get the component keys that we must remove
         let components_elems = entity
             .components
             .iter()
@@ -137,21 +134,20 @@ impl ComponentSet {
 
         // And finally remove the component group from the required subsystems
         let mut lock = self.to_remove.borrow_mut();
-        /*
         let counter = systems
             .iter()
-            .flat_map(|systems| systems.subsystems)
+            .flat_map(|systems| &systems.subsystems)
             .filter(|subsystem| {
                 // If the entity was inside the subsystem before we changed it's cbitfield, and it became invalid afterwards, that means that we must remove the entity from the subsystem
                 subsystem.check(old) && !subsystem.check(new)
             })
             .count();
-            lock.insert(ComponentGroupToRemove { components, counter, key });
-            */
+        // Add the removal group
+        lock.insert(ComponentGroupToRemove { components, counter, key });
         Ok(())
     }
     // Called at the start of the frame
-    pub(crate) fn clear_for_next_frame(&mut self) -> Result<(), ComponentError> {
+    pub(crate) fn ready_for_frame(&mut self) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();
@@ -173,7 +169,7 @@ impl ComponentSet {
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add(&mut self, boxed: EnclosedComponent, _: Bitfield<u32>) -> (ComponentKey, *mut EnclosedComponent) {
+    fn add(&mut self, boxed: EnclosedComponent) -> (ComponentKey, *mut EnclosedComponent) {
         // UnsafeCell moment
         let mut components = self.components.write();
         let cell = UnsafeCell::new(boxed);
