@@ -1,4 +1,4 @@
-use super::{IndexBuilder, Indices, Mesh, VertexBuilder, Vertices};
+use super::{IndexBuilder, Mesh, VertexBuilder};
 
 // Mesh geometry builder
 #[derive(Default)]

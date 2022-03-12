@@ -1,8 +1,4 @@
-use std::cell::RefCell;
-
-use bitfield::Bitfield;
-
-use crate::component::{registry, Component, ComponentQueryParameters, ComponentQuerySet};
+use crate::component::{ComponentQueryParameters, ComponentQuerySet};
 
 use super::{SubSystem, System, SystemSet};
 

@@ -1,4 +1,3 @@
-use crate::{object::PipelineCollectionElement, pipeline::Pipeline};
 use enum_as_inner::EnumAsInner;
 
 // Light source parameters

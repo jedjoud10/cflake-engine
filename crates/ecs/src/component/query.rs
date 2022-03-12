@@ -2,10 +2,7 @@ use super::{registry, Component, LinkedComponents};
 use crate::entity::EntityKey;
 use ahash::AHashMap;
 use bitfield::Bitfield;
-use std::{
-    cell::RefMut,
-    ops::{Deref, DerefMut},
-};
+use std::cell::RefMut;
 // A struct full of LinkedComponents that we send off to update in parallel
 // This will use the components data given by the world to run all the component updates in PARALLEL
 // The components get mutated in parallel, though the system is NOT stored on another thread

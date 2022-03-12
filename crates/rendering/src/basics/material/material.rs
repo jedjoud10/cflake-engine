@@ -1,9 +1,5 @@
 use super::MaterialTextures;
-use crate::{
-    basics::{shader::Shader, texture::Texture},
-    object::PipelineCollectionElement,
-    pipeline::*,
-};
+use crate::{basics::shader::Shader, object::PipelineCollectionElement, pipeline::*};
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -19,7 +15,7 @@ pub struct Material {
 }
 
 impl PipelineCollectionElement for Material {
-    fn added(&mut self, handle: &Handle<Self>) {}
+    fn added(&mut self, _handle: &Handle<Self>) {}
 
     fn disposed(self) {}
 }

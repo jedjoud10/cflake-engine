@@ -1,5 +1,3 @@
-use std::mem::{size_of, MaybeUninit};
-
 use world::{
     rendering::{
         advanced::{
@@ -48,7 +46,7 @@ impl VoxelGenerator {
         // Load the second pass compute shader
         let settings = ShaderInitSettings::default()
             .source(world::terrain::DEFAULT_TERRAIN_SECOND_COMPUTE_SHADER)
-            .directive("voxel_include_path", Directive::External(voxel_src_path.to_string()))
+            .directive("voxel_include_path", Directive::External(voxel_src_path))
             .directive("chunk_size", Directive::Const(CHUNK_SIZE.to_string()));
         let second_compute = ComputeShader::new(settings).unwrap();
         let second_compute = pipeline.compute_shaders.insert(second_compute);

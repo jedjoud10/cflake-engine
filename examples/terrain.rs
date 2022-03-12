@@ -1,20 +1,16 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Light, Transform},
+        components::{self, Transform},
         globals::{self, TerrainSettings},
     },
-    ecs::entity::{ComponentLinkingGroup, Entity},
-    math::{
-        csg::CSGOperation,
-        octrees::HeuristicSettings,
-        shapes::{Cuboid, ShapeType, Sphere},
-    },
+    ecs::entity::ComponentLinkingGroup,
+    math::{csg::CSGOperation, octrees::HeuristicSettings},
     rendering::basics::{
         lights::{LightParameters, LightType::Directional},
         material::{Material, MaterialTextures},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureBundler, TextureFilter, TextureLayout},
+        texture::{Texture, TextureBundler},
     },
     terrain::editing::Edit,
     veclib::{self, vec3},

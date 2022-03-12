@@ -157,7 +157,7 @@ pub mod test {
 
         let builder = ecs.systems.builder();
 
-        fn run_internally(_world: &mut i32, mut data: ComponentQuerySet) {
+        fn run_internally(_world: &mut i32, data: ComponentQuerySet) {
             let query1 = &data[0];
             let query2 = &data[1];
             let len1 = query1.all.len();

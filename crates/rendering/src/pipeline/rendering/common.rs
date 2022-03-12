@@ -1,4 +1,4 @@
-use std::{cell::Ref, ptr::null};
+use std::ptr::null;
 
 use crate::{
     basics::{material::Material, mesh::Mesh, shader::Shader, uniforms::Uniforms},
@@ -21,7 +21,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 }
 
 // Render a model
-pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
+pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
     // Fallback values
     fn fallback_material(pipeline: &Pipeline) -> &Material {
         pipeline.materials.get(&pipeline.defaults().material).unwrap()
@@ -55,7 +55,7 @@ pub(crate) fn render_model(settings: &RenderingSettings, renderer: &RenderedMode
 
     // Finally render the mesh
     unsafe {
-        render(&mesh);
+        render(mesh);
     }
 }
 

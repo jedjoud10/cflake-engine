@@ -1,13 +1,8 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    marker::PhantomData,
-    rc::Rc,
-    sync::Arc,
-};
+use std::{marker::PhantomData, sync::Arc};
 
 use super::{Handle, PipelineElemKey};
 use crate::object::PipelineCollectionElement;
-use bitfield::AtomicSparseBitfield;
+
 use parking_lot::Mutex;
 use slotmap::SlotMap;
 

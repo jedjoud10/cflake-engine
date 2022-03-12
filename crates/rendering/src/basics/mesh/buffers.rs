@@ -1,7 +1,6 @@
 use arrayvec::ArrayVec;
 use getset::Getters;
 use gl::types::GLuint;
-use smallvec::SmallVec;
 
 use crate::advanced::raw::storage::Storage;
 

@@ -1,14 +1,8 @@
 use crate::{pipeline::Pipeline, utils::UsageType};
 use getset::{Getters, MutGetters};
-use gl::types::GLuint;
-use std::{
-    ffi::c_void,
-    marker::PhantomData,
-    mem::{size_of, MaybeUninit},
-    ptr::null,
-};
 
-use super::raw::dynamic::DynamicBuffer;
+use std::mem::MaybeUninit;
+
 // An OpenGL SSBO
 #[derive(Getters, MutGetters)]
 pub struct ShaderStorage<Buffer: super::raw::Buffer> {

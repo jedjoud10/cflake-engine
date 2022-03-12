@@ -1,8 +1,3 @@
-use std::{
-    marker::PhantomData,
-    mem::{size_of, MaybeUninit},
-};
-
 use getset::Getters;
 use gl::types::GLuint;
 

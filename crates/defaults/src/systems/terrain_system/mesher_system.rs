@@ -13,10 +13,7 @@ use world::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
     },
-    terrain::{
-        mesher::{Mesher, MesherSettings},
-        StoredVoxelData,
-    },
+    terrain::mesher::{Mesher, MesherSettings},
     World,
 };
 
@@ -61,11 +58,11 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             terrain.chunks_manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let voxel_data = &terrain.voxel_generator.stored.clone();
+            let _voxel_data = &terrain.voxel_generator.stored.clone();
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
-            let chunk = linked.get_mut::<Chunk>().unwrap();
+            let _chunk = linked.get_mut::<Chunk>().unwrap();
             // Remove the chunk's renderer if it had one
             if world.ecs.entities.get(key).unwrap().is_linked::<crate::components::Renderer>() {
                 let mut unlink_group = ComponentUnlinkGroup::default();
@@ -76,7 +73,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // The chunk ID is the same, but we do not have a surface
             // We still gotta update the current chunk state though
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let voxel_data = &terrain.voxel_generator.stored.clone();
+            let _voxel_data = &terrain.voxel_generator.stored.clone();
         }
     }
 }

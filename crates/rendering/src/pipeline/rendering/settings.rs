@@ -1,4 +1,4 @@
-use crate::basics::lights::{LightParameters, LightTransform, LightType};
+use crate::basics::lights::{LightTransform, LightType};
 
 use super::{RenderedModel, ShadowedModel};
 

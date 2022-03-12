@@ -1,8 +1,8 @@
 use crate::object::PipelineCollectionElement;
-use bitfield::AtomicSparseBitfield;
+
 use parking_lot::Mutex;
-use slotmap::{Key, KeyData};
-use std::{marker::PhantomData, rc::Rc, sync::Arc};
+use slotmap::Key;
+use std::{marker::PhantomData, sync::Arc};
 
 // A unique pipeline collection key
 slotmap::new_key_type! {
@@ -54,7 +54,7 @@ impl<T: PipelineCollectionElement> Drop for Handle<T> {
             if strong_count == 1 {
                 // Remove the element that this Handle referred to
                 let mut inner = to_remove.lock();
-                inner.push(self.key.as_ref().clone());
+                inner.push(*self.key.as_ref());
             }
         }
     }

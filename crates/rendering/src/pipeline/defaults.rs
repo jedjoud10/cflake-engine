@@ -3,7 +3,7 @@ use veclib::vec2;
 
 use crate::basics::{
     material::{Material, MaterialTextures},
-    mesh::{Mesh, Vertices},
+    mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
     texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter},
 };

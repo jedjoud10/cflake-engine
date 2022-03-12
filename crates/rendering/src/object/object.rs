@@ -1,4 +1,4 @@
-use crate::pipeline::{Handle, PipelineCollection};
+use crate::pipeline::Handle;
 
 // An OpenGL trait that will be added to all the objects that actually create OpenGL objects upon their creation
 // This also executes some drop code that will dispose of the OpenGL memory that we have allocated

@@ -1,15 +1,13 @@
 use crate::{
     basics::{
-        shader::{compile_shader, load_includes, query_shader_uniforms_definition_map, IncludeExpansionError, ShaderInitSettings, ShaderProgram, ShaderSource},
+        shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, ShaderProgram},
         uniforms::Uniforms,
     },
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
     pipeline::Pipeline,
 };
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashSet;
 use getset::Getters;
-use gl::types::GLuint;
-use std::{collections::HashSet, ffi::CString, ptr::null};
 
 use super::ComputeShaderExecutionSettings;
 
@@ -25,7 +23,7 @@ pub struct ComputeShader {
 }
 
 impl PipelineCollectionElement for ComputeShader {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
+    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
         // Compiling
         self.program = compile_shader(self.settings.sources());
     }
@@ -40,11 +38,11 @@ impl ComputeShader {
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and edit them
         let mut sources = std::mem::take(settings.sources_mut());
-        let (_, source) = sources.iter_mut().nth(0).unwrap();
+        let (_, source) = sources.iter_mut().next().unwrap();
         let mut included_paths: AHashSet<String> = AHashSet::new();
         // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
         // Include the includables until they cannot be included
-        while load_includes(&settings, &mut source.text_mut(), &mut included_paths)? {
+        while load_includes(&settings, source.text_mut(), &mut included_paths)? {
             // We are still including paths
         }
         *settings.sources_mut() = sources;
@@ -55,7 +53,7 @@ impl ComputeShader {
         })
     }
     // Execute a compute shader
-    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, mut uniforms: Uniforms, flush_and_barrier: bool) -> Result<(), OpenGLObjectNotInitialized> {
+    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, _uniforms: Uniforms, _flush_and_barrier: bool) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
         if self.program().program() == 0 {
             return Err(OpenGLObjectNotInitialized);

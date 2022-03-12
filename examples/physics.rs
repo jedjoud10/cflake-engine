@@ -1,6 +1,6 @@
 use cflake_engine::{
     defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform},
-    ecs::entity::{ComponentLinkingGroup, Entity},
+    ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType},
     veclib, World,
 };

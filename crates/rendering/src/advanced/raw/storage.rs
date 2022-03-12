@@ -1,10 +1,7 @@
-use crate::{
-    pipeline::Pipeline,
-    utils::{AccessType, UpdateFrequency, UsageType},
-};
+use crate::utils::{AccessType, UsageType};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of};
 
 // Raw OpenGL storage
 #[derive(Getters, CopyGetters)]
@@ -93,7 +90,7 @@ impl<Element> Storage<Element> {
         }
     }
     // Read subdata
-    pub(crate) unsafe fn read_subdata(&self, output: *mut Element, len: usize, offset: usize) {
+    pub(crate) unsafe fn read_subdata(&self, output: *mut Element, len: usize, _offset: usize) {
         // Map the buffer
         let ptr = {
             gl::BindBuffer(self._type, self.buffer);
@@ -108,7 +105,7 @@ impl<Element> Storage<Element> {
         std::ptr::copy(ptr as *const Element, output, len);
 
         // We can unmap the buffer now
-        let result = gl::UnmapBuffer(self._type);
+        let _result = gl::UnmapBuffer(self._type);
     }
 }
 

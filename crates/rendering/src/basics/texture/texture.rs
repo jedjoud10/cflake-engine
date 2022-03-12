@@ -1,12 +1,8 @@
-use std::{
-    ffi::c_void,
-    ptr::{null, null_mut},
-};
+use std::{ffi::c_void, ptr::null};
 
 use crate::{
-    basics::texture::{calculate_total_texture_byte_size, convert_format_to_texel_byte_size},
+    basics::texture::convert_format_to_texel_byte_size,
     object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Handle, Pipeline},
     utils::*,
 };
 
@@ -148,7 +144,7 @@ impl Texture {
         }
         // Check if the current dimension type matches up with the new one
         self.dimensions = dims;
-        let ifd = self.ifd;
+        let _ifd = self.ifd;
         // This is a normal texture getting resized
         unsafe {
             gl::BindTexture(self.target, self.buffer);
@@ -275,7 +271,7 @@ unsafe fn update_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer:
 }
 
 impl PipelineCollectionElement for Texture {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
+    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
         // Get OpenGL internal format, format, and data type
         self.ifd = get_ifd(self.layout);
         self.target = match self.dimensions {
@@ -377,7 +373,7 @@ impl PipelineCollectionElement for Texture {
 }
 
 impl Asset for Texture {
-    fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {

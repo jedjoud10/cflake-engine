@@ -6,7 +6,7 @@ use std::{cell::UnsafeCell, sync::Arc};
 use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
-    system::{SubSystem, SystemSet},
+    system::SystemSet,
     utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError},
 };
 

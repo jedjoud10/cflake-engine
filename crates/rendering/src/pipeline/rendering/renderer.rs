@@ -177,7 +177,7 @@ impl SceneRenderer {
             // The first directional light that we find will be used as the sunlight
             let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
 
-            if let Some((parameters, transform)) = first {
+            if let Some((_parameters, transform)) = first {
                 // Only render directional shadow map if we have a sun
                 mapping.update_matrix(transform.rotation);
                 // Then render shadows
@@ -222,7 +222,7 @@ impl SceneRenderer {
         // &str array because I am lazy
         let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
         // Set each texture
-        for ((i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
+        for ((_i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
             uniforms.set_texture(name, handle);
         }
 

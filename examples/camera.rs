@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets,
     defaults::components::{self, Camera, Transform},
-    ecs::entity::{ComponentLinkingGroup, Entity},
+    ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType::Directional},
     veclib, World,
 };

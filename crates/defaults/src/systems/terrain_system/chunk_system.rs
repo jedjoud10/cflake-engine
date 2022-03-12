@@ -17,7 +17,7 @@ use world::{
 // Add a single chunk to the world
 fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
-    let entity = ecs::entity::Entity::default();
+    let _entity = ecs::entity::Entity::default();
     let mut group = ecs::entity::ComponentLinkingGroup::default();
 
     // Link the nessecary components

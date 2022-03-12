@@ -1,8 +1,8 @@
 use crate::{
-    component::{ComponentQueryParameters, LinkedComponents, LinkedComponentsDelta, LinkedComponentsMap},
+    component::{LinkedComponents, LinkedComponentsDelta, LinkedComponentsMap},
     entity::EntityKey,
 };
-use ahash::AHashMap;
+
 use bitfield::Bitfield;
 use std::{cell::RefCell, rc::Rc};
 

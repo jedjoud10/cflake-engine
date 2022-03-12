@@ -48,7 +48,7 @@ impl Asset for ShaderSource {
         // Load a shader source
         // Load a shader source from scratch
         let text = String::from_utf8(bytes.to_vec()).ok()?;
-        let extension = meta.name.to_str().unwrap().to_string().split(".").map(|x| x.to_string()).collect::<Vec<_>>()[1..].join(".");
+        let extension = meta.name.to_str().unwrap().to_string().split('.').map(|x| x.to_string()).collect::<Vec<_>>()[1..].join(".");
         Some(ShaderSource {
             file: meta.name.to_str().unwrap().to_string(),
             text,

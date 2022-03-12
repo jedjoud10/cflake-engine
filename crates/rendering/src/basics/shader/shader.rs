@@ -1,14 +1,9 @@
-use super::info::{ShaderInfo, ShaderInfoQuerySettings};
-use super::{compile_shader, query_shader_info, ShaderInitSettings, ShaderSource, UniformsDefinitionMap};
-use crate::basics::shader::{compile_source, query_shader_uniforms_definition_map, ShaderSourceType};
-use crate::object::{OpenGLObjectNotInitialized, PipelineCollectionElement};
-use crate::pipeline::Pipeline;
-use ahash::{AHashMap, AHashSet};
+use super::{compile_shader, ShaderInitSettings};
+
+use crate::object::PipelineCollectionElement;
+
+use ahash::AHashSet;
 use getset::Getters;
-use gl::types::GLuint;
-use std::collections::{HashMap, HashSet};
-use std::ffi::CString;
-use std::ptr::null;
 
 use super::{load_includes, IncludeExpansionError, ShaderProgram};
 
@@ -32,7 +27,7 @@ impl Shader {
             let mut included_paths: AHashSet<String> = AHashSet::new();
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while load_includes(&settings, &mut source.text_mut(), &mut included_paths)? {
+            while load_includes(&settings, source.text_mut(), &mut included_paths)? {
                 // We are still including paths
             }
         }
@@ -47,7 +42,7 @@ impl Shader {
 }
 
 impl PipelineCollectionElement for Shader {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
+    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
         // Compiling
         self.program = compile_shader(self.settings.sources_mut());
     }

@@ -1,12 +1,4 @@
-use std::cell::{RefCell, RefMut};
-
-use ahash::AHashMap;
-use bitfield::Bitfield;
-
-use crate::{
-    component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta},
-    entity::EntityKey,
-};
+use crate::component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta};
 
 use super::{SubSystem, SystemSettings};
 pub(crate) type Event<World> = Option<fn(&mut World, ComponentQuerySet)>;
@@ -69,7 +61,7 @@ impl<World> System<World> {
                                 components: components.components.clone(),
                                 mutated_components: components.mutated_components.clone(),
                                 linked: components.linked.clone(),
-                                key: components.key.clone(),
+                                key: components.key,
                             },
                         );
                     }

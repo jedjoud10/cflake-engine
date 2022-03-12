@@ -1,5 +1,3 @@
-use std::ops::{Index, IndexMut};
-
 // Mesh indices
 pub type Indices = Vec<u32>;
 // Index builder

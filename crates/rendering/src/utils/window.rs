@@ -1,7 +1,5 @@
 use getset::{CopyGetters, Getters, MutGetters};
-use glutin::{window::Fullscreen, ContextWrapper, PossiblyCurrent, WindowedContext};
-
-use crate::pipeline::SceneRenderer;
+use glutin::{window::Fullscreen, PossiblyCurrent, WindowedContext};
 
 // Get the default width and height of the starting window
 pub const DEFAULT_WINDOW_SIZE: veclib::Vector2<u16> = veclib::vec2(1280, 720);

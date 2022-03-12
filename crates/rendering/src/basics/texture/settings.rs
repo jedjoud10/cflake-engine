@@ -1,4 +1,3 @@
-use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
 
 // Texture filters

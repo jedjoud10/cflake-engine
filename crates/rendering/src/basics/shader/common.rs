@@ -2,7 +2,6 @@
 
 use std::{
     cell::RefCell,
-    collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
     ptr::{null, null_mut},
@@ -59,8 +58,7 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             let source = settings
                 .directives()
                 .get(source_name)
-                .map(|directive| directive.as_external())
-                .flatten()
+                .and_then(|directive| directive.as_external())
                 .ok_or(IncludeExpansionError::new(format!(
                     "Tried to expand #include_custom, but the given source name '{}' is not valid!",
                     source_name
@@ -95,8 +93,7 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             let _const_line = settings
                 .directives()
                 .get(const_name)
-                .map(|directive| Some(format(line, directive.as_const()?.as_str())))
-                .flatten();
+                .and_then(|directive| Some(format(line, directive.as_const()?.as_str())));
             *line = _const_line.ok_or(IncludeExpansionError::new(format!(
                 "Tried to expand #constant, but the given const name '{}' is not valid!",
                 const_name
@@ -160,7 +157,7 @@ pub(crate) fn compile_shader(sources: &AHashMap<String, ShaderSource>) -> Shader
     };
     // Add the shader at the end
     ShaderProgram {
-        program: program,
+        program,
         mappings: query_shader_uniforms_definition_map(program),
         used_texture_units: Default::default(),
     }

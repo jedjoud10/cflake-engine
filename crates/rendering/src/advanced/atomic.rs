@@ -1,18 +1,6 @@
-use std::{
-    ffi::c_void,
-    mem::{size_of, MaybeUninit},
-    ptr::null,
-};
-
-use arrayvec::ArrayVec;
 use getset::{CopyGetters, Getters};
-use gl::types::GLuint;
 
-use crate::{
-    object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    pipeline::{Handle, Pipeline, PipelineCollection},
-    utils::UsageType,
-};
+use crate::{pipeline::Pipeline, utils::UsageType};
 
 use super::raw::{simple::SimpleBuffer, Buffer};
 

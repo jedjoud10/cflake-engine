@@ -1,4 +1,4 @@
-use std::{ffi::c_void, marker::PhantomData, mem::MaybeUninit, ptr::null};
+use std::{mem::MaybeUninit, ptr::null};
 
 use gl::types::GLuint;
 

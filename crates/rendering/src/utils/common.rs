@@ -1,4 +1,4 @@
-use gl::{types::GLuint, FramebufferParameteri};
+use gl::types::GLuint;
 
 // Simple main OpenGL types
 #[derive(Clone, Copy)]

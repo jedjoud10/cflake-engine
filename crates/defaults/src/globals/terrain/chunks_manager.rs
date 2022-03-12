@@ -1,8 +1,8 @@
-use std::{cmp::Ordering, sync::Arc};
+use std::cmp::Ordering;
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
-use parking_lot::Mutex;
+
 use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,

@@ -1,4 +1,4 @@
-use std::{ffi::c_void, mem::size_of, ptr::null};
+use std::ptr::null;
 
 use crate::{
     advanced::raw::storage::Storage,
@@ -6,13 +6,13 @@ use crate::{
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
-use super::{GeometryBuilder, IndexBuilder, Indices, MeshBuffers, VertexBuilder, Vertices};
+use super::{GeometryBuilder, Indices, MeshBuffers, Vertices};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
 use gl::types::GLuint;
 use obj::TexturedVertex;
-use smallvec::SmallVec;
+
 use veclib::{vec2, vec3};
 
 // A simple mesh that holds vertex, normal, and color data
@@ -46,7 +46,7 @@ pub struct Mesh {
 }
 
 impl Asset for Mesh {
-    fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
@@ -66,7 +66,7 @@ impl Asset for Mesh {
 }
 
 impl PipelineCollectionElement for Mesh {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
+    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO

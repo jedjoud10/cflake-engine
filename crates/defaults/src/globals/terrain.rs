@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use world::{
     globals::Global,
     math::octrees::DiffOctree,
@@ -14,7 +12,7 @@ mod chunks_manager;
 mod settings;
 mod voxel_generation;
 pub use chunks_manager::*;
-use parking_lot::Mutex;
+
 pub use settings::*;
 pub use voxel_generation::*;
 
@@ -61,7 +59,7 @@ impl Terrain {
             Some(())
         } else {
             // The chunk does not exist yet
-            return None;
+            None
         }
     }
 }
