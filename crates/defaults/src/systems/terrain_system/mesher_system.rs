@@ -13,9 +13,13 @@ use world::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
     },
-    terrain::mesher::{Mesher, MesherSettings},
+    terrain::{mesher::{Mesher, MesherSettings}, StoredVoxelData},
     World,
 };
+
+// A post generation event that will be called after the generation of a specific chunk
+fn chunk_post_gen(world: &mut World, handle: Handle<Mesh>, chunk: &Chunk, data: &StoredVoxelData) {
+}
 
 // The mesher systems' update loop
 fn run(world: &mut World, mut data: ComponentQuerySet) {
@@ -42,6 +46,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Generate the mesh and add it to the chunk entity
             let mesh = mesher.build();
             let mesh = world.pipeline.meshes.insert(mesh);
+            let cloned = mesh.clone();
 
             if !linked.is_linked::<Renderer>() {
                 // Generate the new component and link it
@@ -58,7 +63,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             terrain.chunks_manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let _voxel_data = &terrain.voxel_generator.stored.clone();
+            let voxel_data = &terrain.voxel_generator.stored.clone();
+            chunk_post_gen(world, cloned, linked.get_mut::<Chunk>().unwrap(), voxel_data);
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
@@ -73,7 +79,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // The chunk ID is the same, but we do not have a surface
             // We still gotta update the current chunk state though
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-            let _voxel_data = &terrain.voxel_generator.stored.clone();
+            let voxel_data = &terrain.voxel_generator.stored.clone();
+            chunk_post_gen(world, Handle::default(), linked.get_mut::<Chunk>().unwrap(), voxel_data);
         }
     }
 }

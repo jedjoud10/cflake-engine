@@ -10,7 +10,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::{Material, MaterialTextures},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBundler},
+        texture::{Texture, TextureBundler, TextureLayout},
     },
     terrain::editing::Edit,
     veclib::{self, vec3},
@@ -72,8 +72,12 @@ fn init(world: &mut World) {
     let texture_norm_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
     let texture_diff_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).mipmaps(true);
-    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).mipmaps(true);
+    let layout = TextureLayout {
+        resizable: true,
+        ..Default::default()
+    };
+    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).mipmaps(true).layout(layout);
+    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).mipmaps(true).layout(layout);
     let diffuse = world.pipeline.textures.insert(diffuse.build());
     let normals = world.pipeline.textures.insert(normals.build());
     let material = Material {
@@ -105,6 +109,6 @@ fn init(world: &mut World) {
     // Big sphere
     terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 500.0, CSGOperation::Union, Some(1)));
     // Pillar
-    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(400.0, 600.0, 400.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(400.0, 1000.0, 400.0), CSGOperation::Subtraction, Some(2)));
     world.globals.add(terrain).unwrap();
 }

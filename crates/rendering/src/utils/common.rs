@@ -43,7 +43,7 @@ pub enum AccessType {
 pub enum UpdateFrequency {
     WriteOnceReadMany,
     WriteManyReadMany,
-    WriteOnceReadSometimes,
+    WriteSometimesReadMany,
 }
 
 // How we will use a buffer
@@ -70,18 +70,18 @@ impl UsageType {
         match self.access {
             AccessType::ClientToServer => match self.frequency {
                 UpdateFrequency::WriteOnceReadMany => gl::STATIC_DRAW,
-                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_DRAW,
-                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_DRAW,
+                UpdateFrequency::WriteManyReadMany => gl::STREAM_DRAW,
+                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_DRAW,
             },
             AccessType::ServerToClient => match self.frequency {
                 UpdateFrequency::WriteOnceReadMany => gl::STATIC_READ,
-                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_READ,
-                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_READ,
+                UpdateFrequency::WriteManyReadMany => gl::STREAM_READ,
+                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_READ,
             },
             AccessType::ServerToServer => match self.frequency {
                 UpdateFrequency::WriteOnceReadMany => gl::STATIC_COPY,
-                UpdateFrequency::WriteManyReadMany => gl::DYNAMIC_COPY,
-                UpdateFrequency::WriteOnceReadSometimes => gl::STREAM_COPY,
+                UpdateFrequency::WriteManyReadMany => gl::STREAM_COPY,
+                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_COPY,
             },
         }
     }

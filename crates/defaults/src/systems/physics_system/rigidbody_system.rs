@@ -2,12 +2,13 @@ use crate::components::{Collider, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 
 use world::ecs::component::ComponentQueryParameters;
-use world::physics::rapier3d::na::{Isometry, Point3};
-use world::physics::rapier3d::prelude::{RigidBodyBuilder, SharedShape};
+use rapier3d::na::{Isometry, Point3};
+use rapier3d::prelude::{RigidBodyBuilder, SharedShape, ColliderBuilder};
+use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
-use world::{ecs::component::ComponentQuerySet, physics::rapier3d::prelude::ColliderBuilder};
+use world::{ecs::component::ComponentQuerySet};
 
 // Convert a rendering mesh to it's SharedShape counterpart
 fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
@@ -21,20 +22,18 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
     let indices = mesh.indices().chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
-    dbg!(mesh.indices().len());
-    dbg!(mesh.vertices().len());
     // Done
     SharedShape::trimesh(vertices, indices)
 }
 
 // Get the Rapier3D shared shape from a collider components
 fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &Collider) -> SharedShape {
-    match &collider._type {
-        crate::components::ColliderType::Shape(shape) => match shape {
-            world::math::shapes::ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
-            world::math::shapes::ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
+    match &collider.geometry {
+        crate::components::ColliderGeometry::Shape(shape) => match shape {
+            ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
+            ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        crate::components::ColliderType::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
+        crate::components::ColliderGeometry::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
     }
 }
 
@@ -56,8 +55,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             })
             .build();
         let r_collider = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), collider))
-            .friction(collider.friction)
-            .restitution(collider.restitution)
+            .friction(collider.material.friction)
+            .restitution(collider.material.restitution)
             //.mass_properties(MassProperties::new(rapier3d::prelude::Point::new(0.0, 0.0, 0.0), 10.0, rapier3d::na::zero()))
             .build();
 

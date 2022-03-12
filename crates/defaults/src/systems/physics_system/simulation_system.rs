@@ -1,7 +1,8 @@
 use world::ecs::component::ComponentQueryParameters;
 use world::physics::PHYSICS_TIME_STEP;
 use world::World;
-use world::{ecs::component::ComponentQuerySet, physics::rapier3d::na::Isometry};
+use world::ecs::component::ComponentQuerySet;
+use rapier3d::na::Isometry;
 
 use crate::components::{Collider, RigidBody, Transform};
 
@@ -21,7 +22,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Update the position/rotation and attributes of each rigidbody since we might have externally updated them
     let query = &mut data.get_mut(0).unwrap().all;
     for (_, components) in query.iter() {
-        // Check if we even need to update the position/rotation
+        // Check if we even need to update the transform
         if components.was_mutated::<Transform>().unwrap_or_default() {
             let rigidbody = components.get::<RigidBody>().unwrap();
             let transform = components.get::<Transform>().unwrap();
@@ -41,6 +42,10 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
                 r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
             }
+        }
+        // Check if we even need to update the collider
+        if components.was_mutated::<Collider>().unwrap_or_default() {
+            
         }
     }
 

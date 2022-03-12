@@ -1,8 +1,8 @@
 use cflake_engine::{
-    defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform},
+    defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform, ColliderGeometry, ColliderMaterial},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType},
-    veclib, World,
+    veclib, World, math::shapes::ShapeType,
 };
 // A game with a test camera
 fn main() {
@@ -47,9 +47,9 @@ fn init(world: &mut World) {
     };
     group.link(renderer).unwrap();
     // Add the rigidbody
-    group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
+    group.link(RigidBody::new(RigidBodyType::Static, veclib::Vector3::ZERO)).unwrap();
     // Add the collider
-    group.link(Collider::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0))).unwrap();
+    group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0))).unwrap();
     world.ecs.add(group).unwrap();
     for y in 0..20 {
         for x in 0..5 {
@@ -69,9 +69,9 @@ fn init(world: &mut World) {
                 };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
+                group.link(RigidBody::new(RigidBodyType::Dynamic, veclib::Vector3::ZERO)).unwrap();
                 // Add the collider
-                group.link(Collider::cuboid(veclib::Vector3::ONE)).unwrap();
+                group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::ONE), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();
             }
         }
@@ -94,9 +94,9 @@ fn init(world: &mut World) {
                 };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
+                group.link(RigidBody::new(RigidBodyType::Dynamic, veclib::Vector3::ZERO)).unwrap();
                 // Add the collider
-                group.link(Collider::sphere(0.5).with_friction(0.05).with_restitution(1.3)).unwrap();
+                group.link(Collider::new(ColliderGeometry::sphere(0.5), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();
             }
         }

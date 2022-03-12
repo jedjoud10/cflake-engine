@@ -69,7 +69,9 @@ impl ComputeShader {
             uniforms.bind();
             //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-            gl::Finish();
+            if _flush_and_barrier {
+                gl::Finish();
+            }
             //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
         }
 

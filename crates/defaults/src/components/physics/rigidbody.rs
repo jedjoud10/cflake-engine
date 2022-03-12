@@ -1,6 +1,5 @@
-pub use world::physics::rapier3d::prelude::RigidBodyType;
-use world::{ecs::component::Component, physics::rapier3d::prelude::RigidBodyHandle};
-
+use world::ecs::component::Component;
+pub use rapier3d::prelude::{RigidBodyHandle, RigidBodyType};
 // RigidBody component
 #[derive(Component)]
 pub struct RigidBody {
@@ -17,17 +16,12 @@ pub struct RigidBody {
 
 impl RigidBody {
     // Create a new rigidbody
-    pub fn new(_type: RigidBodyType) -> Self {
+    pub fn new(_type: RigidBodyType, velocity: veclib::Vector3<f32>) -> Self {
         Self {
             handle: RigidBodyHandle::invalid(),
-            velocity: veclib::Vector3::ZERO,
+            velocity,
             _type,
             sleeping: false,
         }
-    }
-    // With
-    pub fn with_velocity(mut self, velocity: veclib::Vector3<f32>) -> Self {
-        self.velocity = velocity;
-        self
     }
 }

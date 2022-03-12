@@ -1,6 +1,6 @@
 pub mod rigidbody_system;
 pub mod simulation_system;
-use world::physics::rapier3d;
+use rapier3d::*;
 
 // Convert a Rapier3D vector to a position
 pub fn vector_to_vec3(vec: rapier3d::prelude::Vector<f32>) -> veclib::Vector3<f32> {

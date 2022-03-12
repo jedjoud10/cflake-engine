@@ -35,7 +35,9 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // Now we can execute the compute shader and the read bytes command
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS));
     let compute = pipeline.compute_shaders.get(&generator.primary_compute).unwrap();
-    compute.run(pipeline, settings, uniforms, false).unwrap();
+    let i = std::time::Instant::now();
+    compute.run(pipeline, settings, uniforms, true).unwrap();
+    println!("Took {}ms to execute compute shader #1", i.elapsed().as_millis());
 
     // Set the uniforms for the second compute shader
     let program = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap().program();
@@ -51,7 +53,9 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2));
     let compute = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap();
-    compute.run(pipeline, settings, uniforms, false).unwrap();
+    let i = std::time::Instant::now();
+    compute.run(pipeline, settings, uniforms, true).unwrap();
+    println!("Took {}ms to execute compute shader #2", i.elapsed().as_millis());
     terrain.chunks_manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
 }
 
@@ -105,9 +109,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 let chunk = components.get_mut::<Chunk>().unwrap();
                 // We can set our state as not generating if none of the chunks want to generate voxel data
                 // We must start generating the voxel data for this chunk
-                let i = std::time::Instant::now();
                 generate(terrain, &world.pipeline, chunk, key);
-                println!("Took {}ms to execute compute shaders", i.elapsed().as_millis());
             }
         } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.chunks_manager.current_chunk_state {
             // We should fetch the shader storages now

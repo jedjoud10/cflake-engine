@@ -42,7 +42,7 @@ impl<Element> Storage<Element> {
                 gl::BindBuffer(_type, buffer);
                 let bits = match usage.access {
                     AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
-                    AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
+                    AccessType::ServerToClient => gl::MAP_READ_BIT,
                     AccessType::ServerToServer => gl::MAP_READ_BIT,
                 };
                 gl::BufferStorage(_type, (cap * size_of::<Element>()) as isize, ptr as *const c_void, bits);
@@ -83,14 +83,15 @@ impl<Element> Storage<Element> {
         }
     }
     // Update subdata
-    fn update_subdata(&mut self, ptr: *const Element, len: usize) {
+    fn update_subdata(&mut self, input: *const Element, len: usize) {
         unsafe {
             gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, ptr as *const c_void);
+            gl::BufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, input as *const c_void);
         }
     }
     // Read subdata
     pub(crate) unsafe fn read_subdata(&self, output: *mut Element, len: usize, _offset: usize) {
+        /*
         // Map the buffer
         let ptr = {
             gl::BindBuffer(self._type, self.buffer);
@@ -102,10 +103,15 @@ impl<Element> Storage<Element> {
             ptr
         };
         // Then copy to output
+        let i = std::time::Instant::now();
         std::ptr::copy(ptr as *const Element, output, len);
 
         // We can unmap the buffer now
+        let i = std::time::Instant::now();
         let _result = gl::UnmapBuffer(self._type);
+        */
+        gl::BindBuffer(self._type, self.buffer);
+        gl::GetBufferSubData(self._type, 0, (len * size_of::<Element>()) as isize, output as *mut c_void);
     }
 }
 
