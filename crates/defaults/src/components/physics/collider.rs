@@ -1,3 +1,4 @@
+use enum_as_inner::EnumAsInner;
 use world::{
     ecs::component::Component,
     math::shapes::{Cuboid, ShapeType, Sphere},
@@ -37,10 +38,14 @@ impl Default for Collider {
 }
 
 // Collider type
-#[derive(Clone)]
+#[derive(EnumAsInner, Clone)]
 pub enum ColliderGeometry {
     Shape(ShapeType),
-    Mesh(Handle<Mesh>),
+    Mesh {
+        mesh: Handle<Mesh>,
+        mass: f32,
+        com_offset: veclib::Vector3<f32>
+    },
 }
 
 impl ColliderGeometry {
@@ -57,7 +62,11 @@ impl ColliderGeometry {
             radius,
         }))
     }
-    pub fn mesh(mesh: Handle<Mesh>) -> Self {
-        ColliderGeometry::Mesh(mesh)
+    pub fn mesh(mesh: Handle<Mesh>, mass: f32) -> Self {
+        ColliderGeometry::Mesh {
+            mesh,
+            mass,
+            com_offset: veclib::Vector3::ZERO,
+        }
     }
 }

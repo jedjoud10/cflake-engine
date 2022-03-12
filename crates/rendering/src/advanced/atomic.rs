@@ -32,6 +32,9 @@ impl AtomicGroup {
     }
     // Read the atomic group's values
     pub fn get(&mut self) -> AtomicArray {
+        unsafe {
+            gl::MemoryBarrier(gl::ATOMIC_COUNTER_BARRIER_BIT);
+        }
         let mut output = AtomicArray::default();
         self.storage.read(&mut output);
         output

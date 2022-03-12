@@ -3,7 +3,7 @@ use world::{
     rendering::{basics::material::Material, pipeline::Handle},
 };
 
-use super::ChunkGenerationEvent;
+use super::ChunkPostGenerationEvent;
 
 // Terrain settings for simplicity
 pub struct TerrainSettings {
@@ -15,7 +15,7 @@ pub struct TerrainSettings {
     pub heuristic_settings: HeuristicSettings,
 
     // Chunk generation event
-    pub event: ChunkGenerationEvent,
+    pub event: ChunkPostGenerationEvent,
 
     // Mesh generator
     pub material: Handle<Material>,

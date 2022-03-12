@@ -11,7 +11,7 @@ use world::{
 };
 
 // Chunk generation event
-pub type ChunkGenerationEvent = Option<fn(&mut World, Handle<Mesh>, &StoredVoxelData)>;
+pub type ChunkPostGenerationEvent = Option<fn(&mut World, Handle<Mesh>, &StoredVoxelData)>;
 
 // Generation state of the current chunk
 #[derive(EnumAsInner, Debug, PartialEq)]
@@ -36,7 +36,7 @@ pub struct ChunksManager {
     pub priority_list: Vec<(EntityKey, f32)>,
     pub chunks_to_remove: Vec<EntityKey>,
     pub material: Handle<Material>,
-    pub event: ChunkGenerationEvent,
+    pub post_generation_event: ChunkPostGenerationEvent,
 
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation

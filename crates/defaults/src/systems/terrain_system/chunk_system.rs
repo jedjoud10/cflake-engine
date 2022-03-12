@@ -1,12 +1,12 @@
 use crate::{
-    components::{Camera, Transform},
-    globals::{self, ChunksManager},
+    components::{Camera, Transform, Chunk, Collider},
+    globals::{self, ChunksManager, GlobalWorldData, Terrain},
 };
 use world::{
     ecs::{
         self,
         component::{ComponentQueryParameters, ComponentQuerySet},
-        entity::EntityKey,
+        entity::{EntityKey, ComponentLinkingGroup},
         ECSManager,
     },
     input::Keys,
@@ -17,8 +17,7 @@ use world::{
 // Add a single chunk to the world
 fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
-    let _entity = ecs::entity::Entity::default();
-    let mut group = ecs::entity::ComponentLinkingGroup::default();
+    let mut group = ComponentLinkingGroup::default();
 
     // Link the nessecary components
     // Transform
@@ -32,9 +31,9 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     group.link::<Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
-    let chunk = crate::components::Chunk { coords };
-    let priority = crate::components::Chunk::calculate_priority(coords, camera_position, camera_forward);
-    group.link::<crate::components::Chunk>(chunk).unwrap();
+    let chunk = Chunk { coords };
+    let priority = Chunk::calculate_priority(coords, camera_position, camera_forward);
+    group.link::<Chunk>(chunk).unwrap();
 
     // Add the entity to the world
     let id = ecs.add(group).unwrap();
@@ -54,12 +53,12 @@ fn run(world: &mut World, data: ComponentQuerySet) {
     // Get the global terrain component
     // Get the camera position
     let (camera_pos, camera_dir) = {
-        let camkey = world.globals.get::<globals::GlobalWorldData>().unwrap().main_camera;
+        let camkey = world.globals.get::<GlobalWorldData>().unwrap().main_camera;
         let camquery = data.get(0).unwrap();
         let transform = camquery.all.get(&camkey).unwrap().get::<Transform>().unwrap();
         (transform.position, transform.forward())
     };
-    let terrain_ = world.globals.get_mut::<globals::Terrain>();
+    let terrain_ = world.globals.get_mut::<Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {
         // No need to update the terrain
         return;

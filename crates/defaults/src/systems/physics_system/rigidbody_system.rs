@@ -1,14 +1,16 @@
-use crate::components::{Collider, RigidBody, Transform};
+use crate::components::{Collider, RigidBody, Transform, ColliderGeometry};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 
 use world::ecs::component::ComponentQueryParameters;
 use rapier3d::na::{Isometry, Point3};
-use rapier3d::prelude::{RigidBodyBuilder, SharedShape, ColliderBuilder};
+use rapier3d::prelude::{RigidBodyBuilder, SharedShape, ColliderBuilder, MassProperties};
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
 use world::{ecs::component::ComponentQuerySet};
+
+use super::vec3_to_point;
 
 // Convert a rendering mesh to it's SharedShape counterpart
 fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
@@ -29,11 +31,11 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
 // Get the Rapier3D shared shape from a collider components
 fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &Collider) -> SharedShape {
     match &collider.geometry {
-        crate::components::ColliderGeometry::Shape(shape) => match shape {
+        ColliderGeometry::Shape(shape) => match shape {
             ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        crate::components::ColliderGeometry::Mesh(mesh) => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
+        ColliderGeometry::Mesh { mesh, mass, com_offset } => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
     }
 }
 
@@ -54,11 +56,17 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 translation: vec3_to_translation(transform.position),
             })
             .build();
-        let r_collider = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), collider))
+        let builder = ColliderBuilder::new(get_shared_shape(&world.pipeline, &transform.scale_matrix(), collider))
             .friction(collider.material.friction)
-            .restitution(collider.material.restitution)
-            //.mass_properties(MassProperties::new(rapier3d::prelude::Point::new(0.0, 0.0, 0.0), 10.0, rapier3d::na::zero()))
-            .build();
+            .restitution(collider.material.restitution);
+
+        // Set mass for mesh colliders manually
+        let builder = if let Some((_, &mass, &com_offset)) = collider.geometry.as_mesh() {            
+            builder.mass_properties(MassProperties::new(vec3_to_point(com_offset), mass, rapier3d::na::zero()))
+        } else { builder };
+
+        // Build
+        let r_collider = builder.build();
 
         // Add the collider and rigidbody
         let sim = &mut world.physics;

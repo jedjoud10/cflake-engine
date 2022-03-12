@@ -41,6 +41,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
                 r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
+                r_rigidbody.set_angvel(vec3_to_vector(rigidbody.angular_velocity), true);
             }
         }
         // Check if we even need to update the collider
@@ -61,6 +62,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 // Update the components
                 let mut rigidbody = components.get_mut::<RigidBody>().unwrap();
                 rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
+                rigidbody.angular_velocity = vector_to_vec3(*r_rigidbody.angvel());
                 let mut transform = components.get_mut::<Transform>().unwrap();
                 transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
                 transform.rotation = rotation_to_quat(*r_rigidbody.rotation());

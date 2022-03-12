@@ -47,7 +47,7 @@ fn init(world: &mut World) {
     };
     group.link(renderer).unwrap();
     // Add the rigidbody
-    group.link(RigidBody::new(RigidBodyType::Static, veclib::Vector3::ZERO)).unwrap();
+    group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
     // Add the collider
     group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0))).unwrap();
     world.ecs.add(group).unwrap();
@@ -69,7 +69,7 @@ fn init(world: &mut World) {
                 };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic, veclib::Vector3::ZERO)).unwrap();
+                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
                 group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::ONE), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();
@@ -94,7 +94,7 @@ fn init(world: &mut World) {
                 };
                 group.link(renderer).unwrap();
                 // Add the rigidbody
-                group.link(RigidBody::new(RigidBodyType::Dynamic, veclib::Vector3::ZERO)).unwrap();
+                group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
                 group.link(Collider::new(ColliderGeometry::sphere(0.5), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();

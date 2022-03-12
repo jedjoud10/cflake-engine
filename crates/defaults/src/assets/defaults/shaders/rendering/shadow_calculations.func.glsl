@@ -1,5 +1,5 @@
 const float SHADOW_BIAS = #constant shadow_bias
-const float NORMAL_OFFSET = 3.0;
+const float NORMAL_OFFSET = 1.2;
 
 // Calculate if a specific fragment is in shadow or not
 float calculate_shadows(vec3 position, vec3 normal, vec3 light_dir, mat4 lightspace_matrix, sampler2DShadow shadow_map_texture) {

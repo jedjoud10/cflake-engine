@@ -8,6 +8,7 @@ pub struct RigidBody {
 
     // Velocity
     pub velocity: veclib::Vector3<f32>,
+    pub angular_velocity: veclib::Vector3<f32>,
 
     // The state of the rigidbody
     pub _type: RigidBodyType,
@@ -16,10 +17,11 @@ pub struct RigidBody {
 
 impl RigidBody {
     // Create a new rigidbody
-    pub fn new(_type: RigidBodyType, velocity: veclib::Vector3<f32>) -> Self {
+    pub fn new(_type: RigidBodyType) -> Self {
         Self {
             handle: RigidBodyHandle::invalid(),
-            velocity,
+            velocity: veclib::Vector3::ZERO,
+            angular_velocity: veclib::Vector3::ZERO,
             _type,
             sleeping: false,
         }

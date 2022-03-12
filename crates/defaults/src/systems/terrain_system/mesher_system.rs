@@ -1,9 +1,10 @@
 use std::time::Instant;
 
 use crate::{
-    components::{Chunk, Renderer, Transform},
-    globals::ChunkGenerationState,
+    components::{Chunk, Renderer, Transform, Collider, ColliderGeometry, RigidBody},
+    globals::{ChunkGenerationState, ChunkPostGenerationEvent},
 };
+use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
 use world::{
     ecs::{
         component::{ComponentQueryParameters, ComponentQuerySet},
@@ -40,7 +41,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 },
             );
             // Generate the mesh and add it to the chunk entity
-            let mesh = mesher.build();
+            let mesh = mesher.build();            
             let mesh = world.pipeline.meshes.insert(mesh);
             let cloned = mesh.clone();
 
@@ -60,7 +61,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
-            let event  = terrain.chunks_manager.event.clone();
+            let event: ChunkPostGenerationEvent  = terrain.chunks_manager.post_generation_event.clone();
             if let Some(event) = event {
                 event(world, cloned, voxel_data)
             }
@@ -86,13 +87,23 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Material>) -> ComponentLinkingGroup {
     // First time we link the renderer
     let mut group = ComponentLinkingGroup::default();
-    group
-        .link(Renderer {
-            mesh,
-            material,
-            ..Default::default()
-        })
-        .unwrap();
+
+    // Add the renderer
+    let renderer = Renderer {
+        mesh: mesh.clone(),
+        material,
+        ..Default::default()
+    };
+    group.link(renderer).unwrap();
+
+    // Add the collider
+    let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
+    group.link(collider).unwrap();
+
+    // Add the static rigidbody
+    let rigidbody = RigidBody::new(RigidBodyType::Static);
+    group.link(rigidbody).unwrap();
+
     group
 }
 // Create a mesher system

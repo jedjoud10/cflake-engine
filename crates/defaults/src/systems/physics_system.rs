@@ -13,9 +13,21 @@ pub fn vec3_to_vector(pos: veclib::Vector3<f32>) -> rapier3d::prelude::Vector<f3
 pub fn vec3_to_translation(pos: veclib::Vector3<f32>) -> rapier3d::prelude::Translation<f32> {
     rapier3d::prelude::Translation::<f32>::new(pos.x, pos.y, pos.z)
 }
+// Convert a position to a Rapier3D point
+pub fn vec3_to_point(pos: veclib::Vector3<f32>) -> rapier3d::prelude::Point<f32> {
+    rapier3d::prelude::Point::<f32>::new(pos.x, pos.y, pos.z)
+}
 // Convert a quaternion to a Rapier3D rotation
 pub fn quat_to_rotation(quat: veclib::Quaternion<f32>) -> rapier3d::prelude::Rotation<f32> {
-    rapier3d::na::UnitQuaternion::from_quaternion(rapier3d::na::Quaternion::new(quat[0], quat[1], quat[2], quat[3]))
+    // Bruh
+    // TODO: Please, please, PLEASE WORK ON THE VECTOR LIBRARY
+    let (f1, f2, f3, f4) = (quat[0], quat[1], quat[2], quat[3]);
+    let (i1, i2, i3, i4) = (veclib::Quaternion::<f32>::IDENTITY[0], veclib::Quaternion::<f32>::IDENTITY[1], veclib::Quaternion::<f32>::IDENTITY[2], veclib::Quaternion::<f32>::IDENTITY[3]);
+    if (f1 == i1 && f2 == i2 && f3 == i3 && f4 == i4) {
+        rapier3d::na::UnitQuaternion::identity()
+    } else {
+        rapier3d::na::UnitQuaternion::from_quaternion(rapier3d::na::Quaternion::new(quat[0], quat[1], quat[2], quat[3]))
+    }
 }
 // Convert a Rapier3D rotation to a quaternion
 pub fn rotation_to_quat(quat: rapier3d::prelude::Rotation<f32>) -> veclib::Quaternion<f32> {

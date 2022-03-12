@@ -23,7 +23,6 @@ impl<Element> Buffer for SimpleBuffer<Element> {
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Init and fill
-        let mut usage = usage;
         let storage = Storage::new(len, len, ptr, _type, usage);
         Self { storage }
     }
