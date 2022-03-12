@@ -13,7 +13,7 @@ use spin_sleep::LoopHelper;
 pub use world::*;
 
 // Start le engine
-pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
+pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init_systems: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = io::IOManager::new(author_name, app_name);
     let config: Settings = io.load("config/game_config.json").unwrap_or_else(|_| {
@@ -46,11 +46,12 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     let mut world = World::new(config, io, pipeline, renderer);
 
     // Calling the callback
-    println!("Calling World Initialization callback");
     {
         // Load the default systems first
         defaults::start_before_user_sytems(&mut world);
+        init_systems(&mut world);
         defaults::start_after_user_systems(&mut world);
+        println!("Calling World Initialization callback");
         init_world(&mut world);
     }
 

@@ -19,7 +19,11 @@ impl<'a, World> SystemBuilder<'a, World> {
     }
     // Add a subsystem with specific component query parameters
     pub fn query(mut self, params: ComponentQueryParameters) -> Self {
-        self.system.subsystems.push(SubSystem { cbitfield: params.cbitfield, all: Default::default(), delta: Default::default() });
+        self.system.subsystems.push(SubSystem {
+            cbitfield: params.cbitfield,
+            all: Default::default(),
+            delta: Default::default(),
+        });
         self
     }
     // Set the "Run System" event of this system

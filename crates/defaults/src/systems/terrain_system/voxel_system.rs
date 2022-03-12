@@ -1,8 +1,14 @@
 use std::time::Instant;
 
-use crate::{globals::ChunkGenerationState, components::{Chunk, Transform}};
+use crate::{
+    components::{Chunk, Transform},
+    globals::ChunkGenerationState,
+};
 use world::{
-    ecs::{entity::EntityKey, component::{ComponentQuerySet, ComponentQueryParameters}},
+    ecs::{
+        component::{ComponentQueryParameters, ComponentQuerySet},
+        entity::EntityKey,
+    },
     rendering::{
         advanced::{compute::ComputeShaderExecutionSettings, raw::Buffer},
         basics::uniforms::Uniforms,

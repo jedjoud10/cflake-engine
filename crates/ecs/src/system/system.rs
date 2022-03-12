@@ -46,41 +46,44 @@ impl<World> System<World> {
 
         // Get the deltas
         let mut deltas = {
-            self.subsystems.iter().map(|subsystem| {
-                let mut delta = subsystem.delta.borrow_mut();
-                let mut added = std::mem::take(&mut delta.added);
-                let removed = std::mem::take(&mut delta.removed);
-                
-                // Apply the deltas as soon as possible
-                let mut all = subsystem.all.borrow_mut();
-                
-                // Do this so we don't need to clone anything in the next step for unused entities
-                for (key, _) in removed.iter() {
-                    added.remove(key);
-                }
+            self.subsystems
+                .iter()
+                .map(|subsystem| {
+                    let mut delta = subsystem.delta.borrow_mut();
+                    let mut added = std::mem::take(&mut delta.added);
+                    let removed = std::mem::take(&mut delta.removed);
 
-                // Add
-                for (key, components) in added.iter() {
-                    all.insert(*key, LinkedComponents {
-                        components: components.components.clone(),
-                        mutated_components: components.mutated_components.clone(),
-                        linked: components.linked.clone(),
-                        key: components.key.clone(),
-                    });
-                }
+                    // Apply the deltas as soon as possible
+                    let mut all = subsystem.all.borrow_mut();
 
-                // Remove
-                for (key, _) in removed.iter() {
-                    all.remove(key);
-                    added.remove(key);
-                }
+                    // Do this so we don't need to clone anything in the next step for unused entities
+                    for (key, _) in removed.iter() {
+                        added.remove(key);
+                    }
 
-                // Output
-                LinkedComponentsDelta {
-                    added,
-                    removed,
-                }
-            }).collect::<Vec<_>>()
+                    // Add
+                    for (key, components) in added.iter() {
+                        all.insert(
+                            *key,
+                            LinkedComponents {
+                                components: components.components.clone(),
+                                mutated_components: components.mutated_components.clone(),
+                                linked: components.linked.clone(),
+                                key: components.key.clone(),
+                            },
+                        );
+                    }
+
+                    // Remove
+                    for (key, _) in removed.iter() {
+                        all.remove(key);
+                        added.remove(key);
+                    }
+
+                    // Output
+                    LinkedComponentsDelta { added, removed }
+                })
+                .collect::<Vec<_>>()
         };
 
         // Run
@@ -90,7 +93,10 @@ impl<World> System<World> {
                 .subsystems
                 .iter()
                 .zip(deltas.iter_mut())
-                .map(|(subsystem, delta)| ComponentQuery { all: subsystem.all.borrow_mut(), delta })
+                .map(|(subsystem, delta)| ComponentQuery {
+                    all: subsystem.all.borrow_mut(),
+                    delta,
+                })
                 .collect::<Vec<_>>();
             run_system_evn(world, queries);
         }

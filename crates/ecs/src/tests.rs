@@ -190,11 +190,10 @@ pub mod test {
         builder.query(params).query(params2).event(run_internally).build();
 
         // Create a new entity
-        let entity = Entity::default();
         let mut group = ComponentLinkingGroup::default();
         group.link::<Name>(Name::new("John")).unwrap();
         group.link::<Tagged>(Tagged::new("Person")).unwrap();
-        let entity_key = ecs.add(entity, group).unwrap();
+        let entity_key = ecs.add(group).unwrap();
         assert!(!entity_key.is_null());
         let systems = ecs.systems.inner.borrow();
         let system = systems.get(0).unwrap();

@@ -1,7 +1,10 @@
-use crate::components::{Camera, Renderer, Transform, Light};
+use crate::components::{Camera, Light, Renderer, Transform};
 use world::{
     ecs::component::{ComponentQueryParameters, ComponentQuerySet},
-    rendering::{pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel}, basics::lights::LightTransform},
+    rendering::{
+        basics::lights::LightTransform,
+        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
+    },
     World,
 };
 
@@ -26,7 +29,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             projm_viewm: camera.projm * camera.viewm,
         }
     });
-    
+
     // If there isn't a camera, no need to render anything
     if camera.is_none() {
         return;
@@ -78,19 +81,24 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
     // Get the lights
     let query = data.get(2).unwrap();
-    let lights = query.all.iter().map(|(_, linked)| {
-        // Get the linked components
-        let light = linked.get::<Light>().unwrap();
-        let transform = linked.get::<Transform>().unwrap();
-        
-        // Convert
-        (&light.light, LightTransform {
-            position: &transform.position,
-            rotation: &transform.rotation,
+    let lights = query
+        .all
+        .iter()
+        .map(|(_, linked)| {
+            // Get the linked components
+            let light = linked.get::<Light>().unwrap();
+            let transform = linked.get::<Transform>().unwrap();
+
+            // Convert
+            (
+                &light.light,
+                LightTransform {
+                    position: &transform.position,
+                    rotation: &transform.rotation,
+                },
+            )
         })
-    }).collect::<Vec<_>>();
-
-
+        .collect::<Vec<_>>();
 
     // Rendering settings
     let settings = RenderingSettings {

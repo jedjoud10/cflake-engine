@@ -1,9 +1,13 @@
 use std::time::Instant;
 
-use crate::{components::{Chunk, Transform, Renderer}, globals::ChunkGenerationState};
+use crate::{
+    components::{Chunk, Renderer, Transform},
+    globals::ChunkGenerationState,
+};
 use world::{
     ecs::{
-        entity::{ComponentLinkingGroup, ComponentUnlinkGroup}, component::{ComponentQuerySet, ComponentQueryParameters},
+        component::{ComponentQueryParameters, ComponentQuerySet},
+        entity::{ComponentLinkingGroup, ComponentUnlinkGroup},
     },
     rendering::{
         basics::{material::Material, mesh::Mesh},
@@ -25,7 +29,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     }
     if let Ok(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
-        if let ChunkGenerationState::EndVoxelDataGeneration(key, true) = terrain.chunks_manager.current_chunk_state  {
+        if let ChunkGenerationState::EndVoxelDataGeneration(key, true) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
             let coords = linked.get_mut::<Chunk>().unwrap().coords;
@@ -53,13 +57,11 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 renderer.mesh = mesh;
             }
 
-
             // We have created voxel data for this chunk, and it is valid (it contains a surface)
             terrain.chunks_manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
-
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.chunks_manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
@@ -75,7 +77,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // We still gotta update the current chunk state though
             terrain.chunks_manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
             let voxel_data = &terrain.voxel_generator.stored.clone();
-            
         }
     }
 }

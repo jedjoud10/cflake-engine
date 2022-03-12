@@ -6,7 +6,7 @@ use std::{cell::UnsafeCell, sync::Arc};
 use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
-    system::{SystemSet, SubSystem},
+    system::{SubSystem, SystemSet},
     utils::{ComponentError, ComponentLinkingError, ComponentUnlinkError},
 };
 
@@ -37,7 +37,7 @@ impl ComponentSet {
     // Link some components to an entity
     pub fn link<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         for (cbitfield, boxed) in group.linked_components {
-            let (ckey, _ptr) = self.add(boxed, cbitfield);
+            let (ckey, _ptr) = self.add(boxed);
             let entity = entities.get_mut(key).unwrap();
             entity.components.insert(cbitfield, ckey);
         }
@@ -169,7 +169,7 @@ impl ComponentSet {
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add(&mut self, boxed: EnclosedComponent, _: Bitfield<u32>) -> (ComponentKey, *mut EnclosedComponent) {
+    fn add(&mut self, boxed: EnclosedComponent) -> (ComponentKey, *mut EnclosedComponent) {
         // UnsafeCell moment
         let mut components = self.components.write();
         let cell = UnsafeCell::new(boxed);

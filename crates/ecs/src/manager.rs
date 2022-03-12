@@ -48,8 +48,8 @@ impl<World> ECSManager<World> {
 
     // Wrapper functions
     // Entity adding/removing
-    pub fn add(&mut self, entity: Entity, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
-        let key = self.entities.add(entity)?;
+    pub fn add(&mut self, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
+        let key = self.entities.add(Entity::default())?;
         // Then link
         self.components
             .link(key, &mut self.entities, &mut self.systems, group)

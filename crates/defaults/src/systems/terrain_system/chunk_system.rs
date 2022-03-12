@@ -1,6 +1,14 @@
-use crate::{globals::{ChunksManager, self}, components::{Transform, Camera}};
+use crate::{
+    components::{Camera, Transform},
+    globals::{self, ChunksManager},
+};
 use world::{
-    ecs::{self, entity::EntityKey, component::{ComponentQuerySet, ComponentQueryParameters}, ECSManager},
+    ecs::{
+        self,
+        component::{ComponentQueryParameters, ComponentQuerySet},
+        entity::EntityKey,
+        ECSManager,
+    },
     input::Keys,
     terrain::ChunkCoords,
     World,
@@ -16,7 +24,11 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     // Transform
     let position = veclib::Vector3::<f32>::from(coords.position);
     let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
-    let transform = Transform::default().with_position(position).with_scale(scale);
+    let transform = Transform {
+        position,
+        scale,
+        ..Default::default()
+    };
     group.link::<Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
@@ -25,7 +37,7 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>,
     group.link::<crate::components::Chunk>(chunk).unwrap();
 
     // Add the entity to the world
-    let id = ecs.add(entity, group).unwrap();
+    let id = ecs.add(group).unwrap();
     (id, priority)
 }
 // Remove a single chunk

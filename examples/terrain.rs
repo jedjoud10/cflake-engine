@@ -21,12 +21,13 @@ use cflake_engine::{
     World,
 };
 
+
+
 // A game with some test terrain
 fn main() {
-    cflake_engine::start("DevJed", "cflake-engine-example-terrain", init)
+    cflake_engine::start("DevJed", "cflake-engine-example-terrain", init, cflake_engine::defaults::systems::flycam_system::system)
 }
 // Init the terrain world
-
 fn init(world: &mut World) {
     cflake_engine::assets::init!("/examples/assets/");
     cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
@@ -45,9 +46,8 @@ fn init(world: &mut World) {
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
     group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
-    group.link_default::<components::Transform>().unwrap();
-    let entity = Entity::default();
-    let _id = world.ecs.add(entity, group).unwrap();
+    group.link(Transform::default()).unwrap();
+    world.ecs.add(group).unwrap();
 
     // Create the directional light source
     let light = components::Light {
@@ -55,12 +55,15 @@ fn init(world: &mut World) {
             params: LightParameters::default(),
         },
     };
-    let light_transform = components::Transform::default().with_rotation(veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()));
+    let light_transform = Transform {
+        rotation: veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()),
+        ..Default::default()
+    };
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();
     group.link(light_transform).unwrap();
     group.link(light).unwrap();
-    world.ecs.add(Entity::default(), group).unwrap();
+    world.ecs.add(group).unwrap();
 
     // Load a terrain material
     // Load the shader first

@@ -3,7 +3,7 @@ use world::physics::PHYSICS_TIME_STEP;
 use world::World;
 use world::{ecs::component::ComponentQuerySet, physics::rapier3d::na::Isometry};
 
-use crate::components::{Transform, RigidBody, Collider};
+use crate::components::{Collider, RigidBody, Transform};
 
 use super::{quat_to_rotation, rotation_to_quat, vec3_to_translation, vec3_to_vector, vector_to_vec3};
 
