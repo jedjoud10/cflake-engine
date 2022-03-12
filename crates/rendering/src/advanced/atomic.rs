@@ -26,7 +26,6 @@ impl AtomicGroup {
         }
     }
     // Wrapper functions around the inner storage
-
     // Set the atomic group's values
     pub fn set(&mut self, arr: AtomicArray) {
         self.storage.write(&arr);
