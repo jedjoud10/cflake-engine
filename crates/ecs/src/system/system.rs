@@ -53,10 +53,19 @@ impl<World> System<World> {
                 let mut delta = subsystem.delta.borrow_mut();
                 let added = std::mem::take(&mut delta.added);
                 let removed = std::mem::take(&mut delta.removed);
-                // Apply the removal deltas as soon as possible
+                // Apply the deltas as soon as possible
                 let mut all = subsystem.all.borrow_mut();
                 for (key, _) in removed.iter() {
                     all.remove(key);
+                }
+                // Add
+                for (key, components) in added.iter() {
+                    all.insert(*key, LinkedComponents {
+                        components: components.components.clone(),
+                        mutated_components: components.mutated_components.clone(),
+                        linked: components.linked.clone(),
+                        key: components.key.clone(),
+                    });
                 }
                 LinkedComponentsDelta {
                     added,
@@ -79,15 +88,6 @@ impl<World> System<World> {
                 })
                 .collect::<Vec<_>>();
             run_system_evn(world, queries);
-        }
-
-        // Apply the addition deltas
-        for (delta, (subsystem, _)) in deltas.into_iter().zip(self.subsystems.iter()) {
-            let mut all = subsystem.all.borrow_mut();
-            // Add
-            for (key, components) in delta.added {
-                all.insert(key, components);
-            }
         }
     }
 }

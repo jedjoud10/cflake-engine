@@ -163,8 +163,8 @@ pub mod test {
             let len1 = query1.all.len();
             let len2 = query2.all.len();
             if *_world == 0 {
-                assert_eq!(len1, 0);
-                assert_eq!(len2, 0);
+                assert_eq!(len1, 1);
+                assert_eq!(len2, 1);
                 assert_eq!(query1.delta.added.len(), 1);
                 assert_eq!(query2.delta.added.len(), 1);
             } else if *_world == 1 {
