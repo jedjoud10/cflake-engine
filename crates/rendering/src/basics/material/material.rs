@@ -15,9 +15,20 @@ pub struct Material {
 }
 
 impl PipelineCollectionElement for Material {
-    fn added(&mut self, _handle: &Handle<Self>) {}
+    fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
+        pipeline.materials.insert(self)
+    }
 
-    fn disposed(self) {}
+    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {
+        pipeline.materials.get(handle)
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> Option<&'a mut Self> {
+        pipeline.materials.get_mut(handle)
+    }
+
+    fn disposed(self) {
+    }
 }
 
 impl Default for Material {

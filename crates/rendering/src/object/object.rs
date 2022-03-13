@@ -10,8 +10,8 @@ where
     fn add(self, pipeline: &mut Pipeline) -> Handle<Self>;
 
     // Get, get_mut
-    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> &'a Self;
-    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> &'a mut Self;
+    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self>;
+    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> Option<&'a mut Self>;
 
     // Called when the object has 0 strong handles, thus it gets destroyed
     fn disposed(self);

@@ -20,16 +20,16 @@ use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCame
 #[derive(Getters, Setters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
-    meshes: PipelineCollection<Mesh>,
-    shaders: PipelineCollection<Shader>,
-    compute_shaders: PipelineCollection<ComputeShader>,
+    pub(crate) meshes: PipelineCollection<Mesh>,
+    pub(crate) shaders: PipelineCollection<Shader>,
+    pub(crate) compute_shaders: PipelineCollection<ComputeShader>,
 
     // Multiple texture types
-    textures: PipelineCollection<Texture2D>,
-    bundled_textures: PipelineCollection<BundledTexture2D>,
+    pub(crate) textures: PipelineCollection<Texture2D>,
+    pub(crate) bundled_textures: PipelineCollection<BundledTexture2D>,
 
     // Others
-    materials: PipelineCollection<Material>,
+    pub(crate) materials: PipelineCollection<Material>,
 
     // Window
     window: Window,
