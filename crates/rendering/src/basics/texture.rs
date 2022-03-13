@@ -1,12 +1,12 @@
 mod format;
 mod layout;
-mod settings;
 mod texture;
 mod variants;
 mod params;
+mod bytes;
+pub use bytes::*;
 pub use params::*;
 pub use variants::*;
 pub use format::*;
 pub use layout::*;
-pub use settings::*;
 pub use texture::*;

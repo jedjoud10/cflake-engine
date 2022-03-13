@@ -4,7 +4,7 @@ use crate::basics::{
     material::{Material, MaterialTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, TextureBuilder, TextureFilter, Texture2D},
+    texture::{Texture, TextureBuilder, TextureFilter, Texture2D, TextureParams, TextureHandle},
 };
 
 use super::{Handle, Pipeline};
@@ -35,27 +35,25 @@ impl DefaultElements {
     pub(crate) fn new(pipeline: &mut Pipeline) -> Self {
         // Default textures that are created at runtime
         let white = TextureBuilder::default()
-            .bytes(vec![255, 255, 255, 255])
+            .params(TextureParams::from_bytes(vec![255, 255, 255, 255]))
             .dimensions(1, 1)
             .build();
         let white = pipeline.textures.insert(white);
 
         let black = TextureBuilder::default()
-            .bytes(vec![0, 0, 0, 255])
+        .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
             .dimensions(1, 1)
             .build();
         let black = pipeline.textures.insert(black);
 
         let normal_map = TextureBuilder::default()
-            .bytes(vec![127, 127, 255, 255])
+            .params(TextureParams::from_bytes(vec![127, 127, 255, 255]))
             .dimensions(1, 1)
             .build();
         let normal_map = pipeline.textures.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/missing.png").unwrap())
-            .filter(TextureFilter::Nearest)
-            .build();
+        let missing = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap()).build();
         let missing = pipeline.textures.insert(missing);
 
         // Default mesh
@@ -79,9 +77,9 @@ impl DefaultElements {
         let material = Material {
             shader: shader.clone(),
             textures: MaterialTextures {
-                diffuse_map: missing.clone(),
-                normal_map: normal_map.clone(),
-                emissive_map: black.clone(),
+                diffuse_map: TextureHandle::Texture2D(missing.clone()),
+                normal_map: TextureHandle::Texture2D(normal_map.clone()),
+                emissive_map: TextureHandle::Texture2D(black.clone()),
             },
             ..Default::default()
         };

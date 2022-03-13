@@ -1,23 +1,18 @@
 use assets::Asset;
 use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
+use image::GenericImageView;
 
-use crate::basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureBits, get_ifd, TextureParams};
+use crate::{basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, get_ifd, TextureParams, Texture, get_texel_byte_size, TextureBytes}, object::PipelineElement};
 
-// Loaded bytes
-pub type LoadedBytes = Option<Vec<u8>>;
 // A simple two dimensional OpenGL texture
 #[derive(Default, Getters, CopyGetters)]
 pub struct Texture2D {
     // The OpenGL id for this texture
     #[getset(get_copy = "pub(crate)")]
     buffer: GLuint,
-    // The bytes stored in this texture
-    #[getset(get = "pub")]
-    bytes: LoadedBytes,
 
     // Params
-    #[getset(get = "pub")]
     params: TextureParams,
 
     // Texture dimensions
@@ -25,6 +20,21 @@ pub struct Texture2D {
     width: u16,
     #[getset(get_copy = "pub")]
     height: u16,
+}
+
+impl Texture for Texture2D {
+    fn target(&self) -> GLuint {
+        gl::TEXTURE_2D
+    }
+    fn texture(&self) -> GLuint {
+        self.buffer
+    }    
+    fn params(&self) -> &TextureParams {
+        &self.params
+    }
+    fn count_texels(&self) -> usize {
+        self.width as usize * self.height as usize
+    }
 }
 
 // Builder
@@ -39,10 +49,6 @@ impl TextureBuilder {
         Self { inner: texture }
     }
     // This burns my eyes
-    pub fn bytes(mut self, bytes: Vec<u8>) -> Self {
-        self.inner.bytes = bytes;
-        self
-    }
     pub fn params(mut self, params: TextureParams) -> Self {
         self.inner.params = params;
         self
@@ -55,6 +61,24 @@ impl TextureBuilder {
     // Build
     pub fn build(self) -> Texture2D {
         self.inner
+    }
+}
+
+impl PipelineElement for Texture2D {
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
+        todo!()
+    }
+
+    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
+        todo!()
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
+        todo!()
+    }
+
+    fn disposed(self) {
+        todo!()
     }
 }
 
@@ -72,13 +96,13 @@ impl Asset for Texture2D {
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
         Some(
             TextureBuilder::default()
-                .bytes(bytes)
                 .dimensions(width, height)
                 .params(TextureParams {
+                    bytes: TextureBytes::Loaded(bytes),
                     layout: TextureLayout::default(),
                     filter: TextureFilter::Linear,
                     wrap: TextureWrapMode::ClampToEdge(None),
-                    bits: TextureBits::MIPMAPS | TextureBits::SRGB,
+                    flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
                 })
                 .build(),
         )

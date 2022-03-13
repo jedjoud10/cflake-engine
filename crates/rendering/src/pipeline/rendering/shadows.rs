@@ -5,7 +5,7 @@ use gl::types::GLuint;
 use crate::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode, TextureBits},
+        texture::{Texture, TextureBuilder, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode, TextureFlags, Texture2D, TextureParams},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -17,7 +17,7 @@ use super::{RenderingError, ShadowedModel};
 pub struct ShadowMapping {
     // Shadow-casting
     framebuffer: GLuint,
-    pub(crate) depth_texture: Handle<Texture>,
+    pub(crate) depth_texture: Handle<Texture2D>,
     shader: Handle<Shader>,
 
     // Matrices
@@ -39,14 +39,12 @@ impl ShadowMapping {
 
         // Create the depth texture
         let texture = TextureBuilder::default()
-            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(shadow_resolution.max(1), shadow_resolution.max(1))))
-            .filter(TextureFilter::Linear)
-            .wrap_mode(TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())))
-            .bits(TextureBits::SHADOWTEX)
-            .layout(TextureLayout {
-                data: DataType::U8,
-                internal_format: TextureFormat::DepthComponent16,
-                resizable: false,
+            .dimensions(shadow_resolution.max(1), shadow_resolution.max(1))
+            .params(TextureParams {
+                layout: TextureLayout { data: DataType::U8, internal_format: TextureFormat::DepthComponent16, resizable: false },
+                filter: TextureFilter::Linear,
+                wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
+                ..Default::default()
             })
             .build();
         let texture = pipeline.textures.insert(texture);
@@ -129,7 +127,7 @@ impl ShadowMapping {
 
         // Reset
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
         gl::Enable(gl::CULL_FACE);
 
         Ok(())

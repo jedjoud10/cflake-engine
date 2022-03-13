@@ -1,20 +1,20 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use super::{Handle, PipelineElemKey};
-use crate::object::PipelineCollectionElement;
+use crate::object::PipelineElement;
 
 use parking_lot::Mutex;
 use slotmap::SlotMap;
 
 // A pipeline collection that contains multiple elements of the same type
-pub struct PipelineCollection<T: PipelineCollectionElement> {
+pub struct PipelineCollection<T: PipelineElement> {
     // The inner storage
     inner: SlotMap<PipelineElemKey, T>,
     // Keep track of the elements that must be removed
     to_remove: Arc<Mutex<Vec<PipelineElemKey>>>,
 }
 
-impl<T: PipelineCollectionElement> Default for PipelineCollection<T> {
+impl<T: PipelineElement> Default for PipelineCollection<T> {
     fn default() -> Self {
         Self {
             inner: Default::default(),
@@ -23,7 +23,7 @@ impl<T: PipelineCollectionElement> Default for PipelineCollection<T> {
     }
 }
 
-impl<T: PipelineCollectionElement> PipelineCollection<T> {
+impl<T: PipelineElement> PipelineCollection<T> {
     // Update the collection, and remove any elements that have no longer have strong Handles
     pub fn dispose_dangling(&mut self) {
         let mut to_remove_locked = self.to_remove.lock();
@@ -60,7 +60,6 @@ impl<T: PipelineCollectionElement> PipelineCollection<T> {
             to_remove: Some(self.to_remove.clone()),
             _phantom: PhantomData::default(),
         };
-        elem.added(&handle);
         handle
     }
 }

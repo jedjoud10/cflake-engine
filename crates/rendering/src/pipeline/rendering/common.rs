@@ -42,12 +42,12 @@ pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedMod
     let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
 
     // And set them
-    uniforms.set_mat44f32("project_view_matrix", &pipeline.camera.projm_viewm);
+    uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
     // Textures might be not valid, so we fallback to the default ones just in case
-    uniforms.set_texture("diffuse_tex", &material.textures.diffuse_map);
-    uniforms.set_texture("normals_tex", &material.textures.normal_map);
-    uniforms.set_texture("emissive_tex", &material.textures.emissive_map);
+    //uniforms.set_texture2d("diffuse_tex", &material.textures.diffuse_map);
+    //uniforms.set_texture2d("normals_tex", &material.textures.normal_map);
+    //uniforms.set_texture2d("emissive_tex", &material.textures.emissive_map);
     uniforms.set_vec3f32("tint", material.tint);
     uniforms.set_f32("normals_strength", material.normal_map_strength);
     uniforms.set_f32("emissive_strength", material.emissive_map_strength);

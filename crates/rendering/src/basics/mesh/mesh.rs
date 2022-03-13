@@ -2,7 +2,7 @@ use std::ptr::null;
 
 use crate::{
     advanced::storages::TypedStorage,
-    object::PipelineCollectionElement,
+    object::PipelineElement,
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
@@ -67,8 +67,8 @@ impl Asset for Mesh {
     }
 }
 
-impl PipelineCollectionElement for Mesh {
-    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
+impl PipelineElement for Mesh {
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO
@@ -160,9 +160,17 @@ impl PipelineCollectionElement for Mesh {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
+        pipeline.meshes.insert(self)
     }
 
-    // Dispose of the OpenGL buffers
+    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
+        pipeline.meshes.get(handle)
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
+        pipeline.meshes.get_mut(handle)
+    }
+
     fn disposed(self) {
         unsafe {
             // Delete the vertex array

@@ -1,6 +1,6 @@
 use super::{compile_shader, ShaderInitSettings};
 
-use crate::object::PipelineCollectionElement;
+use crate::object::PipelineElement;
 
 use ahash::AHashSet;
 use getset::Getters;
@@ -41,10 +41,19 @@ impl Shader {
     }
 }
 
-impl PipelineCollectionElement for Shader {
-    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
+impl PipelineElement for Shader {
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
         // Compiling
         self.program = compile_shader(self.settings.sources_mut());
+        pipeline.shaders.insert(self)
+    }
+
+    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
+        pipeline.shaders.get(handle)
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
+        pipeline.shaders.get_mut(handle)
     }
 
     fn disposed(self) {

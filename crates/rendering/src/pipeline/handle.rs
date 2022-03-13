@@ -1,4 +1,4 @@
-use crate::object::PipelineCollectionElement;
+use crate::object::PipelineElement;
 
 use parking_lot::Mutex;
 use slotmap::Key;
@@ -10,23 +10,23 @@ slotmap::new_key_type! {
 }
 
 // A strong handle to a pipeline object. If there are 0 strong handles, the pipeline object will be deallocated (totally not stolen from Bevy)
-pub struct Handle<T: PipelineCollectionElement> {
+pub struct Handle<T: PipelineElement> {
     pub(crate) key: Arc<PipelineElemKey>,
     pub(crate) to_remove: Option<Arc<Mutex<Vec<PipelineElemKey>>>>,
     pub(crate) _phantom: PhantomData<T>,
 }
 
 // Sad
-unsafe impl<T: PipelineCollectionElement> Send for Handle<T> {}
-unsafe impl<T: PipelineCollectionElement> Sync for Handle<T> {}
+unsafe impl<T: PipelineElement> Send for Handle<T> {}
+unsafe impl<T: PipelineElement> Sync for Handle<T> {}
 
-impl<T: PipelineCollectionElement> std::fmt::Debug for Handle<T> {
+impl<T: PipelineElement> std::fmt::Debug for Handle<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Handle").field("key", &self.key).finish()
     }
 }
 
-impl<T: PipelineCollectionElement> Default for Handle<T> {
+impl<T: PipelineElement> Default for Handle<T> {
     fn default() -> Self {
         Self {
             key: Arc::new(PipelineElemKey::null()),
@@ -36,7 +36,7 @@ impl<T: PipelineCollectionElement> Default for Handle<T> {
     }
 }
 
-impl<T: PipelineCollectionElement> Clone for Handle<T> {
+impl<T: PipelineElement> Clone for Handle<T> {
     fn clone(&self) -> Self {
         Self {
             key: self.key.clone(),
@@ -46,7 +46,7 @@ impl<T: PipelineCollectionElement> Clone for Handle<T> {
     }
 }
 
-impl<T: PipelineCollectionElement> Drop for Handle<T> {
+impl<T: PipelineElement> Drop for Handle<T> {
     // Remove the element if this is the last strong handle it has
     fn drop(&mut self) {
         if let Some(to_remove) = &self.to_remove {

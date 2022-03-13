@@ -1,4 +1,4 @@
-use getset::{Getters, Setters};
+use getset::{Getters, Setters, MutGetters};
 use glutin::{
     dpi::LogicalSize,
     event::WindowEvent,
@@ -11,13 +11,13 @@ use others::Time;
 use crate::{
     advanced::compute::ComputeShader,
     basics::{material::Material, mesh::Mesh, shader::Shader, texture::{Texture, Texture2D, BundledTexture2D}},
-    utils::{Window, DEFAULT_WINDOW_SIZE}, object::PipelineCollectionElement,
+    utils::{Window, DEFAULT_WINDOW_SIZE}, object::PipelineElement,
 };
 
 use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer, Handle};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
-#[derive(Getters, Setters)]
+#[derive(Getters, MutGetters, Setters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
     pub(crate) meshes: PipelineCollection<Mesh>,
@@ -32,6 +32,7 @@ pub struct Pipeline {
     pub(crate) materials: PipelineCollection<Material>,
 
     // Window
+    #[getset(get = "pub", get_mut = "pub")]
     window: Window,
     // Timings
     #[getset(get = "pub")]
@@ -41,7 +42,8 @@ pub struct Pipeline {
     settings: PipelineSettings,
     #[getset(get = "pub")]
     defaults: DefaultElements,
-    pub camera: RenderingCamera,
+    #[getset(get = "pub", get_mut = "pub")]
+    camera: RenderingCamera,
 }
 
 // Initialize glutin and the window
@@ -158,15 +160,15 @@ impl Pipeline {
 
 impl Pipeline {
     // Add, get, get mut
-    pub fn add<Element: PipelineCollectionElement>(&mut self, obj: Element) -> Handle<Element> {
-        let handle = obj.add(self);
+    pub fn add<Element: PipelineElement>(&mut self, obj: Element) -> Handle<Element> {
+        obj.add(self)
     }
 
     // Get, get mut
-    pub fn get<Element: PipelineCollectionElement>(&self, handle: &Handle<Element>) -> &Element {
+    pub fn get<Element: PipelineElement>(&self, handle: &Handle<Element>) -> Option<&Element> {
         Element::find(self, handle)
     }
-    pub fn get_mut<Element: PipelineCollectionElement>(&mut self, handle: &Handle<Element>) -> &mut Element {
+    pub fn get_mut<Element: PipelineElement>(&mut self, handle: &Handle<Element>) -> Option<&mut Element> {
         Element::find_mut(self, handle)
     }
 }

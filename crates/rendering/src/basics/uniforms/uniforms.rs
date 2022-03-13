@@ -34,7 +34,7 @@ impl<'a> Uniforms<'a> {
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.time().elapsed as f32);
         self.set_f32("_delta", self.pipeline.time().delta as f32);
-        self.set_vec2i32("_resolution", self.pipeline.window.dimensions.as_());
+        self.set_vec2i32("_resolution", self.pipeline.window().dimensions().as_());
     }
     // U32
     pub fn set_u32(&mut self, name: &str, val: u32) {
@@ -165,11 +165,11 @@ impl<'a> Uniforms<'a> {
     }
     // Textures
     pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
-        let texture = self.pipeline.textures.get(texture).unwrap();
+        let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D, texture.texture());
     }
     pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
-        let texture = self.pipeline.textures.get(texture).unwrap();
+        let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.texture());
     }
     // Atomics

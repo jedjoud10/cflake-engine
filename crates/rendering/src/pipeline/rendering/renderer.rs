@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFormat, TextureLayout, TextureWrapMode},
+        texture::{Texture, TextureBuilder, TextureFormat, TextureLayout, TextureWrapMode, Texture2D, TextureParams},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -27,14 +27,14 @@ pub struct SceneRenderer {
     position_texture: Handle<Texture>,
     depth_texture: Handle<Texture>,
     */
-    textures: [Handle<Texture>; 5],
+    textures: [Handle<Texture2D>; 5],
 
     // Screen rendering
     lighting: Handle<Shader>,
     quad: Handle<Mesh>,
 
     // Others
-    sky_gradient: Handle<Texture>,
+    sky_gradient: Handle<Texture2D>,
     shadow_mapping: Option<ShadowMapping>,
 }
 
@@ -68,7 +68,7 @@ impl SceneRenderer {
         let shader = pipeline.shaders.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
-        let dimensions = TextureDimensions::Texture2d(pipeline.window.dimensions);
+        let (width, height) = pipeline.window().dimensions().into_tuple();
 
         // Since we use deferred rendering, we must create a new framebuffer for this renderer
         let mut framebuffer = 0;
@@ -95,9 +95,16 @@ impl SceneRenderer {
                     resizable: true,
                 };
 
-                pipeline.textures.insert(TextureBuilder::default().dimensions(dimensions).layout(layout).build())
+                let texture = pipeline.add(TextureBuilder::default()
+                    .dimensions(width, height)
+                    .params(TextureParams {
+                        layout,
+                        ..Default::default()
+                    })
+                    .build());
+                texture
             })
-            .collect::<Vec<Handle<Texture>>>();
+            .collect::<Vec<Handle<Texture2D>>>();
 
         // Now bind the texture attachememnts
         let attachements = [
@@ -128,8 +135,11 @@ impl SceneRenderer {
         let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
 
         // Load the default sky gradient texture
-        let sky_gradient = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/sky_gradient.png").unwrap())
-            .wrap_mode(TextureWrapMode::ClampToEdge(None))
+        let sky_gradient = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap())
+            .params(TextureParams {
+                wrap: TextureWrapMode::ClampToEdge(None),
+                ..Default::default()
+            })
             .build();
         let sky_gradient = pipeline.textures.insert(sky_gradient);
         /* #endregion */
@@ -146,9 +156,10 @@ impl SceneRenderer {
     // Resize the renderer's textures
     pub(crate) fn resize(&mut self, pipeline: &mut Pipeline) {
         // Very simple since we use an array
+        let (width, height) = pipeline.window().dimensions().into_tuple();
         for handle in self.textures.iter() {
-            let texture = pipeline.textures.get_mut(handle).unwrap();
-            texture.set_dimensions(TextureDimensions::Texture2d(pipeline.window.dimensions())).unwrap();
+            let texture = pipeline.get_mut(handle).unwrap();
+            texture.set_dimensions(width, height).unwrap();
         }
     }
 
@@ -162,7 +173,7 @@ impl SceneRenderer {
 
     // Prepare the FBO and clear the buffers
     pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
-        gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
@@ -216,28 +227,28 @@ impl SceneRenderer {
         uniforms.set_mat44f32("lightspace_matrix", matrix);
 
         // Set the camera matrices
-        let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera.rotation)) * pipeline.camera.projm.inverted();
+        let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().projm.inverted();
         uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
-        uniforms.set_mat44f32("pv_matrix", &pipeline.camera.projm_viewm);
-        uniforms.set_vec2f32("nf_planes", pipeline.camera.clip_planes);
+        uniforms.set_mat44f32("pv_matrix", &pipeline.camera().projm_viewm);
+        uniforms.set_vec2f32("nf_planes", pipeline.camera().clip_planes);
 
         // Also gotta set the deferred textures
         // &str array because I am lazy
         let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
         // Set each texture
         for ((_i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
-            uniforms.set_texture(name, handle);
+            uniforms.set_texture2d(name, handle);
         }
 
         // Sky gradient texture
-        uniforms.set_texture("sky_gradient", &self.sky_gradient);
+        uniforms.set_texture2d("sky_gradient", &self.sky_gradient);
 
         // If we have shadow mapping disabled we must use the default white texture
         let shadow_mapping_texture = self
             .shadow_mapping
             .as_ref()
             .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
-        uniforms.set_texture("shadow_map", shadow_mapping_texture);
+        uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
         uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
 
         // Draw the quad

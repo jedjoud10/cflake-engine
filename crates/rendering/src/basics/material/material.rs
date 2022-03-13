@@ -1,5 +1,5 @@
 use super::MaterialTextures;
-use crate::{basics::shader::Shader, object::PipelineCollectionElement, pipeline::*};
+use crate::{basics::shader::Shader, object::PipelineElement, pipeline::*};
 
 // A material that can have multiple parameters and such
 pub struct Material {
@@ -14,7 +14,7 @@ pub struct Material {
     pub uv_scale: vek::Vec2<f32>,
 }
 
-impl PipelineCollectionElement for Material {
+impl PipelineElement for Material {
     fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
         pipeline.materials.insert(self)
     }

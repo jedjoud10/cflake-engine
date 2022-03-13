@@ -3,7 +3,7 @@ use crate::{
         shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, ShaderProgram},
         uniforms::Uniforms,
     },
-    object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
+    object::{OpenGLObjectNotInitialized, PipelineElement},
     pipeline::Pipeline,
 };
 use ahash::AHashSet;
@@ -22,10 +22,19 @@ pub struct ComputeShader {
     settings: ShaderInitSettings,
 }
 
-impl PipelineCollectionElement for ComputeShader {
-    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
+impl PipelineElement for ComputeShader {
+    fn add(self, pipeline: &mut Pipeline) -> crate::pipeline::Handle<Self> {
         // Compiling
         self.program = compile_shader(self.settings.sources());
+        pipeline.compute_shaders.insert(self)
+    }
+
+    fn find<'a>(pipeline: &'a Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
+        pipeline.compute_shaders.get(handle)
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
+        pipeline.compute_shaders.get_mut(handle)
     }
 
     fn disposed(self) {

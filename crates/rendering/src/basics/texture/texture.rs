@@ -1,35 +1,37 @@
 use gl::types::GLuint;
 
-use crate::object::PipelineCollectionElement;
+use crate::{object::PipelineElement, pipeline::Handle};
 
-use super::{BundledTexture2D, Texture2D};
+use super::{BundledTexture2D, Texture2D, TextureBytes, TextureParams, get_texel_byte_size};
+
+// Texture variant handle
+pub enum TextureHandle {
+    Texture2D(Handle<Texture2D>),
+    BundledTexture(Handle<BundledTexture2D>),
+}
+
+impl Default for TextureHandle {
+    fn default() -> Self {
+        Self::Texture2D(Handle::default())
+    }
+}
+
 // Shared texture logic
 pub trait Texture {
-    // Get the underlying texture name
+    // Get the texter target (OpenGL)
+    fn target(&self) -> GLuint;
+    // Get the texture handle
     fn texture(&self) -> GLuint;
+    // Get the texture parameters
+    fn params(&self) -> &TextureParams;
     // Calculate the number of texels in the texture
     fn count_texels(&self) -> usize;
     // Calculate the number of bytes the texture takes
-    fn count_bytes(&self) -> usize;
-    // Initialize the texture (create it's OpenGL handle)
-    fn init(&mut self);
-}
-
-// A texture type
-pub enum TextureVariant {
-    Texture2d(Texture2D),
-    BundledTexture2D(BundledTexture2D),
-}
-
-impl PipelineCollectionElement for TextureVariant {
-    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
-        todo!()
-    }
-
-    fn disposed(self) {
-        todo!()
+    fn count_bytes(&self) -> usize {
+        self.count_texels() * get_texel_byte_size(self.params().layout.internal_format)
     }
 }
+
 
 /*
 

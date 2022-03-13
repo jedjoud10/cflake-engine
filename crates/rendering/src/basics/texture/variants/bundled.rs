@@ -1,10 +1,7 @@
 use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
-use crate::basics::texture::{TextureLayout, TextureWrapMode, TextureBits, TextureFilter, TextureParams, Texture, get_texel_byte_size};
+use crate::{basics::texture::{TextureLayout, TextureWrapMode, TextureFlags, TextureFilter, TextureParams, Texture, get_texel_byte_size, TextureBytes}, object::PipelineElement};
 use super::{Texture2D, TextureBuilder};
-
-// Bundled bytes
-pub type BundledBytes = Option<Vec<u8>>;
 
 // A combination of multiple texture2D's
 // This represents an OpenGL Array Texture
@@ -12,9 +9,6 @@ pub type BundledBytes = Option<Vec<u8>>;
 pub struct BundledTexture2D {
     // The OpenGL id for this texture
     buffer: GLuint,
-    // The bytes stored in this texture
-    #[getset(get = "pub")]
-    bytes: BundledBytes,
 
     // Params
     #[getset(get = "pub")]
@@ -30,19 +24,35 @@ pub struct BundledTexture2D {
 }
 
 impl Texture for BundledTexture2D {
+    fn target(&self) -> GLuint {
+        gl::TEXTURE_2D_ARRAY
+    }
     fn texture(&self) -> GLuint {
         self.buffer
+    }    
+    fn params(&self) -> &TextureParams {
+        &self.params
     }
     fn count_texels(&self) -> usize {
-        self.width * self.height * self.layers
+        self.width as usize * self.height as usize * self.layers as usize
     }
-    fn count_bytes(&self) -> usize {
-        self.count_texels() * get_texel_byte_size(self.params.layout.internal_format)
+}
+
+impl PipelineElement for BundledTexture2D {
+    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
+        todo!()
     }
 
-    // Initialize the bundled texture
-    fn init(&mut self) {
-        
+    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
+        todo!()
+    }
+
+    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
+        todo!()
+    }
+
+    fn disposed(self) {
+        todo!()
     }
 }
 
@@ -59,7 +69,7 @@ impl BundledTextureBuilder {
         self
     }
     // Build the bundled texture
-    pub fn build(mut self) -> Option<BundledTexture2D> {
+    pub fn build(mut self, params: Option<TextureParams>) -> Option<BundledTexture2D> {
         // We get the main dimensions from the first texture
         let first = self.textures.get(0)?;
         let (width, height) = (first.width(), first.height());
@@ -71,15 +81,24 @@ impl BundledTextureBuilder {
             if texture.width() != width || texture.height() != height {
                 return None;
             }
-            bytes.extend(texture.bytes().iter());
+            let texbytes = texture.params().bytes.as_loaded().unwrap().iter();
+            bytes.extend(texbytes);
         }
+
+        // Use the first texture's params, in case we don't have an override
+        let params = params.as_ref().unwrap_or(first.params());
         Some(BundledTexture2D {
             buffer: 0,
-            bytes,
-            params: first.params(),
+            params: TextureParams {
+                bytes: TextureBytes::Loaded(bytes),
+                layout: params.layout,
+                filter: params.filter,
+                wrap: params.wrap,
+                flags: params.flags,
+            },
             width,
             height,
-            layers: self.textures.len(),
+            layers: self.textures.len() as u16,
         })
     }
 }
