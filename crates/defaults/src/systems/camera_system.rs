@@ -20,16 +20,15 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let components = query.all.get_mut(&global.main_camera);
     if let Some(components) = components {
         // Get the linked components
-        let (position, rotation, mutated) = {
+        let (position, forward, up, mutated) = {
             let transform = components.get::<Transform>().unwrap();
-            (transform.position, transform.rotation, components.was_mutated::<Transform>().unwrap())
+            (transform.position, transform.forward(), transform.up(), components.was_mutated::<Transform>().unwrap())
         };
         let camera = components.get_mut::<Camera>().unwrap();
-
         // And don't forget to update the camera matrices
         camera.update_projection_matrix(world.pipeline.window.dimensions().x as f32, world.pipeline.window.dimensions().y as f32);
         if mutated {
-            camera.update_view_matrix(position, rotation);
+            camera.update_view_matrix(position, forward, up);
         }
     }
 }

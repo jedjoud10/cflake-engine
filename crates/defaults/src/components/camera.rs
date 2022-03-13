@@ -31,15 +31,9 @@ impl Camera {
         self.projm = vek::Mat4::<f32>::perspective_fov_rh_no(vertical_fov, width, height, self.clip_planes.x, self.clip_planes.y);
     }
     // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: vek::Vec3<f32>, mut rotation: vek::Quaternion<f32>) {
-        // Matrix from quaternion
-        let rotation = rotation.normalized();
-        let rotation_matrix = vek::Mat4::<f32>::from(rotation);
-        // Vectors
-        let forward = rotation_matrix.mul_point(-vek::Vec3::<f32>::unit_z());
-        let up = rotation_matrix.mul_point(vek::Vec3::<f32>::unit_y());
+    pub fn update_view_matrix(&mut self, position: vek::Vec3<f32>, forward: vek::Vec3<f32>, up: vek::Vec3<f32>) {
         // Update matrix
-        self.viewm = vek::Mat4::<f32>::look_at_rh(position, (forward + position), up);
+        self.viewm = vek::Mat4::<f32>::look_at_rh(position, forward + position, up);
     }
 }
 

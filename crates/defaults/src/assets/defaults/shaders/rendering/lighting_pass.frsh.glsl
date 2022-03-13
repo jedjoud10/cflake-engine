@@ -45,6 +45,7 @@ void main() {
 		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
 		final_color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
 		final_color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 4096), 0) * sun_strength_factor * 20.0;
+		final_color = pixel_dir;
 	} else {
 		float in_shadow = 0.0;
 		if (shadows_enabled) {

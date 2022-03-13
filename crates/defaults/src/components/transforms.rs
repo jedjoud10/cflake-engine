@@ -35,7 +35,7 @@ impl Transform {
     }
     // Calculate the forward, up, and right vectors
     pub fn forward(&self) -> vek::Vec3<f32> {
-        self.rotation_matrix().mul_point(vek::Vec3::unit_z())
+        self.rotation_matrix().mul_point(-vek::Vec3::unit_z())
     }
     pub fn up(&self) -> vek::Vec3<f32> {
         self.rotation_matrix().mul_point(vek::Vec3::unit_y())

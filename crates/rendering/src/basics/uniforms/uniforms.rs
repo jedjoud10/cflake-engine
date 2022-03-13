@@ -135,7 +135,7 @@ impl<'a> Uniforms<'a> {
             return;
         }
         unsafe {
-            gl::UniformMatrix4fv(location, 1, matrix.gl_should_transpose().into(), matrix.as_col_ptr());
+            gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_col_ptr());
         }
     }
     pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>) {

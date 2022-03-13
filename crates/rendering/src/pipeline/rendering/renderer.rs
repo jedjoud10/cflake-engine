@@ -205,10 +205,10 @@ impl SceneRenderer {
 
         // Try to get the sunlight direction
         let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-        let sunlight = first.map(|(params, transform)| (panic!(), params.strength));
+        let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(vek::Vec3::unit_z()), params.strength));
 
         // Default sunlight values
-        let sunlight = sunlight.unwrap_or((panic!(), 1.0));
+        let sunlight = sunlight.unwrap_or((vek::Vec3::unit_y(), 1.0));
 
         // Sunlight values
         uniforms.set_vec3f32("sunlight_dir", sunlight.0);
@@ -220,9 +220,9 @@ impl SceneRenderer {
         uniforms.set_mat44f32("lightspace_matrix", matrix);
 
         // Set the camera matrices
-        let pr_m = pipeline.camera.projm * (vek::Mat4::from(pipeline.camera.rotation));
+        let pr_m = pipeline.camera.projm * (vek::Mat4::<f32>::from(pipeline.camera.rotation));
         uniforms.set_mat44f32("pr_matrix", &pr_m);
-        uniforms.set_mat44f32("pv_matrix", &(pipeline.camera.projm * pipeline.camera.viewm));
+        uniforms.set_mat44f32("pv_matrix", &pipeline.camera.projm_viewm);
         uniforms.set_vec2f32("nf_planes", pipeline.camera.clip_planes);
 
         // Also gotta set the deferred textures
