@@ -50,12 +50,9 @@ impl SceneRenderer {
                     vek::Vec3::new(1.0, -1.0, 0.0),
                     vek::Vec3::new(-1.0, 1.0, 0.0),
                     vek::Vec3::new(-1.0, -1.0, 0.0),
-                    vek::Vec3::new(1.0, 1.0, 0.0)],
-                uvs: vec![
-                    vek::Vec2::new(255, 0),
-                    vek::Vec2::new(0, 255),
-                    vek::Vec2::new(0, 0),
-                    vek::Vec2::new(255, 255)],
+                    vek::Vec3::new(1.0, 1.0, 0.0),
+                ],
+                uvs: vec![vek::Vec2::new(255, 0), vek::Vec2::new(0, 255), vek::Vec2::new(0, 0), vek::Vec2::new(255, 255)],
                 ..Default::default()
             },
             vec![0, 1, 2, 0, 3, 1],

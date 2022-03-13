@@ -2,7 +2,7 @@ use getset::{CopyGetters, Getters};
 
 use crate::{pipeline::Pipeline, utils::UsageType};
 
-use super::storages::{StaticBuffer, Buffer};
+use super::storages::{Buffer, StaticBuffer};
 
 // Le array
 pub const ATOMIC_COUNTERS_NUM: usize = 4;

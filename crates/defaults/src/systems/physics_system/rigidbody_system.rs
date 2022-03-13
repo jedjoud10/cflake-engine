@@ -1,14 +1,14 @@
-use crate::components::{Collider, RigidBody, Transform, ColliderGeometry};
+use crate::components::{Collider, ColliderGeometry, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 
-use world::ecs::component::ComponentQueryParameters;
 use rapier3d::na::{Isometry, Point3};
-use rapier3d::prelude::{RigidBodyBuilder, SharedShape, ColliderBuilder, MassProperties};
+use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
+use world::ecs::component::ComponentQueryParameters;
+use world::ecs::component::ComponentQuerySet;
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
-use world::{ecs::component::ComponentQuerySet};
 
 use super::vec3_to_point;
 
@@ -35,7 +35,7 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
             ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
         },
-        ColliderGeometry::Mesh { mesh, mass, com_offset } => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
+        ColliderGeometry::Mesh { mesh, mass: _, com_offset: _ } => get_mesh(scale_matrix, pipeline.meshes.get(mesh).unwrap()),
     }
 }
 
@@ -61,9 +61,11 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             .restitution(collider.material.restitution);
 
         // Set mass for mesh colliders manually
-        let builder = if let Some((_, &mass, &com_offset)) = collider.geometry.as_mesh() {            
+        let builder = if let Some((_, &mass, &com_offset)) = collider.geometry.as_mesh() {
             builder.mass_properties(MassProperties::new(vec3_to_point(com_offset), mass, rapier3d::na::zero()))
-        } else { builder };
+        } else {
+            builder
+        };
 
         // Build
         let r_collider = builder.build();

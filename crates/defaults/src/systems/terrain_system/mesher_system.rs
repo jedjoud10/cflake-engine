@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::{
-    components::{Chunk, Renderer, Transform, Collider, ColliderGeometry, RigidBody},
+    components::{Chunk, Collider, ColliderGeometry, Renderer, RigidBody, Transform},
     globals::ChunkGenerationState,
 };
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
@@ -14,7 +14,7 @@ use world::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
     },
-    terrain::{mesher::{Mesher, MesherSettings}, StoredVoxelData},
+    terrain::mesher::{Mesher, MesherSettings},
     World,
 };
 
@@ -41,9 +41,9 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 },
             );
             // Generate the mesh and add it to the chunk entity
-            let mesh = mesher.build();            
+            let mesh = mesher.build();
             let mesh = world.pipeline.meshes.insert(mesh);
-            let cloned = mesh.clone();
+            let _cloned = mesh.clone();
 
             if !linked.is_linked::<Renderer>() {
                 // Generate the new component and link it

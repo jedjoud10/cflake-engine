@@ -1,8 +1,8 @@
 use cflake_engine::{
-    defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform, ColliderGeometry, ColliderMaterial},
+    defaults::components::{Camera, Collider, ColliderGeometry, ColliderMaterial, Light, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType},
-    vek, World, math::shapes::ShapeType,
+    vek, World,
 };
 // A game with a test camera
 fn main() {
@@ -49,7 +49,9 @@ fn init(world: &mut World) {
     // Add the rigidbody
     group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
     // Add the collider
-    group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0))).unwrap();
+    group
+        .link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0)))
+        .unwrap();
     world.ecs.add(group).unwrap();
     for y in 0..20 {
         for x in 0..5 {
@@ -71,7 +73,9 @@ fn init(world: &mut World) {
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
-                group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::one()), ColliderMaterial::new(10.0, 0.0))).unwrap();
+                group
+                    .link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::one()), ColliderMaterial::new(10.0, 0.0)))
+                    .unwrap();
                 world.ecs.add(group).unwrap();
             }
         }

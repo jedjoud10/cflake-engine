@@ -1,8 +1,8 @@
+use rapier3d::na::Isometry;
 use world::ecs::component::ComponentQueryParameters;
+use world::ecs::component::ComponentQuerySet;
 use world::physics::PHYSICS_TIME_STEP;
 use world::World;
-use world::ecs::component::ComponentQuerySet;
-use rapier3d::{na::Isometry, prelude::RigidBodyForces};
 
 use crate::components::{Collider, RigidBody, Transform};
 

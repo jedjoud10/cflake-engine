@@ -3,7 +3,7 @@ use cflake_engine::{
     defaults::components::{self, Camera, Transform},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType::Directional},
-    World, vek
+    vek, World,
 };
 // A game with a test camera
 fn main() {

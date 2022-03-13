@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, rc::Rc};
+use std::cmp::Ordering;
 
 use ahash::{AHashMap, AHashSet};
 use enum_as_inner::EnumAsInner;
@@ -7,8 +7,8 @@ use getset::Getters;
 use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,
-    rendering::{basics::{material::Material, mesh::Mesh}, pipeline::Handle},
-    terrain::{ChunkCoords, StoredVoxelData}, World,
+    rendering::{basics::material::Material, pipeline::Handle},
+    terrain::ChunkCoords,
 };
 
 // Generation state of the current chunk

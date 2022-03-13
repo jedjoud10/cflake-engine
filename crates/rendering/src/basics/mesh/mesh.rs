@@ -55,7 +55,11 @@ impl Asset for Mesh {
         let vertices = &mut builder.vertices;
         for vertex in parsed_obj.vertices {
             vertices.position(vek::Vec3::new(vertex.position[0], vertex.position[1], vertex.position[2]));
-            vertices.normal(vek::Vec3::new((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8));
+            vertices.normal(vek::Vec3::new(
+                (vertex.normal[0] * 127.0) as i8,
+                (vertex.normal[1] * 127.0) as i8,
+                (vertex.normal[2] * 127.0) as i8,
+            ));
             vertices.uv(vek::Vec2::new((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
         builder.indices.indices = parsed_obj.indices;

@@ -3,7 +3,7 @@ use std::{ffi::c_void, mem::size_of, ptr::null};
 use rendering::gl;
 use rendering::gl::types::GLuint;
 use rendering::{
-    advanced::storages::{DynamicBuffer, Buffer},
+    advanced::storages::{Buffer, DynamicBuffer},
     pipeline::Pipeline,
     utils::{AccessType::ClientToServer, UpdateFrequency::WriteManyReadMany, UsageType},
 };

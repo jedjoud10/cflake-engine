@@ -1,5 +1,5 @@
 use crate::{
-    advanced::{atomic::AtomicGroup, storages::Buffer, shader_storage::ShaderStorage},
+    advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
     basics::{shader::ShaderProgram, texture::Texture},
     pipeline::{Handle, Pipeline},
 };

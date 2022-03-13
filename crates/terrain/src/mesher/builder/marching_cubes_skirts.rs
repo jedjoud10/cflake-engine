@@ -125,17 +125,8 @@ impl MarchingCubesSkirts {
             let index2 = info.i + info.index_offsets[two_voxels[1] as usize];
             let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
             // Now interpolate the voxel attributes
-            let normal = vek::Vec3::<f32>::lerp(
-                voxels.normal(index1).as_(),
-                voxels.normal(index2).as_(),
-                value,
-            )
-            .normalized();
-            let color = vek::Vec3::<f32>::lerp(
-                voxels.color(index1).as_(),
-                voxels.color(index2).as_(),
-                value,
-            );
+            let normal = vek::Vec3::<f32>::lerp(voxels.normal(index1).as_(), voxels.normal(index2).as_(), value).normalized();
+            let color = vek::Vec3::<f32>::lerp(voxels.color(index1).as_(), voxels.color(index2).as_(), value);
 
             shared_normal += normal;
             shared_color += color;

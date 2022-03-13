@@ -3,7 +3,6 @@ use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of};
 
-
 // Raw OpenGL storage, just an allocation helper basically
 #[derive(Getters, CopyGetters)]
 pub struct RawStorage {
@@ -126,7 +125,6 @@ impl Drop for RawStorage {
     }
 }
 
-
 // Raw typed OpenGL storage, with a specific type
 #[derive(Getters, CopyGetters)]
 pub struct TypedStorage<Element> {
@@ -159,15 +157,15 @@ impl<Element> TypedStorage<Element> {
     pub fn update(&mut self, ptr: *const Element, cap: usize, len: usize) {
         // Also update self
         self.capacity = self.capacity.max(cap);
-        self.len = len;        
-        unsafe {
-            self.raw.update(ptr as *const c_void, cap * size_of::<Element>(), len * size_of::<Element>())
-        }
+        self.len = len;
+        unsafe { self.raw.update(ptr as *const c_void, cap * size_of::<Element>(), len * size_of::<Element>()) }
     }
     // Read subdata
     pub fn read(&self, output: *mut Element, len: usize, offset: usize) {
         // Cannot read more than we have allocated!
-        if len > self.capacity { panic!() } 
+        if len > self.capacity {
+            panic!()
+        }
         unsafe { self.raw.read(output as *mut c_void, len * size_of::<Element>(), offset * size_of::<Element>()) }
     }
 }

@@ -1,5 +1,5 @@
 use ahash::{AHashMap, RandomState};
-use getset::{Getters, CopyGetters};
+use getset::{CopyGetters, Getters};
 use multimap::MultiMap;
 
 use super::{Keys, State};

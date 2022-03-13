@@ -25,7 +25,9 @@ pub struct DynamicBuffer<Element> {
 impl<Element> Buffer for DynamicBuffer<Element> {
     type Element = Element;
     // Buffer
-    fn buffer(&self) -> GLuint { self.storage.buffer() }
+    fn buffer(&self) -> GLuint {
+        self.storage.buffer()
+    }
     // Storage
     fn storage(&self) -> &TypedStorage<Element> {
         &self.storage
@@ -70,7 +72,9 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     {
         self.inner.clear();
         self.inner.extend_from_slice(buf);
-        unsafe { self.storage.update(self.inner.as_ptr(), self.capacity(), self.len()); }
+        unsafe {
+            self.storage.update(self.inner.as_ptr(), self.capacity(), self.len());
+        }
     }
 }
 
@@ -99,7 +103,6 @@ impl<Element> DynamicBuffer<Element> {
     }
 }
 
-
 // A simple buffer that just holds an OpenGL buffer, but doesn't hold any data by itself
 // Can be useful when all we need to do is update some already preallocated buffers
 #[derive(Getters)]
@@ -112,7 +115,9 @@ pub struct StaticBuffer<Element> {
 impl<Element> Buffer for StaticBuffer<Element> {
     type Element = Element;
     // Buffer
-    fn buffer(&self) -> GLuint { self.storage.buffer() }
+    fn buffer(&self) -> GLuint {
+        self.storage.buffer()
+    }
     // Storage
     fn storage(&self) -> &TypedStorage<Element> {
         &self.storage

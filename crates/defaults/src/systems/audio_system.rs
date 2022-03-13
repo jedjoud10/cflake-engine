@@ -1,4 +1,4 @@
-use world::ecs::component::{ComponentQuerySet, ComponentQueryParameters};
+use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
 use world::World;
 
 use crate::components::{Camera, Transform};
@@ -14,9 +14,7 @@ fn run(world: &mut World, data: ComponentQuerySet) {
         let pos = transform.position;
         let right = transform.right();
         // Update the positions
-        world
-            .audio
-            .update_ear_positions(pos - right, pos + right);
+        world.audio.update_ear_positions(pos - right, pos + right);
     }
 }
 

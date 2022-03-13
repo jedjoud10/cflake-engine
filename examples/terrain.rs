@@ -13,8 +13,7 @@ use cflake_engine::{
         texture::{Texture, TextureBundler, TextureLayout},
     },
     terrain::editing::Edit,
-    vek,
-    World,
+    vek, World,
 };
 
 // A game with some test terrain
@@ -76,8 +75,12 @@ fn init(world: &mut World) {
         resizable: true,
         ..Default::default()
     };
-    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).mipmaps(true).layout(layout);
-    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).mipmaps(true).layout(layout);
+    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3])
+        .mipmaps(true)
+        .layout(layout);
+    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3])
+        .mipmaps(true)
+        .layout(layout);
     let diffuse = world.pipeline.textures.insert(diffuse.build());
     let normals = world.pipeline.textures.insert(normals.build());
     let material = Material {

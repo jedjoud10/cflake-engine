@@ -1,6 +1,6 @@
-use rapier3d::prelude::{RigidBodyForces, RigidBodyMassProps};
-use world::ecs::component::Component;
+use rapier3d::prelude::RigidBodyForces;
 pub use rapier3d::prelude::{RigidBodyHandle, RigidBodyType};
+use world::ecs::component::Component;
 
 use crate::systems::physics_system::{vec3_to_vector, vector_to_vec3};
 // RigidBody component
@@ -13,7 +13,7 @@ pub struct RigidBody {
     pub velocity: vek::Vec3<f32>,
     pub angular_velocity: vek::Vec3<f32>,
 
-    // Forces 
+    // Forces
     pub force: vek::Vec3<f32>,
     pub torque: vek::Vec3<f32>,
     pub(crate) forces: RigidBodyForces,

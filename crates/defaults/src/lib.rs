@@ -60,7 +60,6 @@ pub fn preload_default_assets() {
 pub fn start_before_user_sytems(world: &mut World) {
     // Engine defaults
 
-
     // We gotta add the default globals
     world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
     world.globals.add(crate::globals::Physics::default()).unwrap();

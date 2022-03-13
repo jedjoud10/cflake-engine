@@ -10,6 +10,9 @@ pub struct Cuboid {
 
 impl Default for Cuboid {
     fn default() -> Self {
-        Self { center: Default::default(), size: vek::Vec3::one() }
+        Self {
+            center: Default::default(),
+            size: vek::Vec3::one(),
+        }
     }
 }

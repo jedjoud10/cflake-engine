@@ -7,7 +7,6 @@ pub use settings::*;
 pub use state::*;
 
 pub use ::bitfield;
-pub use vek;
 pub use assets;
 pub use audio;
 pub use ecs;
@@ -21,3 +20,4 @@ pub use others;
 pub use physics;
 pub use rendering;
 pub use terrain;
+pub use vek;

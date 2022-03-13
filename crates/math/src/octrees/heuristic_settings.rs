@@ -11,9 +11,7 @@ pub struct HeuristicSettings {
 impl Default for HeuristicSettings {
     fn default() -> Self {
         Self {
-            function: |node, target| {
-                crate::intersection::point_aabb(target, &node.aabb())
-            },
+            function: |node, target| crate::intersection::point_aabb(target, &node.aabb()),
             min_threshold_distance: 16.0,
         }
     }

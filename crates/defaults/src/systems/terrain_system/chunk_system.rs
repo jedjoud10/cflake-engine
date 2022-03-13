@@ -1,12 +1,11 @@
 use crate::{
-    components::{Camera, Transform, Chunk, Collider},
-    globals::{self, ChunksManager, GlobalWorldData, Terrain},
+    components::{Camera, Chunk, Transform},
+    globals::{ChunksManager, GlobalWorldData, Terrain},
 };
 use world::{
     ecs::{
-        self,
         component::{ComponentQueryParameters, ComponentQuerySet},
-        entity::{EntityKey, ComponentLinkingGroup},
+        entity::{ComponentLinkingGroup, EntityKey},
         ECSManager,
     },
     input::Keys,
