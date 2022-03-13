@@ -1,14 +1,14 @@
 use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
-use crate::{basics::texture::{TextureLayout, TextureWrapMode, TextureFlags, TextureFilter, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture}, object::PipelineElement};
+use crate::{basics::texture::{TextureLayout, TextureWrapMode, TextureFlags, TextureFilter, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture, TextureStorage}, object::PipelineElement, pipeline::{Pipeline, Handle}};
 use super::{Texture2D, TextureBuilder};
 
 // A combination of multiple texture2D's
 // This represents an OpenGL Array Texture
 #[derive(Getters, CopyGetters)]
 pub struct BundledTexture2D {
-    // The OpenGL id for this texture
-    buffer: GLuint,
+    // Storage
+    storage: Option<TextureStorage>,
 
     // Params
     params: TextureParams,
@@ -21,10 +21,10 @@ impl Texture for BundledTexture2D {
     type Dimensions = vek::Vec3<u16>;
 
     fn target(&self) -> GLuint {
-        gl::TEXTURE_2D_ARRAY
+        self.storage.as_ref().expect("OpenGL BundledTexture2D is invalid!").target()
     }
     fn texture(&self) -> GLuint {
-        self.buffer
+        self.storage.as_ref().expect("OpenGL BundledTexture2D is invalid!").name()
     }    
     fn params(&self) -> &TextureParams {
         &self.params
@@ -38,20 +38,19 @@ impl Texture for BundledTexture2D {
 }
 
 impl PipelineElement for BundledTexture2D {
-    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
-        todo!()
+    fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
+        pipeline.bundled_textures.insert(self)
     }
 
-    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
-        todo!()
+    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {
+        pipeline.bundled_textures.get(handle)
     }
 
-    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
-        todo!()
+    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> Option<&'a mut Self> {
+        pipeline.bundled_textures.get_mut(handle)
     }
 
     fn disposed(self) {
-        todo!()
     }
 }
 
@@ -88,7 +87,7 @@ impl BundledTextureBuilder {
         // Use the first texture's params, in case we don't have an override
         let params = params.as_ref().unwrap_or(first.params());
         Some(BundledTexture2D {
-            buffer: 0,
+            storage: None,
             params: TextureParams {
                 bytes: TextureBytes::Loaded(bytes),
                 layout: params.layout,

@@ -89,12 +89,7 @@ impl SceneRenderer {
             .zip(texture_types.into_iter())
             .map(|(internal_format, data_type)| {
                 // Create a texture layout
-                let layout = TextureLayout {
-                    data: data_type,
-                    internal_format,
-                    resizable: true,
-                };
-
+                let layout = TextureLayout::new(data_type, internal_format);
                 let texture = pipeline.insert(TextureBuilder::default()
                     .dimensions(dimensions)
                     .params(TextureParams {

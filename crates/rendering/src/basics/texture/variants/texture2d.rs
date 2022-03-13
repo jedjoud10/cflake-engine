@@ -3,13 +3,13 @@ use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
 use image::GenericImageView;
 
-use crate::{basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, get_ifd, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture}, object::PipelineElement};
+use crate::{basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, get_ifd, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture, TextureStorage}, object::PipelineElement};
 
 // A simple two dimensional OpenGL texture
 #[derive(Default, Getters, CopyGetters)]
 pub struct Texture2D {
-    // The OpenGL id for this texture
-    buffer: GLuint,
+    // Storage
+    storage: Option<TextureStorage>,
 
     // Params
     params: TextureParams,
@@ -22,10 +22,10 @@ impl Texture for Texture2D {
     type Dimensions = vek::Vec2<u16>;
 
     fn target(&self) -> GLuint {
-        gl::TEXTURE_2D
+        self.storage.as_ref().expect("OpenGL Texture2D is invalid!").target()
     }
     fn texture(&self) -> GLuint {
-        self.buffer
+        self.storage.as_ref().expect("OpenGL Texture2D is invalid!").name()
     }    
     fn params(&self) -> &TextureParams {
         &self.params

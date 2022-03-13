@@ -41,7 +41,7 @@ impl ShadowMapping {
         let texture = TextureBuilder::default()
             .dimensions(vek::Vec2::broadcast(shadow_resolution.max(1)))
             .params(TextureParams {
-                layout: TextureLayout { data: DataType::U8, internal_format: TextureFormat::DepthComponent16, resizable: false },
+                layout: TextureLayout { data: DataType::U8, internal_format: TextureFormat::DepthComponent16 },
                 filter: TextureFilter::Linear,
                 wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
                 ..Default::default()

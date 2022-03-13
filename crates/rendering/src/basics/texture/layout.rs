@@ -6,7 +6,14 @@ use crate::utils::DataType;
 pub struct TextureLayout {
     pub data: DataType,
     pub internal_format: TextureFormat,
-    pub resizable: bool,
+}
+
+impl TextureLayout {
+    pub fn new(data: DataType, _format: TextureFormat) -> TextureLayout {
+        Self {
+            data, internal_format: _format,
+        }
+    }
 }
 
 impl Default for TextureLayout {
@@ -14,7 +21,6 @@ impl Default for TextureLayout {
         Self {
             data: DataType::U8,
             internal_format: TextureFormat::RGBA8R,
-            resizable: true,
         }
     }
 }

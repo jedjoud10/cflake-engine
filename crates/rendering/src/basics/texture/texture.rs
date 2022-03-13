@@ -21,9 +21,9 @@ pub trait Texture {
     // Dimension types
     type Dimensions;
 
-    // Get the texter target (OpenGL)
+    // Get the texture target (OpenGL)
     fn target(&self) -> GLuint;
-    // Get the texture handle
+    // Get the underlying texture storage ID
     fn texture(&self) -> GLuint;
     // Get the texture parameters
     fn params(&self) -> &TextureParams;
@@ -173,7 +173,7 @@ unsafe fn init_contents(target: GLuint, resizable: bool, ifd: (GLint, GLuint, GL
 }
 
 // Update the contents of an already existing OpenGL texture
-unsafe fn update_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer: *const c_void, dimensions: TextureDimensions) {
+unsafe fn update_contents(target: GLuint, , pointer: *const c_void, dimensions: TextureDimensions) {
     match dimensions {
         TextureDimensions::Texture1d(width) => {
             gl::TexSubImage1D(target, 0, 0, width as i32, ifd.1, ifd.2, pointer);

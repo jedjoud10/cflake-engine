@@ -2,6 +2,16 @@ use super::{TextureLayout};
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
 
+// Texture parameter bits
+bitflags! {
+    pub struct TextureFlags: u8 {
+        const MIPMAPS = 1;
+        const SRGB = 1 << 1;
+        const RESIZABLE = 1 << 2;
+        const PERSISTENT = 1 << 3;
+    }
+}
+
 // Texture bytes
 #[derive(EnumAsInner)]
 pub enum TextureBytes {
@@ -23,14 +33,6 @@ pub enum TextureWrapMode {
     ClampToBorder(Option<vek::Vec4<f32>>),
     Repeat,
     MirroredRepeat,
-}
-
-// Texture parameter bits
-bitflags! {
-    pub struct TextureFlags: u8 {
-        const MIPMAPS = 1;
-        const SRGB = 1 << 1;
-    }
 }
 
 // Texture parameters 

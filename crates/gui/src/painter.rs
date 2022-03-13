@@ -35,12 +35,8 @@ impl Painter {
         // Load the egui font texture
         let egui_font_texture = TextureBuilder::default()
             .params(TextureParams {
-                layout: TextureLayout {
-                    resizable: true,
-                    ..Default::default()
-                },
                 wrap: TextureWrapMode::ClampToEdge(None),
-                flags: TextureFlags::empty(),
+                flags: TextureFlags::RESIZABLE,
                 ..Default::default()
             })
             .build();
