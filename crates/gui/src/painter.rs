@@ -1,11 +1,11 @@
 use crate::buffers::Buffers;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
-use rendering::basics::texture::TextureFlags;
+use rendering::basics::texture::{TextureFlags, Texture2D, TextureParams};
 use rendering::gl;
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
+        texture::{Texture, TextureBuilder, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -17,7 +17,7 @@ use vek::Clamp;
 pub struct Painter {
     // Store everything we need to render the egui meshes
     pub(crate) shader: Handle<Shader>,
-    pub(crate) gl_font_texture: Handle<Texture>,
+    pub(crate) gl_font_texture: Handle<Texture2D>,
     pub(crate) egui_font_texture_version: Option<u64>,
     pub(crate) buffers: Buffers,
 }
@@ -31,19 +31,20 @@ impl Painter {
             .source("defaults/shaders/gui/vert.vrsh.glsl")
             .source("defaults/shaders/gui/frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();
-        let shader = pipeline.shaders.insert(shader);
+        let shader = pipeline.insert(shader);
         // Load the egui font texture
         let egui_font_texture = TextureBuilder::default()
-            .filter(TextureFilter::Linear)
-            .layout(TextureLayout {
-                data: DataType::U8,
-                internal_format: TextureFormat::RGBA8R,
-                resizable: true,
+            .params(TextureParams {
+                layout: TextureLayout {
+                    resizable: true,
+                    ..Default::default()
+                },
+                wrap: TextureWrapMode::ClampToEdge(None),
+                flags: TextureFlags::empty(),
+                ..Default::default()
             })
-            .wrap_mode(TextureWrapMode::ClampToEdge(None))
-            .bits(TextureFlags::empty())
             .build();
-        let egui_font_texture = pipeline.textures.insert(egui_font_texture);
+        let egui_font_texture = pipeline.insert(egui_font_texture);
         Self {
             shader,
             gl_font_texture: egui_font_texture,
@@ -57,8 +58,8 @@ impl Painter {
         // Get the rect size so we can use the scissor test
         let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
         let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let clip_min = clip_min.clamped(vek::Vec2::zero(), pipeline.window.dimensions().as_());
-        let clip_max = clip_max.clamped(vek::Vec2::zero(), pipeline.window.dimensions().as_());
+        let clip_min = clip_min.clamped(vek::Vec2::zero(), pipeline.window().dimensions().as_());
+        let clip_max = clip_max.clamped(vek::Vec2::zero(), pipeline.window().dimensions().as_());
         let clip_min: vek::Vec2<i32> = clip_min.round().as_();
         let clip_max: vek::Vec2<i32> = clip_max.round().as_();
 
@@ -66,7 +67,7 @@ impl Painter {
         unsafe {
             gl::Scissor(
                 clip_min.x,
-                pipeline.window.dimensions().y as i32 - clip_max.y,
+                pipeline.window().dimensions().y as i32 - clip_max.y,
                 clip_max.x - clip_min.x,
                 clip_max.y - clip_min.y,
             );

@@ -3,26 +3,24 @@ use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
 use image::GenericImageView;
 
-use crate::{basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, get_ifd, TextureParams, Texture, get_texel_byte_size, TextureBytes}, object::PipelineElement};
+use crate::{basics::texture::{TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, get_ifd, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture}, object::PipelineElement};
 
 // A simple two dimensional OpenGL texture
 #[derive(Default, Getters, CopyGetters)]
 pub struct Texture2D {
     // The OpenGL id for this texture
-    #[getset(get_copy = "pub(crate)")]
     buffer: GLuint,
 
     // Params
     params: TextureParams,
 
     // Texture dimensions
-    #[getset(get_copy = "pub")]
-    width: u16,
-    #[getset(get_copy = "pub")]
-    height: u16,
+    dimensions: vek::Vec2<u16>,
 }
 
 impl Texture for Texture2D {
+    type Dimensions = vek::Vec2<u16>;
+
     fn target(&self) -> GLuint {
         gl::TEXTURE_2D
     }
@@ -33,7 +31,16 @@ impl Texture for Texture2D {
         &self.params
     }
     fn count_texels(&self) -> usize {
-        self.width as usize * self.height as usize
+        self.dimensions().as_::<usize>().product()
+    }
+    fn dimensions(&self) -> Self::Dimensions {
+        self.dimensions   
+    }
+}
+
+impl ResizableTexture for Texture2D {
+    fn resize(&mut self, dimensions: Self::Dimensions) {
+        todo!()
     }
 }
 
@@ -53,9 +60,8 @@ impl TextureBuilder {
         self.inner.params = params;
         self
     }
-    pub fn dimensions(mut self, width: u16, height: u16) -> Self {
-        self.inner.width = width;
-        self.inner.height = height;
+    pub fn dimensions(mut self, dimensions: vek::Vec2<u16>) -> Self {
+        self.inner.dimensions = dimensions;
         self
     }
     // Build
@@ -66,19 +72,21 @@ impl TextureBuilder {
 
 impl PipelineElement for Texture2D {
     fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
-        todo!()
+        pipeline.textures.insert(self)
     }
 
     fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
-        todo!()
+        pipeline.textures.get(handle)
     }
 
     fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
-        todo!()
+        pipeline.textures.get_mut(handle)
     }
 
     fn disposed(self) {
-        todo!()
+        unsafe {
+            
+        }
     }
 }
 
@@ -96,7 +104,7 @@ impl Asset for Texture2D {
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
         Some(
             TextureBuilder::default()
-                .dimensions(width, height)
+                .dimensions(vek::Vec2::new(width, height))
                 .params(TextureParams {
                     bytes: TextureBytes::Loaded(bytes),
                     layout: TextureLayout::default(),
