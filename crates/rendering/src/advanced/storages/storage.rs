@@ -27,27 +27,25 @@ pub struct RawStorage {
 impl RawStorage {
     // Create the raw storage, and possibly initialize it
     pub unsafe fn new(cap: usize, len: usize, ptr: *const c_void, _type: u32, usage: UsageType) -> Self {
-        let buffer = unsafe {
+        let buffer = {
             let mut buffer = 0;
             gl::GenBuffers(1, &mut buffer);
             buffer
         };
         // If we will allocate the buffer once, make it immutable
-        unsafe {
-            if usage.dynamic {
-                // Can have multiple allocations
-                gl::BindBuffer(_type, buffer);
-                gl::BufferData(_type, (cap) as isize, ptr as *const c_void, usage.convert());
-            } else {
-                // Single allocation
-                gl::BindBuffer(_type, buffer);
-                let bits = match usage.access {
-                    AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
-                    AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
-                    AccessType::ServerToServer => gl::MAP_READ_BIT,
-                };
-                gl::BufferStorage(_type, (cap) as isize, ptr as *const c_void, bits);
-            }
+        if usage.dynamic {
+            // Can have multiple allocations
+            gl::BindBuffer(_type, buffer);
+            gl::BufferData(_type, (cap) as isize, ptr as *const c_void, usage.convert());
+        } else {
+            // Single allocation
+            gl::BindBuffer(_type, buffer);
+            let bits = match usage.access {
+                AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
+                AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
+                AccessType::ServerToServer => gl::MAP_READ_BIT,
+            };
+            gl::BufferStorage(_type, (cap) as isize, ptr as *const c_void, bits);
         }
         Self {
             buffer,
@@ -77,17 +75,13 @@ impl RawStorage {
     }
     // Completely reallocate
     pub unsafe fn reallocate(&mut self, ptr: *const c_void, cap: usize) {
-        unsafe {
-            gl::BindBuffer(self._type, self.buffer);
-            gl::BufferData(self._type, (cap) as isize, ptr as *const c_void, self.usage.convert());
-        }
+        gl::BindBuffer(self._type, self.buffer);
+        gl::BufferData(self._type, (cap) as isize, ptr as *const c_void, self.usage.convert());
     }
     // Update subdata
     pub unsafe fn update_subdata(&mut self, input: *const c_void, len: usize) {
-        unsafe {
-            gl::BindBuffer(self._type, self.buffer);
-            gl::BufferSubData(self._type, 0, len as isize, input as *const c_void);
-        }
+        gl::BindBuffer(self._type, self.buffer);
+        gl::BufferSubData(self._type, 0, len as isize, input as *const c_void);
     }
     // Read subdata
     pub unsafe fn read(&self, output: *mut c_void, len: usize, _offset: usize) {

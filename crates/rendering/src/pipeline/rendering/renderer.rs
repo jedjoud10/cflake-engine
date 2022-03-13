@@ -130,7 +130,6 @@ impl SceneRenderer {
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture>("defaults/textures/sky_gradient.png").unwrap())
             .wrap_mode(TextureWrapMode::ClampToEdge(None))
-            .mipmaps(false)
             .build();
         let sky_gradient = pipeline.textures.insert(sky_gradient);
         /* #endregion */

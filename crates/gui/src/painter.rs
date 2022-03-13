@@ -1,5 +1,6 @@
 use crate::buffers::Buffers;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
+use rendering::basics::texture::TextureBits;
 use rendering::gl;
 use rendering::{
     basics::{
@@ -40,7 +41,7 @@ impl Painter {
                 resizable: true,
             })
             .wrap_mode(TextureWrapMode::ClampToEdge(None))
-            .mipmaps(false)
+            .bits(TextureBits::empty())
             .build();
         let egui_font_texture = pipeline.textures.insert(egui_font_texture);
         Self {

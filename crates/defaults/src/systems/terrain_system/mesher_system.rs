@@ -47,7 +47,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
             if !linked.is_linked::<Renderer>() {
                 // Generate the new component and link it
-                let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone());
+                let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
                 world.ecs.link(key, group).unwrap();
             } else {
                 // The renderer is already linked, we just need to update the mesh
@@ -79,7 +79,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 }
 
 // Create a new linking group that contains a renderer with a specific mesh
-fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Material>) -> ComponentLinkingGroup {
+fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Material>, physics: bool) -> ComponentLinkingGroup {
     // First time we link the renderer
     let mut group = ComponentLinkingGroup::default();
 
@@ -91,13 +91,15 @@ fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Mate
     };
     group.link(renderer).unwrap();
 
-    // Add the collider
-    let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
-    group.link(collider).unwrap();
-
-    // Add the static rigidbody
-    let rigidbody = RigidBody::new(RigidBodyType::Static);
-    group.link(rigidbody).unwrap();
+    if physics {
+        // Add the collider
+        let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
+        group.link(collider).unwrap();
+        
+        // Add the static rigidbody
+        let rigidbody = RigidBody::new(RigidBodyType::Static);
+        group.link(rigidbody).unwrap();
+    }
 
     group
 }

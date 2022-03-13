@@ -35,9 +35,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // Now we can execute the compute shader and the read bytes command
     let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS, AXIS, AXIS));
     let compute = pipeline.compute_shaders.get(&generator.primary_compute).unwrap();
-    let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
-    println!("Took {}ms to execute compute shader #1", i.elapsed().as_millis());
 
     // Set the uniforms for the second compute shader
     let program = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap().program();
@@ -55,7 +53,6 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     let compute = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap();
     let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
-    println!("Took {}ms to execute compute shader #2", i.elapsed().as_millis());
     terrain.manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
 }
 
@@ -64,7 +61,6 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
     // READ
     // Get the valid counters
     let generator = &mut terrain.generator;
-    let i = std::time::Instant::now();
     let read_counters = generator.atomics.get();
     let positive = *read_counters.get(0).unwrap();
     let negative = *read_counters.get(1).unwrap();
@@ -83,7 +79,6 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
 
     // Switch states
     terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
-    println!("Took {}ms to read buffers", i.elapsed().as_millis());
 }
 
 // The voxel systems' update loop

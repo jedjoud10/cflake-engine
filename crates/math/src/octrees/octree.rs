@@ -55,7 +55,7 @@ impl Octree {
         // Simple check to see if we even moved lol
         if let Some(pos) = self.target.as_ref() {
             // Check distances
-            if vek::Vec3::<f32>::distance(*pos, target) < self.hsettings.min_threshold_distance as f32 {
+            if vek::Vec3::<f32>::distance(*pos, target) < (self.size / 2) as f32 {
                 return None;
             }
         }

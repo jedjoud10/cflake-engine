@@ -5,7 +5,7 @@ use gl::types::GLuint;
 use crate::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
+        texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode, TextureBits},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -42,7 +42,7 @@ impl ShadowMapping {
             .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(shadow_resolution.max(1), shadow_resolution.max(1))))
             .filter(TextureFilter::Linear)
             .wrap_mode(TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())))
-            .custom_params(&[(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)])
+            .bits(TextureBits::SHADOWTEX)
             .layout(TextureLayout {
                 data_type: DataType::U8,
                 internal_format: TextureFormat::DepthComponent16,
@@ -106,6 +106,7 @@ impl ShadowMapping {
         gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::DEPTH_BUFFER_BIT);
+        gl::Disable(gl::CULL_FACE);
 
         // Load the shader and it's uniforms
         let shader = pipeline.shaders.get(&self.shader).unwrap();
@@ -129,6 +130,7 @@ impl ShadowMapping {
         // Reset
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         gl::Viewport(0, 0, pipeline.window.dimensions.x as i32, pipeline.window.dimensions.y as i32);
+        gl::Enable(gl::CULL_FACE);
 
         Ok(())
     }

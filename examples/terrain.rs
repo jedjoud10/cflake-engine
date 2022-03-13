@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Transform},
+        components::{self, Transform, Camera},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -38,7 +38,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
+    group.link(Camera::new(90.0, 2.0, 4000.0)).unwrap();
     group.link(Transform::default()).unwrap();
     world.ecs.add(group).unwrap();
 
@@ -76,10 +76,8 @@ fn init(world: &mut World) {
         ..Default::default()
     };
     let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3])
-        .mipmaps(true)
         .layout(layout);
     let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3])
-        .mipmaps(true)
         .layout(layout);
     let diffuse = world.pipeline.textures.insert(diffuse.build());
     let normals = world.pipeline.textures.insert(normals.build());
@@ -94,12 +92,12 @@ fn init(world: &mut World) {
         ..Default::default()
     };
     let material = world.pipeline.materials.insert(material);
-    let heuristic = HeuristicSettings::default()
-        .with_function(|node, target| {
+    let heuristic = HeuristicSettings {
+        function: |node, target| {
             let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);
             dist < 1.2
-        })
-        .with_threshold(64.0);
+        },
+    };
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),

@@ -35,6 +35,7 @@ pub struct ChunksManager {
     pub(crate) priority_list: Vec<(EntityKey, f32)>,
     pub(crate) chunks_to_remove: Vec<EntityKey>,
     pub(crate) material: Handle<Material>,
+    pub(crate) physics: bool,
 
     // The Entity ID of the chunk that we are generating
     // This includes voxel data generation AND mesh generation

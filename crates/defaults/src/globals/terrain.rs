@@ -32,6 +32,7 @@ impl Terrain {
             manager: ChunksManager {
                 octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
                 material: settings.material,
+                physics: settings.physics,
                 ..Default::default()
             },
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),

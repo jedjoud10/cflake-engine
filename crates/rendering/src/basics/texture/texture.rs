@@ -15,8 +15,19 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
+use bitflags::bitflags;
 
+// Texture parameter bits
+bitflags! {
+    pub struct TextureBits: u8 {
+        const MIPMAPS = 1;
+        const MULTISAMPLE = 1 << 2;
+        const SHADOWTEX = 1 << 3;
+        const SRGB = 1 << 4;
+    }
+}
 // A texture
+// TODO: Implement the texture type enum
 #[derive(CopyGetters, Getters)]
 pub struct Texture {
     // The OpenGL id for this texture
@@ -44,17 +55,13 @@ pub struct Texture {
     #[getset(get_copy = "pub")]
     wrap_mode: TextureWrapMode,
 
-    // The border colors
-    #[getset(get = "pub")]
-    custom_params: SmallVec<[(GLuint, GLuint); 2]>,
-
     // The dimensions of the texture
     #[getset(get_copy = "pub")]
     dimensions: TextureDimensions,
 
-    // Should we generate mipmaps for this texture
+    // Bits
     #[getset(get_copy = "pub")]
-    mipmaps: bool,
+    bits: TextureBits,
 }
 
 impl Default for Texture {
@@ -68,9 +75,8 @@ impl Default for Texture {
 
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapMode::Repeat,
-            custom_params: SmallVec::default(),
             dimensions: TextureDimensions::Texture2d(vek::Vec2::zero()),
-            mipmaps: false,
+            bits: TextureBits::empty(),
         }
     }
 }
@@ -103,16 +109,12 @@ impl TextureBuilder {
         self.inner.wrap_mode = wrapping;
         self
     }
-    pub fn custom_params(mut self, params: &[(GLuint, GLuint)]) -> Self {
-        self.inner.custom_params = SmallVec::from_slice(params);
-        self
-    }
     pub fn dimensions(mut self, dims: TextureDimensions) -> Self {
         self.inner.dimensions = dims;
         self
     }
-    pub fn mipmaps(mut self, enabled: bool) -> Self {
-        self.inner.mipmaps = enabled;
+    pub fn bits(mut self, bits: TextureBits) -> Self {
+        self.inner.bits = bits;
         self
     }
 
@@ -282,6 +284,11 @@ impl PipelineCollectionElement for Texture {
         // Get the pointer to the bytes data
         let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
 
+        // Convert the textures to SRGBA textures if needed
+        if self.bits.contains(TextureBits::SRGB) && self.ifd.0 == gl::RGBA8 as i32 {
+            self.ifd.0 = gl::SRGB8_ALPHA8 as i32;
+        }
+
         // Create the texture and bind it
         unsafe {
             gl::GenTextures(1, &mut self.buffer);
@@ -291,7 +298,7 @@ impl PipelineCollectionElement for Texture {
         }
 
         // The texture is already bound
-        if self.mipmaps {
+        if self.bits.contains(TextureBits::MIPMAPS) {
             unsafe {
                 // Create the mipmaps
                 gl::GenerateMipmap(self.target);
@@ -299,7 +306,7 @@ impl PipelineCollectionElement for Texture {
         }
 
         // Texture parameters
-        let (min, mag) = if self.mipmaps {
+        let (min, mag) = if self.bits.contains(TextureBits::MIPMAPS) {
             // Mip-mapped
             match self.filter {
                 TextureFilter::Linear => {
@@ -354,10 +361,11 @@ impl PipelineCollectionElement for Texture {
             }
         }
 
-        // Set the custom parameters
-        for (name, param) in &self.custom_params {
+        // Custom shadow texture
+        if self.bits.contains(TextureBits::SHADOWTEX) {
             unsafe {
-                gl::TexParameteri(self.target, *name, *param as i32);
+                gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE as i32);
+                gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_FUNC, gl::GREATER as i32);
             }
         }
     }
@@ -385,7 +393,7 @@ impl Asset for Texture {
             TextureBuilder::default()
                 .bytes(bytes)
                 .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(width, height)))
-                .mipmaps(true)
+                .bits(TextureBits::MIPMAPS | TextureBits::SRGB)
                 .layout(TextureLayout {
                     data_type: DataType::U8,
                     internal_format: TextureFormat::RGBA8R,

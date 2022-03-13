@@ -25,10 +25,9 @@ impl TextureBundler {
             .layout(textures[0].layout())
             .bytes(bytes)
             .layout(textures[0].layout())
-            .custom_params(textures[0].custom_params())
+            .bits(textures[0].bits())
             .dimensions(TextureDimensions::Texture2dArray(vek::Vec3::new(width, height, textures.len() as u16)))
             .filter(textures[0].filter())
-            .mipmaps(textures[0].mipmaps())
             .wrap_mode(textures[0].wrap_mode())
     }
 }
