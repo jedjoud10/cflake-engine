@@ -16,7 +16,7 @@ uniform sampler2DShadow shadow_map; // 6
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
-uniform mat4 pr_matrix;
+uniform mat4 inverse_pr_matrix;
 uniform mat4 pv_matrix;
 uniform vec2 nf_planes;
 uniform bool shadows_enabled;
@@ -34,7 +34,7 @@ void main() {
 	float sun_dot_product = dot(sunlight_dir, vec3(0, 1, 0));
 	float time_of_day = sun_dot_product * 0.5 + 0.5;
 	float sun_strength_factor = calculate_sun_strength(time_of_day);	
-	vec3 pixel_dir = normalize((inverse(pr_matrix) * vec4(uvs * 2 - 1, 0, 1)).xyz);
+	vec3 pixel_dir = normalize((inverse_pr_matrix * vec4(uvs * 2 - 1, 0, 1)).xyz);
 
 	// Get fragment depth
 	vec3 final_color = vec3(0, 0, 0);
@@ -45,7 +45,6 @@ void main() {
 		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
 		final_color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
 		final_color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 4096), 0) * sun_strength_factor * 20.0;
-		final_color = pixel_dir;
 	} else {
 		float in_shadow = 0.0;
 		if (shadows_enabled) {

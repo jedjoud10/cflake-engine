@@ -96,9 +96,9 @@ impl ShadowMapping {
     pub(crate) fn update_matrix(&mut self, light_quat: vek::Quaternion<f32>) {
         // Update the light view matrix
         let matrix = vek::Mat4::from(light_quat);
-        let forward = matrix.mul_direction(vek::Vec3::unit_z());
+        let forward = matrix.mul_direction(-vek::Vec3::unit_z());
         let up = matrix.mul_direction(vek::Vec3::unit_y());
-        self.lightspace = matrix;
+        self.lightspace = self.ortho * vek::Mat4::look_at_rh(vek::Vec3::zero(), forward, up);
     }
     // Render the scene from the POV of the light source, so we can cast shadows
     pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) -> Result<(), RenderingError> {

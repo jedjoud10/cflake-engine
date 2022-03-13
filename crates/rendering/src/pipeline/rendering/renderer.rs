@@ -220,8 +220,8 @@ impl SceneRenderer {
         uniforms.set_mat44f32("lightspace_matrix", matrix);
 
         // Set the camera matrices
-        let pr_m = pipeline.camera.projm * (vek::Mat4::<f32>::from(pipeline.camera.rotation));
-        uniforms.set_mat44f32("pr_matrix", &pr_m);
+        let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera.rotation)) * pipeline.camera.projm.inverted();
+        uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
         uniforms.set_mat44f32("pv_matrix", &pipeline.camera.projm_viewm);
         uniforms.set_vec2f32("nf_planes", pipeline.camera.clip_planes);
 
