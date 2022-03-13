@@ -44,7 +44,7 @@ impl ShadowMapping {
             .wrap_mode(TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())))
             .bits(TextureBits::SHADOWTEX)
             .layout(TextureLayout {
-                data_type: DataType::U8,
+                data: DataType::U8,
                 internal_format: TextureFormat::DepthComponent16,
                 resizable: false,
             })

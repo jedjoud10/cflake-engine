@@ -90,7 +90,7 @@ impl SceneRenderer {
             .map(|(internal_format, data_type)| {
                 // Create a texture layout
                 let layout = TextureLayout {
-                    data_type,
+                    data: data_type,
                     internal_format,
                     resizable: true,
                 };

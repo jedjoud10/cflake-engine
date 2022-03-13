@@ -36,7 +36,7 @@ impl Painter {
         let egui_font_texture = TextureBuilder::default()
             .filter(TextureFilter::Linear)
             .layout(TextureLayout {
-                data_type: DataType::U8,
+                data: DataType::U8,
                 internal_format: TextureFormat::RGBA8R,
                 resizable: true,
             })
