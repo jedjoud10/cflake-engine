@@ -7,7 +7,7 @@ pub use settings::*;
 pub use state::*;
 
 pub use ::bitfield;
-pub use ::veclib;
+pub use vek;
 pub use assets;
 pub use audio;
 pub use ecs;

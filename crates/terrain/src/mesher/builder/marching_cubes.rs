@@ -48,19 +48,19 @@ impl MarchingCubes {
         let vedge2 = EDGE_TABLE[(edge.index as usize) * 2 + 1];
         let mut vertex = vek::Vec3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
         // Offset the vertex
-        vertex += vek::Vec3::<f32>::from(info.pos);
+        vertex += info.pos.as_();
         // Get the normal
-        let n1: vek::Vec3<f32> = (*voxels.normal(edge.index1)).into();
-        let n2: vek::Vec3<f32> = (*voxels.normal(edge.index2)).into();
+        let n1: vek::Vec3<f32> = (*voxels.normal(edge.index1)).as_();
+        let n2: vek::Vec3<f32> = (*voxels.normal(edge.index2)).as_();
         let normal = vek::Vec3::<f32>::lerp(n1, n2, value).normalized();
         // Get the color
-        let c1: vek::Vec3<f32> = (*voxels.color(edge.index1)).into();
-        let c2: vek::Vec3<f32> = (*voxels.color(edge.index2)).into();
+        let c1: vek::Vec3<f32> = (*voxels.color(edge.index1)).as_();
+        let c2: vek::Vec3<f32> = (*voxels.color(edge.index2)).as_();
         let color = vek::Vec3::<f32>::lerp(c1, c2, value);
         InterpolatedVertexData {
             vertex,
-            normal: (normal * 127.0).into(),
-            color: color.into(),
+            normal: (normal * 127.0).as_(),
+            color: color.as_(),
         }
     }
     // Solve the marching cubes case and add the vertices to the mesh
@@ -119,7 +119,7 @@ impl MarchingCubes {
                 for z in 0..CHUNK_SIZE {
                     // Convert our 32x32x32 position into the 33x33x33 index, since they are different
                     let i = flatten((x, y, z));
-                    let info = IterInfo { i, pos: veclib::vec3(x, y, z) };
+                    let info = IterInfo { i, pos: vek::Vec3::new(x, y, z) };
 
                     // Generate the case index
                     let case = Self::generate_marching_cubes_case(voxels, &info);

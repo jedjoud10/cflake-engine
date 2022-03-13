@@ -13,7 +13,7 @@ use cflake_engine::{
         texture::{Texture, TextureBundler, TextureLayout},
     },
     terrain::editing::Edit,
-    veclib::{self, vec3},
+    vek,
     World,
 };
 
@@ -50,7 +50,7 @@ fn init(world: &mut World) {
         },
     };
     let light_transform = Transform {
-        rotation: veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()),
+        rotation: vek::Quaternion::<f32>::rotation_x(-30f32.to_radians()),
         ..Default::default()
     };
     // And add it to the world as an entity
@@ -87,13 +87,13 @@ fn init(world: &mut World) {
             normal_map: normals,
             ..Default::default()
         },
-        uv_scale: vek::Vec2::ONE * 0.03,
+        uv_scale: vek::Vec2::one() * 0.03,
         ..Default::default()
     };
     let material = world.pipeline.materials.insert(material);
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
-            let dist = vek::Vec3::<f32>::distance(node.center().into(), *target) / (node.half_extent() as f32 * 2.0);
+            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);
             dist < 1.2
         })
         .with_threshold(64.0);
@@ -107,8 +107,8 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
-    terrain.edit(Edit::cuboid(vek::Vec3::ZERO, vec3(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::cuboid(vek::Vec3::zero(), vek::Vec3::new(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
     // Pillar
-    terrain.edit(Edit::sphere(vek::Vec3::ZERO, 50.0, CSGOperation::Union, Some(1)));
+    terrain.edit(Edit::sphere(vek::Vec3::zero(), 50.0, CSGOperation::Union, Some(1)));
     world.globals.add(terrain).unwrap();
 }

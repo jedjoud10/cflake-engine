@@ -3,7 +3,7 @@ use cflake_engine::{
     defaults::components::{self, Transform},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType::Directional},
-    veclib, World,
+    vek, World,
 };
 // A game with a test camera
 fn main() {
@@ -26,7 +26,7 @@ fn init(world: &mut World) {
         },
     };
     let light_transform = Transform {
-        rotation: veclib::Quaternion::<f32>::from_x_angle(-90f32.to_radians()),
+        rotation: vek::Quaternion::<f32>::rotation_x(-90f32.to_radians()),
         ..Default::default()
     };
     // And add it to the world as an entity

@@ -2,7 +2,7 @@ use cflake_engine::{
     defaults::components::{Camera, Collider, Light, Renderer, RigidBody, RigidBodyType, Transform, ColliderGeometry, ColliderMaterial},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType},
-    veclib, World, math::shapes::ShapeType,
+    vek, World, math::shapes::ShapeType,
 };
 // A game with a test camera
 fn main() {
@@ -24,7 +24,7 @@ fn init(world: &mut World) {
         },
     };
     let light_transform = Transform {
-        rotation: veclib::Quaternion::<f32>::from_x_angle(-30f32.to_radians()),
+        rotation: vek::Quaternion::<f32>::rotation_x(-30f32.to_radians()),
         ..Default::default()
     };
     // And add it to the world as an entity
@@ -37,7 +37,7 @@ fn init(world: &mut World) {
     let mut group = ComponentLinkingGroup::default();
     group
         .link(Transform {
-            scale: veclib::vec3(50.0, 1.0, 50.0),
+            scale: vek::Vec3::new(50.0, 1.0, 50.0),
             ..Default::default()
         })
         .unwrap();
@@ -58,8 +58,8 @@ fn init(world: &mut World) {
                 let mut group = ComponentLinkingGroup::default();
                 group
                     .link(Transform {
-                        position: veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3),
-                        scale: veclib::vec3(1.0, 1.0, 1.0),
+                        position: vek::Vec3::new(x as f32 * 0.3, y as f32 * 2.0 + 20.0, z as f32 * 0.3),
+                        scale: vek::Vec3::new(1.0, 1.0, 1.0),
                         ..Default::default()
                     })
                     .unwrap();
@@ -71,7 +71,7 @@ fn init(world: &mut World) {
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
-                group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::ONE), ColliderMaterial::new(10.0, 0.0))).unwrap();
+                group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::one()), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();
             }
         }
@@ -83,8 +83,8 @@ fn init(world: &mut World) {
                 let mut group = ComponentLinkingGroup::default();
                 group
                     .link(Transform {
-                        position: veclib::vec3(x as f32 * 0.3, y as f32 * 2.0 + 50.0, z as f32 * 0.3),
-                        scale: veclib::vec3(1.0, 1.0, 1.0),
+                        position: vek::Vec3::new(x as f32 * 0.3, y as f32 * 2.0 + 50.0, z as f32 * 0.3),
+                        scale: vek::Vec3::new(1.0, 1.0, 1.0),
                         ..Default::default()
                     })
                     .unwrap();

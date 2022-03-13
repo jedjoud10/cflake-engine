@@ -19,11 +19,11 @@ impl Default for Edit {
     fn default() -> Self {
         Self {
             shape: ShapeType::Sphere(Sphere {
-                center: vek::Vec3::ZERO,
+                center: vek::Vec3::zero(),
                 radius: 10.0,
             }),
             material: Default::default(),
-            color: vek::Vec3::ONE * 255,
+            color: vek::Vec3::one() * 255,
             operation: CSGOperation::Union,
         }
     }
@@ -35,7 +35,7 @@ impl Edit {
         Self {
             shape,
             material: None,
-            color: vek::Vec3::ONE * 255,
+            color: vek::Vec3::one() * 255,
             operation,
         }
     }

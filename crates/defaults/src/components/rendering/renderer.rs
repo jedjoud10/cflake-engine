@@ -10,7 +10,7 @@ pub struct Renderer {
     pub material: Handle<Material>,
 
     // Keep the model matrix cached
-    pub matrix: veclib::Matrix4x4<f32>,
+    pub matrix: vek::Mat4<f32>,
 
     // Some rendering settings
     pub visible: bool,

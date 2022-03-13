@@ -110,7 +110,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
 fn handle_device_event(event: DeviceEvent, world: &mut World, _control_flow: &mut ControlFlow) {
     match event {
         DeviceEvent::MouseMotion { delta } => {
-            world.input.receive_mouse_position_event(veclib::vec2(delta.0 as f32, delta.1 as f32));
+            world.input.receive_mouse_position_event(vek::Vec2::new(delta.0 as f32, delta.1 as f32));
         }
         DeviceEvent::MouseWheel { delta } => match delta {
             glutin::event::MouseScrollDelta::LineDelta(_x, y) => world.input.receive_mouse_scroll_event(y),

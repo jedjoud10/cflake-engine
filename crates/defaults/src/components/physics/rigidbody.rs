@@ -28,10 +28,10 @@ impl RigidBody {
     pub fn new(_type: RigidBodyType) -> Self {
         Self {
             handle: RigidBodyHandle::invalid(),
-            velocity: vek::Vec3::ZERO,
-            angular_velocity: vek::Vec3::ZERO,
-            force: vek::Vec3::ZERO,
-            torque: vek::Vec3::ZERO,
+            velocity: vek::Vec3::zero(),
+            angular_velocity: vek::Vec3::zero(),
+            force: vek::Vec3::zero(),
+            torque: vek::Vec3::zero(),
             forces: RigidBodyForces::default(),
             _type,
             sleeping: false,

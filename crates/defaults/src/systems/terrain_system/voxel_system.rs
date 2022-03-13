@@ -29,11 +29,11 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     let mut uniforms = Uniforms::new(program, pipeline, true);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("terrain_edits", &mut generator.ssbo_edits, 1);
-    uniforms.set_vec3f32("node_pos", chunk.coords.position.into());
+    uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());
     uniforms.set_i32("node_size", chunk.coords.size as i32);
     uniforms.set_u32("num_terrain_edits", generator.ssbo_edits.storage().len() as u32);
     // Now we can execute the compute shader and the read bytes command
-    let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS, AXIS, AXIS));
+    let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS, AXIS, AXIS));
     let compute = pipeline.compute_shaders.get(&generator.primary_compute).unwrap();
     let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
@@ -44,14 +44,14 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     let mut uniforms = Uniforms::new(program, pipeline, true);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("output_voxels", &mut generator.ssbo_final_voxels, 1);
-    uniforms.set_vec3f32("node_pos", chunk.coords.position.into());
+    uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());
     uniforms.set_i32("node_size", chunk.coords.size as i32);
 
     // Clear the atomics then set them
     generator.atomics.set([0, 0, 0, 0]);
     uniforms.set_atomic_group("_", &mut generator.atomics, 0);
     // And execute the shader
-    let settings = ComputeShaderExecutionSettings::new(veclib::vec3(AXIS2, AXIS2, AXIS2));
+    let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS2, AXIS2, AXIS2));
     let compute = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap();
     let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();

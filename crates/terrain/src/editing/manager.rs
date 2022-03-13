@@ -37,7 +37,7 @@ impl EditingManager {
                 // Center, size, shapetype
                 let (center, size, shapetype) = match &edit.shape {
                     ShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
-                    ShapeType::Sphere(sphere) => (sphere.center, veclib::vec3(sphere.radius, 0.0, 0.0), 1u8),
+                    ShapeType::Sphere(sphere) => (sphere.center, vek::Vec3::new(sphere.radius, 0.0, 0.0), 1u8),
                 };
                 // Get the edittype
                 let rgbcolor = (pack_color(edit.color) as u32) << 16; // 2
@@ -46,8 +46,8 @@ impl EditingManager {
                 let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
 
                 PackedEdit {
-                    center: veclib::vec3(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
-                    size: veclib::vec3(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
+                    center: vek::Vec3::new(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
+                    size: vek::Vec3::new(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
                     rgbcolor_shape_type_edit_type_material,
                 }
             })

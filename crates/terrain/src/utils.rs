@@ -23,7 +23,7 @@ pub fn unpack_color(packed: u16) -> vek::Vec3<u8> {
     let r = (packed >> 11).saturating_mul(8);
     let g = ((packed >> 5) & 63).saturating_mul(4);
     let b = (packed & 31).saturating_mul(8);
-    veclib::vec3(r as u8, g as u8, b as u8)
+    vek::Vec3::new(r as u8, g as u8, b as u8)
 }
 
 // Convert an 24 bit RGB color into a 16 bit RGB color

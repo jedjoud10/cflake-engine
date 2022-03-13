@@ -11,7 +11,7 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
         .iter_mut()
         .for_each(|(_, linked)| {
             let transform = linked.get_mut::<Transform>().unwrap();
-            transform.rotation = veclib::Quaternion::<f32>::from_x_angle(-world.time.elapsed.to_radians() as f32);
+            transform.rotation = vek::Quaternion::<f32>::rotation_x(-world.time.elapsed.to_radians() as f32);
         });
 }
 

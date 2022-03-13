@@ -3,8 +3,8 @@ use world::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
 #[derive(Component)]
 pub struct Camera {
-    pub viewm: veclib::Matrix4x4<f32>,
-    pub projm: veclib::Matrix4x4<f32>,
+    pub viewm: vek::Mat4<f32>,
+    pub projm: vek::Mat4<f32>,
     pub horizontal_fov: f32,
     pub clip_planes: vek::Vec2<f32>, // Near, far
 }
@@ -14,28 +14,32 @@ impl Camera {
     // Create a new camera with a specified FOV and clip planes
     pub fn new(fov: f32, clipn: f32, clipf: f32) -> Self {
         let mut camera = Self {
-            viewm: veclib::Matrix4x4::IDENTITY,
-            projm: veclib::Matrix4x4::IDENTITY,
+            viewm: vek::Mat4::identity(),
+            projm: vek::Mat4::identity(),
             horizontal_fov: fov,
             clip_planes: vek::Vec2::new(clipn, clipf),
         };
-        camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32);
+        camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.x as f32, DEFAULT_WINDOW_SIZE.y as f32);
         camera
     }
     // Update the projection matrix of this camera
-    pub fn update_projection_matrix(&mut self, aspect_ratio: f32) {
+    pub fn update_projection_matrix(&mut self, width: f32, height: f32) {
+        // Calculate aspect ratio
+        let ratio = width / height;
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan();
-        self.projm = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
+        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (ratio))).atan();
+        self.projm = vek::Mat4::<f32>::perspective_fov_rh_no(vertical_fov, width, height, self.clip_planes.x, self.clip_planes.y);
     }
     // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: vek::Vec3<f32>, rotation: veclib::Quaternion<f32>) {
-        let rotation_matrix = veclib::Matrix4x4::<f32>::from_quaternion(&rotation);
-        let mut forward_vector = rotation_matrix.mul_point(&vek::Vec3::<f32>::new(0.0, 0.0, -1.0));
-        forward_vector.normalize();
-        let mut up_vector = rotation_matrix.mul_point(&vek::Vec3::<f32>::new(0.0, 1.0, 0.0));
-        up_vector.normalize();
-        self.viewm = veclib::Matrix4x4::<f32>::look_at(&position, &up_vector, &(forward_vector + position));
+    pub fn update_view_matrix(&mut self, position: vek::Vec3<f32>, mut rotation: vek::Quaternion<f32>) {
+        // Matrix from quaternion
+        let rotation = rotation.normalized();
+        let rotation_matrix = vek::Mat4::<f32>::from(rotation);
+        // Vectors
+        let forward = rotation_matrix.mul_point(-vek::Vec3::<f32>::unit_z());
+        let up = rotation_matrix.mul_point(vek::Vec3::<f32>::unit_y());
+        // Update matrix
+        self.viewm = vek::Mat4::<f32>::look_at_rh(position, (forward + position), up);
     }
 }
 

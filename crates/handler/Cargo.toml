@@ -11,5 +11,5 @@ lazy_static = "1.4.0"
 spin_sleep = "1.0.0"
 defaults = { path = "../defaults" }
 world = { path = "../world" }
-
+vek = "0.15.6"
 mimalloc = "0.1.27"

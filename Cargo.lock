@@ -633,6 +633,7 @@ dependencies = [
  "getset",
  "parking_lot 0.12.0",
  "rapier3d",
+ "vek",
  "world",
 ]
 
@@ -984,6 +985,7 @@ dependencies = [
  "lazy_static",
  "mimalloc",
  "spin_sleep",
+ "vek",
  "world",
 ]
 

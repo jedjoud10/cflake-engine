@@ -10,6 +10,7 @@ use rendering::{
     pipeline::{Handle, Pipeline},
     utils::DataType,
 };
+use vek::Clamp;
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
@@ -55,10 +56,10 @@ impl Painter {
         // Get the rect size so we can use the scissor test
         let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
         let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let clip_min = clip_min.clamp(vek::Vec2::ZERO, pipeline.window.dimensions().into());
-        let clip_max = clip_max.clamp(vek::Vec2::ZERO, pipeline.window.dimensions().into());
-        let clip_min: vek::Vec2<i32> = clip_min.round().into();
-        let clip_max: vek::Vec2<i32> = clip_max.round().into();
+        let clip_min = clip_min.clamped(vek::Vec2::zero(), pipeline.window.dimensions().as_());
+        let clip_max = clip_max.clamped(vek::Vec2::zero(), pipeline.window.dimensions().as_());
+        let clip_min: vek::Vec2<i32> = clip_min.round().as_();
+        let clip_max: vek::Vec2<i32> = clip_max.round().as_();
 
         //scissor Y coordinate is from the bottom
         unsafe {

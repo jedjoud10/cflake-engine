@@ -52,13 +52,13 @@ impl ColliderGeometry {
     // Create a new collider with specific shapes
     pub fn cuboid(size: vek::Vec3<f32>) -> Self {
         ColliderGeometry::Shape(ShapeType::Cuboid(Cuboid {
-            center: vek::Vec3::ZERO,
+            center: vek::Vec3::zero(),
             size,
         }))
     }
     pub fn sphere(radius: f32) -> Self {
         ColliderGeometry::Shape(ShapeType::Sphere(Sphere {
-            center: vek::Vec3::ZERO,
+            center: vek::Vec3::zero(),
             radius,
         }))
     }
@@ -66,7 +66,7 @@ impl ColliderGeometry {
         ColliderGeometry::Mesh {
             mesh,
             mass,
-            com_offset: vek::Vec3::ZERO,
+            com_offset: vek::Vec3::zero(),
         }
     }
 }

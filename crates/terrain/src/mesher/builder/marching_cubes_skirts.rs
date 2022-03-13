@@ -103,15 +103,15 @@ impl MarchingCubesSkirts {
         // Get the interpolated voxels
         // Default half-distance interpolated vertices
         let mut ivertices: [SkirtVert; 4] = [
-            SkirtVert::Default(veclib::vec2(0.0, 0.5)),
-            SkirtVert::Default(veclib::vec2(0.5, 1.0)),
-            SkirtVert::Default(veclib::vec2(1.0, 0.5)),
-            SkirtVert::Default(veclib::vec2(0.5, 0.0)),
+            SkirtVert::Default(vek::Vec2::new(0.0, 0.5)),
+            SkirtVert::Default(vek::Vec2::new(0.5, 1.0)),
+            SkirtVert::Default(vek::Vec2::new(1.0, 0.5)),
+            SkirtVert::Default(vek::Vec2::new(0.5, 0.0)),
         ];
 
         // This is some shared data for this whole
-        let mut shared_normal = vek::Vec3::<f32>::ZERO;
-        let mut shared_color = vek::Vec3::<f32>::ZERO;
+        let mut shared_normal = vek::Vec3::<f32>::zero();
+        let mut shared_color = vek::Vec3::<f32>::zero();
         let mut count: usize = 0;
         for edge in MS_CASE_TO_EDGES[case_index as usize] {
             // Exit early
@@ -126,14 +126,14 @@ impl MarchingCubesSkirts {
             let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
             // Now interpolate the voxel attributes
             let normal = vek::Vec3::<f32>::lerp(
-                vek::Vec3::<f32>::from(*voxels.normal(index1)),
-                vek::Vec3::<f32>::from(*voxels.normal(index2)),
+                voxels.normal(index1).as_(),
+                voxels.normal(index2).as_(),
                 value,
             )
             .normalized();
             let color = vek::Vec3::<f32>::lerp(
-                vek::Vec3::<f32>::from(*voxels.color(index1)),
-                vek::Vec3::<f32>::from(*voxels.color(index2)),
+                voxels.color(index1).as_(),
+                voxels.color(index2).as_(),
                 value,
             );
 
@@ -148,8 +148,8 @@ impl MarchingCubesSkirts {
             ivertices[edge as usize] = SkirtVert::Interpolated(position);
         }
         Some(SquareData {
-            normal: (shared_normal / count as f32 * 255.0).into(),
-            color: (shared_color / count as f32).into(),
+            normal: (shared_normal / count as f32 * 255.0).as_(),
+            color: (shared_color / count as f32).as_(),
             voxel_material: *voxels.voxel_material(info.i),
             position: p,
             case: case_index,
@@ -158,7 +158,7 @@ impl MarchingCubesSkirts {
     }
     // Solve a single marching squares case using a passed function for transforming the vertex position to world space
     fn solve_marching_squares(builder: &mut GeometryBuilder, info: &InterInfo, data: &SquareData) {
-        let mut vertices: [vek::Vec3<f32>; 12] = [vek::Vec3::ZERO; 12];
+        let mut vertices: [vek::Vec3<f32>; 12] = [vek::Vec3::zero(); 12];
         let mut len: usize = 0;
         // Create the triangles from the marching squares case
         let triangles = MS_CASE_TO_TRIS[data.case as usize];
@@ -200,7 +200,7 @@ impl MarchingCubesSkirts {
     // Create a marching squares triangle between 3 skirt voxels
     fn create_triangle(indices: &[i8], info: &InterInfo, data: &SquareData) -> [vek::Vec3<f32>; 3] {
         // Check if the local index is one of the interpolated ones
-        let mut vertices = [vek::Vec3::<f32>::ZERO; 3];
+        let mut vertices = [vek::Vec3::<f32>::zero(); 3];
         for (triangle_index, vertex_index) in indices.iter().enumerate() {
             vertices[triangle_index] = if *vertex_index % 2 == 0 {
                 // Not interpolated

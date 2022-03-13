@@ -21,8 +21,8 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: vek::Vec3<f32>, camer
 
     // Link the nessecary components
     // Transform
-    let position = vek::Vec3::<f32>::from(coords.position);
-    let scale = vek::Vec3::ONE * ((coords.size / octree_size) as f32);
+    let position = coords.position.as_();
+    let scale = vek::Vec3::one() * ((coords.size / octree_size) as f32);
     let transform = Transform {
         position,
         scale,

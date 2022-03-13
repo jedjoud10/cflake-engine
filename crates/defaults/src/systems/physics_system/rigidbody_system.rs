@@ -13,14 +13,14 @@ use world::{ecs::component::ComponentQuerySet};
 use super::vec3_to_point;
 
 // Convert a rendering mesh to it's SharedShape counterpart
-fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
+fn get_mesh(scale_matrix: &vek::Mat4<f32>, mesh: &Mesh) -> SharedShape {
     // Convert vertices and indices
     let vertices = mesh
         .vertices()
         .positions
         .iter()
         // Scale the points by the scale matrix
-        .map(|vertex| scale_matrix.mul_point(vertex))
+        .map(|&vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
     let indices = mesh.indices().chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
@@ -29,7 +29,7 @@ fn get_mesh(scale_matrix: &veclib::Matrix4x4<f32>, mesh: &Mesh) -> SharedShape {
 }
 
 // Get the Rapier3D shared shape from a collider components
-fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &veclib::Matrix4x4<f32>, collider: &Collider) -> SharedShape {
+fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider: &Collider) -> SharedShape {
     match &collider.geometry {
         ColliderGeometry::Shape(shape) => match shape {
             ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),

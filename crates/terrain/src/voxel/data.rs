@@ -25,8 +25,8 @@ impl Default for StoredVoxelData {
         // Allocate enough space to store all the voxels voxels
         const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
-        let normals = vec![vek::Vec3::ZERO; LEN];
-        let colors = vec![vek::Vec3::ZERO; LEN];
+        let normals = vec![vek::Vec3::zero(); LEN];
+        let colors = vec![vek::Vec3::zero(); LEN];
         let voxel_materials = vec![0; LEN];
 
         Self {
