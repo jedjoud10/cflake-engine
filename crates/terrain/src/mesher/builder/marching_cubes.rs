@@ -46,17 +46,17 @@ impl MarchingCubes {
         // Create the vertex
         let vedge1 = EDGE_TABLE[(edge.index as usize) * 2];
         let vedge2 = EDGE_TABLE[(edge.index as usize) * 2 + 1];
-        let mut vertex = veclib::Vector3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
+        let mut vertex = vek::Vec3::<f32>::lerp(VERTEX_TABLE[vedge1], VERTEX_TABLE[vedge2], value);
         // Offset the vertex
-        vertex += veclib::Vector3::<f32>::from(info.pos);
+        vertex += vek::Vec3::<f32>::from(info.pos);
         // Get the normal
-        let n1: veclib::Vector3<f32> = (*voxels.normal(edge.index1)).into();
-        let n2: veclib::Vector3<f32> = (*voxels.normal(edge.index2)).into();
-        let normal = veclib::Vector3::<f32>::lerp(n1, n2, value).normalized();
+        let n1: vek::Vec3<f32> = (*voxels.normal(edge.index1)).into();
+        let n2: vek::Vec3<f32> = (*voxels.normal(edge.index2)).into();
+        let normal = vek::Vec3::<f32>::lerp(n1, n2, value).normalized();
         // Get the color
-        let c1: veclib::Vector3<f32> = (*voxels.color(edge.index1)).into();
-        let c2: veclib::Vector3<f32> = (*voxels.color(edge.index2)).into();
-        let color = veclib::Vector3::<f32>::lerp(c1, c2, value);
+        let c1: vek::Vec3<f32> = (*voxels.color(edge.index1)).into();
+        let c2: vek::Vec3<f32> = (*voxels.color(edge.index2)).into();
+        let color = vek::Vec3::<f32>::lerp(c1, c2, value);
         InterpolatedVertexData {
             vertex,
             normal: (normal * 127.0).into(),
@@ -103,7 +103,7 @@ impl MarchingCubes {
                 verts.position(interpolated.vertex);
                 verts.normal(interpolated.normal);
                 verts.color(interpolated.color);
-                verts.uv(veclib::Vector2::new(data.voxel_material, 0));
+                verts.uv(vek::Vec2::new(data.voxel_material, 0));
             } else {
                 // The vertex already exists
                 builder.indices.push(merger[&edge_tuple] as u32);
@@ -153,15 +153,15 @@ impl MarchingCubes {
 // Info about the current iteration
 struct IterInfo {
     i: usize,
-    pos: veclib::Vector3<usize>,
+    pos: vek::Vec3<usize>,
 }
 // A vertex merger used to tell us when we should merge vertices or not
 type VertexMerger = AHashMap<(u8, u8, u8), u16>;
 // Some interpolated vertex data that we calculate for each interesting edge in the marching cube
 struct InterpolatedVertexData {
-    vertex: veclib::Vector3<f32>,
-    normal: veclib::Vector3<i8>,
-    color: veclib::Vector3<u8>,
+    vertex: vek::Vec3<f32>,
+    normal: vek::Vec3<i8>,
+    color: vek::Vec3<u8>,
 }
 // Edge intersection info
 struct EdgeInfo {

@@ -15,13 +15,13 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Create the camera rotation quaternion
     let new_rotation = veclib::Quaternion::<f32>::from_euler_angles(
         veclib::EulerAnglesOrder::YXZ,
-        veclib::Vector3::new(-mouse_pos.y as f32 * SENSIVITY, -mouse_pos.x as f32 * SENSIVITY, 0.0),
+        vek::Vec3::new(-mouse_pos.y as f32 * SENSIVITY, -mouse_pos.x as f32 * SENSIVITY, 0.0),
     );
     // Calculate the vectors
-    let forward = new_rotation.mul_point(-veclib::Vector3::<f32>::Z);
-    let up = new_rotation.mul_point(veclib::Vector3::<f32>::Y);
-    let right = new_rotation.mul_point(veclib::Vector3::<f32>::X);
-    let mut velocity: veclib::Vector3<f32> = veclib::Vector3::ZERO;
+    let forward = new_rotation.mul_point(-vek::Vec3::<f32>::Z);
+    let up = new_rotation.mul_point(vek::Vec3::<f32>::Y);
+    let right = new_rotation.mul_point(vek::Vec3::<f32>::X);
+    let mut velocity: vek::Vec3<f32> = vek::Vec3::ZERO;
 
     // Custom speed
     let original_speed = 0.1 + (world.input.mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);

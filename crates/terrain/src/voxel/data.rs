@@ -8,8 +8,8 @@ use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 // Inner data
 struct InnerStoredVoxelData {
     densities: Vec<f32>,
-    normals: Vec<veclib::Vector3<i8>>,
-    colors: Vec<veclib::Vector3<u8>>,
+    normals: Vec<vek::Vec3<i8>>,
+    colors: Vec<vek::Vec3<u8>>,
     voxel_materials: Vec<u8>,
 }
 
@@ -25,8 +25,8 @@ impl Default for StoredVoxelData {
         // Allocate enough space to store all the voxels voxels
         const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
-        let normals = vec![veclib::Vector3::ZERO; LEN];
-        let colors = vec![veclib::Vector3::ZERO; LEN];
+        let normals = vec![vek::Vec3::ZERO; LEN];
+        let colors = vec![vek::Vec3::ZERO; LEN];
         let voxel_materials = vec![0; LEN];
 
         Self {
@@ -58,10 +58,10 @@ impl StoredVoxelData {
     pub fn density(&self, idx: usize) -> Ref<f32> {
         Ref::map(self.inner.borrow(), |inner| inner.densities.get(idx).unwrap())
     }
-    pub fn normal(&self, idx: usize) -> Ref<veclib::Vector3<i8>> {
+    pub fn normal(&self, idx: usize) -> Ref<vek::Vec3<i8>> {
         Ref::map(self.inner.borrow(), |inner| inner.normals.get(idx).unwrap())
     }
-    pub fn color(&self, idx: usize) -> Ref<veclib::Vector3<u8>> {
+    pub fn color(&self, idx: usize) -> Ref<vek::Vec3<u8>> {
         Ref::map(self.inner.borrow(), |inner| inner.colors.get(idx).unwrap())
     }
     pub fn voxel_material(&self, idx: usize) -> Ref<u8> {

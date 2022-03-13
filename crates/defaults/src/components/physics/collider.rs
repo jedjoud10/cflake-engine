@@ -44,21 +44,21 @@ pub enum ColliderGeometry {
     Mesh {
         mesh: Handle<Mesh>,
         mass: f32,
-        com_offset: veclib::Vector3<f32>
+        com_offset: vek::Vec3<f32>
     },
 }
 
 impl ColliderGeometry {
     // Create a new collider with specific shapes
-    pub fn cuboid(size: veclib::Vector3<f32>) -> Self {
+    pub fn cuboid(size: vek::Vec3<f32>) -> Self {
         ColliderGeometry::Shape(ShapeType::Cuboid(Cuboid {
-            center: veclib::Vector3::ZERO,
+            center: vek::Vec3::ZERO,
             size,
         }))
     }
     pub fn sphere(radius: f32) -> Self {
         ColliderGeometry::Shape(ShapeType::Sphere(Sphere {
-            center: veclib::Vector3::ZERO,
+            center: vek::Vec3::ZERO,
             radius,
         }))
     }
@@ -66,7 +66,7 @@ impl ColliderGeometry {
         ColliderGeometry::Mesh {
             mesh,
             mass,
-            com_offset: veclib::Vector3::ZERO,
+            com_offset: vek::Vec3::ZERO,
         }
     }
 }

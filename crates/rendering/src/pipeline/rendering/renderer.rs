@@ -44,11 +44,18 @@ impl SceneRenderer {
         println!("Initializing the scene renderer...");
         /* #region Quad */
         // Create the quad mesh that we will use to render the whole screen
-        use veclib::{vec2, vec3};
         let quad = Mesh::new(
             Vertices {
-                positions: vec![vec3(1.0, -1.0, 0.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 1.0, 0.0)],
-                uvs: vec![vec2(255, 0), vec2(0, 255), vec2(0, 0), vec2(255, 255)],
+                positions: vec![
+                    vek::Vec3::new(1.0, -1.0, 0.0),
+                    vek::Vec3::new(-1.0, 1.0, 0.0),
+                    vek::Vec3::new(-1.0, -1.0, 0.0),
+                    vek::Vec3::new(1.0, 1.0, 0.0)],
+                uvs: vec![
+                    vek::Vec2::new(255, 0),
+                    vek::Vec2::new(0, 255),
+                    vek::Vec2::new(0, 0),
+                    vek::Vec2::new(255, 255)],
                 ..Default::default()
             },
             vec![0, 1, 2, 0, 3, 1],
@@ -179,7 +186,7 @@ impl SceneRenderer {
 
             if let Some((_parameters, transform)) = first {
                 // Only render directional shadow map if we have a sun
-                mapping.update_matrix(transform.rotation);
+                mapping.update_matrix(*transform.rotation);
                 // Then render shadows
                 mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
             }
@@ -198,22 +205,22 @@ impl SceneRenderer {
 
         // Try to get the sunlight direction
         let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-        let sunlight = first.map(|(params, transform)| (transform.rotation.mul_point(veclib::Vector3::Z), params.strength));
+        let sunlight = first.map(|(params, transform)| (panic!(), params.strength));
 
         // Default sunlight values
-        let sunlight = sunlight.unwrap_or((veclib::Vector3::ZERO, 1.0));
+        let sunlight = sunlight.unwrap_or((panic!(), 1.0));
 
         // Sunlight values
         uniforms.set_vec3f32("sunlight_dir", sunlight.0);
         uniforms.set_f32("sunlight_strength", sunlight.1);
 
         // Sunlight shadow mapping
-        let default = veclib::Matrix4x4::<f32>::IDENTITY;
+        let default = vek::Mat4::<f32>::identity();
         let matrix = self.shadow_mapping.as_ref().map(|mapping| &mapping.lightspace).unwrap_or(&default);
         uniforms.set_mat44f32("lightspace_matrix", matrix);
 
         // Set the camera matrices
-        let pr_m = pipeline.camera.projm * (veclib::Matrix4x4::<f32>::from_quaternion(&pipeline.camera.rotation));
+        let pr_m = pipeline.camera.projm * (vek::Mat4::from(pipeline.camera.rotation));
         uniforms.set_mat44f32("pr_matrix", &pr_m);
         uniforms.set_mat44f32("pv_matrix", &(pipeline.camera.projm * pipeline.camera.viewm));
         uniforms.set_vec2f32("nf_planes", pipeline.camera.clip_planes);

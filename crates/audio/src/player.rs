@@ -9,8 +9,8 @@ pub struct AudioPlayer {
     // Keep track of each sink
     sinks: RefCell<Vec<AudioSourceTracker>>,
     // Position of the left ear and right ear for positional sounds
-    left: [f32; 3],
-    right: [f32; 3],
+    left: vek::Vec3<f32>,
+    right: vek::Vec3<f32>,
 }
 
 impl Default for AudioPlayer {
@@ -42,8 +42,9 @@ impl AudioPlayer {
         sinks.push(tracker.clone());
         Some(tracker)
     }
+    /*
     // Play an audio source at a specified position
-    pub fn play_positional(&self, source: &AudioSource, position: veclib::Vector3<f32>) -> Option<AudioSourceTracker> {
+    pub fn play_positional(&self, source: &AudioSource, position: vek::Vec3<f32>) -> Option<AudioSourceTracker> {
         // Check if the index is gud
         let idx = source.idx?;
         // Decode then play the sound
@@ -85,7 +86,7 @@ impl AudioPlayer {
     pub fn play_positional_with_modifiers<T: Source + Send + 'static>(
         &self,
         source: &AudioSource,
-        position: veclib::Vector3<f32>,
+        position: vek::Vec3<f32>,
         function: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send,
     ) -> Option<AudioSourceTracker>
     where
@@ -107,18 +108,17 @@ impl AudioPlayer {
         sinks.push(tracker.clone());
         Some(tracker)
     }
+    */
     // Update the positions of the spatial ears
-    pub fn update_ear_positions(&mut self, left: veclib::Vector3<f32>, right: veclib::Vector3<f32>) {
-        let left = [left.x, left.y, left.z];
-        let right = [right.x, right.y, right.z];
+    pub fn update_ear_positions(&mut self, left: vek::Vec3<f32>, right: vek::Vec3<f32>) {
         self.left = left;
         self.right = right;
         // Update each spatial sink now
         let borrowed = self.sinks.borrow();
         for sink in borrowed.iter() {
             if let Some(spatial) = sink.as_spatial() {
-                spatial.set_left_ear_position(left);
-                spatial.set_right_ear_position(right);
+                spatial.set_left_ear_position(left.as_slice().try_into().unwrap());
+                spatial.set_right_ear_position(right.as_slice().try_into().unwrap());
             }
         }
     }

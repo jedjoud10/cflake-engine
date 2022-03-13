@@ -11,7 +11,7 @@ slotmap::new_key_type! {
 #[derive(Clone, Debug, Getters, CopyGetters, MutGetters)]
 pub struct Node {
     #[getset(get_copy = "pub")]
-    position: veclib::Vector3<i64>,
+    position: vek::Vec3<i64>,
     #[getset(get_copy = "pub")]
     half_extent: u64,
     #[getset(get_copy = "pub")]
@@ -47,7 +47,7 @@ impl Node {
     pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
         // Get the maximum size of the root node
         let full_extent = (2_u64.pow(depth as u32) * size as u64) as i64;
-        let position = veclib::Vector3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
+        let position = vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
 
         Self {
             position,
@@ -61,16 +61,16 @@ impl Node {
     // Get the AABB from this octee node
     pub fn aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
-            min: veclib::Vector3::<f32>::from(self.position),
-            max: veclib::Vector3::<f32>::from(self.position) + veclib::Vector3::<f32>::new(self.half_extent as f32, self.half_extent as f32, self.half_extent as f32) * 2.0,
+            min: self.position.as_(),
+            max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0),
         }
     }
     // Get the center of this octree node
-    pub fn center(&self) -> veclib::Vector3<i64> {
+    pub fn center(&self) -> vek::Vec3<i64> {
         self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &veclib::Vector3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
+    pub fn can_subdivide(&self, target: &vek::Vec3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
         let test = (settings.function)(self, target);
         test && self.depth < (max_depth - 1)
     }
@@ -85,7 +85,7 @@ impl Node {
             for z in 0..2 {
                 for x in 0..2 {
                     // The position offset for the new octree node
-                    let offset: veclib::Vector3<i64> = veclib::Vector3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
+                    let offset = vek::Vec3::<i64>::new(x * half_extent, y * half_extent, z * half_extent);
 
                     // Calculate the child's index
                     let child = Node {

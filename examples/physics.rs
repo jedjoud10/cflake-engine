@@ -49,7 +49,7 @@ fn init(world: &mut World) {
     // Add the rigidbody
     group.link(RigidBody::new(RigidBodyType::Static)).unwrap();
     // Add the collider
-    group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0))).unwrap();
+    group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::new(50.0, 1.0, 50.0)), ColliderMaterial::new(10.0, 0.0))).unwrap();
     world.ecs.add(group).unwrap();
     for y in 0..20 {
         for x in 0..5 {
@@ -71,7 +71,7 @@ fn init(world: &mut World) {
                 // Add the rigidbody
                 group.link(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
                 // Add the collider
-                group.link(Collider::new(ColliderGeometry::cuboid(veclib::Vector3::ONE), ColliderMaterial::new(10.0, 0.0))).unwrap();
+                group.link(Collider::new(ColliderGeometry::cuboid(vek::Vec3::ONE), ColliderMaterial::new(10.0, 0.0))).unwrap();
                 world.ecs.add(group).unwrap();
             }
         }

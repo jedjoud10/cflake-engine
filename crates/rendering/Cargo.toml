@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-veclib = { git = "https://github.com/jedjoud10/veclib" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 getset = "0.1.2"
+vek = "0.15.6"
 slotmap = "1.0.6"
 assets = { path = "../assets" }
 math = { path = "../math" }

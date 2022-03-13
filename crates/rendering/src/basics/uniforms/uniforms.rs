@@ -32,7 +32,7 @@ impl<'a> Uniforms<'a> {
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.time().elapsed as f32);
         self.set_f32("_delta", self.pipeline.time().delta as f32);
-        self.set_vec2i32("_resolution", self.pipeline.window.dimensions.into());
+        self.set_vec2i32("_resolution", self.pipeline.window.dimensions.as_());
     }
     // U32
     pub fn set_u32(&mut self, name: &str, val: u32) {
@@ -44,7 +44,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1ui(location, val);
         }
     }
-    pub fn set_vec2u32(&mut self, name: &str, vec2: veclib::Vector2<u32>) {
+    pub fn set_vec2u32(&mut self, name: &str, vec2: vek::Vec2<u32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -53,7 +53,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform2ui(location, vec2[0], vec2[1]);
         }
     }
-    pub fn set_vec3u32(&mut self, name: &str, vec3: veclib::Vector3<u32>) {
+    pub fn set_vec3u32(&mut self, name: &str, vec3: vek::Vec3<u32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -72,7 +72,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1i(location, val);
         }
     }
-    pub fn set_vec2i32(&mut self, name: &str, vec2: veclib::Vector2<i32>) {
+    pub fn set_vec2i32(&mut self, name: &str, vec2: vek::Vec2<i32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -81,7 +81,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform2i(location, vec2[0], vec2[1]);
         }
     }
-    pub fn set_vec3i32(&mut self, name: &str, vec3: veclib::Vector3<i32>) {
+    pub fn set_vec3i32(&mut self, name: &str, vec3: vek::Vec3<i32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -100,7 +100,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform1f(location, val);
         }
     }
-    pub fn set_vec2f32(&mut self, name: &str, vec2: veclib::Vector2<f32>) {
+    pub fn set_vec2f32(&mut self, name: &str, vec2: vek::Vec2<f32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -109,7 +109,7 @@ impl<'a> Uniforms<'a> {
             gl::Uniform2f(location, vec2[0], vec2[1]);
         }
     }
-    pub fn set_vec3f32(&mut self, name: &str, vec3: veclib::Vector3<f32>) {
+    pub fn set_vec3f32(&mut self, name: &str, vec3: vek::Vec3<f32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
@@ -122,21 +122,20 @@ impl<'a> Uniforms<'a> {
     pub fn set_bool(&mut self, name: &str, val: bool) {
         self.set_i32(name, val.into());
     }
-    pub fn set_vec2bool(&mut self, name: &str, vec2: veclib::Vector2<bool>) {
-        self.set_vec2i32(name, vec2.into());
+    pub fn set_vec2bool(&mut self, name: &str, vec2: vek::Vec2<bool>) {
+        self.set_vec2i32(name, vec2.as_());
     }
-    pub fn set_vec3bool(&mut self, name: &str, vec3: veclib::Vector3<bool>) {
-        self.set_vec3i32(name, vec3.into());
+    pub fn set_vec3bool(&mut self, name: &str, vec3: vek::Vec3<bool>) {
+        self.set_vec3i32(name, vec3.as_());
     }
     // Textures & others
-    pub fn set_mat44f32(&mut self, name: &str, matrix: &veclib::Matrix4x4<f32>) {
+    pub fn set_mat44f32(&mut self, name: &str, matrix: &vek::Mat4<f32>) {
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
-        let ptr: *const f32 = &matrix[0];
         unsafe {
-            gl::UniformMatrix4fv(location, 1, gl::FALSE, ptr);
+            gl::UniformMatrix4fv(location, 1, matrix.gl_should_transpose().into(), matrix.as_col_ptr());
         }
     }
     pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>) {

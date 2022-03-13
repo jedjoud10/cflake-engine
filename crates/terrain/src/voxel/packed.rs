@@ -9,7 +9,7 @@ use crate::CHUNK_SIZE;
 pub struct PackedVoxel {
     pub density: f16,                // 2
     pub rgb_color: u16,              // 2
-    pub normal: veclib::Vector3<i8>, // 3
+    pub normal: vek::Vec3<i8>, // 3
     pub voxel_material: u8,          // 1
 }
 

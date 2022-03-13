@@ -20,9 +20,9 @@ pub struct InputManager {
 
     // Mouse
     #[getset(get_copy = "pub")]
-    mouse_pos: veclib::Vector2<f32>,
+    mouse_pos: vek::Vec2<f32>,
     #[getset(get_copy = "pub")]
-    mouse_pos_delta: veclib::Vector2<f32>,
+    mouse_pos_delta: vek::Vec2<f32>,
     #[getset(get_copy = "pub")]
     mouse_scroll_delta: f32,
     #[getset(get_copy = "pub")]
@@ -45,7 +45,7 @@ impl Default for InputManager {
 
 impl InputManager {
     // Called whenever the mouse position changes
-    pub fn receive_mouse_position_event(&mut self, delta: veclib::Vector2<f32>) {
+    pub fn receive_mouse_position_event(&mut self, delta: vek::Vec2<f32>) {
         self.mouse_pos += delta;
         self.mouse_pos_delta = delta;
     }

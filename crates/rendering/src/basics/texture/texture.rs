@@ -15,7 +15,6 @@ use gl::{
 };
 use image::GenericImageView;
 use smallvec::SmallVec;
-use veclib::vec2;
 
 // A texture
 #[derive(CopyGetters, Getters)]
@@ -70,7 +69,7 @@ impl Default for Texture {
             filter: TextureFilter::Linear,
             wrap_mode: TextureWrapMode::Repeat,
             custom_params: SmallVec::default(),
-            dimensions: TextureDimensions::Texture2d(veclib::Vector2::ZERO),
+            dimensions: TextureDimensions::Texture2d(vek::Vec2::zero()),
             mipmaps: false,
         }
     }
@@ -344,7 +343,6 @@ impl PipelineCollectionElement for Texture {
             gl::TexParameteri(self.target, gl::TEXTURE_WRAP_S, wrap_mode as i32);
             gl::TexParameteri(self.target, gl::TEXTURE_WRAP_T, wrap_mode as i32);
             // And also border colors
-            use veclib::Vector;
             match self.wrap_mode {
                 TextureWrapMode::ClampToBorder(color) | TextureWrapMode::ClampToEdge(color) => {
                     if let Some(color) = color {
@@ -386,7 +384,7 @@ impl Asset for Texture {
         Some(
             TextureBuilder::default()
                 .bytes(bytes)
-                .dimensions(TextureDimensions::Texture2d(vec2(width, height)))
+                .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(width, height)))
                 .mipmaps(true)
                 .layout(TextureLayout {
                     data_type: DataType::U8,

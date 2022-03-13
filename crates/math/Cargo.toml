@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 ahash = "0.7.6"
-veclib = { git = "https://github.com/jedjoud10/veclib" }
+vek = "0.15.6"
 slotmap = "1.0.6"
 getset = "0.1.2"
 others = { path = "../others" }

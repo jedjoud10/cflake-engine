@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-veclib = { git = "https://github.com/jedjoud10/veclib" }
 assets = { path = "../assets" }
 rodio = "0.15.0"
+vek = "0.15.6"
 enum-as-inner = "0.3.3"

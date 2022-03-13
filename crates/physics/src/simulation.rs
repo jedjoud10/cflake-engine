@@ -15,7 +15,7 @@ pub struct PhysicsSimulation {
     pub query_pipeline: QueryPipeline,
     pub physics_pipeline: PhysicsPipeline,
     pub integration_parameters: IntegrationParameters,
-    pub gravity: veclib::Vector3<f32>,
+    pub gravity: vek::Vec3<f32>,
 }
 
 impl PhysicsSimulation {
@@ -35,7 +35,7 @@ impl PhysicsSimulation {
                 dt: PHYSICS_TIME_STEP,
                 ..Default::default()
             },
-            gravity: veclib::vec3(0.0, -9.81, 0.0),
+            gravity: vek::Vec3::new(0.0, -9.81, 0.0),
         }
     }
     // Step once through the simulation

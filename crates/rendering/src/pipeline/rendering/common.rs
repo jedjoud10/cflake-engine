@@ -63,7 +63,7 @@ pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedMod
 pub struct RenderedModel<'b> {
     // Required
     pub mesh: &'b Handle<Mesh>,
-    pub matrix: &'b veclib::Matrix4x4<f32>,
+    pub matrix: &'b vek::Mat4<f32>,
 
     // Used for rendering
     pub material: &'b Handle<Material>,
@@ -73,5 +73,5 @@ pub struct RenderedModel<'b> {
 pub struct ShadowedModel<'b> {
     // Required
     pub mesh: &'b Handle<Mesh>,
-    pub matrix: &'b veclib::Matrix4x4<f32>,
+    pub matrix: &'b vek::Mat4<f32>,
 }

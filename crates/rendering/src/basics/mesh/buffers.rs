@@ -13,13 +13,13 @@ pub struct MeshBuffers {
 
     // Required
     pub(crate) indices: TypedStorage<u32>,
-    pub(crate) positions: TypedStorage<veclib::Vector3<f32>>,
+    pub(crate) positions: TypedStorage<vek::Vec3<f32>>,
 
     // Optional
-    pub(crate) normals: Option<TypedStorage<veclib::Vector3<i8>>>,
-    pub(crate) tangents: Option<TypedStorage<veclib::Vector4<i8>>>,
-    pub(crate) colors: Option<TypedStorage<veclib::Vector3<u8>>>,
-    pub(crate) uvs: Option<TypedStorage<veclib::Vector2<u8>>>,
+    pub(crate) normals: Option<TypedStorage<vek::Vec3<i8>>>,
+    pub(crate) tangents: Option<TypedStorage<vek::Vec4<i8>>>,
+    pub(crate) colors: Option<TypedStorage<vek::Vec3<u8>>>,
+    pub(crate) uvs: Option<TypedStorage<vek::Vec2<u8>>>,
     /*
     pub element_buffer_object: u32,
 

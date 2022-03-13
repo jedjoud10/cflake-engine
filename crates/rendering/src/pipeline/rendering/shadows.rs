@@ -21,8 +21,8 @@ pub struct ShadowMapping {
     shader: Handle<Shader>,
 
     // Matrices
-    ortho: veclib::Matrix4x4<f32>,
-    pub(crate) lightspace: veclib::Matrix4x4<f32>,
+    ortho: vek::Mat4<f32>,
+    pub(crate) lightspace: vek::Mat4<f32>,
 
     // Settings
     shadow_resolution: u16,
@@ -39,9 +39,9 @@ impl ShadowMapping {
 
         // Create the depth texture
         let texture = TextureBuilder::default()
-            .dimensions(TextureDimensions::Texture2d(veclib::vec2(shadow_resolution.max(1), shadow_resolution.max(1))))
+            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(shadow_resolution.max(1), shadow_resolution.max(1))))
             .filter(TextureFilter::Linear)
-            .wrap_mode(TextureWrapMode::ClampToBorder(Some(veclib::Vector4::<f32>::ONE)))
+            .wrap_mode(TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())))
             .custom_params(&[(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)])
             .layout(TextureLayout {
                 data_type: DataType::U8,
@@ -64,7 +64,15 @@ impl ShadowMapping {
         const DIMS: f32 = 800.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
-        let ortho_matrix = veclib::Matrix4x4::<f32>::from_orthographic(-DIMS, DIMS, -DIMS, DIMS, FAR, NEAR);
+        let frustum = vek::FrustumPlanes {
+            left: -DIMS,
+            right: DIMS,
+            bottom: -DIMS,
+            top: DIMS,
+            near: NEAR,
+            far: FAR,
+        };
+        let ortho_matrix = vek::Mat4::<f32>::orthographic_rh_no(frustum);
 
         // Load our custom shadow shader
         let shader = Shader::new(
@@ -81,17 +89,16 @@ impl ShadowMapping {
             ortho: ortho_matrix,
             shader,
             shadow_resolution,
-            lightspace: veclib::Matrix4x4::IDENTITY,
+            lightspace: vek::Mat4::identity(),
         }
     }
     // Update the lightspace matrix
-    pub(crate) fn update_matrix(&mut self, light_quat: &veclib::Quaternion<f32>) {
+    pub(crate) fn update_matrix(&mut self, light_quat: vek::Quaternion<f32>) {
         // Update the light view matrix
-        let forward = light_quat.mul_point(veclib::Vector3::Z);
-        let up = light_quat.mul_point(veclib::Vector3::Y);
-        let view_matrix = veclib::Matrix4x4::<f32>::look_at(&forward, &up, &veclib::Vector3::ZERO);
-        let lightspace_matrix = self.ortho * view_matrix;
-        self.lightspace = lightspace_matrix;
+        let matrix = vek::Mat4::from(light_quat);
+        let forward = matrix.mul_direction(vek::Vec3::unit_z());
+        let up = matrix.mul_direction(vek::Vec3::unit_y());
+        self.lightspace = matrix;
     }
     // Render the scene from the POV of the light source, so we can cast shadows
     pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) -> Result<(), RenderingError> {
@@ -110,7 +117,7 @@ impl ShadowMapping {
             let mesh = pipeline.meshes.get(mesh).ok_or(RenderingError)?;
 
             // Calculate the light space matrix
-            let lsm: veclib::Matrix4x4<f32> = self.lightspace * *matrix;
+            let lsm = self.lightspace * *matrix;
 
             // Pass the light space matrix to the shader
             uniforms.set_mat44f32("lsm_matrix", &lsm);

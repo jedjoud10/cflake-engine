@@ -6,7 +6,7 @@ pub struct Camera {
     pub viewm: veclib::Matrix4x4<f32>,
     pub projm: veclib::Matrix4x4<f32>,
     pub horizontal_fov: f32,
-    pub clip_planes: veclib::Vector2<f32>, // Near, far
+    pub clip_planes: vek::Vec2<f32>, // Near, far
 }
 
 // Impl block for Camera component
@@ -17,7 +17,7 @@ impl Camera {
             viewm: veclib::Matrix4x4::IDENTITY,
             projm: veclib::Matrix4x4::IDENTITY,
             horizontal_fov: fov,
-            clip_planes: veclib::Vector2::new(clipn, clipf),
+            clip_planes: vek::Vec2::new(clipn, clipf),
         };
         camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.x as f32 / DEFAULT_WINDOW_SIZE.y as f32);
         camera
@@ -29,11 +29,11 @@ impl Camera {
         self.projm = veclib::Matrix4x4::<f32>::from_perspective(self.clip_planes.x, self.clip_planes.y, aspect_ratio, vertical_fov);
     }
     // Update the view matrix using a rotation and a position
-    pub fn update_view_matrix(&mut self, position: veclib::Vector3<f32>, rotation: veclib::Quaternion<f32>) {
+    pub fn update_view_matrix(&mut self, position: vek::Vec3<f32>, rotation: veclib::Quaternion<f32>) {
         let rotation_matrix = veclib::Matrix4x4::<f32>::from_quaternion(&rotation);
-        let mut forward_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 0.0, -1.0));
+        let mut forward_vector = rotation_matrix.mul_point(&vek::Vec3::<f32>::new(0.0, 0.0, -1.0));
         forward_vector.normalize();
-        let mut up_vector = rotation_matrix.mul_point(&veclib::Vector3::<f32>::new(0.0, 1.0, 0.0));
+        let mut up_vector = rotation_matrix.mul_point(&vek::Vec3::<f32>::new(0.0, 1.0, 0.0));
         up_vector.normalize();
         self.viewm = veclib::Matrix4x4::<f32>::look_at(&position, &up_vector, &(forward_vector + position));
     }

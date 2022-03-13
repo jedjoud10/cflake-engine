@@ -13,8 +13,8 @@ backtrace = "0.3.63"
 itertools = "0.10.3"
 lazy_static = "1.4.0"
 crossbeam-channel = "0.5.1"
-veclib = { git = "https://github.com/jedjoud10/veclib" }
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+vek = "0.15.6"
 input = { path = "../input" }
 physics = { path = "../physics" }
 network = { path = "../network" }

@@ -15,14 +15,14 @@ use world::{
 };
 
 // Add a single chunk to the world
-fn add_chunk(ecs: &mut ECSManager<World>, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
+fn add_chunk(ecs: &mut ECSManager<World>, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
     let mut group = ComponentLinkingGroup::default();
 
     // Link the nessecary components
     // Transform
-    let position = veclib::Vector3::<f32>::from(coords.position);
-    let scale = veclib::Vector3::ONE * ((coords.size / octree_size) as f32);
+    let position = vek::Vec3::<f32>::from(coords.position);
+    let scale = vek::Vec3::ONE * ((coords.size / octree_size) as f32);
     let transform = Transform {
         position,
         scale,
@@ -70,7 +70,7 @@ fn run(world: &mut World, data: ComponentQuerySet) {
 }
 
 // Update the terrain
-fn update_terrain(handler: &mut ChunksManager, camera_position: veclib::Vector3<f32>, ecs: &mut ECSManager<World>, camera_forward: veclib::Vector3<f32>) {
+fn update_terrain(handler: &mut ChunksManager, camera_position: vek::Vec3<f32>, ecs: &mut ECSManager<World>, camera_forward: vek::Vec3<f32>) {
     if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
         let octree = &mut handler.octree;
         if let Some((added, removed)) = octree.update(camera_position) {

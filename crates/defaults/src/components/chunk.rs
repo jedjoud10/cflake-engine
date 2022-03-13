@@ -8,8 +8,8 @@ pub struct Chunk {
 
 impl Chunk {
     // Calculate a chunk's priority using chunk coords and the camera position and direction
-    pub fn calculate_priority(coords: ChunkCoords, camera_position: veclib::Vector3<f32>, camera_forward: veclib::Vector3<f32>) -> f32 {
-        let position = veclib::Vector3::<f32>::from(coords.position);
+    pub fn calculate_priority(coords: ChunkCoords, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>) -> f32 {
+        let position = vek::Vec3::<f32>::from(coords.position);
         (camera_position - position).normalized().dot(camera_forward)
     }
 }

@@ -13,12 +13,12 @@ pub fn unflatten(mut index: usize) -> (usize, usize, usize) {
 pub fn flatten(position: (usize, usize, usize)) -> usize {
     position.0 + (position.1 * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) + (position.2 * (CHUNK_SIZE + 1))
 }
-pub fn flatten_vec3(position: veclib::Vector3<usize>) -> usize {
+pub fn flatten_vec3(position: vek::Vec3<usize>) -> usize {
     position.x + (position.y * (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1)) + (position.z * (CHUNK_SIZE + 1))
 }
 
 // Convert a 16 bit RGB color into a 24 bit RGB color
-pub fn unpack_color(packed: u16) -> veclib::Vector3<u8> {
+pub fn unpack_color(packed: u16) -> vek::Vec3<u8> {
     // 65,535
     let r = (packed >> 11).saturating_mul(8);
     let g = ((packed >> 5) & 63).saturating_mul(4);
@@ -27,7 +27,7 @@ pub fn unpack_color(packed: u16) -> veclib::Vector3<u8> {
 }
 
 // Convert an 24 bit RGB color into a 16 bit RGB color
-pub fn pack_color(unpacked: veclib::Vector3<u8>) -> u16 {
+pub fn pack_color(unpacked: vek::Vec3<u8>) -> u16 {
     // 65,535
     let r = ((unpacked.x / 8) as u16) << 11;
     let g = ((unpacked.y / 4) as u16) << 5;

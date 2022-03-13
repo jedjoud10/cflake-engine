@@ -13,8 +13,6 @@ use getset::{CopyGetters, Getters, Setters};
 use gl::types::GLuint;
 use obj::TexturedVertex;
 
-use veclib::{vec2, vec3};
-
 // A simple mesh that holds vertex, normal, and color data
 #[derive(Default, Getters, CopyGetters, Setters)]
 pub struct Mesh {
@@ -56,9 +54,9 @@ impl Asset for Mesh {
         let mut builder = GeometryBuilder::default();
         let vertices = &mut builder.vertices;
         for vertex in parsed_obj.vertices {
-            vertices.position(vec3(vertex.position[0], vertex.position[1], vertex.position[2]));
-            vertices.normal(vec3((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8));
-            vertices.uv(vec2((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
+            vertices.position(vek::Vec3::new(vertex.position[0], vertex.position[1], vertex.position[2]));
+            vertices.normal(vek::Vec3::new((vertex.normal[0] * 127.0) as i8, (vertex.normal[1] * 127.0) as i8, (vertex.normal[2] * 127.0) as i8));
+            vertices.uv(vek::Vec2::new((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
         builder.indices.indices = parsed_obj.indices;
         Some(builder.build())
@@ -88,7 +86,7 @@ impl PipelineCollectionElement for Mesh {
             buffers.push(indices.raw().buffer());
 
             // Positions
-            let positions = TypedStorage::<veclib::Vector3<f32>>::new(self.vertices().len(), self.vertices().len(), self.vertices.positions.as_ptr(), gl::ARRAY_BUFFER, usage);
+            let positions = TypedStorage::<vek::Vec3<f32>>::new(self.vertices().len(), self.vertices().len(), self.vertices.positions.as_ptr(), gl::ARRAY_BUFFER, usage);
             buffers.push(positions.raw().buffer());
 
             // Vertex attrib array
@@ -99,7 +97,7 @@ impl PipelineCollectionElement for Mesh {
             // Vertex normals attribute
             let normals = if !self.vertices.normals.is_empty() {
                 // Vertex normals buffer
-                let normals = TypedStorage::<veclib::Vector3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
+                let normals = TypedStorage::<vek::Vec3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(normals.raw().buffer());
                 gl::EnableVertexAttribArray(1);
                 gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
@@ -111,7 +109,7 @@ impl PipelineCollectionElement for Mesh {
 
             let tangents = if !self.vertices.tangents.is_empty() {
                 // Vertex tangents buffer
-                let tangents = TypedStorage::<veclib::Vector4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
+                let tangents = TypedStorage::<vek::Vec4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(tangents.raw().buffer());
                 gl::EnableVertexAttribArray(2);
                 gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
@@ -123,7 +121,7 @@ impl PipelineCollectionElement for Mesh {
 
             let uvs = if !self.vertices.uvs.is_empty() {
                 // Vertex texture coordinates buffer
-                let uvs = TypedStorage::<veclib::Vector2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
+                let uvs = TypedStorage::<vek::Vec2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(uvs.raw().buffer());
                 gl::EnableVertexAttribArray(3);
                 gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
@@ -135,7 +133,7 @@ impl PipelineCollectionElement for Mesh {
 
             let colors = if !self.vertices.colors.is_empty() {
                 // Vertex colors buffer
-                let colors = TypedStorage::<veclib::Vector3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
+                let colors = TypedStorage::<vek::Vec3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(colors.raw().buffer());
                 gl::EnableVertexAttribArray(4);
                 gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
@@ -196,7 +194,7 @@ impl Mesh {
     pub fn generate_normals(mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
-        let mut vertex_normals: Vec<veclib::Vector3<f32>> = vec![veclib::Vector3::ZERO; self.vertices.positions.len()];
+        let mut vertex_normals: Vec<vek::Vec3<f32>> = vec![vek::Vec3::zero(); self.vertices.positions.len()];
         for i in 0..(self.indices.len() / 3) {
             // Calculate the face normal
             let (i1, i2, i3) = (self.indices[i * 3], self.indices[i * 3 + 1], self.indices[i * 3 + 2]);
@@ -208,7 +206,7 @@ impl Mesh {
             // Calculate
             let d1 = b - a;
             let d2 = c - a;
-            let cross = veclib::Vector3::<f32>::cross(d1, d2).normalized();
+            let cross = vek::Vec3::<f32>::cross(d1, d2).normalized();
 
             // Add the face normal to our local vertices
             vertex_normals[i1 as usize] += cross;
@@ -222,6 +220,6 @@ impl Mesh {
         }
 
         // Update our normals
-        self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().into()).collect::<Vec<_>>();
+        self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().as_()).collect::<Vec<_>>();
     }
 }

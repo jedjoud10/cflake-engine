@@ -8,10 +8,10 @@ pub struct Material {
 
     // Actual parameters used for rendering
     pub textures: MaterialTextures,
-    pub tint: veclib::Vector3<f32>,
+    pub tint: vek::Vec3<f32>,
     pub normal_map_strength: f32,
     pub emissive_map_strength: f32,
-    pub uv_scale: veclib::Vector2<f32>,
+    pub uv_scale: vek::Vec2<f32>,
 }
 
 impl PipelineCollectionElement for Material {
@@ -25,10 +25,10 @@ impl Default for Material {
         Self {
             shader: Default::default(),
             textures: Default::default(),
-            tint: veclib::Vector3::ONE,
+            tint: vek::Vec3::one(),
             normal_map_strength: 1.0,
             emissive_map_strength: 1.0,
-            uv_scale: veclib::Vector2::ONE,
+            uv_scale: vek::Vec2::one(),
         }
     }
 }

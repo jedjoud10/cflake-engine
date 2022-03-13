@@ -10,7 +10,7 @@ pub enum ShapeType {
 
 impl ShapeType {
     // Get the center of the inner basic shape
-    pub fn get_center(&self) -> &veclib::Vector3<f32> {
+    pub fn get_center(&self) -> &vek::Vec3<f32> {
         match self {
             ShapeType::Cuboid(cuboid) => &cuboid.center,
             ShapeType::Sphere(sphere) => &sphere.center,

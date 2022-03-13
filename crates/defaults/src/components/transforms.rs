@@ -2,18 +2,18 @@ use world::ecs::component::Component;
 // The transform component
 #[derive(Component)]
 pub struct Transform {
-    pub position: veclib::Vector3<f32>,
+    pub position: vek::Vec3<f32>,
     pub rotation: veclib::Quaternion<f32>,
-    pub scale: veclib::Vector3<f32>,
+    pub scale: vek::Vec3<f32>,
 }
 
 // Default transform
 impl Default for Transform {
     fn default() -> Self {
         Self {
-            position: veclib::Vector3::ZERO,
+            position: vek::Vec3::ZERO,
             rotation: veclib::Quaternion::IDENTITY,
-            scale: veclib::Vector3::ONE,
+            scale: vek::Vec3::ONE,
         }
     }
 }
@@ -35,13 +35,13 @@ impl Transform {
         veclib::Matrix4x4::<f32>::from_scale(self.scale)
     }
     // Calculate the forward, up, and right vectors
-    pub fn forward(&self) -> veclib::Vector3<f32> {
-        self.rotation_matrix().mul_point(&veclib::Vector3::Z)
+    pub fn forward(&self) -> vek::Vec3<f32> {
+        self.rotation_matrix().mul_point(&vek::Vec3::Z)
     }
-    pub fn up(&self) -> veclib::Vector3<f32> {
-        self.rotation_matrix().mul_point(&veclib::Vector3::Y)
+    pub fn up(&self) -> vek::Vec3<f32> {
+        self.rotation_matrix().mul_point(&vek::Vec3::Y)
     }
-    pub fn right(&self) -> veclib::Vector3<f32> {
-        self.rotation_matrix().mul_point(&veclib::Vector3::X)
+    pub fn right(&self) -> vek::Vec3<f32> {
+        self.rotation_matrix().mul_point(&vek::Vec3::X)
     }
 }

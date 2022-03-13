@@ -7,7 +7,6 @@ use glutin::{
     ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext,
 };
 use others::Time;
-use veclib::vec2;
 
 use crate::{
     advanced::compute::ComputeShader,
@@ -144,7 +143,7 @@ impl Pipeline {
     pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
         match event {
             WindowEvent::Resized(size) => {
-                self.window.dimensions = vec2(size.width as u16, size.height as u16);
+                self.window.dimensions = vek::Vec2::new(size.width as u16, size.height as u16);
                 renderer.resize(self)
             }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,

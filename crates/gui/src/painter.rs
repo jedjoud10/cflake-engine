@@ -53,12 +53,12 @@ impl Painter {
     fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &mut Pipeline, pixels_per_point: f32) {
         // We already have the shader bound, so we just need to draw
         // Get the rect size so we can use the scissor test
-        let clip_min = veclib::vec2(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
-        let clip_max = veclib::vec2(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let clip_min = clip_min.clamp(veclib::Vector2::ZERO, pipeline.window.dimensions().into());
-        let clip_max = clip_max.clamp(veclib::Vector2::ZERO, pipeline.window.dimensions().into());
-        let clip_min: veclib::Vector2<i32> = clip_min.round().into();
-        let clip_max: veclib::Vector2<i32> = clip_max.round().into();
+        let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
+        let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
+        let clip_min = clip_min.clamp(vek::Vec2::ZERO, pipeline.window.dimensions().into());
+        let clip_max = clip_max.clamp(vek::Vec2::ZERO, pipeline.window.dimensions().into());
+        let clip_min: vek::Vec2<i32> = clip_min.round().into();
+        let clip_max: vek::Vec2<i32> = clip_max.round().into();
 
         //scissor Y coordinate is from the bottom
         unsafe {
@@ -93,7 +93,7 @@ impl Painter {
         // Update the OpenGL version
         let gl_tex = pipeline.textures.get_mut(&self.gl_font_texture);
         if let Some(gl_tex) = gl_tex {
-            let dimensions = TextureDimensions::Texture2d(veclib::Vector2::new(image.width as u16, image.height as u16));
+            let dimensions = TextureDimensions::Texture2d(vek::Vec2::new(image.width as u16, image.height as u16));
             gl_tex.set_dimensions(dimensions).unwrap();
             gl_tex.set_bytes(bytes).unwrap();
             // Don't forget to update the version

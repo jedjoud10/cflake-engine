@@ -3,8 +3,8 @@ use math::octrees::Node;
 // The data that will be used to store the position/scale of the chunk
 #[derive(Default, Clone, Copy, Debug)]
 pub struct ChunkCoords {
-    pub position: veclib::Vector3<i64>,
-    pub center: veclib::Vector3<i64>,
+    pub position: vek::Vec3<i64>,
+    pub center: vek::Vec3<i64>,
     pub size: u64,
     pub depth: u8,
 }

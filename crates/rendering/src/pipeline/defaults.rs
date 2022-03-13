@@ -1,5 +1,4 @@
 use assets::assetc;
-use veclib::vec2;
 
 use crate::basics::{
     material::{Material, MaterialTextures},
@@ -37,19 +36,19 @@ impl DefaultElements {
         // Default textures that are created at runtime
         let white = TextureBuilder::default()
             .bytes(vec![255, 255, 255, 255])
-            .dimensions(TextureDimensions::Texture2d(vec2(1, 1)))
+            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
             .build();
         let white = pipeline.textures.insert(white);
 
         let black = TextureBuilder::default()
             .bytes(vec![0, 0, 0, 255])
-            .dimensions(TextureDimensions::Texture2d(vec2(1, 1)))
+            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
             .build();
         let black = pipeline.textures.insert(black);
 
         let normal_map = TextureBuilder::default()
             .bytes(vec![127, 127, 255, 255])
-            .dimensions(TextureDimensions::Texture2d(vec2(1, 1)))
+            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
             .build();
         let normal_map = pipeline.textures.insert(normal_map);
 

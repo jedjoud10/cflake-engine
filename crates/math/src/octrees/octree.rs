@@ -7,7 +7,7 @@ use super::{node::Node, HeuristicSettings, NodeKey};
 #[derive(Getters, CopyGetters)]
 pub struct Octree {
     // The old target point
-    target: Option<veclib::Vector3<f32>>,
+    target: Option<vek::Vec3<f32>>,
     // The total nodes in the octree
     #[getset(get = "pub")]
     nodes: SlotMap<NodeKey, Node>,
@@ -51,11 +51,11 @@ impl Octree {
         self.nodes.get(self.root).unwrap()
     }
     // Generate an octree from a root and a target point
-    pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<()> {
+    pub fn update(&mut self, target: vek::Vec3<f32>) -> Option<()> {
         // Simple check to see if we even moved lol
         if let Some(pos) = self.target.as_ref() {
             // Check distances
-            if veclib::Vector3::<f32>::distance(*pos, target) < self.hsettings.min_threshold_distance as f32 {
+            if vek::Vec3::<f32>::distance(*pos, target) < self.hsettings.min_threshold_distance as f32 {
                 return None;
             }
         }

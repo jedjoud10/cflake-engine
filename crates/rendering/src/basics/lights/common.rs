@@ -3,22 +3,22 @@ use enum_as_inner::EnumAsInner;
 // Light source parameters
 pub struct LightParameters {
     pub strength: f32,
-    pub color: veclib::Vector3<f32>,
+    pub color: vek::Vec3<f32>,
 }
 
 impl Default for LightParameters {
     fn default() -> Self {
         Self {
             strength: 1.0,
-            color: veclib::Vector3::ONE,
+            color: vek::Vec3::one(),
         }
     }
 }
 
 // Light transform
 pub struct LightTransform<'object> {
-    pub position: &'object veclib::Vector3<f32>,
-    pub rotation: &'object veclib::Quaternion<f32>,
+    pub position: &'object vek::Vec3<f32>,
+    pub rotation: &'object vek::Quaternion<f32>,
 }
 
 // A light type

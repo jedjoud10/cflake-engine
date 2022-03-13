@@ -20,7 +20,7 @@ impl DiffOctree {
         }
     }
     // Update the differential, and return the values of new added nodes and old removed nodes
-    pub fn update(&mut self, target: veclib::Vector3<f32>) -> Option<(Vec<Node>, Vec<Node>)> {
+    pub fn update(&mut self, target: vek::Vec3<f32>) -> Option<(Vec<Node>, Vec<Node>)> {
         // Keep track of the previous nodes
         let success = self.inner.update(target);
         let result = if success.is_some() {

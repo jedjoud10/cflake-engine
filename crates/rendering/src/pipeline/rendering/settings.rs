@@ -17,14 +17,14 @@ pub struct RenderingSettings<'scene, 'object> {
 #[derive(Default)]
 pub struct RenderingCamera {
     // Position and rotation
-    pub position: veclib::Vector3<f32>,
-    pub rotation: veclib::Quaternion<f32>,
+    pub position: vek::Vec3<f32>,
+    pub rotation: vek::Quaternion<f32>,
 
     // View and projection matrices
-    pub viewm: veclib::Matrix4x4<f32>,
-    pub projm: veclib::Matrix4x4<f32>,
-    pub projm_viewm: veclib::Matrix4x4<f32>,
+    pub viewm: vek::Mat4<f32>,
+    pub projm: vek::Mat4<f32>,
+    pub projm_viewm: vek::Mat4<f32>,
 
     // Near-Far clip planes
-    pub clip_planes: veclib::Vector2<f32>,
+    pub clip_planes: vek::Vec2<f32>,
 }

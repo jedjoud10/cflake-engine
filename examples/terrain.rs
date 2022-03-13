@@ -87,13 +87,13 @@ fn init(world: &mut World) {
             normal_map: normals,
             ..Default::default()
         },
-        uv_scale: veclib::Vector2::ONE * 0.03,
+        uv_scale: vek::Vec2::ONE * 0.03,
         ..Default::default()
     };
     let material = world.pipeline.materials.insert(material);
     let heuristic = HeuristicSettings::default()
         .with_function(|node, target| {
-            let dist = veclib::Vector3::<f32>::distance(node.center().into(), *target) / (node.half_extent() as f32 * 2.0);
+            let dist = vek::Vec3::<f32>::distance(node.center().into(), *target) / (node.half_extent() as f32 * 2.0);
             dist < 1.2
         })
         .with_threshold(64.0);
@@ -107,8 +107,8 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
-    terrain.edit(Edit::cuboid(veclib::Vector3::ZERO, vec3(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::cuboid(vek::Vec3::ZERO, vec3(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
     // Pillar
-    terrain.edit(Edit::sphere(veclib::Vector3::ZERO, 50.0, CSGOperation::Union, Some(1)));
+    terrain.edit(Edit::sphere(vek::Vec3::ZERO, 50.0, CSGOperation::Union, Some(1)));
     world.globals.add(terrain).unwrap();
 }

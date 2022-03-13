@@ -281,25 +281,25 @@ pub const DATA_OFFSET_TABLE: [usize; 8] = [
 ];
 
 // Vertex table
-pub const VERTEX_TABLE: [veclib::Vector3<f32>; 8] = [
-    veclib::Vector3::<f32> { x: 0.0, y: 0.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 0.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 0.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 0.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 0.0 },
-    veclib::Vector3::<f32> { x: 0.0, y: 1.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 1.0 },
-    veclib::Vector3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
+pub const VERTEX_TABLE: [vek::Vec3<f32>; 8] = [
+    vek::Vec3::<f32> { x: 0.0, y: 0.0, z: 0.0 },
+    vek::Vec3::<f32> { x: 0.0, y: 0.0, z: 1.0 },
+    vek::Vec3::<f32> { x: 1.0, y: 0.0, z: 1.0 },
+    vek::Vec3::<f32> { x: 1.0, y: 0.0, z: 0.0 },
+    vek::Vec3::<f32> { x: 0.0, y: 1.0, z: 0.0 },
+    vek::Vec3::<f32> { x: 0.0, y: 1.0, z: 1.0 },
+    vek::Vec3::<f32> { x: 1.0, y: 1.0, z: 1.0 },
+    vek::Vec3::<f32> { x: 1.0, y: 1.0, z: 0.0 },
 ];
-pub const VERTEX_TABLE_USIZE: [veclib::Vector3<usize>; 8] = [
-    veclib::Vector3::<usize> { x: 0, y: 0, z: 0 },
-    veclib::Vector3::<usize> { x: 0, y: 0, z: 1 },
-    veclib::Vector3::<usize> { x: 1, y: 0, z: 1 },
-    veclib::Vector3::<usize> { x: 1, y: 0, z: 0 },
-    veclib::Vector3::<usize> { x: 0, y: 1, z: 0 },
-    veclib::Vector3::<usize> { x: 0, y: 1, z: 1 },
-    veclib::Vector3::<usize> { x: 1, y: 1, z: 1 },
-    veclib::Vector3::<usize> { x: 1, y: 1, z: 0 },
+pub const VERTEX_TABLE_USIZE: [vek::Vec3<usize>; 8] = [
+    vek::Vec3::<usize> { x: 0, y: 0, z: 0 },
+    vek::Vec3::<usize> { x: 0, y: 0, z: 1 },
+    vek::Vec3::<usize> { x: 1, y: 0, z: 1 },
+    vek::Vec3::<usize> { x: 1, y: 0, z: 0 },
+    vek::Vec3::<usize> { x: 0, y: 1, z: 0 },
+    vek::Vec3::<usize> { x: 0, y: 1, z: 1 },
+    vek::Vec3::<usize> { x: 1, y: 1, z: 1 },
+    vek::Vec3::<usize> { x: 1, y: 1, z: 0 },
 ];
 
 // Marching squares case to triangle combination
@@ -368,15 +368,15 @@ pub const SKIRTS_DIR_INDEXING_FN: [fn(usize, usize, usize) -> usize; 3] = [
     |slice, x, y| crate::flatten((x, y, slice * (CHUNK_SIZE))),
 ];
 // The transform functions for each direction
-pub const SKIRTS_DIR_TRANSFORM_FN: [fn(usize, &veclib::Vector2<f32>, &veclib::Vector2<f32>) -> veclib::Vector3<f32>; 3] = [
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x),
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y),
-    |slice, vertex, offset| veclib::Vector3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32),
+pub const SKIRTS_DIR_TRANSFORM_FN: [fn(usize, &vek::Vec2<f32>, &vek::Vec2<f32>) -> vek::Vec3<f32>; 3] = [
+    |slice, vertex, offset| vek::Vec3::<f32>::new(slice as f32, vertex.x + offset.y, vertex.y + offset.x),
+    |slice, vertex, offset| vek::Vec3::<f32>::new(vertex.x + offset.x, slice as f32, vertex.y + offset.y),
+    |slice, vertex, offset| vek::Vec3::<f32>::new(vertex.y + offset.x, vertex.x + offset.y, slice as f32),
 ];
 
-pub const SQUARES_VERTEX_TABLE: [veclib::Vector2<f32>; 4] = [
-    veclib::Vector2::<f32> { x: 0.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 0.0 },
-    veclib::Vector2::<f32> { x: 1.0, y: 1.0 },
-    veclib::Vector2::<f32> { x: 0.0, y: 1.0 },
+pub const SQUARES_VERTEX_TABLE: [vek::Vec2<f32>; 4] = [
+    vek::Vec2::<f32> { x: 0.0, y: 0.0 },
+    vek::Vec2::<f32> { x: 1.0, y: 0.0 },
+    vek::Vec2::<f32> { x: 1.0, y: 1.0 },
+    vek::Vec2::<f32> { x: 0.0, y: 1.0 },
 ];

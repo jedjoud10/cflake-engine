@@ -2,11 +2,11 @@
 #[derive(Default)]
 pub struct Vertices {
     // Vertex attribute arrays
-    pub positions: Vec<veclib::Vector3<f32>>,
-    pub normals: Vec<veclib::Vector3<i8>>,
-    pub tangents: Vec<veclib::Vector4<i8>>,
-    pub uvs: Vec<veclib::Vector2<u8>>,
-    pub colors: Vec<veclib::Vector3<u8>>,
+    pub positions: Vec<vek::Vec3<f32>>,
+    pub normals: Vec<vek::Vec3<i8>>,
+    pub tangents: Vec<vek::Vec4<i8>>,
+    pub uvs: Vec<vek::Vec2<u8>>,
+    pub colors: Vec<vek::Vec3<u8>>,
 }
 
 impl Vertices {
@@ -27,19 +27,19 @@ pub struct VertexBuilder {
 
 impl VertexBuilder {
     // Le builder pattern
-    pub fn position(&mut self, position: veclib::Vector3<f32>) {
+    pub fn position(&mut self, position: vek::Vec3<f32>) {
         self.vertices.positions.push(position);
     }
-    pub fn normal(&mut self, normal: veclib::Vector3<i8>) {
+    pub fn normal(&mut self, normal: vek::Vec3<i8>) {
         self.vertices.normals.push(normal);
     }
-    pub fn tangent(&mut self, tangent: veclib::Vector4<i8>) {
+    pub fn tangent(&mut self, tangent: vek::Vec4<i8>) {
         self.vertices.tangents.push(tangent);
     }
-    pub fn uv(&mut self, uv: veclib::Vector2<u8>) {
+    pub fn uv(&mut self, uv: vek::Vec2<u8>) {
         self.vertices.uvs.push(uv);
     }
-    pub fn color(&mut self, color: veclib::Vector3<u8>) {
+    pub fn color(&mut self, color: vek::Vec3<u8>) {
         self.vertices.colors.push(color);
     }
 }

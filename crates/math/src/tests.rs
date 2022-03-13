@@ -10,30 +10,30 @@ mod tests {
     #[test]
     pub fn aabb_sphere() {
         let sphere = Sphere {
-            center: veclib::Vector3::X * 2.0,
+            center: vek::Vec3::unit_x() * 2.0,
             radius: 1.0,
         };
         let aabb = AABB {
-            min: -veclib::Vector3::ONE,
-            max: veclib::Vector3::ONE,
+            min: -vek::Vec3::one(),
+            max: vek::Vec3::one(),
         };
         assert!(!crate::intersection::aabb_sphere(&aabb, &sphere));
         let sphere = Sphere {
-            center: veclib::Vector3::X * 1.9,
+            center: vek::Vec3::unit_x() * 1.9,
             radius: 1.0,
         };
         let aabb = AABB {
-            min: -veclib::Vector3::ONE,
-            max: veclib::Vector3::ONE,
+            min: -vek::Vec3::one(),
+            max: vek::Vec3::one(),
         };
         assert!(crate::intersection::aabb_sphere(&aabb, &sphere));
         let sphere = Sphere {
-            center: veclib::Vector3::ONE * 19.0,
+            center: vek::Vec3::one() * 19.0,
             radius: 1.0,
         };
         let aabb = AABB {
-            min: -veclib::Vector3::ONE * 20.0,
-            max: veclib::Vector3::ONE * 20.0,
+            min: -vek::Vec3::one() * 20.0,
+            max: vek::Vec3::one() * 20.0,
         };
         assert!(crate::intersection::aabb_sphere(&aabb, &sphere));
     }
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     pub fn octree() {
         let mut octree = Octree::new(5, 32, HeuristicSettings::default());
-        octree.update(veclib::Vector3::ZERO);
+        octree.update(vek::Vec3::zero());
         assert_eq!(octree.nodes().len(), 33);
     }
 }

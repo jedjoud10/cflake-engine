@@ -1,3 +1,5 @@
+use vek::Clamp;
+
 use super::bounds::aabb::*;
 use crate::{
     octrees::{Node, Octree},
@@ -7,21 +9,23 @@ use crate::{
 /* #region AABB stuff */
 // Check if an AABB intersects another AABB
 pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {
-    aabb.min.elem_lt(&other.max).all() && other.min.elem_lt(&aabb.max).all()
+    let max = aabb.min.partial_cmple(&other.max).reduce_and();
+    let min = other.min.partial_cmplt(&aabb.max).reduce_and();
+    max && min
 }
 // Check if a point is inside an AABB
-pub fn point_aabb(point: &veclib::Vector3<f32>, aabb: &AABB) -> bool {
-    aabb.min.elem_lt(point).all() && aabb.max.elem_gt(point).all()
+pub fn point_aabb(point: &vek::Vec3<f32>, aabb: &AABB) -> bool {
+    aabb.min.partial_cmple(point).reduce_and() && aabb.max.partial_cmpgt(point).reduce_and()
 }
 // Check if an AABB is intersecting a sphere
 pub fn aabb_sphere(aabb: &AABB, sphere: &Sphere) -> bool {
-    let nearest_point = aabb.get_nearest_point(&sphere.center);
+    let nearest_point = sphere.center.clamped(aabb.min, aabb.max);
     point_sphere(&nearest_point, sphere)
 }
 /* #endregion */
 /* #region Main */
 // Check if a point is inside a sphere
-pub fn point_sphere(point: &veclib::Vector3<f32>, sphere: &Sphere) -> bool {
+pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
     point.distance(sphere.center) < sphere.radius
 }
 // Check if a basic shape intersects an octree node
