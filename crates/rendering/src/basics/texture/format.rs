@@ -1,10 +1,11 @@
 use std::mem::size_of;
-
 use gl::types::{GLint, GLuint};
-
 use crate::utils::DataType;
-
 use super::TextureLayout;
+
+// R: -1, 1, float
+// S: Noramlized
+// I: Integer
 
 // The texture format
 #[derive(Clone, Copy, Debug)]
@@ -135,7 +136,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLint, GLuint, GLuint) {
         | TextureFormat::RGBA32F => gl::RGBA,
         TextureFormat::DepthComponent16 | TextureFormat::DepthComponent24 | TextureFormat::DepthComponent32 => gl::DEPTH_COMPONENT,
     };
-    let data_type = match layout.data_type {
+    let data_type = match layout.data {
         DataType::U8 => gl::UNSIGNED_BYTE,
         DataType::I8 => gl::BYTE,
         DataType::U16 => gl::UNSIGNED_SHORT,
@@ -148,7 +149,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLint, GLuint, GLuint) {
 }
 
 // Calculate the byte size for a single texel
-pub fn convert_format_to_texel_byte_size(format: TextureFormat) -> usize {
+pub fn get_texel_byte_size(format: TextureFormat) -> usize {
     match format {
         TextureFormat::R8R | TextureFormat::R8RS | TextureFormat::R8I => size_of::<u8>(),
         TextureFormat::RG8R | TextureFormat::RG8RS | TextureFormat::RG8I => size_of::<u8>() * 2,
@@ -167,9 +168,4 @@ pub fn convert_format_to_texel_byte_size(format: TextureFormat) -> usize {
 
         TextureFormat::DepthComponent24 => 6,
     }
-}
-
-// Calculate the size of a TextureFormat
-pub(crate) fn calculate_total_texture_byte_size(format: TextureFormat, pixel_count: usize) -> usize {
-    convert_format_to_texel_byte_size(format) * pixel_count
 }

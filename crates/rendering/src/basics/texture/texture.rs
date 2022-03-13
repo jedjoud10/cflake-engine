@@ -1,128 +1,37 @@
-use std::{ffi::c_void, ptr::null};
+use gl::types::GLuint;
 
-use crate::{
-    basics::texture::convert_format_to_texel_byte_size,
-    object::{OpenGLObjectNotInitialized, PipelineCollectionElement},
-    utils::*,
-};
+use crate::object::PipelineCollectionElement;
 
-use super::{get_ifd, TextureDimensions, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode};
-use assets::Asset;
-use getset::{CopyGetters, Getters};
-use gl::{
-    self,
-    types::{GLint, GLuint},
-};
-use image::GenericImageView;
-use smallvec::SmallVec;
-use bitflags::bitflags;
+use super::{BundledTexture2D, Texture2D};
+// Shared texture logic
+pub trait Texture {
+    // Get the underlying texture name
+    fn texture(&self) -> GLuint;
+    // Calculate the number of texels in the texture
+    fn count_texels(&self) -> usize;
+    // Calculate the number of bytes the texture takes
+    fn count_bytes(&self) -> usize;
+    // Initialize the texture (create it's OpenGL handle)
+    fn init(&mut self);
+}
 
-// Texture parameter bits
-bitflags! {
-    pub struct TextureBits: u8 {
-        const MIPMAPS = 1;
-        const MULTISAMPLE = 1 << 2;
-        const SHADOWTEX = 1 << 3;
-        const SRGB = 1 << 4;
+// A texture type
+pub enum TextureVariant {
+    Texture2d(Texture2D),
+    BundledTexture2D(BundledTexture2D),
+}
+
+impl PipelineCollectionElement for TextureVariant {
+    fn added(&mut self, handle: &crate::pipeline::Handle<Self>) {
+        todo!()
     }
-}
-// A texture
-// TODO: Implement the texture type enum
-#[derive(CopyGetters, Getters)]
-pub struct Texture {
-    // The OpenGL id for this texture
-    #[getset(get_copy = "pub(crate)")]
-    buffer: GLuint,
-    // The bytes stored in this texture
-    #[getset(get = "pub")]
-    bytes: Vec<u8>,
 
-    // Texture layout
-    #[getset(get_copy = "pub")]
-    layout: TextureLayout,
-
-    // Internal Format, Format, Data
-    #[getset(get_copy = "pub(crate)")]
-    ifd: (GLint, GLuint, GLuint),
-    // The OpenGL target that is linked with this texture, like TEXTURE_2D or TEXTURE_ARRAY
-    #[getset(get_copy = "pub")]
-    target: GLuint,
-
-    // Texture mag and min filters, either Nearest or Linear
-    #[getset(get_copy = "pub")]
-    filter: TextureFilter,
-    // What kind of wrapping will we use for this texture
-    #[getset(get_copy = "pub")]
-    wrap_mode: TextureWrapMode,
-
-    // The dimensions of the texture
-    #[getset(get_copy = "pub")]
-    dimensions: TextureDimensions,
-
-    // Bits
-    #[getset(get_copy = "pub")]
-    bits: TextureBits,
-}
-
-impl Default for Texture {
-    fn default() -> Self {
-        Self {
-            buffer: 0,
-            bytes: Vec::new(),
-            layout: TextureLayout::default(),
-            ifd: get_ifd(TextureLayout::default()),
-            target: gl::TEXTURE_2D,
-
-            filter: TextureFilter::Linear,
-            wrap_mode: TextureWrapMode::Repeat,
-            dimensions: TextureDimensions::Texture2d(vek::Vec2::zero()),
-            bits: TextureBits::empty(),
-        }
+    fn disposed(self) {
+        todo!()
     }
 }
 
-// Builder
-#[derive(Default)]
-pub struct TextureBuilder {
-    inner: Texture,
-}
-
-impl TextureBuilder {
-    // Create a new builder from a texture
-    pub fn new(texture: Texture) -> Self {
-        Self { inner: texture }
-    }
-    // This burns my eyes
-    pub fn bytes(mut self, bytes: Vec<u8>) -> Self {
-        self.inner.bytes = bytes;
-        self
-    }
-    pub fn layout(mut self, layout: TextureLayout) -> Self {
-        self.inner.layout = layout;
-        self
-    }
-    pub fn filter(mut self, filter: TextureFilter) -> Self {
-        self.inner.filter = filter;
-        self
-    }
-    pub fn wrap_mode(mut self, wrapping: TextureWrapMode) -> Self {
-        self.inner.wrap_mode = wrapping;
-        self
-    }
-    pub fn dimensions(mut self, dims: TextureDimensions) -> Self {
-        self.inner.dimensions = dims;
-        self
-    }
-    pub fn bits(mut self, bits: TextureBits) -> Self {
-        self.inner.bits = bits;
-        self
-    }
-
-    // Build
-    pub fn build(self) -> Texture {
-        self.inner
-    }
-}
+/*
 
 impl Texture {
     // Count the numbers of pixels that this texture can contain
@@ -270,9 +179,8 @@ unsafe fn update_contents(target: GLuint, ifd: (GLint, GLuint, GLuint), pointer:
         }
     }
 }
-
-impl PipelineCollectionElement for Texture {
-    fn added(&mut self, _handle: &crate::pipeline::Handle<Self>) {
+*/
+        /*
         // Get OpenGL internal format, format, and data type
         self.ifd = get_ifd(self.layout);
         self.target = match self.dimensions {
@@ -368,38 +276,6 @@ impl PipelineCollectionElement for Texture {
                 gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_FUNC, gl::GREATER as i32);
             }
         }
-    }
+        */
 
-    fn disposed(self) {
-        // Dispose of the OpenGL buffers
-        unsafe {
-            gl::DeleteTextures(1, &self.buffer);
-        }
-    }
-}
-
-impl Asset for Texture {
-    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        // Load this texture from the bytes
-        let image = image::load_from_memory(bytes).unwrap();
-        let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
-        // Flip
-        let image = image.flipv();
-        let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
-        Some(
-            TextureBuilder::default()
-                .bytes(bytes)
-                .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(width, height)))
-                .bits(TextureBits::MIPMAPS | TextureBits::SRGB)
-                .layout(TextureLayout {
-                    data_type: DataType::U8,
-                    internal_format: TextureFormat::RGBA8R,
-                    resizable: false,
-                })
-                .build(),
-        )
-    }
-}
+        

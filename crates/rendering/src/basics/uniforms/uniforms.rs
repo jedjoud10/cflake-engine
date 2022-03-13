@@ -1,6 +1,8 @@
+use gl::types::GLuint;
+
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
-    basics::{shader::ShaderProgram, texture::Texture},
+    basics::{shader::ShaderProgram, texture::{Texture, Texture2D, BundledTexture2D}},
     pipeline::{Handle, Pipeline},
 };
 
@@ -138,12 +140,12 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_col_ptr());
         }
     }
-    pub fn set_texture(&mut self, name: &str, texture: &Handle<Texture>) {
+    // Internal
+    fn set_texture(&mut self, name: &str, target: GLuint, tex: GLuint) {
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
-        let texture = self.pipeline.textures.get(texture).unwrap();
         // Get the active texture ID from the program
         let mut used_texture_units = self.program.used_texture_units().borrow_mut();
         if !used_texture_units.contains_key(name) {
@@ -156,11 +158,21 @@ impl<'a> Uniforms<'a> {
         if let Some(&offset) = used_texture_units.get(name) {
             unsafe {
                 gl::ActiveTexture(offset as u32 + gl::TEXTURE0);
-                gl::BindTexture(texture.target(), texture.buffer());
+                gl::BindTexture(target, tex);
                 gl::Uniform1i(location, offset as i32);
             }
         }
     }
+    // Textures
+    pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
+        let texture = self.pipeline.textures.get(texture).unwrap();
+        self.set_texture(name, gl::TEXTURE_2D, texture.texture());
+    }
+    pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
+        let texture = self.pipeline.textures.get(texture).unwrap();
+        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.texture());
+    }
+    // Atomics
     pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {
         unsafe {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.storage().storage().buffer());
@@ -168,6 +180,7 @@ impl<'a> Uniforms<'a> {
             gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
         }
     }
+    // Storages
     pub fn set_shader_storage<Buffer: crate::advanced::storages::Buffer>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer>, binding: u32) {
         unsafe {
             gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().raw().buffer());

@@ -50,15 +50,6 @@ impl<T: PipelineCollectionElement> PipelineCollection<T> {
     pub fn get_mut(&mut self, handle: &Handle<T>) -> Option<&mut T> {
         self.inner.get_mut(*handle.key)
     }
-    // Manually remove an element, though you should never do this since the Drop implementation on Handle<T> handles automatically removing unused elements
-    pub fn remove(&mut self, handle: &Handle<T>) {
-        // Silently ignores elements that have already been removed
-        let removed = self.inner.remove(*handle.key);
-        // Remember to dispose
-        if let Some(removed) = removed {
-            removed.disposed()
-        }
-    }
     // Insert an element to the collection, returning it's specific handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
         let key = self.inner.insert(value);

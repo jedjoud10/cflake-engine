@@ -10,26 +10,29 @@ use others::Time;
 
 use crate::{
     advanced::compute::ComputeShader,
-    basics::{material::Material, mesh::Mesh, shader::Shader, texture::Texture},
-    utils::{Window, DEFAULT_WINDOW_SIZE},
+    basics::{material::Material, mesh::Mesh, shader::Shader, texture::{Texture, Texture2D, BundledTexture2D}},
+    utils::{Window, DEFAULT_WINDOW_SIZE}, object::PipelineCollectionElement,
 };
 
-use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer};
+use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer, Handle};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, Setters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
-    pub meshes: PipelineCollection<Mesh>,
-    pub shaders: PipelineCollection<Shader>,
-    pub compute_shaders: PipelineCollection<ComputeShader>,
-    pub textures: PipelineCollection<Texture>,
+    meshes: PipelineCollection<Mesh>,
+    shaders: PipelineCollection<Shader>,
+    compute_shaders: PipelineCollection<ComputeShader>,
+
+    // Multiple texture types
+    textures: PipelineCollection<Texture2D>,
+    bundled_textures: PipelineCollection<BundledTexture2D>,
 
     // Others
-    pub materials: PipelineCollection<Material>,
+    materials: PipelineCollection<Material>,
 
     // Window
-    pub window: Window,
+    window: Window,
     // Timings
     #[getset(get = "pub")]
     time: Time,
@@ -88,6 +91,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         shaders: Default::default(),
         compute_shaders: Default::default(),
         textures: Default::default(),
+        bundled_textures: Default::default(),
         materials: Default::default(),
         time: Default::default(),
         camera: Default::default(),
@@ -149,5 +153,20 @@ impl Pipeline {
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             _ => {}
         }
+    }
+}
+
+impl Pipeline {
+    // Add, get, get mut
+    pub fn add<Element: PipelineCollectionElement>(&mut self, obj: Element) -> Handle<Element> {
+        let handle = obj.add(self);
+    }
+
+    // Get, get mut
+    pub fn get<Element: PipelineCollectionElement>(&self, handle: &Handle<Element>) -> &Element {
+        Element::find(self, handle)
+    }
+    pub fn get_mut<Element: PipelineCollectionElement>(&mut self, handle: &Handle<Element>) -> &mut Element {
+        Element::find_mut(self, handle)
     }
 }

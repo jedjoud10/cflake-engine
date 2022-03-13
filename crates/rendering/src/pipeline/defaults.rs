@@ -4,7 +4,7 @@ use crate::basics::{
     material::{Material, MaterialTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, TextureBuilder, TextureDimensions, TextureFilter},
+    texture::{Texture, TextureBuilder, TextureFilter, Texture2D},
 };
 
 use super::{Handle, Pipeline};
@@ -13,10 +13,10 @@ use super::{Handle, Pipeline};
 #[derive(Default)]
 pub struct DefaultElements {
     // Textures
-    pub white: Handle<Texture>,
-    pub black: Handle<Texture>,
-    pub missing: Handle<Texture>,
-    pub normal_map: Handle<Texture>,
+    pub white: Handle<Texture2D>,
+    pub black: Handle<Texture2D>,
+    pub missing: Handle<Texture2D>,
+    pub normal_map: Handle<Texture2D>,
 
     // Meshes
     pub mesh: Handle<Mesh>,
@@ -36,19 +36,19 @@ impl DefaultElements {
         // Default textures that are created at runtime
         let white = TextureBuilder::default()
             .bytes(vec![255, 255, 255, 255])
-            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
+            .dimensions(1, 1)
             .build();
         let white = pipeline.textures.insert(white);
 
         let black = TextureBuilder::default()
             .bytes(vec![0, 0, 0, 255])
-            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
+            .dimensions(1, 1)
             .build();
         let black = pipeline.textures.insert(black);
 
         let normal_map = TextureBuilder::default()
             .bytes(vec![127, 127, 255, 255])
-            .dimensions(TextureDimensions::Texture2d(vek::Vec2::new(1, 1)))
+            .dimensions(1, 1)
             .build();
         let normal_map = pipeline.textures.insert(normal_map);
 
