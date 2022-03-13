@@ -36,19 +36,19 @@ impl DefaultElements {
         // Default textures that are created at runtime
         let white = TextureBuilder::default()
             .params(TextureParams::from_bytes(vec![255, 255, 255, 255]))
-            .dimensions(1, 1)
+            .dimensions(vek::Vec2::one())
             .build();
         let white = pipeline.textures.insert(white);
 
         let black = TextureBuilder::default()
         .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
-            .dimensions(1, 1)
+            .dimensions(vek::Vec2::one())
             .build();
         let black = pipeline.textures.insert(black);
 
         let normal_map = TextureBuilder::default()
             .params(TextureParams::from_bytes(vec![127, 127, 255, 255]))
-            .dimensions(1, 1)
+            .dimensions(vek::Vec2::one())
             .build();
         let normal_map = pipeline.textures.insert(normal_map);
 

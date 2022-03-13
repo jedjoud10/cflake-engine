@@ -68,7 +68,7 @@ impl Asset for Mesh {
 }
 
 impl PipelineElement for Mesh {
-    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
+    fn add(mut self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO

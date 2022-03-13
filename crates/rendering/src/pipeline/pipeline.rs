@@ -159,11 +159,10 @@ impl Pipeline {
 }
 
 impl Pipeline {
-    // Add, get, get mut
-    pub fn add<Element: PipelineElement>(&mut self, obj: Element) -> Handle<Element> {
+    // Insert
+    pub fn insert<Element: PipelineElement>(&mut self, obj: Element) -> Handle<Element> {
         obj.add(self)
     }
-
     // Get, get mut
     pub fn get<Element: PipelineElement>(&self, handle: &Handle<Element>) -> Option<&Element> {
         Element::find(self, handle)

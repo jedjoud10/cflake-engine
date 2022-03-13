@@ -3,8 +3,6 @@ mod layout;
 mod texture;
 mod variants;
 mod params;
-mod bytes;
-pub use bytes::*;
 pub use params::*;
 pub use variants::*;
 pub use format::*;

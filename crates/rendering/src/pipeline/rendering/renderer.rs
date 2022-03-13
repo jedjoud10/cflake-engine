@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureFormat, TextureLayout, TextureWrapMode, Texture2D, TextureParams},
+        texture::{Texture, TextureBuilder, TextureFormat, TextureLayout, TextureWrapMode, Texture2D, TextureParams, ResizableTexture},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -68,7 +68,7 @@ impl SceneRenderer {
         let shader = pipeline.shaders.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
-        let (width, height) = pipeline.window().dimensions().into_tuple();
+        let dimensions = pipeline.window().dimensions();
 
         // Since we use deferred rendering, we must create a new framebuffer for this renderer
         let mut framebuffer = 0;
@@ -95,8 +95,8 @@ impl SceneRenderer {
                     resizable: true,
                 };
 
-                let texture = pipeline.add(TextureBuilder::default()
-                    .dimensions(width, height)
+                let texture = pipeline.insert(TextureBuilder::default()
+                    .dimensions(dimensions)
                     .params(TextureParams {
                         layout,
                         ..Default::default()
@@ -116,8 +116,8 @@ impl SceneRenderer {
         ];
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
-            gl::BindTexture(texture.target(), texture.buffer());
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.buffer(), 0);
+            gl::BindTexture(texture.target(), texture.texture());
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.texture(), 0);
         }
 
         // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT
@@ -156,10 +156,10 @@ impl SceneRenderer {
     // Resize the renderer's textures
     pub(crate) fn resize(&mut self, pipeline: &mut Pipeline) {
         // Very simple since we use an array
-        let (width, height) = pipeline.window().dimensions().into_tuple();
+        let dimensions = pipeline.window().dimensions();
         for handle in self.textures.iter() {
             let texture = pipeline.get_mut(handle).unwrap();
-            texture.set_dimensions(width, height).unwrap();
+            texture.resize(dimensions);
         }
     }
 

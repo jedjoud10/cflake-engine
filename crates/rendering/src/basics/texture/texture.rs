@@ -18,6 +18,9 @@ impl Default for TextureHandle {
 
 // Shared texture logic
 pub trait Texture {
+    // Dimension types
+    type Dimensions;
+
     // Get the texter target (OpenGL)
     fn target(&self) -> GLuint;
     // Get the texture handle
@@ -30,6 +33,14 @@ pub trait Texture {
     fn count_bytes(&self) -> usize {
         self.count_texels() * get_texel_byte_size(self.params().layout.internal_format)
     }
+    // Get the current texture dimensions
+    fn dimensions(&self) -> Self::Dimensions;
+}
+
+// Resizable texture
+pub trait ResizableTexture: Texture {
+    // Resize the current texture
+    fn resize(&mut self, dimensions: Self::Dimensions);
 }
 
 

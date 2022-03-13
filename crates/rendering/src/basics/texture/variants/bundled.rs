@@ -1,6 +1,6 @@
 use getset::{Getters, CopyGetters};
 use gl::types::{GLuint, GLint};
-use crate::{basics::texture::{TextureLayout, TextureWrapMode, TextureFlags, TextureFilter, TextureParams, Texture, get_texel_byte_size, TextureBytes}, object::PipelineElement};
+use crate::{basics::texture::{TextureLayout, TextureWrapMode, TextureFlags, TextureFilter, TextureParams, Texture, get_texel_byte_size, TextureBytes, ResizableTexture}, object::PipelineElement};
 use super::{Texture2D, TextureBuilder};
 
 // A combination of multiple texture2D's
@@ -11,19 +11,15 @@ pub struct BundledTexture2D {
     buffer: GLuint,
 
     // Params
-    #[getset(get = "pub")]
     params: TextureParams,
 
     // Texture dimensions
-    #[getset(get_copy = "pub")]
-    width: u16, 
-    #[getset(get_copy = "pub")]
-    height: u16,
-    #[getset(get_copy = "pub")]
-    layers: u16
+    dimensions: vek::Vec3<u16>,
 }
 
 impl Texture for BundledTexture2D {
+    type Dimensions = vek::Vec3<u16>;
+
     fn target(&self) -> GLuint {
         gl::TEXTURE_2D_ARRAY
     }
@@ -34,7 +30,10 @@ impl Texture for BundledTexture2D {
         &self.params
     }
     fn count_texels(&self) -> usize {
-        self.width as usize * self.height as usize * self.layers as usize
+        self.dimensions.as_::<usize>().product()
+    }
+    fn dimensions(&self) -> vek::Vec3<u16> {
+        self.dimensions
     }
 }
 
@@ -69,16 +68,17 @@ impl BundledTextureBuilder {
         self
     }
     // Build the bundled texture
-    pub fn build(mut self, params: Option<TextureParams>) -> Option<BundledTexture2D> {
+    pub fn build(self, params: Option<TextureParams>) -> Option<BundledTexture2D> {
         // We get the main dimensions from the first texture
         let first = self.textures.get(0)?;
-        let (width, height) = (first.width(), first.height());
+        let (width, height) = (first.dimensions().x, first.dimensions().y);
 
         // Load the bytes
         let mut bytes: Vec<u8> = Vec::with_capacity(self.textures[0].count_bytes());
-        for texture in self.textures {
+        for texture in self.textures.iter() {
             // Check if we have the same settings
-            if texture.width() != width || texture.height() != height {
+            let d = texture.dimensions();
+            if d.x != width || d.y != height {
                 return None;
             }
             let texbytes = texture.params().bytes.as_loaded().unwrap().iter();
@@ -96,9 +96,7 @@ impl BundledTextureBuilder {
                 wrap: params.wrap,
                 flags: params.flags,
             },
-            width,
-            height,
-            layers: self.textures.len() as u16,
+            dimensions: vek::Vec3::new(width, height, self.textures.len() as u16),
         })
     }
 }

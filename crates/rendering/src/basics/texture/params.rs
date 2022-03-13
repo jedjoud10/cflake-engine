@@ -1,5 +1,13 @@
-use super::{TextureBytes, TextureLayout};
+use super::{TextureLayout};
 use bitflags::bitflags;
+use enum_as_inner::EnumAsInner;
+
+// Texture bytes
+#[derive(EnumAsInner)]
+pub enum TextureBytes {
+    Loaded(Vec<u8>),
+    Unloaded,
+}
 
 // Texture filters
 #[derive(Debug, Clone, Copy)]

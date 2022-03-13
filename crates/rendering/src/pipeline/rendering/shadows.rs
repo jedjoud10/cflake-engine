@@ -39,7 +39,7 @@ impl ShadowMapping {
 
         // Create the depth texture
         let texture = TextureBuilder::default()
-            .dimensions(shadow_resolution.max(1), shadow_resolution.max(1))
+            .dimensions(vek::Vec2::broadcast(shadow_resolution.max(1)))
             .params(TextureParams {
                 layout: TextureLayout { data: DataType::U8, internal_format: TextureFormat::DepthComponent16, resizable: false },
                 filter: TextureFilter::Linear,
@@ -51,7 +51,7 @@ impl ShadowMapping {
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().buffer(), 0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().texture(), 0);
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind

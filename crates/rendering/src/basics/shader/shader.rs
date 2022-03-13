@@ -42,7 +42,7 @@ impl Shader {
 }
 
 impl PipelineElement for Shader {
-    fn add(self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
+    fn add(mut self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
         // Compiling
         self.program = compile_shader(self.settings.sources_mut());
         pipeline.shaders.insert(self)

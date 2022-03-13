@@ -23,7 +23,7 @@ pub struct ComputeShader {
 }
 
 impl PipelineElement for ComputeShader {
-    fn add(self, pipeline: &mut Pipeline) -> crate::pipeline::Handle<Self> {
+    fn add(mut self, pipeline: &mut Pipeline) -> crate::pipeline::Handle<Self> {
         // Compiling
         self.program = compile_shader(self.settings.sources());
         pipeline.compute_shaders.insert(self)
