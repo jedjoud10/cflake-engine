@@ -59,7 +59,7 @@ impl RawTexture {
 
 impl Drop for RawTexture {
     fn drop(&mut self) {
-            // Dispose of the texture
-            unsafe { gl::DeleteTextures(1, &self.name) }
+        // Dispose of the texture
+        unsafe { gl::DeleteTextures(1, &self.name) }
     }
 }

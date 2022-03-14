@@ -1,4 +1,11 @@
-use crate::{basics::{shader::Shader, uniforms::{Uniforms, UniformsSet}}, object::PipelineElement, pipeline::*};
+use crate::{
+    basics::{
+        shader::Shader,
+        uniforms::{Uniforms, UniformsSet},
+    },
+    object::PipelineElement,
+    pipeline::*,
+};
 
 // A generic material that contains a shader and a set of uniforms
 pub struct Material {
@@ -10,7 +17,10 @@ pub struct Material {
 }
 
 // Builds a universal material from anything
-pub trait MaterialBuilder where Self: Sized {
+pub trait MaterialBuilder
+where
+    Self: Sized,
+{
     // Build
     fn build(self, pipeline: &Pipeline) -> Material {
         // Use the default shader

@@ -48,19 +48,7 @@ impl Texture for BundledTexture2D {
             let (width, height, layers) = (self.dimensions).as_::<i32>().into_tuple();
             let ifd = raw.ifd;
             unsafe {
-                gl::TexSubImage3D(
-                    gl::TEXTURE_2D_ARRAY,
-                    0,
-                    0,
-                    0,
-                    0,
-                    width,
-                    height,
-                    layers,
-                    ifd.1,
-                    ifd.2,
-                    ptr,
-                );
+                gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);
             }
         }
 

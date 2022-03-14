@@ -1,7 +1,7 @@
 use gl::types::GLuint;
 
-use crate::{basics::texture::TextureFlags, object::PipelineElement, pipeline::Handle};
 use super::{get_texel_byte_size, BundledTexture2D, RawTexture, Texture2D, TextureBytes, TextureParams};
+use crate::{basics::texture::TextureFlags, object::PipelineElement, pipeline::Handle};
 
 // Shared texture logic
 pub trait Texture {

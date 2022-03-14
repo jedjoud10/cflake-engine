@@ -1,6 +1,14 @@
-use crate::{pipeline::Handle, basics::{shader::Shader, texture::Texture2D, uniforms::UniformsSet, material::{Material, MaterialBuilder}}};
+use crate::{
+    basics::{
+        material::{Material, MaterialBuilder},
+        shader::Shader,
+        texture::Texture2D,
+        uniforms::UniformsSet,
+    },
+    pipeline::Handle,
+};
 
-use super::{PbrTextures, PbrParams};
+use super::{PbrParams, PbrTextures};
 
 // A physically based material builder
 pub struct PbrMaterialBuilder {
@@ -8,12 +16,12 @@ pub struct PbrMaterialBuilder {
     pub textures: PbrTextures,
 
     // Parameters
-    pub params: PbrParams
+    pub params: PbrParams,
 }
 
 // Convert
 impl MaterialBuilder for PbrMaterialBuilder {
-    fn build_with_shader(self, pipeline: &crate::pipeline::Pipeline, shader: Handle<Shader>) -> Material {        
+    fn build_with_shader(self, pipeline: &crate::pipeline::Pipeline, shader: Handle<Shader>) -> Material {
         let textures = self.textures;
         let params = self.params;
 

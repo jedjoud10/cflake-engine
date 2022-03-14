@@ -1,6 +1,6 @@
 use crate::buffers::Buffers;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
-use rendering::basics::texture::{Texture2D, TextureFlags, TextureParams, ResizableTexture};
+use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams};
 use rendering::gl;
 use rendering::{
     basics::{

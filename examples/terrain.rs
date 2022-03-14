@@ -8,9 +8,10 @@ use cflake_engine::{
     math::{csg::CSGOperation, octrees::HeuristicSettings},
     rendering::basics::{
         lights::{LightParameters, LightType::Directional},
-        material::{Material},
+        material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureLayout, Texture2D, BundledTextureBuilder}, uniforms::UniformsSet,
+        texture::{BundledTextureBuilder, Texture, Texture2D, TextureLayout},
+        uniforms::UniformsSet,
     },
     terrain::editing::Edit,
     vek, World,

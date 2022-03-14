@@ -2,7 +2,7 @@ use std::{ffi::c_void, mem::ManuallyDrop, ptr::null};
 
 use crate::basics::texture::TextureWrapMode;
 
-use super::{RawTexture, TextureBytes, TextureFilter, TextureFlags, TextureParams, Texture};
+use super::{RawTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureParams};
 
 // Guess how many mipmap levels a texture can have
 // Input value is the maximum dimenions of the texture

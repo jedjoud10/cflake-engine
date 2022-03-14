@@ -1,7 +1,7 @@
 use assets::assetc;
 
 use crate::basics::{
-    material::{Material, PbrMaterialBuilder, PbrTextures, PbrParams, MaterialBuilder},
+    material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
     texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureParams},
@@ -75,14 +75,19 @@ impl DefaultElements {
 
         // Default pbr material
         let pbr_mat = PbrMaterialBuilder {
-            textures: PbrTextures { diffuse: missing.clone(), normal: normal_map.clone(), emissive: black.clone() },
+            textures: PbrTextures {
+                diffuse: missing.clone(),
+                normal: normal_map.clone(),
+                emissive: black.clone(),
+            },
             params: PbrParams {
                 bumpiness: 1.0,
                 emissivity: 0.0,
                 tint: vek::Vec3::one(),
                 uv_scale: vek::Vec2::one(),
             },
-        }.build(pipeline);
+        }
+        .build_with_shader(pipeline, shader.clone());
         let pbr_mat = pipeline.insert(pbr_mat);
 
         Self {
