@@ -54,8 +54,13 @@ fn run(world: &mut World, data: ComponentQuerySet) {
     let (camera_position, camera_forward) = {
         let camkey = world.globals.get::<GlobalWorldData>().unwrap().main_camera;
         let camquery = data.get(0).unwrap();
-        let transform = camquery.all.get(&camkey).unwrap().get::<Transform>().unwrap();
-        (transform.position, transform.forward())
+        let camera = camquery.all.get(&camkey);
+        if let Some(camera) = camera {
+            let transform = camera.get::<Transform>().unwrap();
+            (transform.position, transform.forward())
+        } else {
+            return;
+        }
     };
     let terrain_ = world.globals.get_mut::<Terrain>();
     if world.input.map_toggled("update_terrain") || terrain_.is_err() {

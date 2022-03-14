@@ -22,9 +22,6 @@ use world::{
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     let query = &mut data.get_mut(0).unwrap().all;
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
-    if Instant::now().saturating_duration_since(world.time.current.instant).as_millis() > 1 {
-        return;
-    }
     if let Ok(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
         if let ChunkGenerationState::EndVoxelDataGeneration(key, true, idx) = terrain.manager.current_chunk_state {

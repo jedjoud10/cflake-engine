@@ -86,9 +86,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Get the pipeline without angering the borrow checker
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if let Ok(terrain) = terrain {
-        if Instant::now().saturating_duration_since(world.time.current.instant).as_millis() > 2 {
-            return;
-        }
         // The edit system didn't pack the edits yet, we must skip
         if terrain.editer.is_pending() {
             return;

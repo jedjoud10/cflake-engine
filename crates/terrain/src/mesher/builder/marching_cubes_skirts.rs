@@ -29,7 +29,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Generate the marching cubes skirts
-    pub fn build(&self, voxels: &VoxelData, _coords: ChunkCoords) -> GeometryBuilder {
+    pub fn build(&self, voxels: &VoxelData) -> GeometryBuilder {
         if !self.settings.skirts {
             return GeometryBuilder::default();
         }

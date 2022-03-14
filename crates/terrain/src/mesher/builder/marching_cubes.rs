@@ -138,8 +138,7 @@ impl MarchingCubes {
         }
     }
     // Generate the Marching Cubes mesh
-    pub fn build(&self, voxels: &VoxelData, _coords: ChunkCoords) -> GeometryBuilder {
-        let i = std::time::Instant::now();
+    pub fn build(&self, voxels: &VoxelData) -> GeometryBuilder {
         // Mesh builder
         let mut builder = GeometryBuilder::default();
         // Then generate the mesh

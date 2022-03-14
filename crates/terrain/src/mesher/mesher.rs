@@ -25,8 +25,8 @@ impl Mesher {
     // Generate the mesh from the voxel data
     pub fn build(self, data: &VoxelData) -> (GeometryBuilder, GeometryBuilder) {
         // Gotta combine the main mesh and the skirts one
-        let main = self.builder.build(&data, self.coords);
-        let skirts = self.skirts_builder.build(&data, self.coords);
+        let main = self.builder.build(&data);
+        let skirts = self.skirts_builder.build(&data);
         (main, skirts)
     }
 }

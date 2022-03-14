@@ -5,11 +5,10 @@ use rendering::gl;
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode},
+        texture::{TextureBuilder, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
-    utils::DataType,
 };
 use vek::Clamp;
 

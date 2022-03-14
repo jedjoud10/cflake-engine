@@ -32,7 +32,7 @@ impl Default for MeshScheduler {
     fn default() -> Self {
         let (sender, receiver) = std::sync::mpsc::channel::<MeshGenResult>();
         Self {
-            pool: ThreadPool::new(3),
+            pool: ThreadPool::new(2),
             sender,
             receiver,
             mesh_tasks_running: RefCell::new(0),
