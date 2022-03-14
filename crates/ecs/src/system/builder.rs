@@ -1,6 +1,6 @@
 use crate::component::{ComponentQueryParameters, ComponentQuerySet};
 
-use super::{SubSystem, System, SystemSet};
+use super::{SubSystem, System, SystemSet, SystemExecutionOrder};
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, World> {
@@ -11,7 +11,16 @@ pub struct SystemBuilder<'a, World> {
 impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
     pub(crate) fn new(set: &'a mut SystemSet<World>) -> Self {
-        Self { set, system: System::default() }
+        Self { set, system: System {
+            subsystems: Default::default(),
+            evn_run: Default::default(),
+            order: SystemExecutionOrder::default()
+        }}
+    }
+    // Set the system's execution order
+    pub fn order(mut self, order: SystemExecutionOrder) -> Self {
+        self.system.order = order;
+        self
     }
     // Add a subsystem with specific component query parameters
     pub fn query(mut self, params: ComponentQueryParameters) -> Self {

@@ -1,5 +1,5 @@
 use systems::*;
-use world::{assets::persistent, World};
+use world::{assets::persistent, World, ecs::system::SystemExecutionOrder};
 // Default components
 pub mod components;
 // Default globals
@@ -54,18 +54,12 @@ pub fn preload_default_assets() {
 
     println!("Finished pre-loading default assets!");
 }
-// Start the default systems that will be executed before the user systems
-pub fn start_before_user_sytems(world: &mut World) {
+// Load default systems
+pub fn load_default_systems(world: &mut World) {
     // Engine defaults
-
-    // We gotta add the default globals
-    world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
-    world.globals.add(crate::globals::Physics::default()).unwrap();
-}
-
-// Start the defaults systems that will be executed after the user systems
-pub fn start_after_user_systems(world: &mut World) {
+    SystemExecutionOrder::set(i32::MIN);
     camera_system::system(world);
+
     debugging_system::system(world);
     window_system::system(world);
     audio_system::system(world);
@@ -74,10 +68,18 @@ pub fn start_after_user_systems(world: &mut World) {
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
+
+    // User defined systems should start at ordering 0
+
+    SystemExecutionOrder::set(i32::MAX - 10);
     terrain_system::editing_system::system(world);
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
 
     rendering_system::system(world);
     gui_system::system(world);
+
+    // We gotta add the default globals
+    world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
+    world.globals.add(crate::globals::Physics::default()).unwrap();
 }

@@ -1,4 +1,4 @@
-use std::ptr::null;
+use std::{ptr::null, mem::size_of};
 
 use getset::Getters;
 use gl::types::GLuint;
@@ -34,6 +34,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
     }
     // Create a dynamic buffer
     unsafe fn new_raw(cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
+        assert!(size_of::<Element>() != 0, "Zero sized types not supported!");
         // Dynamic buffer cannot be for buffers that have an AccessType of ServerToClient or ServerToServer, because we don't know when we have update the buffer on the GPU
         match usage.access {
             AccessType::ServerToServer | AccessType::ServerToClient => panic!(),
@@ -123,6 +124,7 @@ impl<Element> Buffer for StaticBuffer<Element> {
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Init and fill
+        assert!(size_of::<Element>() != 0, "Zero sized types not supported!");
         let storage = TypedStorage::new(len, len, ptr, _type, usage);
         Self { storage }
     }

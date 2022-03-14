@@ -1,6 +1,6 @@
 use crate::components::{Camera, Light, Renderer, Transform, RendererFlags};
 use world::{
-    ecs::component::{ComponentQueryParameters, ComponentQuerySet},
+    ecs::{component::{ComponentQueryParameters, ComponentQuerySet}, system::SystemExecutionOrder},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
@@ -13,14 +13,23 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Get the camera if possible
     let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
     let camquery = data.get_mut(1).unwrap();
-    let linked = camquery.all.get(&global.main_camera);
-    let camera = linked.map(|linked| {
-        let camera = linked.get::<Camera>().unwrap();
-        let transform = linked.get::<Transform>().unwrap();
+    let linked = camquery.all.get_mut(&global.main_camera);
+    let camera = linked.map(|components| {     
+        // Get the linked components
+        let (position, forward, up, rotation, mutated) = {
+            let transform = components.get::<Transform>().unwrap();
+            (transform.position, transform.forward(), transform.up(), transform.rotation, components.was_mutated::<Transform>().unwrap())
+        };
+        let camera = components.get_mut::<Camera>().unwrap();
+        // And don't forget to update the camera matrices
+        camera.update_projection_matrix(world.pipeline.window().dimensions().x as f32, world.pipeline.window().dimensions().y as f32);
+        if mutated {
+            camera.update_view_matrix(position, forward, up);
+        }
         // Camera settings
         RenderingCamera {
-            position: transform.position,
-            rotation: transform.rotation,
+            position,
+            rotation,
             viewm: camera.viewm,
             projm: camera.projm,
             clip_planes: camera.clip_planes,

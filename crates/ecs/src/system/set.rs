@@ -29,4 +29,9 @@ impl<World> SystemSet<World> {
         let mut borrowed = self.inner.borrow_mut();
         borrowed.push(system)
     }
+    // Sort the systems based on their ordering
+    pub fn sort(&mut self) {
+        let mut vec = self.inner.borrow_mut();
+        vec.sort_by(|a, b| a.order.cmp(&b.order))
+    }
 }

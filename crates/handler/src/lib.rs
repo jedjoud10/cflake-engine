@@ -1,4 +1,4 @@
-use defaults::rendering::pipeline::PipelineSettings;
+use defaults::{rendering::pipeline::PipelineSettings, ecs::system::SystemExecutionOrder};
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -45,15 +45,13 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     // Create the world
     let mut world = World::new(config, io, pipeline, renderer);
 
-    // Calling the callback
-    {
-        // Load the default systems first
-        defaults::start_before_user_sytems(&mut world);
-        init_systems(&mut world);
-        defaults::start_after_user_systems(&mut world);
-        println!("Calling World Initialization callback");
-        init_world(&mut world);
-    }
+    // Load the default systems first
+    defaults::load_default_systems(&mut world);
+    SystemExecutionOrder::set(0);
+    init_systems(&mut world);
+    println!("Calling World Initialization callback");
+    init_world(&mut world);
+    world.ecs.systems.sort();
 
     // Post-init
     world.pipeline.post_init();

@@ -72,13 +72,13 @@ pub fn system(world: &mut World) {
         .event(run)
         .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
         .build();
-    world.input.bind_key(Keys::W, "camera_forward");
-    world.input.bind_key(Keys::S, "camera_backwards");
-    world.input.bind_key(Keys::D, "camera_right");
-    world.input.bind_key(Keys::A, "camera_left");
-    world.input.bind_key(Keys::Space, "camera_up");
-    world.input.bind_key(Keys::LShift, "camera_down");
-    world.input.bind_key(Keys::Z, "camera_zoom");
-    world.input.bind_key(Keys::X, "camera_unzoom");
-    world.input.bind_key(Keys::RShift, "cull_update");
+    world.input.bind(Keys::W, "camera_forward");
+    world.input.bind(Keys::S, "camera_backwards");
+    world.input.bind(Keys::D, "camera_right");
+    world.input.bind(Keys::A, "camera_left");
+    world.input.bind(Keys::Space, "camera_up");
+    world.input.bind(Keys::LShift, "camera_down");
+    world.input.bind(Keys::Z, "camera_zoom");
+    world.input.bind(Keys::X, "camera_unzoom");
+    world.input.bind(Keys::RShift, "cull_update");
 }

@@ -3,6 +3,8 @@ mod set;
 mod settings;
 mod subsystem;
 mod system;
+mod order;
+pub use order::*;
 pub use builder::*;
 pub(crate) use set::*;
 pub use settings::*;

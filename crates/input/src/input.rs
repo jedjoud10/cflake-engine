@@ -97,7 +97,7 @@ impl InputManager {
         Some(())
     }
     // Binds a key to a specific mapping, making it a button
-    pub fn bind_key(&mut self, key: Keys, map_name: &str) {
+    pub fn bind(&mut self, key: Keys, map_name: &str) {
         // Check if the binding exists
         if !self.maps.contains_key(map_name) {
             // The binding does not exist yet, so create a new one

@@ -1,6 +1,7 @@
 use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
 
 use world::World;
+use world::ecs::system::SystemExecutionOrder;
 
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
@@ -14,22 +15,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // If there isn't a main camera assigned already, we can be the main one
     if let Some((&key, _)) = query.delta.added.iter().next() {
         global.main_camera = key;
-    }
-
-    // Update the camera values now
-    let components = query.all.get_mut(&global.main_camera);
-    if let Some(components) = components {
-        // Get the linked components
-        let (position, forward, up, mutated) = {
-            let transform = components.get::<Transform>().unwrap();
-            (transform.position, transform.forward(), transform.up(), components.was_mutated::<Transform>().unwrap())
-        };
-        let camera = components.get_mut::<Camera>().unwrap();
-        // And don't forget to update the camera matrices
-        camera.update_projection_matrix(world.pipeline.window().dimensions().x as f32, world.pipeline.window().dimensions().y as f32);
-        if mutated {
-            camera.update_view_matrix(position, forward, up);
-        }
     }
 }
 
