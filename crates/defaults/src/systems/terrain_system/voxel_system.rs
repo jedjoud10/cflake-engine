@@ -51,7 +51,6 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS2, AXIS2, AXIS2));
     let compute = pipeline.get(&generator.secondary_compute).unwrap();
-    let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
     terrain.manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);
 }
