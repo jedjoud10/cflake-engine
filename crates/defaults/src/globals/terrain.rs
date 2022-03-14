@@ -36,7 +36,7 @@ impl Terrain {
                 physics: settings.physics,
                 ..Default::default()
             },
-            scheduler: MeshScheduler::new(),
+            scheduler: MeshScheduler::default(),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
             editer: EditingManager::default(),
         }

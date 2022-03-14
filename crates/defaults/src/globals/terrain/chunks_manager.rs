@@ -16,7 +16,7 @@ use world::{
 pub enum ChunkGenerationState {
     RequiresVoxelData,
     FetchShaderStorages(EntityKey, ChunkCoords),
-    EndVoxelDataGeneration(EntityKey, bool),
+    EndVoxelDataGeneration(EntityKey, bool, usize),
 }
 
 impl Default for ChunkGenerationState {

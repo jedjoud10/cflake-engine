@@ -5,7 +5,7 @@ use crate::{
         tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
         MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
     },
-    ChunkCoords, GlobalStoredVoxelData, CHUNK_SIZE,
+    ChunkCoords, VoxelData, CHUNK_SIZE,
 };
 
 // A skirts builder, useful since we can keep track of the current iteration as a field, which organizes somestuff
@@ -29,9 +29,9 @@ impl MarchingCubesSkirts {
         }
     }
     // Generate the marching cubes skirts
-    pub fn build(&self, voxels: &GlobalStoredVoxelData, _coords: ChunkCoords) -> Mesh {
+    pub fn build(&self, voxels: &VoxelData, _coords: ChunkCoords) -> GeometryBuilder {
         if !self.settings.skirts {
-            return Mesh::default();
+            return GeometryBuilder::default();
         }
         // Geometry builder
         let mut builder = GeometryBuilder::default();
@@ -57,10 +57,10 @@ impl MarchingCubesSkirts {
             skirt_settings.slice_part = true;
             self.generate_skirt(voxels, &mut builder, &skirt_settings);
         }
-        builder.build()
+        builder
     }
     // Generate a whole skirt
-    fn generate_skirt(&self, voxels: &GlobalStoredVoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
+    fn generate_skirt(&self, voxels: &VoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
         let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -85,7 +85,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Calculate a marching square case and it's local voxels
-    fn generate_marching_squares_case(&self, voxels: &GlobalStoredVoxelData, info: &InterInfo) -> Option<SquareData> {
+    fn generate_marching_squares_case(&self, voxels: &VoxelData, info: &InterInfo) -> Option<SquareData> {
         // Get the position
         let p = vek::Vec2::new(info.x as f32, info.y as f32);
         // Get the marching cube case

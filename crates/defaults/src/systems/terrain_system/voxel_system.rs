@@ -68,17 +68,17 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
         // We must manually remove this chunk since we will never be able to generate it's mesh
         terrain.manager.chunks_generating.remove(&coords);
         // Switch states
-        terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false);
+        terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, false, 0);
         return;
     }
     // We can read from the SSBO now
     let allocated_packed_voxels = &mut generator.packed.0;
     // READ
     generator.ssbo_final_voxels.storage_mut().read(allocated_packed_voxels.as_mut_slice());
-    generator.stored.store(&generator.packed);
+    let idx = generator.buffer.store(&generator.packed);
 
     // Switch states
-    terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true);
+    terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true, idx);
 }
 
 // The voxel systems' update loop

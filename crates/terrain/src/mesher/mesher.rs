@@ -1,8 +1,8 @@
-use rendering::basics::mesh::Mesh;
+use rendering::basics::mesh::{Mesh, GeometryBuilder};
 
 use super::builder::*;
 use super::settings::MesherSettings;
-use crate::{ChunkCoords, GlobalStoredVoxelData};
+use crate::{ChunkCoords, VoxelData};
 
 // A struct for organization
 // We do not store this mesher, we create it on the spot
@@ -23,10 +23,10 @@ impl Mesher {
         }
     }
     // Generate the mesh from the voxel data
-    pub fn build(self, data: GlobalStoredVoxelData) -> Mesh {
+    pub fn build(self, data: &VoxelData) -> (GeometryBuilder, GeometryBuilder) {
         // Gotta combine the main mesh and the skirts one
         let main = self.builder.build(&data, self.coords);
         let skirts = self.skirts_builder.build(&data, self.coords);
-        Mesh::combine(main, skirts)
+        (main, skirts)
     }
 }

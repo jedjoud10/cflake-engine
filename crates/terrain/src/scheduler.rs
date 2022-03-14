@@ -1,66 +1,59 @@
-use std::sync::mpsc::{Sender, Receiver, SyncSender};
+use std::{sync::{mpsc::{Sender, Receiver, SyncSender}, atomic::AtomicBool, Arc}, thread::JoinHandle};
+use rendering::basics::mesh::{Mesh, GeometryBuilder};
+use threadpool::ThreadPool;
+use crate::{VoxelData, ChunkCoords, mesher::Mesher, SharedVoxelData, VoxelDataBuffer};
 
-use rendering::basics::mesh::Mesh;
-
-use crate::{GlobalStoredVoxelData, ChunkCoords, mesher::Mesher};
-
-// The result of a mesh generation task
-struct MeshTaskResult {
-    coords: ChunkCoords,
-    mesh: Mesh,
-}
-
-// A mesh generation task
-struct MeshTask {
-    mesher: Mesher,
-    data: GlobalStoredVoxelData,
+// The result that is sent to the main thread after we generate a mesh on a worker thread
+pub struct MeshGenResult {
+    pub coords: ChunkCoords,
+    pub builders: (GeometryBuilder, GeometryBuilder),
+    pub buffer_index: usize,
 }
 
 // Mesh generation scheduler
 pub struct MeshScheduler {
-    // Create a specific thread for mesh generation
-    join: std::thread::JoinHandle<()>,
-    sender: SyncSender<MeshTask>,
-    receiver: Receiver<MeshTaskResult>,
+    // Thread pool that contains 3 threads dedicated for mesh generation
+    pool: ThreadPool,
+    // Results
+    sender: Sender<MeshGenResult>,
+    receiver: Receiver<MeshGenResult>,
+}
+
+impl Default for MeshScheduler {
+    fn default() -> Self {
+        let (sender, receiver) = std::sync::mpsc::channel::<MeshGenResult>();
+        Self { pool: ThreadPool::new(3), sender, receiver }
+    }
 }
 
 impl MeshScheduler {
-    // Create a new scheduler, and spawn the mesh generation thread
-    pub fn new() -> Self {
-        // Create the sync channel
-        let (task_tx, task_rx) = std::sync::mpsc::sync_channel::<MeshTask>(1);
-        let (result_tx, result_rx) = std::sync::mpsc::sync_channel::<MeshTaskResult>(1);
+    // Start generating a mesh for the specific voxel data on another thread
+    pub fn execute(&self, mesher: Mesher, buffer: &VoxelDataBuffer, index: usize) {
+        // Lock it
+        let data = buffer.get(index).clone();
+        data.set_used(true);
+        let sender = self.sender.clone();
+        
+        // Execute on a free thread
+        self.pool.execute(move || {
+            // Generate the mesh
+            let arc = data.as_ref();
+            let unlocked = arc.load();
+            let coords = mesher.coords;
+            let builders = mesher.build(&unlocked);
 
-        // Spawn the thread
-        let join = std::thread::spawn(move || {
-            // Wait until we receive new tasks
-            loop {
-                let task = task_rx.recv().unwrap();
-                // Generate the mesh
-                let mesher = task.mesher;
-                let data = task.data;
-                let mesh = mesher.build(data);
-                // Send back the result
-                result_tx.send(MeshTaskResult {
-                    coords: mesher.coords,
-                    mesh,
-                }).unwrap();
-            }
+            // Return 
+            sender.send(MeshGenResult {
+                coords,
+                builders,
+                buffer_index: index,
+            }).unwrap();
         });
-
-        Self {
-            join,
-            sender: task_tx,
-            receiver: result_rx,
-        }
     }
-    // Send a chunk to be generated
-    // TODO: Parallelisation, and make a round robin buffer that contains multiple StoredVoxelDatas
-    pub fn generate(&mut self, mesher: Mesher, data: &GlobalStoredVoxelData) {
-        self.sender.send(MeshTask {
-            data: data.clone(),
-            mesher,
-        }).unwrap();
-    }
-    // Try to 
+    // Get the mesh results that were generated on other threads
+    pub fn get_results(&self) -> Vec<MeshGenResult> {
+        // Get all
+        let results = self.receiver.try_iter().collect::<Vec<_>>();
+        results
+    } 
 }

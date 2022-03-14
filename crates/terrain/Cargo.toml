@@ -11,4 +11,5 @@ ahash = "0.7.6"
 math = { path = "../math" }
 rendering = { path = "../rendering" }
 half = "1.8.2"
+threadpool = "1.8.1"
 parking_lot = "0.12.0"
