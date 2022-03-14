@@ -1,4 +1,4 @@
-use crate::components::{Camera, Light, Renderer, Transform};
+use crate::components::{Camera, Light, Renderer, Transform, RendererFlags};
 use world::{
     ecs::component::{ComponentQueryParameters, ComponentQuerySet},
     rendering::{
@@ -59,11 +59,13 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     for (_, components) in query.all.iter() {
         // We do a bit of borrowing
         let renderer = components.get::<Renderer>().unwrap();
-        models.push(RenderedModel {
-            mesh: &renderer.mesh,
-            matrix: &renderer.matrix,
-            material: &renderer.material,
-        });
+        if renderer.flags.contains(RendererFlags::VISIBLE) {
+            models.push(RenderedModel {
+                mesh: &renderer.mesh,
+                matrix: &renderer.matrix,
+                material: &renderer.material,
+            });
+        }
     }
 
     // Add the shadowed models
@@ -71,7 +73,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         // We do a bit of borrowing
         let renderer = components.get::<Renderer>().unwrap();
         // Only if this is shadowed
-        if renderer.shadowed {
+        if renderer.flags.contains(RendererFlags::SHADOWED) && renderer.flags.contains(RendererFlags::VISIBLE) {
             shadowed.push(ShadowedModel {
                 mesh: &renderer.mesh,
                 matrix: &renderer.matrix,

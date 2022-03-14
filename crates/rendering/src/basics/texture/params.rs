@@ -3,6 +3,7 @@ use std::ptr::null;
 use super::TextureLayout;
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
+use gl::types::GLuint;
 
 // Texture parameter bits
 bitflags! {
@@ -72,6 +73,8 @@ pub struct TextureParams {
     pub filter: TextureFilter,
     // What kind of wrapping will we use for this texture
     pub wrap: TextureWrapMode,
+    // Custom
+    pub custom: Vec<(GLuint, GLuint)>,
     // Bits
     pub flags: TextureFlags,
 }
@@ -79,9 +82,10 @@ pub struct TextureParams {
 impl Default for TextureParams {
     fn default() -> Self {
         Self {
-            layout: TextureLayout::default(),
+            layout: Default::default(),
             filter: TextureFilter::Linear,
             wrap: TextureWrapMode::Repeat,
+            custom: Default::default(),
             flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         }
     }

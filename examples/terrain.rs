@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Transform},
+        components::{self, Camera, Transform, Collider, RigidBody, RigidBodyType, ColliderGeometry, ColliderMaterial, Renderer},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -10,7 +10,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture, Texture2D, TextureLayout, TextureParams, TextureFlags},
+        texture::{BundledTextureBuilder, Texture, Texture2D, TextureFlags, TextureLayout, TextureParams},
         uniforms::UniformsSet,
     },
     terrain::editing::Edit,
@@ -73,10 +73,14 @@ fn init(world: &mut World) {
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2, texture_diff_3], None).unwrap();
-    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2, texture_norm_3], Some(TextureParams {
-        flags: TextureFlags::MIPMAPS,
-        ..Default::default()
-    })).unwrap();
+    let normals = BundledTextureBuilder::build(
+        &[texture_norm_1, texture_norm_2, texture_norm_3],
+        Some(TextureParams {
+            flags: TextureFlags::MIPMAPS,
+            ..Default::default()
+        }),
+    )
+    .unwrap();
     let diffuse = world.pipeline.insert(diffuse);
     let normals = world.pipeline.insert(normals);
     let material = Material {
@@ -103,12 +107,13 @@ fn init(world: &mut World) {
         depth: 4,
         heuristic_settings: heuristic,
         material,
+        physics: false,
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
-    // Big sphere
-    terrain.edit(Edit::cuboid(vek::Vec3::zero(), vek::Vec3::new(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
     // Pillar
-    terrain.edit(Edit::sphere(vek::Vec3::zero(), 50.0, CSGOperation::Union, Some(1)));
+    terrain.edit(Edit::cuboid(vek::Vec3::zero(), vek::Vec3::new(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
+    // Big sphere
+    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, CSGOperation::Union, Some(1)));
     world.globals.add(terrain).unwrap();
 }

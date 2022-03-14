@@ -22,7 +22,7 @@ pub trait Texture {
     fn params(&self) -> &TextureParams;
     // Get the texture bytes
     fn bytes(&self) -> &TextureBytes;
-    // Calculate the number of texels in the texture 
+    // Calculate the number of texels in the texture
     fn count_texels(&self) -> usize;
     // Calculate the number of bytes the texture *can* have
     fn count_bytes(&self) -> usize {
@@ -30,8 +30,6 @@ pub trait Texture {
     }
     // Get the current texture dimensions
     fn dimensions(&self) -> Self::Dimensions;
-    // Set the contents of the texture
-    fn write(&mut self, bytes: Vec<u8>) -> Option<()>;
 }
 
 // Resizable texture
@@ -44,6 +42,58 @@ pub trait ResizableTexture: Texture {
     // Resize the current texture, then set it's bytes
     fn resize_then_write(&mut self, dimensions: Self::Dimensions, bytes: Vec<u8>) -> Option<()>;
 }
+
+// Writable texture
+pub trait WritableTexture: Texture {
+    // Set the contents of the texture
+    fn write(&mut self, bytes: Vec<u8>) -> Option<()>;
+    // Clear a texture
+    fn clear(&mut self) {
+        self.write(Vec::new()).unwrap()
+    }
+}
+
+/*
+
+fn write(&mut self, bytes: Vec<u8>) -> Option<()> {
+    // Write to the OpenGL texture first
+    let ptr = verify_byte_size(self.count_bytes(), &bytes)?;
+
+    // Write
+    if let Some(raw) = self.raw.as_ref() {
+        let (width, height, layers) = (self.dimensions).as_::<i32>().into_tuple();
+        let ifd = raw.ifd;
+        unsafe {
+            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);
+        }
+    }
+    // Then save the bytes if possible
+    if self.params.flags.contains(TextureFlags::PERSISTENT) {
+        self.bytes = TextureBytes::Valid(bytes);
+    }
+    Some(())
+} */
+
+/*
+// Write to the OpenGL texture first
+// Manually drop the vector when we are done with it
+let manual = ManuallyDrop::new(bytes);
+if let Some(raw) = self.raw.as_ref() {
+    let (width, height) = (self.dimensions).as_::<i32>().into_tuple();
+    unsafe {
+        let ptr = verify_byte_size(self.count_bytes(), manual.as_ref())?;
+        let ifd = raw.ifd;
+        gl::BindTexture(gl::TEXTURE_2D, raw.name);
+        gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, width, height, ifd.1, ifd.2, ptr);
+    }
+}
+
+// Then save the bytes if possible
+if self.params.flags.contains(TextureFlags::PERSISTENT) {
+    self.bytes = TextureBytes::Valid(ManuallyDrop::into_inner(manual));
+}
+Some(())
+*/
 
 /*
 

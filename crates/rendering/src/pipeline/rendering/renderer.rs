@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, TextureFlags},
+        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -62,7 +62,7 @@ impl SceneRenderer {
         /* #region Lighting Shader */
         // Load the lighting pass shader
         let settings = ShaderInitSettings::default()
-            .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
+            .source("defaults/shaders/rendering/uv_passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
             .directive("shadow_bias", Directive::Const(pipeline.settings().shadow_bias.to_string())); // TODO: FIX THIS
         let shader = pipeline.insert(Shader::new(settings).unwrap());
@@ -93,8 +93,8 @@ impl SceneRenderer {
                 let texture = pipeline.insert(
                     TextureBuilder::default()
                         .dimensions(dimensions)
-                        .params(TextureParams { 
-                            layout, 
+                        .params(TextureParams {
+                            layout,
                             flags: TextureFlags::RESIZABLE,
                             ..Default::default()
                         })
@@ -130,8 +130,7 @@ impl SceneRenderer {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         /* #endregion */
         /* #region Others */
-        //let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
-        let shadow_mapping = None;
+        let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap())
             .params(TextureParams {

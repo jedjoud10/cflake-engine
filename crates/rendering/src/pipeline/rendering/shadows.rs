@@ -36,18 +36,18 @@ impl ShadowMapping {
             gl::GenFramebuffers(1, &mut fbo);
             fbo
         };
-
         // Create the depth texture
         let texture = TextureBuilder::default()
             .dimensions(vek::Vec2::broadcast(shadow_resolution.max(1)))
             .params(TextureParams {
+                custom: vec![(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)],
                 layout: TextureLayout {
                     data: DataType::U8,
                     internal_format: TextureFormat::DepthComponent16,
                 },
+                flags: TextureFlags::empty(),
                 filter: TextureFilter::Linear,
                 wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
-                ..Default::default()
             })
             .build();
         let texture = pipeline.insert(texture);
@@ -78,8 +78,8 @@ impl ShadowMapping {
         // Load our custom shadow shader
         let shader = Shader::new(
             ShaderInitSettings::default()
-                .source("defaults/shaders/rendering/shadow.vrsh.glsl")
-                .source("defaults/shaders/rendering/shadow.frsh.glsl"),
+                .source("defaults/shaders/rendering/project.vrsh.glsl")
+                .source("defaults/shaders/rendering/empty.frsh.glsl"),
         )
         .unwrap();
         let shader = pipeline.insert(shader);
@@ -122,7 +122,7 @@ impl ShadowMapping {
             let lsm = self.lightspace * *matrix;
 
             // Pass the light space matrix to the shader
-            uniforms.set_mat44f32("lsm_matrix", &lsm);
+            uniforms.set_mat44f32("matrix", &lsm);
 
             // Render now
             super::common::render(mesh);

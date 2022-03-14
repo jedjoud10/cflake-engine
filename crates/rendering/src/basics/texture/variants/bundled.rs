@@ -3,8 +3,8 @@ use std::ffi::c_void;
 use super::{Texture2D, TextureBuilder};
 use crate::{
     basics::texture::{
-        get_texel_byte_size, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureLayout, TextureParams,
-        TextureWrapMode, guess_mipmap_levels, generate_mipmaps, generate_filters,
+        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFilter,
+        TextureFlags, TextureLayout, TextureParams, TextureWrapMode,
     },
     object::PipelineElement,
     pipeline::{Handle, Pipeline},
@@ -21,9 +21,9 @@ pub struct BundledTexture2D {
 
     // The texture bytes
     bytes: TextureBytes,
-    
+
     // Params
-    params: TextureParams,    
+    params: TextureParams,
 
     // Texture dimensions
     dimensions: vek::Vec3<u16>,
@@ -44,25 +44,6 @@ impl Texture for BundledTexture2D {
     fn dimensions(&self) -> vek::Vec3<u16> {
         self.dimensions
     }
-    fn write(&mut self, bytes: Vec<u8>) -> Option<()> {
-        // Write to the OpenGL texture first
-        let ptr = verify_byte_size(self.count_bytes(), &bytes)?;
-
-        // Write
-        if let Some(raw) = self.raw.as_ref() {
-            let (width, height, layers) = (self.dimensions).as_::<i32>().into_tuple();
-            let ifd = raw.ifd;
-            unsafe {
-                gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);
-            }
-        }
-        // Then save the bytes if possible
-        if self.params.flags.contains(TextureFlags::PERSISTENT) {
-            self.bytes = TextureBytes::Valid(bytes);
-        }
-        Some(())
-    }
-
     fn bytes(&self) -> &TextureBytes {
         &self.bytes
     }
@@ -78,7 +59,7 @@ impl PipelineElement for BundledTexture2D {
         // Texture generation, SRGB, mipmap, filters
         unsafe {
             // Don't allocate anything if the textures dimensions are invalid
-            if width != 0 && height != 0 {                
+            if width != 0 && height != 0 {
                 let ptr = self.bytes.get_ptr() as *const c_void;
                 // Depends if it is resizable or not
                 if self.params.flags.contains(TextureFlags::RESIZABLE) {
@@ -153,6 +134,7 @@ impl BundledTextureBuilder {
                 filter: params.filter,
                 wrap: params.wrap,
                 flags: params.flags,
+                custom: params.custom.clone(),
             },
             dimensions: vek::Vec3::new(width, height, textures.len() as u16),
         })

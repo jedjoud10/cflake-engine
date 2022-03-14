@@ -2,9 +2,9 @@
 #load general
 #include "defaults/shaders/rendering/sky.func.glsl"
 #include "defaults/shaders/rendering/sun.func.glsl"
-#include "defaults/shaders/rendering/shadow_calculations.func.glsl"
+#include "defaults/shaders/rendering/shadows.func.glsl"
 #include "defaults/shaders/rendering/lighting.func.glsl"
-#include "defaults/shaders/rendering/post.func.glsl"
+#include "defaults/shaders/rendering/postprocessing.func.glsl"
 out vec4 color;
 uniform sampler2D diffuse_texture; // 0
 uniform sampler2D emissive_texture; // 1

@@ -13,17 +13,15 @@ pub fn preload_default_assets() {
     // Pre load the assets
     println!("Pre-loading default assets...");
     // Rendering
-    persistent!("./assets/defaults/shaders/rendering/passthrough.vrsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/passthrough.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/empty.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/project.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/shadow.vrsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/shadow.frsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/shadow_calculations.func.glsl");
-    persistent!("./assets/defaults/shaders/rendering/screen_space_reflections.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/shadows.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/uv_passthrough.vrsh.glsl");    
     persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
-    persistent!("./assets/defaults/shaders/rendering/post.func.glsl");
+    persistent!("./assets/defaults/shaders/rendering/postprocessing.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
     // Meshes

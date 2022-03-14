@@ -1,6 +1,6 @@
 use std::{ffi::c_void, ptr::null};
 
-use super::{get_ifd, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureBytes};
+use super::{get_ifd, TextureBytes, TextureFlags, TextureFormat, TextureLayout, TextureParams};
 use getset::{CopyGetters, Getters};
 use gl::types::{GLint, GLuint};
 
@@ -32,11 +32,7 @@ impl RawTexture {
             // Get the IFD normally
             get_ifd(params.layout)
         };
-        Self {
-            name,
-            target,
-            ifd,
-        }
+        Self { name, target, ifd }
     }
 }
 

@@ -31,6 +31,7 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
     // Load bytes
     let mut cacher = cacher();
     // Try to load the cached object bytes
+    eprintln!("Loading '{}'...", path);
     let bytes = if let Some(cached) = cacher.try_load(&meta) {
         cached
     } else {

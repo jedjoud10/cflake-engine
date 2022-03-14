@@ -1,4 +1,4 @@
-use std::{ptr::null, mem::ManuallyDrop, ffi::c_void};
+use std::{ffi::c_void, mem::ManuallyDrop, ptr::null};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
@@ -8,7 +8,7 @@ use image::GenericImageView;
 use crate::{
     basics::texture::{
         generate_filters, generate_mipmaps, get_ifd, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes,
-        TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode,
+        TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode, apply_customs,
     },
     object::PipelineElement,
 };
@@ -69,7 +69,7 @@ impl PipelineElement for Texture2D {
         // Texture generation, SRGB, mipmap, filters
         unsafe {
             // Don't allocate anything if the textures dimensions are invalid
-            if width != 0 && height != 0 {                
+            if width != 0 && height != 0 {
                 let ptr = self.bytes.get_ptr() as *const c_void;
                 // Depends if it is resizable or not
                 if self.params.flags.contains(TextureFlags::RESIZABLE) {
@@ -90,6 +90,9 @@ impl PipelineElement for Texture2D {
 
             // Generate filters
             generate_filters(gl::TEXTURE_2D, &self.params);
+
+            // Apply customs
+            apply_customs(gl::TEXTURE_2D, &self.params);
         }
 
         // Clear the texture if it's loaded bytes aren't persistent
@@ -125,27 +128,6 @@ impl Texture for Texture2D {
     fn dimensions(&self) -> Self::Dimensions {
         self.dimensions
     }
-    fn write(&mut self, bytes: Vec<u8>) -> Option<()> {
-        // Write to the OpenGL texture first
-        // Manually drop the vector when we are done with it
-        let manual = ManuallyDrop::new(bytes);
-        if let Some(raw) = self.raw.as_ref() {
-            let (width, height) = (self.dimensions).as_::<i32>().into_tuple();
-            unsafe {
-                let ptr = verify_byte_size(self.count_bytes(), manual.as_ref())?;
-                let ifd = raw.ifd;
-                gl::BindTexture(gl::TEXTURE_2D, raw.name);
-                gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, width, height, ifd.1, ifd.2, ptr);
-            }
-        }
-
-        // Then save the bytes if possible
-        if self.params.flags.contains(TextureFlags::PERSISTENT) {
-            self.bytes = TextureBytes::Valid(ManuallyDrop::into_inner(manual));
-        }
-        Some(())
-    }
-
     fn bytes(&self) -> &TextureBytes {
         &self.bytes
     }
@@ -154,7 +136,9 @@ impl Texture for Texture2D {
 impl ResizableTexture for Texture2D {
     fn resize_then_write(&mut self, dimensions: vek::Vec2<u16>, bytes: Vec<u8>) -> Option<()> {
         // Check if we can even resize the texture
-        if !self.params.flags.contains(TextureFlags::RESIZABLE) { return None }
+        if !self.params.flags.contains(TextureFlags::RESIZABLE) {
+            return None;
+        }
 
         // Resize the texture
         self.dimensions = dimensions;
@@ -165,7 +149,7 @@ impl ResizableTexture for Texture2D {
             unsafe {
                 // Manually drop the vector when we are done with it
                 let manual = ManuallyDrop::new(bytes);
-                let ptr = verify_byte_size(self.count_bytes(),manual.as_ref())?;
+                let ptr = verify_byte_size(self.count_bytes(), manual.as_ref())?;
                 let ifd = raw.ifd;
                 gl::BindTexture(gl::TEXTURE_2D, raw.name);
                 gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0 as i32, width, height, 0, ifd.1, ifd.2, ptr);
@@ -193,11 +177,6 @@ impl Asset for Texture2D {
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
         assert!(bytes.len() != 0, "Cannot load in an empty texture!");
-        Some(
-            TextureBuilder::default()
-                .dimensions(vek::Vec2::new(width, height))
-                .bytes(bytes)
-                .build(),
-        )
+        Some(TextureBuilder::default().dimensions(vek::Vec2::new(width, height)).bytes(bytes).build())
     }
 }
