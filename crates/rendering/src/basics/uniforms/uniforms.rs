@@ -35,8 +35,8 @@ impl<'a> Uniforms<'a> {
     pub fn bind(&mut self) {
         unsafe { gl::UseProgram(self.program.program()) }
         // Set some global uniforms while we're at it
-        self.set_f32("_time", self.pipeline.time().elapsed as f32);
-        self.set_f32("_delta", self.pipeline.time().delta as f32);
+        self.set_f32("_time", self.pipeline.elapsed());
+        self.set_f32("_delta", self.pipeline.delta());
         self.set_vec2i32("_resolution", self.pipeline.window().dimensions().as_());
     }
     // U32

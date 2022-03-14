@@ -4,7 +4,7 @@ use world::{
     rendering::pipeline::Pipeline,
     terrain::{
         editing::{Edit, EditingManager},
-        ChunkCoords, CHUNK_SIZE,
+        ChunkCoords, CHUNK_SIZE, scheduler::MeshScheduler,
     },
 };
 
@@ -22,6 +22,7 @@ pub struct Terrain {
     // Managers
     pub manager: ChunksManager,
     pub generator: VoxelGenerator,
+    pub scheduler: MeshScheduler,
     pub editer: EditingManager,
 }
 
@@ -35,6 +36,7 @@ impl Terrain {
                 physics: settings.physics,
                 ..Default::default()
             },
+            scheduler: MeshScheduler::new(),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
             editer: EditingManager::default(),
         }

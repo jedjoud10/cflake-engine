@@ -11,3 +11,4 @@ ahash = "0.7.6"
 math = { path = "../math" }
 rendering = { path = "../rendering" }
 half = "1.8.2"
+parking_lot = "0.12.0"

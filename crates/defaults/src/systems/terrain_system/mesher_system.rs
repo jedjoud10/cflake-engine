@@ -22,7 +22,7 @@ use world::{
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     let query = &mut data.get_mut(0).unwrap().all;
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
-    if Instant::now().saturating_duration_since(world.time.current.begin_instant).as_millis() > 1 {
+    if Instant::now().saturating_duration_since(world.time.current.instant).as_millis() > 1 {
         return;
     }
     if let Ok(mut terrain) = terrain {
@@ -34,14 +34,12 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Either way, we're going to be updating/generating the mesh so might as well make the mesher now
             let mesher = Mesher::new(
                 coords,
-                &terrain.generator.stored,
                 MesherSettings {
                     interpolation: true,
                     skirts: true,
                 },
             );
-            // Generate the mesh and add it to the chunk entity
-            let mesh = mesher.build();
+            /*
             let mesh = world.pipeline.insert(mesh);
             let _cloned = mesh.clone();
 
@@ -60,6 +58,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             terrain.manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
+            */
         } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();

@@ -57,13 +57,13 @@ impl World {
         world
     }
     // Called each frame
-    pub fn update(&mut self, delta: f64) {
+    pub fn update(&mut self, delta: f32) {
         self.state = WorldState::Running;
         // Update the timings
         self.time.update(delta);
 
         // Update game logic (this includes rendering the world)
-        self.pipeline.start_frame(&mut self.renderer);
+        self.pipeline.start_frame(&mut self.renderer, self.time.delta, self.time.elapsed);
         self.gui.begin_frame(self.pipeline.window().context().window());
 
         let (systems, settings) = self.ecs.ready();
@@ -72,7 +72,7 @@ impl World {
 
         // Late update
         self.pipeline.end_frame();
-        self.input.late_update();
+        self.input.late_update(); 
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

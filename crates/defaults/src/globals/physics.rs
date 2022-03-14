@@ -4,5 +4,5 @@ use world::globals::Global;
 #[derive(Default, Global)]
 pub struct Physics {
     // The last time we executed a physics step
-    pub(crate) last_execution_time: f64,
+    pub(crate) last_execution_time: f32,
 }

@@ -82,7 +82,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
         // Loop events
         Event::MainEventsCleared => {
             // Update the delta time
-            let delta = sleeper.loop_start_s();
+            let delta = sleeper.loop_start_s() as f32;
             // We can update the world now
             world.update(delta);
 

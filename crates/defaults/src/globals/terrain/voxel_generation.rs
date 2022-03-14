@@ -14,7 +14,7 @@ use world::{
         pipeline::{Handle, Pipeline},
         utils::{AccessType, UpdateFrequency, UsageType},
     },
-    terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, StoredVoxelData, CHUNK_SIZE},
+    terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, GlobalStoredVoxelData, CHUNK_SIZE},
 };
 
 #[derive(Getters)]
@@ -31,7 +31,7 @@ pub struct VoxelGenerator {
     pub(crate) ssbo_edits: ShaderStorage<DynamicBuffer<PackedEdit>>,
     // And the voxel data for said chunk
     pub(crate) packed: PackedVoxelData,
-    pub(crate) stored: StoredVoxelData,
+    pub(crate) stored: GlobalStoredVoxelData,
 }
 
 impl VoxelGenerator {
@@ -106,7 +106,7 @@ impl VoxelGenerator {
             ssbo_voxels,
             ssbo_final_voxels,
             packed: PackedVoxelData::default(),
-            stored: StoredVoxelData::default(),
+            stored: GlobalStoredVoxelData::default(),
         }
     }
 }

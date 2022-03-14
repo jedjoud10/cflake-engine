@@ -1,4 +1,4 @@
-use getset::{Getters, MutGetters, Setters};
+use getset::{Getters, MutGetters, Setters, CopyGetters};
 use glutin::{
     dpi::LogicalSize,
     event::WindowEvent,
@@ -6,7 +6,6 @@ use glutin::{
     window::WindowBuilder,
     ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext,
 };
-use others::Time;
 
 use crate::{
     advanced::compute::ComputeShader,
@@ -23,7 +22,7 @@ use crate::{
 use super::{DefaultElements, Handle, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
-#[derive(Getters, MutGetters, Setters)]
+#[derive(Getters, CopyGetters, MutGetters)]
 pub struct Pipeline {
     // OpenGL wrapper objects
     pub(crate) meshes: PipelineCollection<Mesh>,
@@ -41,8 +40,10 @@ pub struct Pipeline {
     #[getset(get = "pub", get_mut = "pub")]
     window: Window,
     // Timings
-    #[getset(get = "pub")]
-    time: Time,
+    #[getset(get_copy = "pub")]
+    delta: f32,
+    #[getset(get_copy = "pub")]
+    elapsed: f32,
     // Settings
     #[getset(get = "pub")]
     settings: PipelineSettings,
@@ -101,7 +102,8 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         textures: Default::default(),
         bundled_textures: Default::default(),
         materials: Default::default(),
-        time: Default::default(),
+        delta: Default::default(),
+        elapsed: Default::default(),
         camera: Default::default(),
         window: {
             // Create a new window
@@ -135,10 +137,10 @@ impl Pipeline {
         }
     }
     // Called at the start of the frame so we can clear buffers if we need to
-    pub fn start_frame(&mut self, renderer: &mut SceneRenderer) {
-        unsafe {
-            renderer.start_frame(self);
-        }
+    pub fn start_frame(&mut self, renderer: &mut SceneRenderer, delta: f32, elapsed: f32) {
+        self.delta = delta;
+        self.elapsed = elapsed;
+        unsafe { renderer.start_frame(self); }
     }
     // Called at the end of the frame to ready the pipeline for the next frame
     pub fn end_frame(&mut self) {

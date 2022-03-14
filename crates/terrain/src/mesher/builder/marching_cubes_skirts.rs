@@ -5,7 +5,7 @@ use crate::{
         tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
         MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
     },
-    ChunkCoords, StoredVoxelData, CHUNK_SIZE,
+    ChunkCoords, GlobalStoredVoxelData, CHUNK_SIZE,
 };
 
 // A skirts builder, useful since we can keep track of the current iteration as a field, which organizes somestuff
@@ -29,7 +29,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Generate the marching cubes skirts
-    pub fn build(&self, voxels: &StoredVoxelData, _coords: ChunkCoords) -> Mesh {
+    pub fn build(&self, voxels: &GlobalStoredVoxelData, _coords: ChunkCoords) -> Mesh {
         if !self.settings.skirts {
             return Mesh::default();
         }
@@ -60,7 +60,7 @@ impl MarchingCubesSkirts {
         builder.build()
     }
     // Generate a whole skirt
-    fn generate_skirt(&self, voxels: &StoredVoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
+    fn generate_skirt(&self, voxels: &GlobalStoredVoxelData, builder: &mut GeometryBuilder, skirt_settings: &SkirtSettings) {
         let slice = (skirt_settings.slice_part as usize) * CHUNK_SIZE;
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -85,7 +85,7 @@ impl MarchingCubesSkirts {
         }
     }
     // Calculate a marching square case and it's local voxels
-    fn generate_marching_squares_case(&self, voxels: &StoredVoxelData, info: &InterInfo) -> Option<SquareData> {
+    fn generate_marching_squares_case(&self, voxels: &GlobalStoredVoxelData, info: &InterInfo) -> Option<SquareData> {
         // Get the position
         let p = vek::Vec2::new(info.x as f32, info.y as f32);
         // Get the marching cube case
@@ -93,7 +93,7 @@ impl MarchingCubesSkirts {
         for i in 0..4 {
             let density = voxels.density(info.i + info.index_offsets[i]);
             // Increase the case index if we have some voxels that are below the 0.0
-            case_index |= ((*density <= 0.0) as u8) << i;
+            case_index |= ((density <= 0.0) as u8) << i;
         }
         // Exit if this case is invalid
         if case_index == 0 || case_index == 15 {
@@ -123,7 +123,7 @@ impl MarchingCubesSkirts {
             let two_voxels = MS_EDGE_TO_VERTICES[edge as usize];
             let index1 = info.i + info.index_offsets[two_voxels[0] as usize];
             let index2 = info.i + info.index_offsets[two_voxels[1] as usize];
-            let value: f32 = self.calc_interpolation(*voxels.density(index1), *voxels.density(index2));
+            let value: f32 = self.calc_interpolation(voxels.density(index1), voxels.density(index2));
             // Now interpolate the voxel attributes
             let normal = vek::Vec3::<f32>::lerp(voxels.normal(index1).as_(), voxels.normal(index2).as_(), value).normalized();
             let color = vek::Vec3::<f32>::lerp(voxels.color(index1).as_(), voxels.color(index2).as_(), value);
@@ -141,7 +141,7 @@ impl MarchingCubesSkirts {
         Some(SquareData {
             normal: (shared_normal / count as f32 * 255.0).as_(),
             color: (shared_color / count as f32).as_(),
-            voxel_material: *voxels.voxel_material(info.i),
+            voxel_material: voxels.voxel_material(info.i),
             position: p,
             case: case_index,
             vertices: ivertices,
