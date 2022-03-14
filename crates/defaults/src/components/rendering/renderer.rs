@@ -1,8 +1,8 @@
+use bitflags::bitflags;
 use world::ecs::component::Component;
 use world::rendering::basics::material::Material;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Handle;
-use bitflags::bitflags;
 // Renderer flags
 bitflags! {
     pub struct RendererFlags: u8 {
@@ -31,7 +31,7 @@ impl Default for Renderer {
             mesh: Default::default(),
             material: Default::default(),
             matrix: Default::default(),
-            flags: RendererFlags::all()
+            flags: RendererFlags::all(),
         }
     }
 }

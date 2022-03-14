@@ -4,7 +4,8 @@ use world::{
     rendering::pipeline::Pipeline,
     terrain::{
         editing::{Edit, EditingManager},
-        ChunkCoords, CHUNK_SIZE, scheduler::MeshScheduler,
+        scheduler::MeshScheduler,
+        ChunkCoords, CHUNK_SIZE,
     },
 };
 

@@ -72,7 +72,7 @@ impl World {
 
         // Late update
         self.pipeline.end_frame();
-        self.input.late_update(); 
+        self.input.late_update();
     }
     // We must destroy the world
     pub fn destroy(&mut self) {

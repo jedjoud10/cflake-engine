@@ -1,7 +1,7 @@
 use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
 
-use world::World;
 use world::ecs::system::SystemExecutionOrder;
+use world::World;
 
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;

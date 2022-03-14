@@ -14,7 +14,7 @@ use world::{
         pipeline::{Handle, Pipeline},
         utils::{AccessType, UpdateFrequency, UsageType},
     },
-    terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, VoxelData, CHUNK_SIZE, VoxelDataBuffer},
+    terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, VoxelData, VoxelDataBuffer, CHUNK_SIZE},
 };
 
 #[derive(Getters)]

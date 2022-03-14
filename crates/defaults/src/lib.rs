@@ -1,5 +1,5 @@
 use systems::*;
-use world::{assets::persistent, World, ecs::system::SystemExecutionOrder};
+use world::{assets::persistent, ecs::system::SystemExecutionOrder, World};
 // Default components
 pub mod components;
 // Default globals
@@ -19,7 +19,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/shadows.func.glsl");
-    persistent!("./assets/defaults/shaders/rendering/uv_passthrough.vrsh.glsl");    
+    persistent!("./assets/defaults/shaders/rendering/uv_passthrough.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/postprocessing.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");

@@ -1,4 +1,4 @@
-use defaults::{rendering::pipeline::PipelineSettings, ecs::system::SystemExecutionOrder};
+use defaults::{ecs::system::SystemExecutionOrder, rendering::pipeline::PipelineSettings};
 use mimalloc::MiMalloc;
 
 #[global_allocator]

@@ -1,4 +1,4 @@
-use std::{ptr::null, mem::size_of};
+use std::{mem::size_of, ptr::null};
 
 use getset::Getters;
 use gl::types::GLuint;

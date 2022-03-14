@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Transform, Collider, RigidBody, RigidBodyType, ColliderGeometry, ColliderMaterial, Renderer},
+        components::{self, Camera, Collider, ColliderGeometry, ColliderMaterial, Renderer, RigidBody, RigidBodyType, Transform},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,

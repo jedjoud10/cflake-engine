@@ -1,6 +1,12 @@
-use std::{cell::{RefCell, Ref}, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use crate::{PackedVoxelData, VoxelData};
 use parking_lot::{Mutex, MutexGuard};
-use crate::{VoxelData, PackedVoxelData};
+use std::{
+    cell::{Ref, RefCell},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 // Can be sent to other threads
 #[derive(Default)]
@@ -15,7 +21,9 @@ impl MutexVoxelData {
         self.used.store(locked, Ordering::Relaxed);
     }
     // Load
-    pub fn load(&self) -> MutexGuard<VoxelData> { self.data.lock() }
+    pub fn load(&self) -> MutexGuard<VoxelData> {
+        self.data.lock()
+    }
 }
 
 // Can be shared between thread
@@ -37,7 +45,7 @@ impl Default for VoxelDataBuffer {
 impl VoxelDataBuffer {
     // Get the index of the next free voxel data
     fn find(&self) -> usize {
-        let idx = self.buffer.borrow().iter().position(|shared| !shared.used.load(Ordering::Relaxed));        
+        let idx = self.buffer.borrow().iter().position(|shared| !shared.used.load(Ordering::Relaxed));
         match idx {
             Some(idx) => idx,
             None => {
@@ -45,10 +53,10 @@ impl VoxelDataBuffer {
                 let mut borrowed = self.buffer.borrow_mut();
                 borrowed.push(SharedVoxelData::default());
                 borrowed.len() - 1
-            },
+            }
         }
     }
-    // Store some new voxel data 
+    // Store some new voxel data
     pub fn store(&mut self, stored: &PackedVoxelData) -> usize {
         // Index
         let idx = self.find();
@@ -63,5 +71,9 @@ impl VoxelDataBuffer {
     // Get
     pub fn get(&self, idx: usize) -> Ref<SharedVoxelData> {
         Ref::map(self.buffer.borrow(), |x| x.get(idx).unwrap())
+    }
+    // Len
+    pub fn len(&self) -> usize {
+        self.buffer.borrow().len()
     }
 }

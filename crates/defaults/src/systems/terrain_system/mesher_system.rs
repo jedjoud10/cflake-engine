@@ -39,13 +39,12 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                     skirts: true,
                 },
             );
-            dbg!(idx);
             terrain.scheduler.execute(mesher, &terrain.generator.buffer, idx);
             // We have created voxel data for this chunk, and it is valid (it contains a surface)
             terrain.manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-        } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false, idx) = terrain.manager.current_chunk_state {
+        } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false, _) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
             let _chunk = linked.get_mut::<Chunk>().unwrap();
@@ -60,7 +59,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // We still gotta update the current chunk state though
             terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
         }
-
 
         // Get the meshes that were generated in other threads
         for generated in terrain.scheduler.get_results() {
@@ -79,22 +77,24 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             };
 
             // Get the chunk entity key
-            let key = *terrain.manager.chunks.get(&coords).unwrap();
-            let linked = query.get_mut(&key).unwrap();
+            let key = terrain.manager.chunks.get(&coords);
+            if let Some(&key) = key {
+                let linked = query.get_mut(&key).unwrap();
 
-            if !linked.is_linked::<Renderer>() {
-                // Generate the new component and link it
-                let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
-                world.ecs.link(key, group).unwrap();
-            } else {
-                // The renderer is already linked, we just need to update the mesh
-                // Valid renderer
-                let renderer = linked.get_mut::<Renderer>().unwrap();
-                renderer.mesh = mesh;
+                if !linked.is_linked::<Renderer>() {
+                    // Generate the new component and link it
+                    let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
+                    world.ecs.link(key, group).unwrap();
+                } else {
+                    // The renderer is already linked, we just need to update the mesh
+                    // Valid renderer
+                    let renderer = linked.get_mut::<Renderer>().unwrap();
+                    renderer.mesh = mesh;
+                }
+
+                // The chunk finished generation
+                shared.set_used(false);
             }
-
-            // The chunk finished generation
-            shared.set_used(false);            
         }
     }
 }

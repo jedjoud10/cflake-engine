@@ -36,6 +36,8 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
             ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = octree.inner.get_root_node().half_extent() * 2));
             ui.label(format!("Chunks: '{}'", terrain.manager.chunks.len()));
             ui.label(format!("Pending Generation: '{}'", terrain.manager.chunks_generating.len()));
+            ui.label(format!("Voxel Data Buffer Length: '{}'", terrain.generator.buffer.len()));
+            ui.label(format!("Active Mesh Tasks Count: '{}'", terrain.scheduler.active_mesh_tasks_count()));
             ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
         }
     });

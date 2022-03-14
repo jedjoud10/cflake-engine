@@ -7,9 +7,9 @@ pub struct MesherSettings {
 
 impl Default for MesherSettings {
     fn default() -> Self {
-        Self { 
-            interpolation: true, 
-            skirts: true
+        Self {
+            interpolation: true,
+            skirts: true,
         }
     }
 }

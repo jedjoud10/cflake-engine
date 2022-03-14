@@ -51,7 +51,7 @@ fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityKey) {
 fn run(world: &mut World, data: ComponentQuerySet) {
     // Get the global terrain component
     // Get the camera position
-    let (camera_pos, camera_dir) = {
+    let (camera_position, camera_forward) = {
         let camkey = world.globals.get::<GlobalWorldData>().unwrap().main_camera;
         let camquery = data.get(0).unwrap();
         let transform = camquery.all.get(&camkey).unwrap().get::<Transform>().unwrap();
@@ -64,21 +64,16 @@ fn run(world: &mut World, data: ComponentQuerySet) {
     }
     let terrain = terrain_.unwrap();
     // Generate the chunks if needed and only if we are not currently generating
-    let handler = &mut terrain.manager;
-    update_terrain(handler, camera_pos, &mut world.ecs, camera_dir);
-}
-
-// Update the terrain
-fn update_terrain(handler: &mut ChunksManager, camera_position: vek::Vec3<f32>, ecs: &mut ECSManager<World>, camera_forward: vek::Vec3<f32>) {
-    if handler.chunks_generating.is_empty() && handler.chunks_to_remove.is_empty() {
-        let octree = &mut handler.octree;
+    let manager = &mut terrain.manager;
+    if manager.chunks_generating.is_empty() && manager.chunks_to_remove.is_empty() && terrain.scheduler.active_mesh_tasks_count() == 0 {
+        let octree = &mut manager.octree;
         if let Some((added, removed)) = octree.update(camera_position) {
             // We have moved, thus the chunks need to be regenerated
             // Remove chunks only if we already generated them
             for node in removed {
                 let coords = ChunkCoords::new(&node);
-                if let Some(id) = handler.chunks.remove(&coords) {
-                    handler.chunks_to_remove.push(id);
+                if let Some(id) = manager.chunks.remove(&coords) {
+                    manager.chunks_to_remove.push(id);
                 }
             }
 
@@ -87,24 +82,25 @@ fn update_terrain(handler: &mut ChunksManager, camera_position: vek::Vec3<f32>, 
                 if node.children().is_none() {
                     // This is a leaf node
                     let coords = ChunkCoords::new(&node);
-                    let (id, priority) = add_chunk(ecs, camera_position, camera_forward, octree.inner.size(), coords);
-                    handler.priority_list.push((id, priority));
-                    handler.chunks.insert(coords, id);
-                    handler.chunks_generating.insert(coords);
+                    let (id, priority) = add_chunk(&mut world.ecs, camera_position, camera_forward, octree.inner.size(), coords);
+                    manager.priority_list.push((id, priority));
+                    manager.chunks.insert(coords, id);
+                    manager.chunks_generating.insert(coords);
                 }
             }
-            handler.update_priorities();
+            manager.update_priorities();
         }
     } else {
         // Mass deletion when we have no more chunks
-        if handler.chunks_generating.is_empty() {
-            let chunks_to_remove = std::mem::take(&mut handler.chunks_to_remove);
+        if manager.chunks_generating.is_empty() && terrain.scheduler.active_mesh_tasks_count() == 0 {
+            let chunks_to_remove = std::mem::take(&mut manager.chunks_to_remove);
             for id in chunks_to_remove {
-                remove_chunk(ecs, id);
+                remove_chunk(&mut world.ecs, id);
             }
         }
     }
 }
+
 // Create a chunk system
 pub fn system(world: &mut World) {
     world

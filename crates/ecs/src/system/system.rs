@@ -1,6 +1,6 @@
 use crate::component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta};
 
-use super::{SubSystem, SystemSettings, SystemExecutionOrder};
+use super::{SubSystem, SystemExecutionOrder, SystemSettings};
 pub(crate) type Event<World> = Option<fn(&mut World, ComponentQuerySet)>;
 // A system that contains multiple subsystems, each with their own component queries
 pub struct System<World> {

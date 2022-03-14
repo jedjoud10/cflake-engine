@@ -27,7 +27,10 @@ impl Default for Time {
             delta: Default::default(),
             average_delta: Default::default(),
             averages: Default::default(),
-            current: FrameTimings { instant: Instant::now(), count: 0 },
+            current: FrameTimings {
+                instant: Instant::now(),
+                count: 0,
+            },
         }
     }
 }

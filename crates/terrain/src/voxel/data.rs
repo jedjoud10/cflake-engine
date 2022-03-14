@@ -1,6 +1,7 @@
 use std::{
     cell::{Ref, RefCell},
-    rc::Rc, sync::Arc,
+    rc::Rc,
+    sync::Arc,
 };
 
 use parking_lot::Mutex;
@@ -25,10 +26,10 @@ impl Default for VoxelData {
         let voxel_materials = vec![0; LEN];
 
         Self {
-                densities,
-                normals,
-                colors,
-                voxel_materials,
+            densities,
+            normals,
+            colors,
+            voxel_materials,
         }
     }
 }

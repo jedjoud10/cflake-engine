@@ -1,6 +1,9 @@
-use crate::components::{Camera, Light, Renderer, Transform, RendererFlags};
+use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
-    ecs::{component::{ComponentQueryParameters, ComponentQuerySet}, system::SystemExecutionOrder},
+    ecs::{
+        component::{ComponentQueryParameters, ComponentQuerySet},
+        system::SystemExecutionOrder,
+    },
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
@@ -14,11 +17,17 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
     let camquery = data.get_mut(1).unwrap();
     let linked = camquery.all.get_mut(&global.main_camera);
-    let camera = linked.map(|components| {     
+    let camera = linked.map(|components| {
         // Get the linked components
         let (position, forward, up, rotation, mutated) = {
             let transform = components.get::<Transform>().unwrap();
-            (transform.position, transform.forward(), transform.up(), transform.rotation, components.was_mutated::<Transform>().unwrap())
+            (
+                transform.position,
+                transform.forward(),
+                transform.up(),
+                transform.rotation,
+                components.was_mutated::<Transform>().unwrap(),
+            )
         };
         let camera = components.get_mut::<Camera>().unwrap();
         // And don't forget to update the camera matrices

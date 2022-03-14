@@ -1,11 +1,11 @@
 mod builder;
+mod order;
 mod set;
 mod settings;
 mod subsystem;
 mod system;
-mod order;
-pub use order::*;
 pub use builder::*;
+pub use order::*;
 pub(crate) use set::*;
 pub use settings::*;
 pub use subsystem::*;

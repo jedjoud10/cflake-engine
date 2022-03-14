@@ -145,7 +145,6 @@ impl MarchingCubes {
         // Then generate the mesh
         self.generate_mesh(voxels, &mut builder);
         // Combine the mesh's custom vertex data with the mesh itself
-        println!("Main: {:.2}ms, verts: {}", i.elapsed().as_secs_f32() * 1000.0, builder.vertices.vertices.len());
         builder
     }
 }
