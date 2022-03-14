@@ -67,6 +67,7 @@ pub fn start_before_user_sytems(world: &mut World) {
 
 // Start the defaults systems that will be executed after the user systems
 pub fn start_after_user_systems(world: &mut World) {
+    /*
     camera_system::system(world);
     debugging_system::system(world);
     window_system::system(world);
@@ -83,4 +84,5 @@ pub fn start_after_user_systems(world: &mut World) {
 
     rendering_system::system(world);
     gui_system::system(world);
+    */
 }

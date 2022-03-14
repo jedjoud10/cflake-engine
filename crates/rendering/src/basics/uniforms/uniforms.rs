@@ -169,11 +169,11 @@ impl<'a> Uniforms<'a> {
     // Textures
     pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
         let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D, texture.name());
+        self.set_texture(name, gl::TEXTURE_2D, texture.name().unwrap());
     }
     pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
         let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name());
+        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name().unwrap());
     }
     // Atomics
     pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {

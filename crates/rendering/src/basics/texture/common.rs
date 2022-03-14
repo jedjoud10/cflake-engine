@@ -79,14 +79,14 @@ pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
 }
 
 // Verify that we can safely write bytes to the texture, then return the pointer to the bytes
-pub fn verify_byte_size(byte_size: usize, bytes: &[u8]) -> *const c_void {
+pub fn verify_byte_size(byte_size: usize, bytes: &[u8]) -> Option<*const c_void> {
     // Check if the size is legal
-    assert!(bytes.len() > byte_size, "Byte length exceeds the allocated texture bytes!");
-    if bytes.is_empty() {
+    if bytes.len() > byte_size { return None; }
+    Some(if bytes.is_empty() {
         null()
     } else {
         bytes.as_ptr() as *const c_void
-    }
+    })
 }
 
 // Store the written bytes into the texture if it's a persistent texture

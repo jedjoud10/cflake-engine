@@ -93,7 +93,7 @@ impl Painter {
         let gl_tex = pipeline.get_mut(&self.gl_font_texture);
         if let Some(gl_tex) = gl_tex {
             let dimensions = vek::Vec2::new(image.width as u16, image.height as u16);
-            gl_tex.resize_then_write(dimensions, bytes);
+            gl_tex.resize_then_write(dimensions, bytes).unwrap();
             // Don't forget to update the version
             self.egui_font_texture_version = Some(image.version);
         } else {

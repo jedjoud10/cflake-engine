@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
+        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, TextureFlags},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -57,7 +57,7 @@ impl SceneRenderer {
             },
             vec![0, 1, 2, 0, 3, 1],
         );
-        let quad = pipeline.meshes.insert(quad);
+        let quad = pipeline.insert(quad);
         /* #endregion */
         /* #region Lighting Shader */
         // Load the lighting pass shader
@@ -65,7 +65,7 @@ impl SceneRenderer {
             .source("defaults/shaders/rendering/passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
             .directive("shadow_bias", Directive::Const(pipeline.settings().shadow_bias.to_string())); // TODO: FIX THIS
-        let shader = pipeline.shaders.insert(Shader::new(settings).unwrap());
+        let shader = pipeline.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
         let dimensions = pipeline.window().dimensions();
@@ -93,7 +93,11 @@ impl SceneRenderer {
                 let texture = pipeline.insert(
                     TextureBuilder::default()
                         .dimensions(dimensions)
-                        .params(TextureParams { layout, ..Default::default() })
+                        .params(TextureParams { 
+                            layout, 
+                            flags: TextureFlags::RESIZABLE,
+                            ..Default::default()
+                        })
                         .build(),
                 );
                 texture
@@ -110,8 +114,8 @@ impl SceneRenderer {
         ];
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
-            gl::BindTexture(texture.target(), texture.name());
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.name(), 0);
+            gl::BindTexture(texture.target().unwrap(), texture.name().unwrap());
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target().unwrap(), texture.name().unwrap(), 0);
         }
 
         // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT
@@ -127,7 +131,7 @@ impl SceneRenderer {
         /* #endregion */
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
-
+        let shadow_mapping = None;
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap())
             .params(TextureParams {
@@ -135,7 +139,7 @@ impl SceneRenderer {
                 ..Default::default()
             })
             .build();
-        let sky_gradient = pipeline.textures.insert(sky_gradient);
+        let sky_gradient = pipeline.insert(sky_gradient);
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
         Self {
@@ -153,7 +157,7 @@ impl SceneRenderer {
         let dimensions = pipeline.window().dimensions();
         for handle in self.textures.iter() {
             let texture = pipeline.get_mut(handle).unwrap();
-            texture.resize(dimensions);
+            texture.resize(dimensions).unwrap();
         }
     }
 
@@ -170,10 +174,12 @@ impl SceneRenderer {
         gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        dbg!("Start frame");
     }
 
     // Render the whole scene
     pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
+        /*
         // Render normally
         for renderer in settings.normal {
             common::render_model(&settings, renderer, pipeline)
@@ -197,6 +203,7 @@ impl SceneRenderer {
         unsafe {
             self.draw_deferred_quad(pipeline, settings);
         }
+        */
     }
 
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader

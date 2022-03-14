@@ -11,12 +11,12 @@ pub trait Texture {
     // Get the raw underlying texture
     fn storage(&self) -> Option<&RawTexture>;
     // Get the texture target (OpenGL)
-    fn target(&self) -> GLuint {
-        self.storage().as_ref().expect("OpenGL texture is invalid!").target
+    fn target(&self) -> Option<GLuint> {
+        self.storage().as_ref().map(|storage| storage.target)
     }
     // Get the underlying texture storage name
-    fn name(&self) -> GLuint {
-        self.storage().as_ref().expect("OpenGL texture is invalid!").name
+    fn name(&self) -> Option<GLuint> {
+        self.storage().as_ref().map(|storage| storage.name)
     }
     // Get the texture parameters
     fn params(&self) -> &TextureParams;
@@ -29,18 +29,19 @@ pub trait Texture {
     // Get the current texture dimensions
     fn dimensions(&self) -> Self::Dimensions;
     // Set the contents of the texture
-    fn write(&mut self, bytes: Vec<u8>);
+    fn write(&mut self, bytes: Vec<u8>) -> Option<()>;
 }
 
 // Resizable texture
 pub trait ResizableTexture: Texture {
     // Resize the current texture
-    fn resize(&mut self, dimensions: Self::Dimensions) {
-        self.resize_then_write(dimensions, Vec::new());
+    fn resize(&mut self, dimensions: Self::Dimensions) -> Option<()> {
+        self.resize_then_write(dimensions, Vec::new())?;
         self.write(Vec::new());
+        Some(())
     }
     // Resize the current texture, then set it's bytes
-    fn resize_then_write(&mut self, dimensions: Self::Dimensions, bytes: Vec<u8>);
+    fn resize_then_write(&mut self, dimensions: Self::Dimensions, bytes: Vec<u8>) -> Option<()>;
 }
 
 /*

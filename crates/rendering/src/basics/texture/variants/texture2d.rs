@@ -40,9 +40,9 @@ impl Texture for Texture2D {
     fn dimensions(&self) -> Self::Dimensions {
         self.dimensions
     }
-    fn write(&mut self, bytes: Vec<u8>) {
+    fn write(&mut self, bytes: Vec<u8>) -> Option<()> {
         // Write to the OpenGL texture first
-        let ptr = verify_byte_size(self.count_bytes(), &bytes);
+        let ptr = verify_byte_size(self.count_bytes(), &bytes)?;
 
         // Write
         if let Some(raw) = self.raw.as_ref() {
@@ -55,13 +55,14 @@ impl Texture for Texture2D {
 
         // Then save the bytes if possible
         store_bytes(self.params().flags, bytes, &mut self.params.bytes);
+        Some(())
     }
 }
 
 impl ResizableTexture for Texture2D {
-    fn resize_then_write(&mut self, dimensions: vek::Vec2<u16>, bytes: Vec<u8>) {
+    fn resize_then_write(&mut self, dimensions: vek::Vec2<u16>, bytes: Vec<u8>) -> Option<()> {
         // Check if we can even resize the texture
-        assert!(self.params.flags.contains(TextureFlags::RESIZABLE), "Texture cannot be resized!");
+        if !self.params.flags.contains(TextureFlags::RESIZABLE) { return None }
 
         // Resize the texture
         self.dimensions = dimensions;
@@ -70,10 +71,11 @@ impl ResizableTexture for Texture2D {
         let raw = self.raw.as_ref();
         if let Some(raw) = raw {
             unsafe {
-                let ptr = verify_byte_size(self.count_bytes(), &bytes);
+                let ptr = verify_byte_size(self.count_bytes(), &bytes)?;
                 gl::TexImage2D(gl::TEXTURE_2D, 0, raw.ifd.0 as i32, width, height, 0, raw.ifd.1, raw.ifd.2, ptr);
             }
         }
+        Some(())
     }
 }
 
@@ -108,13 +110,11 @@ impl PipelineElement for Texture2D {
         // Create the raw texture wrapper
         let (texture, ptr) = unsafe { RawTexture::new(gl::TEXTURE_2D, &self.params) };
         let ifd = texture.ifd;
+        self.raw = Some(texture);
         let (width, height) = self.dimensions.as_::<i32>().into_tuple();
 
         // Texture generation, SRGB, mipmap, filters
         unsafe {
-            // Get the byte size per texel
-            let tsize = get_texel_byte_size(self.params.layout.internal_format) as isize;
-
             // Depends if it is resizable or not
             if self.params.flags.contains(TextureFlags::RESIZABLE) {
                 // Dynamic
@@ -136,9 +136,10 @@ impl PipelineElement for Texture2D {
 
         // Clear the texture if it's loaded bytes aren't persistent
         if !self.params.flags.contains(TextureFlags::PERSISTENT) {
-            let bytes = self.params.bytes.as_loaded_mut().unwrap();
-            bytes.clear();
-            bytes.shrink_to(0);
+            if let Some(bytes) = self.params.bytes.as_loaded_mut(){
+                bytes.clear();
+                bytes.shrink_to(0);
+            }
         }
 
         // Add the texture to the pipeline

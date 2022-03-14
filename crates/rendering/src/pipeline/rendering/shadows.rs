@@ -50,11 +50,11 @@ impl ShadowMapping {
                 ..Default::default()
             })
             .build();
-        let texture = pipeline.textures.insert(texture);
+        let texture = pipeline.insert(texture);
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().name(), 0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.get(&texture).unwrap().name().unwrap(), 0);
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind
@@ -82,7 +82,7 @@ impl ShadowMapping {
                 .source("defaults/shaders/rendering/shadow.frsh.glsl"),
         )
         .unwrap();
-        let shader = pipeline.shaders.insert(shader);
+        let shader = pipeline.insert(shader);
 
         Self {
             framebuffer: fbo,

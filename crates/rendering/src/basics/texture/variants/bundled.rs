@@ -39,9 +39,9 @@ impl Texture for BundledTexture2D {
     fn dimensions(&self) -> vek::Vec3<u16> {
         self.dimensions
     }
-    fn write(&mut self, bytes: Vec<u8>) {
+    fn write(&mut self, bytes: Vec<u8>) -> Option<()> {
         // Write to the OpenGL texture first
-        let ptr = verify_byte_size(self.count_bytes(), &bytes);
+        let ptr = verify_byte_size(self.count_bytes(), &bytes)?;
 
         // Write
         if let Some(raw) = self.raw.as_ref() {
@@ -54,12 +54,14 @@ impl Texture for BundledTexture2D {
 
         // Then save the bytes if possible
         store_bytes(self.params().flags, bytes, &mut self.params.bytes);
+        Some(())
     }
 }
 
 impl PipelineElement for BundledTexture2D {
     fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
-        pipeline.bundled_textures.insert(self)
+        pipeline.bundled_textures.insert(self);
+        todo!()
     }
 
     fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {

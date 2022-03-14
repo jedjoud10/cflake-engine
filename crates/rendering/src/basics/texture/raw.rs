@@ -12,7 +12,6 @@ pub struct RawTexture {
     pub target: GLuint,
     // The Internal Format, Format, Data Type
     pub ifd: (GLuint, GLuint, GLuint),
-    pub len: usize,
 }
 
 impl RawTexture {
@@ -50,7 +49,6 @@ impl RawTexture {
                 name,
                 target,
                 ifd,
-                len: params.bytes.as_loaded().unwrap().len(),
             },
             ptr,
         )
