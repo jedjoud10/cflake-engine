@@ -87,24 +87,18 @@ impl PipelineElement for BundledTexture2D {
 
 // A texture bundler that creates a 2D texture array from a set of textures
 #[derive(Default)]
-pub struct BundledTextureBuilder {
-    textures: Vec<Texture2D>,
-}
+pub struct BundledTextureBuilder;
+
 impl BundledTextureBuilder {
-    // Add a texture to the bundler
-    pub fn push(mut self, texture: Texture2D) -> Self {
-        self.textures.push(texture);
-        self
-    }
     // Build the bundled texture
-    pub fn build(self, params: Option<TextureParams>) -> Option<BundledTexture2D> {
+    pub fn build(textures: &[Texture2D], params: Option<TextureParams>) -> Option<BundledTexture2D> {
         // We get the main dimensions from the first texture
-        let first = self.textures.get(0)?;
+        let first = textures.get(0)?;
         let (width, height) = (first.dimensions().x, first.dimensions().y);
 
         // Load the bytes
-        let mut bytes: Vec<u8> = Vec::with_capacity(self.textures[0].count_bytes());
-        for texture in self.textures.iter() {
+        let mut bytes: Vec<u8> = Vec::with_capacity(textures[0].count_bytes());
+        for texture in textures.iter() {
             // Check if we have the same settings
             let d = texture.dimensions();
             if d.x != width || d.y != height {
@@ -125,7 +119,7 @@ impl BundledTextureBuilder {
                 wrap: params.wrap,
                 flags: params.flags,
             },
-            dimensions: vek::Vec3::new(width, height, self.textures.len() as u16),
+            dimensions: vek::Vec3::new(width, height, textures.len() as u16),
         })
     }
 }

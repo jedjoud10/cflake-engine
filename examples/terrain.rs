@@ -8,9 +8,9 @@ use cflake_engine::{
     math::{csg::CSGOperation, octrees::HeuristicSettings},
     rendering::basics::{
         lights::{LightParameters, LightType::Directional},
-        material::{Material, MaterialTextures},
+        material::{Material},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureLayout},
+        texture::{Texture, TextureLayout, Texture2D, BundledTextureBuilder}, uniforms::UniformsSet,
     },
     terrain::editing::Edit,
     vek, World,
@@ -63,33 +63,29 @@ fn init(world: &mut World) {
     let settings = ShaderInitSettings::default()
         .source("defaults/shaders/voxel_terrain/terrain.vrsh.glsl")
         .source("defaults/shaders/voxel_terrain/terrain.frsh.glsl");
-    let shader = world.pipeline.shaders.insert(Shader::new(settings).unwrap());
+    let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
-    let texture_diff_1 = assetc::load::<Texture>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
-    let texture_norm_1 = assetc::load::<Texture>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
-    let texture_diff_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
-    let texture_norm_2 = assetc::load::<Texture>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
-    let texture_diff_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
-    let texture_norm_3 = assetc::load::<Texture>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    let layout = TextureLayout {
-        resizable: true,
-        ..Default::default()
-    };
-    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).layout(layout);
-    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).layout(layout);
-    let diffuse = world.pipeline.textures.insert(diffuse.build());
-    let normals = world.pipeline.textures.insert(normals.build());
+    let texture_diff_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
+    let texture_norm_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
+    let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
+    let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
+    let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
+    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2, texture_diff_3], None).unwrap();
+    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2, texture_norm_3], None).unwrap();
+    let diffuse = world.pipeline.insert(diffuse);
+    let normals = world.pipeline.insert(normals);
     let material = Material {
         shader,
-        textures: MaterialTextures {
-            diffuse_map: diffuse,
-            normal_map: normals,
-            ..Default::default()
-        },
-        uv_scale: vek::Vec2::one() * 0.03,
-        ..Default::default()
+        uniforms: UniformsSet::new(move |uniforms| {
+            // Set the textures first
+            uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
+            uniforms.set_bundled_texture2d("normals_m", &normals);
+            // Then the parameters
+            uniforms.set_f32("bumpiness", 2.0);
+        }),
     };
-    let material = world.pipeline.materials.insert(material);
+    let material = world.pipeline.insert(material);
     let heuristic = HeuristicSettings {
         function: |node, target| {
             let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);

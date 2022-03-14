@@ -1,17 +1,24 @@
-use super::MaterialTextures;
-use crate::{basics::shader::Shader, object::PipelineElement, pipeline::*};
+use crate::{basics::{shader::Shader, uniforms::{Uniforms, UniformsSet}}, object::PipelineElement, pipeline::*};
 
-// A material that can have multiple parameters and such
+// A generic material that contains a shader and a set of uniforms
 pub struct Material {
-    // Main settings
+    // Shader that will render the surface
     pub shader: Handle<Shader>,
 
-    // Actual parameters used for rendering
-    pub textures: MaterialTextures,
-    pub tint: vek::Vec3<f32>,
-    pub normal_map_strength: f32,
-    pub emissive_map_strength: f32,
-    pub uv_scale: vek::Vec2<f32>,
+    // Custom uniforms
+    pub uniforms: UniformsSet,
+}
+
+// Builds a universal material from anything
+pub trait MaterialBuilder where Self: Sized {
+    // Build
+    fn build(self, pipeline: &Pipeline) -> Material {
+        // Use the default shader
+        let shader = pipeline.defaults().shader.clone();
+        self.build_with_shader(pipeline, shader)
+    }
+    // Build the material using a speficic shader
+    fn build_with_shader(self, pipeline: &Pipeline, shader: Handle<Shader>) -> Material;
 }
 
 impl PipelineElement for Material {
@@ -34,11 +41,7 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             shader: Default::default(),
-            textures: Default::default(),
-            tint: vek::Vec3::one(),
-            normal_map_strength: 1.0,
-            emissive_map_strength: 1.0,
-            uv_scale: vek::Vec2::one(),
+            uniforms: UniformsSet::default(),
         }
     }
 }

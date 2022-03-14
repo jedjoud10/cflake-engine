@@ -1,10 +1,10 @@
 use assets::assetc;
 
 use crate::basics::{
-    material::{Material, MaterialTextures},
+    material::{Material, PbrMaterialBuilder, PbrTextures, PbrParams, MaterialBuilder},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureHandle, TextureParams},
+    texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureParams},
 };
 
 use super::{Handle, Pipeline};
@@ -24,7 +24,7 @@ pub struct DefaultElements {
     pub sphere: Handle<Mesh>,
 
     // Materials
-    pub material: Handle<Material>,
+    pub pbr_mat: Handle<Material>,
 
     // Default rendering shader
     pub shader: Handle<Shader>,
@@ -38,52 +38,52 @@ impl DefaultElements {
             .params(TextureParams::from_bytes(vec![255, 255, 255, 255]))
             .dimensions(vek::Vec2::one())
             .build();
-        let white = pipeline.textures.insert(white);
+        let white = pipeline.insert(white);
 
         let black = TextureBuilder::default()
             .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
             .dimensions(vek::Vec2::one())
             .build();
-        let black = pipeline.textures.insert(black);
+        let black = pipeline.insert(black);
 
         let normal_map = TextureBuilder::default()
             .params(TextureParams::from_bytes(vec![127, 127, 255, 255]))
             .dimensions(vek::Vec2::one())
             .build();
-        let normal_map = pipeline.textures.insert(normal_map);
+        let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
         let missing = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap()).build();
-        let missing = pipeline.textures.insert(missing);
+        let missing = pipeline.insert(missing);
 
         // Default mesh
         let mesh = Mesh::default();
-        let mesh = pipeline.meshes.insert(mesh);
+        let mesh = pipeline.insert(mesh);
 
         // Load the default cube and sphere
-        let cube = pipeline.meshes.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
-        let sphere = pipeline.meshes.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
+        let cube = pipeline.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
+        let sphere = pipeline.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
 
-        // Default rendering shader
+        // Default rendering (PBR) shader
         let shader = Shader::new(
             ShaderInitSettings::default()
                 .source("defaults/shaders/rendering/default.vrsh.glsl")
                 .source("defaults/shaders/rendering/default.frsh.glsl"),
         )
         .unwrap();
-        let shader = pipeline.shaders.insert(shader);
+        let shader = pipeline.insert(shader);
 
-        // Default material
-        let material = Material {
-            shader: shader.clone(),
-            textures: MaterialTextures {
-                diffuse_map: TextureHandle::Texture2D(missing.clone()),
-                normal_map: TextureHandle::Texture2D(normal_map.clone()),
-                emissive_map: TextureHandle::Texture2D(black.clone()),
+        // Default pbr material
+        let pbr_mat = PbrMaterialBuilder {
+            textures: PbrTextures { diffuse: missing.clone(), normal: normal_map.clone(), emissive: black.clone() },
+            params: PbrParams {
+                bumpiness: 1.0,
+                emissivity: 0.0,
+                tint: vek::Vec3::one(),
+                uv_scale: vek::Vec2::one(),
             },
-            ..Default::default()
-        };
-        let material = pipeline.materials.insert(material);
+        }.build(pipeline);
+        let pbr_mat = pipeline.insert(pbr_mat);
 
         Self {
             white,
@@ -93,7 +93,7 @@ impl DefaultElements {
             mesh,
             cube,
             sphere,
-            material,
+            pbr_mat,
             shader,
         }
     }

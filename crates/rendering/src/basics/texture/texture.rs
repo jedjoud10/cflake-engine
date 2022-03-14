@@ -1,32 +1,7 @@
 use gl::types::GLuint;
 
 use crate::{basics::texture::TextureFlags, object::PipelineElement, pipeline::Handle};
-
 use super::{get_texel_byte_size, BundledTexture2D, RawTexture, Texture2D, TextureBytes, TextureParams};
-
-// Texture variant handle
-pub enum TextureHandle {
-    Texture2D(Handle<Texture2D>),
-    BundledTexture(Handle<BundledTexture2D>),
-}
-
-impl From<Handle<Texture2D>> for TextureHandle {
-    fn from(other: Handle<Texture2D>) -> Self {
-        Self::Texture2D(other)
-    }
-}
-
-impl From<Handle<BundledTexture2D>> for TextureHandle {
-    fn from(other: Handle<Texture2D>) -> Self {
-        Self::Texture2D(other)
-    }
-}
-
-impl Default for TextureHandle {
-    fn default() -> Self {
-        Self::Texture2D(Handle::default())
-    }
-}
 
 // Shared texture logic
 pub trait Texture {

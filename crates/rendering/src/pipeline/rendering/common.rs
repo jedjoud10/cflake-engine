@@ -24,7 +24,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
     // Fallback values
     fn fallback_material(pipeline: &Pipeline) -> &Material {
-        pipeline.materials.get(&pipeline.defaults().material).unwrap()
+        pipeline.materials.get(&pipeline.defaults().pbr_mat).unwrap()
     }
     fn fallback_shader(pipeline: &Pipeline) -> &Shader {
         pipeline.shaders.get(&pipeline.defaults().shader).unwrap()
@@ -44,14 +44,7 @@ pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedMod
     // And set them
     uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
-    // Textures might be not valid, so we fallback to the default ones just in case
-    //uniforms.set_texture2d("diffuse_tex", &material.textures.diffuse_map);
-    //uniforms.set_texture2d("normals_tex", &material.textures.normal_map);
-    //uniforms.set_texture2d("emissive_tex", &material.textures.emissive_map);
-    uniforms.set_vec3f32("tint", material.tint);
-    uniforms.set_f32("normals_strength", material.normal_map_strength);
-    uniforms.set_f32("emissive_strength", material.emissive_map_strength);
-    uniforms.set_vec2f32("uv_scale", material.uv_scale);
+    material.uniforms.execute(&mut uniforms);
 
     // Finally render the mesh
     unsafe {
