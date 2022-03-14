@@ -130,7 +130,7 @@ impl SceneRenderer {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         /* #endregion */
         /* #region Others */
-        let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
+        //let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
         let shadow_mapping = None;
         // Load the default sky gradient texture
         let sky_gradient = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap())
@@ -174,12 +174,10 @@ impl SceneRenderer {
         gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        dbg!("Start frame");
     }
 
     // Render the whole scene
     pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
-        /*
         // Render normally
         for renderer in settings.normal {
             common::render_model(&settings, renderer, pipeline)
@@ -203,7 +201,6 @@ impl SceneRenderer {
         unsafe {
             self.draw_deferred_quad(pipeline, settings);
         }
-        */
     }
 
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
@@ -237,7 +234,7 @@ impl SceneRenderer {
         // &str array because I am lazy
         let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
         // Set each texture
-        for ((_i, name), handle) in names.into_iter().enumerate().zip(self.textures.iter()) {
+        for (name, handle) in names.into_iter().zip(self.textures.iter()) {
             uniforms.set_texture2d(name, handle);
         }
 

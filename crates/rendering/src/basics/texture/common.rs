@@ -88,11 +88,3 @@ pub fn verify_byte_size(byte_size: usize, bytes: &[u8]) -> Option<*const c_void>
         bytes.as_ptr() as *const c_void
     })
 }
-
-// Store the written bytes into the texture if it's a persistent texture
-pub fn store_bytes(flags: TextureFlags, input: Vec<u8>, output: &mut TextureBytes) {
-    // If the texture is persistent, save these as our own bytes
-    if flags.contains(TextureFlags::PERSISTENT) {
-        *output = TextureBytes::Written(input);
-    }
-}

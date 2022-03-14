@@ -10,6 +10,10 @@ vec3 compute_lighting(
     float in_shadow,
     sampler2D sky_texture,
     float time_of_day) {       	
+	// Pixel direction reflected by the surface
+	vec3 reflected = reflect(pixel_dir, normal);
+	float fresnel = max(dot(reflected, pixel_dir), 0);
+
 	// Calculate the diffuse lighting
 	float light_val = max(dot(normal, normalize(sunlight_dir)), 0) * sunlight_strength * 1.3; 
 
@@ -20,7 +24,7 @@ vec3 compute_lighting(
 
 	// Add everything
 	vec3 ambient_lighting = diffuse * 0.1 + ambient_lighting_color * ambient_lighting_strength;
-	vec3 color = ambient_lighting;
+	vec3 color = ambient_lighting + pow(fresnel, 3.0) * 0.04;
 	color += (1 - in_shadow) * (diffuse * light_val);
 	
 	// Calculate some specular

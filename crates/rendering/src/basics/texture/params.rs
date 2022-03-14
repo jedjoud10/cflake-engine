@@ -1,3 +1,5 @@
+use std::ptr::null;
+
 use super::TextureLayout;
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
@@ -13,11 +15,37 @@ bitflags! {
 }
 
 // Texture bytes
-#[derive(EnumAsInner)]
+#[derive(EnumAsInner, Debug)]
 pub enum TextureBytes {
-    Written(Vec<u8>),
-    Loaded(Vec<u8>),
-    Unloaded,
+    Valid(Vec<u8>),
+    Invalid,
+}
+
+impl TextureBytes {
+    // Clear the bytes and deallocate them
+    pub fn clear(&mut self) {
+        if let Self::Valid(bytes) = self {
+            *bytes = Vec::new();
+        }
+    }
+    // Pointer
+    pub fn get_ptr(&self) -> *const u8 {
+        if let Some(bytes) = self.as_valid() {
+            if bytes.is_empty() {
+                null()
+            } else {
+                bytes.as_ptr()
+            }
+        } else {
+            null()
+        }
+    }
+}
+
+impl Default for TextureBytes {
+    fn default() -> Self {
+        Self::Invalid
+    }
 }
 
 // Texture filters
@@ -38,8 +66,6 @@ pub enum TextureWrapMode {
 
 // Texture parameters
 pub struct TextureParams {
-    // Loaded texture bytes
-    pub bytes: TextureBytes,
     // Texture layout
     pub layout: TextureLayout,
     // Texture mag and min filters, either Nearest or Linear
@@ -50,24 +76,13 @@ pub struct TextureParams {
     pub flags: TextureFlags,
 }
 
-impl TextureParams {
-    // Load from bytes
-    pub fn from_bytes(bytes: Vec<u8>) -> Self {
-        Self {
-            bytes: TextureBytes::Loaded(bytes),
-            ..Default::default()
-        }
-    }
-}
-
 impl Default for TextureParams {
     fn default() -> Self {
         Self {
-            bytes: TextureBytes::Unloaded,
             layout: TextureLayout::default(),
             filter: TextureFilter::Linear,
             wrap: TextureWrapMode::Repeat,
-            flags: TextureFlags::empty(),
+            flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         }
     }
 }

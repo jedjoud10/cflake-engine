@@ -35,19 +35,19 @@ impl DefaultElements {
     pub(crate) fn new(pipeline: &mut Pipeline) -> Self {
         // Default textures that are created at runtime
         let white = TextureBuilder::default()
-            .params(TextureParams::from_bytes(vec![255, 255, 255, 255]))
+            .bytes(vec![255, 255, 255, 255])
             .dimensions(vek::Vec2::one())
             .build();
         let white = pipeline.insert(white);
 
         let black = TextureBuilder::default()
-            .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
+            .bytes(vec![0, 0, 0, 255])
             .dimensions(vek::Vec2::one())
             .build();
         let black = pipeline.insert(black);
 
         let normal_map = TextureBuilder::default()
-            .params(TextureParams::from_bytes(vec![127, 127, 255, 255]))
+            .bytes(vec![127, 127, 255, 255])
             .dimensions(vek::Vec2::one())
             .build();
         let normal_map = pipeline.insert(normal_map);

@@ -10,7 +10,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture, Texture2D, TextureLayout},
+        texture::{BundledTextureBuilder, Texture, Texture2D, TextureLayout, TextureParams, TextureFlags},
         uniforms::UniformsSet,
     },
     terrain::editing::Edit,
@@ -73,7 +73,10 @@ fn init(world: &mut World) {
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2, texture_diff_3], None).unwrap();
-    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2, texture_norm_3], None).unwrap();
+    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2, texture_norm_3], Some(TextureParams {
+        flags: TextureFlags::MIPMAPS,
+        ..Default::default()
+    })).unwrap();
     let diffuse = world.pipeline.insert(diffuse);
     let normals = world.pipeline.insert(normals);
     let material = Material {
@@ -81,9 +84,10 @@ fn init(world: &mut World) {
         uniforms: UniformsSet::new(move |uniforms| {
             // Set the textures first
             uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
-            uniforms.set_bundled_texture2d("normals_m", &normals);
+            uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
             uniforms.set_f32("bumpiness", 2.0);
+            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.04));
         }),
     };
     let material = world.pipeline.insert(material);

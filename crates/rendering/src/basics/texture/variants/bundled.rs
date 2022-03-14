@@ -1,8 +1,10 @@
+use std::ffi::c_void;
+
 use super::{Texture2D, TextureBuilder};
 use crate::{
     basics::texture::{
-        get_texel_byte_size, store_bytes, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureLayout, TextureParams,
-        TextureWrapMode,
+        get_texel_byte_size, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureLayout, TextureParams,
+        TextureWrapMode, guess_mipmap_levels, generate_mipmaps, generate_filters,
     },
     object::PipelineElement,
     pipeline::{Handle, Pipeline},
@@ -17,8 +19,11 @@ pub struct BundledTexture2D {
     // Storage
     raw: Option<RawTexture>,
 
+    // The texture bytes
+    bytes: TextureBytes,
+    
     // Params
-    params: TextureParams,
+    params: TextureParams,    
 
     // Texture dimensions
     dimensions: vek::Vec3<u16>,
@@ -51,17 +56,57 @@ impl Texture for BundledTexture2D {
                 gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);
             }
         }
-
         // Then save the bytes if possible
-        store_bytes(self.params().flags, bytes, &mut self.params.bytes);
+        if self.params.flags.contains(TextureFlags::PERSISTENT) {
+            self.bytes = TextureBytes::Valid(bytes);
+        }
         Some(())
+    }
+
+    fn bytes(&self) -> &TextureBytes {
+        &self.bytes
     }
 }
 
 impl PipelineElement for BundledTexture2D {
-    fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
-        pipeline.bundled_textures.insert(self);
-        todo!()
+    fn add(mut self, pipeline: &mut Pipeline) -> Handle<Self> {
+        // Create the raw texture array wrapper
+        let texture = unsafe { RawTexture::new(gl::TEXTURE_2D_ARRAY, &self.params) };
+        let ifd = texture.ifd;
+        self.raw = Some(texture);
+        let (width, height, layers) = self.dimensions.as_::<i32>().into_tuple();
+        // Texture generation, SRGB, mipmap, filters
+        unsafe {
+            // Don't allocate anything if the textures dimensions are invalid
+            if width != 0 && height != 0 {                
+                let ptr = self.bytes.get_ptr() as *const c_void;
+                // Depends if it is resizable or not
+                if self.params.flags.contains(TextureFlags::RESIZABLE) {
+                    // Dynamic
+                    gl::TexImage3D(gl::TEXTURE_2D_ARRAY, 0, ifd.0 as i32, width, height, layers, 0, ifd.1, ifd.2, ptr);
+                } else {
+                    // Static
+                    let levels = guess_mipmap_levels(width.max(height).max(layers)).max(1);
+                    gl::TexStorage3D(gl::TEXTURE_2D_ARRAY, levels, ifd.0, width, height, layers);
+                    if !ptr.is_null() {
+                        gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);
+                    }
+                }
+            }
+
+            // Generate mipmaps
+            generate_mipmaps(gl::TEXTURE_2D_ARRAY, &self.params);
+
+            // Generate filters
+            generate_filters(gl::TEXTURE_2D_ARRAY, &self.params);
+        }
+
+        // Clear the texture if it's loaded bytes aren't persistent
+        if !self.params.flags.contains(TextureFlags::PERSISTENT) {
+            self.bytes.clear();
+        }
+        // Add the bundled texture to the pipeline
+        pipeline.bundled_textures.insert(self)
     }
 
     fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {
@@ -94,7 +139,7 @@ impl BundledTextureBuilder {
             if d.x != width || d.y != height {
                 return None;
             }
-            let texbytes = texture.params().bytes.as_loaded().unwrap().iter();
+            let texbytes = texture.bytes().as_valid().unwrap().iter();
             bytes.extend(texbytes);
         }
 
@@ -102,8 +147,8 @@ impl BundledTextureBuilder {
         let params = params.as_ref().unwrap_or(first.params());
         Some(BundledTexture2D {
             raw: None,
+            bytes: TextureBytes::Valid(bytes),
             params: TextureParams {
-                bytes: TextureBytes::Loaded(bytes),
                 layout: params.layout,
                 filter: params.filter,
                 wrap: params.wrap,

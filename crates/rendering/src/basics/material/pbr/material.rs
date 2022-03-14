@@ -30,7 +30,7 @@ impl MaterialBuilder for PbrMaterialBuilder {
             uniforms: UniformsSet::new(move |uniforms| {
                 // Set the textures first
                 uniforms.set_texture2d("diffuse_m", &textures.diffuse);
-                uniforms.set_texture2d("normals_m", &textures.normal);
+                uniforms.set_texture2d("normal_m", &textures.normal);
                 uniforms.set_texture2d("emissive_m", &textures.emissive);
                 // Then the parameters
                 uniforms.set_vec3f32("tint", params.tint);

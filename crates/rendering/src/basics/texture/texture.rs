@@ -20,7 +20,9 @@ pub trait Texture {
     }
     // Get the texture parameters
     fn params(&self) -> &TextureParams;
-    // Calculate the number of texels in the texture
+    // Get the texture bytes
+    fn bytes(&self) -> &TextureBytes;
+    // Calculate the number of texels in the texture 
     fn count_texels(&self) -> usize;
     // Calculate the number of bytes the texture *can* have
     fn count_bytes(&self) -> usize {
@@ -37,7 +39,6 @@ pub trait ResizableTexture: Texture {
     // Resize the current texture
     fn resize(&mut self, dimensions: Self::Dimensions) -> Option<()> {
         self.resize_then_write(dimensions, Vec::new())?;
-        self.write(Vec::new());
         Some(())
     }
     // Resize the current texture, then set it's bytes

@@ -24,7 +24,6 @@ pub struct Painter {
 
 impl Painter {
     // Create a new painter
-    // This will be called on the render thread
     pub fn new(pipeline: &mut Pipeline) -> Self {
         // Load the GUI shader
         let shader_settings = ShaderInitSettings::default()
