@@ -44,7 +44,7 @@ impl VoxelGenerator {
             .directive("voxel_include_path", Directive::External(voxel_src_path.to_string()))
             .directive("chunk_size", Directive::Const(CHUNK_SIZE.to_string()));
         let base_compute = ComputeShader::new(settings).unwrap();
-        let base_compute = pipeline.compute_shaders.insert(base_compute);
+        let base_compute = pipeline.insert(base_compute);
 
         // Load the second pass compute shader
         let settings = ShaderInitSettings::default()
@@ -52,8 +52,8 @@ impl VoxelGenerator {
             .directive("voxel_include_path", Directive::External(voxel_src_path))
             .directive("chunk_size", Directive::Const(CHUNK_SIZE.to_string()));
         let second_compute = ComputeShader::new(settings).unwrap();
-        let second_compute = pipeline.compute_shaders.insert(second_compute);
-        let second_compute_program = pipeline.compute_shaders.get(&second_compute).unwrap().program();
+        let second_compute = pipeline.insert(second_compute);
+        let second_compute_program = pipeline.get(&second_compute).unwrap().program();
 
         // Usage types
         let readback = UsageType {

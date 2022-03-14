@@ -1,14 +1,14 @@
-use std::mem::size_of;
-use gl::types::{GLint, GLuint};
-use crate::utils::DataType;
 use super::TextureLayout;
+use crate::utils::DataType;
+use gl::types::{GLint, GLuint};
+use std::mem::size_of;
 
 // R: -1, 1, float
 // S: Noramlized
 // I: Integer
 
 // The texture format
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextureFormat {
     // Red
     R8R,
@@ -58,7 +58,7 @@ pub enum TextureFormat {
 }
 
 // Get the IFD from a simple TextureFormat and DataType
-pub fn get_ifd(layout: TextureLayout) -> (GLint, GLuint, GLuint) {
+pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
     let internal_format = match layout.internal_format {
         // Red
         TextureFormat::R8R => gl::R8,
@@ -145,7 +145,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLint, GLuint, GLuint) {
         DataType::I32 => gl::INT,
         DataType::F32 => gl::FLOAT,
     };
-    (internal_format as i32, format as u32, data_type as u32)
+    (internal_format, format, data_type)
 }
 
 // Calculate the byte size for a single texel

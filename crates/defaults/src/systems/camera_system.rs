@@ -26,7 +26,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         };
         let camera = components.get_mut::<Camera>().unwrap();
         // And don't forget to update the camera matrices
-        camera.update_projection_matrix(world.pipeline.window.dimensions().x as f32, world.pipeline.window.dimensions().y as f32);
+        camera.update_projection_matrix(world.pipeline.window().dimensions().x as f32, world.pipeline.window().dimensions().y as f32);
         if mutated {
             camera.update_view_matrix(position, forward, up);
         }

@@ -1,4 +1,4 @@
-use getset::{Getters, Setters, MutGetters};
+use getset::{Getters, MutGetters, Setters};
 use glutin::{
     dpi::LogicalSize,
     event::WindowEvent,
@@ -10,11 +10,17 @@ use others::Time;
 
 use crate::{
     advanced::compute::ComputeShader,
-    basics::{material::Material, mesh::Mesh, shader::Shader, texture::{Texture, Texture2D, BundledTexture2D}},
-    utils::{Window, DEFAULT_WINDOW_SIZE}, object::PipelineElement,
+    basics::{
+        material::Material,
+        mesh::Mesh,
+        shader::Shader,
+        texture::{BundledTexture2D, Texture, Texture2D},
+    },
+    object::PipelineElement,
+    utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer, Handle};
+use super::{DefaultElements, Handle, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, MutGetters, Setters)]

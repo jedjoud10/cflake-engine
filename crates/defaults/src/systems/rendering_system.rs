@@ -34,7 +34,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     if camera.is_none() {
         return;
     }
-    world.pipeline.camera = camera.unwrap();
+    *world.pipeline.camera_mut() = camera.unwrap();
 
     // Render the world
     let query = data.get_mut(0).unwrap();

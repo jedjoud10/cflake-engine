@@ -1,13 +1,25 @@
 use gl::types::GLuint;
 
-use crate::{object::PipelineElement, pipeline::Handle};
+use crate::{basics::texture::TextureFlags, object::PipelineElement, pipeline::Handle};
 
-use super::{BundledTexture2D, Texture2D, TextureBytes, TextureParams, get_texel_byte_size};
+use super::{get_texel_byte_size, BundledTexture2D, RawTexture, Texture2D, TextureBytes, TextureParams};
 
 // Texture variant handle
 pub enum TextureHandle {
     Texture2D(Handle<Texture2D>),
     BundledTexture(Handle<BundledTexture2D>),
+}
+
+impl From<Handle<Texture2D>> for TextureHandle {
+    fn from(other: Handle<Texture2D>) -> Self {
+        Self::Texture2D(other)
+    }
+}
+
+impl From<Handle<BundledTexture2D>> for TextureHandle {
+    fn from(other: Handle<Texture2D>) -> Self {
+        Self::Texture2D(other)
+    }
 }
 
 impl Default for TextureHandle {
@@ -19,30 +31,42 @@ impl Default for TextureHandle {
 // Shared texture logic
 pub trait Texture {
     // Dimension types
-    type Dimensions;
+    type Dimensions: Default;
 
+    // Get the raw underlying texture
+    fn storage(&self) -> Option<&RawTexture>;
     // Get the texture target (OpenGL)
-    fn target(&self) -> GLuint;
-    // Get the underlying texture storage ID
-    fn texture(&self) -> GLuint;
+    fn target(&self) -> GLuint {
+        self.storage().as_ref().expect("OpenGL texture is invalid!").target
+    }
+    // Get the underlying texture storage name
+    fn name(&self) -> GLuint {
+        self.storage().as_ref().expect("OpenGL texture is invalid!").name
+    }
     // Get the texture parameters
     fn params(&self) -> &TextureParams;
     // Calculate the number of texels in the texture
     fn count_texels(&self) -> usize;
-    // Calculate the number of bytes the texture takes
+    // Calculate the number of bytes the texture *can* have
     fn count_bytes(&self) -> usize {
         self.count_texels() * get_texel_byte_size(self.params().layout.internal_format)
     }
     // Get the current texture dimensions
     fn dimensions(&self) -> Self::Dimensions;
+    // Set the contents of the texture
+    fn write(&mut self, bytes: Vec<u8>);
 }
 
 // Resizable texture
 pub trait ResizableTexture: Texture {
     // Resize the current texture
-    fn resize(&mut self, dimensions: Self::Dimensions);
+    fn resize(&mut self, dimensions: Self::Dimensions) {
+        self.resize_then_write(dimensions, Vec::new());
+        self.write(Vec::new());
+    }
+    // Resize the current texture, then set it's bytes
+    fn resize_then_write(&mut self, dimensions: Self::Dimensions, bytes: Vec<u8>);
 }
-
 
 /*
 
@@ -193,102 +217,46 @@ unsafe fn update_contents(target: GLuint, , pointer: *const c_void, dimensions: 
     }
 }
 */
-        /*
-        // Get OpenGL internal format, format, and data type
-        self.ifd = get_ifd(self.layout);
-        self.target = match self.dimensions {
-            TextureDimensions::Texture1d(_) => gl::TEXTURE_1D,
-            TextureDimensions::Texture2d(_) => gl::TEXTURE_2D,
-            TextureDimensions::Texture3d(_) => gl::TEXTURE_3D,
-            TextureDimensions::Texture2dArray(_) => gl::TEXTURE_2D_ARRAY,
-        };
-        // Get the pointer to the bytes data
-        let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
+/*
+// Get OpenGL internal format, format, and data type
+self.ifd = get_ifd(self.layout);
+self.target = match self.dimensions {
+    TextureDimensions::Texture1d(_) => gl::TEXTURE_1D,
+    TextureDimensions::Texture2d(_) => gl::TEXTURE_2D,
+    TextureDimensions::Texture3d(_) => gl::TEXTURE_3D,
+    TextureDimensions::Texture2dArray(_) => gl::TEXTURE_2D_ARRAY,
+};
+// Get the pointer to the bytes data
+let pointer: *const c_void = if !self.bytes.is_empty() { self.bytes.as_ptr() as *const c_void } else { null() };
 
-        // Convert the textures to SRGBA textures if needed
-        if self.bits.contains(TextureBits::SRGB) && self.ifd.0 == gl::RGBA8 as i32 {
-            self.ifd.0 = gl::SRGB8_ALPHA8 as i32;
-        }
+// Convert the textures to SRGBA textures if needed
+if self.bits.contains(TextureBits::SRGB) && self.ifd.0 == gl::RGBA8 as i32 {
+    self.ifd.0 = gl::SRGB8_ALPHA8 as i32;
+}
 
-        // Create the texture and bind it
-        unsafe {
-            gl::GenTextures(1, &mut self.buffer);
-            gl::BindTexture(self.target, self.buffer);
-            // Set the texture contents
-            init_contents(self.target, self.layout.resizable, self.ifd, self.layout, pointer, self.dimensions);
-        }
+// Create the texture and bind it
+unsafe {
+    gl::GenTextures(1, &mut self.buffer);
+    gl::BindTexture(self.target, self.buffer);
+    // Set the texture contents
+    init_contents(self.target, self.layout.resizable, self.ifd, self.layout, pointer, self.dimensions);
+}
 
-        // The texture is already bound
-        if self.bits.contains(TextureBits::MIPMAPS) {
-            unsafe {
-                // Create the mipmaps
-                gl::GenerateMipmap(self.target);
-            }
-        }
+// The texture is already bound
+if self.bits.contains(TextureBits::MIPMAPS) {
+    unsafe {
+        // Create the mipmaps
+        gl::GenerateMipmap(self.target);
+    }
+}
 
-        // Texture parameters
-        let (min, mag) = if self.bits.contains(TextureBits::MIPMAPS) {
-            // Mip-mapped
-            match self.filter {
-                TextureFilter::Linear => {
-                    (gl::LINEAR_MIPMAP_LINEAR, gl::LINEAR)
-                    // 'Linear' filter
-                }
-                TextureFilter::Nearest => {
-                    // 'Nearest' filter
-                    (gl::NEAREST_MIPMAP_NEAREST, gl::NEAREST)
-                }
-            }
-        } else {
-            // Not mip-mapped
-            match self.filter {
-                TextureFilter::Linear => {
-                    (gl::LINEAR, gl::LINEAR)
-                    // 'Linear' filter
-                }
-                TextureFilter::Nearest => {
-                    // 'Nearest' filter
-                    (gl::NEAREST, gl::NEAREST)
-                }
-            }
-        };
-        unsafe {
-            // Set
-            gl::TexParameteri(self.target, gl::TEXTURE_MIN_FILTER, min as i32);
-            gl::TexParameteri(self.target, gl::TEXTURE_MAG_FILTER, mag as i32);
-        }
 
-        // Set the wrap mode for the texture (Mipmapped or not)
-        let wrap_mode = match self.wrap_mode {
-            TextureWrapMode::ClampToEdge(_) => gl::CLAMP_TO_EDGE,
-            TextureWrapMode::ClampToBorder(_) => gl::CLAMP_TO_BORDER,
-            TextureWrapMode::Repeat => gl::REPEAT,
-            TextureWrapMode::MirroredRepeat => gl::MIRRORED_REPEAT,
-        };
 
-        unsafe {
-            // Now set the actual wrapping mode in the opengl texture
-            gl::TexParameteri(self.target, gl::TEXTURE_WRAP_S, wrap_mode as i32);
-            gl::TexParameteri(self.target, gl::TEXTURE_WRAP_T, wrap_mode as i32);
-            // And also border colors
-            match self.wrap_mode {
-                TextureWrapMode::ClampToBorder(color) | TextureWrapMode::ClampToEdge(color) => {
-                    if let Some(color) = color {
-                        let ptr = color.as_ptr();
-                        gl::TexParameterfv(self.target, gl::TEXTURE_BORDER_COLOR, ptr);
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // Custom shadow texture
-        if self.bits.contains(TextureBits::SHADOWTEX) {
-            unsafe {
-                gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE as i32);
-                gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_FUNC, gl::GREATER as i32);
-            }
-        }
-        */
-
-        
+// Custom shadow texture
+if self.bits.contains(TextureBits::SHADOWTEX) {
+    unsafe {
+        gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE as i32);
+        gl::TexParameteri(self.target, gl::TEXTURE_COMPARE_FUNC, gl::GREATER as i32);
+    }
+}
+*/

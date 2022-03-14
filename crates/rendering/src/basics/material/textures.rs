@@ -1,4 +1,7 @@
-use crate::{basics::texture::{Texture, Texture2D, BundledTexture2D, TextureHandle}, pipeline::Handle};
+use crate::{
+    basics::texture::{BundledTexture2D, Texture, Texture2D, TextureHandle},
+    pipeline::Handle,
+};
 // Material textures
 #[derive(Default)]
 pub struct MaterialTextures {

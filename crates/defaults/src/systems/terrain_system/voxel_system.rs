@@ -25,7 +25,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
     const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
     // Set the uniforms for the first compute shader
-    let program = pipeline.compute_shaders.get(&generator.primary_compute).unwrap().program();
+    let program = pipeline.get(&generator.primary_compute).unwrap().program();
     let mut uniforms = Uniforms::new(program, pipeline, true);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("terrain_edits", &mut generator.ssbo_edits, 1);
@@ -34,11 +34,11 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     uniforms.set_u32("num_terrain_edits", generator.ssbo_edits.storage().len() as u32);
     // Now we can execute the compute shader and the read bytes command
     let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS, AXIS, AXIS));
-    let compute = pipeline.compute_shaders.get(&generator.primary_compute).unwrap();
+    let compute = pipeline.get(&generator.primary_compute).unwrap();
     compute.run(pipeline, settings, uniforms, true).unwrap();
 
     // Set the uniforms for the second compute shader
-    let program = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap().program();
+    let program = pipeline.get(&generator.secondary_compute).unwrap().program();
     let mut uniforms = Uniforms::new(program, pipeline, true);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("output_voxels", &mut generator.ssbo_final_voxels, 1);
@@ -50,7 +50,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     uniforms.set_atomic_group("_", &mut generator.atomics, 0);
     // And execute the shader
     let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS2, AXIS2, AXIS2));
-    let compute = pipeline.compute_shaders.get(&generator.secondary_compute).unwrap();
+    let compute = pipeline.get(&generator.secondary_compute).unwrap();
     let i = std::time::Instant::now();
     compute.run(pipeline, settings, uniforms, true).unwrap();
     terrain.manager.current_chunk_state = ChunkGenerationState::FetchShaderStorages(key, chunk.coords);

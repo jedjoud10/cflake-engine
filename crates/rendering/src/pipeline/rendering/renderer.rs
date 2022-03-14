@@ -3,7 +3,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureFormat, TextureLayout, TextureWrapMode, Texture2D, TextureParams, ResizableTexture},
+        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -90,13 +90,12 @@ impl SceneRenderer {
             .map(|(internal_format, data_type)| {
                 // Create a texture layout
                 let layout = TextureLayout::new(data_type, internal_format);
-                let texture = pipeline.insert(TextureBuilder::default()
-                    .dimensions(dimensions)
-                    .params(TextureParams {
-                        layout,
-                        ..Default::default()
-                    })
-                    .build());
+                let texture = pipeline.insert(
+                    TextureBuilder::default()
+                        .dimensions(dimensions)
+                        .params(TextureParams { layout, ..Default::default() })
+                        .build(),
+                );
                 texture
             })
             .collect::<Vec<Handle<Texture2D>>>();
@@ -111,8 +110,8 @@ impl SceneRenderer {
         ];
         for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
             let texture = pipeline.textures.get(handle).unwrap();
-            gl::BindTexture(texture.target(), texture.texture());
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.texture(), 0);
+            gl::BindTexture(texture.target(), texture.name());
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target(), texture.name(), 0);
         }
 
         // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT

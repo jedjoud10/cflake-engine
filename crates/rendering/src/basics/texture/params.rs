@@ -1,4 +1,4 @@
-use super::{TextureLayout};
+use super::TextureLayout;
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
 
@@ -15,6 +15,7 @@ bitflags! {
 // Texture bytes
 #[derive(EnumAsInner)]
 pub enum TextureBytes {
+    Written(Vec<u8>),
     Loaded(Vec<u8>),
     Unloaded,
 }
@@ -35,7 +36,7 @@ pub enum TextureWrapMode {
     MirroredRepeat,
 }
 
-// Texture parameters 
+// Texture parameters
 pub struct TextureParams {
     // Loaded texture bytes
     pub bytes: TextureBytes,

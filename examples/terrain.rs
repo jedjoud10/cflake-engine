@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Transform, Camera},
+        components::{self, Camera, Transform},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -10,7 +10,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::{Material, MaterialTextures},
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBundler, TextureLayout},
+        texture::{Texture, TextureLayout},
     },
     terrain::editing::Edit,
     vek, World,
@@ -75,10 +75,8 @@ fn init(world: &mut World) {
         resizable: true,
         ..Default::default()
     };
-    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3])
-        .layout(layout);
-    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3])
-        .layout(layout);
+    let diffuse = TextureBundler::convert_texturearray(&[texture_diff_1, texture_diff_2, texture_diff_3]).layout(layout);
+    let normals = TextureBundler::convert_texturearray(&[texture_norm_1, texture_norm_2, texture_norm_3]).layout(layout);
     let diffuse = world.pipeline.textures.insert(diffuse.build());
     let normals = world.pipeline.textures.insert(normals.build());
     let material = Material {

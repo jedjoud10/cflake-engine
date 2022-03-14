@@ -64,7 +64,7 @@ impl World {
 
         // Update game logic (this includes rendering the world)
         self.pipeline.start_frame(&mut self.renderer);
-        self.gui.begin_frame(self.pipeline.window.context().window());
+        self.gui.begin_frame(self.pipeline.window().context().window());
 
         let (systems, settings) = self.ecs.ready();
         let systems = systems.borrow();

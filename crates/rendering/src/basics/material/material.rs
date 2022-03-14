@@ -27,8 +27,7 @@ impl PipelineElement for Material {
         pipeline.materials.get_mut(handle)
     }
 
-    fn disposed(self) {
-    }
+    fn disposed(self) {}
 }
 
 impl Default for Material {

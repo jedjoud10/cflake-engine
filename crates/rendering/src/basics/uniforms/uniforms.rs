@@ -2,7 +2,10 @@ use gl::types::GLuint;
 
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
-    basics::{shader::ShaderProgram, texture::{Texture, Texture2D, BundledTexture2D}},
+    basics::{
+        shader::ShaderProgram,
+        texture::{BundledTexture2D, Texture, Texture2D},
+    },
     pipeline::{Handle, Pipeline},
 };
 
@@ -166,11 +169,11 @@ impl<'a> Uniforms<'a> {
     // Textures
     pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
         let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D, texture.texture());
+        self.set_texture(name, gl::TEXTURE_2D, texture.name());
     }
     pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
         let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.texture());
+        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name());
     }
     // Atomics
     pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {

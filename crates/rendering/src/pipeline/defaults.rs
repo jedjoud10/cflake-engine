@@ -4,7 +4,7 @@ use crate::basics::{
     material::{Material, MaterialTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, TextureBuilder, TextureFilter, Texture2D, TextureParams, TextureHandle},
+    texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureHandle, TextureParams},
 };
 
 use super::{Handle, Pipeline};
@@ -41,7 +41,7 @@ impl DefaultElements {
         let white = pipeline.textures.insert(white);
 
         let black = TextureBuilder::default()
-        .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
+            .params(TextureParams::from_bytes(vec![0, 0, 0, 255]))
             .dimensions(vek::Vec2::one())
             .build();
         let black = pipeline.textures.insert(black);

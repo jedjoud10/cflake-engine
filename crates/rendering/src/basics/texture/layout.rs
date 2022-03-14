@@ -10,9 +10,7 @@ pub struct TextureLayout {
 
 impl TextureLayout {
     pub fn new(data: DataType, _format: TextureFormat) -> TextureLayout {
-        Self {
-            data, internal_format: _format,
-        }
+        Self { data, internal_format: _format }
     }
 }
 

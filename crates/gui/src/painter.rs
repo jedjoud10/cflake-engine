@@ -1,6 +1,6 @@
 use crate::buffers::Buffers;
 use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
-use rendering::basics::texture::{TextureFlags, Texture2D, TextureParams};
+use rendering::basics::texture::{Texture2D, TextureFlags, TextureParams, ResizableTexture};
 use rendering::gl;
 use rendering::{
     basics::{
@@ -90,11 +90,10 @@ impl Painter {
         }
 
         // Update the OpenGL version
-        let gl_tex = pipeline.textures.get_mut(&self.gl_font_texture);
+        let gl_tex = pipeline.get_mut(&self.gl_font_texture);
         if let Some(gl_tex) = gl_tex {
-            let dimensions = TextureDimensions::Texture2d(vek::Vec2::new(image.width as u16, image.height as u16));
-            gl_tex.set_dimensions(dimensions).unwrap();
-            gl_tex.set_bytes(bytes).unwrap();
+            let dimensions = vek::Vec2::new(image.width as u16, image.height as u16);
+            gl_tex.resize_then_write(dimensions, bytes);
             // Don't forget to update the version
             self.egui_font_texture_version = Some(image.version);
         } else {
@@ -104,17 +103,17 @@ impl Painter {
     // Draw a single frame using an egui context and a painter
     pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, font_image: &FontImage, _output: Output) {
         // No need to draw if we don't have any meshes or if our shader is invalid
-        if clipped_meshes.is_empty() || pipeline.shaders.get(&self.shader).is_none() {
+        if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
             return;
         }
         // Le texture
         self.upload_egui_font_texture(pipeline, font_image);
 
         // Since all the elements use the same shader, we can simply set it once
-        let shader = pipeline.shaders.get(&self.shader).unwrap();
+        let shader = pipeline.get(&self.shader).unwrap();
         let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
         // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature
-        uniforms.set_texture("u_sampler", &self.gl_font_texture);
+        uniforms.set_texture2d("u_sampler", &self.gl_font_texture);
         drop(shader);
 
         // OpenGL settings
@@ -131,7 +130,7 @@ impl Painter {
         }
 
         for ClippedMesh(rect, mesh) in clipped_meshes {
-            self.draw_mesh(rect, mesh, pipeline, pipeline.window.pixels_per_point() as f32);
+            self.draw_mesh(rect, mesh, pipeline, pipeline.window().pixels_per_point() as f32);
         }
 
         // Reset

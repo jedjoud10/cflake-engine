@@ -5,7 +5,7 @@ use gl::types::GLuint;
 use crate::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, TextureBuilder, TextureFilter, TextureFormat, TextureLayout, TextureWrapMode, TextureFlags, Texture2D, TextureParams},
+        texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -41,7 +41,10 @@ impl ShadowMapping {
         let texture = TextureBuilder::default()
             .dimensions(vek::Vec2::broadcast(shadow_resolution.max(1)))
             .params(TextureParams {
-                layout: TextureLayout { data: DataType::U8, internal_format: TextureFormat::DepthComponent16 },
+                layout: TextureLayout {
+                    data: DataType::U8,
+                    internal_format: TextureFormat::DepthComponent16,
+                },
                 filter: TextureFilter::Linear,
                 wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
                 ..Default::default()
@@ -51,7 +54,7 @@ impl ShadowMapping {
         // Now attach the depth texture
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().texture(), 0);
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.textures.get(&texture).unwrap().name(), 0);
             gl::DrawBuffer(gl::NONE);
             gl::ReadBuffer(gl::NONE);
             // Unbind
