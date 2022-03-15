@@ -11,7 +11,7 @@ uniform sampler2DArray normal_m;
 uniform vec2 uv_scale;
 uniform float bumpiness;
 in vec3 m_position;
-in flat vec3 m_normal;
+in vec3 m_normal;
 in flat vec2 m_uv;
 void main() {
 	// Triplanar settings

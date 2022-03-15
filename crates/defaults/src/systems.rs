@@ -1,5 +1,4 @@
 // Default systems
-pub mod relation_system;
 pub mod audio_system;
 pub mod camera_system;
 pub mod debugging_system;

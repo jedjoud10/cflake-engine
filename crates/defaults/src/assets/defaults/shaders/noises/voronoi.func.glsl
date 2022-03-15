@@ -22,7 +22,7 @@ vec2 voronoi(vec3 pos) {
                 float d = distance(get_sphere_location(neighbor_coord), pos);
                 if (d < min_distance) {
                     min_distance = d;
-                    value = vec2((d/2.23) * 2.0 - 1.0, hash13(neighbor_coord));
+                    value = vec2((d/2.82), hash13(neighbor_coord));
                 }
             }
         }

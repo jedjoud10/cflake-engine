@@ -76,8 +76,6 @@ pub fn load_default_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
 
-    relation_system::system(world);
-
     rendering_system::system(world);
     gui_system::system(world);
 
