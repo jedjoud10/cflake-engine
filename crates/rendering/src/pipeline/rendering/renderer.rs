@@ -93,7 +93,7 @@ impl SceneRenderer {
                 
                 pipeline.insert(
                     TextureBuilder::default()
-                        .dimensions(dimensions)
+                        .dimensions(dimensions.into())
                         .params(TextureParams {
                             layout,
                             flags: TextureFlags::RESIZABLE,
@@ -156,7 +156,7 @@ impl SceneRenderer {
         let dimensions = pipeline.window().dimensions();
         for handle in self.textures.iter() {
             let texture = pipeline.get_mut(handle).unwrap();
-            texture.resize(dimensions).unwrap();
+            texture.resize(dimensions.into()).unwrap();
         }
     }
 
@@ -205,7 +205,7 @@ impl SceneRenderer {
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
     unsafe fn draw_deferred_quad(&self, pipeline: &Pipeline, settings: RenderingSettings) {
         // We have a ton of uniforms to set
-        let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, true);
+        let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline);
 
         // Try to get the sunlight direction
         let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));

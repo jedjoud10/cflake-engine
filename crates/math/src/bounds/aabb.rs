@@ -16,22 +16,7 @@ impl Default for AABB {
     }
 }
 
-// Conversions
-impl From<Cuboid> for AABB {
-    fn from(cuboid: Cuboid) -> Self {
-        let half_extent = cuboid.size / 2.0;
-        Self {
-            min: cuboid.center - half_extent,
-            max: cuboid.center + half_extent,
-        }
-    }
-}
-impl From<AABB> for Cuboid {
-    fn from(aabb: AABB) -> Self {
-        let full_extent = aabb.max - aabb.min;
-        Self {
-            center: aabb.min + (full_extent / 2.0),
-            size: full_extent,
-        }
-    }
+// Trait to convert any shape to an AABB
+pub trait ToAABB {
+    fn aabb(&self) -> AABB;
 }

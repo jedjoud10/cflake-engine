@@ -34,6 +34,7 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
         ColliderGeometry::Shape(shape) => match shape {
             ShapeType::Cuboid(cuboid) => SharedShape::cuboid(cuboid.size.x / 2.0, cuboid.size.y / 2.0, cuboid.size.z / 2.0),
             ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
+            ShapeType::VerticalCapsule(capsule) => SharedShape::capsule( vec3_to_point(capsule.bottom()), vec3_to_point(capsule.top()), capsule.radius),
         },
         ColliderGeometry::Mesh { mesh, mass: _, com_offset: _ } => get_mesh(scale_matrix, pipeline.get(mesh).unwrap()),
     }

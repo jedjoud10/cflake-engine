@@ -26,11 +26,11 @@ pub struct BundledTexture2D {
     params: TextureParams,
 
     // Texture dimensions
-    dimensions: vek::Vec3<u16>,
+    dimensions: vek::Extent3<u16>,
 }
 
 impl Texture for BundledTexture2D {
-    type Dimensions = vek::Vec3<u16>;
+    type Dimensions = vek::Extent3<u16>;
 
     fn storage(&self) -> Option<&RawTexture> {
         self.raw.as_ref()
@@ -41,7 +41,7 @@ impl Texture for BundledTexture2D {
     fn count_texels(&self) -> usize {
         self.dimensions.as_::<usize>().product()
     }
-    fn dimensions(&self) -> vek::Vec3<u16> {
+    fn dimensions(&self) -> vek::Extent3<u16> {
         self.dimensions
     }
     fn bytes(&self) -> &TextureBytes {
@@ -110,14 +110,14 @@ impl BundledTextureBuilder {
     pub fn build(textures: &[Texture2D], params: Option<TextureParams>) -> Option<BundledTexture2D> {
         // We get the main dimensions from the first texture
         let first = textures.get(0)?;
-        let (width, height) = (first.dimensions().x, first.dimensions().y);
+        let (width, height) = (first.dimensions().w, first.dimensions().h);
 
         // Load the bytes
         let mut bytes: Vec<u8> = Vec::with_capacity(textures[0].count_bytes());
         for texture in textures.iter() {
             // Check if we have the same settings
             let d = texture.dimensions();
-            if d.x != width || d.y != height {
+            if d.w != width || d.h != height {
                 return None;
             }
             let texbytes = texture.bytes().as_valid().unwrap().iter();
@@ -136,7 +136,7 @@ impl BundledTextureBuilder {
                 flags: params.flags,
                 custom: params.custom.clone(),
             },
-            dimensions: vek::Vec3::new(width, height, textures.len() as u16),
+            dimensions: vek::Extent3::new(width, height, textures.len() as u16),
         })
     }
 }

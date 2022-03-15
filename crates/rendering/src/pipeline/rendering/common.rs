@@ -39,7 +39,7 @@ pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedMod
     let mesh = pipeline.meshes.get(renderer.mesh).unwrap();
 
     // Create some uniforms
-    let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
+    let mut uniforms = Uniforms::new(shader.program(), pipeline);
 
     // And set them
     uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);

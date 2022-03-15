@@ -26,7 +26,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
     const AXIS2: u16 = ((CHUNK_SIZE + 1) as u16) / 8 + 1;
     // Set the uniforms for the first compute shader
     let program = pipeline.get(&generator.primary_compute).unwrap().program();
-    let mut uniforms = Uniforms::new(program, pipeline, true);
+    let mut uniforms = Uniforms::new(program, pipeline);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("terrain_edits", &mut generator.ssbo_edits, 1);
     uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());
@@ -39,7 +39,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 
     // Set the uniforms for the second compute shader
     let program = pipeline.get(&generator.secondary_compute).unwrap().program();
-    let mut uniforms = Uniforms::new(program, pipeline, true);
+    let mut uniforms = Uniforms::new(program, pipeline);
     uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
     uniforms.set_shader_storage("output_voxels", &mut generator.ssbo_final_voxels, 1);
     uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());

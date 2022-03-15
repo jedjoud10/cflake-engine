@@ -38,7 +38,7 @@ impl ShadowMapping {
         };
         // Create the depth texture
         let texture = TextureBuilder::default()
-            .dimensions(vek::Vec2::broadcast(shadow_resolution.max(1)))
+            .dimensions(vek::Extent2::broadcast(shadow_resolution.max(1)))
             .params(TextureParams {
                 custom: vec![(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)],
                 layout: TextureLayout {
@@ -111,7 +111,7 @@ impl ShadowMapping {
 
         // Load the shader and it's uniforms
         let shader = pipeline.shaders.get(&self.shader).unwrap();
-        let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
+        let mut uniforms = Uniforms::new(shader.program(), pipeline);
 
         // Render all the models
         for model in models {

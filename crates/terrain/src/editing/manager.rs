@@ -38,6 +38,7 @@ impl EditingManager {
                 let (center, size, shapetype) = match &edit.shape {
                     ShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
                     ShapeType::Sphere(sphere) => (sphere.center, vek::Vec3::new(sphere.radius, 0.0, 0.0), 1u8),
+                    ShapeType::VerticalCapsule(_) => todo!(),
                 };
                 // Get the edittype
                 let params = edit.params.clone();

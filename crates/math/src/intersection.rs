@@ -32,8 +32,9 @@ pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
 pub fn basic_shape_octree_node(shape: &ShapeType, node: &Node) -> bool {
     let aabb = node.aabb();
     match shape {
-        ShapeType::Cuboid(cuboid) => aabb_aabb(&AABB::from(cuboid.clone()), &aabb),
+        ShapeType::Cuboid(cuboid) => aabb_aabb(&cuboid.aabb(), &aabb),
         ShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),
+        ShapeType::VerticalCapsule(capsule) => aabb_aabb(&capsule.aabb(), &aabb),
     }
 }
 //

@@ -18,12 +18,9 @@ pub struct Uniforms<'a> {
 // Gotta change the place where this shit is in
 impl<'a> Uniforms<'a> {
     // Create a uniforms setter using a shader program and the pipeline
-    pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline, autobind: bool) -> Self {
+    pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline) -> Self {
         let mut me = Self { program, pipeline };
-        // Auto bind
-        if autobind {
-            me.bind();
-        }
+        me.bind();
         me
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not

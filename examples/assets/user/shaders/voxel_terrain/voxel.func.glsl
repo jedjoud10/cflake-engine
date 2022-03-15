@@ -17,7 +17,7 @@ struct Voxel {
 Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
     float noise = 0.0;
     for (int i = 0; i < 6; i++) {
-        noise += snoise(pos * 0.0009 * vec3(1, 0.0, 1.0) * pow(2.0, i) + 4.0595) * pow(0.4, i);
+        noise += snoise(pos * 0.0009 * vec3(1, 0.0, 1.0) * pow(2.0, i) + hash11(float(i)) * 4.0595) * pow(0.4, i);
     }
     return Voxel(noise * 200 + pos.y, 255, vec3(1.0));
 }

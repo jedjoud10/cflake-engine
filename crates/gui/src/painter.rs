@@ -90,7 +90,7 @@ impl Painter {
         // Update the OpenGL version
         let gl_tex = pipeline.get_mut(&self.gl_font_texture);
         if let Some(gl_tex) = gl_tex {
-            let dimensions = vek::Vec2::new(image.width as u16, image.height as u16);
+            let dimensions = vek::Extent2::new(image.width as u16, image.height as u16);
             gl_tex.resize_then_write(dimensions, bytes).unwrap();
             // Don't forget to update the version
             self.egui_font_texture_version = Some(image.version);
@@ -109,7 +109,7 @@ impl Painter {
 
         // Since all the elements use the same shader, we can simply set it once
         let shader = pipeline.get(&self.shader).unwrap();
-        let mut uniforms = Uniforms::new(shader.program(), pipeline, true);
+        let mut uniforms = Uniforms::new(shader.program(), pipeline);
         // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature
         uniforms.set_texture2d("u_sampler", &self.gl_font_texture);
         drop(shader);

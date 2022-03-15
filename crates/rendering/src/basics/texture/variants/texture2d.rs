@@ -26,7 +26,7 @@ pub struct Texture2D {
     params: TextureParams,
 
     // Texture dimensions
-    dimensions: vek::Vec2<u16>,
+    dimensions: vek::Extent2<u16>,
 }
 
 // Builder
@@ -49,7 +49,7 @@ impl TextureBuilder {
         self.inner.bytes = TextureBytes::Valid(bytes);
         self
     }
-    pub fn dimensions(mut self, dimensions: vek::Vec2<u16>) -> Self {
+    pub fn dimensions(mut self, dimensions: vek::Extent2<u16>) -> Self {
         self.inner.dimensions = dimensions;
         self
     }
@@ -115,7 +115,7 @@ impl PipelineElement for Texture2D {
 }
 
 impl Texture for Texture2D {
-    type Dimensions = vek::Vec2<u16>;
+    type Dimensions = vek::Extent2<u16>;
     fn storage(&self) -> Option<&RawTexture> {
         self.raw.as_ref()
     }
@@ -134,7 +134,7 @@ impl Texture for Texture2D {
 }
 
 impl ResizableTexture for Texture2D {
-    fn resize_then_write(&mut self, dimensions: vek::Vec2<u16>, bytes: Vec<u8>) -> Option<()> {
+    fn resize_then_write(&mut self, dimensions: vek::Extent2<u16>, bytes: Vec<u8>) -> Option<()> {
         // Check if we can even resize the texture
         if !self.params.flags.contains(TextureFlags::RESIZABLE) {
             return None;
@@ -177,6 +177,6 @@ impl Asset for Texture2D {
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
-        Some(TextureBuilder::default().dimensions(vek::Vec2::new(width, height)).bytes(bytes).build())
+        Some(TextureBuilder::default().dimensions(vek::Extent2::new(width, height)).bytes(bytes).build())
     }
 }
