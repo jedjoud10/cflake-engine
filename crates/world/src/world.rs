@@ -1,7 +1,7 @@
 use crate::{Settings, WorldState};
 use audio::player::AudioPlayer;
 use ecs::ECSManager;
-use globals::GlobalsCollection;
+use globals::GlobalsSet;
 use gui::GUIManager;
 use input::InputManager;
 use io::IOManager;
@@ -23,7 +23,7 @@ pub struct World {
     // Logic
     pub state: WorldState,
     pub ecs: ECSManager<Self>,
-    pub globals: GlobalsCollection,
+    pub globals: GlobalsSet,
     pub physics: PhysicsSimulation,
 
     // Other

@@ -5,7 +5,6 @@ use std::{cell::RefCell, io::Cursor, sync::Arc, fmt::Debug};
 pub struct AudioPlayer {
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
-    cache: Vec<Buffered<Decoder<Cursor<Vec<u8>>>>>,
     // Keep track of each sink
     sinks: RefCell<Vec<AudioSourceTracker>>,
     // Position of the left ear and right ear for positional sounds
@@ -20,7 +19,6 @@ impl Default for AudioPlayer {
         Self {
             _stream,
             stream_handle: handle,
-            cache: Default::default(),
             sinks: Default::default(),
             left: Default::default(),
             right: Default::default(),
@@ -38,10 +36,7 @@ impl AudioPlayer {
     where
         <T as Iterator>::Item: rodio::Sample + Send,
     {
-        // Check if the index is gud
-        let idx = source.idx?;
-        let buffered = self.cache.get(idx).unwrap().clone();
-        let buffered = function(buffered);
+        let buffered = function(source.buffered.clone().unwrap());
         let sink = Sink::try_new(&self.stream_handle).unwrap();
         // Run the modifiers
         sink.append(buffered);
@@ -61,11 +56,7 @@ impl AudioPlayer {
     where
         <T as Iterator>::Item: rodio::Sample + Send + Debug,
     {
-        // Check if the index is gud
-        let idx = source.idx?;
-        // Decode then play the sound
-        let buffered = self.cache.get(idx).unwrap().clone();
-        let buffered = function(buffered);
+        let buffered = function(source.buffered.clone().unwrap());
         // Create a new spatial sink
         // Convert positions
         let pos = [position.x, position.y, position.z];
@@ -80,24 +71,24 @@ impl AudioPlayer {
         Some(tracker)
     }
     // Update the positions of the spatial ears
-    pub fn update_ear_positions(&mut self, left: vek::Vec3<f32>, right: vek::Vec3<f32>) {
+    pub fn update(&mut self, left: vek::Vec3<f32>, right: vek::Vec3<f32>) {
         self.left = left;
         self.right = right;
         // Update each spatial sink now
-        let borrowed = self.sinks.borrow();
+        let mut borrowed = self.sinks.borrow_mut();
         for sink in borrowed.iter() {
             if let Some(spatial) = sink.as_spatial() {
                 spatial.set_left_ear_position(left.as_slice().try_into().unwrap());
                 spatial.set_right_ear_position(right.as_slice().try_into().unwrap());
             }
         }
-    }
-    // Cache a sound to the playback cache (not really; We are just stealing it's temporary bytes)
-    pub fn cache(&mut self, mut source: AudioSource) -> Option<AudioSource> {
-        // Steal
-        source.idx = Some(self.cache.len());
-        let compressed = source.temp.take()?;
-        self.cache.push(compressed);
-        Some(source)
+
+        // Remove the sinks that finished playing
+        borrowed.retain(|sink| {
+            match sink {
+                AudioSourceTracker::Global(g) => !g.empty(),
+                AudioSourceTracker::Spatial(s) => !s.empty(),
+            }
+        });
     }
 }
