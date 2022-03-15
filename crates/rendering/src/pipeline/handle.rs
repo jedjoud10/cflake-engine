@@ -2,7 +2,7 @@ use crate::object::PipelineElement;
 
 use parking_lot::Mutex;
 use slotmap::Key;
-use std::{marker::PhantomData, sync::Arc};
+use std::{marker::PhantomData, sync::Arc, hash::Hash};
 
 // A unique pipeline collection key
 slotmap::new_key_type! {
@@ -14,6 +14,23 @@ pub struct Handle<T: PipelineElement> {
     pub(crate) key: Arc<PipelineElemKey>,
     pub(crate) to_remove: Option<Arc<Mutex<Vec<PipelineElemKey>>>>,
     pub(crate) _phantom: PhantomData<T>,
+}
+
+// Bruh derive moment
+impl<T: PipelineElement> PartialEq for Handle<T> {
+    fn ne(&self, other: &Self) -> bool {
+        self.key != other.key
+    }
+
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+impl<T: PipelineElement> Eq for Handle<T> {}
+impl<T: PipelineElement> Hash for Handle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.key.hash(state);
+    }
 }
 
 // Sad

@@ -36,8 +36,11 @@ impl GUIManager {
     // End frame
     pub fn draw_frame(&mut self, pipeline: &mut Pipeline) {
         let output = self.egui.end_frame();
+        // Decompose 
         let clipped_shapes = output.shapes;
+        let deltas = output.textures_delta;
         let meshes = self.egui.tessellate(clipped_shapes);
-        self.painter.draw_gui(pipeline, meshes);
+        // Draw the GUI
+        self.painter.draw_gui(pipeline, meshes, deltas);
     }
 }

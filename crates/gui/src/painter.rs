@@ -1,6 +1,13 @@
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+
 use crate::buffers::Buffers;
+use crate::common::{convert_image, get_dimensions, get_id};
+use egui::{TexturesDelta, ImageData};
+use egui::epaint::ahash::AHashSet;
 use egui::{epaint::Mesh, ClippedMesh, Color32, Rect};
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams};
+use nohash_hasher::NoHashHasher;
+use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams, TextureFormat};
 use rendering::gl;
 use rendering::{
     basics::{
@@ -16,8 +23,9 @@ use vek::Clamp;
 pub struct Painter {
     // Store everything we need to render the egui meshes
     pub(crate) shader: Handle<Shader>,
-    pub(crate) gl_font_texture: Handle<Texture2D>,
-    pub(crate) egui_font_texture_version: Option<u64>,
+
+    // Multiple textures
+    pub(crate) textures: HashMap::<u64, Handle<Texture2D>, BuildHasherDefault<NoHashHasher<u64>>>,
     pub(crate) buffers: Buffers,
 }
 
@@ -30,26 +38,32 @@ impl Painter {
             .source("defaults/shaders/gui/frag.frsh.glsl");
         let shader = Shader::new(shader_settings).unwrap();
         let shader = pipeline.insert(shader);
-        // Load the egui font texture
-        let egui_font_texture = TextureBuilder::default()
-            .params(TextureParams {
-                wrap: TextureWrapMode::ClampToEdge(None),
-                flags: TextureFlags::RESIZABLE,
-                ..Default::default()
-            })
-            .build();
-        let egui_font_texture = pipeline.insert(egui_font_texture);
         Self {
             shader,
-            gl_font_texture: egui_font_texture,
+            textures: Default::default(),
             buffers: Buffers::new(pipeline),
-            egui_font_texture_version: Default::default(),
+        }
+    }
+    // Set uniforms
+    fn set_mesh_uniforms(&mut self, mesh: &Mesh, uniforms: &mut Uniforms, last_texture: &mut Handle<Texture2D>) {
+        // Get ID 
+        let id = match mesh.texture_id {
+            egui::TextureId::Managed(id) => id,
+            egui::TextureId::User(_) => todo!(),
+        };
+
+        let handle = self.textures.get(&id).unwrap();
+        // Only set the uniform if we need to
+        if handle != last_texture {
+            uniforms.set_texture2d("u_sampler", handle);       
+            *last_texture = handle.clone(); 
         }
     }
     // Draw a single egui mesh
-    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &mut Pipeline, pixels_per_point: f32) {
+    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &Pipeline) {
         // We already have the shader bound, so we just need to draw
         // Get the rect size so we can use the scissor test
+        let pixels_per_point = pipeline.window().pixels_per_point() as f32;
         let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
         let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
         let dims = pipeline.window().dimensions().as_().into();
@@ -72,50 +86,53 @@ impl Painter {
         self.buffers.fill_buffers(mesh.vertices, mesh.indices);
         self.buffers.draw();
     }
-    // Upload the egui font texture and update it's OpenGL counterpart if it changed
-    fn upload_egui_font_texture(&mut self, pipeline: &mut Pipeline) {
-        /*
-        // Only update if we need to
-        if Some(image) == self.egui_font_texture_version {
-            return;
+    // Apply the texture deltas
+    fn apply_deltas(&mut self, pipeline: &mut Pipeline, deltas: TexturesDelta) {
+        // Create / modify
+        for (tid, delta) in deltas.set {
+            if let Some(handle) = self.textures.get(&get_id(tid)) {
+                // Simply update the texture
+                let texture = pipeline.get_mut(handle).unwrap();
+                if delta.is_whole() {
+                    // Resize and write
+                    texture.resize_then_write(get_dimensions(&delta.image), convert_image(delta.image));
+                }
+            } else {
+                // If we don't have the texture ID stored, we must create it
+                let texture = TextureBuilder::default()
+                    .params(TextureParams {
+                        wrap: TextureWrapMode::ClampToEdge(None),
+                        flags: TextureFlags::RESIZABLE,
+                        ..Default::default()
+                    })
+                    .dimensions(get_dimensions(&delta.image))
+                    .bytes(convert_image(delta.image))
+                    .build();
+                // Create the texture handle
+                let texture = pipeline.insert(texture);
+                self.textures.insert(get_id(tid), texture);
+            }
         }
-        // I hate this
-        let mut bytes = Vec::<u8>::with_capacity(image.pixels.len() * 4);
-        for alpha in image.pixels.iter() {
-            let color = Color32::from_white_alpha(*alpha);
-            bytes.push(color.r());
-            bytes.push(color.g());
-            bytes.push(color.b());
-            bytes.push(color.a());
+        // Delete
+        for tid in deltas.free {
+            // Dropping the handle will automatically get rid of the texture
+            self.textures.remove(&get_id(tid)).unwrap();
         }
-
-        // Update the OpenGL version
-        let gl_tex = pipeline.get_mut(&self.gl_font_texture);
-        if let Some(gl_tex) = gl_tex {
-            let dimensions = vek::Extent2::new(image.width as u16, image.height as u16);
-            gl_tex.resize_then_write(dimensions, bytes).unwrap();
-            // Don't forget to update the version
-            self.egui_font_texture_version = Some(image.version);
-        } else {
-            self.egui_font_texture_version = None;
-        }
-        */
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>) {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
         // No need to draw if we don't have any meshes or if our shader is invalid
         if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
             return;
         }
-        // Le texture
-        self.upload_egui_font_texture(pipeline);
+
+        // Apply the texture deltas
+        self.apply_deltas(pipeline, deltas);
 
         // Since all the elements use the same shader, we can simply set it once
         let shader = pipeline.get(&self.shader).unwrap();
+        // We can bind once, and mutate multiple times 
         let mut uniforms = Uniforms::new(shader.program(), pipeline);
-        // For now, the single texture we can draw is the font texture. We won't be able to set user textures, but that is an upcoming feature
-        uniforms.set_texture2d("u_sampler", &self.gl_font_texture);
-        drop(shader);
 
         // OpenGL settings
         unsafe {
@@ -130,8 +147,11 @@ impl Painter {
             gl::Enable(gl::SCISSOR_TEST);
         }
 
+        // Draw each mesh
+        let mut last_texture = Handle::<Texture2D>::default();
         for ClippedMesh(rect, mesh) in clipped_meshes {
-            self.draw_mesh(rect, mesh, pipeline, pipeline.window().pixels_per_point() as f32);
+            self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);            
+            self.draw_mesh(rect, mesh, pipeline);
         }
 
         // Reset
