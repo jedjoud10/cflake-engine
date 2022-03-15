@@ -3,14 +3,14 @@ use enum_as_inner::EnumAsInner;
 // Light source parameters
 pub struct LightParameters {
     pub strength: f32,
-    pub color: vek::Vec3<f32>,
+    pub color: vek::Rgb<f32>,
 }
 
 impl Default for LightParameters {
     fn default() -> Self {
         Self {
             strength: 1.0,
-            color: vek::Vec3::one(),
+            color: vek::Rgb::one(),
         }
     }
 }
