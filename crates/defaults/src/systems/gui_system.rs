@@ -1,5 +1,5 @@
 use world::{
-    ecs::component::{ComponentQueryParameters, ComponentQuerySet},
+    ecs::component::{ComponentQueryParams, ComponentQuerySet},
     World,
 };
 
@@ -22,6 +22,6 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<Light>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Light>().link::<Transform>())
         .build();
 }

@@ -5,4 +5,5 @@ use world::globals::Global;
 pub struct Physics {
     // The last time we executed a physics step
     pub(crate) last_execution_time: f32,
+    pub(crate) active_num: i32,
 }

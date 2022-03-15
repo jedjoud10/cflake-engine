@@ -1,4 +1,4 @@
-use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
+use world::ecs::component::{ComponentQueryParams, ComponentQuerySet};
 use world::input::Keys;
 use world::World;
 
@@ -70,7 +70,7 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .build();
     world.input.bind(Keys::W, "camera_forward");
     world.input.bind(Keys::S, "camera_backwards");

@@ -1,4 +1,4 @@
-use crate::component::{ComponentQueryParameters, ComponentQuerySet};
+use crate::component::{ComponentQueryParams, ComponentQuerySet};
 
 use super::{SubSystem, System, SystemExecutionOrder, SystemSet};
 
@@ -26,7 +26,7 @@ impl<'a, World> SystemBuilder<'a, World> {
         self
     }
     // Add a subsystem with specific component query parameters
-    pub fn query(mut self, params: ComponentQueryParameters) -> Self {
+    pub fn query(mut self, params: ComponentQueryParams) -> Self {
         self.system.subsystems.push(SubSystem {
             cbitfield: params.cbitfield,
             all: Default::default(),

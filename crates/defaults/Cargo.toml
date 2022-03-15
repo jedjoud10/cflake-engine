@@ -13,4 +13,5 @@ rapier3d = "0.11.1"
 vek = "0.15.6"
 getset = "0.1.2"
 parking_lot = "0.12.0"
+itertools = "0.10.3"
 world = { path = "../world" }

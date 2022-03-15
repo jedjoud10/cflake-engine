@@ -3,7 +3,7 @@ use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 
 use rapier3d::na::{Isometry, Point3};
 use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
-use world::ecs::component::ComponentQueryParameters;
+use world::ecs::component::ComponentQueryParams;
 use world::ecs::component::ComponentQuerySet;
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
@@ -90,6 +90,6 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
         .build();
 }

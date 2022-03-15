@@ -1,5 +1,7 @@
 use world::{ecs::component::ComponentQuerySet, gui::egui, terrain, World, WorldState};
 
+use crate::globals::{Physics, Terrain};
+
 // The debugging system's update loop
 fn run(world: &mut World, _data: ComponentQuerySet) {
     // Check if we need to debug
@@ -26,7 +28,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
         ui.label(format!("Systems: '{}'", world.ecs.systems.inner().borrow().len()));
         // Terrain
-        let terrain = world.globals.get_mut::<crate::globals::Terrain>();
+        let terrain = world.globals.get_mut::<Terrain>();
         if let Ok(terrain) = terrain {
             let octree = &terrain.manager.octree;
             ui.separator();
@@ -39,6 +41,13 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
             ui.label(format!("Voxel Data Buffer Length: '{}'", terrain.generator.buffer.len()));
             ui.label(format!("Active Mesh Tasks Count: '{}'", terrain.scheduler.active_mesh_tasks_count()));
             ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
+        }
+        // Physics
+        let physics = world.globals.get_mut::<Physics>();
+        if let Ok(physics) = physics {
+            ui.separator();
+            ui.heading("Physics");
+            ui.label(format!("Active Count: '{}'", physics.active_num));
         }
     });
 }

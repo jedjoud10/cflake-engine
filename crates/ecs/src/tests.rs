@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod test {
     use crate::{
-        component::{registry, Component, ComponentQueryParameters, ComponentQuerySet},
+        component::{registry, Component, ComponentQueryParams, ComponentQuerySet},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
         ECSManager,
     };
@@ -71,7 +71,7 @@ pub mod test {
         // Make a simple system
         let builder = ecs.systems.builder();
 
-        let params = ComponentQueryParameters::default().link::<Name>();
+        let params = ComponentQueryParams::default().link::<Name>();
         builder.query(params).event(run_system).build();
 
         // Create a simple entity with that component
@@ -100,7 +100,7 @@ pub mod test {
         // Make a simple system
         let builder = ecs.systems.builder();
         fn run_internally(_world: &mut World, _data: ComponentQuerySet) {}
-        let params = ComponentQueryParameters::default().link::<Name>();
+        let params = ComponentQueryParams::default().link::<Name>();
         builder.query(params).event(run_internally).build();
 
         // Create 10k entities
@@ -128,7 +128,7 @@ pub mod test {
 
         // Make a simple system
         let builder = ecs.systems.builder();
-        let params = ComponentQueryParameters::default().link::<Name>();
+        let params = ComponentQueryParams::default().link::<Name>();
         builder.query(params).event(run_system).build();
 
         // Add a new entity and play with it's components
@@ -184,9 +184,9 @@ pub mod test {
         }
 
         // Query 1
-        let params = ComponentQueryParameters::default().link::<Name>();
+        let params = ComponentQueryParams::default().link::<Name>();
         // Query 2
-        let params2 = ComponentQueryParameters::default().link::<Tagged>();
+        let params2 = ComponentQueryParams::default().link::<Tagged>();
         builder.query(params).query(params2).event(run_internally).build();
 
         // Create a new entity

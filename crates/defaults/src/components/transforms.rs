@@ -1,10 +1,21 @@
-use world::ecs::component::Component;
+use world::ecs::{component::Component, entity::EntityKey};
 // The transform component
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Transform {
+    // Position, rotation, scale
     pub position: vek::Vec3<f32>,
     pub rotation: vek::Quaternion<f32>,
     pub scale: vek::Vec3<f32>,
+}
+
+impl From<vek::Transform<f32, f32, f32>> for Transform {
+    fn from(t: vek::Transform<f32, f32, f32>) -> Self {
+        Self {
+            position: t.position,
+            rotation: t.orientation,
+            scale: t.scale,
+        }
+    }
 }
 
 // Default transform

@@ -7,7 +7,7 @@ use crate::{
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
 use world::{
     ecs::{
-        component::{ComponentQueryParameters, ComponentQuerySet},
+        component::{ComponentQueryParams, ComponentQuerySet},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup},
     },
     rendering::{
@@ -127,8 +127,8 @@ pub fn system(world: &mut World) {
         .ecs
         .systems
         .builder()
-        .query(ComponentQueryParameters::default().link::<Transform>().link::<Chunk>())
-        .query(ComponentQueryParameters::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
+        .query(ComponentQueryParams::default().link::<Transform>().link::<Chunk>())
+        .query(ComponentQueryParams::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
         .event(run)
         .build()
 }

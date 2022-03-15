@@ -1,4 +1,4 @@
-use world::ecs::component::{ComponentQueryParameters, ComponentQuerySet};
+use world::ecs::component::{ComponentQueryParams, ComponentQuerySet};
 use world::World;
 
 use crate::components::{Camera, Transform};
@@ -25,6 +25,6 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .build();
 }

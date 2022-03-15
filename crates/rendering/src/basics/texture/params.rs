@@ -66,6 +66,7 @@ pub enum TextureWrapMode {
 }
 
 // Texture parameters
+#[derive(Clone)]
 pub struct TextureParams {
     // Texture layout
     pub layout: TextureLayout,

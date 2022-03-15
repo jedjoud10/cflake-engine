@@ -17,11 +17,11 @@ pub struct LinkedComponentsDelta {
 
 // Some query parameters for a single component query
 #[derive(Default)]
-pub struct ComponentQueryParameters {
+pub struct ComponentQueryParams {
     pub(crate) cbitfield: Bitfield<u32>,
 }
 
-impl ComponentQueryParameters {
+impl ComponentQueryParams {
     // This component query shall use components that validate this bitfield
     pub fn link<U: Component + 'static>(mut self) -> Self {
         let c = registry::get_component_bitfield::<U>();

@@ -1,7 +1,7 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
     ecs::{
-        component::{ComponentQueryParameters, ComponentQuerySet},
+        component::{ComponentQueryParams, ComponentQuerySet},
         system::SystemExecutionOrder,
     },
     rendering::{
@@ -140,8 +140,8 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<Renderer>().link::<Transform>())
-        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
-        .query(ComponentQueryParameters::default().link::<Light>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Renderer>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Light>().link::<Transform>())
         .build();
 }

@@ -4,7 +4,7 @@ use crate::{
 };
 use world::{
     ecs::{
-        component::{ComponentQueryParameters, ComponentQuerySet},
+        component::{ComponentQueryParams, ComponentQuerySet},
         entity::{ComponentLinkingGroup, EntityKey},
         ECSManager,
     },
@@ -112,7 +112,7 @@ pub fn system(world: &mut World) {
         .ecs
         .systems
         .builder()
-        .query(ComponentQueryParameters::default().link::<Camera>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .event(run)
         .build();
     world.input.bind_key_toggle(Keys::Y, "update_terrain");

@@ -1,5 +1,5 @@
 use rapier3d::na::Isometry;
-use world::ecs::component::ComponentQueryParameters;
+use world::ecs::component::ComponentQueryParams;
 use world::ecs::component::ComponentQuerySet;
 use world::physics::PHYSICS_TIME_STEP;
 use world::World;
@@ -18,6 +18,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     } else {
         return;
     }
+    physics.active_num = 0;
 
     // Update the position/rotation and attributes of each rigidbody since we might have externally updated them
     let query = &mut data.get_mut(0).unwrap().all;
@@ -74,6 +75,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 let mut transform = components.get_mut::<Transform>().unwrap();
                 transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
                 transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
+                physics.active_num += 1;
             }
         }
     }
@@ -85,7 +87,7 @@ pub fn system(world: &mut World) {
         .ecs
         .systems
         .builder()
-        .query(ComponentQueryParameters::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
+        .query(ComponentQueryParams::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
         .event(run)
         .build();
 }

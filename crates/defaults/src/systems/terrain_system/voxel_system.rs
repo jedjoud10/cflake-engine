@@ -6,7 +6,7 @@ use crate::{
 };
 use world::{
     ecs::{
-        component::{ComponentQueryParameters, ComponentQuerySet},
+        component::{ComponentQueryParams, ComponentQuerySet},
         entity::EntityKey,
     },
     rendering::{
@@ -116,6 +116,6 @@ pub fn system(world: &mut World) {
         .systems
         .builder()
         .event(run)
-        .query(ComponentQueryParameters::default().link::<Transform>().link::<Chunk>())
+        .query(ComponentQueryParams::default().link::<Transform>().link::<Chunk>())
         .build();
 }
