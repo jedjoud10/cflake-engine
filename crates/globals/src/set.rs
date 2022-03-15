@@ -1,6 +1,6 @@
 use crate::{
     error::GlobalError,
-    global::{EnclosedGlobalComponent, Global},
+    global::{BoxedGlobal, Global},
 };
 use ahash::AHashMap;
 use std::any::TypeId;
@@ -8,7 +8,7 @@ use std::any::TypeId;
 // A struct that will be stored in the world that will contain some globals
 #[derive(Default)]
 pub struct GlobalsSet {
-    pub(crate) globals: AHashMap<TypeId, EnclosedGlobalComponent>,
+    pub(crate) globals: AHashMap<TypeId, BoxedGlobal>,
 }
 
 impl GlobalsSet {

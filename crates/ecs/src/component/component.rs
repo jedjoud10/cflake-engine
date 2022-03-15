@@ -24,8 +24,8 @@ pub trait Component: Sync {
 }
 
 // Main type because I don't want to type
-pub type Components = Arc<RwLock<SlotMap<ComponentKey, UnsafeCell<EnclosedComponent>>>>;
-pub type EnclosedComponent = Box<dyn Component + Sync + Send>;
+pub type Components = Arc<RwLock<SlotMap<ComponentKey, UnsafeCell<BoxedComponent>>>>;
+pub type BoxedComponent = Box<dyn Component + Sync + Send>;
 pub(crate) type DanglingComponentsToRemove = Rc<RefCell<SlotMap<ComponentGroupKey, ComponentGroupToRemove>>>;
 
 // Component groups that we must remove

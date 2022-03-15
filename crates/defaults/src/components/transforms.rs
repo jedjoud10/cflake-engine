@@ -29,6 +29,15 @@ impl Default for Transform {
     }
 }
 
+impl From<vek::Vec3<f32>> for Transform {
+    fn from(vec: vek::Vec3<f32>) -> Self {
+        Self {
+            position: vec,
+            ..Default::default()
+        }
+    }
+}
+
 impl Transform {
     // Calculate the transform matrix and return it
     pub fn transform_matrix(&self) -> vek::Mat4<f32> {

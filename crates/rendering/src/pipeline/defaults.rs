@@ -25,6 +25,8 @@ pub struct DefaultElements {
 
     // Materials
     pub pbr_mat: Handle<Material>,
+    pub pbr_mat_white: Handle<Material>,
+    pub pbr_mat_black: Handle<Material>,
 
     // Default rendering shader
     pub shader: Handle<Shader>,
@@ -68,22 +70,41 @@ impl DefaultElements {
         .unwrap();
         let shader = pipeline.insert(shader);
 
-        // Default pbr material
+        // Default pbr material (uses missing texture)
         let pbr_mat = PbrMaterialBuilder {
             textures: PbrTextures {
                 diffuse: missing.clone(),
                 normal: normal_map.clone(),
                 emissive: black.clone(),
             },
-            params: PbrParams {
-                bumpiness: 1.0,
-                emissivity: 0.0,
-                tint: vek::Vec3::one(),
-                uv_scale: vek::Vec2::one(),
-            },
+            params: PbrParams::default(),
         }
         .build_with_shader(pipeline, shader.clone());
         let pbr_mat = pipeline.insert(pbr_mat);
+
+        // Default pbr material (uses white texture)
+        let pbr_mat_white = PbrMaterialBuilder {
+            textures: PbrTextures {
+                diffuse: white.clone(),
+                normal: normal_map.clone(),
+                emissive: black.clone(),
+            },
+            params: PbrParams::default(),
+        }
+        .build_with_shader(pipeline, shader.clone());
+        let pbr_mat_white = pipeline.insert(pbr_mat_white);
+
+        // Default pbr material (uses black texture)
+        let pbr_mat_black = PbrMaterialBuilder {
+            textures: PbrTextures {
+                diffuse: black.clone(),
+                normal: normal_map.clone(),
+                emissive: black.clone(),
+            },
+            params: PbrParams::default(),
+        }
+        .build_with_shader(pipeline, shader.clone());
+        let pbr_mat_black = pipeline.insert(pbr_mat_black);
 
         Self {
             white,
@@ -94,6 +115,8 @@ impl DefaultElements {
             cube,
             sphere,
             pbr_mat,
+            pbr_mat_white,
+            pbr_mat_black,
             shader,
         }
     }

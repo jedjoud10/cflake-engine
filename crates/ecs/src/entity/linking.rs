@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{registry, Component, EnclosedComponent},
+    component::{registry, Component, BoxedComponent},
     utils::ComponentLinkingError,
 };
 
@@ -12,7 +12,7 @@ use super::Entity;
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 #[derive(Default)]
 pub struct ComponentLinkingGroup {
-    pub linked_components: AHashMap<Bitfield<u32>, EnclosedComponent>,
+    pub linked_components: AHashMap<Bitfield<u32>, BoxedComponent>,
     pub cbitfield: Bitfield<u32>,
 }
 

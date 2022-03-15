@@ -16,3 +16,14 @@ pub struct PbrParams {
     pub tint: vek::Vec3<f32>,
     pub uv_scale: vek::Vec2<f32>,
 }
+
+impl Default for PbrParams {
+    fn default() -> Self {
+        Self {
+            bumpiness: 1.0,
+            emissivity: 0.0,
+            tint: vek::Vec3::one(),
+            uv_scale: vek::Vec2::one(),
+        }
+    }
+}

@@ -5,4 +5,4 @@ pub trait Global {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
-pub type EnclosedGlobalComponent = Box<dyn Global>;
+pub type BoxedGlobal = Box<dyn Global>;

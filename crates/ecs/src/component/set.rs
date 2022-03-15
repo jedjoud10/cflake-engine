@@ -3,7 +3,7 @@ use bitfield::{AtomicSparseBitfield, Bitfield};
 use slotmap::Key;
 use std::{cell::UnsafeCell, sync::Arc};
 
-use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, EnclosedComponent, LinkedComponents};
+use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, BoxedComponent, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
     system::SystemSet,
@@ -169,7 +169,7 @@ impl ComponentSet {
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
-    fn add(&mut self, boxed: EnclosedComponent) -> (ComponentKey, *mut EnclosedComponent) {
+    fn add(&mut self, boxed: BoxedComponent) -> (ComponentKey, *mut BoxedComponent) {
         // UnsafeCell moment
         let mut components = self.components.write();
         let cell = UnsafeCell::new(boxed);
@@ -177,7 +177,6 @@ impl ComponentSet {
         let key = components.insert(cell);
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
-        dbg!("Write", index);
         (key, ptr)
     }
     // Remove a specified component from the list

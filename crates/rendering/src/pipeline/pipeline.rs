@@ -4,7 +4,7 @@ use glutin::{
     event::WindowEvent,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-    ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext,
+    ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext, Api,
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
         material::Material,
         mesh::Mesh,
         shader::Shader,
-        texture::{BundledTexture2D, Texture, Texture2D},
+        texture::{BundledTexture2D, Texture2D},
     },
     object::PipelineElement,
     utils::{Window, DEFAULT_WINDOW_SIZE},
@@ -63,8 +63,8 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
         .with_double_buffer(Some(true))
         .with_vsync(vsync)
         .with_gl_profile(GlProfile::Core)
-        .with_gl_debug_flag(false)
-        .with_gl(GlRequest::Latest)
+        .with_gl_debug_flag(true)
+        .with_gl(GlRequest::Specific(Api::OpenGl, (4, 6)))
         .build_windowed(wb, el)
         .unwrap();
     // Make the context a current context
