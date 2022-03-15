@@ -21,13 +21,13 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 }
 
 // Render a model
-pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedModel, pipeline: &Pipeline) {
+pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &RenderedModel<'a>, last_material: &mut Handle<Material>, pipeline: &Pipeline) {
     // Fallback values
     fn fallback_material(pipeline: &Pipeline) -> &Material {
         pipeline.materials.get(&pipeline.defaults().pbr_mat).unwrap()
     }
     fn fallback_shader(pipeline: &Pipeline) -> &Shader {
-        pipeline.shaders.get(&pipeline.defaults().shader).unwrap()
+        pipeline.shaders.get(&pipeline.defaults().missing_shader).unwrap()
     }
 
     // Render the mesh
@@ -41,15 +41,23 @@ pub(crate) fn render_model(_settings: &RenderingSettings, renderer: &RenderedMod
     // Create some uniforms
     let mut uniforms = Uniforms::new(shader.program(), pipeline);
 
-    // And set them
-    uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
+    // Set the uniforms 
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
-    material.uniforms.execute(&mut uniforms);
+    
+    // Check if we really need to set the material uniforms
+    if last_material != renderer.material {
+        uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
+        material.uniforms.execute(&mut uniforms);
+        *last_material = renderer.material.clone();
+    }
 
     // Finally render the mesh
     unsafe {
         render(mesh);
     }
+
+    // Set last material used
+    *last_material = renderer.material.clone();
 }
 
 // A normal object that we will render
@@ -62,6 +70,10 @@ pub struct RenderedModel<'b> {
     pub material: &'b Handle<Material>,
 }
 
+// The last model that we have drawn 
+pub struct LastRenderedModelInfo<'b> {
+    pub material: &'b Handle<Material>,
+}
 // A shadowed object that we will render
 pub struct ShadowedModel<'b> {
     // Required

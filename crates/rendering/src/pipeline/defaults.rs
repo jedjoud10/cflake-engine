@@ -15,7 +15,7 @@ pub struct DefaultElements {
     // Textures
     pub white: Handle<Texture2D>,
     pub black: Handle<Texture2D>,
-    pub missing: Handle<Texture2D>,
+    pub missing_texture: Handle<Texture2D>,
     pub normal_map: Handle<Texture2D>,
 
     // Meshes
@@ -30,6 +30,7 @@ pub struct DefaultElements {
 
     // Default rendering shader
     pub shader: Handle<Shader>,
+    pub missing_shader: Handle<Shader>,
 }
 
 impl DefaultElements {
@@ -63,7 +64,7 @@ impl DefaultElements {
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
         let missing = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap()).build();
-        let missing = pipeline.insert(missing);
+        let missing_texture = pipeline.insert(missing);
 
         // Default mesh
         let mesh = Mesh::default();
@@ -82,10 +83,19 @@ impl DefaultElements {
         .unwrap();
         let shader = pipeline.insert(shader);
 
+        // Default missing rendering (PBR) shader
+        let missing_shader = Shader::new(
+            ShaderInitSettings::default()
+                .source("defaults/shaders/rendering/missing.vrsh.glsl")
+                .source("defaults/shaders/rendering/missing.frsh.glsl"),
+        )
+        .unwrap();
+        let missing_shader = pipeline.insert(missing_shader);
+
         // Default pbr material (uses missing texture)
         let pbr_mat = PbrMaterialBuilder {
             textures: PbrTextures {
-                diffuse: missing.clone(),
+                diffuse: missing_texture.clone(),
                 normal: normal_map.clone(),
                 emissive: black.clone(),
             },
@@ -121,7 +131,7 @@ impl DefaultElements {
         Self {
             white,
             black,
-            missing,
+            missing_texture,
             normal_map,
             mesh,
             cube,
@@ -130,6 +140,7 @@ impl DefaultElements {
             pbr_mat_white,
             pbr_mat_black,
             shader,
+            missing_shader,
         }
     }
 }

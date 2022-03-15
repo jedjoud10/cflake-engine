@@ -180,8 +180,9 @@ impl SceneRenderer {
     // Render the whole scene
     pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // Render normally
+        let mut last_material = Handle::default();
         for renderer in settings.normal {
-            common::render_model(&settings, renderer, pipeline)
+            common::render_model(&settings, renderer, &mut last_material, pipeline)
         }
 
         // Then render the shadows

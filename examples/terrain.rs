@@ -118,7 +118,7 @@ fn init(world: &mut World) {
         50.0,
         EditParams {
             _union: true,
-            material: Some(1),
+            material: None,
             ..Default::default()
         },
     ));
