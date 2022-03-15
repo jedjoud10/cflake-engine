@@ -25,7 +25,7 @@ pub type UniformsDefinitionMap = AHashMap<String, i32>;
 // Used texture units
 pub type UsedTextureUnits = RefCell<AHashMap<String, usize>>;
 
-// Load the files that need to be included for this specific shader and return the included lines
+// Load the files that need to be included for this specific shader
 pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, included_paths: &mut AHashSet<String>) -> Result<bool, IncludeExpansionError> {
     // Turn the string into lines
     let mut lines = source.lines().into_iter().map(|x| x.to_string()).collect::<Vec<String>>();
@@ -104,8 +104,7 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
     // Update the source
     *source = lines.join("\n");
     // Check if we need to continue expanding the includes
-    let need_to_continue = lines
-        .iter()
+    let need_to_continue = source.lines()
         .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
     Ok(need_to_continue)
 }

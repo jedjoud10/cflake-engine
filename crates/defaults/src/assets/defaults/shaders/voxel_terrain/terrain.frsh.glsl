@@ -12,12 +12,13 @@ uniform vec2 uv_scale;
 uniform float bumpiness;
 in vec3 m_position;
 in vec3 m_normal;
+in vec3 m_color;
 in flat vec2 m_uv;
 void main() {
 	// Triplanar settings
-	TriplanarSettings settings = TriplanarSettings(uv_scale, 0.9);
+	TriplanarSettings settings = TriplanarSettings(uv_scale, 0.1);
 	uint m_material_type = uint(m_uv.x * 255);
-	frag_diffuse = array_triplanar(diffuse_m, m_position, m_normal, int(m_material_type), settings);	
+	frag_diffuse = array_triplanar(diffuse_m, m_position, m_normal, int(m_material_type), settings) * m_color;	
 	frag_normal = array_triplanar_normal(normal_m, m_position, m_normal, int(m_material_type), bumpiness, settings);
 	frag_pos = m_position;
 	frag_emissive = vec3(0.0);

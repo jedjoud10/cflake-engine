@@ -126,7 +126,7 @@ impl MarchingCubesSkirts {
             let value: f32 = self.calc_interpolation(voxels.density(index1), voxels.density(index2));
             // Now interpolate the voxel attributes
             let normal = vek::Vec3::<f32>::lerp(voxels.normal(index1).as_(), voxels.normal(index2).as_(), value).normalized();
-            let color = vek::Vec3::<f32>::lerp(voxels.color(index1).as_(), voxels.color(index2).as_(), value);
+            let color = vek::Rgb::<f32>::lerp(voxels.color(index1).as_(), voxels.color(index2).as_(), value);
 
             shared_normal += normal;
             shared_color += color;
@@ -140,7 +140,7 @@ impl MarchingCubesSkirts {
         }
         Some(SquareData {
             normal: (shared_normal / count as f32 * 255.0).as_(),
-            color: (shared_color / count as f32).as_(),
+            color: (shared_color / count as f32).as_::<u8>().into(),
             voxel_material: voxels.voxel_material(info.i),
             position: p,
             case: case_index,
@@ -233,7 +233,7 @@ pub enum SkirtVert {
 struct SquareData {
     // Shared voxel data
     normal: vek::Vec3<i8>,
-    color: vek::Vec3<u8>,
+    color: vek::Rgb<u8>,
     voxel_material: u8,
 
     // Meshing data

@@ -5,15 +5,15 @@ use cflake_engine::{
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
-    math::{csg::CSGOperation, octrees::HeuristicSettings},
+    math::{octrees::HeuristicSettings},
     rendering::basics::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture, Texture2D, TextureFlags, TextureLayout, TextureParams},
+        texture::{BundledTextureBuilder, Texture, Texture2D, TextureFlags, TextureLayout, TextureParams, TextureFilter},
         uniforms::UniformsSet,
     },
-    terrain::editing::Edit,
+    terrain::editing::{Edit, EditParams},
     vek, World,
 };
 
@@ -89,7 +89,7 @@ fn init(world: &mut World) {
             uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
             uniforms.set_f32("bumpiness", 2.0);
-            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
+            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.02));
         }),
     };
     let material = world.pipeline.insert(material);
@@ -105,13 +105,17 @@ fn init(world: &mut World) {
         depth: 6,
         heuristic_settings: heuristic,
         material,
-        physics: false,
+        physics: true,
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Pillar
-    terrain.edit(Edit::cuboid(vek::Vec3::zero(), vek::Vec3::new(300.0, 600.0, 300.0), CSGOperation::Subtraction, Some(2)));
+    terrain.edit(Edit::cuboid(vek::Vec3::zero(), vek::Vec3::new(300.0, 600.0, 300.0), EditParams { 
+        _union: false,
+        ..Default::default()
+    }));
+    
     // Big sphere
-    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, CSGOperation::Union, Some(1)));
+    //terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, CSGOperation::Union, Some(1)));
     world.globals.add(terrain).unwrap();
 }

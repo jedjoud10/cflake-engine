@@ -10,6 +10,6 @@ impl Chunk {
     // Calculate a chunk's priority using chunk coords and the camera position and direction
     pub fn calculate_priority(coords: ChunkCoords, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>) -> f32 {
         let position = coords.position.as_();
-        (camera_position - position).normalized().dot(camera_forward)
+        (position - camera_position).normalized().dot(camera_forward)
     }
 }

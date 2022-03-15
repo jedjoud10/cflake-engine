@@ -54,9 +54,9 @@ impl MarchingCubes {
         let n2: vek::Vec3<f32> = voxels.normal(edge.index2).as_();
         let normal = vek::Vec3::<f32>::lerp(n1, n2, value).normalized();
         // Get the color
-        let c1: vek::Vec3<f32> = voxels.color(edge.index1).as_();
-        let c2: vek::Vec3<f32> = voxels.color(edge.index2).as_();
-        let color = vek::Vec3::<f32>::lerp(c1, c2, value);
+        let c1: vek::Rgb<f32> = voxels.color(edge.index1).as_::<f32>();
+        let c2: vek::Rgb<f32> = voxels.color(edge.index2).as_::<f32>();
+        let color = vek::Rgb::<f32>::lerp(c1, c2, value);
         InterpolatedVertexData {
             vertex,
             normal: (normal * 127.0).as_(),
@@ -158,7 +158,7 @@ type VertexMerger = AHashMap<(u8, u8, u8), u16>;
 struct InterpolatedVertexData {
     vertex: vek::Vec3<f32>,
     normal: vek::Vec3<i8>,
-    color: vek::Vec3<u8>,
+    color: vek::Rgb<u8>,
 }
 // Edge intersection info
 struct EdgeInfo {

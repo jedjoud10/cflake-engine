@@ -6,7 +6,7 @@ pub struct Vertices {
     pub normals: Vec<vek::Vec3<i8>>,
     pub tangents: Vec<vek::Vec4<i8>>,
     pub uvs: Vec<vek::Vec2<u8>>,
-    pub colors: Vec<vek::Vec3<u8>>,
+    pub colors: Vec<vek::Rgb<u8>>,
 }
 
 impl Vertices {
@@ -39,7 +39,7 @@ impl VertexBuilder {
     pub fn uv(&mut self, uv: vek::Vec2<u8>) {
         self.vertices.uvs.push(uv);
     }
-    pub fn color(&mut self, color: vek::Vec3<u8>) {
+    pub fn color(&mut self, color: vek::Rgb<u8>) {
         self.vertices.colors.push(color);
     }
 }

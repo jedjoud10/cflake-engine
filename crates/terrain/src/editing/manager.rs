@@ -40,9 +40,10 @@ impl EditingManager {
                     ShapeType::Sphere(sphere) => (sphere.center, vek::Vec3::new(sphere.radius, 0.0, 0.0), 1u8),
                 };
                 // Get the edittype
-                let rgbcolor = (pack_color(edit.color) as u32) << 16; // 2
-                let shape_type_edit_type = (((shapetype << 4) | (edit.operation as u8)) as u32) << 8; // 1
-                let material = edit.material.unwrap_or(255) as u32; // 1
+                let params = edit.params.clone();
+                let rgbcolor = (pack_color(params.color) as u32) << 16; // 2
+                let shape_type_edit_type = (((shapetype << 4) | (!params._union as u8)) as u32) << 8; // 1
+                let material = params.material.unwrap_or(255) as u32; // 1
                 let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
 
                 PackedEdit {

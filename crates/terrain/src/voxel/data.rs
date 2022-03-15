@@ -12,7 +12,7 @@ use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 pub struct VoxelData {
     densities: Vec<f32>,
     normals: Vec<vek::Vec3<i8>>,
-    colors: Vec<vek::Vec3<u8>>,
+    colors: Vec<vek::Rgb<u8>>,
     voxel_materials: Vec<u8>,
 }
 
@@ -22,7 +22,7 @@ impl Default for VoxelData {
         const LEN: usize = (CHUNK_SIZE + 1).pow(3);
         let densities = vec![0.0; LEN];
         let normals = vec![vek::Vec3::zero(); LEN];
-        let colors = vec![vek::Vec3::zero(); LEN];
+        let colors = vec![vek::Rgb::zero(); LEN];
         let voxel_materials = vec![0; LEN];
 
         Self {
@@ -54,7 +54,7 @@ impl VoxelData {
     pub fn normal(&self, idx: usize) -> vek::Vec3<i8> {
         *self.normals.get(idx).unwrap()
     }
-    pub fn color(&self, idx: usize) -> vek::Vec3<u8> {
+    pub fn color(&self, idx: usize) -> vek::Rgb<u8> {
         *self.colors.get(idx).unwrap()
     }
     pub fn voxel_material(&self, idx: usize) -> u8 {

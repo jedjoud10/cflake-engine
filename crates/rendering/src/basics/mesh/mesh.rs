@@ -137,7 +137,7 @@ impl PipelineElement for Mesh {
 
             let colors = if !self.vertices.colors.is_empty() {
                 // Vertex colors buffer
-                let colors = TypedStorage::<vek::Vec3<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
+                let colors = TypedStorage::<vek::Rgb<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(colors.raw().buffer());
                 gl::EnableVertexAttribArray(4);
                 gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());

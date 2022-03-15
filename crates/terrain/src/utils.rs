@@ -18,19 +18,19 @@ pub fn flatten_vec3(position: vek::Vec3<usize>) -> usize {
 }
 
 // Convert a 16 bit RGB color into a 24 bit RGB color
-pub fn unpack_color(packed: u16) -> vek::Vec3<u8> {
+pub fn unpack_color(packed: u16) -> vek::Rgb<u8> {
     // 65,535
     let r = (packed >> 11).saturating_mul(8);
     let g = ((packed >> 5) & 63).saturating_mul(4);
     let b = (packed & 31).saturating_mul(8);
-    vek::Vec3::new(r as u8, g as u8, b as u8)
+    vek::Rgb::new(r as u8, g as u8, b as u8)
 }
 
 // Convert an 24 bit RGB color into a 16 bit RGB color
-pub fn pack_color(unpacked: vek::Vec3<u8>) -> u16 {
+pub fn pack_color(unpacked: vek::Rgb<u8>) -> u16 {
     // 65,535
-    let r = ((unpacked.x / 8) as u16) << 11;
-    let g = ((unpacked.y / 4) as u16) << 5;
-    let b = (unpacked.z / 8) as u16;
+    let r = ((unpacked.r / 8) as u16) << 11;
+    let g = ((unpacked.g / 4) as u16) << 5;
+    let b = (unpacked.b / 8) as u16;
     r | g | b
 }
