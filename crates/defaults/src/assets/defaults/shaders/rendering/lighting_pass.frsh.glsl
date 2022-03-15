@@ -18,7 +18,6 @@ uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
 uniform mat4 inverse_pr_matrix;
 uniform mat4 pv_matrix;
-uniform vec2 nf_planes;
 uniform bool shadows_enabled;
 in vec2 uvs;
 

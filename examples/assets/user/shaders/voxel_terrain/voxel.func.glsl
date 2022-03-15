@@ -17,9 +17,9 @@ struct Voxel {
 Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
     float noise = 0.0;
     for (int i = 0; i < 6; i++) {
-        noise += snoise(pos * 0.0009 * vec3(1, 0.0, 1.0) * pow(2.0, i) + hash11(float(i)) * 4.0595) * pow(0.4, i);
+        noise += abs(snoise(pos * 0.0009 * vec3(1, 3.0, 1.0) * pow(1.7, i) + 4.0595)) * pow(0.43, i);
     }
-    return Voxel(noise * 200 + pos.y, 255, vec3(1.0));
+    return Voxel(pos.y + noise * 200.0, 255, vec3(1.0));
 }
 
 // Modify the voxel after we get it's normal
@@ -28,9 +28,11 @@ void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inou
     if (voxel.material != 255) {
         return;
     }
-    if (dot(normal, vec3(0, 1, 0)) > 0.8) {
+    if (dot(normal, vec3(0, 1, 0)) > 0.9) {
         voxel.material = 0;
-    } else {
+    } else if (dot(normal, vec3(0, 1, 0)) > 0.8) {
         voxel.material = 1;
+    } else {
+        voxel.material = 2;
     }
 }
