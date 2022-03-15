@@ -33,7 +33,7 @@ pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &Rendere
     // Render the mesh
     let material = pipeline.materials.get(renderer.material);
     // Load the default material if we don't have a valid one
-    let material = material.unwrap_or(fallback_material(pipeline));
+    let material = material.unwrap_or_else(|| fallback_material(pipeline));
     // The shader will always be valid
     let shader = pipeline.shaders.get(&material.shader).unwrap_or_else(|| fallback_shader(pipeline));
     let mesh = pipeline.meshes.get(renderer.mesh).unwrap();

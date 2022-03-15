@@ -36,9 +36,6 @@ pub struct MeshScheduler {
 
     // Results
     cached: RefCell<Vec<GenerationResult>>,
-
-    // Settings
-    settings: MeshSchedulerSettings,
 }
 
 impl MeshScheduler {
@@ -58,7 +55,6 @@ impl MeshScheduler {
         Self {
             pool,
             cached: RefCell::new(Vec::new()),
-            settings,
         }
     }
     // Start generating a mesh for the specific voxel data on another thread

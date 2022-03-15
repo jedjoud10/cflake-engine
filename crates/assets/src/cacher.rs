@@ -27,10 +27,6 @@ impl AssetCacher {
     pub(crate) fn cache(&mut self, meta: AssetMetadata, bytes: Vec<u8>) {
         self.cached.insert(meta, bytes);
     }
-    // Uncache a specific asset
-    pub(crate) fn uncache(&mut self, meta: AssetMetadata) {
-        self.cached.remove(&meta);
-    }
     // Try to load a cached asset
     pub(crate) fn try_load(&self, meta: &AssetMetadata) -> Option<&[u8]> {
         self.cached.get(meta).map(|x| x.as_slice())

@@ -1,5 +1,3 @@
-use crate::shapes::Cuboid;
-
 // An AABB bound
 pub struct AABB {
     pub min: vek::Vec3<f32>,

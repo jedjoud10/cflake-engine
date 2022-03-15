@@ -176,7 +176,7 @@ pub(crate) fn compile_source(source: &ShaderSource) -> GLuint {
         let program = gl::CreateShader(shader_type);
 
         // Compile the shader
-        let cstring = CString::new(source.text().clone()).unwrap();
+        let cstring = CString::new(source.text()).unwrap();
         let shader_source: *const i8 = cstring.as_ptr();
         gl::ShaderSource(program, 1, &shader_source, null());
         gl::CompileShader(program);

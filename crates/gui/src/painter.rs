@@ -3,11 +3,10 @@ use std::hash::BuildHasherDefault;
 
 use crate::buffers::Buffers;
 use crate::common::{convert_image, get_dimensions, get_id};
-use egui::{TexturesDelta, ImageData};
-use egui::epaint::ahash::AHashSet;
-use egui::{epaint::Mesh, ClippedMesh, Color32, Rect};
+use egui::TexturesDelta;
+use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams, TextureFormat};
+use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams};
 use rendering::gl;
 use rendering::{
     basics::{

@@ -9,7 +9,7 @@ use crate::{
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
-    utils::{DataType, Window},
+    utils::{DataType},
 };
 use assets::assetc;
 use gl::types::GLuint;
@@ -95,7 +95,7 @@ impl SceneRenderer {
 
                 pipeline.insert(
                     TextureBuilder::default()
-                        .dimensions(dimensions.into())
+                        .dimensions(dimensions)
                         .params(TextureParams {
                             layout,
                             flags: TextureFlags::RESIZABLE,
@@ -158,7 +158,7 @@ impl SceneRenderer {
         let dimensions = pipeline.window().dimensions();
         for handle in self.textures.iter() {
             let texture = pipeline.get_mut(handle).unwrap();
-            texture.resize(dimensions.into()).unwrap();
+            texture.resize(dimensions).unwrap();
         }
     }
 
@@ -186,18 +186,20 @@ impl SceneRenderer {
         }
 
         // Then render the shadows
-        self.shadow_mapping.as_mut().map(|mapping| unsafe {
-            // Update the lightspace matrix
-            // The first directional light that we find will be used as the sunlight
-            let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-
-            if let Some((_parameters, transform)) = first {
-                // Only render directional shadow map if we have a sun
-                mapping.update_matrix(*transform.rotation);
-                // Then render shadows
-                mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
+        if let Some(mapping) = &mut self.shadow_mapping {
+            unsafe {
+                // Update the lightspace matrix
+                // The first directional light that we find will be used as the sunlight
+                let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
+    
+                if let Some((_parameters, transform)) = first {
+                    // Only render directional shadow map if we have a sun
+                    mapping.update_matrix(*transform.rotation);
+                    // Then render shadows
+                    mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
+                }
             }
-        });
+        }
 
         // Render the deferred quad
         unsafe {

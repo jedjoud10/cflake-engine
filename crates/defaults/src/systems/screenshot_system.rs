@@ -2,7 +2,7 @@ use std::fs::OpenOptions;
 use std::io::BufWriter;
 
 use image::{DynamicImage, RgbImage, ImageFormat};
-use time::{OffsetDateTime, PrimitiveDateTime};
+use time::{OffsetDateTime};
 use world::ecs::component::ComponentQuerySet;
 use world::input::Keys;
 use world::World;

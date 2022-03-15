@@ -130,7 +130,6 @@ impl ComponentSet {
         for (cbitfield, _) in &components_elems {
             entity.components.remove(cbitfield).unwrap();
         }
-        drop(entity);
 
         // And finally remove the component group from the required subsystems
         let mut lock = self.to_remove.borrow_mut();

@@ -3,7 +3,6 @@ use std::{ffi::c_void, mem::ManuallyDrop};
 use assets::Asset;
 use getset::{CopyGetters, Getters};
 
-use image::GenericImageView;
 
 use crate::{
     basics::texture::{
@@ -174,7 +173,8 @@ impl Asset for Texture2D {
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
         // Flip
         let image = image.flipv();
-        let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
+        let (width, height) = (image.width() as u16, image.height() as u16);
+        let bytes = image.into_bytes();
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
         Some(TextureBuilder::default().dimensions(vek::Extent2::new(width, height)).bytes(bytes).build())
     }

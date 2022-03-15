@@ -4,7 +4,7 @@ use crate::basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, Texture2D, TextureBuilder, TextureFlags, TextureParams},
+    texture::{Texture2D, TextureBuilder, TextureFlags, TextureParams},
 };
 
 use super::{Handle, Pipeline};

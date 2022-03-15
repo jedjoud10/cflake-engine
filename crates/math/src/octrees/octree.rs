@@ -73,7 +73,6 @@ impl Octree {
             if octree_node.can_subdivide(&target, self.depth, &self.hsettings) {
                 // Subidivide
                 let subdivided = octree_node.subdivide();
-                drop(octree_node);
 
                 // Insert the new nodes into the tree
                 let mut children_keys = [NodeKey::null(); 8];
