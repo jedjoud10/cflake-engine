@@ -63,7 +63,7 @@ fn run(world: &mut World, data: ComponentQuerySet) {
         }
     };
     let terrain_ = world.globals.get_mut::<Terrain>();
-    if world.input.map_toggled("update_terrain") || terrain_.is_err() {
+    if world.input.toggled("update_terrain") || terrain_.is_err() {
         // No need to update the terrain
         return;
     }
@@ -115,5 +115,5 @@ pub fn system(world: &mut World) {
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .event(run)
         .build();
-    world.input.bind_key_toggle(Keys::Y, "update_terrain");
+    world.input.bind_toggle(Keys::Y, "update_terrain");
 }

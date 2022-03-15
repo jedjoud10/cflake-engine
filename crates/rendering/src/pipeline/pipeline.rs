@@ -58,7 +58,7 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
     let wb = WindowBuilder::new()
         .with_resizable(true)
         .with_title(title)
-        .with_inner_size(LogicalSize::new(DEFAULT_WINDOW_SIZE.x as u32, DEFAULT_WINDOW_SIZE.y as u32));
+        .with_inner_size(LogicalSize::new(DEFAULT_WINDOW_SIZE.w as u32, DEFAULT_WINDOW_SIZE.h as u32));
     let wc = ContextBuilder::new()
         .with_double_buffer(Some(true))
         .with_vsync(vsync)
@@ -85,7 +85,7 @@ fn init_opengl(context: &WindowedContext<PossiblyCurrent>) {
             panic!()
         }
 
-        gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.x as i32, DEFAULT_WINDOW_SIZE.y as i32);
+        gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.w as i32, DEFAULT_WINDOW_SIZE.h as i32);
         SceneRenderer::init_opengl();
     }
 }
@@ -159,7 +159,7 @@ impl Pipeline {
     pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
         match event {
             WindowEvent::Resized(size) => {
-                self.window.dimensions = vek::Vec2::new(size.width as u16, size.height as u16);
+                self.window.dimensions = vek::Extent2::new(size.width.max(1) as u16, size.height.max(1) as u16);
                 renderer.resize(self)
             }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,

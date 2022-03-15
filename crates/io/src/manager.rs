@@ -62,7 +62,7 @@ impl IOManager {
             writeln!(&mut writer, "{}", message).unwrap();
         }
     }
-    // Create a file if it is not created yet
+    // Create a file relative to the game's data folder
     pub fn create_file(&self, file_path: impl AsRef<Path>) {
         let mut path = self.local_path.clone().unwrap();
         path.push(file_path);
@@ -71,6 +71,12 @@ impl IOManager {
             std::fs::create_dir_all(parent).unwrap();
             File::create(path).unwrap();
         }
+    }
+    // Load a file relative to the game's data folder
+    pub fn open_file(&self, file_path: impl AsRef<Path>, options: &OpenOptions) -> io::Result<File> {
+        let mut path = self.local_path.clone().unwrap();
+        path.push(file_path);
+        options.open(path)
     }
     // Load a struct from a file
     pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: impl AsRef<Path>) -> io::Result<T> {

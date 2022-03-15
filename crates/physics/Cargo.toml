@@ -11,4 +11,4 @@ vek = "0.15.6"
 math = { path = "../math" }
 rapier3d = "0.11.1"
 ahash = "0.7.6"
-enum-as-inner = "0.3.3"
+enum-as-inner = "0.4.0"

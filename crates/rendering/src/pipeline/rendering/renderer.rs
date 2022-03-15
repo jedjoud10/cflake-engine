@@ -1,3 +1,5 @@
+use std::ffi::c_void;
+
 use super::{common, RenderingSettings, ShadowMapping};
 use crate::{
     basics::{
@@ -7,7 +9,7 @@ use crate::{
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
-    utils::DataType,
+    utils::{DataType, Window},
 };
 use assets::assetc;
 use gl::types::GLuint;
@@ -170,7 +172,7 @@ impl SceneRenderer {
 
     // Prepare the FBO and clear the buffers
     pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
-        gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
+        gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
@@ -255,5 +257,19 @@ impl SceneRenderer {
         common::render(quad_mesh);
         gl::Enable(gl::DEPTH_TEST);
         gl::BindVertexArray(0);
+    }
+
+    // Screenshot the current frame
+    // This must be done after we render everything
+    pub fn screenshot(&mut self, dimensions: vek::Extent2<u16>) -> Vec<u8> {
+        // Create a vector that'll hod all of our RGB bytes
+        let bytes_num = dimensions.as_::<usize>().product() * 3;
+        let mut bytes = vec![0; bytes_num];
+        // Read
+        unsafe {
+            gl::ReadPixels(0, 0, dimensions.w as i32, dimensions.h as i32, gl::RGB, gl::UNSIGNED_BYTE, bytes.as_mut_ptr() as *mut c_void);
+            gl::Finish();
+        }
+        bytes
     }
 }

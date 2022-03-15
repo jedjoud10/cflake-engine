@@ -1,5 +1,5 @@
 use crate::buffers::Buffers;
-use egui::{epaint::Mesh, ClippedMesh, Color32, FontImage, Output, Rect};
+use egui::{epaint::Mesh, ClippedMesh, Color32, Rect};
 use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams};
 use rendering::gl;
 use rendering::{
@@ -52,8 +52,9 @@ impl Painter {
         // Get the rect size so we can use the scissor test
         let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
         let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let clip_min = clip_min.clamped(vek::Vec2::zero(), pipeline.window().dimensions().as_());
-        let clip_max = clip_max.clamped(vek::Vec2::zero(), pipeline.window().dimensions().as_());
+        let dims = pipeline.window().dimensions().as_().into();
+        let clip_min = clip_min.clamped(vek::Vec2::zero(), dims);
+        let clip_max = clip_max.clamped(vek::Vec2::zero(), dims);
         let clip_min: vek::Vec2<i32> = clip_min.round().as_();
         let clip_max: vek::Vec2<i32> = clip_max.round().as_();
 
@@ -61,7 +62,7 @@ impl Painter {
         unsafe {
             gl::Scissor(
                 clip_min.x,
-                pipeline.window().dimensions().y as i32 - clip_max.y,
+                dims.y as i32 - clip_max.y,
                 clip_max.x - clip_min.x,
                 clip_max.y - clip_min.y,
             );
@@ -72,9 +73,10 @@ impl Painter {
         self.buffers.draw();
     }
     // Upload the egui font texture and update it's OpenGL counterpart if it changed
-    fn upload_egui_font_texture(&mut self, pipeline: &mut Pipeline, image: &FontImage) {
+    fn upload_egui_font_texture(&mut self, pipeline: &mut Pipeline) {
+        /*
         // Only update if we need to
-        if Some(image.version) == self.egui_font_texture_version {
+        if Some(image) == self.egui_font_texture_version {
             return;
         }
         // I hate this
@@ -97,15 +99,16 @@ impl Painter {
         } else {
             self.egui_font_texture_version = None;
         }
+        */
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, font_image: &FontImage, _output: Output) {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>) {
         // No need to draw if we don't have any meshes or if our shader is invalid
         if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
             return;
         }
         // Le texture
-        self.upload_egui_font_texture(pipeline, font_image);
+        self.upload_egui_font_texture(pipeline);
 
         // Since all the elements use the same shader, we can simply set it once
         let shader = pipeline.get(&self.shader).unwrap();

@@ -130,7 +130,7 @@ impl ShadowMapping {
 
         // Reset
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        gl::Viewport(0, 0, pipeline.window().dimensions().x as i32, pipeline.window().dimensions().y as i32);
+        gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
         gl::Enable(gl::CULL_FACE);
 
         Ok(())

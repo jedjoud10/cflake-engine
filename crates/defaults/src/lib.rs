@@ -78,6 +78,7 @@ pub fn load_default_systems(world: &mut World) {
 
     rendering_system::system(world);
     gui_system::system(world);
+    screenshot_system::system(world);
 
     // We gotta add the default globals
     world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();

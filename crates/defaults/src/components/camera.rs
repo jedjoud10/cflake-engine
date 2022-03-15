@@ -19,7 +19,7 @@ impl Camera {
             horizontal_fov: fov,
             clip_planes: vek::Vec2::new(clipn, clipf),
         };
-        camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.x as f32, DEFAULT_WINDOW_SIZE.y as f32);
+        camera.update_projection_matrix(DEFAULT_WINDOW_SIZE.w as f32, DEFAULT_WINDOW_SIZE.h as f32);
         camera
     }
     // Update the projection matrix of this camera

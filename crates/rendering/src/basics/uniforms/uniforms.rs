@@ -34,7 +34,7 @@ impl<'a> Uniforms<'a> {
         // Set some global uniforms while we're at it
         self.set_f32("_time", self.pipeline.elapsed());
         self.set_f32("_delta", self.pipeline.delta());
-        self.set_vec2i32("_resolution", self.pipeline.window().dimensions().as_());
+        self.set_vec2i32("_resolution", self.pipeline.window().dimensions().as_().into());
         self.set_vec2f32("_nf_planes", self.pipeline.camera().clip_planes);
     }
     // U32

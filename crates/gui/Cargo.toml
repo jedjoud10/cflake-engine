@@ -9,7 +9,7 @@ edition = "2021"
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 math = { path = "../math" }
-egui = "0.16.1"
+egui = "0.17.0"
 vek = "0.15.6"
-egui-winit = "0.16.0"
+egui-winit = "0.17.0"
 parking_lot = "0.12.0"
