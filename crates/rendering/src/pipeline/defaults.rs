@@ -4,7 +4,7 @@ use crate::basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureParams, TextureFlags},
+    texture::{Texture, Texture2D, TextureBuilder, TextureParams, TextureFlags},
 };
 
 use super::{Handle, Pipeline};
@@ -44,7 +44,7 @@ impl DefaultElements {
         let black = TextureBuilder::default().params(params.clone()).bytes(vec![0, 0, 0, 255]).dimensions(vek::Vec2::one()).build();
         let black = pipeline.insert(black);
 
-        let normal_map = TextureBuilder::default().params(params.clone()).bytes(vec![127, 127, 255, 255]).dimensions(vek::Vec2::one()).build();
+        let normal_map = TextureBuilder::default().params(params).bytes(vec![127, 127, 255, 255]).dimensions(vek::Vec2::one()).build();
         let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine

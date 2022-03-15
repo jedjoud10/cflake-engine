@@ -1,7 +1,7 @@
 use crate::{
     basics::{
         shader::Shader,
-        uniforms::{Uniforms, UniformsSet},
+        uniforms::{UniformsSet},
     },
     object::PipelineElement,
     pipeline::*,

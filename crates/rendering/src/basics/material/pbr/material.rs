@@ -2,7 +2,6 @@ use crate::{
     basics::{
         material::{Material, MaterialBuilder},
         shader::Shader,
-        texture::Texture2D,
         uniforms::UniformsSet,
     },
     pipeline::Handle,
@@ -21,7 +20,7 @@ pub struct PbrMaterialBuilder {
 
 // Convert
 impl MaterialBuilder for PbrMaterialBuilder {
-    fn build_with_shader(self, pipeline: &crate::pipeline::Pipeline, shader: Handle<Shader>) -> Material {
+    fn build_with_shader(self, _pipeline: &crate::pipeline::Pipeline, shader: Handle<Shader>) -> Material {
         let textures = self.textures;
         let params = self.params;
 

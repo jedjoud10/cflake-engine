@@ -1,4 +1,4 @@
-use getset::{CopyGetters, Getters, MutGetters, Setters};
+use getset::{CopyGetters, Getters, MutGetters};
 use glutin::{
     dpi::LogicalSize,
     event::WindowEvent,

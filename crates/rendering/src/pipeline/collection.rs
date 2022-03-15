@@ -53,11 +53,11 @@ impl<T: PipelineElement> PipelineCollection<T> {
     // Insert an element to the collection, returning it's specific handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
         let key = self.inner.insert(value);
-        let handle = Handle {
+        
+        Handle {
             key: Arc::new(key),
             to_remove: Some(self.to_remove.clone()),
             _phantom: PhantomData::default(),
-        };
-        handle
+        }
     }
 }

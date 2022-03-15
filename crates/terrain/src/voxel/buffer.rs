@@ -65,7 +65,7 @@ impl VoxelDataBuffer {
         let borrowed = self.buffer.borrow();
         let shared_voxel_data = borrowed.get(idx).unwrap();
         let mut data = shared_voxel_data.data.lock();
-        data.store(&stored);
+        data.store(stored);
         idx
     }
     // Get

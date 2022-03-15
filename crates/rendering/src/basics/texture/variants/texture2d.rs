@@ -1,14 +1,14 @@
-use std::{ffi::c_void, mem::ManuallyDrop, ptr::null};
+use std::{ffi::c_void, mem::ManuallyDrop};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
-use gl::types::{GLint, GLuint};
+
 use image::GenericImageView;
 
 use crate::{
     basics::texture::{
-        apply_customs, generate_filters, generate_mipmaps, get_ifd, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture,
-        TextureBytes, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode,
+        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture,
+        TextureBytes, TextureFlags, TextureParams,
     },
     object::PipelineElement,
 };
@@ -176,7 +176,7 @@ impl Asset for Texture2D {
         // Flip
         let image = image.flipv();
         let (bytes, width, height) = (image.to_bytes(), image.width() as u16, image.height() as u16);
-        assert!(bytes.len() != 0, "Cannot load in an empty texture!");
+        assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
         Some(TextureBuilder::default().dimensions(vek::Vec2::new(width, height)).bytes(bytes).build())
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     components::{Camera, Chunk, Transform},
-    globals::{ChunksManager, GlobalWorldData, Terrain},
+    globals::{GlobalWorldData, Terrain},
 };
 use world::{
     ecs::{

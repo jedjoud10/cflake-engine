@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicI32, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI32, Ordering};
 
 // System execution order
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]

@@ -1,4 +1,4 @@
-use world::ecs::{component::Component, entity::EntityKey};
+use world::ecs::{component::Component};
 // The transform component
 #[derive(Component, Clone)]
 pub struct Transform {

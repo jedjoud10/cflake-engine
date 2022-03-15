@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Collider, ColliderGeometry, ColliderMaterial, Renderer, RigidBody, RigidBodyType, Transform},
+        components::{self, Camera, Transform},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -10,7 +10,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture, Texture2D, TextureFlags, TextureLayout, TextureParams, TextureFilter},
+        texture::{BundledTextureBuilder, Texture2D, TextureFlags, TextureParams},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},

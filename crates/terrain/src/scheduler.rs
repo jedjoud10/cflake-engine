@@ -1,13 +1,10 @@
-use crate::{mesher::Mesher, ChunkCoords, SharedVoxelData, VoxelData, VoxelDataBuffer};
-use rendering::basics::mesh::{GeometryBuilder, Mesh};
+use crate::{mesher::Mesher, ChunkCoords, VoxelDataBuffer};
+use rendering::basics::mesh::{GeometryBuilder};
 use std::{
-    cell::{Cell, RefCell},
+    cell::{RefCell},
     sync::{
-        atomic::AtomicBool,
-        mpsc::{Receiver, Sender, SyncSender},
-        Arc,
+        mpsc::{Receiver, Sender},
     },
-    thread::JoinHandle,
 };
 use threadpool::ThreadPool;
 

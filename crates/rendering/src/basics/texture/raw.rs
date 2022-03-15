@@ -1,8 +1,8 @@
-use std::{ffi::c_void, ptr::null};
 
-use super::{get_ifd, TextureBytes, TextureFlags, TextureFormat, TextureLayout, TextureParams};
+
+use super::{get_ifd, TextureFlags, TextureFormat, TextureParams};
 use getset::{CopyGetters, Getters};
-use gl::types::{GLint, GLuint};
+use gl::types::{GLuint};
 
 // Underlying texture storage
 #[derive(Getters, CopyGetters)]

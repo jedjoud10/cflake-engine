@@ -1,11 +1,10 @@
-use rendering::basics::mesh::{GeometryBuilder, Mesh};
+use rendering::basics::mesh::{GeometryBuilder};
 
 use crate::{
     mesher::{
         tables::{MS_CASE_TO_EDGES, MS_CASE_TO_TRIS, MS_EDGE_TO_VERTICES, SQUARES_VERTEX_TABLE},
         MesherSettings, SKIRTS_DIR_FLIP, SKIRTS_DIR_INDEXING_FN, SKIRTS_DIR_INDEX_OFFSET, SKIRTS_DIR_TRANSFORM_FN,
-    },
-    ChunkCoords, VoxelData, CHUNK_SIZE,
+    }, VoxelData, CHUNK_SIZE,
 };
 
 // A skirts builder, useful since we can keep track of the current iteration as a field, which organizes somestuff

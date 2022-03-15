@@ -90,7 +90,8 @@ impl SceneRenderer {
             .map(|(internal_format, data_type)| {
                 // Create a texture layout
                 let layout = TextureLayout::new(data_type, internal_format);
-                let texture = pipeline.insert(
+                
+                pipeline.insert(
                     TextureBuilder::default()
                         .dimensions(dimensions)
                         .params(TextureParams {
@@ -99,8 +100,7 @@ impl SceneRenderer {
                             ..Default::default()
                         })
                         .build(),
-                );
-                texture
+                )
             })
             .collect::<Vec<Handle<Texture2D>>>();
 

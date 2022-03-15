@@ -1,16 +1,16 @@
 use std::ffi::c_void;
 
-use super::{Texture2D, TextureBuilder};
+use super::{Texture2D};
 use crate::{
     basics::texture::{
-        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFilter,
-        TextureFlags, TextureLayout, TextureParams, TextureWrapMode,
+        generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes,
+        TextureFlags, TextureParams,
     },
     object::PipelineElement,
     pipeline::{Handle, Pipeline},
 };
 use getset::{CopyGetters, Getters};
-use gl::types::{GLint, GLuint};
+
 
 // A combination of multiple texture2D's
 // This represents an OpenGL Array Texture

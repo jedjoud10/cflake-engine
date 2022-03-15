@@ -2,7 +2,6 @@ use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
     ecs::{
         component::{ComponentQueryParams, ComponentQuerySet},
-        system::SystemExecutionOrder,
     },
     rendering::{
         basics::lights::LightTransform,

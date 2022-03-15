@@ -1,6 +1,6 @@
 use world::ecs::component::{ComponentQueryParams, ComponentQuerySet};
 
-use world::ecs::system::SystemExecutionOrder;
+
 use world::World;
 
 use crate::components::{Camera, Transform};
