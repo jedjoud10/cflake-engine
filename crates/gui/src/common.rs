@@ -1,6 +1,6 @@
 use egui::{Color32, ImageData, TextureId};
 
-// Get the u64 ID from a TextureID 
+// Get the u64 ID from a TextureID
 pub fn get_id(tid: TextureId) -> u64 {
     match tid {
         egui::TextureId::Managed(id) => id,

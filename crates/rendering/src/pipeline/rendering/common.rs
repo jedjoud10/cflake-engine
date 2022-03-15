@@ -41,9 +41,9 @@ pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &Rendere
     // Create some uniforms
     let mut uniforms = Uniforms::new(shader.program(), pipeline);
 
-    // Set the uniforms 
+    // Set the uniforms
     uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
-    
+
     // Check if we really need to set the material uniforms
     if last_material != renderer.material {
         uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
@@ -70,7 +70,7 @@ pub struct RenderedModel<'b> {
     pub material: &'b Handle<Material>,
 }
 
-// The last model that we have drawn 
+// The last model that we have drawn
 pub struct LastRenderedModelInfo<'b> {
     pub material: &'b Handle<Material>,
 }

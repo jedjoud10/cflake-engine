@@ -1,8 +1,8 @@
 use std::fs::OpenOptions;
 use std::io::BufWriter;
 
-use image::{DynamicImage, RgbImage, ImageFormat};
-use time::{OffsetDateTime};
+use image::{DynamicImage, ImageFormat, RgbImage};
+use time::OffsetDateTime;
 use world::ecs::component::ComponentQuerySet;
 use world::input::Keys;
 use world::World;
@@ -16,9 +16,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
 
         // Get the current time
         let time = OffsetDateTime::now_local().unwrap();
-        let format = time::format_description::parse(
-            "y[year]-m[month]-d[day]-h[hour]-m[minute]-s[second]",
-        ).unwrap();
+        let format = time::format_description::parse("y[year]-m[month]-d[day]-h[hour]-m[minute]-s[second]").unwrap();
         let formatted = time.format(&format).unwrap();
 
         // And use it to format the name of the screenshot
@@ -28,7 +26,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         world.io.create_file(&name);
         let mut options = OpenOptions::new();
         options.write(true).truncate(true);
-        
+
         // Write to a dynamic image
         let image = DynamicImage::ImageRgb8(RgbImage::from_vec(dimensions.w as u32, dimensions.h as u32, bytes).unwrap());
         let image = image.flipv();

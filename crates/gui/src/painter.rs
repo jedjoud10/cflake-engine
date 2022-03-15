@@ -24,7 +24,7 @@ pub struct Painter {
     pub(crate) shader: Handle<Shader>,
 
     // Multiple textures
-    pub(crate) textures: HashMap::<u64, Handle<Texture2D>, BuildHasherDefault<NoHashHasher<u64>>>,
+    pub(crate) textures: HashMap<u64, Handle<Texture2D>, BuildHasherDefault<NoHashHasher<u64>>>,
     pub(crate) buffers: Buffers,
 }
 
@@ -45,7 +45,7 @@ impl Painter {
     }
     // Set uniforms
     fn set_mesh_uniforms(&mut self, mesh: &Mesh, uniforms: &mut Uniforms, last_texture: &mut Handle<Texture2D>) {
-        // Get ID 
+        // Get ID
         let id = match mesh.texture_id {
             egui::TextureId::Managed(id) => id,
             egui::TextureId::User(_) => todo!(),
@@ -54,8 +54,8 @@ impl Painter {
         let handle = self.textures.get(&id).unwrap();
         // Only set the uniform if we need to
         if handle != last_texture {
-            uniforms.set_texture2d("u_sampler", handle);       
-            *last_texture = handle.clone(); 
+            uniforms.set_texture2d("u_sampler", handle);
+            *last_texture = handle.clone();
         }
     }
     // Draw a single egui mesh
@@ -73,12 +73,7 @@ impl Painter {
 
         //scissor Y coordinate is from the bottom
         unsafe {
-            gl::Scissor(
-                clip_min.x,
-                dims.y as i32 - clip_max.y,
-                clip_max.x - clip_min.x,
-                clip_max.y - clip_min.y,
-            );
+            gl::Scissor(clip_min.x, dims.y as i32 - clip_max.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
         }
 
         // Gotta fil the buffers with new data, then we can draw
@@ -130,7 +125,7 @@ impl Painter {
 
         // Since all the elements use the same shader, we can simply set it once
         let shader = pipeline.get(&self.shader).unwrap();
-        // We can bind once, and mutate multiple times 
+        // We can bind once, and mutate multiple times
         let mut uniforms = Uniforms::new(shader.program(), pipeline);
 
         // OpenGL settings
@@ -149,7 +144,7 @@ impl Painter {
         // Draw each mesh
         let mut last_texture = Handle::<Texture2D>::default();
         for ClippedMesh(rect, mesh) in clipped_meshes {
-            self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);            
+            self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
             self.draw_mesh(rect, mesh, pipeline);
         }
 

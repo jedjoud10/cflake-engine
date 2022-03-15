@@ -3,7 +3,6 @@ use std::{ffi::c_void, mem::ManuallyDrop};
 use assets::Asset;
 use getset::{CopyGetters, Getters};
 
-
 use crate::{
     basics::texture::{
         apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams,

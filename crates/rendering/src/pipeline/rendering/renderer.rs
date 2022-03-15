@@ -9,7 +9,7 @@ use crate::{
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
-    utils::{DataType},
+    utils::DataType,
 };
 use assets::assetc;
 use gl::types::GLuint;
@@ -191,7 +191,7 @@ impl SceneRenderer {
                 // Update the lightspace matrix
                 // The first directional light that we find will be used as the sunlight
                 let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-    
+
                 if let Some((_parameters, transform)) = first {
                     // Only render directional shadow map if we have a sun
                     mapping.update_matrix(*transform.rotation);
@@ -270,7 +270,15 @@ impl SceneRenderer {
         let mut bytes = vec![0; bytes_num];
         // Read
         unsafe {
-            gl::ReadPixels(0, 0, dimensions.w as i32, dimensions.h as i32, gl::RGB, gl::UNSIGNED_BYTE, bytes.as_mut_ptr() as *mut c_void);
+            gl::ReadPixels(
+                0,
+                0,
+                dimensions.w as i32,
+                dimensions.h as i32,
+                gl::RGB,
+                gl::UNSIGNED_BYTE,
+                bytes.as_mut_ptr() as *mut c_void,
+            );
             gl::Finish();
         }
         bytes

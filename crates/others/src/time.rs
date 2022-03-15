@@ -45,7 +45,7 @@ impl Time {
         self.delta = delta;
         self.elapsed += delta;
         // Update current frame
-        if let None = self.current {
+        if self.current.is_none() {
             // First frame ever
             self.current = Some(FrameTimings {
                 instant: Instant::now(),

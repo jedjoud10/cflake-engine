@@ -2,7 +2,7 @@ use crate::object::PipelineElement;
 
 use parking_lot::Mutex;
 use slotmap::Key;
-use std::{marker::PhantomData, sync::Arc, hash::Hash};
+use std::{hash::Hash, marker::PhantomData, sync::Arc};
 
 // A unique pipeline collection key
 slotmap::new_key_type! {

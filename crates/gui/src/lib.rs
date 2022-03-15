@@ -1,7 +1,7 @@
 mod buffers;
+mod common;
 mod manager;
 mod painter;
-mod common;
 pub use egui;
 pub use egui_winit;
 pub use manager::*;
