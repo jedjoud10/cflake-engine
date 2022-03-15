@@ -1,32 +1,30 @@
 use cflake_engine::{
-    assets::{self},
-    defaults::components::{self, Transform},
+    defaults::components::{Camera, Collider, ColliderGeometry, ColliderMaterial, Light, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::ComponentLinkingGroup,
-    rendering::basics::lights::{LightParameters, LightType::Directional},
+    rendering::basics::lights::{LightParameters, LightType},
     vek, World,
 };
 // A game with a test camera
 fn main() {
-    cflake_engine::start("DevJed", "cflake-engine-example-camera", init, cflake_engine::defaults::systems::flycam_system::system)
+    cflake_engine::start("DevJed", "cflake-engine-example-mesh", init, cflake_engine::defaults::systems::flycam_system::system)
 }
 // Init the simple camera
 fn init(world: &mut World) {
     // ----Start the world----
-    assets::init!("/examples/assets/");
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group.link(components::Camera::new(90.0, 2.0, 9000.0)).unwrap();
+    group.link(Camera::new(90.0, 2.0, 9000.0)).unwrap();
     group.link(Transform::default()).unwrap();
     world.ecs.add(group).unwrap();
 
     // Create the directional light source
-    let light = components::Light {
-        light: Directional {
+    let light = Light {
+        light: LightType::Directional {
             params: LightParameters::default(),
         },
     };
     let light_transform = Transform {
-        rotation: vek::Quaternion::<f32>::rotation_x(-90f32.to_radians()),
+        rotation: vek::Quaternion::<f32>::rotation_x(-30f32.to_radians()),
         ..Default::default()
     };
     // And add it to the world as an entity
@@ -35,14 +33,18 @@ fn init(world: &mut World) {
     group.link(light).unwrap();
     world.ecs.add(group).unwrap();
 
-    // Le axe
+    // Create a flat surface
     let mut group = ComponentLinkingGroup::default();
     group
-        .link(components::Renderer {
-            mesh: world.pipeline.defaults().sphere.clone(),
+        .link(Transform {
+            scale: vek::Vec3::new(50.0, 1.0, 50.0),
             ..Default::default()
         })
         .unwrap();
-    group.link(Transform::default()).unwrap();
+    let renderer = Renderer {
+        mesh: world.pipeline.defaults().cube.clone(),
+        ..Default::default()
+    };
+    group.link(renderer).unwrap();
     world.ecs.add(group).unwrap();
 }

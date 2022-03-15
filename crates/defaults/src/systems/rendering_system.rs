@@ -59,7 +59,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Before we do anything, we must update each model matrix if it needs to be updated
     for (_, components) in query.all.iter_mut() {
         // Only update if we need to
-        if components.was_mutated::<Transform>().unwrap_or_default() || components.was_mutated::<Renderer>().unwrap_or_default() {
+        if components.was_mutated::<Transform>().unwrap() || components.was_mutated::<Renderer>().unwrap() {
             let transform = components.get::<Transform>().unwrap();
             let matrix = transform.transform_matrix();
             let renderer = components.get_mut::<Renderer>().unwrap();

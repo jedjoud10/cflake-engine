@@ -30,8 +30,8 @@ impl<World> Default for ECSManager<World> {
 // Global code for the Entities, Components, and Systems
 impl<World> ECSManager<World> {
     // Create the proper execution settings for systems, and return them
-    pub fn ready(&mut self) -> (Rc<RefCell<Vec<System<World>>>>, SystemSettings) {
-        self.components.ready_for_frame().unwrap();
+    pub fn ready(&mut self, frame: u128) -> (Rc<RefCell<Vec<System<World>>>>, SystemSettings) {
+        self.components.ready_for_frame(frame).unwrap();
         (
             self.systems.inner.clone(),
             SystemSettings {

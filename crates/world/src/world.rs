@@ -66,7 +66,7 @@ impl World {
         self.pipeline.start_frame(&mut self.renderer, self.time.delta, self.time.elapsed);
         self.gui.begin_frame(self.pipeline.window().context().window());
 
-        let (systems, settings) = self.ecs.ready();
+        let (systems, settings) = self.ecs.ready(self.time.current.as_ref().unwrap().count);
         let systems = systems.borrow();
         ECSManager::<World>::execute_systems(systems, self, settings);
 

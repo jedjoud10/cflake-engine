@@ -147,7 +147,7 @@ impl ComponentSet {
         Ok(())
     }
     // Called at the start of the frame
-    pub(crate) fn ready_for_frame(&mut self) -> Result<(), ComponentError> {
+    pub(crate) fn ready_for_frame(&mut self, frame: u128) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();
@@ -165,7 +165,7 @@ impl ComponentSet {
             }
         }
         // Also clear the bitfield indicating which components have been mutated
-        self.mutated_components.clear();
+        if frame != 0 { self.mutated_components.clear(); }
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID
@@ -177,6 +177,7 @@ impl ComponentSet {
         let key = components.insert(cell);
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
+        dbg!("Write", index);
         (key, ptr)
     }
     // Remove a specified component from the list

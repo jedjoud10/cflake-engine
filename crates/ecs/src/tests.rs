@@ -54,10 +54,10 @@ pub mod test {
 
     // Run the systems in sync, but their component updates are not
     // Used only for testing
-    fn run_systems<W>(ecs: &mut ECSManager<W>, world: &mut W) {
-        ecs.components.ready_for_frame().unwrap();
-        let (systems, settings) = ecs.ready();
+    fn run_systems<W>(ecs: &mut ECSManager<W>, world: &mut W, frame: &mut u128) {
+        let (systems, settings) = ecs.ready(*frame);
         ECSManager::execute_systems(systems.borrow(), world, settings);
+        *frame += 1;
     }
 
     #[test]
@@ -65,6 +65,7 @@ pub mod test {
     pub fn test() {
         // Also create the context
         let mut world = World;
+        let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<World>::default();
 
@@ -85,15 +86,16 @@ pub mod test {
         // The ID is valid now
         assert!(ecs.entities.get(key2).is_ok());
         // Run the system for two frames
-        run_systems(&mut ecs, &mut world);
+        run_systems(&mut ecs, &mut world, &mut frame);
         ecs.entities.remove(key3, &mut ecs.components, &mut ecs.systems).unwrap();
-        run_systems(&mut ecs, &mut world);
+        run_systems(&mut ecs, &mut world, &mut frame);
     }
     #[test]
     // Multithreaded stress test
     pub fn multithreaded_test() {
         // Also create the context
         let mut world = World;
+let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<World>::default();
 
@@ -115,7 +117,7 @@ pub mod test {
         }
         for _x in 0..10 {
             let i = std::time::Instant::now();
-            run_systems(&mut ecs, &mut world);
+            run_systems(&mut ecs, &mut world, &mut frame);
             println!("Took {}µs to update", i.elapsed().as_micros())
         }
     }
@@ -123,6 +125,7 @@ pub mod test {
     pub fn test_direct() {
         // Also create the context
         let mut world = World;
+let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<World>::default();
 
@@ -141,7 +144,7 @@ pub mod test {
         group.link(Tagged::new("Some interesting tag")).unwrap();
         ecs.components.link(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
         assert_ne!(ecs.entities.get(key).unwrap().cbitfield, Bitfield::<u32>::default());
-        run_systems(&mut ecs, &mut world);
+        run_systems(&mut ecs, &mut world, &mut frame);
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
@@ -152,6 +155,7 @@ pub mod test {
     pub fn queries() {
         // Also create the context
         let mut world = 0;
+        let mut frame = 0; 
         // Create the main ECS manager
         let mut ecs = ECSManager::<i32>::default();
 
@@ -201,9 +205,9 @@ pub mod test {
         drop(systems);
 
         // Steps
-        run_systems(&mut ecs, &mut world);
-        run_systems(&mut ecs, &mut world);
+        run_systems(&mut ecs, &mut world, &mut frame);
+        run_systems(&mut ecs, &mut world, &mut frame);
         ecs.remove(entity_key).unwrap();
-        run_systems(&mut ecs, &mut world);
+        run_systems(&mut ecs, &mut world, &mut frame);
     }
 }

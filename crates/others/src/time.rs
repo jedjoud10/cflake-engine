@@ -13,7 +13,7 @@ pub struct Time {
     // Frame
     pub elapsed: f32,
     pub delta: f32,
-    pub current: FrameTimings,
+    pub current: Option<FrameTimings>,
 
     // Profiler
     pub average_delta: f32,
@@ -27,10 +27,7 @@ impl Default for Time {
             delta: Default::default(),
             average_delta: Default::default(),
             averages: Default::default(),
-            current: FrameTimings {
-                instant: Instant::now(),
-                count: 0,
-            },
+            current: None,
         }
     }
 }
@@ -41,8 +38,17 @@ impl Time {
         self.delta = delta;
         self.elapsed += delta;
         // Update current frame
-        self.current.count += 1;
-        self.current.instant = Instant::now();
+        if let None = self.current {
+            // First frame ever
+            self.current = Some(FrameTimings {
+                instant: Instant::now(),
+                count: 0,
+            });
+        } else if let Some(current) = &mut self.current {
+            // Update
+            current.count += 1;
+            current.instant = Instant::now();
+        }
         self.averages.rotate_right(1);
         self.averages[0] = delta;
 
