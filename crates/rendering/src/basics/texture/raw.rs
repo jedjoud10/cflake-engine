@@ -1,8 +1,6 @@
-
-
 use super::{get_ifd, TextureFlags, TextureFormat, TextureParams};
 use getset::{CopyGetters, Getters};
-use gl::types::{GLuint};
+use gl::types::GLuint;
 
 // Underlying texture storage
 #[derive(Getters, CopyGetters)]

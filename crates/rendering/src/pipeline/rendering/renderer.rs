@@ -90,7 +90,7 @@ impl SceneRenderer {
             .map(|(internal_format, data_type)| {
                 // Create a texture layout
                 let layout = TextureLayout::new(data_type, internal_format);
-                
+
                 pipeline.insert(
                     TextureBuilder::default()
                         .dimensions(dimensions.into())

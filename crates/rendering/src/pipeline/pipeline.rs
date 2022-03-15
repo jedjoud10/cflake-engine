@@ -4,7 +4,7 @@ use glutin::{
     event::WindowEvent,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-    ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext, Api,
+    Api, ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, WindowedContext,
 };
 
 use crate::{

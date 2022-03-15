@@ -1,7 +1,7 @@
 mod error;
 mod global;
-mod set;
 mod registry;
+mod set;
 pub use global::*;
-pub use set::*;
 pub use globals_derive::*;
+pub use set::*;

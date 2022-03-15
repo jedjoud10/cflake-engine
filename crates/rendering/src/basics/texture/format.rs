@@ -1,6 +1,6 @@
 use super::TextureLayout;
 use crate::utils::DataType;
-use gl::types::{GLuint};
+use gl::types::GLuint;
 use std::mem::size_of;
 
 // R: -1, 1, float

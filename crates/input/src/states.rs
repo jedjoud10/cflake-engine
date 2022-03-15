@@ -41,7 +41,3 @@ pub enum MapState {
     Button(ButtonState),
     Toggle(ToggleState),
 }
-
-impl MapState {
-    // Default toggle
-}

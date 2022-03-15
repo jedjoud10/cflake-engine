@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bitfield::Bitfield;
 
 use crate::{
-    component::{registry, Component, BoxedComponent},
+    component::{registry, BoxedComponent, Component},
     utils::ComponentLinkingError,
 };
 

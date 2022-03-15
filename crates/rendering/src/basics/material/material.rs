@@ -1,8 +1,5 @@
 use crate::{
-    basics::{
-        shader::Shader,
-        uniforms::{UniformsSet},
-    },
+    basics::{shader::Shader, uniforms::UniformsSet},
     object::PipelineElement,
     pipeline::*,
 };

@@ -1,6 +1,4 @@
-use math::{
-    shapes::{Cuboid, ShapeType, Sphere},
-};
+use math::shapes::{Cuboid, ShapeType, Sphere};
 
 // Edit parameters
 #[derive(Clone)]
@@ -12,10 +10,10 @@ pub struct EditParams {
 
 impl Default for EditParams {
     fn default() -> Self {
-        Self { 
+        Self {
             material: Default::default(),
             color: vek::Rgb::one() * 255,
-            _union: Default::default()
+            _union: Default::default(),
         }
     }
 }
@@ -33,10 +31,7 @@ pub struct Edit {
 impl Edit {
     // Create a new edit
     pub fn new(shape: ShapeType, params: EditParams) -> Self {
-        Self {
-            shape,
-            params,
-        }
+        Self { shape, params }
     }
     // Create a new sphere edit
     pub fn sphere(center: vek::Vec3<f32>, radius: f32, params: EditParams) -> Self {

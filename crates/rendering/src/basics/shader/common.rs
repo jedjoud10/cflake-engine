@@ -104,7 +104,8 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
     // Update the source
     *source = lines.join("\n");
     // Check if we need to continue expanding the includes
-    let need_to_continue = source.lines()
+    let need_to_continue = source
+        .lines()
         .any(|x| x.trim().starts_with("#include ") || x.trim().starts_with("#include_custom ") || x.trim().starts_with("#load ") || x.trim().contains("#constant "));
     Ok(need_to_continue)
 }

@@ -3,10 +3,11 @@ use crate::{
     mesher::{
         settings::MesherSettings,
         tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE, VERTEX_TABLE_USIZE},
-    }, VoxelData, CHUNK_SIZE,
+    },
+    VoxelData, CHUNK_SIZE,
 };
 use ahash::AHashMap;
-use rendering::basics::mesh::{GeometryBuilder};
+use rendering::basics::mesh::GeometryBuilder;
 use std::collections::hash_map::Entry;
 
 // Struct that contains everything related to the marching cubes mesh generation

@@ -1,6 +1,6 @@
 use crate::{source::AudioSource, AudioSourceTracker};
 use rodio::{source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink};
-use std::{cell::RefCell, io::Cursor, sync::Arc, fmt::Debug};
+use std::{cell::RefCell, fmt::Debug, io::Cursor, sync::Arc};
 // A playback cache that contains all the loaded sources
 pub struct AudioPlayer {
     _stream: OutputStream,
@@ -28,11 +28,7 @@ impl Default for AudioPlayer {
 
 impl AudioPlayer {
     // Play a global audio source with modifier
-    pub fn play<T: Source + Send + 'static>(
-        &self,
-        source: &AudioSource,
-        function: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send,
-    ) -> Option<AudioSourceTracker>
+    pub fn play<T: Source + Send + 'static>(&self, source: &AudioSource, function: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send) -> Option<AudioSourceTracker>
     where
         <T as Iterator>::Item: rodio::Sample + Send,
     {
@@ -84,11 +80,9 @@ impl AudioPlayer {
         }
 
         // Remove the sinks that finished playing
-        borrowed.retain(|sink| {
-            match sink {
-                AudioSourceTracker::Global(g) => !g.empty(),
-                AudioSourceTracker::Spatial(s) => !s.empty(),
-            }
+        borrowed.retain(|sink| match sink {
+            AudioSourceTracker::Global(g) => !g.empty(),
+            AudioSourceTracker::Spatial(s) => !s.empty(),
         });
     }
 }

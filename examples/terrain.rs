@@ -5,7 +5,7 @@ use cflake_engine::{
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
-    math::{octrees::HeuristicSettings},
+    math::octrees::HeuristicSettings,
     rendering::basics::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
@@ -46,7 +46,10 @@ fn init(world: &mut World) {
     // Create the directional light source
     let light = components::Light {
         light: Directional {
-            params: LightParameters { strength: 1.0, color: vek::Rgb::one() },
+            params: LightParameters {
+                strength: 1.0,
+                color: vek::Rgb::one(),
+            },
         },
     };
     let light_transform = Transform {
@@ -108,12 +111,16 @@ fn init(world: &mut World) {
         physics: false,
         ..Default::default()
     };
-    let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
+    let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
     // Big sphere
-    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams { 
-        _union: true,
-        material: Some(1),
-        ..Default::default()
-    }));
+    terrain.edit(Edit::sphere(
+        vek::Vec3::unit_y() * -50.0,
+        50.0,
+        EditParams {
+            _union: true,
+            material: Some(1),
+            ..Default::default()
+        },
+    ));
     world.globals.add(terrain).unwrap();
 }

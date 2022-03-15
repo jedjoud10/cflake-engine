@@ -22,14 +22,14 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
     // Custom speed
     let original_speed = 0.1 + (world.input.mouse_scroll() as f32 * 0.1).clamp(0.0, 100.0).powf(2.0);
-    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta as f32;
+    let speed = original_speed.abs().powf(2.0) * original_speed.signum() * 1.0 * world.time.delta() as f32;
     let fov_delta = if world.input.map_held("camera_zoom") {
         1.0
     } else if world.input.map_held("camera_unzoom") {
         -1.0
     } else {
         0.0
-    } * world.time.delta as f32
+    } * world.time.delta() as f32
         * 10.0;
 
     // Actually update the velocity

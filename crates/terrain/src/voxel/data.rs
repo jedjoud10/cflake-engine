@@ -1,7 +1,3 @@
-
-
-
-
 use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
 
 // Some stored voxel data, in SoA form

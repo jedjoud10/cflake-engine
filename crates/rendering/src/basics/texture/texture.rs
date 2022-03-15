@@ -2,7 +2,6 @@ use gl::types::GLuint;
 
 use super::{get_texel_byte_size, RawTexture, TextureBytes, TextureParams};
 
-
 // Shared texture logic
 pub trait Texture {
     // Dimension types

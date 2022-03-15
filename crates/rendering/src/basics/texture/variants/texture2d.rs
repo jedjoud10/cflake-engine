@@ -7,8 +7,7 @@ use image::GenericImageView;
 
 use crate::{
     basics::texture::{
-        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture,
-        TextureBytes, TextureFlags, TextureParams,
+        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams,
     },
     object::PipelineElement,
 };

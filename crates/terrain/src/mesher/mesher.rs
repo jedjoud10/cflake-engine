@@ -1,4 +1,4 @@
-use rendering::basics::mesh::{GeometryBuilder};
+use rendering::basics::mesh::GeometryBuilder;
 
 use super::builder::*;
 use super::settings::MesherSettings;

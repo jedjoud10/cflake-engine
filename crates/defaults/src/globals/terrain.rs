@@ -7,6 +7,7 @@ use world::{
         scheduler::{MeshScheduler, MeshSchedulerSettings},
         ChunkCoords, CHUNK_SIZE,
     },
+    TerrainMesherThreadness, TerrainUserSettings,
 };
 
 mod chunks_manager;
@@ -29,7 +30,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain global
-    pub fn new(settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
+    pub fn new(user_settings: &TerrainUserSettings, settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
             manager: ChunksManager {
                 octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
@@ -38,7 +39,10 @@ impl Terrain {
                 ..Default::default()
             },
             scheduler: MeshScheduler::new(MeshSchedulerSettings {
-                thread_num: Some(1),
+                thread_num: match user_settings.mesher {
+                    TerrainMesherThreadness::Threaded(num) => Some(num),
+                    TerrainMesherThreadness::Single => None,
+                },
             }),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
             editer: EditingManager::default(),

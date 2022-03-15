@@ -1,10 +1,8 @@
 // Export
 mod settings;
-mod state;
 mod world;
 pub use self::world::*;
 pub use settings::*;
-pub use state::*;
 
 pub use ::bitfield;
 pub use assets;

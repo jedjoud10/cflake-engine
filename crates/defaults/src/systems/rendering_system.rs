@@ -1,8 +1,6 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
-    ecs::{
-        component::{ComponentQueryParams, ComponentQuerySet},
-    },
+    ecs::component::{ComponentQueryParams, ComponentQuerySet},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},

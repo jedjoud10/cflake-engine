@@ -1,33 +1,20 @@
 mod graphics;
-use graphics::*;
+pub use graphics::*;
+mod window;
+pub use window::*;
+mod terrain;
+pub use self::terrain::*;
 use io::{serde, Deserialize, Serialize};
-
-fn default_fps_cap() -> i32 {
-    -1
-}
-
 // Some game settings
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(crate = "self::serde")]
 pub struct Settings {
-    // Graphics
-    #[serde(default)]
-    pub vsync: bool,
-    #[serde(default)]
-    pub fullscreen: bool,
-    #[serde(default)]
-    pub shadow_resolution: ShadowResolution,
-    #[serde(default = "default_fps_cap")]
-    pub fps_cap: i32,
-}
+    // Window settings
+    pub window: WindowSettings,
 
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            vsync: Default::default(),
-            fullscreen: Default::default(),
-            shadow_resolution: Default::default(),
-            fps_cap: default_fps_cap(),
-        }
-    }
+    // Shadow settings
+    pub shadows: ShadowSettings,
+
+    // Terrain settings
+    pub terrain: TerrainUserSettings,
 }

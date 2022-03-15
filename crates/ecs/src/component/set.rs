@@ -3,7 +3,7 @@ use bitfield::{AtomicSparseBitfield, Bitfield};
 use slotmap::Key;
 use std::{cell::UnsafeCell, sync::Arc};
 
-use super::{registry, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, BoxedComponent, LinkedComponents};
+use super::{registry, BoxedComponent, Component, ComponentGroupToRemove, ComponentKey, Components, DanglingComponentsToRemove, LinkedComponents};
 use crate::{
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, EntityKey, EntitySet},
     system::SystemSet,
@@ -165,7 +165,9 @@ impl ComponentSet {
             }
         }
         // Also clear the bitfield indicating which components have been mutated
-        if frame != 0 { self.mutated_components.clear(); }
+        if frame != 0 {
+            self.mutated_components.clear();
+        }
         Ok(())
     }
     // Add a specific linked componment to the component manager. Return the said component's ID

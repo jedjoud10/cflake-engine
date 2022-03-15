@@ -1,5 +1,3 @@
-
-
 use crate::{
     components::{Chunk, Transform},
     globals::ChunkGenerationState,

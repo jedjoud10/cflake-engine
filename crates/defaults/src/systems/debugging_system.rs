@@ -6,21 +6,20 @@ use crate::globals::{Physics, Terrain};
 fn run(world: &mut World, _data: ComponentQuerySet) {
     // Check if we need to debug
     let gui = &world.gui.egui;
-    let state = &mut world.state;
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
         let _data = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
         ui.heading("World");
         if ui.button("Quit game").clicked() {
-            *state = WorldState::Exit;
+            world.state = WorldState::Exit;
         }
         // Timings
         ui.separator();
         ui.heading("Timings");
-        ui.label(format!("Time: {:.1}", world.time.elapsed));
-        ui.label(format!("Delta: {:.3}", world.time.average_delta));
-        ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta));
+        ui.label(format!("Time: {:.1}", world.time.elapsed()));
+        ui.label(format!("Delta: {:.3}", world.time.average_delta()));
+        ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta()));
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");

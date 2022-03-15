@@ -1,5 +1,3 @@
-
-
 use crate::{
     components::{Chunk, Collider, ColliderGeometry, Renderer, RigidBody, Transform},
     globals::ChunkGenerationState,

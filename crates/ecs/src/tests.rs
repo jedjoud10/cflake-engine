@@ -95,7 +95,7 @@ pub mod test {
     pub fn multithreaded_test() {
         // Also create the context
         let mut world = World;
-let mut frame = 0;
+        let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<World>::default();
 
@@ -125,7 +125,7 @@ let mut frame = 0;
     pub fn test_direct() {
         // Also create the context
         let mut world = World;
-let mut frame = 0;
+        let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<World>::default();
 
@@ -155,7 +155,7 @@ let mut frame = 0;
     pub fn queries() {
         // Also create the context
         let mut world = 0;
-        let mut frame = 0; 
+        let mut frame = 0;
         // Create the main ECS manager
         let mut ecs = ECSManager::<i32>::default();
 

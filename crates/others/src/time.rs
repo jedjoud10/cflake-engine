@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use getset::{CopyGetters, Getters};
+
 // Time info about the current frame
 #[derive(Clone)]
 pub struct FrameTimings {
@@ -9,14 +11,19 @@ pub struct FrameTimings {
     pub count: u128,
 }
 // Static time variables
+#[derive(Getters, CopyGetters)]
 pub struct Time {
     // Frame
-    pub elapsed: f32,
-    pub delta: f32,
-    pub current: Option<FrameTimings>,
+    #[getset(get_copy = "pub")]
+    elapsed: f32,
+    #[getset(get_copy = "pub")]
+    delta: f32,
+    #[getset(get = "pub")]
+    current: Option<FrameTimings>,
 
     // Profiler
-    pub average_delta: f32,
+    #[getset(get_copy = "pub")]
+    average_delta: f32,
     averages: [f32; 30],
 }
 

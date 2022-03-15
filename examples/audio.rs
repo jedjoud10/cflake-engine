@@ -2,10 +2,11 @@ use std::time::Duration;
 
 use cflake_engine::{
     assets,
+    audio::{AudioSource, Source},
     defaults::components::{self, Camera, Transform},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType::Directional},
-    vek, World, audio::{AudioSource, Source},
+    vek, World,
 };
 // A game with a test camera
 fn main() {
@@ -41,6 +42,12 @@ fn init(world: &mut World) {
     // Play le funny sound
     let audio = assets::assetc::load::<AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
     let audio2 = assets::assetc::load::<AudioSource>("user/sounds/nicolas.mp3").unwrap();
-    world.audio.play_positional(&audio, vek::Vec3::unit_x() * -2.0, |s| s.reverb(Duration::from_millis(20), 2.0)).unwrap();
-    world.audio.play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s|  s.reverb(Duration::from_millis(20), 2.0)).unwrap();
+    world
+        .audio
+        .play_positional(&audio, vek::Vec3::unit_x() * -2.0, |s| s.reverb(Duration::from_millis(20), 2.0))
+        .unwrap();
+    world
+        .audio
+        .play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s| s.reverb(Duration::from_millis(20), 2.0))
+        .unwrap();
 }

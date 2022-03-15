@@ -1,10 +1,8 @@
 use crate::{mesher::Mesher, ChunkCoords, VoxelDataBuffer};
-use rendering::basics::mesh::{GeometryBuilder};
+use rendering::basics::mesh::GeometryBuilder;
 use std::{
-    cell::{RefCell},
-    sync::{
-        mpsc::{Receiver, Sender},
-    },
+    cell::RefCell,
+    sync::mpsc::{Receiver, Sender},
 };
 use threadpool::ThreadPool;
 
@@ -38,7 +36,7 @@ pub struct MeshScheduler {
 
     // Results
     cached: RefCell<Vec<GenerationResult>>,
-    
+
     // Settings
     settings: MeshSchedulerSettings,
 }
@@ -108,20 +106,23 @@ impl MeshScheduler {
                 builders,
                 buffer_index: index,
             });
-        }      
+        }
     }
     // Get the mesh results that were generated on other threads
     pub fn get_results(&self) -> Vec<GenerationResult> {
-        self.pool.as_ref().map(|pool| {
-            // No need to cache the results since we can give them directly
-            let results = pool.receiver.try_iter().collect::<Vec<_>>();
-            *pool.mesh_tasks_running.borrow_mut() -= results.len();
-            results
-        }).unwrap_or_else(|| {
-            // Poll first
-            let mut results = self.cached.borrow_mut();
-            std::mem::take(&mut results)
-        })
+        self.pool
+            .as_ref()
+            .map(|pool| {
+                // No need to cache the results since we can give them directly
+                let results = pool.receiver.try_iter().collect::<Vec<_>>();
+                *pool.mesh_tasks_running.borrow_mut() -= results.len();
+                results
+            })
+            .unwrap_or_else(|| {
+                // Poll first
+                let mut results = self.cached.borrow_mut();
+                std::mem::take(&mut results)
+            })
     }
     // Get the amount of threads that are currently active
     pub fn active_mesh_tasks_count(&self) -> usize {

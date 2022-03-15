@@ -1,6 +1,7 @@
-use crate::{Settings, WorldState};
+use crate::Settings;
 use audio::player::AudioPlayer;
 use ecs::ECSManager;
+use getset::*;
 use globals::GlobalsSet;
 use gui::GUIManager;
 use input::InputManager;
@@ -9,7 +10,17 @@ use others::Time;
 use physics::PhysicsSimulation;
 use rendering::pipeline::{Pipeline, SceneRenderer};
 
+// The current state of the world
+#[derive(Clone, Copy)]
+pub enum WorldState {
+    StartingUp,
+    Running,
+    Exit,
+    Paused,
+}
+
 // The whole world that stores our managers and data
+#[derive(Getters, CopyGetters, Setters)]
 pub struct World {
     // User
     pub input: InputManager,
@@ -63,10 +74,10 @@ impl World {
         self.time.update(delta);
 
         // Update game logic (this includes rendering the world)
-        self.pipeline.start_frame(&mut self.renderer, self.time.delta, self.time.elapsed);
+        self.pipeline.start_frame(&mut self.renderer, self.time.delta(), self.time.elapsed());
         self.gui.begin_frame(self.pipeline.window().context().window());
 
-        let (systems, settings) = self.ecs.ready(self.time.current.as_ref().unwrap().count);
+        let (systems, settings) = self.ecs.ready(self.time.current().as_ref().unwrap().count);
         let systems = systems.borrow();
         ECSManager::<World>::execute_systems(systems, self, settings);
 

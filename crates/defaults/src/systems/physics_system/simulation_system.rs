@@ -12,7 +12,7 @@ use super::{quat_to_rotation, rotation_to_quat, vec3_to_translation, vec3_to_vec
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Execute only if we need to
     let physics = world.globals.get_mut::<crate::globals::Physics>().unwrap();
-    let current_time = world.time.elapsed;
+    let current_time = world.time.elapsed();
     if (current_time - physics.last_execution_time) > PHYSICS_TIME_STEP {
         physics.last_execution_time = current_time;
     } else {

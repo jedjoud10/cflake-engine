@@ -16,10 +16,10 @@ pub use world::*;
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init_systems: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = io::IOManager::new(author_name, app_name);
-    let config: Settings = io.load("config/game_config.json").unwrap_or_else(|_| {
+    let config: Settings = io.load("config/engine.json").unwrap_or_else(|_| {
         // If we failed reading the config file, try creating it and saving it
-        io.create_file("config/game_config.json");
-        io.save("config/game_config.json", &Settings::default());
+        io.create_file("config/engine.json");
+        io.save("config/engine.json", &Settings::default());
         Settings::default()
     });
 
@@ -30,12 +30,13 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     defaults::preload_default_assets();
 
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
-    let shadows = config.shadow_resolution.convert();
+    let shadows = config.shadows.resolution.convert();
+    let ws = config.window.clone();
     let (pipeline, renderer) = rendering::pipeline::new(
         &event_loop,
         format!("'{}', by '{}'", app_name, author_name),
-        config.vsync,
-        config.fullscreen,
+        ws.fps_cap == FrameRateCap::Vsync,
+        ws.fullscreen,
         PipelineSettings {
             shadow_resolution: if shadows.0 == 0 { None } else { Some(shadows.0) },
             shadow_bias: shadows.1,
@@ -56,10 +57,15 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     // Post-init
     world.pipeline.post_init();
 
-    let mut sleeper = if config.fps_cap <= 0 {
-        LoopHelper::builder().build_without_target_rate()
-    } else {
-        LoopHelper::builder().build_with_target_rate(config.fps_cap as f32)
+    // FPS cap
+    let builder = LoopHelper::builder();
+    let mut sleeper = match ws.fps_cap {
+        FrameRateCap::Unlimited => builder.build_without_target_rate(),
+        FrameRateCap::Limited(cap) => {
+            assert!(cap != 0, "Frame rate limit cannot be zero");
+            builder.build_with_target_rate(cap as f32)
+        }
+        FrameRateCap::Vsync => builder.build_without_target_rate(),
     };
 
     // Main loop
