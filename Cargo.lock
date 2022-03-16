@@ -1845,6 +1845,9 @@ dependencies = [
  "bytemuck",
  "bytes",
  "enum-as-inner",
+ "getset",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3012,7 +3015,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b68113367df5a2efc576e46d50afdd8f8c98bc2e4a77e9c9b66a58e05b596994"
 dependencies = [
  "approx 0.4.0",
- "bytemuck",
  "num-integer",
  "num-traits",
  "rustc_version",
