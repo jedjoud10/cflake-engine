@@ -1,18 +1,17 @@
-use crate::component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta};
+use crate::{component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta}, event::{EcsEventSet, Event}};
 
 use super::{SubSystem, SystemExecutionOrder, SystemSettings};
-pub(crate) type Event<World> = Option<fn(&mut World, ComponentQuerySet)>;
 // A system that contains multiple subsystems, each with their own component queries
-pub struct System<World> {
+pub struct System {
     pub(crate) subsystems: Vec<SubSystem>,
-    pub(crate) evn_run: Event<World>,
+    pub(crate) evn_index: Option<usize>,
     pub(crate) order: SystemExecutionOrder,
 }
 
 // System code
-impl<World> System<World> {
+impl System {
     // Create a SystemExecutionData that we can actually run at a later time
-    pub fn run_system(&self, world: &mut World, settings: SystemSettings) {
+    pub fn run_system<World>(&self, world: &mut World, events: &[Event<World>], settings: SystemSettings) {
         // Do a bit of decrementing
         let mut lock = settings.to_remove.borrow_mut();
         for (_, components) in lock.iter_mut() {
@@ -71,7 +70,7 @@ impl<World> System<World> {
         };
 
         // Run
-        if let Some(run_system_evn) = self.evn_run {
+        if let Some(run_system_evn) = self.evn_index.and_then(|index| events.get(index)) {
             // Get the queries (added, removed, all)
             let queries = self
                 .subsystems

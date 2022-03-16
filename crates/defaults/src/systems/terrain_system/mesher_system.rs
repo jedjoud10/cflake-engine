@@ -124,7 +124,7 @@ pub fn system(world: &mut World) {
     world
         .ecs
         .systems
-        .builder()
+        .builder(&mut world.events.ecs)
         .query(ComponentQueryParams::default().link::<Transform>().link::<Chunk>())
         .query(ComponentQueryParams::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
         .event(run)

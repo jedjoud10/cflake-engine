@@ -1,23 +1,25 @@
-use crate::component::{ComponentQueryParams, ComponentQuerySet};
+use crate::{component::{ComponentQueryParams, ComponentQuerySet}, event::RcEvents};
 
 use super::{SubSystem, System, SystemExecutionOrder, SystemSet};
 
 // A system builder used to build multiple systems
 pub struct SystemBuilder<'a, World> {
-    set: &'a mut SystemSet<World>,
-    system: System<World>,
+    set: &'a mut SystemSet,
+    events: RcEvents<World>,
+    system: System,
 }
 
 impl<'a, World> SystemBuilder<'a, World> {
     // Create a new system builder
-    pub(crate) fn new(set: &'a mut SystemSet<World>) -> Self {
+    pub(crate) fn new(set: &'a mut SystemSet, events: RcEvents<World>) -> Self {
         Self {
             set,
             system: System {
                 subsystems: Default::default(),
-                evn_run: Default::default(),
+                evn_index: Default::default(),
                 order: SystemExecutionOrder::default(),
             },
+            events
         }
     }
     // Set the system's execution order
@@ -36,7 +38,11 @@ impl<'a, World> SystemBuilder<'a, World> {
     }
     // Set the "Run System" event of this system
     pub fn event(mut self, evn: fn(&mut World, ComponentQuerySet)) -> Self {
-        self.system.evn_run = Some(evn);
+        let mut borrowed = self.events.borrow_mut();
+        let index = borrowed.len();
+        borrowed.push(evn);
+        self.system.evn_index = Some(index);
+        drop(borrowed);
         self
     }
     // Build this system and add it to the ECS manager

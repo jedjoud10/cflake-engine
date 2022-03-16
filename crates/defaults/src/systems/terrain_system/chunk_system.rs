@@ -6,7 +6,7 @@ use world::{
     ecs::{
         component::{ComponentQueryParams, ComponentQuerySet},
         entity::{ComponentLinkingGroup, EntityKey},
-        ECSManager,
+        EcsManager,
     },
     input::Keys,
     terrain::ChunkCoords,
@@ -14,7 +14,7 @@ use world::{
 };
 
 // Add a single chunk to the world
-fn add_chunk(ecs: &mut ECSManager<World>, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
+fn add_chunk(ecs: &mut EcsManager, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
     let mut group = ComponentLinkingGroup::default();
 
@@ -39,7 +39,7 @@ fn add_chunk(ecs: &mut ECSManager<World>, camera_position: vek::Vec3<f32>, camer
     (id, priority)
 }
 // Remove a single chunk
-fn remove_chunk(ecs: &mut ECSManager<World>, id: EntityKey) {
+fn remove_chunk(ecs: &mut EcsManager, id: EntityKey) {
     // Make sure that the chunk entity even exists
     if ecs.entities.get(id).is_ok() {
         // Remove the chunk entity at that specific EntityID
@@ -111,7 +111,7 @@ pub fn system(world: &mut World) {
     world
         .ecs
         .systems
-        .builder()
+        .builder(&mut world.events.ecs)
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .event(run)
         .build();

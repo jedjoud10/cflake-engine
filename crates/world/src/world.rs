@@ -1,6 +1,6 @@
-use crate::Settings;
+use crate::{Settings, EventSet};
 use audio::player::AudioPlayer;
-use ecs::ECSManager;
+use ecs::EcsManager;
 use getset::*;
 use globals::GlobalsSet;
 use gui::GUIManager;
@@ -33,7 +33,8 @@ pub struct World {
 
     // Logic
     pub state: WorldState,
-    pub ecs: ECSManager<Self>,
+    pub ecs: EcsManager,
+    pub events: EventSet,
     pub globals: GlobalsSet,
     pub physics: PhysicsSimulation,
 
@@ -52,7 +53,7 @@ impl World {
             input: Default::default(),
             time: Default::default(),
             gui,
-            ecs: ECSManager::<Self>::default(),
+            ecs: EcsManager::default(),
             globals: Default::default(),
             io,
             settings: Default::default(),
@@ -61,6 +62,7 @@ impl World {
             state: WorldState::StartingUp,
             audio: Default::default(),
             physics: PhysicsSimulation::new(),
+            events: Default::default(),
         };
         // Just set the game settings and we are done
         world.settings = settings;
@@ -79,7 +81,7 @@ impl World {
 
         let (systems, settings) = self.ecs.ready(self.time.current().as_ref().unwrap().count);
         let systems = systems.borrow();
-        ECSManager::<World>::execute_systems(systems, self, settings);
+        //EcsManager::execute_systems(systems, self, selfsettings);
 
         // Late update
         self.pipeline.end_frame();

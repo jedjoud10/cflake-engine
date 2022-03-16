@@ -1,31 +1,33 @@
 use std::{cell::RefCell, rc::Rc};
 
+use crate::event::EcsEventSet;
+
 use super::{System, SystemBuilder};
 use getset::Getters;
 
 // Systems
-pub type Systems<World> = Rc<RefCell<Vec<System<World>>>>;
+pub type Systems = Rc<RefCell<Vec<System>>>;
 
 // System set
 #[derive(Getters)]
-pub struct SystemSet<World> {
+pub struct SystemSet {
     #[getset(get = "pub")]
-    pub(crate) inner: Systems<World>,
+    pub(crate) inner: Systems,
 }
 
-impl<World> Default for SystemSet<World> {
+impl Default for SystemSet {
     fn default() -> Self {
         Self { inner: Default::default() }
     }
 }
 
-impl<World> SystemSet<World> {
+impl SystemSet {
     // Create a new system build
-    pub fn builder(&mut self) -> SystemBuilder<World> {
-        SystemBuilder::new(self)
+    pub fn builder<World>(&mut self, ecs_events: &mut EcsEventSet<World>) -> SystemBuilder<World> {
+        SystemBuilder::<World>::new(self, ecs_events.events.clone())
     }
     // Add a system to our current systems
-    pub(crate) fn add(&mut self, system: System<World>) {
+    pub(crate) fn add(&mut self, system: System) {
         let mut borrowed = self.inner.borrow_mut();
         borrowed.push(system)
     }

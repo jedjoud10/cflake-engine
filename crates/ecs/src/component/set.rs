@@ -35,7 +35,7 @@ fn invalid_err() -> ComponentError {
 
 impl ComponentSet {
     // Link some components to an entity
-    pub fn link<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
+    pub fn link(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         for (cbitfield, boxed) in group.linked_components {
             let (ckey, _ptr) = self.add(boxed);
             let entity = entities.get_mut(key).unwrap();
@@ -78,7 +78,7 @@ impl ComponentSet {
         Ok(())
     }
     // Unlink some components from an entity
-    pub fn unlink<World>(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet<World>, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
+    pub fn unlink(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
         // Check if the entity even have these components
         let entity = entities.get(key).unwrap();
         let valid = entity.cbitfield.contains(&group.removal_cbitfield);

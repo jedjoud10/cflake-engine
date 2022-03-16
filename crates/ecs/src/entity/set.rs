@@ -35,7 +35,7 @@ impl EntitySet {
         Ok(key)
     }
     // Remove an entity, but keep it's components alive until all systems have been notified
-    pub fn remove<World>(&mut self, key: EntityKey, components: &mut ComponentSet, systems: &mut SystemSet<World>) -> Result<(), EntityError> {
+    pub fn remove(&mut self, key: EntityKey, components: &mut ComponentSet, systems: &mut SystemSet) -> Result<(), EntityError> {
         let entity = self.inner.get(key).ok_or_else(|| EntityError::new("Could not find entity!".to_string(), key))?;
         let group = ComponentUnlinkGroup::unlink_all_from_entity(entity);
         // Unlink all of the entity's components
