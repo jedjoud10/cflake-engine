@@ -1,9 +1,13 @@
-use std::{marker::PhantomData, net::{Ipv6Addr, SocketAddrV6, UdpSocket, SocketAddr}, io::{self, BufReader, Cursor, BufRead, Read}, cell::RefCell};
+use std::{
+    io::{self, ErrorKind},
+    marker::PhantomData,
+    net::{Ipv6Addr, SocketAddr, SocketAddrV6, UdpSocket},
+};
 
 use getset::CopyGetters;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{de::DeserializeOwned};
 
-use crate::common::PacketMetadata;
+use crate::common::{deserialize_payload};
 
 // A host that has multiple clients connect to it
 // In a singleplayer world, the host also contains an internal client
@@ -12,68 +16,73 @@ pub struct Host {
     socket: UdpSocket,
     #[getset(get_copy = "pub")]
     address: SocketAddrV6,
-    data: Vec<Vec<u8>>,
 }
 
 impl Host {
-    // Open a host on the specified port
-    pub fn open(port: &str) -> Result<Self, io::Error> {
+    // Open a host on a random port
+    pub fn open() -> Result<Self, io::Error> {
         // Since we are a host, we use the local address
         let local = Ipv6Addr::LOCALHOST;
         // TODO: Learn about flowinfo and scope_id
-        let socket = SocketAddrV6::new(local, 0, 0,0);
+        let socket = SocketAddrV6::new(local, 0, 0, 0);
         let socket = UdpSocket::bind(socket)?;
+        socket.set_nonblocking(true).unwrap();
         // Get the IpV6 socket address
         let address = match socket.local_addr()? {
             SocketAddr::V4(_) => todo!(),
             SocketAddr::V6(address) => address,
         };
         println!("Host started on port '{:?}'", address);
-        Ok(Self {
-            socket,
-            address,
-            data: Default::default(),
-        })
+        Ok(Self { socket, address })
     }
 }
-
 
 // Packet receiver
 pub struct PacketReceiver<Payload: 'static> {
     socket: UdpSocket,
     _phantom: PhantomData<*const Payload>,
+    buffer_size: usize,
     id: u64,
 }
 
 impl<Payload: 'static> PacketReceiver<Payload> {
     // Create a new receiver using a host
-    pub fn new(host: &Host, id: u64) -> Result<Self, io::Error> {
+    pub fn new(host: &Host, id: u64, buffer_size: usize) -> Result<Self, io::Error> {
         let cloned = host.socket.try_clone()?;
         Ok(Self {
             socket: cloned,
             _phantom: Default::default(),
+            buffer_size,
             id,
         })
     }
     // Check if we have received any new packets, and return them
-    pub fn receive(&self) -> Payload where Payload: DeserializeOwned {
-        let mut buf = [0; 256];
-        self.socket.recv_from(&mut buf).unwrap();
-        dbg!(buf);
-        // Buf reader
-        let cursor = Cursor::new(buf);
-        let mut reader = BufReader::new(cursor);
-        // Split at the end of the metadata
-        let mut metadata = Vec::default();
-        let mut payload = Vec::default();
-        reader.read_until(0, &mut metadata).unwrap();
-        reader.read_until(0, &mut payload).unwrap();
-        metadata.pop();
-        payload.pop();
-        // Deserialize
-        let string = String::from_utf8(metadata.clone()).unwrap();
-        let metadata = serde_json::from_slice::<PacketMetadata>(&metadata).unwrap();
-        let payload = serde_json::from_slice::<Payload>(&payload).unwrap();
-        payload
+    pub fn receive(&self) -> Result<Vec<Payload>, io::Error>
+    where
+        Payload: DeserializeOwned,
+    {
+        // Read until the buffer we gen an error
+        let mut payloads = Vec::new();
+        loop {
+            // Simple buffer
+            let mut buf = vec![0; self.buffer_size];
+            let (_len, _addr) = match self.socket.recv_from(&mut buf) {
+                Ok(tuple) => tuple,
+                Err(err) => {
+                    if err.kind() == ErrorKind::WouldBlock {
+                        // Break normally, since this isn't an error theoretically
+                        break;
+                    } else {
+                        // Actual error that needs to be handled
+                        return Err(err);
+                    }
+                }
+            };
+
+            // Deserialize the data
+            let (_meta, payload) = deserialize_payload(&buf, self.id)?;
+            payloads.push(payload);
+        }
+        Ok(payloads)
     }
 }

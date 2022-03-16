@@ -1,10 +1,13 @@
-use std::{marker::PhantomData, net::{SocketAddrV6, Ipv6Addr, UdpSocket}, io, any::TypeId, collections::hash_map::DefaultHasher, hash::{Hasher, Hash}};
-use serde::{Serialize, Deserialize};
+use serde::{Serialize};
+use std::{
+    io,
+    net::{Ipv6Addr, SocketAddrV6, UdpSocket}, marker::PhantomData,
+};
 
 use crate::common::{serialize_payload, PacketMetadata};
 // A client that connects to a host
 pub struct Client {
-    host: SocketAddrV6,
+    _host: SocketAddrV6,
     socket: UdpSocket,
 }
 
@@ -15,13 +18,11 @@ impl Client {
         let local = SocketAddrV6::new(Ipv6Addr::LOCALHOST, 0, 0, 0);
         let host = SocketAddrV6::new(addr, port, 0, 0);
         let socket = UdpSocket::bind(local)?;
+        socket.set_nonblocking(true).unwrap();
         socket.connect(host)?;
         println!("Client '{:?}' connected to host '{:?}'", local, host);
-        Ok(Self {
-            host: host,
-            socket: socket,
-        })
-    } 
+        Ok(Self { _host: host, socket: socket })
+    }
 }
 
 // Packet sender
@@ -42,11 +43,13 @@ impl<Payload: 'static> PacketSender<Payload> {
         })
     }
     // Send a packet to the host
-    pub fn send(&mut self, payload: Payload) where Payload: Serialize {
+    pub fn send(&mut self, payload: Payload) -> Result<(), io::Error>
+    where
+        Payload: Serialize,
+    {
         // Serialize the data
-        let bytes = serialize_payload::<Payload>(PacketMetadata {
-            id: self.id,
-        }, payload);
-        self.socket.send(&bytes).unwrap();
-    }   
+        let bytes = serialize_payload::<Payload>(PacketMetadata { id: self.id }, payload)?;
+        self.socket.send(&bytes)?;
+        Ok(())
+    }
 }
