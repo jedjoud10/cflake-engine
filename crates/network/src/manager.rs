@@ -1,5 +1,5 @@
 use enum_as_inner::EnumAsInner;
-use crate::{client::Client, host::Host};
+use crate::{client::{Client, PacketSender}, host::{Host, PacketReceiver}};
 
 // Network manager
 #[derive(EnumAsInner)]

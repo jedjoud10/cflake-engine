@@ -1,12 +1,7 @@
-use std::{marker::PhantomData, net::{SocketAddrV6, Ipv6Addr, UdpSocket}, io};
+use std::{marker::PhantomData, net::{SocketAddrV6, Ipv6Addr, UdpSocket}, io, any::TypeId, collections::hash_map::DefaultHasher, hash::{Hasher, Hash}};
 use serde::{Serialize, Deserialize};
 
-use crate::common::{Packet};
-
-// A client identifier 
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct ClientId(pub(crate) u64);
-
+use crate::common::{serialize_payload, PacketMetadata};
 // A client that connects to a host
 pub struct Client {
     host: SocketAddrV6,
@@ -30,25 +25,28 @@ impl Client {
 }
 
 // Packet sender
-pub struct PacketSender<Payload> {
-    id: ClientId,
+pub struct PacketSender<Payload: 'static> {
     socket: UdpSocket,
     _phantom: PhantomData<*const Payload>,
+    id: u64,
 }
 
-impl<Payload> PacketSender<Payload> {
+impl<Payload: 'static> PacketSender<Payload> {
     // Create a new sender using a client
-    pub fn new(client: &Client) -> Result<Self, io::Error> {
+    pub fn new(client: &Client, id: u64) -> Result<Self, io::Error> {
         let cloned = client.socket.try_clone()?;
         Ok(Self {
-            id: ClientId(0),
             socket: cloned,
-            _phantom: Default::default()
+            _phantom: Default::default(),
+            id,
         })
     }
     // Send a packet to the host
     pub fn send(&mut self, payload: Payload) where Payload: Serialize {
-        
-    }
-
+        // Serialize the data
+        let bytes = serialize_payload::<Payload>(PacketMetadata {
+            id: self.id,
+        }, payload);
+        self.socket.send(&bytes).unwrap();
+    }   
 }
