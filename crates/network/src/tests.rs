@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::net::{Ipv6Addr};
+    use std::net::Ipv6Addr;
 
     use serde::{Deserialize, Serialize};
 

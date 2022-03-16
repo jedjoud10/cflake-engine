@@ -114,6 +114,7 @@ pub fn system(world: &mut World) {
         .builder(&mut world.events.ecs)
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .event(run)
-        .build();
+        .build()
+        .unwrap();
     world.input.bind_toggle(Keys::Y, "update_terrain");
 }

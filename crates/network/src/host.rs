@@ -5,9 +5,9 @@ use std::{
 };
 
 use getset::CopyGetters;
-use serde::{de::DeserializeOwned};
+use serde::de::DeserializeOwned;
 
-use crate::common::{deserialize_payload};
+use crate::common::deserialize_payload;
 
 // A host that has multiple clients connect to it
 // In a singleplayer world, the host also contains an internal client

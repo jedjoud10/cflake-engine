@@ -129,4 +129,5 @@ pub fn system(world: &mut World) {
         .query(ComponentQueryParams::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
         .event(run)
         .build()
+        .unwrap()
 }

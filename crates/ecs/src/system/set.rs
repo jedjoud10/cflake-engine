@@ -13,11 +13,15 @@ pub type Systems = Rc<RefCell<Vec<System>>>;
 pub struct SystemSet {
     #[getset(get = "pub")]
     pub(crate) inner: Systems,
+    pub(crate) allowed_to_build: bool,
 }
 
 impl Default for SystemSet {
     fn default() -> Self {
-        Self { inner: Default::default() }
+        Self {
+            inner: Default::default(),
+            allowed_to_build: true,
+        }
     }
 }
 

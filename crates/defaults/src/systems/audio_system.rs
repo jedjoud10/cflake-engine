@@ -26,5 +26,6 @@ pub fn system(world: &mut World) {
         .builder(&mut world.events.ecs)
         .event(run)
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
-        .build();
+        .build()
+        .unwrap();
 }

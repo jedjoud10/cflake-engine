@@ -17,7 +17,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
 
 // Create a system that'll allow us to disable/enable fullscreen
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder(&mut world.events.ecs).event(run).build();
+    world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
     world.input.bind_toggle(Keys::F2, "toggle_input");
     world.input.bind_toggle(Keys::F5, "toggle_fullscreen");
 }

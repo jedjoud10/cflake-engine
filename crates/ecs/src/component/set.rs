@@ -146,7 +146,7 @@ impl ComponentSet {
         Ok(())
     }
     // Called at the start of the frame
-    pub(crate) fn ready_for_frame(&mut self, frame: u128) -> Result<(), ComponentError> {
+    pub(crate) fn ready(&mut self, frame: u128) -> Result<(), ComponentError> {
         // Check if all the system have run the "Remove Entity" event, and if they did, we must internally remove the component group
         let removed_groups = {
             let mut lock = self.to_remove.borrow_mut();

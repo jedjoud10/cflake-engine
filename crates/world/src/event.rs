@@ -1,5 +1,5 @@
-use ecs::event::EcsEventSet;
 use crate::World;
+use ecs::event::EcsEventSet;
 
 // World events
 // Currently only support ECS events

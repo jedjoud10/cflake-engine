@@ -6,8 +6,9 @@ use std::{
 use crate::{
     component::ComponentSet,
     entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityKey, EntitySet},
+    event::Event,
     system::{System, SystemSet, SystemSettings},
-    utils::{ComponentLinkingError, ComponentUnlinkError, EntityError}, event::Event,
+    utils::{ComponentLinkingError, ComponentUnlinkError, EntityError},
 };
 
 // The Entity Component System manager that will handle everything ECS related
@@ -22,7 +23,10 @@ pub struct EcsManager {
 impl EcsManager {
     // Create the proper execution settings for systems, and return them
     pub fn ready(&mut self, frame: u128) -> (Rc<RefCell<Vec<System>>>, SystemSettings) {
-        self.components.ready_for_frame(frame).unwrap();
+        self.components.ready(frame).unwrap();
+
+        // Cannot build any more systems
+        self.systems.allowed_to_build = false;
         (
             self.systems.inner.clone(),
             SystemSettings {

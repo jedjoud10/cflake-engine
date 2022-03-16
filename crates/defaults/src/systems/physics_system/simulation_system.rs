@@ -89,5 +89,6 @@ pub fn system(world: &mut World) {
         .builder(&mut world.events.ecs)
         .query(ComponentQueryParams::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
         .event(run)
-        .build();
+        .build()
+        .unwrap();
 }

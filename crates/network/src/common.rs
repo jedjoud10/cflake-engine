@@ -1,11 +1,6 @@
-use std::{
-    io::{self, BufRead, BufReader, Cursor},
-};
+use std::io::{self, BufRead, BufReader, Cursor};
 
-use serde::{
-    de::{DeserializeOwned},
-    Deserialize, Serialize,
-};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 // Packet metadata that contains some info on how we should treat the incoming payload
 #[derive(Serialize, Deserialize)]

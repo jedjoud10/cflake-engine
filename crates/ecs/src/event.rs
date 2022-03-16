@@ -1,4 +1,7 @@
-use std::{cell::{RefCell, Ref}, rc::Rc};
+use std::{
+    cell::{Cell, Ref, RefCell},
+    rc::Rc,
+};
 
 use crate::component::ComponentQuerySet;
 
@@ -10,6 +13,12 @@ pub type RcEvents<World> = Rc<RefCell<Vec<Event<World>>>>;
 // Event manager
 pub struct EcsEventSet<World> {
     pub(crate) events: RcEvents<World>,
+}
+
+impl<World> Clone for EcsEventSet<World> {
+    fn clone(&self) -> Self {
+        Self { events: self.events.clone() }
+    }
 }
 
 impl<World> EcsEventSet<World> {

@@ -3,7 +3,8 @@ pub mod test {
     use crate::{
         component::{registry, Component, ComponentQueryParams, ComponentQuerySet},
         entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity},
-        EcsManager, event::EcsEventSet,
+        event::EcsEventSet,
+        EcsManager,
     };
     use bitfield::Bitfield;
     use slotmap::Key;

@@ -1,7 +1,8 @@
-use serde::{Serialize};
+use serde::Serialize;
 use std::{
     io,
-    net::{Ipv6Addr, SocketAddrV6, UdpSocket}, marker::PhantomData,
+    marker::PhantomData,
+    net::{Ipv6Addr, SocketAddrV6, UdpSocket},
 };
 
 use crate::common::{serialize_payload, PacketMetadata};

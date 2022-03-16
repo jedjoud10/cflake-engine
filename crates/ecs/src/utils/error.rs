@@ -96,3 +96,18 @@ impl std::error::Error for ComponentUnlinkError {
         &self.details
     }
 }
+// Error that occurs whenever we try to build a system during a frame
+#[derive(Debug)]
+pub struct SystemBuildingError;
+
+impl fmt::Display for SystemBuildingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Cannot build system during ECS frame!")
+    }
+}
+
+impl std::error::Error for SystemBuildingError {
+    fn description(&self) -> &str {
+        "Cannot build system during ECS frame!"
+    }
+}

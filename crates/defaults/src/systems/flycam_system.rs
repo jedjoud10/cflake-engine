@@ -71,7 +71,8 @@ pub fn system(world: &mut World) {
         .builder(&mut world.events.ecs)
         .event(run)
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
-        .build();
+        .build()
+        .unwrap();
     world.input.bind(Keys::W, "camera_forward");
     world.input.bind(Keys::S, "camera_backwards");
     world.input.bind(Keys::D, "camera_right");

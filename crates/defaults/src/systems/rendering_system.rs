@@ -140,5 +140,6 @@ pub fn system(world: &mut World) {
         .query(ComponentQueryParams::default().link::<Renderer>().link::<Transform>())
         .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
         .query(ComponentQueryParams::default().link::<Light>().link::<Transform>())
-        .build();
+        .build()
+        .unwrap();
 }

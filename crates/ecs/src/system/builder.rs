@@ -1,4 +1,8 @@
-use crate::{component::{ComponentQueryParams, ComponentQuerySet}, event::RcEvents};
+use crate::{
+    component::{ComponentQueryParams, ComponentQuerySet},
+    event::RcEvents,
+    utils::SystemBuildingError,
+};
 
 use super::{SubSystem, System, SystemExecutionOrder, SystemSet};
 
@@ -19,7 +23,7 @@ impl<'a, World> SystemBuilder<'a, World> {
                 evn_index: Default::default(),
                 order: SystemExecutionOrder::default(),
             },
-            events
+            events,
         }
     }
     // Set the system's execution order
@@ -46,7 +50,11 @@ impl<'a, World> SystemBuilder<'a, World> {
         self
     }
     // Build this system and add it to the ECS manager
-    pub fn build(self) {
-        self.set.add(self.system)
+    pub fn build(self) -> Result<(), SystemBuildingError> {
+        if self.set.allowed_to_build {
+            Ok(self.set.add(self.system))
+        } else {
+            Err(SystemBuildingError)
+        }
     }
 }

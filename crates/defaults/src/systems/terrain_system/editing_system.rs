@@ -23,5 +23,5 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
 
 // Create the system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder(&mut world.events.ecs).event(run).build();
+    world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
 }

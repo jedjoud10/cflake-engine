@@ -1,4 +1,4 @@
-use crate::{Settings, EventSet};
+use crate::{EventSet, Settings};
 use audio::player::AudioPlayer;
 use ecs::EcsManager;
 use getset::*;
@@ -79,9 +79,14 @@ impl World {
         self.pipeline.start_frame(&mut self.renderer, self.time.delta(), self.time.elapsed());
         self.gui.begin_frame(self.pipeline.window().context().window());
 
+        // Read the systems
         let (systems, settings) = self.ecs.ready(self.time.current().as_ref().unwrap().count);
         let systems = systems.borrow();
-        //EcsManager::execute_systems(systems, self, selfsettings);
+
+        // Get events
+        let event_set = self.events.ecs.clone();
+        let events = event_set.events();
+        EcsManager::execute_systems::<Self>(systems, self, &events, settings);
 
         // Late update
         self.pipeline.end_frame();
