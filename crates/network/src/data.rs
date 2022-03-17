@@ -1,50 +1,48 @@
-use std::io::{self, BufRead, BufReader, Cursor};
-
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::io::{self, BufRead, BufReader, Cursor, Read};
 
+pub trait Payload: Serialize + DeserializeOwned {}
+impl<T> Payload for T where T: Serialize + DeserializeOwned {}
 // Packet metadata that contains some info on how we should treat the incoming payload
-#[derive(Serialize, Deserialize)]
 pub struct PacketMetadata {
     // Payload type
     pub id: u64,
 }
 
 // Serialize a payload, with it's packet metadata
-pub fn serialize_payload<Payload: Serialize>(meta: PacketMetadata, payload: Payload) -> Result<Vec<u8>, io::Error> {
+pub fn serialize_payload<P: Payload>(meta: PacketMetadata, payload: P) -> Result<Vec<u8>, io::Error> {
     // Serialze the metadata
-    let meta = serde_json::to_string_pretty(&meta)?;
+    let meta = meta.id.to_be_bytes();
     // Serialize the payload
     let payload = serde_json::to_string_pretty(&payload)?;
 
-    println!("{}", &meta);
+    println!("{:?}", &meta);
     println!("{}", &payload);
 
     // Convert to bytes
-    let mut meta = meta.into_bytes();
+    let mut meta = meta.to_vec();
     let payload = payload.into_bytes();
 
     // Extend
-    meta.push(0);
     meta.extend(payload);
-    meta.push(0);
     Ok(meta)
 }
 
 // Deserialize a packet, and write it to a buffer
-pub fn deserialize_payload<Payload: DeserializeOwned>(buf: &[u8], id: u64) -> Result<(PacketMetadata, Payload), io::Error> {
+pub fn deserialize_payload<P: Payload>(buf: &[u8], id: u64) -> Result<(PacketMetadata, P), io::Error> {
     // Buf reader
     let cursor = Cursor::new(buf);
     let mut reader = BufReader::new(cursor);
     // Split at the end of the metadata
-    let mut metadata = Vec::default();
+    let mut metadata = [0u8; 8];
     let mut payload = Vec::default();
-    reader.read_until(0, &mut metadata)?;
-    reader.read_until(0, &mut payload)?;
-    metadata.pop();
-    payload.pop();
+    
+    // Read the u64 id data
+    reader.read_exact(&mut metadata)?;
+    reader.read_to_end(&mut payload)?;
     // Deserialize
-    let metadata = serde_json::from_slice::<PacketMetadata>(&metadata)?;
+    let metadata = PacketMetadata { id: u64::from_be_bytes(metadata) };
     assert!(metadata.id == id, "Metadata ID does not match up with PacketReceiver's ID");
-    let payload = serde_json::from_slice::<Payload>(&payload)?;
+    let payload = serde_json::from_slice::<P>(&payload)?;
     Ok((metadata, payload))
 }

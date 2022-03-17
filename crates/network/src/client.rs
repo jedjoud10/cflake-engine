@@ -1,56 +1,32 @@
+use getset::Getters;
 use serde::Serialize;
 use std::{
-    io,
+    io::{self, Error},
     marker::PhantomData,
     net::{Ipv6Addr, SocketAddrV6, UdpSocket},
 };
 
-use crate::common::{serialize_payload, PacketMetadata};
+use crate::{data::serialize_payload, protocols::EndPoint, PacketMetadata, Payload};
 // A client that connects to a host
+#[derive(Getters)]
 pub struct Client {
-    _host: SocketAddrV6,
-    socket: UdpSocket,
+    #[getset(get = "pub")]
+    pub(crate) endpoint: EndPoint,
 }
 
 impl Client {
     // Create a new client by connecting to a server
-    pub fn connect(addr: Ipv6Addr, port: u16) -> Result<Self, io::Error> {
+    pub fn connect(addr: SocketAddrV6) -> Result<Self, Error> {
         // Create the localhost socket address
         let local = SocketAddrV6::new(Ipv6Addr::LOCALHOST, 0, 0, 0);
-        let host = SocketAddrV6::new(addr, port, 0, 0);
+
+        // Client socket
         let socket = UdpSocket::bind(local)?;
         socket.set_nonblocking(true).unwrap();
-        socket.connect(host)?;
-        println!("Client '{:?}' connected to host '{:?}'", local, host);
-        Ok(Self { _host: host, socket: socket })
-    }
-}
-
-// Packet sender
-pub struct PacketSender<Payload: 'static> {
-    socket: UdpSocket,
-    _phantom: PhantomData<*const Payload>,
-    id: u64,
-}
-
-impl<Payload: 'static> PacketSender<Payload> {
-    // Create a new sender using a client
-    pub fn new(client: &Client, id: u64) -> Result<Self, io::Error> {
-        let cloned = client.socket.try_clone()?;
+        socket.connect(addr)?;
+        println!("Client '{:?}' connected to host '{:?}'", local, addr);
         Ok(Self {
-            socket: cloned,
-            _phantom: Default::default(),
-            id,
+            endpoint: EndPoint { addr: local, socket: socket },
         })
-    }
-    // Send a packet to the host
-    pub fn send(&mut self, payload: Payload) -> Result<(), io::Error>
-    where
-        Payload: Serialize,
-    {
-        // Serialize the data
-        let bytes = serialize_payload::<Payload>(PacketMetadata { id: self.id }, payload)?;
-        self.socket.send(&bytes)?;
-        Ok(())
     }
 }

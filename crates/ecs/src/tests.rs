@@ -75,7 +75,7 @@ pub mod test {
         let builder = ecs.systems.builder(&mut events);
 
         let params = ComponentQueryParams::default().link::<Name>();
-        builder.query(params).event(run_system).build();
+        builder.query(params).event(run_system).build().unwrap();
 
         // Create a simple entity with that component
         let mut group = ComponentLinkingGroup::default();
@@ -106,7 +106,7 @@ pub mod test {
         let builder = ecs.systems.builder(&mut events);
         fn run_internally(_world: &mut World, _data: ComponentQuerySet) {}
         let params = ComponentQueryParams::default().link::<Name>();
-        builder.query(params).event(run_internally).build();
+        builder.query(params).event(run_internally).build().unwrap();
 
         // Create 10k entities
         for _x in 0..10_000 {
@@ -136,7 +136,7 @@ pub mod test {
         // Make a simple system
         let builder = ecs.systems.builder(&mut events);
         let params = ComponentQueryParams::default().link::<Name>();
-        builder.query(params).event(run_system).build();
+        builder.query(params).event(run_system).build().unwrap();
 
         // Add a new entity and play with it's components
         let entity = Entity::default();
@@ -196,7 +196,7 @@ pub mod test {
         let params = ComponentQueryParams::default().link::<Name>();
         // Query 2
         let params2 = ComponentQueryParams::default().link::<Tagged>();
-        builder.query(params).query(params2).event(run_internally).build();
+        builder.query(params).query(params2).event(run_internally).build().unwrap();
 
         // Create a new entity
         let mut group = ComponentLinkingGroup::default();

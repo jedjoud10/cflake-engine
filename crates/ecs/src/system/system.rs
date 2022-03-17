@@ -1,6 +1,6 @@
 use crate::{
-    component::{ComponentQuery, ComponentQuerySet, LinkedComponents, LinkedComponentsDelta},
-    event::{EcsEventSet, Event},
+    component::{ComponentQuery, LinkedComponents, LinkedComponentsDelta},
+    event::Event,
 };
 
 use super::{SubSystem, SystemExecutionOrder, SystemSettings};

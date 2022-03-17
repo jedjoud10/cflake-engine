@@ -1,12 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv6Addr;
+    use std::net::{Ipv6Addr, SocketAddrV6};
 
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        client::{Client, PacketSender},
-        host::{Host, PacketReceiver},
+        client::Client,
+        host::Host,
+        manager::NetworkManager,
+        protocols::{
+            transport::{channel, PacketDirection, PacketTransferParams},
+            udp::*,
+            EndPoint,
+        },
     };
 
     #[test]
@@ -14,26 +20,29 @@ mod tests {
         // Create a host, and open it's port on a random port
         let host = Host::open().unwrap();
         // Create a client and connect to a server
-        let client = Client::connect(Ipv6Addr::LOCALHOST, host.address().port()).unwrap();
+        let addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, host.endpoint().addr().port(), 0, 0);
+        let client = Client::connect(addr).unwrap();
+
+        // Make two network managers
+        let mut host = NetworkManager::Host(host);
+        let mut client = NetworkManager::Client(client);
+
+        // Params
+        let params = PacketTransferParams { id: 0, max_buffer_size: 512 };
 
         #[derive(Serialize, Deserialize)]
-        struct TestPayload {
-            pub name: String,
-            pub value: i32,
+        struct CustomPayload {
+            value: f32,
         }
 
-        // Create a packet sender and a packet receiver
-        let mut sender = PacketSender::<TestPayload>::new(&client, 0).unwrap();
-        sender
-            .send(TestPayload {
-                name: "Jed le Jribi".to_string(),
-                value: -5,
-            })
-            .unwrap();
-        let receiver = PacketReceiver::<TestPayload>::new(&host, 0, 256).unwrap();
-        let payload = receiver.receive().unwrap();
+        // Make a packet channel
+        let mut sender = channel::<CustomPayload>(&mut client, &params, PacketDirection::ClientToServer).unwrap();
+        let sender = sender.as_sender_mut().unwrap();
+        let mut receiver = channel::<CustomPayload>(&mut host, &params, PacketDirection::ClientToServer).unwrap();
+        let receiver = receiver.as_receiver_mut().unwrap();
 
-        dbg!(&payload[0].name);
-        dbg!(&payload[0].value);
+        sender.send(CustomPayload { value: 0.591 }).unwrap();
+        let payloads = receiver.recv().unwrap();
+        dbg!(payloads[0].value);
     }
 }
