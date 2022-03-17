@@ -2,9 +2,9 @@ use std::net::{Ipv6Addr, SocketAddrV6, UdpSocket};
 
 use getset::{CopyGetters, Getters};
 
-// An endpoint. Either a host or a client
+// A UDP endpoint. Either a host or a client
 #[derive(CopyGetters, Getters)]
-pub struct EndPoint {
+pub struct UdpEndPoint {
     #[getset(get_copy = "pub")]
     pub(crate) addr: SocketAddrV6,
     #[getset(get = "pub")]

@@ -6,7 +6,7 @@ use crate::{connection::ConnectedClientId, manager::NetworkManager, Payload};
 
 use super::{
     udp::{UdpPacketReceiver, UdpPacketSender},
-    EndPoint, Protocol,
+    Protocol,
 };
 
 // Either a packet receiver or packet sender
@@ -14,12 +14,6 @@ use super::{
 pub enum PacketChannel<P: Payload + 'static, Proto: Protocol<P>> {
     Sender(Proto::Sender),
     Receiver(Proto::Receiver),
-}
-
-// Packet transfer parameters
-pub struct PacketTransferParams {
-    pub id: u64,
-    pub max_buffer_size: usize,
 }
 
 // Communication direction
