@@ -12,6 +12,7 @@ use crate::{data::serialize_payload, protocols::EndPoint, PacketMetadata, Payloa
 pub struct Client {
     #[getset(get = "pub")]
     pub(crate) endpoint: EndPoint,
+    // Client has a TCP connection with the server for events
 }
 
 impl Client {

@@ -8,10 +8,7 @@ mod tests {
         client::Client,
         host::Host,
         manager::NetworkManager,
-        protocols::{
-            transport::{channel, PacketDirection, PacketTransferParams},
-            udp::*,
-            EndPoint,
+        protocols::{UdpProtocol, Protocol, transport::{PacketDirection, PacketTransferParams, PacketChannel}
         },
     };
 
@@ -26,9 +23,13 @@ mod tests {
         // Make two network managers
         let mut host = NetworkManager::Host(host);
         let mut client = NetworkManager::Client(client);
-
+        
         // Params
         let params = PacketTransferParams { id: 0, max_buffer_size: 512 };
+        let udp: PacketChannel<f32, UdpProtocol> = UdpProtocol::new(&mut host, &params, PacketDirection::ClientToServer).unwrap();
+        let receiver = udp.as_receiver_mut().unwrap();
+        UdpProtocol::recv(receiver);
+        /*
 
         #[derive(Serialize, Deserialize)]
         struct CustomPayload {
@@ -44,5 +45,6 @@ mod tests {
         sender.send(CustomPayload { value: 0.591 }).unwrap();
         let payloads = receiver.recv().unwrap();
         dbg!(payloads[0].value);
+        */
     }
 }

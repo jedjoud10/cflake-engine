@@ -7,7 +7,7 @@ use std::{
 use getset::{CopyGetters, Getters};
 use serde::de::DeserializeOwned;
 
-use crate::{data::deserialize_payload, protocols::EndPoint, connection::ConnectedClientId};
+use crate::{data::deserialize_payload, protocols::EndPoint, connection::{ConnectedClientId, ConnectedClient}};
 
 // A host that has multiple clients connect to it
 // In a singleplayer world, the host also contains an internal client
@@ -16,7 +16,7 @@ pub struct Host {
     #[getset(get = "pub")]
     pub(crate) endpoint: EndPoint,
     // All the connected clients
-    //connected: HashMap<ConnectedClientId, ConnectedClient>
+    connected: HashMap<ConnectedClientId, ConnectedClient>
 }
 
 impl Host {
@@ -36,6 +36,7 @@ impl Host {
         println!("Host started on port '{:?}'", address);
         Ok(Self {
             endpoint: EndPoint { addr: address, socket },
+            connected: HashMap::default(),
         })
     }
 }

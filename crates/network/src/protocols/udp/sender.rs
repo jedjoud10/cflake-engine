@@ -23,15 +23,6 @@ impl<P: Payload + 'static> UdpPacketSender<P> {
             id,
         })
     }
-    // Create a new sender using an endpoint
-    pub fn new(endpoint: &EndPoint, id: u64) -> Result<Self, Error> {
-        let cloned = endpoint.socket().try_clone()?;
-        Ok(Self {
-            socket: cloned,
-            _phantom: Default::default(),
-            id,
-        })
-    }
     // Send a packet to the receiver
     pub fn send(&mut self, payload: P) -> Result<(), Error> {
         // Serialize the data

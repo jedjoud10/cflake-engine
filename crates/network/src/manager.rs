@@ -1,6 +1,13 @@
 use crate::{client::Client, host::Host};
 use enum_as_inner::EnumAsInner;
 
+// Session
+#[derive(EnumAsInner)]
+pub enum Session {
+    Multiplayer(NetworkManager),
+    Singleplayer,
+}
+
 // Network manager
 #[derive(EnumAsInner)]
 pub enum NetworkManager {
