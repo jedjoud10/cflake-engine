@@ -1,9 +1,9 @@
-use std::{collections::HashMap, net::{SocketAddr, Ipv4Addr, Ipv6Addr, SocketAddrV6}, io::Error, thread::JoinHandle};
+use std::{collections::HashMap, net::{SocketAddr, Ipv4Addr, Ipv6Addr, SocketAddrV6}, io::Error, thread::JoinHandle, mem::size_of};
 
 use getset::{Getters, MutGetters, CopyGetters};
 use laminar::{Socket, Packet, SocketEvent};
 use uuid::Uuid;
-use crate::{NetworkCache, ConnectedClient};
+use crate::{NetworkCache, ConnectedClient, Payload, PayloadBucketId};
 
 // A host that has multiple clients connect to it
 #[derive(Getters, MutGetters, CopyGetters)]
@@ -63,6 +63,11 @@ impl Host {
                         // Can't do anything unless we are connected
                         continue;
                     }
+
+                    if packet.payload().len() >= size_of::<PayloadBucketId>() {
+                        // Add the data to the network cache
+                        self.cache.push(packet)
+                    }
                 },
                 SocketEvent::Connect(client_addr) => {
                     // A client has succsessfully made a connection, we can register them as our own
@@ -88,5 +93,11 @@ impl Host {
             }
         }
         Ok(())
+    }
+    // Try to read some payloads from the network cache using their bucket ID
+    pub fn drain_bucket<P: Payload>(&mut self, bucket_id: PayloadBucketId) -> Option<Vec<P>> {
+        let cache = &mut self.cache;
+        let bucket = cache.drain_bucket(bucket_id)?;
+        //Some(bucket)
     }
 }

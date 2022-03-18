@@ -1,10 +1,10 @@
 // Export
 mod client;
 mod host;
-mod manager;
+mod session;
 mod data;
 pub use client::*;
 pub use host::*;
-pub use manager::*;
+pub use session::*;
 pub use data::*;
 mod tests;

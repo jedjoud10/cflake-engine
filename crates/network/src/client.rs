@@ -3,7 +3,7 @@ use std::{net::{SocketAddrV6, SocketAddr}, time::SystemTime, thread::JoinHandle}
 use getset::{Getters, MutGetters};
 use laminar::{Socket, Packet, SocketEvent};
 use uuid::Uuid;
-use crate::{NetworkCache, serialize_payload, PacketBucketId};
+use crate::{NetworkCache, serialize_payload, PayloadBucketId};
 
 // Unique identifier for each client that is connected
 #[derive(Hash, PartialEq, Eq)]

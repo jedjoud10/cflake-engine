@@ -1,50 +1,51 @@
+use laminar::Packet;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{io::{self, BufRead, BufReader, Cursor, Read}, collections::HashMap, cell::RefCell};
+use std::{io::{self, BufRead, BufReader, Cursor, Read}, collections::{HashMap, hash_map::Entry}, cell::RefCell};
 
 
 // Stored network cache
 #[derive(Default)]
 pub struct NetworkCache {
-    buckets: HashMap<PacketBucketId, RefCell<Vec<Vec<u8>>>>,
+    // Buckets that contain multiple types of packet data (packet bucket id + payload)
+    buckets: HashMap<PayloadBucketId, Vec<Packet>>,
 }
 
 impl NetworkCache {
-    pub fn new(max_buffer_size: usize) -> Self {
-        Self {
-            buckets: Default::default(),
-        }
-    }
     // Clear all cache
     pub fn clear(&mut self) {
-        for (_, slots) in self.buckets.iter() {
-            let mut borrow = slots.borrow_mut();
-            borrow.clear();
+        for (_, vec) in self.buckets.iter_mut() {
+            vec.clear();
         }
     }
     // Drain a whole bucket of payloads
-    pub fn drain_bucket(&self, meta: PacketBucketId) -> Option<Vec<Vec<u8>>> {
-        let vec = self.buckets.get(&meta)?;
-        let mut borrowed = vec.borrow_mut();
-        let stolen = std::mem::take(&mut *borrowed);
-        if stolen.is_empty() {
-            None
-        } else {
-            Some(stolen)
-        }
+    pub fn drain_bucket(&mut self, bucket_id: PayloadBucketId) -> Option<Vec<Packet>> {
+        let vec = self.buckets.get_mut(&bucket_id)?;
+        Some(std::mem::take(vec))
     }
-    // Push some received payload data into the corresponding slot
-    pub fn push(&mut self, meta: PacketBucketId, data: Vec<u8>) {
+    // Push some received packet data into the corresponding bucket
+    pub fn push(&mut self, packet: Packet) {
+        // Buffered
+        let cursor = Cursor::new(packet.payload());
+        let mut reader = BufReader::new(cursor);
 
+        // Deserialize the bucket ID
+        let mut bucket_id_bytes = [0u8; 8];
+        reader.read_exact(&mut bucket_id_bytes).unwrap();
+        let bucket_id = PayloadBucketId::from_be_bytes(bucket_id_bytes);
+
+        // Push the packet
+        let vector = self.buckets.entry(bucket_id).or_default();
+        vector.push(packet);
     }
 }
 
 
 pub trait Payload: Serialize + DeserializeOwned {}
 impl<T> Payload for T where T: Serialize + DeserializeOwned {}
-pub type PacketBucketId = u64;
+pub type PayloadBucketId = u64;
 
 // Serialize a payload, with it's packet bucket ID
-pub fn serialize_payload<P: Payload>(bucket_id: PacketBucketId, payload: P) -> Result<Vec<u8>, io::Error> {
+pub fn serialize_payload<P: Payload>(bucket_id: PayloadBucketId, payload: P) -> Result<Vec<u8>, io::Error> {
     // Serialze the bucket ID
     let bucket_id_bytes = bucket_id.to_be_bytes();
     // Serialize the payload
@@ -63,7 +64,7 @@ pub fn serialize_payload<P: Payload>(bucket_id: PacketBucketId, payload: P) -> R
 }
 
 // Deserialize a payload
-pub fn deserialize_payload<P: Payload>(buf: Vec<u8>) -> Result<(PacketBucketId, P), io::Error> {
+pub fn deserialize_payload<P: Payload>(buf: Vec<u8>) -> Result<(PayloadBucketId, P), io::Error> {
     // Buffered
     let cursor = Cursor::new(&buf);
     let mut reader = BufReader::new(cursor);
@@ -71,7 +72,7 @@ pub fn deserialize_payload<P: Payload>(buf: Vec<u8>) -> Result<(PacketBucketId, 
     // Deserialize the bucket ID first
     let mut bucket_id_bytes = [0u8; 8];
     reader.read_exact(&mut bucket_id_bytes)?;
-    let bucket_id = PacketBucketId::from_be_bytes(bucket_id_bytes);
+    let bucket_id = PayloadBucketId::from_be_bytes(bucket_id_bytes);
 
     // Then deserialize the payload
     let mut payload = Vec::default();
