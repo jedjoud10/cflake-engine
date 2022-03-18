@@ -24,9 +24,9 @@ impl GUIManager {
         }
     }
     // We have received some events from glutin
-    pub fn receive_event(&mut self, event: &egui_winit::winit::event::WindowEvent<'_>) {
+    pub fn receive_event(&mut self, event: &egui_winit::winit::event::WindowEvent<'_>) -> bool {
         let context = &self.egui;
-        self.state.on_event(context, event);
+        self.state.on_event(context, event)
     }
     // Begin frame
     pub fn begin_frame(&mut self, window: &egui_winit::winit::window::Window) {

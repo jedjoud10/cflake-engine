@@ -80,8 +80,9 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
     match event {
         // Window events
         Event::WindowEvent { window_id: _, event } => {
-            world.gui.receive_event(&event);
-            world.pipeline.handle_window_event(&mut world.renderer, event, control_flow);
+            let can_use_events = !world.gui.receive_event(&event);
+            if !can_use_events { return; }
+            world.pipeline.handle_window_event(&mut world.renderer, &event, control_flow);
         }
         // Device event
         Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),

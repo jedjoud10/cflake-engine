@@ -89,7 +89,7 @@ impl DefaultElements {
                 .source("defaults/shaders/rendering/missing.frsh.glsl"),
         )
         .unwrap();
-        let missing_shader = pipeline.insert(missing_shader);
+        let _missing_shader = pipeline.insert(missing_shader);
 
         // Default pbr material (uses missing texture)
         let pbr_mat = PbrMaterialBuilder {

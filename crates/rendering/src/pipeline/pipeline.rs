@@ -156,7 +156,7 @@ impl Pipeline {
         self.window.context().swap_buffers().unwrap();
     }
     // Handle window events
-    pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: WindowEvent, control_flow: &mut ControlFlow) {
+    pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: &WindowEvent, control_flow: &mut ControlFlow) {
         match event {
             WindowEvent::Resized(size) => {
                 self.window.dimensions = vek::Extent2::new(size.width.max(1) as u16, size.height.max(1) as u16);

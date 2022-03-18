@@ -9,3 +9,4 @@ pub mod rendering_system;
 pub mod screenshot_system;
 pub mod terrain_system;
 pub mod window_system;
+pub mod networking_system;
