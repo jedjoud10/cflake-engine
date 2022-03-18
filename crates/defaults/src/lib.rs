@@ -61,15 +61,6 @@ pub fn load_default_systems(world: &mut World) {
     // Engine defaults
     SystemExecutionOrder::set(i32::MIN);
 
-    // Register the default components
-    ecs::component::registry::register::<components::Camera>();
-    ecs::component::registry::register::<components::Transform>();
-    ecs::component::registry::register::<components::Chunk>();
-    ecs::component::registry::register::<components::RigidBody>();
-    ecs::component::registry::register::<components::Collider>();
-    ecs::component::registry::register::<components::Renderer>();
-    ecs::component::registry::register::<components::Light>();
-
     camera_system::system(world);
 
     debugging_system::system(world);

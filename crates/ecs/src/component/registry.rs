@@ -37,8 +37,8 @@ pub fn get<T: Component + 'static>() -> Bitfield<u32> {
         let lock = REGISTERED_COMPONENTS.read();
         lock[&TypeId::of::<T>()]
     } else {
-        // Not good
-        panic!("Component {} is not registered!", std::any::type_name::<T>())
+        // Register the component ourselves
+        register::<T>()
     }
 }
 // Cast a boxed component to a reference of that component
