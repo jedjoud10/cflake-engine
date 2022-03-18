@@ -7,10 +7,23 @@ mod tests {
     #[test]
     fn test() {
         // Host
-        let host = Host::host(None).unwrap();
-        let address = host.socket().local_addr().unwrap();
+        let mut host = Host::host().unwrap();
         // Client
-        let client = Client::connect(address).unwrap();
+        let client = Client::connect(host.local_addr()).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        for x in 0..10 {
+            host.poll().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+
+        drop(client);
+
+        for x in 0..10 {
+            host.poll().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+        }
+
+        
 
 
         /*

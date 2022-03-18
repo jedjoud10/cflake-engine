@@ -1,11 +1,11 @@
-use crate::{client::Client, host::Host, PacketReceiver, PacketSender, Payload};
+use crate::{client::Client, host::Host, Payload};
 use enum_as_inner::EnumAsInner;
 
 // Session
 #[derive(EnumAsInner)]
 pub enum Session {
-    Multiplayer(NetworkManager),
-    Singleplayer,
+    Networked(NetworkManager),
+    Local,
 }
 
 // Network manager
@@ -15,9 +15,13 @@ pub enum NetworkManager {
     Client(Client),
 }
 
-// A packet manager that can send/receive specific packets
-#[derive(EnumAsInner)]
-pub enum PacketManager<P: Payload + 'static> {
-    Sender(PacketSender<P>),
-    Receiver(PacketReceiver<P>)
+impl NetworkManager {
+    // Update the network manager, should be called at the start of every frame, or even before every system execution
+    pub fn update(&mut self) -> laminar::Result<()> {
+        match self {
+            NetworkManager::Host(host) => host.poll()?,
+            NetworkManager::Client(client) => client.poll()?,
+        }
+        Ok(())
+    }
 }
