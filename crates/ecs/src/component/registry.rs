@@ -2,12 +2,10 @@ use crate::utils::ComponentError;
 use ahash::AHashMap;
 use bitfield::Bitfield;
 use lazy_static::lazy_static;
+use parking_lot::RwLock;
 use std::{
     any::{Any, TypeId},
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        RwLock,
-    },
+    sync::atomic::{AtomicU32, Ordering},
 };
 
 use super::Component;
@@ -18,9 +16,9 @@ lazy_static! {
 }
 
 // Register a specific component
-pub fn register_component<T: Component + Sized + 'static>() -> Bitfield<u32> {
+pub fn register<T: Component + Sized + 'static>() -> Bitfield<u32> {
     // Register the component
-    let mut lock = REGISTERED_COMPONENTS.write().unwrap();
+    let mut lock = REGISTERED_COMPONENTS.write();
     // Make a copy of the id before the bit shift
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
 
@@ -32,23 +30,19 @@ pub fn register_component<T: Component + Sized + 'static>() -> Bitfield<u32> {
     component_id
 }
 // Get the bitfield ID of a specific component
-pub fn get_component_bitfield<T: Component + 'static>() -> Bitfield<u32> {
-    if is_component_registered::<T>() {
+pub fn get<T: Component + 'static>() -> Bitfield<u32> {
+    let is_registered = REGISTERED_COMPONENTS.read().contains_key(&TypeId::of::<T>());
+    if is_registered {
         // Simple read
-        let lock = REGISTERED_COMPONENTS.read().unwrap();
+        let lock = REGISTERED_COMPONENTS.read();
         lock[&TypeId::of::<T>()]
     } else {
-        // Register if it wasn't registered yet
-        register_component::<T>()
+        // Not good
+        panic!("Component {} is not registered!", std::any::type_name::<T>())
     }
 }
-// Checks if a specific component is registered
-pub fn is_component_registered<T: Component + 'static>() -> bool {
-    let lock = REGISTERED_COMPONENTS.read().unwrap();
-    lock.contains_key(&TypeId::of::<T>())
-}
 // Cast a boxed component to a reference of that component
-pub(crate) fn cast_component<T>(component: &dyn Component) -> Result<&T, ComponentError>
+pub(crate) fn cast<T>(component: &dyn Component) -> Result<&T, ComponentError>
 where
     T: Component + 'static,
 {
@@ -59,7 +53,7 @@ where
     Ok(reference)
 }
 // Cast a boxed component to a mutable reference of that component
-pub(crate) fn cast_component_mut<T>(component: &mut dyn Component) -> Result<&mut T, ComponentError>
+pub(crate) fn cast_mut<T>(component: &mut dyn Component) -> Result<&mut T, ComponentError>
 where
     T: Component + 'static,
 {

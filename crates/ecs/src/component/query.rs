@@ -24,7 +24,7 @@ pub struct ComponentQueryParams {
 impl ComponentQueryParams {
     // This component query shall use components that validate this bitfield
     pub fn link<U: Component + 'static>(mut self) -> Self {
-        let c = registry::get_component_bitfield::<U>();
+        let c = registry::get::<U>();
         self.cbitfield = self.cbitfield.add(&c);
         self
     }

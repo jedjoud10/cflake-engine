@@ -206,7 +206,7 @@ impl ComponentSet {
         // Then get it's pointer and do black magic
         let ptr = cell.get();
         let component = unsafe { &*ptr }.as_ref();
-        let component = registry::cast_component::<T>(component)?;
+        let component = registry::cast::<T>(component)?;
         Ok(component)
     }
     // Get a single component mutably
@@ -221,7 +221,7 @@ impl ComponentSet {
         // Then get it's pointer and do black magic
         let ptr = cell.get();
         let component = unsafe { &mut *ptr }.as_mut();
-        let component = registry::cast_component_mut::<T>(component)?;
+        let component = registry::cast_mut::<T>(component)?;
         // We only care about the index
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);

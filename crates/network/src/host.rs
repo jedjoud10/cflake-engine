@@ -1,9 +1,15 @@
-use std::{collections::HashMap, net::{SocketAddr, Ipv4Addr, Ipv6Addr, SocketAddrV6}, io::Error, thread::JoinHandle, mem::size_of};
+use std::{
+    collections::HashMap,
+    io::Error,
+    mem::size_of,
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6},
+    thread::JoinHandle,
+};
 
-use getset::{Getters, MutGetters, CopyGetters};
-use laminar::{Socket, Packet, SocketEvent};
+use crate::{ConnectedClient, NetworkCache, Payload, PayloadBucketId};
+use getset::{CopyGetters, Getters, MutGetters};
+use laminar::{Packet, Socket, SocketEvent};
 use uuid::Uuid;
-use crate::{NetworkCache, ConnectedClient, Payload, PayloadBucketId};
 
 // A host that has multiple clients connect to it
 #[derive(Getters, MutGetters, CopyGetters)]
@@ -18,7 +24,6 @@ pub struct Host {
     // Network cache
     #[getset(get = "pub", get_mut = "pub")]
     cache: NetworkCache,
-    
 
     // UUIDs of clients that will connect soon
     uuids: HashMap<SocketAddr, Uuid>,
@@ -40,7 +45,9 @@ impl Host {
         let handle = std::thread::spawn(move || socket.start_polling());
 
         Ok(Self {
-            sender, receiver, handle,
+            sender,
+            receiver,
+            handle,
             local_addr,
             cache: NetworkCache::default(),
             uuids: HashMap::default(),
@@ -68,7 +75,7 @@ impl Host {
                         // Add the data to the network cache
                         self.cache.push(packet)
                     }
-                },
+                }
                 SocketEvent::Connect(client_addr) => {
                     // A client has succsessfully made a connection, we can register them as our own
 
@@ -76,28 +83,22 @@ impl Host {
                     assert!(!self.connected.contains_key(&client_addr), "Client address duplication!");
                     assert!(self.uuids.contains_key(&client_addr), "Client UUID not generated!");
                     println!("Server: Client '{}' succsesfully connected", self.uuids.get(&client_addr).unwrap());
-                    
+
                     let uuid = self.uuids.remove(&client_addr).unwrap();
                     self.connected.insert(client_addr, ConnectedClient { uuid });
-                },
+                }
                 SocketEvent::Timeout(client_addr) => {
                     // A client has timed out
                     println!("Server: Client timed out");
-                },
+                }
                 SocketEvent::Disconnect(client_addr) => {
                     // A client has been disconnected
                     assert!(self.connected.contains_key(&client_addr), "Client was not connected in the first place!");
                     let client = self.connected.remove(&client_addr).unwrap();
                     println!("Server: Client '{}' succsesfully disconnected", client.uuid);
-                },
+                }
             }
         }
         Ok(())
-    }
-    // Try to read some payloads from the network cache using their bucket ID
-    pub fn drain_bucket<P: Payload>(&mut self, bucket_id: PayloadBucketId) -> Option<Vec<P>> {
-        let cache = &mut self.cache;
-        let bucket = cache.drain_bucket(bucket_id)?;
-        //Some(bucket)
     }
 }

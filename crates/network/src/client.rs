@@ -1,16 +1,19 @@
-use std::{net::{SocketAddrV6, SocketAddr}, time::SystemTime, thread::JoinHandle};
+use std::{
+    net::{SocketAddr, SocketAddrV6},
+    thread::JoinHandle,
+    time::SystemTime,
+};
 
+use crate::{serialize_payload, NetworkCache, Payload, PayloadBucketId};
 use getset::{Getters, MutGetters};
-use laminar::{Socket, Packet, SocketEvent};
+use laminar::{Packet, Socket, SocketEvent};
 use uuid::Uuid;
-use crate::{NetworkCache, serialize_payload, PayloadBucketId};
 
 // Unique identifier for each client that is connected
 #[derive(Hash, PartialEq, Eq)]
 pub struct ConnectedClient {
     pub uuid: Uuid,
 }
-
 
 #[derive(Getters, MutGetters)]
 pub struct Client {
@@ -43,9 +46,11 @@ impl Client {
         sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
 
         Ok(Self {
-            sender, receiver, handle,
+            sender,
+            receiver,
+            handle,
             cache: NetworkCache::default(),
-            host: addr
+            host: addr,
         })
     }
     // Handle connections and server->client packets
@@ -57,8 +62,13 @@ impl Client {
                 SocketEvent::Timeout(_) => todo!(),
                 SocketEvent::Disconnect(_) => todo!(),
             }
-        } 
+        }
         Ok(())
     }
-    // Send a payload to the server, using a specific packet metadata
+    /*
+    // Send a payload to the server, using a specific packet bucket ID
+    pub fn send<P: Payload>(&self, bucket_id: PayloadBucketId, payload: P) -> laminar::Result<()> {
+        self.sender.send()
+    }
+    */
 }

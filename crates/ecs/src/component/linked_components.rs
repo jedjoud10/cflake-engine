@@ -31,7 +31,7 @@ fn invalid_err_not_linked() -> ComponentError {
 impl LinkedComponents {
     // Check if we have a component linked
     pub fn is_linked<T: Component + 'static>(&self) -> bool {
-        let cbitfield = crate::component::registry::get_component_bitfield::<T>();
+        let cbitfield = crate::component::registry::get::<T>();
         self.linked.contains_key(&cbitfield)
     }
     // Get a reference to a specific linked component
@@ -40,7 +40,7 @@ impl LinkedComponents {
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
-        let cbitfield = registry::get_component_bitfield::<T>();
+        let cbitfield = registry::get::<T>();
         let key = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let map = self.components.read();
         let cell = map.get(*key).ok_or_else(invalid_err)?;
@@ -48,7 +48,7 @@ impl LinkedComponents {
         // Then get it's pointer and do black magic
         let ptr = cell.get();
         let component = unsafe { &*ptr }.as_ref();
-        let component = registry::cast_component::<T>(component)?;
+        let component = registry::cast::<T>(component)?;
         Ok(component)
     }
     // Get a mutable reference to a specific linked entity components struct
@@ -58,7 +58,7 @@ impl LinkedComponents {
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
-        let cbitfield = registry::get_component_bitfield::<T>();
+        let cbitfield = registry::get::<T>();
         let key = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let map = self.components.read();
         let cell = map.get(*key).ok_or_else(invalid_err)?;
@@ -66,7 +66,7 @@ impl LinkedComponents {
         // Then get it's pointer and do black magic
         let ptr = cell.get();
         let component = unsafe { &mut *ptr }.as_mut();
-        let component = registry::cast_component_mut::<T>(component)?;
+        let component = registry::cast_mut::<T>(component)?;
         // We only care about the index
         let index = key.data().as_ffi() & 0xffff_ffff;
         self.mutated_components.set(index as usize, true);
@@ -79,7 +79,7 @@ impl LinkedComponents {
         T: Component + Send + Sync + 'static,
     {
         // Get the UnsafeCell
-        let cbitfield = registry::get_component_bitfield::<T>();
+        let cbitfield = registry::get::<T>();
         let key = self.linked.get(&cbitfield).ok_or_else(invalid_err_not_linked)?;
         let map = self.components.read();
         let cell = map.get(*key).ok_or_else(invalid_err)?;
@@ -87,7 +87,7 @@ impl LinkedComponents {
         // Then get it's pointer and do black magic
         let ptr = cell.get();
         let component = unsafe { &mut *ptr }.as_mut();
-        let component = registry::cast_component_mut::<T>(component)?;
+        let component = registry::cast_mut::<T>(component)?;
         Ok(component)
     }
     // Check if a specific component has been updated during this frame
@@ -96,7 +96,7 @@ impl LinkedComponents {
         T: Component + Send + Sync + 'static,
     {
         // Check if we even have the component
-        let cbitfield = registry::get_component_bitfield::<T>();
+        let cbitfield = registry::get::<T>();
         let key = self.linked.get(&cbitfield).ok_or_else(invalid_err)?;
 
         // We only care about the index
