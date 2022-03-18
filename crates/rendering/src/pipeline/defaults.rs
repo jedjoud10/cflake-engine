@@ -30,7 +30,6 @@ pub struct DefaultElements {
 
     // Default rendering shader
     pub shader: Handle<Shader>,
-    pub missing_shader: Handle<Shader>,
 }
 
 impl DefaultElements {
@@ -140,7 +139,7 @@ impl DefaultElements {
             pbr_mat_white,
             pbr_mat_black,
             shader,
-            missing_shader,
+            //missing_shader,
         }
     }
 }

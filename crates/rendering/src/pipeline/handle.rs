@@ -45,11 +45,7 @@ impl<T: PipelineElement> std::fmt::Debug for Handle<T> {
 
 impl<T: PipelineElement> Default for Handle<T> {
     fn default() -> Self {
-        Self {
-            key: Arc::new(PipelineElemKey::null()),
-            to_remove: None,
-            _phantom: PhantomData::default(),
-        }
+        Self::null()
     }
 }
 
@@ -59,6 +55,29 @@ impl<T: PipelineElement> Clone for Handle<T> {
             key: self.key.clone(),
             to_remove: self.to_remove.clone(),
             _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl<T: PipelineElement> Handle<T> {
+    // Check if a handle is valid
+    pub fn is_null(&self) -> bool {
+        self.key.is_null()
+    }
+    // Create a new invalid handle
+    pub fn null() -> Self {
+        Self {
+            key: Arc::new(PipelineElemKey::null()),
+            to_remove: None,
+            _phantom: PhantomData::default(),
+        }
+    }
+    // Map the handle if it is invalid
+    pub fn fallback_to<'a>(&'a self, default: &'a Self) -> &'a Self {
+        if !self.is_null() {
+            self
+        } else {
+            default
         }
     }
 }

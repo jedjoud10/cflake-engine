@@ -21,6 +21,11 @@ impl<'a> Uniforms<'a> {
     pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline) -> Self {
         let mut me = Self { program, pipeline };
         me.bind();
+        // Set some global uniforms while we're at it
+        me.set_f32("_time", pipeline.elapsed());
+        me.set_f32("_delta", pipeline.delta());
+        me.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
+        me.set_vec2f32("_nf_planes", pipeline.camera().clip_planes);
         me
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
@@ -31,11 +36,6 @@ impl<'a> Uniforms<'a> {
     // Bind the shader for execution/rendering
     pub fn bind(&mut self) {
         unsafe { gl::UseProgram(self.program.program()) }
-        // Set some global uniforms while we're at it
-        self.set_f32("_time", self.pipeline.elapsed());
-        self.set_f32("_delta", self.pipeline.delta());
-        self.set_vec2i32("_resolution", self.pipeline.window().dimensions().as_().into());
-        self.set_vec2f32("_nf_planes", self.pipeline.camera().clip_planes);
     }
     // U32
     pub fn set_u32(&mut self, name: &str, val: u32) {
@@ -166,10 +166,12 @@ impl<'a> Uniforms<'a> {
     }
     // Textures
     pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
+        assert!(!texture.is_null(), "Texture bound to uniform '{}' is invalid", name);
         let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D, texture.name().unwrap());
     }
     pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
+        assert!(!texture.is_null(), "Texture Bundle bound to uniform '{}' is invalid", name);
         let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name().unwrap());
     }
