@@ -79,10 +79,10 @@ pub fn load_default_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
 
+    networking_system::system(world);
     rendering_system::system(world);
     gui_system::system(world);
     screenshot_system::system(world);
-    networking_system::system(world);
 
     // We gotta add the default globals
     world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();

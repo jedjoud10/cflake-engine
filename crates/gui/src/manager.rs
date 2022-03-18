@@ -1,4 +1,5 @@
 use crate::painter::Painter;
+use egui_winit::winit::event::WindowEvent;
 use rendering::gl;
 use rendering::pipeline::Pipeline;
 
@@ -24,7 +25,7 @@ impl GUIManager {
         }
     }
     // We have received some events from glutin
-    pub fn receive_event(&mut self, event: &egui_winit::winit::event::WindowEvent<'_>) -> bool {
+    pub fn receive_event(&mut self, event: &WindowEvent<'_>) -> bool {
         let context = &self.egui;
         self.state.on_event(context, event)
     }
@@ -35,8 +36,10 @@ impl GUIManager {
     }
     // End frame
     pub fn draw_frame(&mut self, pipeline: &mut Pipeline) {
+        let window = pipeline.window().context().window();
         let output = self.egui.end_frame();
         // Decompose
+        self.state.handle_platform_output(window, &mut self.egui, output.platform_output);
         let clipped_shapes = output.shapes;
         let deltas = output.textures_delta;
         let meshes = self.egui.tessellate(clipped_shapes);

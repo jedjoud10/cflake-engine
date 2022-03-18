@@ -13,13 +13,9 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
         Some(session) => {
         },
         None => {
-            egui::Window::new("Networking").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
+            egui::Window::new("Networking").show(gui, |ui| {
                 // Client server IP lol
-                ui.horizontal(|ui| {
-                    ui.label("Host Address: ");
-                    ui.text_edit_multiline(&mut manager.host_addr_string);
-                });
-                dbg!(&manager.host_addr_string);
+                ui.text_edit_singleline(&mut manager.host_addr_string);
                 // Convert to an IP
                 let ip = manager.host_addr_string.parse::<SocketAddr>();
 
@@ -29,6 +25,7 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                     manager.session = Some(NetworkSession::Host(host));
                     return;
                 }
+
                 if let Ok(ip) = ip {
                     if ui.button("Join Session").clicked() {
                         // Try to connect
