@@ -12,3 +12,4 @@ enum-as-inner = "0.4.0"
 getset = "0.1.2"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
+laminar = "0.5.0"
