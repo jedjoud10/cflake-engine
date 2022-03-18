@@ -1,40 +1,64 @@
-use getset::Getters;
-use serde::Serialize;
-use std::{
-    io::{self, Error},
-    marker::PhantomData,
-    net::{Ipv6Addr, SocketAddrV6, UdpSocket},
-};
+use std::{net::{SocketAddrV6, SocketAddr}, time::SystemTime, thread::JoinHandle};
 
-use crate::{data::serialize_payload, PacketMetadata, Payload, cache::NetworkCache, sockets::StreamSockets};
-// A client that connects to a host
-#[derive(Getters)]
+use getset::{Getters, MutGetters};
+use laminar::{Socket, Packet, SocketEvent};
+use uuid::Uuid;
+use crate::{NetworkCache, serialize_payload, PayloadBucketId};
+
+// Unique identifier for each client that is connected
+#[derive(Hash, PartialEq, Eq)]
+pub struct ConnectedClient {
+    pub uuid: Uuid,
+}
+
+
+#[derive(Getters, MutGetters)]
 pub struct Client {
-    // Address
-    #[getset(get = "pub")]
-    addr: SocketAddrV6,
+    // Sender and receiver
+    sender: crossbeam_channel::Sender<Packet>,
+    receiver: crossbeam_channel::Receiver<SocketEvent>,
+    handle: JoinHandle<()>,
 
     // Network cache
-    #[getset(get = "pub")]
+    #[getset(get = "pub", get_mut = "pub")]
     cache: NetworkCache,
 
-    // Writing streams
-    #[getset(get = "pub")]
-    stream: StreamSockets,
+    // The hosts's address
+    host: SocketAddr,
 }
 
 impl Client {
-    // Create a new client by connecting to a server
-    pub fn connect(addr: SocketAddrV6, max_buffer_size: usize) -> Result<Self, Error> {
-        // Create the localhost socket address
-        let local = SocketAddrV6::new(Ipv6Addr::LOCALHOST, 0, 0, 0);
+    // Create a client and connect it to a host
+    pub fn connect(addr: SocketAddr) -> laminar::Result<Self> {
+        // Create a new laminar socket for ourselves
+        let mut socket = Socket::bind_any()?;
+        println!("Client: Bound on port '{}' & connected to server socket '{}'", socket.local_addr().unwrap().port(), addr);
+
+        // Start polling in another thread
+        let sender = socket.get_packet_sender();
+        let receiver = socket.get_event_receiver();
+        let handle = std::thread::spawn(move || socket.start_polling());
+
+        // Send a single packet to establish a connection
+        sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
+
         Ok(Self {
-            addr: local,
-            cache: NetworkCache::new(max_buffer_size),
-            stream: StreamSockets {
-                udp_stream: todo!(),
-                tcp_stream: todo!(),
-            }
+            sender, receiver, handle,
+            cache: NetworkCache::default(),
+            host: addr
         })
     }
+    // Handle connections and server->client packets
+    pub fn poll(&mut self) -> laminar::Result<()> {
+        for event in self.receiver.try_iter() {
+            match event {
+                SocketEvent::Packet(_) => todo!(),
+                SocketEvent::Connect(_) => todo!(),
+                SocketEvent::Timeout(_) => todo!(),
+                SocketEvent::Disconnect(_) => todo!(),
+            }
+        } 
+        Ok(())
+    }
+    // Send a payload to the server, using a specific packet metadata
 }

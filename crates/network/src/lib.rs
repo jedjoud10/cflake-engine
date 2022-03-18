@@ -1,11 +1,10 @@
 // Export
-pub mod client;
-pub mod connection;
-pub mod data;
+mod client;
+mod host;
+mod session;
+mod data;
+pub use client::*;
+pub use host::*;
+pub use session::*;
 pub use data::*;
-pub mod host;
-pub mod manager;
-pub mod cache;
-pub mod sockets;
-mod protocols;
 mod tests;

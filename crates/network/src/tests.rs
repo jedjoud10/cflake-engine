@@ -1,59 +1,81 @@
 #[cfg(test)]
 mod tests {
-    use std::net::{Ipv6Addr, SocketAddrV6};
+    use std::net::{SocketAddrV6, Ipv6Addr, SocketAddr};
 
-    use serde::{Deserialize, Serialize};
-
-    use crate::{
-        client::Client,
-        host::Host,
-        manager::NetworkManager,
-        protocols::{UdpProtocol, Protocol, transport::{PacketDirection, PacketChannel}, Poller
-        }, PacketMetadata,
-    };
+    use crate::{Host, Client};
 
     #[test]
     fn test() {
-        // Create a host, and open it's port on a random port
-        let host = Host::open(512, Some(5000)).unwrap();
-        // Create a client and connect to a server
-        let addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, 5000, 0, 0);
-        let client = Client::connect(addr, 512).unwrap();
-        
-        
-        // Make two network managers
-        let mut host = NetworkManager::Host(host);
-        let mut client = NetworkManager::Client(client);
+        // Host
+        let mut host = Host::host().unwrap();
+        // Client
+        let client = Client::connect(host.local_addr()).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        for x in 0..10 {
+            host.poll().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
 
-        // Params
-        let meta = PacketMetadata { bucket_id: 0 };
+        drop(client);
+
+        for x in 0..10 {
+            host.poll().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+        }
+
         
-        let mut udp: PacketChannel<f32, UdpProtocol> = UdpProtocol::new(&mut host, PacketDirection::ClientToServer).unwrap();
-        let receiver = udp.as_receiver_mut().unwrap();
 
-        let host = host.as_host_mut().unwrap();
 
-        UdpProtocol::poll_from(host.cache_mut(), todo!()).unwrap();
         /*
+        use laminar::{Socket, Packet};
 
-        UdpProtocol::recv(receiver);
+        // Creates the socket
+        let mut socket1 = Socket::bind_any().unwrap();
+        let packet_sender = socket1.get_packet_sender();
+        let mut socket2 = Socket::bind_any().unwrap();
+        let addr = socket2.local_addr().unwrap();
+        let event_receiver = socket2.get_event_receiver();
+        let packet_sender2 = socket2.get_packet_sender(); 
+
+        // Bytes to sent
+        let bytes = vec![0, 2, 0, 0];
+
+        // Creates packets with different reliabilities
+        let reliable = Packet::reliable_unordered(addr, bytes);
+        packet_sender.send(reliable).unwrap();
+
+        // Starts the socket, which will start a poll mechanism to receive and send messages.
+        let _thread = std::thread::spawn(move || socket1.start_polling());
+        let _thread2 = std::thread::spawn(move || socket2.start_polling());
+
+        for event in event_receiver {
+            match event {
+                laminar::SocketEvent::Packet(packet) => {
+                    let endpoint: SocketAddr = packet.addr();
+                    let received_data: &[u8] = packet.payload();
+                    packet_sender2.send(Packet::reliable_unordered(addr, vec![0])).unwrap();
+                    dbg!(received_data);
+                },
+                laminar::SocketEvent::Connect(_) => todo!(),
+                laminar::SocketEvent::Timeout(_) => todo!(),
+                laminar::SocketEvent::Disconnect(_) => todo!(),
+            }
+        }
         */
         /*
 
-        #[derive(Serialize, Deserialize)]
-        struct CustomPayload {
-            value: f32,
-        }
-
-        // Make a packet channel
-        let mut sender = channel::<CustomPayload>(&mut client, &params, PacketDirection::ClientToServer).unwrap();
-        let sender = sender.as_sender_mut().unwrap();
-        let mut receiver = channel::<CustomPayload>(&mut host, &params, PacketDirection::ClientToServer).unwrap();
-        let receiver = receiver.as_receiver_mut().unwrap();
-
-        sender.send(CustomPayload { value: 0.591 }).unwrap();
-        let payloads = receiver.recv().unwrap();
-        dbg!(payloads[0].value);
+        
+        // Specifies on which stream and how to order our packets, check out our book and documentation for more information
+        let unreliable = Packet::unreliable_sequenced(addr, bytes, Some(1));
+        let reliable_sequenced = Packet::reliable_sequenced(addr, bytes, Some(2));
+        let reliable_ordered = Packet::reliable_ordered(addr, bytes, Some(3));
+        
+        // Sends the created packets
+        packet_sender.send(unreliable).unwrap();
+        packet_sender.send(reliable).unwrap();
+        packet_sender.send(unreliable_sequenced).unwrap();
+        packet_sender.send(reliable_sequenced).unwrap();
+        packet_sender.send(reliable_ordered).unwrap();
         */
     }
 }
