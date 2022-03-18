@@ -30,14 +30,14 @@ fn invalid_err_not_linked() -> ComponentError {
 }
 impl LinkedComponents {
     // Check if we have a component linked
-    pub fn is_linked<T: Component + 'static>(&self) -> bool {
+    pub fn is_linked<T: Component>(&self) -> bool {
         let cbitfield = crate::component::registry::get::<T>();
         self.linked.contains_key(&cbitfield)
     }
     // Get a reference to a specific linked component
     pub fn get<T>(&self) -> Result<&T, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Get the UnsafeCell
         let cbitfield = registry::get::<T>();
@@ -55,7 +55,7 @@ impl LinkedComponents {
     // This mutation can be detected using was_mutated
     pub fn get_mut<T>(&mut self) -> Result<&mut T, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Get the UnsafeCell
         let cbitfield = registry::get::<T>();
@@ -76,7 +76,7 @@ impl LinkedComponents {
     // This won't update the mutated_components bitfield
     pub fn get_mut_silent<T>(&mut self) -> Result<&mut T, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Get the UnsafeCell
         let cbitfield = registry::get::<T>();
@@ -93,7 +93,7 @@ impl LinkedComponents {
     // Check if a specific component has been updated during this frame
     pub fn was_mutated<T>(&self) -> Result<bool, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Check if we even have the component
         let cbitfield = registry::get::<T>();

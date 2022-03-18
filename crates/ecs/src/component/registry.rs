@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 // Register a specific component
-pub fn register<T: Component + Sized + 'static>() -> Bitfield<u32> {
+pub fn register<T: Component + Sized>() -> Bitfield<u32> {
     // Register the component
     let mut lock = REGISTERED_COMPONENTS.write();
     // Make a copy of the id before the bit shift
@@ -30,7 +30,7 @@ pub fn register<T: Component + Sized + 'static>() -> Bitfield<u32> {
     component_id
 }
 // Get the bitfield ID of a specific component
-pub fn get<T: Component + 'static>() -> Bitfield<u32> {
+pub fn get<T: Component>() -> Bitfield<u32> {
     let is_registered = REGISTERED_COMPONENTS.read().contains_key(&TypeId::of::<T>());
     if is_registered {
         // Simple read
@@ -44,7 +44,7 @@ pub fn get<T: Component + 'static>() -> Bitfield<u32> {
 // Cast a boxed component to a reference of that component
 pub(crate) fn cast<T>(component: &dyn Component) -> Result<&T, ComponentError>
 where
-    T: Component + 'static,
+    T: Component,
 {
     let component_any: &dyn Any = component.as_any();
     let reference = component_any
@@ -55,7 +55,7 @@ where
 // Cast a boxed component to a mutable reference of that component
 pub(crate) fn cast_mut<T>(component: &mut dyn Component) -> Result<&mut T, ComponentError>
 where
-    T: Component + 'static,
+    T: Component,
 {
     let component_any: &mut dyn Any = component.as_any_mut();
     let reference_mut = component_any

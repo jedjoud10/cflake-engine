@@ -18,7 +18,7 @@ slotmap::new_key_type! {
 
 // A component that can be accessed through multiple worker threads
 // This allows for parralel computing, but we must be careful with reading/writing to it
-pub trait Component: Sync {
+pub trait Component: Sync + 'static {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }

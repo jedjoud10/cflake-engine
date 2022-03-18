@@ -5,8 +5,8 @@ use std::{
     collections::{hash_map::Entry, HashMap},
     io::{self, BufRead, BufReader, Cursor, Error, Read},
 };
-pub trait Payload: Serialize + DeserializeOwned {}
-impl<T> Payload for T where T: Serialize + DeserializeOwned {}
+pub trait Payload: Serialize + DeserializeOwned + 'static {}
+impl<T> Payload for T where T: Serialize + DeserializeOwned + 'static {}
 pub type PayloadBucketId = u16;
 
 // Serialize a payload, with it's packet bucket ID
@@ -15,9 +15,6 @@ pub fn serialize_payload<P: Payload>(bucket_id: PayloadBucketId, payload: P) -> 
     let bucket_id_bytes = bucket_id.to_be_bytes();
     // Serialize the payload
     let payload = serde_json::to_string_pretty(&payload)?;
-
-    println!("{:?}", &bucket_id_bytes);
-    println!("{}", &payload);
 
     // Convert to bytes
     let mut bucket_bytes = bucket_id_bytes.to_vec();

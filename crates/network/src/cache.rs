@@ -5,7 +5,7 @@ use std::{
 
 use laminar::Packet;
 
-use crate::{deserialize_bucket_id, deserialize_payload, Payload, PayloadBucketId};
+use crate::{deserialize_bucket_id, deserialize_payload, Payload, PayloadBucketId, registry};
 
 // Stored network cache
 #[derive(Default)]
@@ -22,7 +22,8 @@ impl NetworkCache {
         }
     }
     // Drain a whole bucket of packets into a payload cache
-    pub fn drain_to_payload_cache<P: Payload>(&mut self, bucket_id: PayloadBucketId, cache: &mut PayloadCache<P>) {
+    pub fn drain_to_payload_cache<P: Payload>(&mut self, cache: &mut PayloadCache<P>) {
+        let bucket_id = registry::get_bucket_id::<P>();
         let vec = self.buckets.entry(bucket_id).or_default();
         let vec = std::mem::take(vec);
         // Deserialize
@@ -41,6 +42,12 @@ impl NetworkCache {
 // Payload cache
 pub struct PayloadCache<P: Payload> {
     payloads: Vec<P>,
+}
+
+impl<P: Payload> Default for PayloadCache<P> {
+    fn default() -> Self {
+        Self { payloads: Default::default() }
+    }
 }
 
 impl<P: Payload> PayloadCache<P> {

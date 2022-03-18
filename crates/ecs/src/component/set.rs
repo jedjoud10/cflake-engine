@@ -197,7 +197,7 @@ impl ComponentSet {
     // Get a single component
     pub fn get<T>(&self, key: ComponentKey) -> Result<&T, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Read directly
         let map = self.components.read();
@@ -212,7 +212,7 @@ impl ComponentSet {
     // Get a single component mutably
     pub fn get_mut<T>(&mut self, key: ComponentKey) -> Result<&mut T, ComponentError>
     where
-        T: Component + Send + Sync + 'static,
+        T: Component + Send + Sync,
     {
         // Read directly
         let map = self.components.read();

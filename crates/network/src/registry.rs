@@ -1,5 +1,5 @@
 use std::{
-    any::TypeId,
+    any::{TypeId, type_name},
     sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering},
 };
 
@@ -26,8 +26,10 @@ pub fn register<P: Payload + 'static>() -> PayloadBucketId {
 }
 
 // Get the bucket ID of a specific payload type
-pub fn get_bucket_id<P: Payload + 'static>() -> Option<PayloadBucketId> {
+pub fn get_bucket_id<P: Payload + 'static>() -> PayloadBucketId {
     // Read
     let read = REGSISTERED_BUCKET_IDS.read();
-    read.get(&TypeId::of::<P>()).cloned()
+    if let Some(id) = read.get(&TypeId::of::<P>()).cloned() { id } else {
+        panic!("Payload '{}' does not have a registered bucket ID!", type_name::<P>())
+    }
 }
