@@ -152,7 +152,7 @@ pub mod test {
         let mut group = ComponentUnlinkGroup::default();
         group.unlink::<Tagged>().unwrap();
         ecs.components.unlink(key, &mut ecs.entities, &mut ecs.systems, group).unwrap();
-        assert_eq!(ecs.entities.get(key).unwrap().cbitfield, registry::get_component_bitfield::<Name>());
+        assert_eq!(ecs.entities.get(key).unwrap().cbitfield, registry::get::<Name>());
     }
     // Test multiple queries
     #[test]

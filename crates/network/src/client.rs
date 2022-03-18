@@ -1,16 +1,20 @@
-use std::{net::{SocketAddrV6, SocketAddr}, time::SystemTime, thread::JoinHandle};
+use std::{
+    net::{SocketAddr, SocketAddrV6},
+    thread::JoinHandle,
+    time::SystemTime, io::Error,
+};
 
+use crate::{serialize_payload, NetworkCache, Payload, PayloadBucketId, registry};
 use getset::{Getters, MutGetters};
-use laminar::{Socket, Packet, SocketEvent};
+use laminar::{Packet, Socket, SocketEvent};
+use serde::Serialize;
 use uuid::Uuid;
-use crate::{NetworkCache, serialize_payload, PayloadBucketId};
 
 // Unique identifier for each client that is connected
 #[derive(Hash, PartialEq, Eq)]
 pub struct ConnectedClient {
     pub uuid: Uuid,
 }
-
 
 #[derive(Getters, MutGetters)]
 pub struct Client {
@@ -43,9 +47,11 @@ impl Client {
         sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
 
         Ok(Self {
-            sender, receiver, handle,
+            sender,
+            receiver,
+            handle,
             cache: NetworkCache::default(),
-            host: addr
+            host: addr,
         })
     }
     // Handle connections and server->client packets
@@ -57,8 +63,38 @@ impl Client {
                 SocketEvent::Timeout(_) => todo!(),
                 SocketEvent::Disconnect(_) => todo!(),
             }
-        } 
+        }
         Ok(())
     }
-    // Send a payload to the server, using a specific packet metadata
+    // How we send messages to the server
+    pub fn send_unreliable_unordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
+        let bucket_id = registry::get_bucket_id::<P>();
+        let packet = Packet::unreliable(self.host, serialize_payload(bucket_id, payload)?);
+        self.sender.send(packet).unwrap();
+        Ok(())
+    }
+    pub fn send_reliable_unordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
+        let bucket_id = registry::get_bucket_id::<P>();
+        let packet = Packet::reliable_unordered(self.host, serialize_payload(bucket_id, payload)?);
+        self.sender.send(packet).unwrap();
+        Ok(())
+    }
+    pub fn send_reliable_ordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
+        let bucket_id = registry::get_bucket_id::<P>();
+        let packet = Packet::reliable_ordered(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+        self.sender.send(packet).unwrap();
+        Ok(())
+    }
+    pub fn send_reliable_sequenced<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
+        let bucket_id = registry::get_bucket_id::<P>();
+        let packet = Packet::reliable_sequenced(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+        self.sender.send(packet).unwrap();
+        Ok(())
+    }
+    pub fn send_unreliable_sequences<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
+        let bucket_id = registry::get_bucket_id::<P>();
+        let packet = Packet::unreliable_sequenced(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+        self.sender.send(packet).unwrap();
+        Ok(())
+    }
 }

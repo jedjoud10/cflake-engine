@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use std::net::{SocketAddrV6, Ipv6Addr, SocketAddr};
+    use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
 
-    use crate::{Host, Client};
+    use crate::{Client, Host, registry::register, PayloadCache};
 
     #[test]
     fn test() {
@@ -16,16 +16,22 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(20));
         }
 
-        drop(client);
+        register::<f32>();
+        register::<u32>();
+
+        //client.send();
+        client.send_reliable_ordered::<u32>(012).unwrap();
 
         for x in 0..10 {
             host.poll().unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1000));
         }
 
-        
-
-
+        let mut cache = PayloadCache::<u32>::default();
+        host.cache_mut().drain_to_payload_cache(&mut cache);
+        for val in cache.iter() {
+            dbg!(val);
+        }
         /*
         use laminar::{Socket, Packet};
 
@@ -35,7 +41,7 @@ mod tests {
         let mut socket2 = Socket::bind_any().unwrap();
         let addr = socket2.local_addr().unwrap();
         let event_receiver = socket2.get_event_receiver();
-        let packet_sender2 = socket2.get_packet_sender(); 
+        let packet_sender2 = socket2.get_packet_sender();
 
         // Bytes to sent
         let bytes = vec![0, 2, 0, 0];
@@ -64,12 +70,12 @@ mod tests {
         */
         /*
 
-        
+
         // Specifies on which stream and how to order our packets, check out our book and documentation for more information
         let unreliable = Packet::unreliable_sequenced(addr, bytes, Some(1));
         let reliable_sequenced = Packet::reliable_sequenced(addr, bytes, Some(2));
         let reliable_ordered = Packet::reliable_ordered(addr, bytes, Some(3));
-        
+
         // Sends the created packets
         packet_sender.send(unreliable).unwrap();
         packet_sender.send(reliable).unwrap();

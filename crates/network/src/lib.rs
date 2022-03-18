@@ -1,10 +1,14 @@
 // Export
+mod cache;
 mod client;
-mod host;
-mod session;
 mod data;
+mod host;
+mod registry;
+mod session;
+pub use cache::*;
 pub use client::*;
-pub use host::*;
-pub use session::*;
 pub use data::*;
+pub use host::*;
+use registry::*;
+pub use session::*;
 mod tests;
