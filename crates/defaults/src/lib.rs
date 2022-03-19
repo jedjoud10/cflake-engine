@@ -80,9 +80,9 @@ pub fn load_default_systems(world: &mut World) {
     screenshot_system::system(world);
 
     // We gotta add the default globals
-    world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
-    world.globals.add(crate::globals::NetworkManager::default()).unwrap();
-    world.globals.add(crate::globals::Physics::default()).unwrap();
+    world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
+    world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
+    world.globals.insert(crate::globals::Physics::default()).unwrap();
 }
 // Load the debugging systems
 pub fn load_debugging_systems(world: &mut World) {

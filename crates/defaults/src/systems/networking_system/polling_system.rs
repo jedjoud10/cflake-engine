@@ -26,5 +26,8 @@ pub fn system(world: &mut World) {
     register::<i32>();
     register::<i64>();
     register::<i128>();
+    register::<String>();
+
+
     world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
 }

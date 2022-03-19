@@ -130,7 +130,7 @@ fn init(world: &mut World) {
             ..Default::default()
         },
     ));
-    world.globals.add(terrain).unwrap();
+    world.globals.insert(terrain).unwrap();
 
     // And add it to the world as an entity
     let mut group = ComponentLinkingGroup::default();

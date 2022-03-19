@@ -1,8 +1,8 @@
-use std::{mem::size_of, net::SocketAddr, thread::JoinHandle};
+use std::{mem::size_of, net::SocketAddr, thread::JoinHandle, marker::PhantomData, time::Duration};
 
 use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use getset::{Getters, MutGetters};
-use laminar::{Packet, Result, Socket, SocketEvent};
+use laminar::{Packet, Result, Socket, SocketEvent, Config};
 use uuid::Uuid;
 
 #[derive(Getters, MutGetters)]
@@ -22,13 +22,18 @@ pub struct Client {
 
     // The host's address
     host: SocketAddr,
+
+    _phantom: PhantomData<*const ()>,
 }
 
 impl Client {
     // Create a client and connect it to a host
     pub fn connect(addr: SocketAddr) -> Result<Self> {
         // Create a new laminar socket for ourselves
-        let mut socket = Socket::bind_any()?;
+        let mut socket = Socket::bind_any_with_config(Config {
+            heartbeat_interval: Some(Duration::from_secs(3)),
+            ..Default::default()
+        })?;
         println!("Client: Bound on port '{}' & connected to server socket '{}'", socket.local_addr().unwrap().port(), addr);
 
         // Start polling in another thread
@@ -63,6 +68,7 @@ impl Client {
             _handle,
             cache: NetworkCache::default(),
             uuid,
+            _phantom: Default::default(),
         })
     }
     // Handle connections and server->client packets
@@ -82,8 +88,8 @@ impl Client {
         Ok(())
     }
     // Send a packet to the server using a special packet type
-    pub fn send<P: Payload + 'static>(&mut self, payload: P, _type: PacketType) {
-        send(self.host, payload, &mut self.sender, _type).unwrap();
+    pub fn send<P: Payload + 'static>(&self, payload: P, _type: PacketType) {
+        send(self.host, payload, &self.sender, _type).unwrap();
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{mem::size_of, net::SocketAddr, thread::JoinHandle};
+use std::{mem::size_of, net::SocketAddr, thread::JoinHandle, marker::PhantomData};
 
 use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use bimap::BiHashMap;
@@ -17,12 +17,14 @@ pub struct Host {
     local_addr: SocketAddr,
 
     // Network cache
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub")]
     cache: NetworkCache,
 
     // Connected clients
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub")]
     clients: BiHashMap<SocketAddr, Uuid>,
+
+    _phantom: PhantomData<*const ()>,
 }
 
 impl Host {
@@ -45,6 +47,7 @@ impl Host {
             local_addr,
             cache: Default::default(),
             clients: Default::default(),
+            _phantom: Default::default(),
         })
     }
     // Poll all the event (packets, connections) that we must handle
@@ -64,7 +67,7 @@ impl Host {
                         // Can't do anything unless we are connected
                         continue;
                     }
-
+                    println!("Server: Received packet from Client '{}'", self.clients.get_by_left(&client_addr).unwrap());
                     if packet.payload().len() >= size_of::<PayloadBucketId>() {
                         // Add the data to the network cache
                         let _bucket_id = self.cache.push(packet);
@@ -93,10 +96,10 @@ impl Host {
         Ok(())
     }
     // Send a packet to the a specific client using it's UUID
-    pub fn send<P: Payload + 'static>(&mut self, payload: P, _type: PacketType, uuid: Uuid) -> Option<()> {
+    pub fn send<P: Payload + 'static>(&self, payload: P, _type: PacketType, uuid: Uuid) -> Option<()> {
         // Get the client's socket address
         let addr = self.clients.get_by_right(&uuid)?;
-        send(addr.clone(), payload, &mut self.sender, _type).unwrap();
+        send(addr.clone(), payload, &self.sender, _type).unwrap();
         Some(())
     }
 }
