@@ -28,7 +28,8 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
         uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
         uniforms.set_shader_storage("terrain_edits", &mut generator.ssbo_edits, 1);
         uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());
-        uniforms.set_i32("node_size", chunk.coords.size.get() as i32);
+        uniforms.set_u32("node_depth", chunk.coords.depth as u32);
+        uniforms.set_u32("node_size", chunk.coords.size.get() as u32);
         uniforms.set_u32("num_terrain_edits", generator.ssbo_edits.storage().len() as u32);
         // Now we can execute the compute shader and the read bytes command
         let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS, AXIS, AXIS));
@@ -42,7 +43,8 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
         uniforms.set_shader_storage("arbitrary_voxels", &mut generator.ssbo_voxels, 0);
         uniforms.set_shader_storage("output_voxels", &mut generator.ssbo_final_voxels, 1);
         uniforms.set_vec3f32("node_pos", chunk.coords.position.as_());
-        uniforms.set_i32("node_size", chunk.coords.size.get() as i32);
+        uniforms.set_u32("node_depth", chunk.coords.depth as u32);
+        uniforms.set_u32("node_size", chunk.coords.size.get() as u32);
         // Clear the atomics then set them
         generator.atomics.set([0, 0, 0, 0]);
         uniforms.set_atomic_group("_", &mut generator.atomics, 0);

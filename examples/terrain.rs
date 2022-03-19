@@ -12,7 +12,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture2D, TextureFlags, TextureParams},
+        texture::{BundledTextureBuilder, Texture2D, TextureFlags, TextureParams, TextureFilter},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
@@ -27,7 +27,7 @@ fn main() {
 fn init(world: &mut World) {
     cflake_engine::assets::init!("/examples/assets/");
     cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
-    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
+    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/terrain.frsh.glsl");
     cflake_engine::assets::asset!("./assets/user/textures/Snow006_2K_Color.jpg");
     cflake_engine::assets::asset!("./assets/user/textures/Snow006_2K_NormalGL.jpg");
     cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_diff_2k.jpg");
@@ -68,24 +68,30 @@ fn init(world: &mut World) {
     // Load the shader first
     let settings = ShaderInitSettings::default()
         .source("defaults/shaders/voxel_terrain/terrain.vrsh.glsl")
-        .source("defaults/shaders/voxel_terrain/terrain.frsh.glsl");
+        .source("user/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
     let texture_diff_1 = assetc::load::<Texture2D>("user/textures/Snow006_2K_Color.jpg").unwrap();
     let texture_norm_1 = assetc::load::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg").unwrap();
     let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
     let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    /*
     let texture_diff_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
     let texture_norm_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
     let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
     let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2, texture_diff_3], None).unwrap();
+    */
+    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2], Some(TextureParams {
+        filter: TextureFilter::Nearest,
+        ..Default::default()
+    })).unwrap();
     let normals = BundledTextureBuilder::build(
-        &[texture_norm_1, texture_norm_2, texture_norm_3],
+        &[texture_norm_1, texture_norm_2],
         Some(TextureParams {
             flags: TextureFlags::MIPMAPS,
+            filter: TextureFilter::Nearest,
             ..Default::default()
         }),
     )
@@ -113,7 +119,7 @@ fn init(world: &mut World) {
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: NonZeroU8::new(4).unwrap(),
+        depth: NonZeroU8::new(12).unwrap(),
         heuristic_settings: heuristic,
         material,
         physics: false,

@@ -16,7 +16,8 @@ layout(std430, binding = 1) writeonly buffer output_voxels
     PackedVoxel packed_voxels[];
 };
 uniform vec3 node_pos;
-uniform int node_size;
+uniform uint node_size;
+uniform uint node_depth;
 
 void main() {
     // Get the pixel coord
@@ -38,7 +39,8 @@ void main() {
 
         // Calculate the normal for a voxel using the neighboring normals
         vec3 normal = normalize(vec3(vx.density-voxel.density, vy.density-voxel.density, vz.density-voxel.density));
-        modify_voxel(uvec3(pc), pos, normal, voxel);
+        Chunk chunk = Chunk(node_depth, node_size);
+        modify_voxel(chunk, pos, normal, voxel);
         FinalVoxel final_voxel = get_final_voxel(pos, normalize(normal), voxel);
         // Pack the voxel
         PackedVoxel packed_voxel = get_packed_voxel(final_voxel);

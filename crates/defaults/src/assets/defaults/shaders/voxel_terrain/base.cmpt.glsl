@@ -14,9 +14,10 @@ layout(std430, binding = 1) readonly buffer terrain_edits
 {   
     PackedTerrainEdit edits[];
 };
-layout(location = 2) uniform vec3 node_pos;
-layout(location = 3) uniform int node_size;
-layout(location = 4) uniform uint num_terrain_edits;
+uniform vec3 node_pos;
+uniform uint node_size;
+uniform uint node_depth;
+uniform uint num_terrain_edits;
 
 void main() {
     // Get the pixel coord
@@ -31,7 +32,8 @@ void main() {
     // Check if we can actually do calculations or not
     if (all(lessThan(pixel_coords, ivec3(CHUNK_SIZE+2, CHUNK_SIZE+2, CHUNK_SIZE+2)))) {        
         // Create the density value
-        Voxel voxel = get_voxel(uvec3(pc), pos);
+        Chunk chunk = Chunk(node_depth, node_size);
+        Voxel voxel = get_voxel(chunk, pos);
         for(int i = 0; i < num_terrain_edits; i++) {
             // Gotta convert from packed to unpacked
             TerrainEdit edit = get_unpacked_terrain_edit(edits[i]);

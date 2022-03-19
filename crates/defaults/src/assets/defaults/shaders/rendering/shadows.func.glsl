@@ -20,7 +20,7 @@ float calculate_shadows(vec3 position, vec3 normal, vec3 light_dir, mat4 lightsp
     float accumulated_shadow = 0.0;
     // Sample the depth texture multiple times to smooth it out
     vec2 offset_size = 1.0 / textureSize(shadow_map_texture, 0);
-    const int samples = 1;
+    const int samples = 0;
     for(int x = -samples; x <= samples; x++) {
         for (int y = -samples; y <= samples; y++) {
             vec2 offset = vec2(x, y) * offset_size;

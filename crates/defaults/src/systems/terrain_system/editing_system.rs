@@ -34,16 +34,11 @@ fn run(world: &mut World, data: ComponentQuerySet) {
 fn handle_dynamic_edits(mut data: Vec<ComponentQuery>, terrain: &mut globals::Terrain) {
     let query = data.get_mut(0).unwrap();
     /*
+    // TODO: Fix mesh generation for chunks that had a dynamic edit in them
     // Debug
     for (_, components) in query.all.iter_mut() {
         let transform = components.get_mut::<Transform>().unwrap();
-        transform.position = transform.position + vek::Vec3::unit_y() * 0.01;
-        let edit = components.get_mut::<DynamicEdit>().unwrap();
-        edit.edit.params.color.r = edit.edit.params.color.r.wrapping_add(1);
-        match &mut edit.edit.shape {
-            ShapeType::Sphere(s) => s.radius += 0.01,
-            _ => {}
-        }
+        transform.position -= vek::Vec3::unit_y() * 0.1;
     }
     */
     // Add the actual edits first

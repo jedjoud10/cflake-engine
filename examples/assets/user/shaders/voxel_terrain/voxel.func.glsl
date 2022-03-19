@@ -13,37 +13,31 @@ struct Voxel {
     vec3 color;
 };
 
+// Chunk definition
+struct Chunk {
+    uint depth;
+    uint size;
+};
+
+
 // Get the voxel at a specific position (First Pass)
-Voxel get_voxel(const uvec3 local_pos, vec3 pos) {
-    // Ridged noise
+Voxel get_voxel(const Chunk chunk, vec3 pos) {
     float noise = 0.0;
-    float strength = 700.0;
-    float scale = 0.0001;
-    float lacunarity = 1.63;
-    float persistence = 0.5;
-    int octaves = 8;
-    for (int i = 0; i < octaves; i++) {
-        noise += (1-voronoi(pos * scale * vec3(1, 2.0, 1.0) * pow(lacunarity, i) + 4.0595).x) * pow(persistence, i);
+    for (int i = 0; i < 6; i++) {
+        noise += abs(snoise(pos * 0.0009 * vec3(1, 1.3, 1.0) * pow(1.7, i) + hash11(4.0595 * i))) * pow(0.43, i);
     }
-    float density = noise * strength + pos.y - 500;
-    
-    return Voxel(density, 255, vec3(1.0));
+    return Voxel(pos.y + noise * 200.0, 255, vec3(1.0));
 }
 
 // Modify the voxel after we get it's normal
-void modify_voxel(const uvec3 local_pos, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
+void modify_voxel(const Chunk chunk, const vec3 pos, inout vec3 normal, inout Voxel voxel) {
     // If the material is already set, use it
     if (voxel.material != 255) {
         return;
     }
-    /*
     if (dot(normal, vec3(0, 1, 0)) > 0.9) {
         voxel.material = 0;
-    } else if (dot(normal, vec3(0, 1, 0)) > 0.8) {
-        voxel.material = 1;
     } else {
-        voxel.material = 2;
+        voxel.material = 1;
     }
-    */
-    voxel.material = 0;
 }
