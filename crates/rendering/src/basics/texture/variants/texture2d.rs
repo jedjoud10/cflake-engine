@@ -168,6 +168,7 @@ impl Asset for Texture2D {
         Self: Sized,
     {
         // Load this texture from the bytes
+        let i = std::time::Instant::now();
         let image = image::load_from_memory(bytes).unwrap();
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
         // Flip
@@ -175,6 +176,7 @@ impl Asset for Texture2D {
         let (width, height) = (image.width() as u16, image.height() as u16);
         let bytes = image.into_bytes();
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
+        println!("Took {}ms to load texture", i.elapsed().as_millis());
         Some(TextureBuilder::default().dimensions(vek::Extent2::new(width, height)).bytes(bytes).build())
     }
 }

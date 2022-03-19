@@ -28,8 +28,5 @@ members = [
     "crates/terrain",
 ]
 
-[profile.dev.package.terrain]
-opt-level = 3
-
-[profile.dev.package.image]
+[profile.dev]
 opt-level = 3

@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Transform},
+        components::{self, Camera, Transform, DynamicEdit},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -123,4 +123,11 @@ fn init(world: &mut World) {
         },
     ));
     world.globals.add(terrain).unwrap();
+
+    // And add it to the world as an entity
+    let mut group = ComponentLinkingGroup::default();
+    group.link(Transform::default()).unwrap();
+    group.link(DynamicEdit::new(Edit::sphere(vek::Vec3::default(), 200.0, EditParams::default()))).unwrap();
+    world.ecs.add(group).unwrap();
+
 }
