@@ -2,7 +2,7 @@
 mod tests {
     use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
 
-    use crate::{Client, Host, registry::register, PayloadCache};
+    use crate::{registry::register, Client, Host, PayloadCache};
 
     #[test]
     fn test() {

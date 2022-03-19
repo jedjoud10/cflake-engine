@@ -5,7 +5,7 @@ use std::{
 
 use laminar::Packet;
 
-use crate::{deserialize_bucket_id, deserialize_payload, Payload, PayloadBucketId, registry};
+use crate::{deserialize_bucket_id, deserialize_payload, registry, Payload, PayloadBucketId};
 
 // Stored network cache
 #[derive(Default)]

@@ -1,6 +1,11 @@
-use std::net::{Ipv4Addr, SocketAddrV4, SocketAddr};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use world::{ecs::component::ComponentQuerySet, World, gui::egui, network::{Client, NetworkSession, Host, PayloadCache}};
+use world::{
+    ecs::component::ComponentQuerySet,
+    gui::egui,
+    network::{Client, Host, NetworkSession, PayloadCache},
+    World,
+};
 
 use crate::globals::NetworkManager;
 
@@ -25,14 +30,14 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                         for value in cache.iter() {
                             ui.label(format!("Value: {}", value));
                         }
-                    },
+                    }
                     NetworkSession::Client(client) => {
                         ui.label(format!("Client UUID: {}", client.uuid()));
                         client.send_unreliable_unordered(world.time.elapsed().round()).unwrap();
-                    },
+                    }
                 }
             });
-        },
+        }
         None => {
             egui::Window::new("Networking").show(gui, |ui| {
                 // Client server IP lol
@@ -56,8 +61,8 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                     }
                 }
             });
-        },
-    }    
+        }
+    }
 }
 
 // Create the networking debug system

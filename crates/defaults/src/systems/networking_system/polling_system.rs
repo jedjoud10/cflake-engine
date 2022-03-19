@@ -1,6 +1,11 @@
-use std::net::{Ipv4Addr, SocketAddrV4, SocketAddr};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use world::{ecs::component::ComponentQuerySet, World, gui::egui, network::{Client, NetworkSession, Host, register}};
+use world::{
+    ecs::component::ComponentQuerySet,
+    gui::egui,
+    network::{register, Client, Host, NetworkSession},
+    World,
+};
 
 use crate::globals::NetworkManager;
 
@@ -10,7 +15,7 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
     let manager = world.globals.get_mut::<NetworkManager>().unwrap();
     if let Some(session) = &mut manager.session {
         session.update().unwrap();
-    } 
+    }
 }
 
 // Create the networking system

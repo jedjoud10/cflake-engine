@@ -1,10 +1,11 @@
 use std::{
+    io::Error,
     net::{SocketAddr, SocketAddrV6},
     thread::JoinHandle,
-    time::SystemTime, io::Error,
+    time::SystemTime,
 };
 
-use crate::{serialize_payload, NetworkCache, Payload, PayloadBucketId, registry, deserialize_bucket_id};
+use crate::{deserialize_bucket_id, registry, serialize_payload, NetworkCache, Payload, PayloadBucketId};
 use getset::{Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
 use serde::Serialize;
@@ -50,7 +51,7 @@ impl Client {
                 // Deserialize UUID
                 let uuid = packet.payload();
                 Uuid::from_bytes(uuid.try_into().unwrap())
-            },
+            }
             SocketEvent::Connect(_) => todo!(),
             SocketEvent::Timeout(_) => todo!(),
             SocketEvent::Disconnect(_) => todo!(),
@@ -62,7 +63,7 @@ impl Client {
             handle,
             cache: NetworkCache::default(),
             host: addr,
-            uuid
+            uuid,
         })
     }
     // Handle connections and server->client packets

@@ -1,6 +1,9 @@
-use std::net::{SocketAddrV4, SocketAddr};
+use std::net::{SocketAddr, SocketAddrV4};
 
-use world::{network::{NetworkSession, PayloadCache}, globals::Global};
+use world::{
+    globals::Global,
+    network::{NetworkSession, PayloadCache},
+};
 
 // Server/Client networking
 #[derive(Default, Global)]

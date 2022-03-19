@@ -7,7 +7,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
     if world.input.changed("toggle_fullscreen") {
         world.pipeline.window_mut().set_fullscreen(world.input.toggled("toggle_fullscreen"));
     }
-    if world.input.changed("toggle_input") {
+    {
         // If "var" is true, we show the cursor
         let var = world.input.toggled("toggle_input");
         world.pipeline.window().context().window().set_cursor_grab(!var).unwrap();
