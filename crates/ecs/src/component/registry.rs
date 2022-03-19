@@ -5,18 +5,27 @@ use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use std::{
     any::{Any, TypeId},
-    sync::atomic::{AtomicU32, Ordering},
+    sync::atomic::{AtomicU32, Ordering, AtomicBool},
 };
 
 use super::Component;
 // Use to keep track of the component IDs
 lazy_static! {
     static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
+    static ref CAN_REGISTER: AtomicBool = AtomicBool::new(true);
     static ref REGISTERED_COMPONENTS: RwLock<AHashMap<TypeId, Bitfield<u32>>> = RwLock::new(AHashMap::new());
+}
+
+// Disable component registration
+pub(super) fn disable() {
+    CAN_REGISTER.store(false, Ordering::Relaxed)
 }
 
 // Register a specific component
 pub fn register<T: Component + Sized>() -> Bitfield<u32> {
+    // Check first
+    assert!(CAN_REGISTER.load(Ordering::Relaxed), "Cannot register components during frame!");
+
     // Register the component
     let mut lock = REGISTERED_COMPONENTS.write();
     // Make a copy of the id before the bit shift

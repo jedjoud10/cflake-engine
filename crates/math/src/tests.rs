@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use std::num::{NonZeroU8, NonZeroU64};
+
     use crate::{
         bounds::aabb::AABB,
         octrees::{HeuristicSettings, Octree},
@@ -40,7 +42,7 @@ mod tests {
     // Octree
     #[test]
     pub fn octree() {
-        let mut octree = Octree::new(5, 32, HeuristicSettings::default());
+        let mut octree = Octree::new(NonZeroU8::new(5).unwrap(), NonZeroU64::new(32).unwrap(), HeuristicSettings::default());
         octree.update(vek::Vec3::zero());
         assert_eq!(octree.nodes().len(), 33);
     }

@@ -166,6 +166,9 @@ impl ComponentSet {
         // Also clear the bitfield indicating which components have been mutated
         if frame != 0 {
             self.mutated_components.clear();
+        } else {
+            // When the game starts, disable component registration
+            registry::disable();
         }
         Ok(())
     }

@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use crate::{
     components::{Camera, Chunk, Transform},
     globals::{GlobalWorldData, Terrain},
@@ -14,14 +16,14 @@ use world::{
 };
 
 // Add a single chunk to the world
-fn add_chunk(ecs: &mut EcsManager, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>, octree_size: u64, coords: ChunkCoords) -> (EntityKey, f32) {
+fn add_chunk(ecs: &mut EcsManager, camera_position: vek::Vec3<f32>, camera_forward: vek::Vec3<f32>, octree_size: NonZeroU64, coords: ChunkCoords) -> (EntityKey, f32) {
     // Create the chunk entity
     let mut group = ComponentLinkingGroup::default();
 
     // Link the nessecary components
     // Transform
     let position = coords.position.as_();
-    let scale = vek::Vec3::one() * ((coords.size / octree_size) as f32);
+    let scale = vek::Vec3::one() * ((coords.size.get() / octree_size.get()) as f32);
     let transform = Transform {
         position,
         scale,

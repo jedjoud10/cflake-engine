@@ -1,3 +1,5 @@
+use std::num::{NonZeroU64, NonZeroU8};
+
 use ahash::AHashSet;
 
 use super::{HeuristicSettings, Node, Octree};
@@ -13,7 +15,7 @@ pub struct DiffOctree {
 
 impl DiffOctree {
     // Create a new octree with a specific depth
-    pub fn new(depth: u8, size: u64, hsettings: HeuristicSettings) -> Self {
+    pub fn new(depth: NonZeroU8, size: NonZeroU64, hsettings: HeuristicSettings) -> Self {
         Self {
             inner: Octree::new(depth, size, hsettings),
             previous: Default::default(),

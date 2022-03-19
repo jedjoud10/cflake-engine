@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use world::{
     globals::Global,
     math::octrees::DiffOctree,
@@ -33,7 +35,7 @@ impl Terrain {
     pub fn new(user_settings: &TerrainUserSettings, settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
             manager: ChunksManager {
-                octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
+                octree: DiffOctree::new(settings.depth, NonZeroU64::new(CHUNK_SIZE as u64).unwrap(), settings.heuristic_settings),
                 material: settings.material,
                 physics: settings.physics,
                 ..Default::default()

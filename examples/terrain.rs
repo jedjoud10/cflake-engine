@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use cflake_engine::{
     assets::assetc,
     defaults::{
@@ -104,14 +106,14 @@ fn init(world: &mut World) {
     let material = world.pipeline.insert(material);
     let heuristic = HeuristicSettings {
         function: |node, target| {
-            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);
+            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent().get() as f32 * 2.0);
             dist < 1.2
         },
     };
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: 9,
+        depth: NonZeroU8::new(4).unwrap(),
         heuristic_settings: heuristic,
         material,
         physics: false,
