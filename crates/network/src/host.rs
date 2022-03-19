@@ -1,12 +1,11 @@
 use std::{
     collections::HashMap,
-    io::Error,
     mem::size_of,
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6},
+    net::{SocketAddr},
     thread::JoinHandle,
 };
 
-use crate::{NetworkCache, Payload, PayloadBucketId};
+use crate::{NetworkCache, PayloadBucketId};
 use getset::{CopyGetters, Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
 use uuid::Uuid;
@@ -89,7 +88,7 @@ impl Host {
                     let uuid = self.uuids.remove(&client_addr).unwrap();
                     self.connected.insert(client_addr, uuid);
                 }
-                SocketEvent::Timeout(client_addr) => {
+                SocketEvent::Timeout(_client_addr) => {
                     // A client has timed out
                     println!("Server: Client timed out");
                 }

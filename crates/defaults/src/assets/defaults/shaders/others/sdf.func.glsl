@@ -12,6 +12,11 @@ float sdBox( vec3 p, vec3 b )
     vec3 q = abs(p) - b;
     return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
+float sdCappedCylinder( vec3 p, float h, float r )
+{
+  vec2 d = abs(vec2(length(p.xz),p.y)) - vec2(h,r);
+  return min(max(d.x,d.y),0.0) + length(max(d,0.0));
+}
 float opUnion( float d1, float d2 ) { return min(d1,d2); }
 float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
 float opIntersection( float d1, float d2 ) { return max(d1,d2); }

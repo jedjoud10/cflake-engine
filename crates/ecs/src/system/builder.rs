@@ -52,7 +52,8 @@ impl<'a, World> SystemBuilder<'a, World> {
     // Build this system and add it to the ECS manager
     pub fn build(self) -> Result<(), SystemBuildingError> {
         if self.set.allowed_to_build {
-            Ok(self.set.add(self.system))
+            self.set.add(self.system);
+            Ok(())
         } else {
             Err(SystemBuildingError)
         }

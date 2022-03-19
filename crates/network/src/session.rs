@@ -1,4 +1,4 @@
-use crate::{client::Client, host::Host, Payload};
+use crate::{client::Client, host::Host};
 use enum_as_inner::EnumAsInner;
 
 // Network session

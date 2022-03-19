@@ -1,9 +1,7 @@
-use laminar::Packet;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+use serde::{de::DeserializeOwned, Serialize};
 use std::{
-    cell::RefCell,
-    collections::{hash_map::Entry, HashMap},
-    io::{self, BufRead, BufReader, Cursor, Error, Read},
+    io::{BufReader, Cursor, Error, Read},
 };
 pub trait Payload: Serialize + DeserializeOwned + 'static {}
 impl<T> Payload for T where T: Serialize + DeserializeOwned + 'static {}

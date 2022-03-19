@@ -1,4 +1,4 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{SocketAddr};
 
 use world::{
     ecs::component::ComponentQuerySet,
@@ -57,7 +57,7 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                         // Try to connect
                         let client = Client::connect(ip).unwrap();
                         manager.session = Some(NetworkSession::Client(client));
-                        return;
+                        
                     }
                 }
             });

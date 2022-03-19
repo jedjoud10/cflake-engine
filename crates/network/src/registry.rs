@@ -1,6 +1,6 @@
 use std::{
     any::{type_name, TypeId},
-    sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering},
+    sync::atomic::{AtomicU16, Ordering},
 };
 
 use ahash::AHashMap;

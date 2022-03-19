@@ -69,7 +69,7 @@ fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> Windo
         .unwrap();
     // Make the context a current context
     let wc = unsafe { wc.make_current().unwrap() };
-    let window = wc.window();
+    let _window = wc.window();
     //window.set_cursor_grab(true).unwrap();
     //window.set_cursor_visible(false);
     wc

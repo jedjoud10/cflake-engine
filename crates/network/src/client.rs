@@ -1,14 +1,13 @@
 use std::{
     io::Error,
-    net::{SocketAddr, SocketAddrV6},
+    net::{SocketAddr},
     thread::JoinHandle,
-    time::SystemTime,
 };
 
-use crate::{deserialize_bucket_id, registry, serialize_payload, NetworkCache, Payload, PayloadBucketId};
+use crate::{registry, serialize_payload, NetworkCache, Payload};
 use getset::{Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
-use serde::Serialize;
+
 use uuid::Uuid;
 #[derive(Getters, MutGetters)]
 pub struct Client {
@@ -68,7 +67,7 @@ impl Client {
     }
     // Handle connections and server->client packets
     pub fn poll(&mut self) -> laminar::Result<()> {
-        for event in self.receiver.try_iter() {
+        for _event in self.receiver.try_iter() {
             /*
             match event {
                 SocketEvent::Packet(_) => todo!(),
