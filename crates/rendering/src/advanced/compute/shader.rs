@@ -74,10 +74,6 @@ impl ComputeShader {
         unsafe {
             let axii = settings.axii;
 
-            // Uniforms
-            // TODO: FIX THIS
-            let mut uniforms = Uniforms::new(self.program(), pipeline);
-            uniforms.bind();
             //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
             gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
             if _flush_and_barrier {

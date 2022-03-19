@@ -1,11 +1,8 @@
 // Export
-mod event;
-mod settings;
+pub mod event;
 mod world;
-pub use self::world::*;
-pub use event::*;
-pub use settings::*;
-
+pub use world::*;
+pub mod settings;
 pub use ::bitfield;
 pub use assets;
 pub use audio;

@@ -102,7 +102,7 @@ impl ShadowMapping {
         self.lightspace = self.ortho * vek::Mat4::look_at_rh(vek::Vec3::zero(), forward, up);
     }
     // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) -> Result<(), RenderingError> {
+    pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) {
         // Setup the shadow framebuffer
         gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
@@ -111,28 +111,26 @@ impl ShadowMapping {
 
         // Load the shader and it's uniforms
         let shader = pipeline.shaders.get(&self.shader).unwrap();
-        let mut uniforms = Uniforms::new(shader.program(), pipeline);
+        Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+            // Render all the models
+            for model in models {
+                let (mesh, matrix) = (model.mesh, model.matrix);
+                let mesh = pipeline.meshes.get(mesh).unwrap();
 
-        // Render all the models
-        for model in models {
-            let (mesh, matrix) = (model.mesh, model.matrix);
-            let mesh = pipeline.meshes.get(mesh).ok_or(RenderingError)?;
+                // Calculate the light space matrix
+                let lsm = self.lightspace * *matrix;
 
-            // Calculate the light space matrix
-            let lsm = self.lightspace * *matrix;
+                // Pass the light space matrix to the shader
+                uniforms.set_mat44f32("matrix", &lsm);
 
-            // Pass the light space matrix to the shader
-            uniforms.set_mat44f32("matrix", &lsm);
-
-            // Render now
-            super::common::render(mesh);
-        }
+                // Render now
+                super::common::render(mesh);
+            }
+        });
 
         // Reset
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
         gl::Enable(gl::CULL_FACE);
-
-        Ok(())
     }
 }

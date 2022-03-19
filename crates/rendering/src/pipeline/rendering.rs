@@ -3,6 +3,8 @@ mod error;
 mod renderer;
 mod settings;
 mod shadows;
+mod framebuffer;
+pub use framebuffer::*;
 pub use common::*;
 pub use error::*;
 pub use renderer::*;

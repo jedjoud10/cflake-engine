@@ -71,7 +71,6 @@ fn run(world: &mut World, data: ComponentQuerySet) {
     // Generate the chunks if needed and only if we are not currently generating
     let manager = &mut terrain.manager;
     manager.must_update_octree = manager.octree.inner.must_update(camera_position);
-    dbg!(manager.must_update_octree);
     if manager.chunks_generating.is_empty() && manager.chunks_to_remove.is_empty() && terrain.scheduler.active_mesh_tasks_count() == 0 {
         let octree = &mut manager.octree;
         if let Some((added, removed)) = octree.update(camera_position) {

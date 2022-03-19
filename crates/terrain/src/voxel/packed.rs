@@ -2,7 +2,7 @@ use half::f16;
 
 use crate::CHUNK_SIZE;
 
-// A packed voxel that has a size of 16 bytes
+// A packed voxel that has a size of 8 bytes
 // This is the final voxel that is returned from the compute shader
 #[repr(align(8))]
 #[derive(Default, Clone, Copy)]

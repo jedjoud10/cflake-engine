@@ -8,18 +8,25 @@ use crate::{
         texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
-    pipeline::{Handle, Pipeline},
+    pipeline::{Handle, Pipeline, Framebuffer, FramebufferClearBits},
     utils::DataType,
 };
 use assets::assetc;
+use getset::{Getters, MutGetters};
 use gl::types::GLuint;
 
 // Scene renderer that will render our world using deferred rendering
 // TODO: Document
-#[derive(Default)]
+#[derive(Getters, MutGetters)]
+#[getset(get = "pub")]
 pub struct SceneRenderer {
-    // Frame buffer
-    framebuffer: GLuint,
+    // Default frame buffer
+    #[getset(get_mut = "pub")]
+    default: Framebuffer,
+    
+    // Deffered frame buffer
+    #[getset(get_mut = "pub")]
+    framebuffer: Framebuffer,
 
     // Our deferred textures
     /*
@@ -73,9 +80,8 @@ impl SceneRenderer {
         let dimensions = pipeline.window().dimensions();
 
         // Since we use deferred rendering, we must create a new framebuffer for this renderer
-        let mut framebuffer = 0;
-        gl::GenFramebuffers(1, &mut framebuffer);
-        gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
+        let mut framebuffer = Framebuffer::new(pipeline, FramebufferClearBits::COLOR | FramebufferClearBits::DEPTH);
+
         // Create the textures now
         let texture_formats = [
             TextureFormat::RGB8R,
@@ -114,19 +120,10 @@ impl SceneRenderer {
             gl::COLOR_ATTACHMENT3,
             gl::DEPTH_ATTACHMENT,
         ];
-        for (handle, &attachement) in textures.iter().zip(attachements.iter()) {
-            let texture = pipeline.textures.get(handle).unwrap();
-            gl::BindTexture(texture.target().unwrap(), texture.name().unwrap());
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachement, texture.target().unwrap(), texture.name().unwrap(), 0);
-        }
-
-        // Note: the number of attachements are n-1 because we do not give it the gl::DEPTH_ATTACHEMENT
-        gl::DrawBuffers(attachements.len() as i32 - 1, attachements.as_ptr() as *const u32);
-
-        // Check frame buffer state
-        if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-            panic!("Framebuffer has failed initialization! Error: '{:#x}'", gl::CheckFramebufferStatus(gl::FRAMEBUFFER));
-        }
+        
+        // Bind textures
+        let textures_and_attachements = textures.iter().cloned().zip(attachements).collect::<Vec<_>>();
+        framebuffer.bind_textures(pipeline, &textures_and_attachements);
 
         // Unbind
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -144,6 +141,11 @@ impl SceneRenderer {
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
         Self {
+            default: Framebuffer {
+                id: 0,
+                bits: FramebufferClearBits::COLOR,
+                _phantom: Default::default(),
+            },
             framebuffer,
             textures: textures.try_into().expect("Deferred textures count mismatch!"),
             lighting: shader,
@@ -173,8 +175,7 @@ impl SceneRenderer {
     // Prepare the FBO and clear the buffers
     pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
         gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
-        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        self.framebuffer.clear();
     }
 
     // Render the whole scene
@@ -196,7 +197,7 @@ impl SceneRenderer {
                     // Only render directional shadow map if we have a sun
                     mapping.update_matrix(*transform.rotation);
                     // Then render shadows
-                    mapping.render_all_shadows(settings.shadowed, pipeline).unwrap();
+                    mapping.render_all_shadows(settings.shadowed, pipeline);
                 }
             }
         }
@@ -208,58 +209,59 @@ impl SceneRenderer {
     }
 
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
-    unsafe fn draw_deferred_quad(&self, pipeline: &Pipeline, settings: RenderingSettings) {
+    unsafe fn draw_deferred_quad(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // We have a ton of uniforms to set
-        let mut uniforms = Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline);
+        Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, |mut uniforms| {
+            // Try to get the sunlight direction
+            let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
+            let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(vek::Vec3::unit_z()), params.strength));
 
-        // Try to get the sunlight direction
-        let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-        let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(vek::Vec3::unit_z()), params.strength));
+            // Default sunlight values
+            let sunlight = sunlight.unwrap_or((vek::Vec3::unit_y(), 1.0));
 
-        // Default sunlight values
-        let sunlight = sunlight.unwrap_or((vek::Vec3::unit_y(), 1.0));
+            // Sunlight values
+            uniforms.set_vec3f32("sunlight_dir", sunlight.0);
+            uniforms.set_f32("sunlight_strength", sunlight.1);
 
-        // Sunlight values
-        uniforms.set_vec3f32("sunlight_dir", sunlight.0);
-        uniforms.set_f32("sunlight_strength", sunlight.1);
+            // Sunlight shadow mapping
+            let default = vek::Mat4::<f32>::identity();
+            let matrix = self.shadow_mapping.as_ref().map(|mapping| &mapping.lightspace).unwrap_or(&default);
+            uniforms.set_mat44f32("lightspace_matrix", matrix);
 
-        // Sunlight shadow mapping
-        let default = vek::Mat4::<f32>::identity();
-        let matrix = self.shadow_mapping.as_ref().map(|mapping| &mapping.lightspace).unwrap_or(&default);
-        uniforms.set_mat44f32("lightspace_matrix", matrix);
+            // Set the camera matrices
+            let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().projm.inverted();
+            uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
+            uniforms.set_mat44f32("pv_matrix", &pipeline.camera().projm_viewm);
 
-        // Set the camera matrices
-        let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().projm.inverted();
-        uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
-        uniforms.set_mat44f32("pv_matrix", &pipeline.camera().projm_viewm);
+            // Also gotta set the deferred textures
+            // &str array because I am lazy
+            let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
+            // Set each texture
+            for (name, handle) in names.into_iter().zip(self.textures.iter()) {
+                uniforms.set_texture2d(name, handle);
+            }
 
-        // Also gotta set the deferred textures
-        // &str array because I am lazy
-        let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
-        // Set each texture
-        for (name, handle) in names.into_iter().zip(self.textures.iter()) {
-            uniforms.set_texture2d(name, handle);
-        }
+            // Sky gradient texture
+            uniforms.set_texture2d("sky_gradient", &self.sky_gradient);
 
-        // Sky gradient texture
-        uniforms.set_texture2d("sky_gradient", &self.sky_gradient);
-
-        // If we have shadow mapping disabled we must use the default white texture
-        let shadow_mapping_texture = self
-            .shadow_mapping
-            .as_ref()
-            .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
-        uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
-        uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
+            // If we have shadow mapping disabled we must use the default white texture
+            let shadow_mapping_texture = self
+                .shadow_mapping
+                .as_ref()
+                .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
+            uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
+            uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
+        });        
 
         // Draw the quad
         let quad_mesh = pipeline.meshes.get(&self.quad).unwrap();
-        // Draw to the deferred framebuffer instead
-        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        gl::Disable(gl::DEPTH_TEST);
-        common::render(quad_mesh);
-        gl::Enable(gl::DEPTH_TEST);
-        gl::BindVertexArray(0);
+        // Draw to the default framebuffer
+        self.default.bind(false, |_| {            
+            gl::Disable(gl::DEPTH_TEST);
+            common::render(quad_mesh);
+            gl::Enable(gl::DEPTH_TEST);
+            gl::BindVertexArray(0);
+        });
     }
 
     // Screenshot the current frame

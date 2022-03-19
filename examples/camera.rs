@@ -7,7 +7,7 @@ use cflake_engine::{
 };
 // A game with a test camera
 fn main() {
-    cflake_engine::start("DevJed", "cflake-engine-example-camera", init, cflake_engine::defaults::systems::flycam_system::system)
+    cflake_engine::start("cflake-examples", "camera", init, cflake_engine::defaults::load_debugging_systems)
 }
 // Init the simple camera
 fn init(world: &mut World) {

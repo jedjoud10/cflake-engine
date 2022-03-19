@@ -47,6 +47,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
     // If there isn't a camera, no need to render anything
     if camera.is_none() {
+        // Force a clear of the default framebuffer, since we won't be overwritting it
+        world.renderer.default_mut().clear();
         return;
     }
     *world.pipeline.camera_mut() = camera.unwrap();

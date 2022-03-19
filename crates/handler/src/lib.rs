@@ -1,4 +1,7 @@
-use defaults::{ecs::system::SystemExecutionOrder, rendering::pipeline::PipelineSettings};
+pub use world::*;
+use ecs::system::SystemExecutionOrder;
+use settings::*;
+use rendering::pipeline::*;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -10,7 +13,6 @@ use glutin::{
     event_loop::{ControlFlow, EventLoop},
 };
 use spin_sleep::LoopHelper;
-pub use world::*;
 
 // Start le engine
 pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init_systems: fn(&mut World)) {

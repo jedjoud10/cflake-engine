@@ -6,7 +6,6 @@ pub mod components;
 pub mod globals;
 // Default systems
 pub mod systems;
-pub use world::*;
 
 // Pre-load the default assets
 pub fn preload_default_assets() {
@@ -61,9 +60,7 @@ pub fn load_default_systems(world: &mut World) {
     // Engine defaults
     SystemExecutionOrder::set(i32::MIN);
     networking_system::polling_system::system(world);
-    camera_system::system(world);
-
-    debugging_system::system(world);
+    camera_system::system(world);    
     window_system::system(world);
     audio_system::system(world);
 
@@ -77,9 +74,7 @@ pub fn load_default_systems(world: &mut World) {
     SystemExecutionOrder::set(i32::MAX - 10);
     terrain_system::editing_system::system(world);
     physics_system::rigidbody_system::system(world);
-    physics_system::simulation_system::system(world);
-
-    networking_system::debugging_system::system(world);
+    physics_system::simulation_system::system(world);    
     rendering_system::system(world);
     gui_system::system(world);
     screenshot_system::system(world);
@@ -88,4 +83,11 @@ pub fn load_default_systems(world: &mut World) {
     world.globals.add(crate::globals::GlobalWorldData::default()).unwrap();
     world.globals.add(crate::globals::NetworkManager::default()).unwrap();
     world.globals.add(crate::globals::Physics::default()).unwrap();
+}
+// Load the debugging systems
+pub fn load_debugging_systems(world: &mut World) {
+    SystemExecutionOrder::set(0);
+    debugging_system::system(world);
+    networking_system::debugging_system::system(world);
+    flycam_system::system(world);
 }

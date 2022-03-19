@@ -19,7 +19,7 @@ use cflake_engine::{
 
 // A game with some test terrain
 fn main() {
-    cflake_engine::start("DevJed", "cflake-engine-example-terrain", init, cflake_engine::defaults::systems::flycam_system::system)
+    cflake_engine::start("cflake-examples", "terrain", init, cflake_engine::defaults::load_debugging_systems)
 }
 // Init the terrain world
 fn init(world: &mut World) {
@@ -39,7 +39,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     let mut group = ComponentLinkingGroup::default();
-    group.link(Camera::new(90.0, 2.0, 4000.0)).unwrap();
+    group.link(Camera::new(90.0, 10.0, 32000.0)).unwrap();
     group.link(Transform::default()).unwrap();
     world.ecs.add(group).unwrap();
 
@@ -73,9 +73,15 @@ fn init(world: &mut World) {
     let texture_norm_1 = assetc::load::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg").unwrap();
     let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
     let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
-    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2], None).unwrap();
+    let texture_diff_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
+    let texture_norm_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
+    let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
+    let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
+    let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
+    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2, texture_diff_3], None).unwrap();
     let normals = BundledTextureBuilder::build(
-        &[texture_norm_1, texture_norm_2],
+        &[texture_norm_1, texture_norm_2, texture_norm_3],
         Some(TextureParams {
             flags: TextureFlags::MIPMAPS,
             ..Default::default()
@@ -86,12 +92,12 @@ fn init(world: &mut World) {
     let normals = world.pipeline.insert(normals);
     let material = Material {
         shader,
-        uniforms: UniformsSet::new(move |uniforms| {
+        uniforms: UniformsSet::new(move |mut uniforms| {
             // Set the textures first
             uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
             uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
-            uniforms.set_f32("bumpiness", 2.0);
+            uniforms.set_f32("bumpiness", 3.0);
             uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.02));
         }),
     };
@@ -105,7 +111,7 @@ fn init(world: &mut World) {
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: 6,
+        depth: 9,
         heuristic_settings: heuristic,
         material,
         physics: false,

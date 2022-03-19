@@ -8,34 +8,31 @@ use crate::{
     },
     pipeline::{Handle, Pipeline},
 };
-
-// Struct that allows us to set the uniforms for a specific shader
+// Bound uniform object that can set OpenGL uniforms
 pub struct Uniforms<'a> {
     program: &'a ShaderProgram,
     pipeline: &'a Pipeline,
 }
 
-// Gotta change the place where this shit is in
 impl<'a> Uniforms<'a> {
     // Create a uniforms setter using a shader program and the pipeline
-    pub fn new(program: &'a ShaderProgram, pipeline: &'a Pipeline) -> Self {
-        let mut me = Self { program, pipeline };
-        me.bind();
+    pub fn new<>(program: &ShaderProgram, pipeline: &Pipeline, closure: impl FnOnce(Uniforms)) {
+        unsafe { gl::UseProgram(program.program()) }
+        let mut bound = Uniforms {
+            program,
+            pipeline,
+        };
         // Set some global uniforms while we're at it
-        me.set_f32("_time", pipeline.elapsed());
-        me.set_f32("_delta", pipeline.delta());
-        me.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
-        me.set_vec2f32("_nf_planes", pipeline.camera().clip_planes);
-        me
-    }
+        bound.set_f32("_time", pipeline.elapsed());
+        bound.set_f32("_delta", pipeline.delta());
+        bound.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
+        bound.set_vec2f32("_nf_planes", pipeline.camera().clip_planes);
+        closure(bound);        
+    } 
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
         self.program.mappings().get(name).cloned().unwrap_or(-1)
-    }
-    // Bind the shader for execution/rendering
-    pub fn bind(&mut self) {
-        unsafe { gl::UseProgram(self.program.program()) }
     }
     // U32
     pub fn set_u32(&mut self, name: &str, val: u32) {

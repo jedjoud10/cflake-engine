@@ -30,17 +30,17 @@ pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &Rendere
     let mesh = pipeline.meshes.get(renderer.mesh).unwrap();
 
     // Create some uniforms
-    let mut uniforms = Uniforms::new(shader.program(), pipeline);
-
-    // Set the uniforms
-    uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
-
-    // Check if we really need to set the material uniforms
-    if *last_mat_handle != mat_handle.clone() {
-        uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
-        mat.uniforms.execute(&mut uniforms);
-        *last_mat_handle = renderer.material.clone();
-    }
+    Uniforms::new(shader.program(), pipeline, |mut uniforms| {        
+        // Set the uniforms
+        uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
+        
+        // Check if we really need to set the material uniforms
+        if *last_mat_handle != mat_handle.clone() {
+            uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
+            mat.uniforms.execute(uniforms);
+            *last_mat_handle = renderer.material.clone();
+        }
+    });
 
     // Finally render the mesh
     unsafe {

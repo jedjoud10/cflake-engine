@@ -1,4 +1,4 @@
-use crate::{EventSet, Settings};
+use crate::{event::EventSet, settings::Settings};
 use audio::player::AudioPlayer;
 use ecs::EcsManager;
 use getset::*;

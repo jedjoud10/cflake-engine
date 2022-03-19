@@ -7,7 +7,7 @@ use world::{
         scheduler::{MeshScheduler, MeshSchedulerSettings},
         ChunkCoords, CHUNK_SIZE,
     },
-    TerrainMesherThreadness, TerrainUserSettings,
+    settings::{TerrainMesherThreadingType, TerrainUserSettings},
 };
 
 mod chunks_manager;
@@ -40,8 +40,8 @@ impl Terrain {
             },
             scheduler: MeshScheduler::new(MeshSchedulerSettings {
                 thread_num: match user_settings.mesher {
-                    TerrainMesherThreadness::Threaded(num) => Some(num),
-                    TerrainMesherThreadness::Single => None,
+                    TerrainMesherThreadingType::Threaded(num) => Some(num),
+                    TerrainMesherThreadingType::Single => None,
                 },
             }),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),

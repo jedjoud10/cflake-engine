@@ -31,7 +31,7 @@ impl MaterialBuilder for PbrMaterialBuilder {
 
         Material {
             shader,
-            uniforms: UniformsSet::new(move |uniforms| {
+            uniforms: UniformsSet::new(move |mut uniforms| {
                 // Use default textures if we need to
                 let diffuse = textures.diffuse.fallback_to(&white);
                 let normal = textures.normal.fallback_to(&normal_map);

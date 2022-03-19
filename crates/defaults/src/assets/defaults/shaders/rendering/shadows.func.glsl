@@ -20,14 +20,15 @@ float calculate_shadows(vec3 position, vec3 normal, vec3 light_dir, mat4 lightsp
     float accumulated_shadow = 0.0;
     // Sample the depth texture multiple times to smooth it out
     vec2 offset_size = 1.0 / textureSize(shadow_map_texture, 0);
-    for(int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
+    const int samples = 1;
+    for(int x = -samples; x <= samples; x++) {
+        for (int y = -samples; y <= samples; y++) {
             vec2 offset = vec2(x, y) * offset_size;
             float in_shadow = texture(shadow_map_texture, vec3(lightspace_uvs.xy + offset, current_depth - (SHADOW_BIAS * 0.0001))).r;
             accumulated_shadow += in_shadow;
         }
     }
     // Average
-    accumulated_shadow /= 9.0;
+    accumulated_shadow /= float((samples*2+1) * (samples*2+1));
     return accumulated_shadow;
 }

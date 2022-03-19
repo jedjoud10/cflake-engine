@@ -55,20 +55,12 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Update the camera values now
     let global = world.globals.get::<GlobalWorldData>().unwrap();
     let components = query.all.get_mut(&global.main_camera);
-    let position = if let Some(components) = components {
+    if let Some(components) = components {
         let mut transform = components.get_mut::<Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
-        let pos = transform.position;
         let mut camera = components.get_mut::<Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
-        pos
-    } else {
-        panic!()
-    };
-    let global = world.globals.get_mut::<crate::globals::Terrain>().unwrap();
-    if world.input.pressed("cull_update") {
-        global.edit(world::terrain::editing::Edit::sphere(position, 50.0, world::terrain::editing::EditParams::default()))
     }
 }
 
@@ -90,5 +82,4 @@ pub fn system(world: &mut World) {
     world.input.bind(Keys::LShift, "camera_down");
     world.input.bind(Keys::Z, "camera_zoom");
     world.input.bind(Keys::X, "camera_unzoom");
-    world.input.bind(Keys::RShift, "cull_update");
 }
