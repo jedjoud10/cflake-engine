@@ -12,7 +12,7 @@ use world::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
     },
-    terrain::mesher::{Mesher, MesherSettings},
+    terrain::{mesher::{Mesher, MesherSettings}},
     World,
 };
 
@@ -22,7 +22,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
-        if let ChunkGenerationState::EndVoxelDataGeneration(key, true, idx) = terrain.manager.current_chunk_state {
+        if let ChunkGenerationState::EndVoxelDataGeneration(key, true, Some(id)) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
             let linked = query.get_mut(&key).unwrap();
             let coords = linked.get_mut::<Chunk>().unwrap().coords;
@@ -34,7 +34,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                     skirts: true,
                 },
             );
-            terrain.scheduler.execute(mesher, &terrain.generator.buffer, idx);
+            terrain.scheduler.execute(mesher, &terrain.generator.buffer, id);
             // We have created voxel data for this chunk, and it is valid (it contains a surface)
             terrain.manager.chunks_generating.remove(&coords);
             // Switch states
@@ -63,8 +63,8 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         drop(query);
         for generated in terrain.scheduler.get_results() {
             // Unlock
-            let idx = generated.buffer_index;
-            let shared = terrain.generator.buffer.get(idx);
+            let id = generated.id;
+            let shared = terrain.generator.buffer.get(id);
             let coords = generated.coords;
 
             // Build the mesh from the two builders
@@ -85,6 +85,10 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                     // Generate the new component and link it
                     let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
                     world.ecs.link(key, group).unwrap();
+                    // And update the chunk
+                    let query = &mut data.get_mut(0).unwrap().all;
+                    let chunk = query.get_mut(&key).unwrap().get_mut::<Chunk>().unwrap();
+                    chunk.voxel_data_id = Some(id);
                 } else {
                     // The renderer is already linked, we just need to update the mesh
                     // Valid renderer

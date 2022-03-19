@@ -1,6 +1,6 @@
 use crossbeam_channel::Sender;
 use laminar::Packet;
-use serde::{de::DeserializeOwned, Serialize, Deserialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::{io::{BufReader, Cursor, Error, Read}, net::SocketAddr};
 
 use crate::registry;

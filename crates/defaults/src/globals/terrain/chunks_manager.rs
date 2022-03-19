@@ -8,15 +8,15 @@ use world::{
     ecs::entity::EntityKey,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, pipeline::Handle},
-    terrain::ChunkCoords,
+    terrain::{ChunkCoords, VoxelDataBufferId},
 };
 
 // Generation state of the current chunk
-#[derive(EnumAsInner, Debug, PartialEq)]
+#[derive(EnumAsInner, PartialEq)]
 pub enum ChunkGenerationState {
     RequiresVoxelData,
     FetchShaderStorages(EntityKey, ChunkCoords),
-    EndVoxelDataGeneration(EntityKey, bool, usize),
+    EndVoxelDataGeneration(EntityKey, bool, Option<VoxelDataBufferId>),
 }
 
 impl Default for ChunkGenerationState {

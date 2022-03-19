@@ -1,4 +1,4 @@
-use crate::{mesher::Mesher, ChunkCoords, VoxelDataBuffer};
+use crate::{mesher::Mesher, ChunkCoords, VoxelDataBuffer, VoxelDataBufferId};
 use rendering::basics::mesh::GeometryBuilder;
 use std::{
     cell::RefCell,
@@ -10,7 +10,7 @@ use threadpool::ThreadPool;
 pub struct GenerationResult {
     pub coords: ChunkCoords,
     pub builders: (GeometryBuilder, GeometryBuilder),
-    pub buffer_index: usize,
+    pub id: VoxelDataBufferId,
 }
 
 // How the mesh scheduler should generate the chunks
@@ -58,11 +58,11 @@ impl MeshScheduler {
         }
     }
     // Start generating a mesh for the specific voxel data on another thread
-    pub fn execute(&self, mesher: Mesher, buffer: &VoxelDataBuffer, index: usize) {
+    pub fn execute(&self, mesher: Mesher, buffer: &VoxelDataBuffer, id: VoxelDataBufferId) {
         if let Some(pool) = &self.pool {
             // Multithreaded
             // Lock it
-            let data = buffer.get(index).clone();
+            let data = buffer.get(id).clone();
             data.set_used(true);
             let sender = pool.sender.clone();
             *pool.mesh_tasks_running.borrow_mut() += 1;
@@ -80,13 +80,13 @@ impl MeshScheduler {
                     .send(GenerationResult {
                         coords,
                         builders,
-                        buffer_index: index,
+                        id,
                     })
                     .unwrap();
             });
         } else {
             // Singlethreaded
-            let data = buffer.get(index).clone();
+            let data = buffer.get(id).clone();
             data.set_used(true);
 
             // Generate the mesh
@@ -100,7 +100,7 @@ impl MeshScheduler {
             cached.push(GenerationResult {
                 coords,
                 builders,
-                buffer_index: index,
+                id,
             });
         }
     }

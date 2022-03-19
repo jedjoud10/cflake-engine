@@ -1,7 +1,6 @@
-use std::{io::Error, net::SocketAddr, thread::JoinHandle, mem::size_of};
+use std::{net::SocketAddr, thread::JoinHandle, mem::size_of};
 
-use crate::{registry, serialize_payload, NetworkCache, Payload, PayloadBucketId, send, PacketType};
-use crossbeam_channel::Sender;
+use crate::{NetworkCache, Payload, PayloadBucketId, send, PacketType};
 use getset::{Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent, Result};
 use uuid::Uuid;

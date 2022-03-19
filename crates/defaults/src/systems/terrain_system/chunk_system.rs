@@ -30,7 +30,7 @@ fn add_chunk(ecs: &mut EcsManager, camera_position: vek::Vec3<f32>, camera_forwa
     group.link::<Transform>(transform).unwrap();
 
     // Calculate the chunk's priory and create it
-    let chunk = Chunk { coords };
+    let chunk = Chunk { coords, voxel_data_id: None };
     let priority = Chunk::calculate_priority(coords, camera_position, camera_forward);
     group.link::<Chunk>(chunk).unwrap();
 

@@ -1,9 +1,13 @@
-use world::{ecs::component::Component, terrain::ChunkCoords};
+use world::{ecs::component::Component, terrain::{ChunkCoords, VoxelDataBufferId}};
 
 // A component that will be added to chunk entities
 #[derive(Component)]
 pub struct Chunk {
+    // The chunk's coordinates
     pub coords: ChunkCoords,
+
+    // The specific voxel data buffer index that we used to generate our mesh
+    pub voxel_data_id: Option<VoxelDataBufferId>,
 }
 
 impl Chunk {

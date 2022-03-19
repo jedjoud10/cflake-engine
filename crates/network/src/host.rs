@@ -1,6 +1,6 @@
-use std::{collections::HashMap, mem::size_of, net::SocketAddr, thread::JoinHandle};
+use std::{mem::size_of, net::SocketAddr, thread::JoinHandle};
 
-use crate::{NetworkCache, PayloadBucketId, Payload, PacketType, send, PayloadCache};
+use crate::{NetworkCache, PayloadBucketId, Payload, PacketType, send};
 use bimap::BiHashMap;
 use getset::{CopyGetters, Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
@@ -12,7 +12,7 @@ pub struct Host {
     // Sender and receiver
     sender: crossbeam_channel::Sender<Packet>,
     receiver: crossbeam_channel::Receiver<SocketEvent>,
-    handle: JoinHandle<()>,
+    _handle: JoinHandle<()>,
     #[getset(get_copy = "pub")]
     local_addr: SocketAddr,
 
@@ -36,12 +36,12 @@ impl Host {
         // Start polling in another thread
         let sender = socket.get_packet_sender();
         let receiver = socket.get_event_receiver();
-        let handle = std::thread::spawn(move || socket.start_polling());
+        let _handle = std::thread::spawn(move || socket.start_polling());
 
         Ok(Self {
             sender,
             receiver,
-            handle,
+            _handle,
             local_addr,
             cache: Default::default(),
             clients: Default::default(),
@@ -67,7 +67,7 @@ impl Host {
 
                     if packet.payload().len() >= size_of::<PayloadBucketId>() {
                         // Add the data to the network cache
-                        let bucket_id = self.cache.push(packet);
+                        let _bucket_id = self.cache.push(packet);
                     }
                 }
                 SocketEvent::Connect(client_addr) => {
