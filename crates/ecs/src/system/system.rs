@@ -1,6 +1,8 @@
+use ahash::AHashSet;
+
 use crate::{
     component::{ComponentQuery, LinkedComponents, LinkedComponentsDelta},
-    event::Event,
+    event::Event, entity::EntityKey,
 };
 
 use super::{SubSystem, SystemExecutionOrder, SystemSettings};
@@ -37,14 +39,16 @@ impl System {
                 .map(|subsystem| {
                     let mut delta = subsystem.delta.borrow_mut();
                     let mut added = std::mem::take(&mut delta.added);
-                    let removed = std::mem::take(&mut delta.removed);
+                    let mut removed = std::mem::take(&mut delta.removed);
 
                     // Apply the deltas as soon as possible
                     let mut all = subsystem.all.borrow_mut();
 
-                    // Do this so we don't need to clone anything in the next step for unused entities
+                    // Do this so we don't need to clone anything in the next step for entities that will never make it alive
                     for (key, _) in removed.iter() {
-                        added.remove(key);
+                        if added.contains_key(key) {
+                            added.remove(key).unwrap();
+                        }
                     }
 
                     // Add
@@ -61,10 +65,17 @@ impl System {
                     }
 
                     // Remove
+                    let mut invalid_removals = AHashSet::<EntityKey>::default();
                     for (key, _) in removed.iter() {
-                        all.remove(key);
-                        added.remove(key);
+                        // Only remove when we can
+                        if all.contains_key(key) {
+                            all.remove(key).unwrap();
+                        } else {
+                            invalid_removals.insert(*key);
+                        }
                     }
+                    removed.retain(|key, _| !invalid_removals.contains(key));
+                    
 
                     // Output
                     LinkedComponentsDelta { added, removed }

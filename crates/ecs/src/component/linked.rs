@@ -29,11 +29,6 @@ fn invalid_err_not_linked() -> ComponentError {
     ComponentError::new("Component is not linked to the entity!".to_string())
 }
 impl LinkedComponents {
-    // Check if we have a component linked
-    pub fn is_linked<T: Component>(&self) -> bool {
-        let cbitfield = crate::component::registry::get::<T>();
-        self.linked.contains_key(&cbitfield)
-    }
     // Get a reference to a specific linked component
     pub fn get<T>(&self) -> Result<&T, ComponentError>
     where

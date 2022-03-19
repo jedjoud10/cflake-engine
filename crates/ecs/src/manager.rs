@@ -58,7 +58,7 @@ impl EcsManager {
     pub fn link(&mut self, key: EntityKey, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
         self.components.link(key, &mut self.entities, &mut self.systems, group)
     }
-    pub fn unlink_components(&mut self, key: EntityKey, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
+    pub fn unlink(&mut self, key: EntityKey, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
         self.components.unlink(key, &mut self.entities, &mut self.systems, group)
     }
 }

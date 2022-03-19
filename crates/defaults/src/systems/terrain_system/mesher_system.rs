@@ -44,10 +44,14 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             let linked = query.get_mut(&key).unwrap();
             let _chunk = linked.get_mut::<Chunk>().unwrap();
             // Remove the chunk's renderer if it had one
-            if world.ecs.entities.get(key).unwrap().is_linked::<crate::components::Renderer>() {
-                let mut unlink_group = ComponentUnlinkGroup::default();
-                unlink_group.unlink::<crate::components::Renderer>().unwrap();
-                world.ecs.unlink_components(key, unlink_group).unwrap();
+            if world.ecs.entities.get(key).unwrap().is_linked::<Renderer>() {
+                let mut group = ComponentUnlinkGroup::default();
+                group.unlink::<Renderer>().unwrap();
+                if terrain.manager.physics {
+                    group.unlink::<RigidBody>().unwrap();
+                    group.unlink::<Collider>().unwrap();
+                }
+                world.ecs.unlink(key, group).unwrap();
             }
 
             // The chunk ID is the same, but we do not have a surface
@@ -56,6 +60,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         }
 
         // Get the meshes that were generated in other threads
+        drop(query);
         for generated in terrain.scheduler.get_results() {
             // Unlock
             let idx = generated.buffer_index;
@@ -74,15 +79,17 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             // Get the chunk entity key
             let key = terrain.manager.chunks.get(&coords);
             if let Some(&key) = key {
-                let linked = query.get_mut(&key).unwrap();
-
-                if !linked.is_linked::<Renderer>() {
+                // Get the entity
+                let entity = world.ecs.entities.get(key).unwrap();
+                if !entity.is_linked::<Renderer>() {
                     // Generate the new component and link it
                     let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
                     world.ecs.link(key, group).unwrap();
                 } else {
                     // The renderer is already linked, we just need to update the mesh
                     // Valid renderer
+                    let query2 = &mut data.get_mut(1).unwrap().all;
+                    let linked = query2.get_mut(&key).unwrap();
                     let renderer = linked.get_mut::<Renderer>().unwrap();
                     renderer.mesh = mesh;
                 }

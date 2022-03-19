@@ -22,12 +22,13 @@ pub fn register<T: Component + Sized>() -> Bitfield<u32> {
     // Make a copy of the id before the bit shift
     let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
 
-    let component_id = Bitfield::<u32>::from_num(id);
-    lock.insert(TypeId::of::<T>(), component_id);
+    let cbitfield = Bitfield::<u32>::from_num(id);
+    lock.insert(TypeId::of::<T>(), cbitfield);
     // Bit shift to the left
     NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
     // Return the component ID before the bit shift
-    component_id
+    eprintln!("Registered component '{}' with bitfield '{}'", std::any::type_name::<T>(), cbitfield);
+    cbitfield
 }
 // Get the bitfield ID of a specific component
 pub fn get<T: Component>() -> Bitfield<u32> {

@@ -43,8 +43,9 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
 // Whenever we add a rigidbody that has a collider attached to it, we must add them to the Rapier3D simulation
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Add each rigidbody and it's corresponding collider
-    let query = &mut data.get_mut(0).unwrap().delta.added;
-    for (_, components) in query.iter_mut() {
+    let added = &mut data.get_mut(0).unwrap().delta.added;
+    let sim = &mut world.physics;
+    for (_, components) in added.iter_mut() {
         // Get the components
         let rigidbody = components.get::<RigidBody>().unwrap();
         let collider = components.get::<Collider>().unwrap();
@@ -72,7 +73,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         let r_collider = builder.build();
 
         // Add the collider and rigidbody
-        let sim = &mut world.physics;
         let rigidbody_handle = sim.bodies.insert(r_rigibody);
         let collider_handle = sim.colliders.insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
 
@@ -81,6 +81,15 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         rigidbody.handle = rigidbody_handle;
         let mut collider = components.get_mut::<Collider>().unwrap();
         collider.handle = collider_handle;
+    }
+
+    let removed = &mut data.get_mut(0).unwrap().delta.removed;
+    // Also remove the rigidbodies that we don't need anymore
+    for (_, components) in removed {
+        let rb = components.get::<RigidBody>().unwrap();
+        let collider = components.get::<Collider>().unwrap();
+        sim.bodies.remove(rb.handle, &mut sim.islands, &mut sim.colliders, &mut sim.joints).unwrap();
+        sim.colliders.remove(collider.handle, &mut sim.islands, &mut sim.bodies, false).unwrap();
     }
 }
 

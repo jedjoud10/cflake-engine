@@ -25,8 +25,6 @@ impl SubSystem {
     }
     // Remove an entity
     pub(crate) fn remove(&self, key: EntityKey, linked_components: LinkedComponents) {
-        if self.all.borrow().contains_key(&key) | self.delta.borrow().added.contains_key(&key) {
-            self.delta.borrow_mut().removed.insert(key, linked_components);
-        }
+        self.delta.borrow_mut().removed.insert(key, linked_components);
     }
 }
