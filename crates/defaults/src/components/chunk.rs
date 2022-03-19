@@ -1,4 +1,7 @@
-use world::{ecs::component::Component, terrain::{ChunkCoords, VoxelDataBufferId}};
+use world::{
+    ecs::component::Component,
+    terrain::{ChunkCoords, VoxelDataBufferId},
+};
 
 // A component that will be added to chunk entities
 #[derive(Component)]

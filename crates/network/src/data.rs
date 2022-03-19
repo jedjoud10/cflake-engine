@@ -1,7 +1,10 @@
 use crossbeam_channel::Sender;
 use laminar::Packet;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{io::{BufReader, Cursor, Error, Read}, net::SocketAddr};
+use std::{
+    io::{BufReader, Cursor, Error, Read},
+    net::SocketAddr,
+};
 
 use crate::registry;
 pub trait Payload: Serialize + DeserializeOwned + 'static {}
@@ -59,7 +62,7 @@ pub enum PacketType {
     ReliableUnordered,
     ReliableOrdered,
     ReliableSequenced,
-    UnreliableSequenced
+    UnreliableSequenced,
 }
 
 // Helper functions that automatically serialize the payload before sending it

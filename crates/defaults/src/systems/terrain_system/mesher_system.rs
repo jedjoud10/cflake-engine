@@ -12,7 +12,7 @@ use world::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
     },
-    terrain::{mesher::{Mesher, MesherSettings}},
+    terrain::mesher::{Mesher, MesherSettings},
     World,
 };
 
@@ -68,11 +68,10 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
             let coords = generated.coords;
 
             // Build the mesh from the two builders
-            let (builder1, builder2) = generated.builders;
             let mesh = {
-                let mesh1 = builder1.build();
-                let mesh2 = builder2.build();
-                let combined = Mesh::combine(mesh1, mesh2);
+                let base = generated.base.build();
+                let skirts = generated.skirts.build();
+                let combined = Mesh::combine(base, skirts);
                 world.pipeline.insert(combined)
             };
 

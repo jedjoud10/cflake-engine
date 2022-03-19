@@ -2,7 +2,7 @@ use crate::{
     flatten, flatten_vec3,
     mesher::{
         settings::MesherSettings,
-        tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE, VERTEX_TABLE_USIZE},
+        tables::{DATA_OFFSET_TABLE, EDGE_TABLE, TRI_TABLE, VERTEX_TABLE, VERTEX_TABLE_USIZE}, GeneratedMeshSurface, GeneratedCube,
     },
     VoxelData, CHUNK_SIZE,
 };
@@ -64,7 +64,11 @@ impl MarchingCubes {
         }
     }
     // Solve the marching cubes case and add the vertices to the mesh
-    fn solve_marching_cubes_case(&self, voxels: &VoxelData, builder: &mut GeometryBuilder, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) {
+    fn solve_marching_cubes_case(&self, voxels: &VoxelData, builder: &mut GeometryBuilder, merger: &mut VertexMerger, info: &IterInfo, data: CubeData) -> GeneratedCube {
+        // Keep track of the average vertex
+        let mut average = vek::Vec3::<f32>::default();
+        let mut count = 0;
+
         // The vertex indices that are gonna be used for the skirts
         for edge in TRI_TABLE[data.case as usize] {
             // Make sure the triangle is valid
@@ -104,14 +108,29 @@ impl MarchingCubes {
                 verts.normal(interpolated.normal);
                 verts.color(interpolated.color);
                 verts.uv(vek::Vec2::new(data.voxel_material, 0));
+                average += interpolated.vertex;
+                count += 1;
             } else {
                 // The vertex already exists
-                builder.indices.push(merger[&edge_tuple] as u32);
+                let index = merger[&edge_tuple] as u32;
+                builder.indices.push(index);
+                average += builder.vertices.vertices.positions[index as usize];
+                count += 1;
             }
         }
+
+        // Return the generated cube, this is only used to create a mesh surface, but not the actual mesh
+        GeneratedCube {
+            average: average / count as f32,
+            material: data.voxel_material,
+        }
     }
-    // Generate the mesh
-    fn generate_mesh(&self, voxels: &VoxelData, builder: &mut GeometryBuilder) {
+    // Generate the Marching Cubes mesh
+    pub fn build(&self, voxels: &VoxelData) -> (GeometryBuilder, GeneratedMeshSurface) {
+        // Mesh builder
+        let mut builder = GeometryBuilder::default();
+        let mut surface = GeneratedMeshSurface::default();
+        // Then generate the mesh
         // Use vertex merging
         let mut merger = VertexMerger::default();
         for x in 0..CHUNK_SIZE {
@@ -132,19 +151,13 @@ impl MarchingCubes {
                         voxel_material: voxels.voxel_material(i),
                         case,
                     };
-                    self.solve_marching_cubes_case(voxels, builder, &mut merger, &info, data)
+                    let cube = self.solve_marching_cubes_case(voxels, &mut builder, &mut merger, &info, data);
+                    surface.cubes.push(cube);
                 }
             }
         }
-    }
-    // Generate the Marching Cubes mesh
-    pub fn build(&self, voxels: &VoxelData) -> GeometryBuilder {
-        // Mesh builder
-        let mut builder = GeometryBuilder::default();
-        // Then generate the mesh
-        self.generate_mesh(voxels, &mut builder);
         // Combine the mesh's custom vertex data with the mesh itself
-        builder
+        (builder, surface)
     }
 }
 // Info about the current iteration

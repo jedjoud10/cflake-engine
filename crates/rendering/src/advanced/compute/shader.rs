@@ -64,7 +64,7 @@ impl ComputeShader {
         })
     }
     // Execute a compute shader
-    pub fn run(&self, pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, _uniforms: Uniforms, _flush_and_barrier: bool) -> Result<(), OpenGLObjectNotInitialized> {
+    pub fn run(&self, _pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, _uniforms: Uniforms, force: bool) -> Result<(), OpenGLObjectNotInitialized> {
         // Check validity
         if self.program().program() == 0 {
             return Err(OpenGLObjectNotInitialized);
@@ -73,13 +73,15 @@ impl ComputeShader {
         // Run
         unsafe {
             let axii = settings.axii;
-
-            //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
-            gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
-            if _flush_and_barrier {
-                gl::Finish();
+            // TODO: fix this
+            if force {
+                gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
             }
-            //gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
+            gl::DispatchCompute(axii.x as u32, axii.y as u32, axii.z as u32);
+            if force {
+                gl::Finish();
+                gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT | gl::ATOMIC_COUNTER_BARRIER_BIT | gl::SHADER_STORAGE_BARRIER_BIT);
+            }
         }
 
         Ok(())

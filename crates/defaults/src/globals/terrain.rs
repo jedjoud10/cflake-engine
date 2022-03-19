@@ -2,12 +2,12 @@ use world::{
     globals::Global,
     math::octrees::DiffOctree,
     rendering::pipeline::Pipeline,
+    settings::{TerrainMesherThreadingType, TerrainUserSettings},
     terrain::{
         editing::{Edit, EditingManager},
         scheduler::{MeshScheduler, MeshSchedulerSettings},
         ChunkCoords, CHUNK_SIZE,
     },
-    settings::{TerrainMesherThreadingType, TerrainUserSettings},
 };
 
 mod chunks_manager;

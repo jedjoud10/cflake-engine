@@ -1,4 +1,4 @@
-use crate::{mesher::Mesher, ChunkCoords, VoxelDataBuffer, VoxelDataBufferId};
+use crate::{mesher::{Mesher, GeneratedMeshSurface}, ChunkCoords, VoxelDataBuffer, VoxelDataBufferId};
 use rendering::basics::mesh::GeometryBuilder;
 use std::{
     cell::RefCell,
@@ -8,8 +8,19 @@ use threadpool::ThreadPool;
 
 // The result that is sent to the main thread after we generate a mesh on a worker thread
 pub struct GenerationResult {
+    // The coordinates of the chunk
     pub coords: ChunkCoords,
-    pub builders: (GeometryBuilder, GeometryBuilder),
+
+    // The main geometry builder, generates most of the mesh
+    pub base: GeometryBuilder,
+
+    // The skirts' geometry builder, used only to hide seams between multiple chunks
+    pub skirts: GeometryBuilder,
+
+    // The mesh's surface
+    pub surface: GeneratedMeshSurface,
+
+    // The ID of the voxel data that we used to generate this mesh
     pub id: VoxelDataBufferId,
 }
 
@@ -73,16 +84,10 @@ impl MeshScheduler {
                 let arc = data.as_ref();
                 let unlocked = arc.load();
                 let coords = mesher.coords;
-                let builders = mesher.build(&unlocked);
+                let (main, skirts, surface) = mesher.build(&unlocked);
 
                 // Return
-                sender
-                    .send(GenerationResult {
-                        coords,
-                        builders,
-                        id,
-                    })
-                    .unwrap();
+                sender.send(GenerationResult { coords, base: main, skirts, surface, id }).unwrap();
             });
         } else {
             // Singlethreaded
@@ -93,15 +98,11 @@ impl MeshScheduler {
             let arc = data.as_ref();
             let unlocked = arc.load();
             let coords = mesher.coords;
-            let builders = mesher.build(&unlocked);
+            let (main, skirts, surface) = mesher.build(&unlocked);
 
             // Cached the result
             let mut cached = self.cached.borrow_mut();
-            cached.push(GenerationResult {
-                coords,
-                builders,
-                id,
-            });
+            cached.push(GenerationResult { coords, base: main, skirts, surface, id });
         }
     }
     // Get the mesh results that were generated on other threads

@@ -139,20 +139,14 @@ impl Painter {
             gl::Enable(gl::SCISSOR_TEST);
         }
 
-        let vec = Vec::<f32>::new();
         // We can bind once, and mutate multiple times
-        Uniforms::new(shader.program(), pipeline, |uniforms| {
+        Uniforms::new(shader.program(), pipeline, |mut uniforms| {
             // Draw each mesh
             let mut last_texture = Handle::<Texture2D>::default();
-            for x in vec.into_iter() {
-
-            }
-            /*
             for ClippedMesh(rect, mesh) in clipped_meshes {
                 self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
                 self.draw_mesh(rect, mesh, pipeline);
             }
-            */
         });
 
         // Reset

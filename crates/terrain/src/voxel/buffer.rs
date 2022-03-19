@@ -77,10 +77,7 @@ impl VoxelDataBuffer {
         data.store(stored);
         // Increment the counter
         self.counter += 1;
-        VoxelDataBufferId {
-            idx,
-            counter: self.counter,
-        }
+        VoxelDataBufferId { idx, counter: self.counter }
     }
     // Get
     pub fn get(&self, id: VoxelDataBufferId) -> Ref<SharedVoxelData> {

@@ -1,8 +1,8 @@
-use std::{net::SocketAddr, thread::JoinHandle, mem::size_of};
+use std::{mem::size_of, net::SocketAddr, thread::JoinHandle};
 
-use crate::{NetworkCache, Payload, PayloadBucketId, send, PacketType};
+use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use getset::{Getters, MutGetters};
-use laminar::{Packet, Socket, SocketEvent, Result};
+use laminar::{Packet, Result, Socket, SocketEvent};
 use uuid::Uuid;
 
 #[derive(Getters, MutGetters)]
@@ -11,11 +11,11 @@ pub struct Client {
     sender: crossbeam_channel::Sender<Packet>,
     receiver: crossbeam_channel::Receiver<SocketEvent>,
     _handle: JoinHandle<()>,
-    
+
     // Network cache
     #[getset(get = "pub", get_mut = "pub")]
     cache: NetworkCache,
-    
+
     // UUID
     #[getset(get = "pub")]
     uuid: Uuid,
@@ -40,7 +40,8 @@ impl Client {
         sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
 
         // Wait till we get a connection back
-        if let SocketEvent::Connect(_) = receiver.recv().unwrap() {} else {
+        if let SocketEvent::Connect(_) = receiver.recv().unwrap() {
+        } else {
             // Not good, we didn't get a connection as our first packet
             panic!();
         }
@@ -50,11 +51,13 @@ impl Client {
                 let uuid = packet.payload();
                 Uuid::from_bytes(uuid.try_into().unwrap())
             }
-            _ => { panic!("Did not receive the UUID packet!") }
+            _ => {
+                panic!("Did not receive the UUID packet!")
+            }
         };
 
         Ok(Self {
-            sender, 
+            sender,
             host: addr,
             receiver,
             _handle,
@@ -71,13 +74,13 @@ impl Client {
                         // Add the data to the network cache
                         self.cache.push(packet);
                     }
-                },
+                }
                 SocketEvent::Connect(_) => panic!("Connection event duplication!"),
                 _ => {}
             }
-        };
+        }
         Ok(())
-    }    
+    }
     // Send a packet to the server using a special packet type
     pub fn send<P: Payload + 'static>(&mut self, payload: P, _type: PacketType) {
         send(self.host, payload, &mut self.sender, _type).unwrap();

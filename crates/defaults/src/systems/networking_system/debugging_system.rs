@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use world::{
     ecs::component::ComponentQuerySet,
     gui::egui,
-    network::{Client, Host, NetworkSession, PayloadCache, PacketType},
+    network::{Client, Host, NetworkSession, PacketType, PayloadCache},
     World,
 };
 

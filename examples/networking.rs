@@ -1,4 +1,4 @@
-use cflake_engine::{*, defaults::systems::networking_system, ecs::component::ComponentQuerySet};
+use cflake_engine::{defaults::systems::networking_system, ecs::component::ComponentQuerySet, *};
 
 // An empty game window
 fn main() {
@@ -11,9 +11,7 @@ fn main() {
 }
 
 // Create a system that will send / receive messages
-fn run(world: &mut World, data: ComponentQuerySet) {
-}
-
+fn run(world: &mut World, data: ComponentQuerySet) {}
 
 // Init the empty world
 fn init(_world: &mut World) {}

@@ -174,7 +174,7 @@ impl MarchingCubesSkirts {
                 vertices.swap(swap_index0, swap_index1);
             }
         }
-        // Actually add th
+        // Add the vertices
         for (i, vertex) in vertices.into_iter().enumerate() {
             //Exit early
             if i == len {

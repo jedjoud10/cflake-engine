@@ -1,6 +1,6 @@
 use std::{mem::size_of, net::SocketAddr, thread::JoinHandle};
 
-use crate::{NetworkCache, PayloadBucketId, Payload, PacketType, send};
+use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use bimap::BiHashMap;
 use getset::{CopyGetters, Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
@@ -89,8 +89,7 @@ impl Host {
                 }
             }
         }
-        
-        
+
         Ok(())
     }
     // Send a packet to the a specific client using it's UUID

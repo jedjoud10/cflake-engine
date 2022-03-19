@@ -61,9 +61,7 @@ impl RawStorage {
         self.byte_len = len;
         if cap > self.byte_cap {
             // Check if we can reallocate first
-            if !self.usage.dynamic {
-                panic!()
-            }
+            assert!(self.usage.dynamic, "Buffer is not dynamic, cannot reallocate!");
 
             // Reallocate
             self.byte_cap = cap;
@@ -97,11 +95,9 @@ impl RawStorage {
             ptr
         };
         // Then copy to output
-        let i = std::time::Instant::now();
-        std::ptr::copy(ptr as *const Element, output, len);
+        std::ptr::copy(ptr, output, len);
 
         // We can unmap the buffer now
-        let i = std::time::Instant::now();
         let _result = gl::UnmapBuffer(self._type);
         */
         gl::BindBuffer(self._type, self.buffer);
@@ -156,7 +152,7 @@ impl<Element> TypedStorage<Element> {
     }
     // Read subdata
     pub fn read(&self, output: *mut Element, len: usize, offset: usize) {
-        // Cannot read more than we have allocated!
+        // Cannot read more than we have allocated
         if len > self.capacity {
             panic!()
         }

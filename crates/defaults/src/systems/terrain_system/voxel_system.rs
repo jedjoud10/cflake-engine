@@ -34,7 +34,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
         let settings = ComputeShaderExecutionSettings::new(vek::Vec3::new(AXIS, AXIS, AXIS));
         let compute = pipeline.get(&generator.primary_compute).unwrap();
         compute.run(pipeline, settings, uniforms, true).unwrap();
-    });    
+    });
 
     // Set the uniforms for the second compute shader
     let program = pipeline.get(&generator.secondary_compute).unwrap().program();

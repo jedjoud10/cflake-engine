@@ -1,6 +1,6 @@
 use cflake_engine::{
     assets,
-    audio::{AudioSource},
+    audio::AudioSource,
     defaults::components::{self, Camera, Transform},
     ecs::entity::ComponentLinkingGroup,
     rendering::basics::lights::{LightParameters, LightType::Directional},
@@ -42,17 +42,8 @@ fn init(world: &mut World) {
     let audio = assets::assetc::load::<AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
     let audio2 = assets::assetc::load::<AudioSource>("user/sounds/nicolas.mp3").unwrap();
     let audio3 = assets::assetc::load::<AudioSource>("user/sounds/bruh.mp3").unwrap();
-    
-    world
-        .audio
-        .play_positional(&audio, vek::Vec3::unit_x() * -2.0, |s| s)
-        .unwrap();
-    world
-        .audio
-        .play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s| s)
-        .unwrap();
-    world
-        .audio
-        .play_positional(&audio3, vek::Vec3::default(), |s| s)
-        .unwrap();
+
+    world.audio.play_positional(&audio, vek::Vec3::unit_x() * -2.0, |s| s).unwrap();
+    world.audio.play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s| s).unwrap();
+    world.audio.play_positional(&audio3, vek::Vec3::default(), |s| s).unwrap();
 }

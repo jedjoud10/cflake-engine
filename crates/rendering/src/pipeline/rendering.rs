@@ -1,12 +1,12 @@
 mod common;
 mod error;
+mod framebuffer;
 mod renderer;
 mod settings;
 mod shadows;
-mod framebuffer;
-pub use framebuffer::*;
 pub use common::*;
 pub use error::*;
+pub use framebuffer::*;
 pub use renderer::*;
 pub use settings::*;
 pub use shadows::*;

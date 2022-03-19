@@ -5,15 +5,14 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture, Texture2D, TextureBuilder, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
+        texture::{ResizableTexture, Texture2D, TextureBuilder, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
-    pipeline::{Handle, Pipeline, Framebuffer, FramebufferClearBits},
+    pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
     utils::DataType,
 };
 use assets::assetc;
 use getset::{Getters, MutGetters};
-use gl::types::GLuint;
 
 // Scene renderer that will render our world using deferred rendering
 // TODO: Document
@@ -23,7 +22,7 @@ pub struct SceneRenderer {
     // Default frame buffer
     #[getset(get_mut = "pub")]
     default: Framebuffer,
-    
+
     // Deffered frame buffer
     #[getset(get_mut = "pub")]
     framebuffer: Framebuffer,
@@ -120,7 +119,7 @@ impl SceneRenderer {
             gl::COLOR_ATTACHMENT3,
             gl::DEPTH_ATTACHMENT,
         ];
-        
+
         // Bind textures
         let textures_and_attachements = textures.iter().cloned().zip(attachements).collect::<Vec<_>>();
         framebuffer.bind_textures(pipeline, &textures_and_attachements);
@@ -251,12 +250,12 @@ impl SceneRenderer {
                 .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
             uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
             uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
-        });        
+        });
 
         // Draw the quad
         let quad_mesh = pipeline.meshes.get(&self.quad).unwrap();
         // Draw to the default framebuffer
-        self.default.bind(false, |_| {            
+        self.default.bind(false, |_| {
             gl::Disable(gl::DEPTH_TEST);
             common::render(quad_mesh);
             gl::Enable(gl::DEPTH_TEST);

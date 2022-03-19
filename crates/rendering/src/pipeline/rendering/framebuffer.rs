@@ -1,9 +1,12 @@
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 use getset::Getters;
 use gl::types::GLuint;
 
-use crate::{pipeline::{Pipeline, Handle}, basics::texture::{Texture, Texture2D}};
+use crate::{
+    basics::texture::{Texture, Texture2D},
+    pipeline::{Handle, Pipeline},
+};
 use bitflags::bitflags;
 
 // Framebuffer clear bits
@@ -54,7 +57,7 @@ impl Framebuffer {
                     gl::NamedFramebufferTexture(me.id, *attachement, texture.name().unwrap(), 0);
                 }
 
-                    // Check if this attachement is a color attachement
+                // Check if this attachement is a color attachement
                 match attachement {
                     36064..=36079 => {
                         // Valid color attachement
@@ -88,14 +91,16 @@ impl Framebuffer {
     pub fn bind(&mut self, reset: bool, mut closure: impl FnMut(&mut Self)) {
         // Check the currently bound frame buffer
         let currently_bound = unsafe { CURRENTLY_BOUND_FRAMEBUFFER };
-        unsafe { 
+        unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.id);
             CURRENTLY_BOUND_FRAMEBUFFER = self.id;
-        }        
+        }
         closure(self);
         // Bind the framebuffer that *lost* it's binding, if needed
         if reset {
-            unsafe { gl::BindFramebuffer(gl::FRAMEBUFFER, currently_bound); }
+            unsafe {
+                gl::BindFramebuffer(gl::FRAMEBUFFER, currently_bound);
+            }
         }
     }
 }
@@ -103,8 +108,6 @@ impl Framebuffer {
 impl Drop for Framebuffer {
     // Dispose of the frame buffer
     fn drop(&mut self) {
-        unsafe {
-            gl::DeleteFramebuffers(1, &self.id)
-        }
+        unsafe { gl::DeleteFramebuffers(1, &self.id) }
     }
 }

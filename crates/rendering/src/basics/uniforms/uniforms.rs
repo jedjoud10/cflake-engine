@@ -16,19 +16,16 @@ pub struct Uniforms<'a> {
 
 impl<'a> Uniforms<'a> {
     // Create a uniforms setter using a shader program and the pipeline
-    pub fn new<>(program: &ShaderProgram, pipeline: &Pipeline, closure: impl FnOnce(Uniforms)) {
+    pub fn new(program: &ShaderProgram, pipeline: &Pipeline, closure: impl FnOnce(Uniforms)) {
         unsafe { gl::UseProgram(program.program()) }
-        let mut bound = Uniforms {
-            program,
-            pipeline,
-        };
+        let mut bound = Uniforms { program, pipeline };
         // Set some global uniforms while we're at it
         bound.set_f32("_time", pipeline.elapsed());
         bound.set_f32("_delta", pipeline.delta());
         bound.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
         bound.set_vec2f32("_nf_planes", pipeline.camera().clip_planes);
-        closure(bound);        
-    } 
+        closure(bound);
+    }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {
         //if res == -1 { eprintln!("{} does not have a valid uniform location for program {}", name, self.program); }
