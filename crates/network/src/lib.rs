@@ -9,6 +9,6 @@ pub use cache::*;
 pub use client::*;
 pub use data::*;
 pub use host::*;
-use registry::*;
+pub use registry::*;
 pub use session::*;
 mod tests;

@@ -4,18 +4,11 @@ use std::{
     time::SystemTime, io::Error,
 };
 
-use crate::{serialize_payload, NetworkCache, Payload, PayloadBucketId, registry};
+use crate::{serialize_payload, NetworkCache, Payload, PayloadBucketId, registry, deserialize_bucket_id};
 use getset::{Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
 use serde::Serialize;
 use uuid::Uuid;
-
-// Unique identifier for each client that is connected
-#[derive(Hash, PartialEq, Eq)]
-pub struct ConnectedClient {
-    pub uuid: Uuid,
-}
-
 #[derive(Getters, MutGetters)]
 pub struct Client {
     // Sender and receiver
@@ -29,6 +22,10 @@ pub struct Client {
 
     // The hosts's address
     host: SocketAddr,
+
+    // UUID
+    #[getset(get = "pub")]
+    uuid: Uuid,
 }
 
 impl Client {
@@ -46,23 +43,39 @@ impl Client {
         // Send a single packet to establish a connection
         sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
 
+        // Wait till we get a connection back
+        receiver.recv().unwrap();
+        let uuid = match receiver.recv().unwrap() {
+            SocketEvent::Packet(packet) => {
+                // Deserialize UUID
+                let uuid = packet.payload();
+                Uuid::from_bytes(uuid.try_into().unwrap())
+            },
+            SocketEvent::Connect(_) => todo!(),
+            SocketEvent::Timeout(_) => todo!(),
+            SocketEvent::Disconnect(_) => todo!(),
+        };
+
         Ok(Self {
             sender,
             receiver,
             handle,
             cache: NetworkCache::default(),
             host: addr,
+            uuid
         })
     }
     // Handle connections and server->client packets
     pub fn poll(&mut self) -> laminar::Result<()> {
         for event in self.receiver.try_iter() {
+            /*
             match event {
                 SocketEvent::Packet(_) => todo!(),
                 SocketEvent::Connect(_) => todo!(),
                 SocketEvent::Timeout(_) => todo!(),
                 SocketEvent::Disconnect(_) => todo!(),
             }
+            */
         }
         Ok(())
     }

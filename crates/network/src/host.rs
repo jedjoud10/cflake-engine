@@ -6,7 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use crate::{ConnectedClient, NetworkCache, Payload, PayloadBucketId};
+use crate::{NetworkCache, Payload, PayloadBucketId};
 use getset::{CopyGetters, Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
 use uuid::Uuid;
@@ -28,7 +28,8 @@ pub struct Host {
     // UUIDs of clients that will connect soon
     uuids: HashMap<SocketAddr, Uuid>,
     // Connected clients
-    connected: HashMap<SocketAddr, ConnectedClient>,
+    #[getset(get = "pub", get_mut = "pub")]
+    connected: HashMap<SocketAddr, Uuid>,
 }
 
 impl Host {
@@ -66,7 +67,8 @@ impl Host {
                         let uuid = uuid::Uuid::new_v4();
                         let payload = uuid.as_bytes().to_vec();
                         self.uuids.insert(client_addr, uuid);
-                        self.sender.send(Packet::reliable_unordered(client_addr, payload)).unwrap();
+                        self.sender.send(Packet::reliable_ordered(client_addr, payload.clone(), None)).unwrap();
+                        self.sender.send(Packet::reliable_ordered(client_addr, Vec::new(), None)).unwrap();
                         // Can't do anything unless we are connected
                         continue;
                     }
@@ -85,7 +87,7 @@ impl Host {
                     println!("Server: Client '{}' succsesfully connected", self.uuids.get(&client_addr).unwrap());
 
                     let uuid = self.uuids.remove(&client_addr).unwrap();
-                    self.connected.insert(client_addr, ConnectedClient { uuid });
+                    self.connected.insert(client_addr, uuid);
                 }
                 SocketEvent::Timeout(client_addr) => {
                     // A client has timed out
@@ -94,8 +96,8 @@ impl Host {
                 SocketEvent::Disconnect(client_addr) => {
                     // A client has been disconnected
                     assert!(self.connected.contains_key(&client_addr), "Client was not connected in the first place!");
-                    let client = self.connected.remove(&client_addr).unwrap();
-                    println!("Server: Client '{}' succsesfully disconnected", client.uuid);
+                    let uuid = self.connected.remove(&client_addr).unwrap();
+                    println!("Server: Client '{}' succsesfully disconnected", uuid);
                 }
             }
         }

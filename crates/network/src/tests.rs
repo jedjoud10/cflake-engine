@@ -6,21 +6,31 @@ mod tests {
 
     #[test]
     fn test() {
+        /*
         // Host
         let mut host = Host::host().unwrap();
         // Client
-        let client = Client::connect(host.local_addr()).unwrap();
+        register::<f32>();
+        register::<u32>();
+        let addr = host.local_addr();
+        let join = std::thread::spawn(move || {
+            let client = Client::connect(addr).unwrap();
+            for x in 0..10 {
+                //client.send_reliable_ordered::<u32>(012).unwrap();
+            }
+            client.send_reliable_ordered::<u32>(012).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(10000));
+        });
         std::thread::sleep(std::time::Duration::from_millis(200));
         for x in 0..10 {
             host.poll().unwrap();
             std::thread::sleep(std::time::Duration::from_millis(20));
         }
 
-        register::<f32>();
-        register::<u32>();
+
 
         //client.send();
-        client.send_reliable_ordered::<u32>(012).unwrap();
+
 
         for x in 0..10 {
             host.poll().unwrap();
@@ -32,6 +42,8 @@ mod tests {
         for val in cache.iter() {
             dbg!(val);
         }
+        join.join();
+        */
         /*
         use laminar::{Socket, Packet};
 

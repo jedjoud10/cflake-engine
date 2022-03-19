@@ -60,7 +60,7 @@ pub fn preload_default_assets() {
 pub fn load_default_systems(world: &mut World) {
     // Engine defaults
     SystemExecutionOrder::set(i32::MIN);
-
+    networking_system::polling_system::system(world);
     camera_system::system(world);
 
     debugging_system::system(world);
@@ -79,7 +79,7 @@ pub fn load_default_systems(world: &mut World) {
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
 
-    networking_system::system(world);
+    networking_system::debugging_system::system(world);
     rendering_system::system(world);
     gui_system::system(world);
     screenshot_system::system(world);
