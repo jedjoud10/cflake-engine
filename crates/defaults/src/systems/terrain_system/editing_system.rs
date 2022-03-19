@@ -1,8 +1,8 @@
-use world::ecs::component::{ComponentQuerySet, ComponentQueryParams, ComponentQuery};
+use world::ecs::component::{ComponentQuery, ComponentQueryParams, ComponentQuerySet};
 use world::math::shapes::ShapeType;
 use world::rendering::advanced::storages::Buffer;
-use world::World;
 use world::terrain::editing::Edit;
+use world::World;
 
 use crate::components::{DynamicEdit, Transform};
 use crate::globals;
@@ -32,8 +32,9 @@ fn run(world: &mut World, data: ComponentQuerySet) {
 
 // Updates the terrain edits to reflect on the modification applied onto the dynamic edits
 fn handle_dynamic_edits(mut data: Vec<ComponentQuery>, terrain: &mut globals::Terrain) {
-    // Debug
     let query = data.get_mut(0).unwrap();
+    /*
+    // Debug
     for (_, components) in query.all.iter_mut() {
         let transform = components.get_mut::<Transform>().unwrap();
         transform.position = transform.position + vek::Vec3::unit_y() * 0.01;
@@ -44,6 +45,7 @@ fn handle_dynamic_edits(mut data: Vec<ComponentQuery>, terrain: &mut globals::Te
             _ => {}
         }
     }
+    */
     // Add the actual edits first
     for (_, components) in query.delta.added.iter_mut() {
         let dynamic_edit = components.get_mut::<DynamicEdit>().unwrap();
@@ -51,7 +53,9 @@ fn handle_dynamic_edits(mut data: Vec<ComponentQuery>, terrain: &mut globals::Te
         dynamic_edit.key = terrain.editer.edit(dynamic_edit.edit.clone());
     }
     // Only update the edits if we finished generating the base terrain
-    if !terrain.manager.chunks_generating.is_empty() || terrain.manager.must_update_octree || !terrain.manager.chunks_to_remove.is_empty() { return } 
+    if !terrain.manager.chunks_generating.is_empty() || terrain.manager.must_update_octree || !terrain.manager.chunks_to_remove.is_empty() {
+        return;
+    }
 
     // Loop through every dynamic edit and update it's corresponding terrain edit
     for (_, components) in query.all.iter() {
@@ -67,11 +71,11 @@ fn handle_dynamic_edits(mut data: Vec<ComponentQuery>, terrain: &mut globals::Te
                 ShapeType::Sphere(sphere) => sphere.center += transform.position,
                 ShapeType::VerticalCapsule(capsule) => capsule.center += transform.position,
             };
-        
+
             *stored_edit = Edit {
                 shape,
                 params: dynamic_edit.edit.params.clone(),
-            }; 
+            };
         }
     }
 }

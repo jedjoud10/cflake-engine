@@ -1,5 +1,5 @@
 use ahash::{AHashMap, RandomState};
-use getset::{CopyGetters, Getters};
+use getset::{CopyGetters, Getters, Setters};
 use multimap::MultiMap;
 
 use super::{Keys, State};
@@ -8,7 +8,7 @@ use crate::{ButtonState, MapState, ToggleState};
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
 // Get binding:
 // Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
-#[derive(Getters, CopyGetters)]
+#[derive(Getters, CopyGetters, Setters)]
 pub struct InputManager {
     // "debug_map" -> State: "Pressed"
     #[getset(get = "pub")]
@@ -27,6 +27,10 @@ pub struct InputManager {
     mouse_scroll_delta: f32,
     #[getset(get_copy = "pub")]
     mouse_scroll: f32,
+
+    // Do we currently accept input
+    #[getset(get_copy = "pub", set = "pub")]
+    is_accepting_input: bool,
 }
 
 impl Default for InputManager {
@@ -39,6 +43,7 @@ impl Default for InputManager {
             mouse_pos_delta: Default::default(),
             mouse_scroll: Default::default(),
             mouse_scroll_delta: Default::default(),
+            is_accepting_input: true,
         }
     }
 }

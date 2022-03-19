@@ -56,11 +56,15 @@ impl Octree {
         if let Some(pos) = self.target.as_ref() {
             // Check distances
             vek::Vec3::<f32>::distance(*pos, target) > (self.size / 2) as f32
-        } else { true }
+        } else {
+            true
+        }
     }
     // Generate an octree from a root and a target point
     pub fn update(&mut self, target: vek::Vec3<f32>) -> Option<()> {
-        if !self.must_update(target) { return None; }
+        if !self.must_update(target) {
+            return None;
+        }
         // Reset the tree
         self.nodes.retain(|key, _| key == self.root);
         // The nodes that must be evaluated

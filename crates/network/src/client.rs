@@ -1,36 +1,33 @@
-use std::{
-    io::Error,
-    net::{SocketAddr},
-    thread::JoinHandle,
-};
+use std::{io::Error, net::SocketAddr, thread::JoinHandle, mem::size_of};
 
-use crate::{registry, serialize_payload, NetworkCache, Payload};
+use crate::{registry, serialize_payload, NetworkCache, Payload, PayloadBucketId, send, PacketType};
+use crossbeam_channel::Sender;
 use getset::{Getters, MutGetters};
-use laminar::{Packet, Socket, SocketEvent};
-
+use laminar::{Packet, Socket, SocketEvent, Result};
 use uuid::Uuid;
+
 #[derive(Getters, MutGetters)]
 pub struct Client {
     // Sender and receiver
     sender: crossbeam_channel::Sender<Packet>,
     receiver: crossbeam_channel::Receiver<SocketEvent>,
-    handle: JoinHandle<()>,
-
+    _handle: JoinHandle<()>,
+    
     // Network cache
     #[getset(get = "pub", get_mut = "pub")]
     cache: NetworkCache,
-
-    // The hosts's address
-    host: SocketAddr,
-
+    
     // UUID
     #[getset(get = "pub")]
     uuid: Uuid,
+
+    // The host's address
+    host: SocketAddr,
 }
 
 impl Client {
     // Create a client and connect it to a host
-    pub fn connect(addr: SocketAddr) -> laminar::Result<Self> {
+    pub fn connect(addr: SocketAddr) -> Result<Self> {
         // Create a new laminar socket for ourselves
         let mut socket = Socket::bind_any()?;
         println!("Client: Bound on port '{}' & connected to server socket '{}'", socket.local_addr().unwrap().port(), addr);
@@ -38,76 +35,59 @@ impl Client {
         // Start polling in another thread
         let sender = socket.get_packet_sender();
         let receiver = socket.get_event_receiver();
-        let handle = std::thread::spawn(move || socket.start_polling());
+        let _handle = std::thread::spawn(move || socket.start_polling());
 
         // Send a single packet to establish a connection
         sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
 
         // Wait till we get a connection back
-        receiver.recv().unwrap();
+        if let SocketEvent::Connect(_) = receiver.recv().unwrap() {} else {
+            // Not good, we didn't get a connection as our first packet
+            panic!();
+        }
         let uuid = match receiver.recv().unwrap() {
             SocketEvent::Packet(packet) => {
                 // Deserialize UUID
                 let uuid = packet.payload();
                 Uuid::from_bytes(uuid.try_into().unwrap())
             }
-            SocketEvent::Connect(_) => todo!(),
-            SocketEvent::Timeout(_) => todo!(),
-            SocketEvent::Disconnect(_) => todo!(),
+            _ => { panic!("Did not receive the UUID packet!") }
         };
 
         Ok(Self {
-            sender,
-            receiver,
-            handle,
-            cache: NetworkCache::default(),
+            sender, 
             host: addr,
+            receiver,
+            _handle,
+            cache: NetworkCache::default(),
             uuid,
         })
     }
     // Handle connections and server->client packets
-    pub fn poll(&mut self) -> laminar::Result<()> {
-        for _event in self.receiver.try_iter() {
-            /*
+    pub fn poll(&mut self) -> Result<()> {
+        for event in self.receiver.try_iter() {
             match event {
-                SocketEvent::Packet(_) => todo!(),
-                SocketEvent::Connect(_) => todo!(),
-                SocketEvent::Timeout(_) => todo!(),
-                SocketEvent::Disconnect(_) => todo!(),
+                SocketEvent::Packet(packet) => {
+                    if packet.payload().len() >= size_of::<PayloadBucketId>() {
+                        // Add the data to the network cache
+                        self.cache.push(packet);
+                    }
+                },
+                SocketEvent::Connect(_) => panic!("Connection event duplication!"),
+                _ => {}
             }
-            */
-        }
+        };
         Ok(())
+    }    
+    // Send a packet to the server using a special packet type
+    pub fn send<P: Payload + 'static>(&mut self, payload: P, _type: PacketType) {
+        send(self.host, payload, &mut self.sender, _type).unwrap();
     }
-    // How we send messages to the server
-    pub fn send_unreliable_unordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
-        let bucket_id = registry::get_bucket_id::<P>();
-        let packet = Packet::unreliable(self.host, serialize_payload(bucket_id, payload)?);
-        self.sender.send(packet).unwrap();
-        Ok(())
-    }
-    pub fn send_reliable_unordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
-        let bucket_id = registry::get_bucket_id::<P>();
-        let packet = Packet::reliable_unordered(self.host, serialize_payload(bucket_id, payload)?);
-        self.sender.send(packet).unwrap();
-        Ok(())
-    }
-    pub fn send_reliable_ordered<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
-        let bucket_id = registry::get_bucket_id::<P>();
-        let packet = Packet::reliable_ordered(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
-        self.sender.send(packet).unwrap();
-        Ok(())
-    }
-    pub fn send_reliable_sequenced<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
-        let bucket_id = registry::get_bucket_id::<P>();
-        let packet = Packet::reliable_sequenced(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
-        self.sender.send(packet).unwrap();
-        Ok(())
-    }
-    pub fn send_unreliable_sequences<P: Payload + 'static>(&self, payload: P) -> Result<(), Error> {
-        let bucket_id = registry::get_bucket_id::<P>();
-        let packet = Packet::unreliable_sequenced(self.host, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
-        self.sender.send(packet).unwrap();
-        Ok(())
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        // Send a packet to the server to tell it that it must disconnect us
+        //self.send(ManagementPayload::Disconnect, PacketType::ReliableOrdered)
     }
 }

@@ -8,6 +8,7 @@ use crate::globals::GlobalWorldData;
 // Move the main camera around
 fn run(world: &mut World, mut data: ComponentQuerySet) {
     let query = data.get_mut(0).unwrap();
+    if !world.input.is_accepting_input() { return; }
     // Rotate the camera around
     let mouse_pos = world.input.mouse_pos();
     const SENSIVITY: f32 = 0.0007;
@@ -62,7 +63,9 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         let mut camera = components.get_mut::<Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
         pos
-    } else { panic!() };
+    } else {
+        panic!()
+    };
     let global = world.globals.get_mut::<crate::globals::Terrain>().unwrap();
     if world.input.pressed("cull_update") {
         global.edit(world::terrain::editing::Edit::sphere(position, 50.0, world::terrain::editing::EditParams::default()))

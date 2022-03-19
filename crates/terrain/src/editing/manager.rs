@@ -5,7 +5,7 @@ use math::{octrees::Octree, shapes::ShapeType};
 use slotmap::SlotMap;
 
 slotmap::new_key_type! {
-    pub struct EditKey; 
+    pub struct EditKey;
 }
 
 // An editing manager that contains all the world edits
@@ -18,8 +18,13 @@ pub struct EditingManager {
 
 impl EditingManager {
     // Get a specific edit using an edit key
-    pub fn get(&self, key: EditKey) -> Option<&Edit> { self.edits.get(key) }
-    pub fn get_mut(&mut self, key: EditKey) -> Option<&mut Edit> { self.mutated.push(key); self.edits.get_mut(key) }
+    pub fn get(&self, key: EditKey) -> Option<&Edit> {
+        self.edits.get(key)
+    }
+    pub fn get_mut(&mut self, key: EditKey) -> Option<&mut Edit> {
+        self.mutated.push(key);
+        self.edits.get_mut(key)
+    }
     // Add a new edit
     pub fn edit(&mut self, edit: Edit) -> EditKey {
         let key = self.edits.insert(edit);

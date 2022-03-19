@@ -1,9 +1,9 @@
-use std::net::{SocketAddr};
+use std::net::SocketAddr;
 
 use world::{
     ecs::component::ComponentQuerySet,
     gui::egui,
-    network::{Client, Host, NetworkSession, PayloadCache},
+    network::{Client, Host, NetworkSession, PayloadCache, PacketType},
     World,
 };
 
@@ -23,17 +23,17 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                     NetworkSession::Host(host) => {
                         ui.label(format!("Host IP: {}", host.local_addr()));
                         // Also display the UUIDs of each connected client
-                        for (_, connected) in host.connected() {
+                        for (_, connected) in host.clients() {
                             ui.label(format!("Client UUID: {}", connected));
                         }
-                        host.cache_mut().drain_to_payload_cache(&mut cache);
+                        host.cache_mut().drain_bucket_to_payload_cache(&mut cache);
                         for value in cache.iter() {
                             ui.label(format!("Value: {}", value));
                         }
                     }
                     NetworkSession::Client(client) => {
                         ui.label(format!("Client UUID: {}", client.uuid()));
-                        client.send_unreliable_unordered(world.time.elapsed().round()).unwrap();
+                        client.send(world.time.elapsed().round(), PacketType::UnreliableUnordered);
                     }
                 }
             });
@@ -57,7 +57,6 @@ fn run(world: &mut World, mut _data: ComponentQuerySet) {
                         // Try to connect
                         let client = Client::connect(ip).unwrap();
                         manager.session = Some(NetworkSession::Client(client));
-                        
                     }
                 }
             });

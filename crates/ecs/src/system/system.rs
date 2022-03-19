@@ -2,7 +2,8 @@ use ahash::AHashSet;
 
 use crate::{
     component::{ComponentQuery, LinkedComponents, LinkedComponentsDelta},
-    event::Event, entity::EntityKey,
+    entity::EntityKey,
+    event::Event,
 };
 
 use super::{SubSystem, SystemExecutionOrder, SystemSettings};
@@ -75,7 +76,6 @@ impl System {
                         }
                     }
                     removed.retain(|key, _| !invalid_removals.contains(key));
-                    
 
                     // Output
                     LinkedComponentsDelta { added, removed }

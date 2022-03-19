@@ -1,9 +1,4 @@
-
-
-use world::{
-    globals::Global,
-    network::{NetworkSession},
-};
+use world::{globals::Global, network::NetworkSession};
 
 // Server/Client networking
 #[derive(Default, Global)]

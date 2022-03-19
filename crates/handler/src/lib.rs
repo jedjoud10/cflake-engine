@@ -80,13 +80,18 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
     match event {
         // Window events
         Event::WindowEvent { window_id: _, event } => {
-            if world.input.toggled("toggle_input") {
+            if !world.input.is_accepting_input() {
                 world.gui.receive_event(&event);
             }
             world.pipeline.handle_window_event(&mut world.renderer, &event, control_flow);
         }
         // Device event
-        Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),
+        Event::DeviceEvent { device_id: _, event } => {
+            // Only handle device events if the window is in focus
+            if world.pipeline.window().focused() {
+                handle_device_event(event, world, control_flow)
+            }
+        },
         // Loop events
         Event::MainEventsCleared => {
             // Update the delta time
@@ -116,12 +121,14 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
 fn handle_device_event(event: DeviceEvent, world: &mut World, _control_flow: &mut ControlFlow) {
     match event {
         DeviceEvent::MouseMotion { delta } => {
-            world.input.receive_mouse_position_event(vek::Vec2::new(delta.0 as f32, delta.1 as f32));
+            if world.input.is_accepting_input() {
+                world.input.receive_mouse_position_event(vek::Vec2::new(delta.0 as f32, delta.1 as f32));
+            }
         }
-        DeviceEvent::MouseWheel { delta } => match delta {
+        DeviceEvent::MouseWheel { delta } => if world.input.is_accepting_input() { match delta {
             glutin::event::MouseScrollDelta::LineDelta(_x, y) => world.input.receive_mouse_scroll_event(y),
             glutin::event::MouseScrollDelta::PixelDelta(y) => world.input.receive_mouse_scroll_event(y.x as f32),
-        },
+        }},
         DeviceEvent::Key(input) => {
             if let Some(virtual_keycode) = input.virtual_keycode {
                 world.input.receive_key_event(virtual_keycode, input.state);

@@ -1,11 +1,7 @@
-use std::{
-    collections::HashMap,
-    mem::size_of,
-    net::{SocketAddr},
-    thread::JoinHandle,
-};
+use std::{collections::HashMap, mem::size_of, net::SocketAddr, thread::JoinHandle};
 
-use crate::{NetworkCache, PayloadBucketId};
+use crate::{NetworkCache, PayloadBucketId, Payload, PacketType, send, PayloadCache};
+use bimap::BiHashMap;
 use getset::{CopyGetters, Getters, MutGetters};
 use laminar::{Packet, Socket, SocketEvent};
 use uuid::Uuid;
@@ -24,11 +20,9 @@ pub struct Host {
     #[getset(get = "pub", get_mut = "pub")]
     cache: NetworkCache,
 
-    // UUIDs of clients that will connect soon
-    uuids: HashMap<SocketAddr, Uuid>,
     // Connected clients
     #[getset(get = "pub", get_mut = "pub")]
-    connected: HashMap<SocketAddr, Uuid>,
+    clients: BiHashMap<SocketAddr, Uuid>,
 }
 
 impl Host {
@@ -49,9 +43,8 @@ impl Host {
             receiver,
             handle,
             local_addr,
-            cache: NetworkCache::default(),
-            uuids: HashMap::default(),
-            connected: HashMap::default(),
+            cache: Default::default(),
+            clients: Default::default(),
         })
     }
     // Poll all the event (packets, connections) that we must handle
@@ -61,11 +54,11 @@ impl Host {
                 SocketEvent::Packet(packet) => {
                     // If the client isn't connected, send the payload back to form a connection
                     let client_addr = packet.addr();
-                    if !self.connected.contains_key(&client_addr) {
+                    if !self.clients.contains_left(&client_addr) {
                         // Client isn't connected yet, send back a packet
                         let uuid = uuid::Uuid::new_v4();
                         let payload = uuid.as_bytes().to_vec();
-                        self.uuids.insert(client_addr, uuid);
+                        self.clients.insert(client_addr, uuid);
                         self.sender.send(Packet::reliable_ordered(client_addr, payload.clone(), None)).unwrap();
                         self.sender.send(Packet::reliable_ordered(client_addr, Vec::new(), None)).unwrap();
                         // Can't do anything unless we are connected
@@ -74,19 +67,15 @@ impl Host {
 
                     if packet.payload().len() >= size_of::<PayloadBucketId>() {
                         // Add the data to the network cache
-                        self.cache.push(packet)
+                        let bucket_id = self.cache.push(packet);
                     }
                 }
                 SocketEvent::Connect(client_addr) => {
                     // A client has succsessfully made a connection, we can register them as our own
 
                     // Simple check just in case
-                    assert!(!self.connected.contains_key(&client_addr), "Client address duplication!");
-                    assert!(self.uuids.contains_key(&client_addr), "Client UUID not generated!");
-                    println!("Server: Client '{}' succsesfully connected", self.uuids.get(&client_addr).unwrap());
-
-                    let uuid = self.uuids.remove(&client_addr).unwrap();
-                    self.connected.insert(client_addr, uuid);
+                    assert!(self.clients.contains_left(&client_addr), "Client UUID not generated!");
+                    println!("Server: Client '{}' succsesfully connected", self.clients.get_by_left(&client_addr).unwrap());
                 }
                 SocketEvent::Timeout(_client_addr) => {
                     // A client has timed out
@@ -94,12 +83,21 @@ impl Host {
                 }
                 SocketEvent::Disconnect(client_addr) => {
                     // A client has been disconnected
-                    assert!(self.connected.contains_key(&client_addr), "Client was not connected in the first place!");
-                    let uuid = self.connected.remove(&client_addr).unwrap();
+                    assert!(self.clients.contains_left(&client_addr), "Client was not connected in the first place!");
+                    let (_, uuid) = self.clients.remove_by_left(&client_addr).unwrap();
                     println!("Server: Client '{}' succsesfully disconnected", uuid);
                 }
             }
         }
+        
+        
         Ok(())
+    }
+    // Send a packet to the a specific client using it's UUID
+    pub fn send<P: Payload + 'static>(&mut self, payload: P, _type: PacketType, uuid: Uuid) -> Option<()> {
+        // Get the client's socket address
+        let addr = self.clients.get_by_right(&uuid)?;
+        send(addr.clone(), payload, &mut self.sender, _type).unwrap();
+        Some(())
     }
 }

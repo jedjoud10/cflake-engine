@@ -1,6 +1,4 @@
-use std::{
-    collections::HashMap,
-};
+use std::collections::HashMap;
 
 use laminar::Packet;
 
@@ -21,7 +19,7 @@ impl NetworkCache {
         }
     }
     // Drain a whole bucket of packets into a payload cache
-    pub fn drain_to_payload_cache<P: Payload>(&mut self, cache: &mut PayloadCache<P>) {
+    pub fn drain_bucket_to_payload_cache<P: Payload>(&mut self, cache: &mut PayloadCache<P>) {
         let bucket_id = registry::get_bucket_id::<P>();
         let vec = self.buckets.entry(bucket_id).or_default();
         let vec = std::mem::take(vec);
@@ -30,11 +28,12 @@ impl NetworkCache {
         cache.payloads = payloads;
     }
     // Push some received packet data into the corresponding bucket
-    pub fn push(&mut self, packet: Packet) {
+    pub fn push(&mut self, packet: Packet) -> u16 {
         let bucket_id = deserialize_bucket_id(packet.payload()).unwrap();
         // Push the packet
         let vector = self.buckets.entry(bucket_id).or_default();
         vector.push(packet);
+        bucket_id
     }
 }
 

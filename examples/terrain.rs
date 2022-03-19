@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Transform, DynamicEdit},
+        components::{self, Camera, DynamicEdit, Transform},
         globals::{self, TerrainSettings},
     },
     ecs::entity::ComponentLinkingGroup,
@@ -129,5 +129,4 @@ fn init(world: &mut World) {
     group.link(Transform::default()).unwrap();
     group.link(DynamicEdit::new(Edit::sphere(vek::Vec3::default(), 200.0, EditParams::default()))).unwrap();
     world.ecs.add(group).unwrap();
-
 }

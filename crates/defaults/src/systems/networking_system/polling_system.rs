@@ -1,10 +1,4 @@
-
-
-use world::{
-    ecs::component::ComponentQuerySet,
-    network::{register},
-    World,
-};
+use world::{ecs::component::ComponentQuerySet, network::register, World};
 
 use crate::globals::NetworkManager;
 

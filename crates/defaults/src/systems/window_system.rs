@@ -12,6 +12,7 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         let var = world.input.toggled("toggle_input");
         world.pipeline.window().context().window().set_cursor_grab(!var).unwrap();
         world.pipeline.window().context().window().set_cursor_visible(var);
+        world.input.set_is_accepting_input(!var);
     }
 }
 

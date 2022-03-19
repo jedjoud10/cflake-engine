@@ -13,6 +13,8 @@ pub struct Window {
     pub(crate) context: WindowedContext<PossiblyCurrent>,
     #[getset(get_copy = "pub")]
     pub(crate) fullscreen: bool,
+    #[getset(get_copy = "pub")]
+    pub(crate) focused: bool,
 }
 
 impl Window {
