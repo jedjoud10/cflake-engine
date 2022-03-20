@@ -1,6 +1,13 @@
 use std::cell::RefCell;
 
-use cflake_engine::{defaults::{systems::networking_system, globals::NetworkManager}, ecs::component::ComponentQuerySet, *, network::{NetworkSession, PayloadCache, PacketType}, gui::egui::{self, Slider}, globals::Global};
+use cflake_engine::{
+    defaults::{globals::NetworkManager, systems::networking_system},
+    ecs::component::ComponentQuerySet,
+    globals::Global,
+    gui::egui::{self, Slider},
+    network::{NetworkSession, PacketType, PayloadCache},
+    *,
+};
 
 // An empty game window
 fn main() {
@@ -38,19 +45,19 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
                 if let Some(message) = payloads.newest() {
                     println!("{}", message);
                 }
-            },
+            }
             NetworkSession::Client(client) => {
                 // Send a message to the host
                 egui::Window::new("Send message to host").show(context, |ui| {
                     let mut value = messenger.value.borrow_mut();
-                    // Text field for the message 
+                    // Text field for the message
                     ui.add(Slider::new(&mut *value, -100..=100));
-                    
+
                     if ui.button("Send Message to Host").clicked() {
                         client.send(*value, PacketType::ReliableUnordered);
                     }
                 });
-            },
+            }
         }
     }
 }

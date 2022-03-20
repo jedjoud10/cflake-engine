@@ -10,7 +10,9 @@ vek = "0.15.6"
 ahash = "0.7.6"
 math = { path = "../math" }
 rendering = { path = "../rendering" }
+bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 slotmap = "1.0.6"
 half = "1.8.2"
 threadpool = "1.8.1"
+rayon = "1.5.1"
 parking_lot = "0.12.0"

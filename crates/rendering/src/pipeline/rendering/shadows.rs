@@ -12,7 +12,7 @@ use crate::{
     utils::DataType,
 };
 
-use super::{ShadowedModel};
+use super::ShadowedModel;
 #[derive(Default)]
 pub struct ShadowMapping {
     // Shadow-casting

@@ -93,6 +93,5 @@ impl World {
         self.input.late_update();
     }
     // We must destroy the world
-    pub fn destroy(&mut self) {
-    }
+    pub fn destroy(&mut self) {}
 }

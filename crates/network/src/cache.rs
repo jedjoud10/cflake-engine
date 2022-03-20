@@ -1,4 +1,4 @@
-use std::{collections::HashMap, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap};
 
 use laminar::Packet;
 

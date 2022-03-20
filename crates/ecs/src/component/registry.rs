@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use std::{
     any::{Any, TypeId},
-    sync::atomic::{AtomicU32, Ordering, AtomicBool},
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
 };
 
 use super::Component;

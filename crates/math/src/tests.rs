@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::num::{NonZeroU8, NonZeroU64};
+    use std::num::{NonZeroU64, NonZeroU8};
 
     use crate::{
         bounds::aabb::AABB,

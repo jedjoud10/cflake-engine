@@ -1,8 +1,8 @@
-use std::{mem::size_of, net::SocketAddr, thread::JoinHandle, marker::PhantomData, time::Duration};
+use std::{marker::PhantomData, mem::size_of, net::SocketAddr, thread::JoinHandle, time::Duration};
 
 use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use getset::{Getters, MutGetters};
-use laminar::{Packet, Result, Socket, SocketEvent, Config};
+use laminar::{Config, Packet, Result, Socket, SocketEvent};
 use uuid::Uuid;
 
 #[derive(Getters, MutGetters)]

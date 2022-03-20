@@ -2900,9 +2900,11 @@ name = "terrain"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "bitfield",
  "half",
  "math",
  "parking_lot 0.12.0",
+ "rayon",
  "rendering",
  "slotmap",
  "threadpool",

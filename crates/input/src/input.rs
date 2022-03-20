@@ -125,7 +125,9 @@ impl InputManager {
 // The get-map events
 impl InputManager {
     // Get the map state of a specific map
-    pub fn get(&self, name: &str) -> Option<&MapState> { self.maps.get(name).map(|(state, _)| state) }
+    pub fn get(&self, name: &str) -> Option<&MapState> {
+        self.maps.get(name).map(|(state, _)| state)
+    }
     // Returns true when the map is pressed
     pub fn pressed(&self, name: &str) -> bool {
         self.maps

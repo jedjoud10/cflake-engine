@@ -1,7 +1,11 @@
 use super::HeuristicSettings;
 use getset::{CopyGetters, Getters, MutGetters};
 use slotmap::Key;
-use std::{hash::Hash, mem::MaybeUninit, num::{NonZeroU64, NonZeroU8}};
+use std::{
+    hash::Hash,
+    mem::MaybeUninit,
+    num::{NonZeroU64, NonZeroU8},
+};
 
 slotmap::new_key_type! {
     pub struct NodeKey;
@@ -21,7 +25,7 @@ pub struct Node {
     // Depth of the node. 0 means that is is the root node
     #[getset(get_copy = "pub")]
     depth: u8,
-    
+
     // Parent of the node. This could be null if the node is the root node
     #[getset(get_copy = "pub")]
     parent: NodeKey,

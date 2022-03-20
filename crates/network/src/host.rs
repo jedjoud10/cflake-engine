@@ -1,4 +1,4 @@
-use std::{mem::size_of, net::SocketAddr, thread::JoinHandle, marker::PhantomData};
+use std::{marker::PhantomData, mem::size_of, net::SocketAddr, thread::JoinHandle};
 
 use crate::{send, NetworkCache, PacketType, Payload, PayloadBucketId};
 use bimap::BiHashMap;

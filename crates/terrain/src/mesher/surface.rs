@@ -2,7 +2,7 @@
 pub struct GeneratedCube {
     // The average vertex position
     pub average: vek::Vec3<f32>,
-    
+
     // The cube's voxel material
     pub material: u8,
 }

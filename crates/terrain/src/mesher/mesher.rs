@@ -1,7 +1,7 @@
 use rendering::basics::mesh::GeometryBuilder;
 
-use super::{builder::*, GeneratedMeshSurface};
 use super::settings::MesherSettings;
+use super::{builder::*, GeneratedMeshSurface};
 use crate::{ChunkCoords, VoxelData};
 
 // A struct for organization

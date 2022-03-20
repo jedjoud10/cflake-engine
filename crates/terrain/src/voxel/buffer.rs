@@ -1,4 +1,4 @@
-use crate::{PackedVoxelData, VoxelData};
+use crate::{PackedVoxelData, PersistentVoxelData, VoxelData};
 use parking_lot::{Mutex, MutexGuard};
 use std::{
     cell::{Ref, RefCell},
@@ -66,7 +66,7 @@ impl VoxelDataBuffer {
         }
     }
     // Store some new voxel data
-    pub fn store(&mut self, stored: &PackedVoxelData) -> VoxelDataBufferId {
+    pub fn store(&mut self, stored: &PackedVoxelData) -> (VoxelDataBufferId, PersistentVoxelData) {
         // Index
         let idx = self.find();
 
@@ -74,10 +74,10 @@ impl VoxelDataBuffer {
         let borrowed = self.buffer.borrow();
         let shared_voxel_data = borrowed.get(idx).unwrap();
         let mut data = shared_voxel_data.data.lock();
-        data.store(stored);
+        let persistent = data.store(stored);
         // Increment the counter
         self.counter += 1;
-        VoxelDataBufferId { idx, counter: self.counter }
+        (VoxelDataBufferId { idx, counter: self.counter }, persistent)
     }
     // Get
     pub fn get(&self, id: VoxelDataBufferId) -> Ref<SharedVoxelData> {

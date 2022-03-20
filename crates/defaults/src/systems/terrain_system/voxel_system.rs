@@ -57,7 +57,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 }
 
 // Then, a frame later, fetch the buffer data
-fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: ChunkCoords) {
+fn fetch_buffers(terrain: &mut crate::globals::Terrain, chunk: &mut Chunk, key: EntityKey, coords: ChunkCoords) {
     // READ
     // Get the valid counters
     let generator = &mut terrain.generator;
@@ -75,10 +75,13 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, key: EntityKey, coords: 
     let allocated_packed_voxels = &mut generator.packed.0;
     // READ
     generator.ssbo_final_voxels.storage_mut().read(allocated_packed_voxels.as_mut_slice());
-    let id = generator.buffer.store(&generator.packed);
+    let (id, persistent) = generator.buffer.store(&generator.packed);
 
     // Switch states
     terrain.manager.current_chunk_state = ChunkGenerationState::EndVoxelDataGeneration(key, true, Some(id));
+
+    // Save the persistent voxel data inside the chunk
+    chunk.persistent = Some(persistent);
 }
 
 // The voxel systems' update loop
@@ -95,17 +98,16 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         if terrain.manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((key, _)) = terrain.manager.priority_list.pop() {
-                let lock_ = query;
-                let components = lock_.get_mut(&key).unwrap();
-                // We break out at the first chunk if we start generating it's voxel data
+                // Start generating some voxel data on the GPU
+                let components = query.get_mut(&key).unwrap();
                 let chunk = components.get_mut::<Chunk>().unwrap();
-                // We can set our state as not generating if none of the chunks want to generate voxel data
-                // We must start generating the voxel data for this chunk
                 generate(terrain, &world.pipeline, chunk, key);
             }
         } else if let ChunkGenerationState::FetchShaderStorages(key, coords) = terrain.manager.current_chunk_state {
             // We should fetch the shader storages now
-            fetch_buffers(terrain, key, coords);
+            let components = query.get_mut(&key).unwrap();
+            let chunk = components.get_mut::<Chunk>().unwrap();
+            fetch_buffers(terrain, chunk, key, coords);
         }
     }
 }

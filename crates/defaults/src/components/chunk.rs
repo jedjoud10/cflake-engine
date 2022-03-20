@@ -1,6 +1,6 @@
 use world::{
     ecs::component::Component,
-    terrain::{ChunkCoords, VoxelDataBufferId},
+    terrain::{ChunkCoords, PersistentVoxelData, VoxelDataBufferId},
 };
 
 // A component that will be added to chunk entities
@@ -11,6 +11,9 @@ pub struct Chunk {
 
     // The specific voxel data buffer index that we used to generate our mesh
     pub voxel_data_id: Option<VoxelDataBufferId>,
+
+    // Persistent chunk voxel data that we use for pathfinding and such
+    pub persistent: Option<PersistentVoxelData>,
 }
 
 impl Chunk {

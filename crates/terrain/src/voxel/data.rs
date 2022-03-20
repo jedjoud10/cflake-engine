@@ -1,4 +1,9 @@
-use crate::{unpack_color, PackedVoxelData, CHUNK_SIZE};
+use std::mem::size_of;
+
+use bitfield::SparseBitfield;
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+
+use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
 
 // Some stored voxel data, in SoA form
 pub struct VoxelData {
@@ -28,14 +33,39 @@ impl Default for VoxelData {
 
 impl VoxelData {
     // Update the stored voxel data using some packed data that came from the GPU
-    pub fn store(&mut self, packed: &PackedVoxelData) {
+    pub fn store(&mut self, packed: &PackedVoxelData) -> PersistentVoxelData {
+        let i = std::time::Instant::now();
+        // Loop through every density to detect it's state
+        const LEN: usize = (CHUNK_SIZE + 1).pow(3);
+        let capacity = size_of::<u128>() / LEN;
+        let voxels = &packed.0;
+        let densities = &mut self.densities;
+        let colors = &mut self.colors;
+        let normals = &mut self.normals;
+        let voxel_materials = &mut self.voxel_materials;
+
         // We do a bit of overwriting
-        for (i, voxel) in packed.0.iter().enumerate() {
-            // Read the voxel attributes
-            self.densities[i] = voxel.density.to_f32();
-            self.colors[i] = unpack_color(voxel.rgb_color);
-            self.normals[i] = voxel.normal;
-            self.voxel_materials[i] = voxel.voxel_material;
+        let solid_state = voxels
+            .par_iter()
+            .zip(densities)
+            .zip(colors)
+            .zip(normals)
+            .zip(voxel_materials)
+            .map(|((((voxel, density), color), normal), voxel_material)| {
+                // Read the voxel attributes
+                *density = voxel.density.to_f32();
+                *color = unpack_color(voxel.rgb_color);
+                *normal = voxel.normal;
+                *voxel_material = voxel.voxel_material;
+                // Set the state bit while we're at it
+                *density < 0.0
+            })
+            .collect::<Vec<bool>>();
+
+        println!("{}", i.elapsed().as_millis());
+        PersistentVoxelData {
+            solid: SparseBitfield::from_bools(&solid_state),
+            voxel_materials: self.voxel_materials.clone(),
         }
     }
 
@@ -51,5 +81,19 @@ impl VoxelData {
     }
     pub fn voxel_material(&self, idx: usize) -> u8 {
         *self.voxel_materials.get(idx).unwrap()
+    }
+
+    // Iterators
+    pub fn iter_densities(&self) -> impl Iterator<Item = &f32> {
+        self.densities.iter()
+    }
+    pub fn iter_normals(&self) -> impl Iterator<Item = &vek::Vec3<i8>> {
+        self.normals.iter()
+    }
+    pub fn iter_colors(&self) -> impl Iterator<Item = &vek::Rgb<u8>> {
+        self.colors.iter()
+    }
+    pub fn iter_voxel_materials(&self) -> impl Iterator<Item = &u8> {
+        self.voxel_materials.iter()
     }
 }

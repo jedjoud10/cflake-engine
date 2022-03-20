@@ -12,7 +12,7 @@ use cflake_engine::{
         lights::{LightParameters, LightType::Directional},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture2D, TextureFlags, TextureParams, TextureFilter},
+        texture::{BundledTextureBuilder, Texture2D, TextureFilter, TextureFlags, TextureParams},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
@@ -83,10 +83,14 @@ fn init(world: &mut World) {
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     */
-    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2], Some(TextureParams {
-        filter: TextureFilter::Nearest,
-        ..Default::default()
-    })).unwrap();
+    let diffuse = BundledTextureBuilder::build(
+        &[texture_diff_1, texture_diff_2],
+        Some(TextureParams {
+            filter: TextureFilter::Nearest,
+            ..Default::default()
+        }),
+    )
+    .unwrap();
     let normals = BundledTextureBuilder::build(
         &[texture_norm_1, texture_norm_2],
         Some(TextureParams {

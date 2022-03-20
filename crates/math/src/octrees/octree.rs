@@ -1,4 +1,4 @@
-use std::num::{NonZeroU8, NonZeroU64};
+use std::num::{NonZeroU64, NonZeroU8};
 
 use getset::{CopyGetters, Getters};
 use slotmap::{Key, SlotMap};
@@ -24,7 +24,7 @@ pub struct Octree {
     // The size factor for each node, should be a power of two
     #[getset(get_copy = "pub")]
     size: NonZeroU64,
-    
+
     // Some specific heuristic settings
     #[getset(get = "pub")]
     hsettings: HeuristicSettings,

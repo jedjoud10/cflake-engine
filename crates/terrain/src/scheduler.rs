@@ -1,4 +1,7 @@
-use crate::{mesher::{Mesher, GeneratedMeshSurface}, ChunkCoords, VoxelDataBuffer, VoxelDataBufferId};
+use crate::{
+    mesher::{GeneratedMeshSurface, Mesher},
+    ChunkCoords, VoxelDataBuffer, VoxelDataBufferId,
+};
 use rendering::basics::mesh::GeometryBuilder;
 use std::{
     cell::RefCell,
@@ -87,7 +90,15 @@ impl MeshScheduler {
                 let (main, skirts, surface) = mesher.build(&unlocked);
 
                 // Return
-                sender.send(GenerationResult { coords, base: main, skirts, surface, id }).unwrap();
+                sender
+                    .send(GenerationResult {
+                        coords,
+                        base: main,
+                        skirts,
+                        surface,
+                        id,
+                    })
+                    .unwrap();
             });
         } else {
             // Singlethreaded
@@ -102,7 +113,13 @@ impl MeshScheduler {
 
             // Cached the result
             let mut cached = self.cached.borrow_mut();
-            cached.push(GenerationResult { coords, base: main, skirts, surface, id });
+            cached.push(GenerationResult {
+                coords,
+                base: main,
+                skirts,
+                surface,
+                id,
+            });
         }
     }
     // Get the mesh results that were generated on other threads
