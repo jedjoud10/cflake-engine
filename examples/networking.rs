@@ -20,7 +20,7 @@ struct ClientMessenger {
 }
 
 // Create a system that will send / receive messages
-fn run(world: &mut World, data: ComponentQuerySet) {
+fn run(world: &mut World, _data: ComponentQuerySet) {
     // Fetch from world
     let manager = world.globals.get::<NetworkManager>().unwrap();
     let messenger = world.globals.get::<ClientMessenger>().unwrap();

@@ -1,24 +1,16 @@
-use log::LevelFilter;
-use parking_lot::Mutex;
 use platform_dirs::AppDirs;
 
 use std::{
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
-    sync::Arc,
 };
-
-use crate::logger::Logger;
 
 // Lets us save / load a file from the saved folder
 #[derive(Default)]
 pub struct IOManager {
     // The path where all the local data will be stored into
     pub local_path: Option<PathBuf>,
-    // An arc containing all the logged messages
-    messages: Arc<Mutex<Vec<String>>>,
-    log_file_path: PathBuf,
 }
 
 impl IOManager {
@@ -27,39 +19,8 @@ impl IOManager {
         let old_path = format!("{}/{}/", author_name, app_name);
         let path = AppDirs::new(Some(&old_path), false).unwrap();
         println!("Init saver-loader with path: '{:?}'", path.config_dir);
-        // Also init the logger
-        let log_file_path = {
-            let mut path = path.config_dir.clone();
-            path.push("log/recent.log");
-
-            // Make sure the log file exists
-            let parent = path.parent().unwrap();
-            if !path.exists() {
-                std::fs::create_dir_all(parent).unwrap();
-                File::create(path.clone()).unwrap();
-            }
-            path
-        };
-        let messages = Arc::new(Mutex::new(Vec::new()));
-        let logger = Logger { messages: messages.clone() };
-        log::set_boxed_logger(Box::new(logger)).unwrap();
-        log::set_max_level(LevelFilter::Info);
         IOManager {
             local_path: Some(path.config_dir),
-            messages,
-            log_file_path,
-        }
-    }
-    // Close everything and stop the saver loader
-    pub fn quit(&self) {
-        // Mass write
-        let mut lock = self.messages.lock();
-        let taken = lock.drain(..);
-        // Open the log file so we can start writing to it
-        let file = std::fs::OpenOptions::new().write(true).open(&self.log_file_path).unwrap();
-        let mut writer = BufWriter::new(file);
-        for message in taken {
-            writeln!(&mut writer, "{}", message).unwrap();
         }
     }
     // Create a file relative to the game's data folder

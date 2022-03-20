@@ -24,15 +24,13 @@ impl GlobalsSet {
     }
     // Get a reference to a specific global component
     pub fn get<U: Global + 'static>(&self) -> Result<&U, GlobalError> {
-        // First, we gotta check if this component was mutably borrowed
-        // Kill me
         let hashmap = &self.globals;
         let boxed = hashmap
             .get(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = &*boxed.as_ref();
-        let global = crate::registry::cast_global::<U>(ptr)?;
+        let any = &*boxed.as_ref().as_any();
+        let global = any.downcast_ref::<U>().ok_or_else(|| GlobalError::new("Could not cast global!".to_string()))?;
         Ok(global)
     }
     // Get a mutable reference to a specific global component
@@ -42,8 +40,8 @@ impl GlobalsSet {
             .get_mut(&TypeId::of::<U>())
             .ok_or_else(|| GlobalError::new("Global component could not be fetched!".to_string()))?;
         // Magic
-        let ptr = &mut *boxed.as_mut();
-        let global = crate::registry::cast_global_mut::<U>(ptr)?;
+        let any = &mut *boxed.as_mut().as_any_mut();
+        let global = any.downcast_mut::<U>().ok_or_else(|| GlobalError::new("Could not cast global!".to_string()))?;
         Ok(global)
     }
 }

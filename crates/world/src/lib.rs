@@ -1,7 +1,7 @@
 // Export
 pub mod event;
 mod world;
-pub use world::*;
+pub use self::world::*;
 pub mod settings;
 pub use ::bitfield;
 pub use assets;

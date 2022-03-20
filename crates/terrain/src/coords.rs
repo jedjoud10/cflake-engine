@@ -1,4 +1,4 @@
-use std::num::{NonZeroU64, NonZeroU8};
+use std::num::{NonZeroU64};
 
 use math::octrees::Node;
 

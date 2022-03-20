@@ -3,8 +3,6 @@
 #include "defaults/shaders/noises/voronoi.func.glsl"
 #include "defaults/shaders/others/sdf.func.glsl"
 
-uniform sampler2D tex;
-
 // A simple voxel that is stored in an array, in a GPU buffer 
 // This voxel struct can contain some arbitrary values related to voxel generation
 struct Voxel {

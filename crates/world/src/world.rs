@@ -94,7 +94,5 @@ impl World {
     }
     // We must destroy the world
     pub fn destroy(&mut self) {
-        // Quit the saver loader
-        self.io.quit();
     }
 }

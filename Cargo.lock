@@ -1419,7 +1419,6 @@ dependencies = [
 name = "io"
 version = "0.1.0"
 dependencies = [
- "log",
  "parking_lot 0.12.0",
  "platform-dirs",
  "serde",
