@@ -9,6 +9,9 @@ pub struct RenderingSettings<'scene, 'object> {
     // Shadowed objects
     pub shadowed: &'scene [ShadowedModel<'object>],
 
+    // Should we recalculate the shadow map?
+    pub redraw_shadows: bool,
+
     // All the light sources
     pub lights: &'scene [(&'object LightType, LightTransform<'object>)],
 }

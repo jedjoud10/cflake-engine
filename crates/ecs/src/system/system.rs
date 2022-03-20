@@ -9,8 +9,13 @@ use crate::{
 use super::{SubSystem, SystemExecutionOrder, SystemSettings};
 // A system that contains multiple subsystems, each with their own component queries
 pub struct System {
+    // All valid systems
     pub(crate) subsystems: Vec<SubSystem>,
+
+    // The event index for the execution callback of this system
     pub(crate) evn_index: Option<usize>,
+
+    // The current order of the system, useful when some systems need to execute before others
     pub(crate) order: SystemExecutionOrder,
 }
 

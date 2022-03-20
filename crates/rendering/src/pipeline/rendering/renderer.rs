@@ -193,10 +193,13 @@ impl SceneRenderer {
                 let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
 
                 if let Some((_parameters, transform)) = first {
-                    // Only render directional shadow map if we have a sun
-                    mapping.update_matrix(*transform.rotation);
-                    // Then render shadows
-                    mapping.render_all_shadows(settings.shadowed, pipeline);
+                    // No need to update if nothing has changed
+                    if settings.redraw_shadows {
+                        // Only render directional shadow map if we have a sun
+                        mapping.update_matrix(*transform.rotation);
+                        // Then render shadows
+                        mapping.render_all_shadows(settings.shadowed, pipeline);
+                    }
                 }
             }
         }

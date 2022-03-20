@@ -9,8 +9,13 @@ use std::{cell::RefCell, rc::Rc};
 // A subsystem can only contain a single component query and a single cbitfield
 #[derive(Default)]
 pub struct SubSystem {
+    // The cbitfield of the current subsystem
     pub(crate) cbitfield: Bitfield<u32>,
+
+    // The currently valid linked components that will be present in the query
     pub(super) all: Rc<RefCell<LinkedComponentsMap>>,
+
+    // Added or removed components from last frame
     pub(super) delta: Rc<RefCell<LinkedComponentsDelta>>,
 }
 

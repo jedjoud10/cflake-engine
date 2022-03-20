@@ -13,6 +13,7 @@ rapier3d = "0.11.1"
 vek = { version = "0.15.6", features = ["serde"] }
 getset = "0.1.2"
 image = "0.24.1"
+rayon = "1.5.1"
 time = { version = "0.3.7", features = ["formatting", "local-offset"] }
 parking_lot = "0.12.0"
 itertools = "0.10.3"

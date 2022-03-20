@@ -56,6 +56,9 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     // Render the world
     let query = data.get_mut(0).unwrap();
 
+    // Keep track if we need to redraw shadows
+    let mut redraw_shadows = false;
+
     // Before we do anything, we must update each model matrix if it needs to be updated
     for (_, components) in query.all.iter_mut() {
         // Only update if we need to
@@ -95,6 +98,21 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 mesh: &renderer.mesh,
                 matrix: &renderer.matrix,
             });
+            // Only redraw if we need to
+            if components.was_mutated::<Renderer>().unwrap() || components.was_mutated::<Transform>().unwrap() {
+                redraw_shadows = true;
+            }
+        }
+    }
+
+    // More shadow checks, just to be sure
+    for (_, components) in query.delta.removed.iter().chain(query.delta.added.iter()) {
+        // We do a bit of borrowing
+        let renderer = components.get::<Renderer>().unwrap();
+        // Only if this is shadowed
+        if renderer.flags.contains(RendererFlags::SHADOWED) && renderer.flags.contains(RendererFlags::VISIBLE) {
+            redraw_shadows = true;
+            break;
         }
     }
 
@@ -124,6 +142,7 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
         normal: models.as_slice(),
         shadowed: shadowed.as_slice(),
         lights: &lights,
+        redraw_shadows,
     };
 
     // Render

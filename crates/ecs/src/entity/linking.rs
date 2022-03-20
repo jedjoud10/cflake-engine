@@ -12,7 +12,10 @@ use super::Entity;
 // A collection of components that will be mass linked to a specific entity when it gets added into the world on the main thread
 #[derive(Default)]
 pub struct ComponentLinkingGroup {
-    pub linked_components: AHashMap<Bitfield<u32>, BoxedComponent>,
+    // The linked components
+    pub linked: AHashMap<Bitfield<u32>, BoxedComponent>,
+
+    // A component bitfield that encompasses all the linked components' bitfields
     pub cbitfield: Bitfield<u32>,
 }
 
@@ -22,7 +25,7 @@ impl ComponentLinkingGroup {
     pub fn link<T: Component + Send + Sync>(&mut self, component: T) -> Result<(), ComponentLinkingError> {
         let cbitfield = registry::get::<T>();
         // Check if we have the component linked on this linking group
-        if let std::collections::hash_map::Entry::Vacant(e) = self.linked_components.entry(cbitfield) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.linked.entry(cbitfield) {
             // Add the local component to our hashmap
             let boxed = Box::new(component);
             e.insert(boxed);

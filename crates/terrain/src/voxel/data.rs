@@ -1,8 +1,5 @@
-use std::mem::size_of;
-
 use bitfield::SparseBitfield;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-
 use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
 
 // Some stored voxel data, in SoA form
@@ -34,10 +31,6 @@ impl Default for VoxelData {
 impl VoxelData {
     // Update the stored voxel data using some packed data that came from the GPU
     pub fn store(&mut self, packed: &PackedVoxelData) -> PersistentVoxelData {
-        let i = std::time::Instant::now();
-        // Loop through every density to detect it's state
-        const LEN: usize = (CHUNK_SIZE + 1).pow(3);
-        let capacity = size_of::<u128>() / LEN;
         let voxels = &packed.0;
         let densities = &mut self.densities;
         let colors = &mut self.colors;
@@ -62,7 +55,6 @@ impl VoxelData {
             })
             .collect::<Vec<bool>>();
 
-        println!("{}", i.elapsed().as_millis());
         PersistentVoxelData {
             solid: SparseBitfield::from_bools(&solid_state),
             voxel_materials: self.voxel_materials.clone(),

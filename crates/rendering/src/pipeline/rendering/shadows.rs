@@ -16,6 +16,7 @@ use super::ShadowedModel;
 #[derive(Default)]
 pub struct ShadowMapping {
     // Shadow-casting
+    // TODO: Switch to custom framebuffer
     framebuffer: GLuint,
     pub(crate) depth_texture: Handle<Texture2D>,
     shader: Handle<Shader>,

@@ -36,7 +36,7 @@ fn invalid_err() -> ComponentError {
 impl ComponentSet {
     // Link some components to an entity
     pub fn link(&mut self, key: EntityKey, entities: &mut EntitySet, systems: &mut SystemSet, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
-        for (cbitfield, boxed) in group.linked_components {
+        for (cbitfield, boxed) in group.linked {
             let (ckey, _ptr) = self.add(boxed);
             let entity = entities.get_mut(key).unwrap();
             entity.components.insert(cbitfield, ckey);
