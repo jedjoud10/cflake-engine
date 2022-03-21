@@ -30,22 +30,21 @@ impl RawStorage {
         let buffer = {
             let mut buffer = 0;
             gl::GenBuffers(1, &mut buffer);
+            gl::BindBuffer(_type, buffer);
             buffer
         };
         // If we will allocate the buffer once, make it immutable
         if usage.dynamic {
             // Can have multiple allocations
-            gl::BindBuffer(_type, buffer);
-            gl::BufferData(_type, (cap) as isize, ptr as *const c_void, usage.convert());
+            gl::NamedBufferData(buffer, (cap) as isize, ptr as *const c_void, usage.convert());
         } else {
             // Single allocation
-            gl::BindBuffer(_type, buffer);
             let bits = match usage.access {
                 AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
                 AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
                 AccessType::ServerToServer => gl::MAP_READ_BIT,
             };
-            gl::BufferStorage(_type, (cap) as isize, ptr as *const c_void, bits);
+            gl::NamedBufferStorage(buffer, (cap) as isize, ptr as *const c_void, bits);
         }
         Self {
             buffer,
@@ -73,13 +72,11 @@ impl RawStorage {
     }
     // Completely reallocate
     pub unsafe fn reallocate(&mut self, ptr: *const c_void, cap: usize) {
-        gl::BindBuffer(self._type, self.buffer);
-        gl::BufferData(self._type, (cap) as isize, ptr as *const c_void, self.usage.convert());
+        gl::NamedBufferData(self.buffer, (cap) as isize, ptr as *const c_void, self.usage.convert());
     }
     // Update subdata
     pub unsafe fn update_subdata(&mut self, input: *const c_void, len: usize) {
-        gl::BindBuffer(self._type, self.buffer);
-        gl::BufferSubData(self._type, 0, len as isize, input as *const c_void);
+        gl::NamedBufferSubData(self.buffer, 0, len as isize, input as *const c_void);
     }
     // Read subdata
     pub unsafe fn read(&self, output: *mut c_void, len: usize, _offset: usize) {
@@ -100,8 +97,7 @@ impl RawStorage {
         // We can unmap the buffer now
         let _result = gl::UnmapBuffer(self._type);
         */
-        gl::BindBuffer(self._type, self.buffer);
-        gl::GetBufferSubData(self._type, 0, (len) as isize, output as *mut c_void);
+        gl::GetNamedBufferSubData(self.buffer, 0, (len) as isize, output as *mut c_void);
     }
 }
 

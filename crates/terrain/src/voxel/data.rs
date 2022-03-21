@@ -1,6 +1,6 @@
+use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
 use bitfield::SparseBitfield;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
 
 // Some stored voxel data, in SoA form
 pub struct VoxelData {
