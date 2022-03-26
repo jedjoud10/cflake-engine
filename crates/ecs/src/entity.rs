@@ -1,6 +1,6 @@
 mod entity;
-mod linking;
+mod linkings;
 mod set;
 pub use entity::*;
-pub use linking::*;
-pub(crate) use set::*;
+pub use linkings::*;
+pub use set::*;

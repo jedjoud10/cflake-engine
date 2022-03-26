@@ -1,40 +1,135 @@
-use super::{registry, Component, LinkedComponents};
-use crate::entity::EntityKey;
-use ahash::AHashMap;
-use bitfield::Bitfield;
-use std::cell::RefMut;
-// A struct full of LinkedComponents that we send off to update in parallel
-// This will use the components data given by the world to run all the component updates in PARALLEL
-// The components get mutated in parallel, though the system is NOT stored on another thread
-pub(crate) type LinkedComponentsMap = AHashMap<EntityKey, LinkedComponents>;
+use crate::{
+    archetype::{ArchetypeId, ArchetypeSet, ComponentsHashMap},
+    manager::EcsManager,
+};
+use getset::CopyGetters;
+use parking_lot::RwLock;
+use std::{cell::UnsafeCell, sync::Arc, marker::PhantomData};
 
-// Added/removed
-#[derive(Default)]
-pub struct LinkedComponentsDelta {
-    pub added: LinkedComponentsMap,
-    pub removed: LinkedComponentsMap,
+use super::{
+    component_err, unlinked_err, Component, QueryError, ADDED_STATE, MUTATED_STATE, REMOVED_STATE,
+};
+
+// Component deltas (each component has a state of either [Mutated, Added, PendingForDeletion])
+#[derive(CopyGetters)]
+pub struct ComponentDeltas {
+    #[getset(get_copy = "pub")]
+    state: u8,
 }
 
-// Some query parameters for a single component query
-#[derive(Default)]
-pub struct ComponentQueryParams {
-    pub(crate) cbitfield: Bitfield<u32>,
-}
-
-impl ComponentQueryParams {
-    // This component query shall use components that validate this bitfield
-    pub fn link<U: Component>(mut self) -> Self {
-        let c = registry::get::<U>();
-        self.cbitfield = self.cbitfield.add(&c);
-        self
+impl ComponentDeltas {
+    // Check if  the current component was added
+    pub fn was_added(&self) -> bool {
+        self.state == ADDED_STATE
+    }
+    // Check if a component was mutated
+    pub fn was_mutated(&self) -> bool {
+        self.state == MUTATED_STATE
+    }
+    // Check if a component is pending for deletion
+    pub fn is_pending_for_deletion(&self) -> bool {
+        self.state == REMOVED_STATE
     }
 }
 
-// A single component query that contains the added/removed components, alongside all the components
-pub struct ComponentQuery<'a> {
-    pub all: RefMut<'a, LinkedComponentsMap>,
-    pub delta: &'a mut LinkedComponentsDelta,
+// A linked component query. This can be iterated through in multiple threads for parallelism
+// Even though the components are stored in an unsafe cell, this should never UB, since we never mutate a component while it is being written to
+pub struct ComponentQuery {
+    // The hashmap for ComponentBitmask -> Components
+    components: Arc<RwLock<ComponentsHashMap>>,
+
+    // Bitmask
+    bitmask: u64,
+
+    // The current bundle (entity) index
+    bundle: usize,
 }
 
-// A component query set that contains multiple queries that can be fetched from the subsystems of a specific system
-pub type ComponentQuerySet<'subsystem> = Vec<ComponentQuery<'subsystem>>;
+// Trust trust
+unsafe impl Send for ComponentQuery {}
+unsafe impl Sync for ComponentQuery {}
+
+impl ComponentQuery {
+    // Create a new component query using a specific layout and a bundle index and archetype index
+    pub(crate) unsafe fn new(
+        set: &ArchetypeSet,
+        bitmask: u64,
+        bundle: usize,
+        archetype: ArchetypeId,
+    ) -> Self {
+        // Temp
+        let temp = set.get(archetype).unwrap();
+
+        // Clone the components' arc
+        let components = temp.components().clone();
+
+        Self {
+            components,
+            bitmask,
+            bundle,
+        }
+    }
+    // Check if the component bits are valid first
+    fn get_component_bits<T: Component>(&self) -> Result<u64, QueryError> {
+        // Check if the bits are valid first
+        let bits = T::bits().map_err(component_err::<T>)?;
+        if self.bitmask & bits == 0 {
+            return Err(unlinked_err::<T>())?;
+        }
+        Ok(bits)
+    }
+    // Get the component deltas
+    pub fn deltas<T: Component>(&self) -> Result<ComponentDeltas, QueryError> {
+        // Get the component bits for T
+        let bits = self.get_component_bits::<T>()?;
+
+        // Get the component deltas
+        // Get the specific archetype component storages
+        let lock = self.components.read();
+        // Get the storage vector by downcasting
+        let (_, states) = lock.get(&bits).unwrap();
+        Ok(ComponentDeltas {
+            state: states.get(self.bundle),
+        })
+    }
+    // Get a component immutably
+    pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
+        // Get the component bits for T
+        let bits = self.get_component_bits::<T>()?;
+
+        // Get the specific archetype component storages
+        let lock = self.components.read();
+        // Get the storage vector by downcasting
+        let (storage, _) = lock.get(&bits).unwrap();
+        let vec = storage
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<Vec<UnsafeCell<T>>>()
+            .unwrap();
+        // I want to apologize in advance for this
+        Ok(unsafe { &*vec[self.bundle].get() })
+    }
+    // Get a component mutably
+    pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+        // Get the component bits for T
+        let bits = self.get_component_bits::<T>()?;
+
+        // Get the specific archetype component storages
+        let lock = self.components.read();
+        // Get the storage vector by downcasting
+        let (storage, mutated) = lock.get(&bits).unwrap();
+        let vec = storage
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<Vec<UnsafeCell<T>>>()
+            .unwrap();
+
+        // Don't overwrite removed or added
+        mutated.set(self.bundle, MUTATED_STATE);
+
+        // I want to apologize in advance for this
+        Ok(unsafe { &mut *vec[self.bundle].get() })
+    }
+}

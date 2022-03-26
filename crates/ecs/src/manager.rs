@@ -1,64 +1,97 @@
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
-
 use crate::{
-    component::ComponentSet,
-    entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityKey, EntitySet},
-    event::Event,
-    system::{System, SystemSet, SystemSettings},
-    utils::{ComponentLinkingError, ComponentUnlinkError, EntityError},
+    archetype::{Archetype, ArchetypeError, ArchetypeId, ArchetypeSet, ArchetypeStorage},
+    component::{Component, ComponentLayout, ComponentQuery, GuardedEntry, QueryError},
+    entity::{Entity, EntityLinkings, EntitySet},
+    prelude::SystemSet,
 };
 
-// The Entity Component System manager that will handle everything ECS related
+// Manages ECS logic
 #[derive(Default)]
 pub struct EcsManager {
+    // Entities
     pub entities: EntitySet,
-    pub components: ComponentSet,
-    pub systems: SystemSet,
+
+    // Archetypes
+    pub archetypes: ArchetypeSet,
 }
 
-// Global code for the Entities, Components, and Systems
 impl EcsManager {
-    // Create the proper execution settings for systems, and return them
-    pub fn ready(&mut self, frame: u128) -> (Rc<RefCell<Vec<System>>>, SystemSettings) {
-        self.components.ready(frame).unwrap();
-
-        // Cannot build any more systems
-        self.systems.allowed_to_build = false;
-        (
-            self.systems.inner.clone(),
-            SystemSettings {
-                to_remove: self.components.to_remove.clone(),
-            },
-        )
-    }
-    // Execute a bunch of systems
-    pub fn execute_systems<World>(systems: Ref<Vec<System>>, world: &mut World, events: &[Event<World>], settings: SystemSettings) {
-        for system in systems.iter() {
-            system.run_system(world, events, settings.clone());
+    // Prepare the Ecs Manager for one execution
+    pub fn prepare<World>(&mut self) {
+        // Reset the archetype component flags
+        for (_, archetype) in self.archetypes.iter_mut() {
+            archetype.prepare()
         }
     }
 
-    // Wrapper functions
-    // Entity adding/removing
-    pub fn add(&mut self, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
-        let key = self.entities.add(Entity::default())?;
-        // Then link
-        self.components
-            .link(key, &mut self.entities, &mut self.systems, group)
-            .map_err(|error| EntityError::new(error.details, key))?;
-        Ok(key)
+    // Execute the systems in sequence
+    pub fn execute<World>(world: &mut World, systems: SystemSet<World>) {
+        let borrowed = systems.inner.borrow();
+        for event in borrowed.as_slice() {
+            // Execute the system
+            event(world)
+        }
     }
-    pub fn remove(&mut self, key: EntityKey) -> Result<(), EntityError> {
-        self.entities.remove(key, &mut self.components, &mut self.systems)
+
+    // Registers a new archetype. This becomes a no op if the archetype already exists
+    pub fn register(&mut self, layout: ComponentLayout) -> ArchetypeId {
+        self.archetypes.register(layout)
     }
-    // Linking / unlinking
-    pub fn link(&mut self, key: EntityKey, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
-        self.components.link(key, &mut self.entities, &mut self.systems, group)
+
+    // Insert an empty entity into the manager
+    pub fn insert(&mut self) -> Entity {
+        self.entities.insert(None)
     }
-    pub fn unlink(&mut self, key: EntityKey, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
-        self.components.unlink(key, &mut self.entities, &mut self.systems, group)
+    // Insert an entity into the manager with specific components
+    pub fn insert_with(
+        &mut self,
+        id: ArchetypeId,
+        callback: impl FnOnce(&mut ArchetypeStorage),
+    ) -> Result<Entity, ArchetypeError> {
+        // Get the correct archetype first
+        let archetype = self
+            .archetypes
+            .get_mut(id)
+            .ok_or(ArchetypeError::NotFound)?;
+        let bundle = archetype.insert_with(callback)?;
+        Ok(self.entities.insert(Some(EntityLinkings {
+            archetype: id,
+            bundle,
+        })))
+    }
+
+    // Get a component query using a specific entity ID
+    pub fn entry<'a>(
+        &'a mut self,
+        entity: Entity,
+        layout: ComponentLayout,
+    ) -> GuardedEntry<'a> {
+        // Get the archetype ID and bundle index
+        let EntityLinkings { archetype, bundle } = *self.entities.get(entity).unwrap();
+        GuardedEntry::new(self, layout.mask, bundle, archetype)
+    }
+    // Query some linked components using the specific layout
+    pub fn query(&mut self, layout: ComponentLayout) -> Vec<ComponentQuery> {
+        // Loop through each archetype that satisfies the layout and extend the component queries
+        let mut queries = Vec::<ComponentQuery>::new();
+        for (id, archetype) in self.archetypes.iter() {
+            // Convert the archetype ID into a bitmask
+            let mask = id.0;
+
+            // Check if it satisfies the field
+            if (mask & layout.mask) == layout.mask {
+                // Create multiple queries using the archetype
+                queries.extend((0..(archetype.len())).into_iter().map(|x| unsafe { ComponentQuery::new(&self.archetypes, layout.mask, x, *id) }));
+            }
+        }
+        // Return the queries
+        queries
+    }
+
+    // Add a new system (stored as an event) into the manager
+    pub fn system<World>(&mut self, evn: fn(&mut World), systems: &mut SystemSet<World>) {
+        // Borrow since it's stored in an RC
+        let mut borrow = systems.inner.borrow_mut();
+        borrow.push(evn);
     }
 }

@@ -1,2 +1,2 @@
-mod error;
-pub use error::*;
+mod events;
+pub use events::*;

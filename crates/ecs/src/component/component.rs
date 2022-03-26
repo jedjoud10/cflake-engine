@@ -1,36 +1,59 @@
-use ahash::AHashMap;
-use bitfield::Bitfield;
-use parking_lot::RwLock;
-use slotmap::SlotMap;
+use getset::CopyGetters;
+use lazy_static::lazy_static;
+use parking_lot::{MappedRwLockReadGuard, Mutex, RwLock, RwLockReadGuard};
 use std::{
-    any::Any,
-    cell::{RefCell, UnsafeCell},
-    rc::Rc,
+    any::{type_name, TypeId},
+    cell::UnsafeCell,
+    collections::HashMap,
+    marker::PhantomData,
     sync::Arc,
 };
 
-use crate::entity::EntityKey;
+use crate::{
+    archetype::{ArchetypeId, ArchetypeSet, ComponentsHashMap, MaybeNoneStorage, NoHash},
+    manager::EcsManager,
+};
 
-slotmap::new_key_type! {
-    pub struct ComponentKey;
-    pub(crate) struct ComponentGroupKey;
+use super::ComponentError;
+
+// Registered components
+lazy_static! {
+    static ref NEXT: Mutex<u64> = Mutex::new(1);
+    static ref REGISTERED: RwLock<HashMap<TypeId, u64>> = RwLock::new(HashMap::new());
 }
 
-// A component that can be accessed through multiple worker threads
-// This allows for parralel computing, but we must be careful with reading/writing to it
-pub trait Component: Sync + 'static {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+// Implemented for components
+pub trait Component
+where
+    Self: 'static + Sync + Send,
+{
+    // Return the registered bits of the component
+    fn bits() -> Result<u64, ComponentError> {
+        let locked = REGISTERED.read();
+        let id = TypeId::of::<Self>();
+        locked
+            .get(&id)
+            .ok_or(ComponentError::NotRegistered(type_name::<Self>()))
+            .cloned()
+    }
+    // Registers the component if it wasn't already registered.
+    // This is a no op if the component is already registered
+    fn register() -> u64 {
+        let mut locked = REGISTERED.write();
+        let id = TypeId::of::<Self>();
+        // If the component was already registered, no need to do anything
+        if let Some(&bits) = locked.get(&id) {
+            return bits;
+        }
+
+        // Left bitshft
+        let mut bit = NEXT.lock();
+        // Keep a copy of bit
+        let copy = *bit;
+        locked.insert(id, copy);
+        *bit = *bit << 1;
+        copy
+    }
 }
 
-// Main type because I don't want to type
-pub type Components = Arc<RwLock<SlotMap<ComponentKey, UnsafeCell<BoxedComponent>>>>;
-pub type BoxedComponent = Box<dyn Component + Sync + Send>;
-pub(crate) type DanglingComponentsToRemove = Rc<RefCell<SlotMap<ComponentGroupKey, ComponentGroupToRemove>>>;
-
-// Component groups that we must remove
-pub(crate) struct ComponentGroupToRemove {
-    pub components: AHashMap<Bitfield<u32>, ComponentKey>,
-    pub counter: usize,
-    pub key: EntityKey,
-}
+impl<T> Component for T where T: 'static + Sized + Send + Sync {}
