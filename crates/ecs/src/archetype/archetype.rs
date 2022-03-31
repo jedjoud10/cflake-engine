@@ -1,144 +1,169 @@
-use std::{any::{type_name, Any}, cell::UnsafeCell, sync::Arc, collections::HashMap};
+use std::{
+    any::{type_name, Any},
+    cell::UnsafeCell,
+    collections::{BTreeMap, HashMap},
+    mem::size_of,
+    sync::Arc,
+};
 
-use getset::Getters;
+use getset::{CopyGetters, Getters};
 use parking_lot::RwLock;
 
 use crate::{
-    archetype::duplicate_err,
-    component::{Component, ComponentLayout, SparseComponentStates, ADDED_STATE, registry},
+    component::{registry, Component},
     entity::{Entity, EntityLinkings},
+    prelude::{ComponentState, ComponentStatesBitfield, Mask},
 };
 
-use super::{component_err, invalid_er, ArchetypeError, ArchetypeId, ComponentsHashMap, MaybeNoneStorage, ArchetypeSet, NoHash};
+use super::{
+    ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher,
+    UniqueComponentStoragesHashMap,
+};
+
+// The archetype set (BTreeMap)
+pub type ArchetypeSet = BTreeMap<Mask, Archetype>;
 
 // Combination of multiple component types
-#[derive(Getters)]
+#[derive(Getters, CopyGetters)]
 pub struct Archetype {
     // Component storage
+    #[getset(get = "pub(crate)")]
+    components: Arc<RwLock<ComponentStoragesHashMap>>,
+
+    // Bundle Index -> Entity
     #[getset(get = "pub")]
-    components: Arc<RwLock<ComponentsHashMap>>,
-
-    // How many components stored per storage
-    length: usize,
-
-    // Bundles -> Entity ID
     entities: Vec<Entity>,
 
-    // Component bits
+    // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
-    bits: u64,
+    pending_for_removal: Vec<usize>,
+
+    // Combined component masks
+    #[getset(get_copy = "pub")]
+    mask: Mask,
 }
 
 impl Archetype {
-    // Get the entities that are stored into this archetype
-    pub fn entities(&self) -> &[Entity] {
-        &self.entities
-    }
-    // Length and is empty
-    pub fn len(&self) -> usize {
-        self.length
-    }
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
-impl Archetype {
-    // Create new a archetype based on it's layout
-    pub(super) fn new(layout: ComponentLayout) -> Self {
-        // Allocate all the new component storages
-        let storages: ComponentsHashMap = layout.bits.iter().map(|&id| (id, (None, SparseComponentStates::default()))).collect();
+    // Create new a archetype based on it's individual component masks and it's combined mask
+    pub(crate) fn new(masks: (&[Mask], Mask), uniques: &UniqueComponentStoragesHashMap) -> Self {
+        // Use the uniquer component storages to make new empty storages
+        let storages: ComponentStoragesHashMap = masks
+            .0
+            .iter()
+            .map(|&id| {
+                (
+                    id,
+                    (
+                        uniques.get(&id).unwrap().new_empty_from_self(),
+                        ComponentStatesBitfield::default(),
+                    ),
+                )
+            })
+            .collect();
         Self {
             components: Arc::new(RwLock::new(storages)),
-            length: 0,
-            bits: layout.mask,
-            entities: Vec::new(),
+            mask: masks.1,
+            entities: Default::default(),
+            pending_for_removal: Default::default(),
         }
     }
 
     // Insert an entity into the arhcetype using a ComponentLinker
-    pub(crate) fn insert_with(&mut self, components: HashMap<u64, Box<dyn Component>, NoHash>, linkings: &mut EntityLinkings, entity: Entity) {
-        // Add the components using their specific bits
-        for (bitmask, component) in components {
+    pub(crate) fn insert_with(
+        &mut self,
+        components: Vec<(Mask, Box<dyn Any>)>,
+        linkings: &mut EntityLinkings,
+        entity: Entity,
+    ) {
+        // Lock the component storages for writing
+        let mut write = self.components.write();
 
+        // Commons
+        let len = self.entities.len() + 1;
+
+        // Add the components using their specific storages
+        for (mask, component) in components {
+            let (storage, mutated) = write.get_mut(&mask).unwrap();
+
+            
+            // Update length
+            mutated.set_len(len);
+            // Set the new component state to Added
+            mutated.set(len-1, ComponentState::Added);
+            // Insert the component
+            storage.push(component);
         }
-
-
 
         // Update the length
-        self.length += 1;
-        linkings.bundle = self.length - 1;
-        linkings.archetype = ArchetypeId(self.bits);
-        Ok(())
+        self.entities.push(entity);
+        dbg!("push");
+        linkings.bundle = self.entities.len() - 1;
+        dbg!(linkings.bundle);
+        linkings.mask = self.mask;
     }
 
-    // Insert a component into the archetype
-    // This must be called whenever we are inserting components for an entity
-    fn insert<T: Component>(&mut self, component: Box<dyn Any>) -> Result<(), ArchetypeError> {
-        // We must register the components separately
-        let bits = registry::bits::<T>().map_err(component_err::<T>)?;
+    // Start the deletion process for components. The component will actually get deleted next frame
+    pub(crate) fn add_pending_for_removal(&mut self, bundle: usize) {
+        // We don't need to have a write lock since the sparse bitfield is backed by atomics
+        let read = self.components.read();
 
-        // Check if the component is even valid to be stored inside the archetype
-        if self.bits & bits == 0 {
-            return Err(invalid_er::<T>());
+        // Just set the state of ComponentState::PendingForRemoval
+        for (_, (_, mutated)) in read.iter() {
+            // Set state
+            mutated.set(bundle, ComponentState::PendingForRemoval);
         }
 
-        // Lock
-        let mut lock = self.components.write();
-
-        // Get the proper storage, and push the element
-        let (storage, mutated) = lock.get_mut(&bits).unwrap();
-
-        // Set the component's flags
-        mutated.extend_by_one();
-        mutated.set(self.len(), ADDED_STATE);
-
-        // Insert the storage if it does not exist yet
-        let storage = storage.get_or_insert(Box::new(Vec::<UnsafeCell<T>>::new()));
-
-        // Cast to the approriate type now
-        let storage = storage.as_any_mut().downcast_mut::<Vec<UnsafeCell<T>>>().unwrap();
-
-        // Insert the component
-        let component = *component.downcast::<T>().unwrap();
-        Ok(storage.push(UnsafeCell::new(component)))
+        // Pending for removal push
+        self.pending_for_removal.push(bundle);
     }
 
-    // Reset the archetype for the next frame. This will cear the mutated components' flags
+    // Directly removes a bundle from the archetype (PS: This mutably locks "components")
+    fn remove(&mut self, bundle: usize) {
+        // Remove the components from the storages
+        for (_, (storage, _)) in self.components.write().iter_mut() {
+            storage.swap_remove(bundle);
+        }
+
+        // And then the locally stored entity ID
+        self.entities.swap_remove(bundle);
+    }
+
+    // Remove all the components that are pending for removal
+    fn remove_all_pending(&mut self) {
+        // Steal
+        let stolen = std::mem::take(&mut self.pending_for_removal);
+
+        // And remove
+        for bundle in stolen {
+            self.remove(bundle);
+        }
+    }
+
+    // Moves an entity from this archetype to another archetype
+    pub(crate) fn move_entity(
+        &mut self,
+        entity: Entity,
+        linkings: &EntityLinkings,
+        other: &mut Self,
+    ) {
+        // First, remove the entity from Self directly
+        self.remove(linkings.bundle);
+
+        // And simply add it to Other
+        other.insert_with()
+
+    }
+
+    // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
     pub fn prepare(&mut self) {
+        // Remove "pending for deletion" components
+        self.remove_all_pending();
+
         // Iterate through the bitfields and reset them
         let mut components = self.components.write();
-        for (_, (_, mutated)) in components.iter_mut() {
-            mutated.reset();
+        for (_, (_storage, states)) in components.iter_mut() {
+            // Reset the states
+            states.reset()
         }
-    }
-}
-
-// Something that we can use to link components to an entity
-pub struct ComponentLinker<'a> {
-    // Archetype set
-    set: &'a mut ArchetypeSet,
-
-    // The stored components
-    components: HashMap<u64, Box<dyn Any>, NoHash>,
-
-    // Bits of the components that were successfully added
-    bits: u64,
-} 
-
-impl<'a> ComponentLinker<'a> {
-    // Add a single component into this local inserter
-    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), ArchetypeError> {
-        // Only insert the component if we never had it before
-        let component_bits = registry::bits::<T>().map_err(component_err::<T>)?;
-        let new = self.bits | component_bits;
-
-        // Check for link duplication
-        if self.bits == new { return Err(duplicate_err::<T>()); }
-        self.bits = new;
-
-        // Temporarily store the components
-        self.components.insert(component_bits, Box::new(component));
-        Ok(())
     }
 }
