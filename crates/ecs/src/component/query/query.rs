@@ -6,7 +6,7 @@ use std::{
 };
 use tinyvec::ArrayVec;
 
-use crate::{Archetype, Component, EcsManager, Mask, QueryBuilder, QueryError, ComponentState, Entity};
+use crate::{Archetype, Component, ComponentState, EcsManager, Entity, Mask, QueryBuilder, QueryError};
 
 // Something that can be queried using the query builder. This will return a vector of type Vec<&Self>
 pub trait RefQuery {
@@ -49,7 +49,7 @@ impl RefQuery for Entity {
     // We can also fetch the entity that is linked to each component bundle
     fn query<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
         todo!()
-    }    
+    }
 }
 
 // Something that can be mutably queried using the query builder. This will return a vector of type Vec<&mut Self>
