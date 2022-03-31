@@ -1,5 +1,5 @@
 use systems::*;
-use world::{assets::persistent, ecs::system::SystemExecutionOrder, World};
+use world::{assets::persistent, World};
 // Default components
 pub mod components;
 // Default globals
@@ -55,6 +55,7 @@ pub fn preload_default_assets() {
 
     println!("Finished pre-loading default assets!");
 }
+/*
 // Load default systems
 pub fn load_default_systems(world: &mut World) {
     // Engine defaults
@@ -91,3 +92,4 @@ pub fn load_debugging_systems(world: &mut World) {
     networking_system::debugging_system::system(world);
     flycam_system::system(world);
 }
+*/

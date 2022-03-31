@@ -103,24 +103,4 @@ impl EcsManager {
 
         Some(())
     }
-    /*
-    let linkings = self.entities.remove(entity)?;
-
-    // In case the entity actually had components
-    if let Some(linkings) = linkings {
-        // Simply remove the components that were linked to this entity
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        archetype.remove(entity, linkings);
-    }
-
-    // Result
-    Some(())
-    */
-
-    // Add a new system (stored as an event) into the manager
-    pub fn system<World>(&mut self, evn: fn(&mut World), systems: &mut SystemSet<World>) {
-        // Borrow since it's stored in an RC
-        let mut borrow = systems.inner.borrow_mut();
-        borrow.push(evn);
-    }
 }

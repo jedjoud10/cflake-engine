@@ -25,7 +25,7 @@ pub type ArchetypeSet = BTreeMap<Mask, Archetype>;
 pub struct Archetype {
     // Component storage
     #[getset(get = "pub(crate)")]
-    components: Arc<RwLock<ComponentStoragesHashMap>>,
+    components: ComponentStoragesHashMap,
 
     // Bundle Index -> Entity
     #[getset(get = "pub")]
@@ -66,7 +66,7 @@ impl Archetype {
             })
             .collect();
         Self {
-            components: Arc::new(RwLock::new(storages)),
+            components: storages,
             mask,
             entities: Default::default(),
             pending_for_removal: Default::default(),
@@ -75,15 +75,12 @@ impl Archetype {
 
     // Insert an entity into the arhcetype using a ComponentLinker
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
-        // Lock the component storages for writing
-        let mut write = self.components.write();
-
         // Commons
         let len = self.entities.len() + 1;
 
         // Add the components using their specific storages
         for (mask, component) in components {
-            let (storage, mutated) = write.get_mut(&mask).unwrap();
+            let (storage, mutated) = self.components.get_mut(&mask).unwrap();
 
             // Update length
             mutated.set_len(len);
@@ -101,11 +98,8 @@ impl Archetype {
 
     // Start the deletion process for components. The component will actually get deleted next frame
     pub(crate) fn add_pending_for_removal(&mut self, bundle: usize) {
-        // We don't need to have a write lock since the sparse bitfield is backed by atomics
-        let read = self.components.read();
-
         // Just set the state of ComponentState::PendingForRemoval
-        for (_, (_, mutated)) in read.iter() {
+        for (_, (_, mutated)) in self.components.iter() {
             // Set state
             mutated.set(bundle, ComponentState::PendingForRemoval);
         }
@@ -121,7 +115,7 @@ impl Archetype {
         let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
 
         // Remove the components from the storages
-        for (mask, (storage, _)) in self.components.write().iter_mut() {
+        for (mask, (storage, _)) in self.components.iter_mut() {
             let boxed = storage.swap_remove_boxed_bundle(bundle);
             components.push((*mask, boxed));
         }
@@ -134,7 +128,7 @@ impl Archetype {
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
     fn remove(&mut self, bundle: usize) {
         // Remove the components from the storages
-        for (_, (storage, _)) in self.components.write().iter_mut() {
+        for (_, (storage, _)) in self.components.iter_mut() {
             storage.swap_remove_bundle(bundle);
         }
 
@@ -168,8 +162,7 @@ impl Archetype {
         self.remove_all_pending();
 
         // Iterate through the bitfields and reset them
-        let mut components = self.components.write();
-        for (_, (_storage, states)) in components.iter_mut() {
+        for (_, (_storage, states)) in self.components.iter_mut() {
             // Reset the states
             states.reset()
         }

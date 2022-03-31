@@ -9,6 +9,75 @@ use tinyvec::ArrayVec;
 use super::{registry, Component, ComponentState, QueryError};
 use crate::{Archetype, EcsManager, Mask};
 
+// Something that can be queried using the query builder. This will return a vector of type Vec<&Self>
+pub trait RefQuery {
+    // Create a vector (full of immutable references) using a query builder
+    fn query<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError>;
+}
+
+impl<T: Component> RefQuery for T {
+    // Components are always queriable
+    fn query<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
+        // Get the component mask and entry mask
+        let component_mask = builder.get_component_mask::<T>()?;
+        let entry_mask = builder.mask;
+
+        // A vector full of references
+        let mut components = Vec::<&T>::new();
+        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+            // Check if the archetype is valid for our query builder
+            if entry_mask & archetype_mask == entry_mask {
+                // Fetch the vector
+                let (storage, _) = archetype.components().get(&component_mask).unwrap();
+
+                // Extend
+                let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+                components.extend(vec.iter().map(|cell| unsafe { &*cell.get() }))
+            }
+        }
+        Ok(components)
+    }
+}
+
+// Something that can be mutably queried using the query builder. This will return a vector of type Vec<&mut Self>
+pub trait MutQuery {
+    // Create a vector (full of mutable references) using a query builder
+    fn query_mut<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a mut Self>, QueryError>;
+}
+
+impl<T: Component> MutQuery for T {
+    // Components are always queriable
+    fn query_mut<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a mut Self>, QueryError> {
+        // Get the component mask and entry mask
+        let component_mask = builder.get_component_mask::<T>()?;
+        let entry_mask = builder.mask;
+
+        // A vector full of mtuable references
+        let mut components = Vec::<&mut T>::new();
+        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+            // Check if the archetype is valid for our query builder
+            if entry_mask & archetype_mask == entry_mask {
+                // Fetch the vector and states
+                let (storage, states) = archetype.components().get(&component_mask).unwrap();
+
+                // Set all the states to mutated, since we will be reading from this query mutably
+                states.set_all_mutated(); 
+
+                // Extend
+                let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+                components.extend(vec.iter().map(|cell| unsafe { &mut *cell.get() }))
+            }
+        }
+
+        // The component is currently being borro
+        let mut borrowed = builder.borrowed.borrow_mut();
+        *borrowed = *borrowed | component_mask;
+
+        Ok(components)
+    }
+}
+
+
 // Helps us get queries from archetypes
 pub struct QueryBuilder<'a> {
     // Ecs Manager
@@ -47,67 +116,35 @@ impl<'a> QueryBuilder<'a> {
 
         Ok(mask)
     }
-    // Get the component vec storage directly from an archetype
-    fn get_component_vec<'b, T: Component>(archetype: &'b Archetype, m_component: Mask) -> MappedRwLockReadGuard<'b, Vec<UnsafeCell<T>>> {
-        // A simple downcast ref
-        RwLockReadGuard::map(archetype.components().read(), |read| {
-            let (storage, _) = read.get(&m_component).unwrap();
-            storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap()
-        })
-    }
     // Create a new immutable query
-    pub fn get<T: Component>(&self) -> Result<Vec<&T>, QueryError> {
-        // Get the component mask and entry mask
-        let component_mask = self.get_component_mask::<T>()?;
-        let entry_mask = self.mask;
-
-        // A vector full of references
-        let mut components = Vec::<&T>::new();
-        for (&archetype_mask, archetype) in self.manager.archetypes.iter() {
-            // Check if the archetype is valid for this query builder
-            if entry_mask & archetype_mask == entry_mask {
-                // Extend the components by the components stored in this archetype (rip performance)
-                let vec = Self::get_component_vec::<T>(archetype, component_mask);
-                components.extend(vec.iter().map(|cell| unsafe { &*cell.get() }))
-            }
-        }
-
-        Ok(components)
-    }
+    pub fn get<T: Component + RefQuery>(&self) -> Result<Vec<&T>, QueryError> { T::query(self) }
     // Create a new mutable query
-    pub fn get_mut<T: Component>(&self) -> Result<Vec<&mut T>, QueryError> {
-        // Get the component mask and entry mask
+    pub fn get_mut<T: Component + MutQuery>(&self) -> Result<Vec<&mut T>, QueryError> { T::query_mut(self) }
+    // Get a raw mutable pointer to a component from an archetype mask and bundle index
+    pub fn get_ptr<T: Component>(&self, bundle: usize, m_archetype: Mask) -> Result<*mut T, QueryError> {
+        // Get the component mask
         let component_mask = self.get_component_mask::<T>()?;
-        let entry_mask = self.mask;
 
-        // A vector full of mutable references
-        let mut components = Vec::<&mut T>::new();
+        // And then get the singular component
+        let archetype = self
+            .manager
+            .archetypes
+            .get(&m_archetype)
+            .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(m_archetype, registry::name::<T>()))?;
 
-        for (&archetype_mask, archetype) in self.manager.archetypes.iter() {
-            // Check if the archetype is valid for this query builder
-            if entry_mask & archetype_mask == entry_mask {
-                // Extend the components by the components stored in this archetype (rip performance)
-                let vec = Self::get_component_vec::<T>(archetype, component_mask);
-                components.extend(vec.iter().map(|cell| unsafe { &mut *cell.get() }))
-            }
-        }
+        // Read from the rwlock
+        let (storage, _) = archetype.components().get(&component_mask).unwrap();
 
-        // The component is currently being borro
-        let mut borrowed = self.borrowed.borrow_mut();
-        *borrowed = *borrowed | component_mask;
-
-        Ok(components)
+        // Just fetch the pointer
+        let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+        let component = vec.get(bundle).ok_or_else(|| QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>()))?;
+        Ok(component.get())
     }
-    // Get the states vector of a specific component
-    pub fn states<T: Component>(&self) -> Result<Vec<ComponentState>, QueryError> {
-        // Get the component mask and entry mask
-        let component_mask = self.get_component_mask::<T>()?;
-        let entry_mask = self.mask;
+}
 
-        // A vector full of states
-        let mut components = Vec::<ComponentState>::new();
+/*
 
-        for (&archetype_mask, archetype) in self.manager.archetypes.iter() {
+for (&archetype_mask, archetype) in self.manager.archetypes.iter() {
             // Check if the archetype is valid for this query builder
             if entry_mask & archetype_mask == entry_mask {
                 // Get the component states for this specific archetype, and then add it to the vector
@@ -119,46 +156,4 @@ impl<'a> QueryBuilder<'a> {
                 }
             }
         }
-
-        Ok(components)
-    }
-    /*
-    // Get the mutation states of each component of a specific type
-    pub fn mutations<T: Component>(&self) -> Result<Vec<bool>, QueryError> {
-        // Get the component mask and entry mask
-        let component_mask = self.get_component_mask::<T>()?;
-        let entry_mask = self.mask;
-
-        // The mutation states
-        let mut mutated = Vec::<bool>::new();
-
-        for (&archetype_mask, archetype) in self.manager.archetypes.iter() {
-            // Check if the archetype is valid for this query builder
-            if entry_mask & archetype_mask == entry_mask {
-                // Get the mutation states
-                let vec = Self::get_mutation_vec::<T>(archetype, component_mask);
-                components.extend(vec.iter().map(|cell| unsafe { &mut *cell.get() }))
-            }
-        }
-
-        // The component is currently being borro
-        let mut borrowed = self.borrowed.borrow_mut();
-        *borrowed = *borrowed | component_mask;
-    }
-    */
-    // Get a raw mutable pointer to a component from an archetype mask and bundle index
-    pub fn get_ptr<T: Component>(&self, bundle: usize, m_archetype: Mask) -> Result<*mut T, QueryError> {
-        // Get the component mask
-        let m_component = self.get_component_mask::<T>()?;
-
-        // And then get the singular component
-        let archetype = self
-            .manager
-            .archetypes
-            .get(&m_archetype)
-            .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(m_archetype, registry::name::<T>()))?;
-        let vec = Self::get_component_vec::<T>(archetype, m_component);
-        let component = vec.get(bundle).ok_or_else(|| QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>()))?;
-        Ok(component.get())
-    }
-}
+*/

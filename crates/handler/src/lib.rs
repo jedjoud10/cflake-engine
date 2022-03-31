@@ -1,4 +1,3 @@
-use ecs::system::SystemExecutionOrder;
 use mimalloc::MiMalloc;
 use rendering::pipeline::*;
 use settings::*;
@@ -49,12 +48,12 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     let mut world = World::new(config, io, pipeline, renderer);
 
     // Load the default systems first
-    defaults::load_default_systems(&mut world);
-    SystemExecutionOrder::set(0);
+    //defaults::load_default_systems(&mut world);
+    //SystemExecutionOrder::set(0);
     init_systems(&mut world);
     println!("Calling World Initialization callback");
     init_world(&mut world);
-    world.ecs.systems.sort();
+    //world.ecs.systems.sort();
 
     // Post-init
     world.pipeline.post_init();
