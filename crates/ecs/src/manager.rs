@@ -44,6 +44,12 @@ impl EcsManager {
         }
     }
 
+    // Modify an entity's component layout
+    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut OccupiedLinkModifier)) -> Option<()> {
+        // Try to get the entity
+        let entity = self.entities.get(entity)?;
+    }
+
     // Get an entity entry
     pub fn entry(&mut self, entity: Entity) -> Option<EntityEntry> {
         EntityEntry::new(self, entity)

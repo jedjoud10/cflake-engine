@@ -8,7 +8,7 @@ new_key_type! {
 pub type EntitySet = SlotMap<Entity, Option<EntityLinkings>>;
 
 // Entity linking data that we will use to link entities to their specified components
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct EntityLinkings {
     // The component mask of this entity
     pub mask: Mask,

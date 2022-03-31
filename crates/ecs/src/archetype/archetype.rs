@@ -43,25 +43,30 @@ pub struct Archetype {
 }
 
 impl Archetype {
-    // Create new a archetype based on it's individual component masks and it's combined mask
-    pub(crate) fn new(masks: (&[Mask], Mask), uniques: &UniqueComponentStoragesHashMap) -> Self {
-        // Use the uniquer component storages to make new empty storages
+    // Create new a archetype based on it's combined mask
+    pub(crate) fn new(mask: Mask, uniques: &UniqueComponentStoragesHashMap) -> Self {
+        // We must decompose the combined mask into the individual masks
+        let masks = (0..(u64::BITS as usize)).into_iter().filter_map(|i| {
+            // Get the individual mask
+            let individual = mask >> i;
+
+            // Filter
+            if individual == Mask::one() { return Some((individual & Mask::one()) << i) }
+            else { None }
+        });
+        
+        // Use the unique component storages to make new empty storages
         let storages: ComponentStoragesHashMap = masks
-            .0
-            .iter()
-            .map(|&id| {
-                (
-                    id,
-                    (
-                        uniques.get(&id).unwrap().new_empty_from_self(),
-                        ComponentStatesBitfield::default(),
-                    ),
-                )
+            .map(|mask| {
+                // Create le tuple
+                let vec = uniques.get(&mask).unwrap().new_empty_from_self();
+                let states = ComponentStatesBitfield::default();
+                (mask, (vec, states))
             })
             .collect();
         Self {
             components: Arc::new(RwLock::new(storages)),
-            mask: masks.1,
+            mask,
             entities: Default::default(),
             pending_for_removal: Default::default(),
         }
