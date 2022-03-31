@@ -1,7 +1,7 @@
-use world::World;
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-
+use world::World;
+/*
 // The camera system update loop
 fn run(world: &mut World) {
     // Set the main camera entity key in the world global
@@ -25,3 +25,4 @@ pub fn system(world: &mut World) {
         .build()
         .unwrap();
 }
+*/

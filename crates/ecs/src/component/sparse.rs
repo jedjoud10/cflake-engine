@@ -40,7 +40,7 @@ impl ComponentStatesBitfield {
         for chunks in self.vec.read().iter() {
             chunks.store(u64::MAX, Ordering::Relaxed);
         }
-    } 
+    }
     // Update the length of the sparse bitfield, and check if we must insert a new chunk
     pub fn set_len(&mut self, length: usize) {
         // Check if need to extend the sparse component mutation bitfields by one chunk

@@ -1,5 +1,5 @@
+use crate::{components::Transform, globals::GlobalWorldData};
 use world::World;
-use crate::{globals::GlobalWorldData, components::Transform};
 
 // Update the position of the left and right ears
 fn run(world: &mut World) {
@@ -9,7 +9,7 @@ fn run(world: &mut World) {
     if let Some(entry) = entry {
         // Get the component
         let transform = entry.get::<Transform>().unwrap();
-        
+
         // Update the positions
         let pos = transform.position;
         let right = transform.right();
