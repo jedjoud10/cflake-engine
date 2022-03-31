@@ -2,7 +2,7 @@
 mod tests {
     use std::mem::size_of;
 
-    use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
+    use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 
     use crate::*;
 
@@ -26,7 +26,7 @@ mod tests {
 
         // Make a new entity
         const COUNT: usize = 10;
-        let mut entity = Entity::default();
+        let entity = Entity::default();
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
                 modifs.insert(Name("Le Jribi")).unwrap();
@@ -46,15 +46,15 @@ mod tests {
 
         while i.elapsed().as_secs() < 5 {
             manager.prepare();
-            let h = std::time::Instant::now();
-            let entry = EntityEntry::new(&mut manager, entity);
+            let _h = std::time::Instant::now();
+            let _entry = EntityEntry::new(&mut manager, entity);
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
             let builder = QueryBuilder::new(&mut manager, mask);
             let values = builder.get_mut::<SimpleValue>().unwrap();
             let tags = builder.get::<Tag>().unwrap();
             let names = builder.get::<Name>().unwrap();
-            values.into_iter().zip(tags.into_iter()).zip(names.into_iter()).for_each(|((value, tag), name)| {
+            values.into_iter().zip(tags.into_iter()).zip(names.into_iter()).for_each(|((value, _tag), _name)| {
                 println!("{}", value.0);
             });
 

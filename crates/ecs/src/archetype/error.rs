@@ -1,5 +1,4 @@
-use crate::component::{Component, ComponentError};
-use std::any::type_name;
+use crate::component::ComponentError;
 
 // Archetype Error
 pub enum ArchetypeError {

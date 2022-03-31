@@ -1,8 +1,5 @@
 use parking_lot::RwLock;
-use std::{
-    mem::size_of,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 // The current state of the component
 #[repr(u8)]

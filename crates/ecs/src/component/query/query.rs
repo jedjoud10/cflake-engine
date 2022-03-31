@@ -1,12 +1,6 @@
-use parking_lot::{MappedRwLockReadGuard, RwLockReadGuard};
-use std::{
-    any::type_name,
-    cell::{RefCell, UnsafeCell},
-    collections::BTreeMap,
-};
-use tinyvec::ArrayVec;
+use std::cell::UnsafeCell;
 
-use crate::{Archetype, Component, ComponentState, EcsManager, Entity, Mask, QueryBuilder, QueryError};
+use crate::{Component, ComponentState, Entity, QueryBuilder, QueryError};
 
 // Something that can be queried using the query builder. This will return a vector of type Vec<&Self>
 pub trait RefQuery {
@@ -40,14 +34,14 @@ impl<T: Component> RefQuery for T {
 
 impl RefQuery for ComponentState {
     // We can also fetch the component state of each component
-    fn query<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
+    fn query<'a>(_builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
         todo!()
     }
 }
 
 impl RefQuery for Entity {
     // We can also fetch the entity that is linked to each component bundle
-    fn query<'a>(builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
+    fn query<'a>(_builder: &QueryBuilder<'a>) -> Result<Vec<&'a Self>, QueryError> {
         todo!()
     }
 }

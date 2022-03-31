@@ -1,19 +1,15 @@
-use super::{Archetype, ArchetypeError, LinkModifierError};
+use super::{Archetype, LinkModifierError};
 use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
     Mask,
 };
-use std::{
-    any::{type_name, Any},
-    cell::UnsafeCell,
-};
-use tinyvec::ArrayVec;
+use std::{any::Any, cell::UnsafeCell};
 
 // Get the mask of a specific component
 fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {
-    registry::mask::<T>().map_err(|err| LinkModifierError::ComponentError(err))
+    registry::mask::<T>().map_err(LinkModifierError::ComponentError)
 }
 
 // Make sure there is an emtpy unique component vector at our disposal
@@ -179,7 +175,7 @@ impl<'a> LinkModifier<'a> {
         Ok(())
     }
     // Apply the linker
-    pub(crate) fn apply(self, linkings: &mut Option<EntityLinkings>) {
+    pub(crate) fn apply(self, _linkings: &mut Option<EntityLinkings>) {
         /*
         // Make sure the archetype exists
         let archetype = self

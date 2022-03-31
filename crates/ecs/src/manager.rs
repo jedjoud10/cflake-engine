@@ -1,11 +1,7 @@
-use std::{cell::UnsafeCell, mem::size_of};
-
-use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelExtend, ParallelIterator};
-
 use crate::{
-    archetype::{Archetype, ArchetypeError, ArchetypeSet, ComponentStoragesHashMap, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntityLinkings, EntitySet},
-    registry, EntityEntry, LinkModifier, Linker, Mask, SystemSet,
+    archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
+    entity::{Entity, EntitySet},
+    EntityEntry, LinkModifier, Linker, SystemSet,
 };
 
 // Manages ECS logic
@@ -85,11 +81,7 @@ impl EcsManager {
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
         // Check if the entity is valid
         let maybe = self.entities.get_mut(entity).and_then(|x| x.as_mut());
-        let linkings = if let Some(linkings) = maybe {
-            linkings
-        } else {
-            return None;
-        };
+        let linkings = maybe?;
 
         // Check if the linking is valid (the entity is not pending for removal)
         if !linkings.is_valid() {

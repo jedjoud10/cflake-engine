@@ -25,7 +25,7 @@ impl<'a> QueryBuilder<'a> {
     // This will get the component mask, not the entry mask
     pub(super) fn get_component_mask<T: Component>(&self) -> Result<Mask, QueryError> {
         // Component mask
-        let mask = registry::mask::<T>().map_err(|err| QueryError::ComponentError(err))?;
+        let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
 
         // Check if the component mask is even valid
         if mask & self.mask == Mask::default() {

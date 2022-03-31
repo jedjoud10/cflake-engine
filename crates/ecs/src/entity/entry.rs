@@ -14,7 +14,7 @@ impl<'a> EntityEntry<'a> {
     // Create self from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         // Fetch the entity linkings and it's state
-        let linkings = manager.entities.get(entity).and_then(|x| x.as_ref())?.clone();
+        let linkings = *manager.entities.get(entity).and_then(|x| x.as_ref())?;
 
         // Check if the linkings belong to a valid entity
         if !linkings.is_valid() {

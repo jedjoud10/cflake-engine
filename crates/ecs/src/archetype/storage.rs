@@ -38,7 +38,7 @@ impl<T: Component> ComponentStorage for Vec<UnsafeCell<T>> {
     // Simple swap remove, but box the result
     fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
         let element = self.swap_remove(bundle).into_inner();
-        return Box::new(element);
+        Box::new(element)
     }
 
     // Create a new boxed component storage of an empty vec

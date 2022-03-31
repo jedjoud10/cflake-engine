@@ -1,7 +1,7 @@
 use crate::{component::ComponentStatesBitfield, Mask};
 
 use super::ComponentStorage;
-use nohash_hasher::{IsEnabled, NoHashHasher};
+use nohash_hasher::NoHashHasher;
 use std::{collections::HashMap, hash::BuildHasherDefault};
 
 // NoHash hasher that works with Mask

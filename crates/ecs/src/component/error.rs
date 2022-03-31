@@ -1,6 +1,4 @@
-use super::Component;
 use crate::Mask;
-use std::any::type_name;
 
 // Specific component errors
 pub enum ComponentError {

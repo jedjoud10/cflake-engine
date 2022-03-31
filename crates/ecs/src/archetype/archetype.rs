@@ -1,21 +1,13 @@
-use std::{
-    any::{type_name, Any},
-    cell::UnsafeCell,
-    collections::{BTreeMap, HashMap},
-    mem::size_of,
-    sync::Arc,
-};
+use std::{any::Any, collections::BTreeMap};
 
 use getset::{CopyGetters, Getters};
-use parking_lot::RwLock;
 
 use crate::{
-    component::{registry, Component},
     entity::{Entity, EntityLinkings},
     ComponentState, ComponentStatesBitfield, Mask,
 };
 
-use super::{ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher, UniqueComponentStoragesHashMap};
+use super::{ComponentStorage, ComponentStoragesHashMap, UniqueComponentStoragesHashMap};
 
 // The archetype set (BTreeMap)
 pub type ArchetypeSet = BTreeMap<Mask, Archetype>;
@@ -50,7 +42,7 @@ impl Archetype {
 
             // Filter
             if individual == Mask::one() {
-                return Some((individual & Mask::one()) << i);
+                Some((individual & Mask::one()) << i)
             } else {
                 None
             }
