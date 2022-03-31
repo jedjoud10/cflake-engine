@@ -35,24 +35,10 @@ impl std::fmt::Debug for ArchetypeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ArchetypeError::ComponentError(err) => std::fmt::Debug::fmt(err, f),
-            ArchetypeError::Invalid(name) => write!(
-                f,
-                "Component of type '{}' is invalid for the current archetype",
-                name
-            ),
-            ArchetypeError::LinkDuplication(name) => write!(
-                f,
-                "Component of type '{}' is already linked to the entity",
-                name
-            ),
-            ArchetypeError::NotFound => write!(
-                f,
-                "Archetype not found, you must register the archetype first"
-            ),
-            ArchetypeError::IncompleteLinks => write!(
-                f,
-                "Missing components, check component layout or insert component calls"
-            ),
+            ArchetypeError::Invalid(name) => write!(f, "Component of type '{}' is invalid for the current archetype", name),
+            ArchetypeError::LinkDuplication(name) => write!(f, "Component of type '{}' is already linked to the entity", name),
+            ArchetypeError::NotFound => write!(f, "Archetype not found, you must register the archetype first"),
+            ArchetypeError::IncompleteLinks => write!(f, "Missing components, check component layout or insert component calls"),
         }
     }
 }

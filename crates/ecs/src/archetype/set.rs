@@ -22,8 +22,7 @@ impl ArchetypeSet {
         }
 
         // Insert a new archetype with the specified layout
-        self.archetypes
-            .insert(ArchetypeId(layout.mask), Archetype::new(layout));
+        self.archetypes.insert(ArchetypeId(layout.mask), Archetype::new(layout));
         id
     }
 

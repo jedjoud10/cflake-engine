@@ -885,23 +885,11 @@ checksum = "6907e25393cdcc1f4f3f513d9aac1e840eb1cc341a0fccb01171f7d14d10b946"
 name = "ecs"
 version = "0.1.0"
 dependencies = [
- "ahash 0.7.6",
- "bitfield",
- "ecs-derive",
- "enum-as-inner",
  "getset",
  "lazy_static",
- "others",
+ "nohash-hasher",
  "parking_lot 0.12.0",
  "slotmap",
-]
-
-[[package]]
-name = "ecs-derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]

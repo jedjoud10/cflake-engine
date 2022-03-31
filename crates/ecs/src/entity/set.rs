@@ -19,9 +19,6 @@ impl EntitySet {
         self.entities.get(entity.0).map(|x| x.as_ref()).flatten()
     }
     pub fn get_mut(&mut self, entity: Entity) -> Option<&mut EntityLinkings> {
-        self.entities
-            .get_mut(entity.0)
-            .map(|x| x.as_mut())
-            .flatten()
+        self.entities.get_mut(entity.0).map(|x| x.as_mut()).flatten()
     }
 }

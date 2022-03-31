@@ -1,27 +1,22 @@
 use std::marker::PhantomData;
 
-use crate::{manager::EcsManager, archetype::ArchetypeId, entity::Entity};
+use crate::{archetype::ArchetypeId, entity::Entity, manager::EcsManager};
 
-use super::{ComponentQuery, Component, ComponentDeltas, QueryError};
+use super::{Component, ComponentDeltas, ComponentQuery, QueryError};
 
 // A guarded entity entry that we can fetch from the Ecs Manager that we can use to read/write to specific components on an entity
-pub struct GuardedEntry<'a> {
+pub struct EntityEntry<'a> {
     // Internal query
     query: ComponentQuery,
     _phantom: PhantomData<&'a mut EcsManager>,
 }
 
-impl<'a> GuardedEntry<'a> {
+impl<'a> EntityEntry<'a> {
     // Create a new guarded entry using an ecs manager and some extra data
-    pub(crate) fn new(
-        manager: &'a mut EcsManager,
-        bitmask: u64,
-        bundle: usize,
-        archetype: ArchetypeId,
-    ) -> Self {
+    pub(crate) fn new(manager: &'a mut EcsManager, bitmask: u64, entity: Entity, bundle: usize, archetype: ArchetypeId) -> Self {
         unsafe {
             Self {
-                query: ComponentQuery::new(&manager.archetypes, bitmask, bundle, archetype),
+                query: ComponentQuery::new(&manager.archetypes, bitmask, entity, bundle, archetype),
                 _phantom: Default::default(),
             }
         }

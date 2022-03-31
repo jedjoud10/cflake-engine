@@ -1,7 +1,7 @@
 use crate::{
-    archetype::{Archetype, ArchetypeError, ArchetypeId, ArchetypeSet, ArchetypeStorage},
-    component::{Component, ComponentLayout, ComponentQuery, GuardedEntry, QueryError},
-    entity::{Entity, EntityLinkings, EntitySet},
+    archetype::{Archetype, ArchetypeError, ArchetypeId, ArchetypeSet, ArchetypeComponentInserter},
+    component::{Component, ComponentLayout, ComponentQuery, EntityEntry, QueryError},
+    entity::{Entity, EntityLinkings, EntitySet, EntityModifier},
     prelude::SystemSet,
 };
 
@@ -43,32 +43,24 @@ impl EcsManager {
         self.entities.insert(None)
     }
     // Insert an entity into the manager with specific components
-    pub fn insert_with(
-        &mut self,
-        id: ArchetypeId,
-        callback: impl FnOnce(&mut ArchetypeStorage),
-    ) -> Result<Entity, ArchetypeError> {
+    pub fn insert_with(&mut self, id: ArchetypeId, callback: impl FnOnce(&mut ArchetypeComponentInserter)) -> Result<Entity, ArchetypeError> {
         // Get the correct archetype first
-        let archetype = self
-            .archetypes
-            .get_mut(id)
-            .ok_or(ArchetypeError::NotFound)?;
-        let bundle = archetype.insert_with(callback)?;
-        Ok(self.entities.insert(Some(EntityLinkings {
-            archetype: id,
-            bundle,
-        })))
+        let archetype = self.archetypes.get_mut(id).ok_or(ArchetypeError::NotFound)?;
+
+        // Add the entity with an empty bundle index
+        let entity = self.entities.insert(Some(EntityLinkings { archetype: id, bundle: 0 }));
+
+        // Get the linkings and insert the components into the archetype
+        let linkings = self.entities.get_mut(entity).unwrap();
+        archetype.insert_with(callback, linkings, entity)?;
+        Ok(entity)
     }
 
-    // Get a component query using a specific entity ID
-    pub fn entry<'a>(
-        &'a mut self,
-        entity: Entity,
-        layout: ComponentLayout,
-    ) -> GuardedEntry<'a> {
+    // Get an entity entry using a specific entity ID
+    pub fn entry<'a>(&'a mut self, entity: Entity, layout: ComponentLayout) -> EntityEntry<'a> {
         // Get the archetype ID and bundle index
         let EntityLinkings { archetype, bundle } = *self.entities.get(entity).unwrap();
-        GuardedEntry::new(self, layout.mask, bundle, archetype)
+        EntityEntry::new(self, layout.mask, entity, bundle, archetype)
     }
     // Query some linked components using the specific layout
     pub fn query(&mut self, layout: ComponentLayout) -> Vec<ComponentQuery> {
@@ -80,12 +72,23 @@ impl EcsManager {
 
             // Check if it satisfies the field
             if (mask & layout.mask) == layout.mask {
-                // Create multiple queries using the archetype
-                queries.extend((0..(archetype.len())).into_iter().map(|x| unsafe { ComponentQuery::new(&self.archetypes, layout.mask, x, *id) }));
+                // Loop through each entity that is stored in the archetype
+                queries.extend(
+                    archetype
+                        .entities()
+                        .iter()
+                        .enumerate()
+                        .map(|(bundle, entity)| unsafe { ComponentQuery::new(&self.archetypes, layout.mask, *entity, bundle, *id) }),
+                );
             }
         }
         // Return the queries
         queries
+    }
+
+    // Modify an entity by adding/removing components from it. This will move the entity from an archetype to another archetype, so it is not recomended to use it
+    pub fn modify<'a>(&'a mut self, entity: Entity) -> EntityModifier<'a> {
+        todo!()
     }
 
     // Add a new system (stored as an event) into the manager

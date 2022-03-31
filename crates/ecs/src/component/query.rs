@@ -1,14 +1,13 @@
 use crate::{
     archetype::{ArchetypeId, ArchetypeSet, ComponentsHashMap},
+    entity::Entity,
     manager::EcsManager,
 };
 use getset::CopyGetters;
 use parking_lot::RwLock;
-use std::{cell::UnsafeCell, sync::Arc, marker::PhantomData};
+use std::{cell::UnsafeCell, marker::PhantomData, sync::Arc};
 
-use super::{
-    component_err, unlinked_err, Component, QueryError, ADDED_STATE, MUTATED_STATE, REMOVED_STATE,
-};
+use super::{component_err, unlinked_err, Component, QueryError, ADDED_STATE, MUTATED_STATE, REMOVED_STATE, registry};
 
 // Component deltas (each component has a state of either [Mutated, Added, PendingForDeletion])
 #[derive(CopyGetters)]
@@ -41,6 +40,9 @@ pub struct ComponentQuery {
     // Bitmask
     bitmask: u64,
 
+    // The entity ID
+    entity: Entity,
+
     // The current bundle (entity) index
     bundle: usize,
 }
@@ -51,12 +53,7 @@ unsafe impl Sync for ComponentQuery {}
 
 impl ComponentQuery {
     // Create a new component query using a specific layout and a bundle index and archetype index
-    pub(crate) unsafe fn new(
-        set: &ArchetypeSet,
-        bitmask: u64,
-        bundle: usize,
-        archetype: ArchetypeId,
-    ) -> Self {
+    pub(crate) unsafe fn new(set: &ArchetypeSet, bitmask: u64, entity: Entity, bundle: usize, archetype: ArchetypeId) -> Self {
         // Temp
         let temp = set.get(archetype).unwrap();
 
@@ -64,6 +61,7 @@ impl ComponentQuery {
         let components = temp.components().clone();
 
         Self {
+            entity,
             components,
             bitmask,
             bundle,
@@ -72,7 +70,7 @@ impl ComponentQuery {
     // Check if the component bits are valid first
     fn get_component_bits<T: Component>(&self) -> Result<u64, QueryError> {
         // Check if the bits are valid first
-        let bits = T::bits().map_err(component_err::<T>)?;
+        let bits = registry::bits::<T>().map_err(component_err::<T>)?;
         if self.bitmask & bits == 0 {
             return Err(unlinked_err::<T>())?;
         }
@@ -88,9 +86,7 @@ impl ComponentQuery {
         let lock = self.components.read();
         // Get the storage vector by downcasting
         let (_, states) = lock.get(&bits).unwrap();
-        Ok(ComponentDeltas {
-            state: states.get(self.bundle),
-        })
+        Ok(ComponentDeltas { state: states.get(self.bundle) })
     }
     // Get a component immutably
     pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
@@ -101,12 +97,7 @@ impl ComponentQuery {
         let lock = self.components.read();
         // Get the storage vector by downcasting
         let (storage, _) = lock.get(&bits).unwrap();
-        let vec = storage
-            .as_ref()
-            .unwrap()
-            .as_any()
-            .downcast_ref::<Vec<UnsafeCell<T>>>()
-            .unwrap();
+        let vec = storage.as_ref().unwrap().as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
         // I want to apologize in advance for this
         Ok(unsafe { &*vec[self.bundle].get() })
     }
@@ -119,12 +110,7 @@ impl ComponentQuery {
         let lock = self.components.read();
         // Get the storage vector by downcasting
         let (storage, mutated) = lock.get(&bits).unwrap();
-        let vec = storage
-            .as_ref()
-            .unwrap()
-            .as_any()
-            .downcast_ref::<Vec<UnsafeCell<T>>>()
-            .unwrap();
+        let vec = storage.as_ref().unwrap().as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
 
         // Don't overwrite removed or added
         mutated.set(self.bundle, MUTATED_STATE);

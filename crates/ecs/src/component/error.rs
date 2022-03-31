@@ -52,11 +52,7 @@ impl std::fmt::Debug for QueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             QueryError::ComponentError(err) => std::fmt::Debug::fmt(err, f),
-            QueryError::Unlinked(name) => write!(
-                f,
-                "Component of type '{}' is not available in the current query.",
-                name
-            ),
+            QueryError::Unlinked(name) => write!(f, "Component of type '{}' is not available in the current query.", name),
         }
     }
 }
