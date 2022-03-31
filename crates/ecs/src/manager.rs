@@ -10,7 +10,7 @@ use crate::{
         UniqueComponentStoragesHashMap,
     },
     entity::{Entity, EntityLinkings, EntitySet},
-    prelude::{registry, Mask, SystemSet, LinkModifier, EntityEntry},
+    prelude::{registry, Mask, SystemSet, Linker, EntityEntry, LinkModifier},
 };
 
 // Manages ECS logic
@@ -45,9 +45,21 @@ impl EcsManager {
     }
 
     // Modify an entity's component layout
-    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut OccupiedLinkModifier)) -> Option<()> {
-        // Try to get the entity
-        let entity = self.entities.get(entity)?;
+    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
+        // Just to check
+        if !self.entities.contains_key(entity) { return None; }
+
+        // Keep a copy of the linkings before we do anything
+        let mut copied = *self.entities.get(entity)?;
+
+        // Create a link modifier, so we can insert/remove components
+        let mut linker = LinkModifier::new(self, entity);
+        function(entity, &mut linker);
+        
+        // Apply the changes
+        linker.apply(&mut copied);
+        *self.entities.get_mut(entity).unwrap() = copied;
+        Some(())
     }
 
     // Get an entity entry
@@ -59,13 +71,13 @@ impl EcsManager {
     pub fn insert(&mut self) -> Entity { self.entities.insert(None) }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
-    pub fn insert_with(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
+    pub fn insert_with(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
         let entity = self.insert();
-        // Create a link modifier, so we can insert components into the archetypes
-        let mut modifier = LinkModifier::new(self, entity);
-        function(entity, &mut modifier);
+        // Create a linker, so we can insert components and link them to the entity
+        let mut linker = Linker::new(self, entity);
+        function(entity, &mut linker);
         // Apply the changes
-        modifier.apply();
+        linker.apply();
         entity
     }
 
