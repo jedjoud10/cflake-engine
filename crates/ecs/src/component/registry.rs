@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
 };
 
-use crate::{archetype::ComponentStorage, prelude::Mask};
+use crate::{archetype::ComponentStorage, Mask};
 
 use super::{Component, ComponentError};
 use lazy_static::lazy_static;
@@ -18,10 +18,7 @@ lazy_static! {
 pub fn mask<T: Component>() -> Result<Mask, ComponentError> {
     let locked = REGISTERED.read();
     let id = TypeId::of::<T>();
-    locked
-        .get(&id)
-        .ok_or(ComponentError::NotRegistered(name::<T>()))
-        .cloned()
+    locked.get(&id).ok_or(ComponentError::NotRegistered(name::<T>())).cloned()
 }
 // Registers the component if it wasn't already registered
 #[inline(always)]

@@ -12,12 +12,10 @@ use parking_lot::RwLock;
 use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
-    prelude::{ComponentState, ComponentStatesBitfield, Mask},
+    ComponentState, ComponentStatesBitfield, Mask,
 };
 
-use super::{
-    ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher, UniqueComponentStoragesHashMap,
-};
+use super::{ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher, UniqueComponentStoragesHashMap};
 
 // The archetype set (BTreeMap)
 pub type ArchetypeSet = BTreeMap<Mask, Archetype>;
@@ -51,10 +49,13 @@ impl Archetype {
             let individual = mask >> i;
 
             // Filter
-            if individual == Mask::one() { return Some((individual & Mask::one()) << i) }
-            else { None }
+            if individual == Mask::one() {
+                return Some((individual & Mask::one()) << i);
+            } else {
+                None
+            }
         });
-        
+
         // Use the unique component storages to make new empty storages
         let storages: ComponentStoragesHashMap = masks
             .map(|mask| {
@@ -73,12 +74,7 @@ impl Archetype {
     }
 
     // Insert an entity into the arhcetype using a ComponentLinker
-    pub(crate) fn insert_with(
-        &mut self,
-        components: Vec<(Mask, Box<dyn Any>)>,
-        linkings: &mut EntityLinkings,
-        entity: Entity,
-    ) {
+    pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Lock the component storages for writing
         let mut write = self.components.write();
 
@@ -89,11 +85,10 @@ impl Archetype {
         for (mask, component) in components {
             let (storage, mutated) = write.get_mut(&mask).unwrap();
 
-            
             // Update length
             mutated.set_len(len);
             // Set the new component state to Added
-            mutated.set(len-1, ComponentState::Added);
+            mutated.set(len - 1, ComponentState::Added);
             // Insert the component
             storage.push(component);
         }
@@ -124,7 +119,7 @@ impl Archetype {
     fn remove_boxed(&mut self, bundle: usize) -> Vec<(Mask, Box<dyn Any>)> {
         // The boxed components that will be returned
         let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
-        
+
         // Remove the components from the storages
         for (mask, (storage, _)) in self.components.write().iter_mut() {
             let boxed = storage.swap_remove_boxed_bundle(bundle);
@@ -134,7 +129,7 @@ impl Archetype {
         // And then the locally stored entity ID
         self.entities.swap_remove(bundle);
         components
-    }    
+    }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
     fn remove(&mut self, bundle: usize) {
@@ -159,12 +154,7 @@ impl Archetype {
     }
 
     // Moves an entity from this archetype to another archetype
-    pub(crate) fn move_entity(
-        &mut self,
-        entity: Entity,
-        linkings: &mut EntityLinkings,
-        other: &mut Self,
-    ) {
+    pub(crate) fn move_entity(&mut self, entity: Entity, linkings: &mut EntityLinkings, other: &mut Self) {
         // First, remove the entity from Self directly
         let components = self.remove_boxed(linkings.bundle);
 

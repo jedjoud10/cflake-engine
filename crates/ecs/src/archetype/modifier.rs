@@ -3,7 +3,7 @@ use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
-    prelude::Mask,
+    Mask,
 };
 use std::{
     any::{type_name, Any},
@@ -19,10 +19,7 @@ fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {
 // Make sure there is an emtpy unique component vector at our disposal
 fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
     // Create a new unique component storage if it is missing
-    manager
-     .uniques
-     .entry(mask)
-     .or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
+    manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
 }
 
 // Component linker that will simply link components to an entity
@@ -68,23 +65,16 @@ impl<'a> Linker<'a> {
         self.new_components.push((mask, Box::new(component)));
 
         // Create a new unique component storage if it is missing
-        self.manager
-            .uniques
-            .entry(mask)
-            .or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
+        self.manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
         Ok(())
     }
     // Apply the linker
     pub(crate) fn apply(self) {
         // Make sure the archetype exists
-        let archetype = self
-            .manager
-            .archetypes
-            .entry(self.mask)
-            .or_insert_with(|| {
-                // Insert a new archetype
-                Archetype::new(self.mask, &self.manager.uniques)
-            });
+        let archetype = self.manager.archetypes.entry(self.mask).or_insert_with(|| {
+            // Insert a new archetype
+            Archetype::new(self.mask, &self.manager.uniques)
+        });
 
         // Insert the components into the archetype
         let linkings = self
@@ -92,14 +82,10 @@ impl<'a> Linker<'a> {
             .entities
             .get_mut(self.entity)
             .unwrap()
-            .get_or_insert_with(|| EntityLinkings {
-                bundle: 0,
-                mask: Mask::default(),
-            });
+            .get_or_insert_with(|| EntityLinkings { bundle: 0, mask: Mask::default() });
         archetype.insert_with(self.new_components, linkings, self.entity);
     }
 }
-
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -148,11 +134,11 @@ impl<'a> LinkModifier<'a> {
         if self.added == new {
             return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
         }
-        // Always make sure there is a unique vector for this component        
+        // Always make sure there is a unique vector for this component
         register_unique::<T>(self.manager, mask);
-        
+
         // No link duplication. However, there is a chance we removed this component in an earlier call, so we must check for that as well
-        // If we did remove it earlier, just overwrite it 
+        // If we did remove it earlier, just overwrite it
         if self.removed & mask != Mask::default() {
             // We did remove it, so simply overwrite it (only if we are part of a valid archetype)
             if let Some(mut entry) = self.manager.entry(self.entity) {
@@ -162,15 +148,16 @@ impl<'a> LinkModifier<'a> {
 
                 // Exit early
                 return Ok(());
-            } else { /* We are not part of an archetype, so add the component normally */ }
+            } else { /* We are not part of an archetype, so add the component normally */
+            }
 
             // Remove the component bits from the "removed" mask
-            self.removed = self.removed & !mask;        
+            self.removed = self.removed & !mask;
         }
-        
-        // Finish it off        
+
+        // Finish it off
         self.added = new;
-        
+
         // Temporarily store the components
         self.new_components.push((mask, Box::new(component)));
         Ok(())
@@ -179,16 +166,15 @@ impl<'a> LinkModifier<'a> {
     pub fn remove<T: Component>(&mut self) -> Result<(), LinkModifierError> {
         // Bits
         let mask = component_mask::<T>()?;
-        
+
         // Check if we have the component locally stored in this link modifier
-        if self.added & mask != Mask::default() { 
+        if self.added & mask != Mask::default() {
             // Search for the local component, and remove it
             self.new_components.retain(|(m, _)| *m != mask);
         }
 
         // Removal bits
         self.removed = self.removed | mask;
-
 
         Ok(())
     }

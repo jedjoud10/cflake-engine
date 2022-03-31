@@ -1,4 +1,4 @@
-use crate::prelude::Mask;
+use crate::Mask;
 use slotmap::{new_key_type, SlotMap};
 new_key_type! {
     pub struct Entity;
@@ -17,6 +17,8 @@ pub struct EntityLinkings {
     pub bundle: usize,
 }
 impl EntityLinkings {
-    // Check if the entity linkings are valid 
-    pub fn is_valid(&self) -> bool { self.mask != Default::default() }
+    // Check if the entity linkings are valid
+    pub fn is_valid(&self) -> bool {
+        self.mask != Default::default()
+    }
 }

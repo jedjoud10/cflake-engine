@@ -1,16 +1,11 @@
 use std::{cell::UnsafeCell, mem::size_of};
 
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelRefIterator, ParallelExtend, ParallelIterator,
-};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelExtend, ParallelIterator};
 
 use crate::{
-    archetype::{
-        Archetype, ArchetypeError, ArchetypeSet, ComponentStoragesHashMap,
-        UniqueComponentStoragesHashMap,
-    },
+    archetype::{Archetype, ArchetypeError, ArchetypeSet, ComponentStoragesHashMap, UniqueComponentStoragesHashMap},
     entity::{Entity, EntityLinkings, EntitySet},
-    prelude::{registry, Mask, SystemSet, Linker, EntityEntry, LinkModifier},
+    registry, EntityEntry, LinkModifier, Linker, Mask, SystemSet,
 };
 
 // Manages ECS logic
@@ -47,7 +42,9 @@ impl EcsManager {
     // Modify an entity's component layout
     pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
         // Just to check
-        if !self.entities.contains_key(entity) { return None; }
+        if !self.entities.contains_key(entity) {
+            return None;
+        }
 
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
@@ -55,7 +52,7 @@ impl EcsManager {
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity);
         function(entity, &mut linker);
-        
+
         // Apply the changes
         linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
@@ -68,7 +65,9 @@ impl EcsManager {
     }
 
     // Insert an empty entity into the manager
-    pub fn insert(&mut self) -> Entity { self.entities.insert(None) }
+    pub fn insert(&mut self) -> Entity {
+        self.entities.insert(None)
+    }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
     pub fn insert_with(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
@@ -93,7 +92,9 @@ impl EcsManager {
         };
 
         // Check if the linking is valid (the entity is not pending for removal)
-        if !linkings.is_valid() { return None }
+        if !linkings.is_valid() {
+            return None;
+        }
 
         // Get the arhcetype and commence the bundle's components deletion process
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();

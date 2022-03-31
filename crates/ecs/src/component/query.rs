@@ -7,7 +7,7 @@ use std::{
 use tinyvec::ArrayVec;
 
 use super::{registry, Component, ComponentState, QueryError};
-use crate::prelude::{Archetype, EcsManager, Mask};
+use crate::{Archetype, EcsManager, Mask};
 
 // Helps us get queries from archetypes
 pub struct QueryBuilder<'a> {
@@ -48,17 +48,11 @@ impl<'a> QueryBuilder<'a> {
         Ok(mask)
     }
     // Get the component vec storage directly from an archetype
-    fn get_component_vec<'b, T: Component>(
-        archetype: &'b Archetype,
-        m_component: Mask,
-    ) -> MappedRwLockReadGuard<'b, Vec<UnsafeCell<T>>> {
+    fn get_component_vec<'b, T: Component>(archetype: &'b Archetype, m_component: Mask) -> MappedRwLockReadGuard<'b, Vec<UnsafeCell<T>>> {
         // A simple downcast ref
         RwLockReadGuard::map(archetype.components().read(), |read| {
             let (storage, _) = read.get(&m_component).unwrap();
-            storage
-                .as_any()
-                .downcast_ref::<Vec<UnsafeCell<T>>>()
-                .unwrap()
+            storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap()
         })
     }
     // Create a new immutable query
@@ -153,22 +147,18 @@ impl<'a> QueryBuilder<'a> {
     }
     */
     // Get a raw mutable pointer to a component from an archetype mask and bundle index
-    pub fn get_ptr<T: Component>(
-        &self,
-        bundle: usize,
-        m_archetype: Mask,
-    ) -> Result<*mut T, QueryError> {
+    pub fn get_ptr<T: Component>(&self, bundle: usize, m_archetype: Mask) -> Result<*mut T, QueryError> {
         // Get the component mask
         let m_component = self.get_component_mask::<T>()?;
 
         // And then get the singular component
-        let archetype = self.manager.archetypes.get(&m_archetype).ok_or_else(|| {
-            QueryError::DirectAccessArchetypeMissing(m_archetype, registry::name::<T>())
-        })?;
+        let archetype = self
+            .manager
+            .archetypes
+            .get(&m_archetype)
+            .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(m_archetype, registry::name::<T>()))?;
         let vec = Self::get_component_vec::<T>(archetype, m_component);
-        let component = vec.get(bundle).ok_or_else(|| {
-            QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>())
-        })?;
+        let component = vec.get(bundle).ok_or_else(|| QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>()))?;
         Ok(component.get())
     }
 }

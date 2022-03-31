@@ -1,5 +1,4 @@
 // Export
-pub mod event;
 mod world;
 pub use self::world::*;
 pub mod settings;

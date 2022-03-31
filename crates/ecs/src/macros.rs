@@ -3,10 +3,10 @@ macro_rules! layout {
     ($($x:ty),*) => {
         // Simple array of masks
         {
-            let mut mask = $crate::prelude::Mask::default();
+            let mut mask = $crate::Mask::default();
             $(
                 // Add the mask
-                mask = mask | $crate::prelude::registry::mask::<$x>().unwrap();
+                mask = mask | $crate::registry::mask::<$x>().unwrap();
             )*
             mask
         }

@@ -1,6 +1,6 @@
-use crate::{event::EventSet, settings::Settings};
+use crate::settings::Settings;
 use audio::player::AudioPlayer;
-use ecs::EcsManager;
+use ecs::{manager::EcsManager, SystemSet};
 use getset::*;
 use globals::GlobalsSet;
 use gui::GUIManager;
@@ -34,7 +34,7 @@ pub struct World {
     // Logic
     pub state: WorldState,
     pub ecs: EcsManager,
-    pub events: EventSet,
+    pub systems: SystemSet<Self>,
     pub globals: GlobalsSet,
     pub physics: PhysicsSimulation,
 
@@ -51,18 +51,18 @@ impl World {
         let gui = gui::GUIManager::new(&mut pipeline);
         let mut world = World {
             input: Default::default(),
-            time: Default::default(),
-            gui,
-            ecs: EcsManager::default(),
-            globals: Default::default(),
             io,
-            settings: Default::default(),
             pipeline,
             renderer,
+            gui,
             state: WorldState::StartingUp,
-            audio: Default::default(),
+            ecs: EcsManager::default(),
+            systems: Default::default(),
+            globals: Default::default(),
             physics: PhysicsSimulation::new(),
-            events: Default::default(),
+            time: Default::default(),
+            settings: Default::default(),
+            audio: Default::default(),
         };
         // Just set the game settings and we are done
         world.settings = settings;
@@ -79,14 +79,12 @@ impl World {
         self.pipeline.start_frame(&mut self.renderer, self.time.delta(), self.time.elapsed());
         self.gui.begin_frame(self.pipeline.window().context().window());
 
-        // Read the systems
-        let (systems, settings) = self.ecs.ready(self.time.current().as_ref().unwrap().count);
-        let systems = systems.borrow();
+        // Prepare the Ecs manager
+        self.ecs.prepare();
 
-        // Get events
-        let event_set = self.events.ecs.clone();
-        let events = event_set.events();
-        EcsManager::execute_systems::<Self>(systems, self, &events, settings);
+        // Execute
+        let systems = self.systems.clone();
+        EcsManager::execute(self, systems);
 
         // Late update
         self.pipeline.end_frame();

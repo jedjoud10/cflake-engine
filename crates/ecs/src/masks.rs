@@ -12,11 +12,17 @@ impl IsEnabled for Mask {}
 
 impl Mask {
     // One and zero masks
-    pub fn one() -> Mask { Mask(1) }
-    pub fn zero() -> Mask { Mask(0) }
+    pub fn one() -> Mask {
+        Mask(1)
+    }
+    pub fn zero() -> Mask {
+        Mask(0)
+    }
 
     // All
-    pub fn all() -> Mask { Mask(u64::MAX) }
+    pub fn all() -> Mask {
+        Mask(u64::MAX)
+    }
 }
 
 impl BitAnd for Mask {

@@ -1,4 +1,4 @@
-use crate::{component::ComponentStatesBitfield, prelude::Mask};
+use crate::{component::ComponentStatesBitfield, Mask};
 
 use super::ComponentStorage;
 use nohash_hasher::{IsEnabled, NoHashHasher};
@@ -14,5 +14,4 @@ type Combined = (Box<dyn ComponentStorage>, ComponentStatesBitfield);
 pub(crate) type ComponentStoragesHashMap = HashMap<Mask, Combined, MaskHasher>;
 
 // Unique component storages that will be cloned whenever we make a new archetype (cheap since the vectors are empty)
-pub(crate) type UniqueComponentStoragesHashMap =
-    HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>;
+pub(crate) type UniqueComponentStoragesHashMap = HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>;

@@ -2,12 +2,9 @@
 mod tests {
     use std::mem::size_of;
 
-    use rayon::iter::{
-        IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator,
-        IntoParallelRefMutIterator, ParallelIterator,
-    };
+    use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 
-    use crate::prelude::*;
+    use crate::*;
 
     #[test]
     fn test() {
@@ -38,8 +35,6 @@ mod tests {
             });
         }
 
-
-
         // Create a mask layout
         let mask = crate::layout!(Name, Tag, SimpleValue);
 
@@ -59,13 +54,9 @@ mod tests {
             let values = builder.get_mut::<SimpleValue>().unwrap();
             let tags = builder.get::<Tag>().unwrap();
             let names = builder.get::<Name>().unwrap();
-            values
-                .into_iter()
-                .zip(tags.into_iter())
-                .zip(names.into_iter())
-                .for_each(|((value, tag), name)| {
-                   println!("{}", value.0); 
-                });
+            values.into_iter().zip(tags.into_iter()).zip(names.into_iter()).for_each(|((value, tag), name)| {
+                println!("{}", value.0);
+            });
 
             //panic!("remove");
             manager.remove(entity);

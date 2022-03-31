@@ -63,10 +63,7 @@ impl ComponentStatesBitfield {
 
         // Read from the vector now
         let read = self.vec.read();
-        let bits = read
-            .get(chunk_pos as usize)
-            .unwrap()
-            .load(Ordering::Relaxed);
+        let bits = read.get(chunk_pos as usize).unwrap().load(Ordering::Relaxed);
 
         // Filter the specific bits
         let mask = 0b11 << local_pos;

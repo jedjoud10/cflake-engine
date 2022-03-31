@@ -10,16 +10,12 @@ pub struct SystemSet<World> {
 
 impl<World> Default for SystemSet<World> {
     fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
+        Self { inner: Default::default() }
     }
 }
 
 impl<World> Clone for SystemSet<World> {
     fn clone(&self) -> Self {
-        Self {
-            inner: self.inner.clone(),
-        }
+        Self { inner: self.inner.clone() }
     }
 }
