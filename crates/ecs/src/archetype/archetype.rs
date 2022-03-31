@@ -16,8 +16,7 @@ use crate::{
 };
 
 use super::{
-    ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher,
-    UniqueComponentStoragesHashMap,
+    ArchetypeError, ComponentStorage, ComponentStoragesHashMap, MaskHasher, UniqueComponentStoragesHashMap,
 };
 
 // The archetype set (BTreeMap)
@@ -96,9 +95,7 @@ impl Archetype {
 
         // Update the length
         self.entities.push(entity);
-        dbg!("push");
         linkings.bundle = self.entities.len() - 1;
-        dbg!(linkings.bundle);
         linkings.mask = self.mask;
     }
 
@@ -118,10 +115,27 @@ impl Archetype {
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
+    // This will return the boxed components that were removed
+    fn remove_boxed(&mut self, bundle: usize) -> Vec<(Mask, Box<dyn Any>)> {
+        // The boxed components that will be returned
+        let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
+        
+        // Remove the components from the storages
+        for (mask, (storage, _)) in self.components.write().iter_mut() {
+            let boxed = storage.swap_remove_boxed_bundle(bundle);
+            components.push((*mask, boxed));
+        }
+
+        // And then the locally stored entity ID
+        self.entities.swap_remove(bundle);
+        components
+    }    
+
+    // Directly removes a bundle from the archetype (PS: This mutably locks "components")
     fn remove(&mut self, bundle: usize) {
         // Remove the components from the storages
         for (_, (storage, _)) in self.components.write().iter_mut() {
-            storage.swap_remove(bundle);
+            storage.swap_remove_bundle(bundle);
         }
 
         // And then the locally stored entity ID
@@ -143,15 +157,14 @@ impl Archetype {
     pub(crate) fn move_entity(
         &mut self,
         entity: Entity,
-        linkings: &EntityLinkings,
+        linkings: &mut EntityLinkings,
         other: &mut Self,
     ) {
         // First, remove the entity from Self directly
-        self.remove(linkings.bundle);
+        let components = self.remove_boxed(linkings.bundle);
 
-        // And simply add it to Other
-        other.insert_with()
-
+        // And insert into Other
+        other.insert_with(components, linkings, entity);
     }
 
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components

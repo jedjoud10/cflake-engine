@@ -9,7 +9,9 @@ pub trait ComponentStorage {
     // Push a component into the vector
     fn push(&mut self, component: Box<dyn Any>);
     // Remove a component without moving the whole vector
-    fn swap_remove(&mut self, bundle: usize);
+    fn swap_remove_bundle(&mut self, bundle: usize);
+    // Remove a component, but boxes the result 
+    fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any>;
     // Create a new empty boxed component storage vec using self
     fn new_empty_from_self(&self) -> Box<dyn ComponentStorage>;
 }
@@ -29,12 +31,16 @@ impl<T: Component> ComponentStorage for Vec<UnsafeCell<T>> {
         let component = *component.downcast::<T>().unwrap();
         self.push(UnsafeCell::new(component));
     }
+    // Simple swap remove
+    fn swap_remove_bundle(&mut self, bundle: usize) { self.swap_remove(bundle); }
+    // Simple swap remove, but box the result
+    fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
+        let element = self.swap_remove(bundle).into_inner();
+        return Box::new(element);
+    }
+
     // Create a new boxed component storage of an empty vec
     fn new_empty_from_self(&self) -> Box<dyn ComponentStorage> {
         Box::new(Vec::<UnsafeCell<T>>::new())
-    }
-    // Simple swap remove
-    fn swap_remove(&mut self, bundle: usize) {
-        self.swap_remove(bundle);
     }
 }
