@@ -11,3 +11,6 @@ slotmap = "1.0.6"
 getset = "0.1.2"
 nohash-hasher = "0.2.0"
 parking_lot = "0.12.0"
+tinyvec = "1.5.1"
+rayon = "1.5.1"
+ecs-derive = { path = "./ecs-derive"  }

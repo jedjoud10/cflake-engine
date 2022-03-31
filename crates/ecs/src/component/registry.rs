@@ -1,22 +1,31 @@
-use std::{any::{TypeId, type_name}, collections::HashMap};
+use std::{
+    any::{type_name, TypeId},
+    collections::HashMap,
+};
 
-use lazy_static::lazy_static;
-use parking_lot::{RwLock, Mutex};
+use crate::{archetype::ComponentStorage, prelude::Mask};
+
 use super::{Component, ComponentError};
+use lazy_static::lazy_static;
+use parking_lot::{Mutex, RwLock};
 // Registered components
 lazy_static! {
-    static ref NEXT: Mutex<u64> = Mutex::new(1);
-    static ref REGISTERED: RwLock<HashMap<TypeId, u64>> = RwLock::new(HashMap::new());
+    static ref NEXT: Mutex<Mask> = Mutex::new(Mask(1));
+    static ref REGISTERED: RwLock<HashMap<TypeId, Mask>> = RwLock::new(HashMap::new());
 }
-// Return the registered bits of the component
-pub fn bits<T: Component>() -> Result<u64, ComponentError> {
+// Return the registered mask of the component
+#[inline(always)]
+pub fn mask<T: Component>() -> Result<Mask, ComponentError> {
     let locked = REGISTERED.read();
     let id = TypeId::of::<T>();
-    locked.get(&id).ok_or(ComponentError::NotRegistered(type_name::<T>())).cloned()
+    locked
+        .get(&id)
+        .ok_or(ComponentError::NotRegistered(name::<T>()))
+        .cloned()
 }
-// Registers the component if it wasn't already registered.
-// This is a no op if the component is already registered
-pub fn register<T: Component>() -> u64 {
+// Registers the component if it wasn't already registered
+#[inline(always)]
+pub fn register<T: Component>() -> Mask {
     let mut locked = REGISTERED.write();
     let id = TypeId::of::<T>();
     // If the component was already registered, no need to do anything
@@ -31,4 +40,9 @@ pub fn register<T: Component>() -> u64 {
     locked.insert(id, copy);
     *bit = *bit << 1;
     copy
+}
+// Get the name of a component
+#[inline(always)]
+pub fn name<T: Component>() -> &'static str {
+    type_name::<T>()
 }

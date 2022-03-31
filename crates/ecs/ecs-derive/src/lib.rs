@@ -9,12 +9,6 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
     let output = quote! {
         // Main traits implemented
         impl #impl_generics Component for #ident #ty_generics #where_clause {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
         }
     };
     output.into()

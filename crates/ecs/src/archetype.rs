@@ -1,10 +1,10 @@
 mod archetype;
 mod common;
 mod error;
-mod set;
+mod modifier;
 mod storage;
 pub use archetype::*;
 pub use common::*;
 pub use error::*;
-pub use set::*;
+pub use modifier::*;
 pub use storage::*;

@@ -1,23 +1,18 @@
+use crate::{component::ComponentStatesBitfield, prelude::Mask};
+
+use super::ComponentStorage;
 use nohash_hasher::{IsEnabled, NoHashHasher};
 use std::{collections::HashMap, hash::BuildHasherDefault};
 
-use crate::component::SparseComponentStates;
+// NoHash hasher that works with Mask
+pub type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
 
-use super::VecComponentStorage;
+// A tuple that contains a component storage and it's corresponding mutated bitfield
+type Combined = (Box<dyn ComponentStorage>, ComponentStatesBitfield);
 
-// A component storage that might not be initialized
-pub type MaybeNoneStorage = Option<Box<dyn VecComponentStorage>>;
+// Component storages hash map that contains each component vector
+pub(crate) type ComponentStoragesHashMap = HashMap<Mask, Combined, MaskHasher>;
 
-// The components hashmap
-pub type NoHash = BuildHasherDefault<NoHashHasher<u64>>;
-pub type ComponentsHashMap = HashMap<u64, (MaybeNoneStorage, SparseComponentStates), NoHash>;
-
-// Identifier
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ArchetypeId(pub(crate) u64);
-impl std::hash::Hash for ArchetypeId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        u64::hash(&self.0, state)
-    }
-}
-impl IsEnabled for ArchetypeId {}
+// Unique component storages that will be cloned whenever we make a new archetype (cheap since the vectors are empty)
+pub(crate) type UniqueComponentStoragesHashMap =
+    HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>;

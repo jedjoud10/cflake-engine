@@ -1,13 +1,9 @@
 mod component;
-mod entry;
 mod error;
-mod layout;
 mod query;
-mod states;
 pub mod registry;
+mod sparse;
 pub use component::*;
-pub use entry::*;
 pub use error::*;
-pub use layout::*;
 pub use query::*;
-pub use states::*;
+pub use sparse::*;
