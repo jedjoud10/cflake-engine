@@ -40,11 +40,11 @@ impl<'a> QueryBuilder<'a> {
         Ok(mask)
     }
     // Create a new immutable query
-    pub fn get<T: Component + RefQuery>(&self) -> Result<Vec<&T>, QueryError> {
+    pub fn get<T: RefQuery<'a>>(&self) -> Result<Vec<T::Item>, QueryError> {
         T::query(self)
     }
     // Create a new mutable query
-    pub fn get_mut<T: Component + MutQuery>(&self) -> Result<Vec<&mut T>, QueryError> {
+    pub fn get_mut<T: MutQuery<'a>>(&self) -> Result<Vec<T::Item>, QueryError> {
         T::query_mut(self)
     }
     // Get a raw mutable pointer to a component from an archetype mask and bundle index

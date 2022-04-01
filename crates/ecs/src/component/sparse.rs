@@ -34,8 +34,8 @@ impl ComponentStatesBitfield {
     }
     // Set all the bits to the mutated state (0b11)
     pub fn set_all_mutated(&self) {
-        for chunks in self.vec.read().iter() {
-            chunks.store(u64::MAX, Ordering::Relaxed);
+        for bundle in 0..self.length {
+            self.set(bundle, ComponentState::Mutated);
         }
     }
     // Update the length of the sparse bitfield, and check if we must insert a new chunk
@@ -43,8 +43,6 @@ impl ComponentStatesBitfield {
         // Check if need to extend the sparse component mutation bitfields by one chunk
         let half = (u64::BITS as usize) / 2;
         let extend = length.div_ceil(half) > self.length.div_ceil(half);
-        dbg!(length.div_ceil(half));
-        dbg!(self.length.div_ceil(half));
 
         // Extend by one chunk
         if extend {
@@ -54,6 +52,7 @@ impl ComponentStatesBitfield {
         // Set length
         self.length = length;
     }
+    /*
     // Get the state of a specific component in the archetype
     pub fn get(&self, bundle: usize) -> ComponentState {
         // Check if the index is valid
@@ -74,6 +73,7 @@ impl ComponentStatesBitfield {
         let shifted = (filtered >> local_pos) as u8;
         unsafe { std::mem::transmute::<u8, ComponentState>(shifted) }
     }
+    */
     // Set the component state of a specific component
     pub fn set(&self, bundle: usize, state: ComponentState) {
         // Check if the index is valid
@@ -86,7 +86,6 @@ impl ComponentStatesBitfield {
         let half = (u64::BITS as usize) / 2;
         let local_pos = bundle % half;
         let chunk_pos = bundle / half;
-        dbg!(chunk_pos);
 
         // Be ready to write to the vector
         let vec = self.vec.read();
@@ -112,5 +111,31 @@ impl ComponentStatesBitfield {
 
         // Store
         atomic.store(result, Ordering::Relaxed);
+    }
+    // Iterate through the sparse set and return an Iterator full of component states
+    pub fn iter(&self) -> impl IntoIterator<Item = ComponentState> {
+        // We know the length, and each compoonent is already tightly packed
+        let len = self.length;
+
+        // Load all the chunks
+        let read = self.vec.read();
+        let chunks = read.iter().map(|atomic| atomic.load(Ordering::Relaxed)).collect::<Vec<u64>>();
+
+        // Load each component state
+        (0..len).into_iter().map(move |bundle| {
+            // Get the local position, and chunk position
+            let half = (u64::BITS as usize) / 2;
+            let local_pos = bundle % half;
+            let chunk_pos = bundle / half;
+
+            // Load the bits from the chunk
+            let bits = chunks.get(chunk_pos).unwrap();
+
+            // Filter the specific bits
+            let mask = 0b11 << local_pos;
+            let filtered = bits & mask;
+            let shifted = (filtered >> local_pos) as u8;
+            unsafe { std::mem::transmute::<u8, ComponentState>(shifted) }
+        })
     }
 }

@@ -52,7 +52,7 @@ mod tests {
             //dbg!(entry.state());=
             let builder = QueryBuilder::new(&mut manager, mask);
             let values = builder.get_mut::<SimpleValue>().unwrap();
-            let tags = builder.get::<Tag>().unwrap();
+            let tags = builder.get::<(Tag, ComponentState)>().unwrap();
             let names = builder.get::<Name>().unwrap();
             values.into_iter().zip(tags.into_iter()).zip(names.into_iter()).for_each(|((value, _tag), _name)| {
                 println!("{}", value.0);

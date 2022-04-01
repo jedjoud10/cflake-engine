@@ -1,4 +1,3 @@
-use world::ecs::component::{ComponentQueryParams, ComponentQuerySet};
 use world::input::Keys;
 use world::World;
 
@@ -6,8 +5,7 @@ use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
 
 // Move the main camera around
-fn run(world: &mut World, mut data: ComponentQuerySet) {
-    let query = data.get_mut(0).unwrap();
+fn run(world: &mut World) {
     if !world.input.is_accepting_input() {
         return;
     }
@@ -54,28 +52,27 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
     } else if world.input.held("camera_down") {
         velocity += -up * speed;
     }
+
     // Update the camera values now
     let global = world.globals.get::<GlobalWorldData>().unwrap();
-    let components = query.all.get_mut(&global.main_camera);
-    if let Some(components) = components {
-        let mut transform = components.get_mut::<Transform>().unwrap();
+
+    // Fetch the main camera
+    let entry = world.ecs.entry(global.camera);
+    if let Some(mut entry) = entry {
+        // Get the transform and update it
+        let transform = entry.get_mut::<Transform>().unwrap();
         transform.position += velocity;
         transform.rotation = new_rotation;
-        let mut camera = components.get_mut::<Camera>().unwrap();
+
+        // Get the camera and update it
+        let camera = entry.get_mut::<Camera>().unwrap();
         camera.horizontal_fov += fov_delta;
     }
 }
 
 // Create the flycam system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .event(run)
-        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
-        .build()
-        .unwrap();
+    world.systems.insert(run);
     world.input.bind(Keys::W, "camera_forward");
     world.input.bind(Keys::S, "camera_backwards");
     world.input.bind(Keys::D, "camera_right");

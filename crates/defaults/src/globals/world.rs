@@ -4,5 +4,5 @@ use world::{ecs::Entity, globals::Global};
 #[derive(Default, Global)]
 pub struct GlobalWorldData {
     // The main camera entity
-    pub main_camera: Entity,
+    pub camera: Entity,
 }

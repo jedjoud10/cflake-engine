@@ -5,7 +5,7 @@ use world::World;
 fn run(world: &mut World) {
     // Global
     let global = world.globals.get::<GlobalWorldData>().unwrap();
-    let entry = world.ecs.entry(global.main_camera);
+    let entry = world.ecs.entry(global.camera);
     if let Some(entry) = entry {
         // Get the component
         let transform = entry.get::<Transform>().unwrap();
