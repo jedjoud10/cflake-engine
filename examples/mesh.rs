@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     defaults::components::{Camera, Light, Renderer, Transform},
     ecs::entity::ComponentLinkingGroup,
@@ -48,3 +49,5 @@ fn init(world: &mut World) {
     group.link(renderer).unwrap();
     world.ecs.add(group).unwrap();
 }
+*/
+fn main() {}

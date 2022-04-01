@@ -1,5 +1,6 @@
 use std::num::NonZeroU8;
 
+/*
 use cflake_engine::{
     assets::assetc,
     defaults::{
@@ -148,3 +149,5 @@ fn init(world: &mut World) {
     group.link(DynamicEdit::new(Edit::sphere(vek::Vec3::default(), 200.0, EditParams::default()))).unwrap();
     world.ecs.add(group).unwrap();
 }
+*/
+fn main() {}

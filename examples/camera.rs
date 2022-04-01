@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets,
     defaults::components::{self, Camera, Transform},
@@ -34,3 +35,5 @@ fn init(world: &mut World) {
     group.link(light).unwrap();
     world.ecs.add(group).unwrap();
 }
+*/
+fn main() { }

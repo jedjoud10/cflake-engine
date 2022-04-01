@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     defaults::components::{Camera, Collider, ColliderGeometry, ColliderMaterial, Light, Renderer, RigidBody, RigidBodyType, Transform},
     ecs::entity::ComponentLinkingGroup,
@@ -106,3 +107,5 @@ fn init(world: &mut World) {
         }
     }
 }
+*/
+fn main() {}

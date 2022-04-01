@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets,
     audio::AudioSource,
@@ -48,3 +49,4 @@ fn init(world: &mut World) {
     world.audio.play_positional(&audio3, vek::Vec3::default(), |s| s).unwrap();
 }
 */
+fn main() {}

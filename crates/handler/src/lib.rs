@@ -14,7 +14,7 @@ use glutin::{
 use spin_sleep::LoopHelper;
 
 // Start le engine
-pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init_systems: fn(&mut World)) {
+pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
     let io = io::IOManager::new(author_name, app_name);
     let config: Settings = io.load("config/engine.json").unwrap_or_else(|_| {
@@ -50,7 +50,6 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     // Load the default systems first
     //defaults::load_default_systems(&mut world);
     //SystemExecutionOrder::set(0);
-    init_systems(&mut world);
     println!("Calling World Initialization callback");
     init_world(&mut world);
     //world.ecs.systems.sort();
