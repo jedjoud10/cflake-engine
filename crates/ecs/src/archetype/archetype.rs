@@ -1,11 +1,8 @@
 use std::{any::Any};
-
 use getset::{CopyGetters, Getters};
-
-use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap};
+use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap, states::BundleEntityStatesBitfield};
 use crate::{
-    entity::{Entity, EntityLinkings},
-    ComponentState, ComponentStatesBitfield, Mask,
+    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, BundleEntityState},
 };
 
 // Combination of multiple component types
@@ -18,6 +15,10 @@ pub struct Archetype {
     // Bundle Index -> Entity
     #[getset(get = "pub")]
     entities: Vec<Entity>,
+
+    // Bundle entity states
+    #[getset(get = "pub(crate)")]
+    states: BundleEntityStatesBitfield,
 
     // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
@@ -50,7 +51,7 @@ impl Archetype {
             .map(|mask| {
                 // Create le tuple
                 let vec = uniques.get(&mask).unwrap().new_empty_from_self();
-                let states = ComponentStatesBitfield::default();
+                let states = ComponentMutationsBitfield::default();
                 (mask, (vec, states))
             })
             .collect();
@@ -58,6 +59,7 @@ impl Archetype {
             components: storages,
             mask,
             entities: Default::default(),
+            states: Default::default(),
             pending_for_removal: Default::default(),
         }
     }
@@ -72,30 +74,29 @@ impl Archetype {
             dbg!(mask);
             let (vec, mutated) = self.components.get_mut(&mask).unwrap();
 
-            // Update length
-            mutated.set_len(len);
-            // Set the new component state to Added
-            mutated.set(len - 1, ComponentState::Added);
             // Insert the component
+            mutated.set_len(len);
+            mutated.set_mutated_state(len - 1);
             vec.push(component);
         }
+
+        // Set the entity state
+        self.states.set_len(len);
+        self.states.set(len - 1, BundleEntityState::Added);
 
         // Update the length
         self.entities.push(entity);
         linkings.bundle = self.entities.len() - 1;
-        linkings.mask = self.mask;
+        linkings.mask = self.mask;        
     }
 
     // Start the deletion process for components. The component will actually get deleted next frame
     pub(crate) fn add_pending_for_removal(&mut self, bundle: usize) {
-        // Just set the state of ComponentState::PendingForRemoval
-        for (_, (_, mutated)) in self.components.iter() {
-            // Set state
-            mutated.set(bundle, ComponentState::PendingForRemoval);
-        }
-
         // Pending for removal push
         self.pending_for_removal.push(bundle);
+
+        // Set the entity state
+        self.states.set(bundle, BundleEntityState::PendingForRemoval)
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
@@ -165,5 +166,8 @@ impl Archetype {
             // Reset the states
             states.reset()
         }
+
+        // Also reset the entity states
+        self.states.reset();
     }
 }

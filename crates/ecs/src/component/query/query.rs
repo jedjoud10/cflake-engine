@@ -1,10 +1,13 @@
 use std::cell::UnsafeCell;
+use crate::{Component, Entity, QueryBuilder, QueryError, BundleEntityState};
 
-use crate::{Component, ComponentState, Entity, QueryBuilder, QueryError};
+// TODO: Fix duplicate code
 
-// Something that can be queried using the query builder. This will return a vector of type Vec<&Self>
+// Something that can be queried using the query builder
 pub trait RefQuery<'a> {
+    // The element of the result vector
     type Item;
+
     // Create a vector (full of immutable references) using a query builder
     fn query(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError>;
 }
@@ -30,19 +33,24 @@ impl<'a, T: Component> RefQuery<'a> for T {
                 components.extend(vec.iter().map(|cell| unsafe { &*cell.get() }))
             }
         }
+
+        // The component is currently being borrowed
+        let mut borrowed = builder.borrowed.borrow_mut();
+        *borrowed = *borrowed | component_mask;
+
         Ok(components)
     }
 }
-impl<'a, T: Component> RefQuery<'a> for (T, ComponentState) {
-    // We can also fetch the component state of each component
-    type Item = ComponentState;
+impl<'a, T: Component> RefQuery<'a> for (T, bool) {
+    // We can also fetch the component mutation state of each component
+    type Item = bool;
     fn query(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError> {
         // Get the component mask and entry mask
         let component_mask = builder.get_component_mask::<T>()?;
         let entry_mask = builder.mask;
 
-        // A vector full of references to component states
-        let mut states = Vec::<ComponentState>::new();
+        // A vector full of references to component mutation states
+        let mut mutated = Vec::<bool>::new();
         for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
             if entry_mask & archetype.mask() == entry_mask {
@@ -50,10 +58,10 @@ impl<'a, T: Component> RefQuery<'a> for (T, ComponentState) {
                 let (_storage, storage_states) = archetype.components().get(&component_mask).unwrap();
 
                 // Extend
-                states.extend(storage_states.iter())
+                mutated.extend(storage_states.iter())
             }
         }
-        Ok(states)
+        Ok(mutated)
     }
 }
 
@@ -77,9 +85,31 @@ impl<'a> RefQuery<'a> for Entity {
     }
 }
 
-// Something that can be mutably queried using the query builder. This will return a vector of type Vec<&mut Self>
+impl<'a> RefQuery<'a> for BundleEntityState {
+    // We can also fetch the entity states
+    type Item = BundleEntityState;
+    fn query(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError> {
+        // Just get the entry mask this time
+        let entry_mask = builder.mask;
+
+        // A vector full of entity states
+        let mut entities = Vec::<BundleEntityState>::new();
+        for archetype in builder.manager.archetypes.iter() {
+            // Check if the archetype is valid for our query builder
+            if entry_mask & archetype.mask() == entry_mask {
+                // Extend
+                entities.extend(archetype.states().iter())
+            }
+        }
+        Ok(entities)
+    }
+}
+
+// Something that can be mutably queried using the query builder
 pub trait MutQuery<'a> {
+    // The element of the result vector
     type Item;
+
     // Create a vector (full of mutable references) using a query builder
     fn query_mut(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError>;
 }
@@ -109,7 +139,7 @@ impl<'a, T: Component> MutQuery<'a> for T {
             }
         }
 
-        // The component is currently being borro
+        // The component is currently being borrowed
         let mut borrowed = builder.borrowed.borrow_mut();
         *borrowed = *borrowed | component_mask;
 

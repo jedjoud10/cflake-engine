@@ -5,18 +5,17 @@ use enum_as_inner::EnumAsInner;
 
 use getset::Getters;
 use world::{
-    ecs::entity::EntityKey,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, pipeline::Handle},
-    terrain::{ChunkCoords, VoxelDataBufferId},
+    terrain::{ChunkCoords, VoxelDataBufferId}, ecs::Entity,
 };
 
 // Generation state of the current chunk
 #[derive(EnumAsInner, PartialEq)]
 pub enum ChunkGenerationState {
     RequiresVoxelData,
-    FetchShaderStorages(EntityKey, ChunkCoords),
-    EndVoxelDataGeneration(EntityKey, bool, Option<VoxelDataBufferId>),
+    FetchShaderStorages(Entity, ChunkCoords),
+    EndVoxelDataGeneration(Entity, bool, Option<VoxelDataBufferId>),
 }
 
 impl Default for ChunkGenerationState {
@@ -30,10 +29,10 @@ impl Default for ChunkGenerationState {
 pub struct ChunksManager {
     // Chunk generation
     pub(crate) octree: DiffOctree,
-    pub(crate) chunks: AHashMap<ChunkCoords, EntityKey>,
+    pub(crate) chunks: AHashMap<ChunkCoords, Entity>,
     pub(crate) chunks_generating: AHashSet<ChunkCoords>,
-    pub(crate) priority_list: Vec<(EntityKey, f32)>,
-    pub(crate) chunks_to_remove: Vec<EntityKey>,
+    pub(crate) priority_list: Vec<(Entity, f32)>,
+    pub(crate) chunks_to_remove: Vec<Entity>,
     pub(crate) material: Handle<Material>,
     pub(crate) physics: bool,
     pub(crate) must_update_octree: bool,

@@ -1,6 +1,6 @@
-use crate::{component::ComponentStatesBitfield, Mask};
+use crate::{ComponentStorage, Mask};
 
-use super::ComponentStorage;
+use super::{states::ComponentMutationsBitfield};
 use nohash_hasher::NoHashHasher;
 use std::{collections::HashMap, hash::BuildHasherDefault};
 
@@ -8,7 +8,7 @@ use std::{collections::HashMap, hash::BuildHasherDefault};
 pub type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
 
 // A tuple that contains a component storage and it's corresponding mutated bitfield
-type Combined = (Box<dyn ComponentStorage>, ComponentStatesBitfield);
+type Combined = (Box<dyn ComponentStorage>, ComponentMutationsBitfield);
 
 // Component storages hash map that contains each component vector
 pub(crate) type ComponentStoragesHashMap = HashMap<Mask, Combined, MaskHasher>;
