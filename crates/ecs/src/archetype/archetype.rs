@@ -140,9 +140,13 @@ impl Archetype {
     }
 
     // Moves an entity from this archetype to another archetype
-    pub(crate) fn move_entity(&mut self, entity: Entity, linkings: &mut EntityLinkings, other: &mut Self) {
+    // We will also be able to add some extra components if needed
+    pub(crate) fn move_entity(&mut self, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>, other: &mut Self) {
         // First, remove the entity from Self directly
         let components = self.remove_boxed_filtered(linkings.bundle, other.mask);
+
+        // Combine the removed components with the extra components
+
         // And insert into Other
         other.insert_with(components, linkings, entity);
     }

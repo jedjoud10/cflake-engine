@@ -28,12 +28,18 @@ mod tests {
         let entity = manager.insert_with(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            linker.insert(SimpleValue(0)).unwrap();
+            //linker.insert(SimpleValue(0)).unwrap();
         });
 
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
+            linker.insert(SimpleValue(0)).unwrap();
         });
+
+        let entry = manager.entry(entity).unwrap();
+        dbg!(entry.get::<Name>());
+        dbg!(entry.get::<Tag>().unwrap());
+        dbg!(entry.get::<SimpleValue>().unwrap());
 
         /*
         // Make a new entity
