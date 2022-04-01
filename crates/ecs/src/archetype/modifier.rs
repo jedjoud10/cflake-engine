@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::{EcsManager, Mask, Entity, Component, LinkModifierError, component_mask, EntityLinkings, registry, register_unique};
+use crate::{EcsManager, Mask, Entity, Component, LinkModifierError, component_mask, EntityLinkings, registry, register_unique, Archetype};
 
 
 // An link modifier that can add additional components to an entity or remove components
@@ -50,6 +50,7 @@ impl<'a> LinkModifier<'a> {
         if self.added == new {
             return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
         }
+
         // Always make sure there is a unique vector for this component
         register_unique::<T>(self.manager, mask);
 
@@ -93,18 +94,32 @@ impl<'a> LinkModifier<'a> {
             
         Ok(())
     }
-    // Apply the linker
-    pub(crate) fn apply(self, _linkings: &mut Option<EntityLinkings>) {
+    // Makes sure an archetype exists
+    fn archetype_insert_or_default(&mut self, mask: Mask) -> &mut Archetype {
+        // Make sure the target archetype exists
+        self.manager.archetypes.entry(mask).or_insert_with(|| {
+            // Insert a new archetype
+            Archetype::new(mask, &self.manager.uniques)
+        })
+    }
+    // Apply the modifier
+    // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
+    pub(crate) fn apply(mut self, linkings: &mut Option<EntityLinkings>) {
+        if let Some(linkings) = linkings {
+            // The entity is currently part of an archetype
+            let accumulated = linkings.mask | self.added;
+            // Get the current archetype
+            let current = self.manager.archetypes.get_mut(&linkings.mask).unwrap();
+
+            let target = self.archetype_insert_or_default(accumulated);
+            let current = 
+            // Move
+        } else {
+            // First time linkings
+            let target = self.archetype_insert_or_default(self.added);
+        }
+        
         /*
-        // Make sure the archetype exists
-        let archetype = self
-            .manager
-            .archetypes
-            .entry(self.combined)
-            .or_insert_with(|| {
-                // Insert a new archetype
-                Archetype::new((&self.masks, self.combined), &self.manager.uniques)
-            });
 
         // Insert the components into the archetype
         let linkings = self

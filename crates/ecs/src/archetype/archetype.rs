@@ -36,12 +36,13 @@ impl Archetype {
     // Create new a archetype based on it's combined mask
     pub(crate) fn new(mask: Mask, uniques: &UniqueComponentStoragesHashMap) -> Self {
         // We must decompose the combined mask into the individual masks
+        dbg!(mask);
         let masks = (0..(u64::BITS as usize)).into_iter().filter_map(|i| {
             // Get the individual mask
             let individual = mask >> i;
 
             // Filter
-            if individual == Mask::one() {
+            if individual & Mask::one() == Mask::one() {
                 Some((individual & Mask::one()) << i)
             } else {
                 None

@@ -57,6 +57,9 @@ impl<'a> Linker<'a> {
             self.mask = new;
         }
 
+        // Always make sure there is a unique vector for this component
+        register_unique::<T>(self.manager, mask);
+
         // Temporarily store the components
         self.new_components.push((mask, Box::new(component)));
 

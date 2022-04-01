@@ -24,6 +24,18 @@ mod tests {
         struct SimpleValue(usize);
         registry::register::<SimpleValue>();
 
+
+        let entity = manager.insert_with(|_, linker| {
+            linker.insert(Name("Le Jribi")).unwrap();
+            linker.insert(Tag("Jed est cool (trust)")).unwrap();
+            linker.insert(SimpleValue(0)).unwrap();
+        });
+
+        manager.modify(entity, |_, modifier| {
+            modifier.remove::<Name>().unwrap();
+        });
+
+        /*
         // Make a new entity
         const COUNT: usize = 10;
         let entity = Entity::default();
@@ -95,5 +107,6 @@ mod tests {
             */
             //dbg!(h.elapsed().as_micros());
         }
+        */
     }
 }
