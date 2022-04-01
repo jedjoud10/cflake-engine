@@ -1,10 +1,8 @@
 use crate::components::{Collider, ColliderGeometry, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
-
 use rapier3d::na::{Isometry, Point3};
 use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
-use world::ecs::component::ComponentQueryParams;
-use world::ecs::component::ComponentQuerySet;
+use world::ecs::{QueryBuilder, layout};
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
@@ -41,16 +39,19 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
 }
 
 // Whenever we add a rigidbody that has a collider attached to it, we must add them to the Rapier3D simulation
-fn run(world: &mut World, mut data: ComponentQuerySet) {
+fn run(world: &mut World) {
     // Add each rigidbody and it's corresponding collider
-    let added = &mut data.get_mut(0).unwrap().delta.added;
-    let sim = &mut world.physics;
-    for (_, components) in added.iter_mut() {
-        // Get the components
-        let rigidbody = components.get::<RigidBody>().unwrap();
-        let collider = components.get::<Collider>().unwrap();
-        let transform = components.get::<crate::components::Transform>().unwrap();
+    let queries = QueryBuilder::new(&mut world.ecs, layout!(RigidBody, Collider, Transform));
 
+    // Queries
+    let rigidbodies = queries.get::<RigidBody>().unwrap();
+    let colliders = queries.get::<Collider>().unwrap();
+    let transforms = queries.get::<Transform>().unwrap();
+    let states = queries.get::<EntityState>
+
+    // Le physics simulation
+    let sim = &mut world.physics;
+    for (rigidbody, collider, transform) in world::ecs::join!(rigidbodies, colliders, transforms) {
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)
             .position(Isometry {
@@ -95,12 +96,5 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
 
 // Create the physics rigidbody & collider system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .event(run)
-        .query(ComponentQueryParams::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
-        .build()
-        .unwrap();
+    world.systems.insert(run);
 }
