@@ -4,6 +4,8 @@ mod error;
 mod linker;
 mod modifier;
 mod storage;
+mod set;
+pub use set::*;
 pub use archetype::*;
 pub use modifier::*;
 pub use common::*;

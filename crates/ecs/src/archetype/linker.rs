@@ -70,10 +70,7 @@ impl<'a> Linker<'a> {
     // Apply the linker
     pub(crate) fn apply(self) {
         // Make sure the archetype exists
-        let archetype = self.manager.archetypes.entry(self.mask).or_insert_with(|| {
-            // Insert a new archetype
-            Archetype::new(self.mask, &self.manager.uniques)
-        });
+        let archetype = self.manager.archetypes.insert_default(self.mask, &self.manager.uniques);
 
         // Insert the components into the archetype
         let linkings = self

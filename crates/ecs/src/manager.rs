@@ -21,7 +21,7 @@ impl EcsManager {
     // Prepare the Ecs Manager for one execution
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
-        for (_, archetype) in self.archetypes.iter_mut() {
+        for archetype in self.archetypes.iter_mut() {
             archetype.prepare()
         }
     }

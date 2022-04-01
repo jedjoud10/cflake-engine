@@ -19,9 +19,9 @@ impl<'a, T: Component> RefQuery<'a> for T {
 
         // A vector full of references
         let mut components = Vec::<&T>::new();
-        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+        for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
-            if entry_mask & archetype_mask == entry_mask {
+            if entry_mask & archetype.mask() == entry_mask {
                 // Fetch the vector
                 let (storage, _) = archetype.components().get(&component_mask).unwrap();
 
@@ -43,9 +43,9 @@ impl<'a, T: Component> RefQuery<'a> for (T, ComponentState) {
 
         // A vector full of references to component states
         let mut states = Vec::<ComponentState>::new();
-        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+        for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
-            if entry_mask & archetype_mask == entry_mask {
+            if entry_mask & archetype.mask() == entry_mask {
                 // Fetch the vector
                 let (_storage, storage_states) = archetype.components().get(&component_mask).unwrap();
 
@@ -66,9 +66,9 @@ impl<'a> RefQuery<'a> for Entity {
 
         // A vector full of entity handles
         let mut entities = Vec::<Entity>::new();
-        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+        for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
-            if entry_mask & archetype_mask == entry_mask {
+            if entry_mask & archetype.mask() == entry_mask {
                 // Extend
                 entities.extend(archetype.entities())
             }
@@ -94,9 +94,9 @@ impl<'a, T: Component> MutQuery<'a> for T {
 
         // A vector full of mtuable references
         let mut components = Vec::<&mut T>::new();
-        for (&archetype_mask, archetype) in builder.manager.archetypes.iter() {
+        for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
-            if entry_mask & archetype_mask == entry_mask {
+            if entry_mask & archetype.mask() == entry_mask {
                 // Fetch the vector and states
                 let (storage, states) = archetype.components().get(&component_mask).unwrap();
 

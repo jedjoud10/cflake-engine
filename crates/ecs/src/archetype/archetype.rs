@@ -6,11 +6,7 @@ use crate::{
     entity::{Entity, EntityLinkings},
     ComponentState, ComponentStatesBitfield, Mask,
 };
-
 use super::{ComponentStorage, ComponentStoragesHashMap, UniqueComponentStoragesHashMap};
-
-// The archetype set (BTreeMap)
-pub type ArchetypeSet = BTreeMap<Mask, Archetype>;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters)]
