@@ -33,13 +33,15 @@ mod tests {
 
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
-            linker.insert(SimpleValue(0)).unwrap();
+            modifier.insert(Name("Trustrutrst")).unwrap();
+            modifier.insert(SimpleValue(0)).unwrap();
+            modifier.remove::<SimpleValue>().unwrap();
         });
 
         let entry = manager.entry(entity).unwrap();
-        dbg!(entry.get::<Name>());
+        dbg!(entry.get::<Name>().unwrap());
         dbg!(entry.get::<Tag>().unwrap());
-        dbg!(entry.get::<SimpleValue>().unwrap());
+        dbg!(entry.get::<SimpleValue>());
 
         /*
         // Make a new entity

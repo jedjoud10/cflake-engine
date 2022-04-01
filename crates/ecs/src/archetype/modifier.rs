@@ -67,12 +67,12 @@ impl<'a> LinkModifier<'a> {
                 // The current archetype contains components of this type, so we can simply overwrite
                 let mut entry = self.manager.entry(self.entity).unwrap();
                 *entry.get_mut::<T>().unwrap() = component;
-            }
+                return Ok(());
+            } else { /* Add the component normally */ }
+        } else { /* Add the component normally */ }
 
-        } else {
-            // Temporarily store the components
-            self.new_components.push((mask, Box::new(component)));
-        }
+        // Temporarily store the components
+        self.new_components.push((mask, Box::new(component)));
         
         Ok(())
     }

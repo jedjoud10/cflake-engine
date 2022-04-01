@@ -69,6 +69,7 @@ impl Archetype {
         dbg!(self.mask);
         // Add the components using their specific storages
         for (mask, component) in components {
+            dbg!(mask);
             let (vec, mutated) = self.components.get_mut(&mask).unwrap();
             
             // Update length
@@ -143,9 +144,12 @@ impl Archetype {
     // We will also be able to add some extra components if needed
     pub(crate) fn move_entity(&mut self, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>, other: &mut Self) {
         // First, remove the entity from Self directly
-        let components = self.remove_boxed_filtered(linkings.bundle, other.mask);
+        let mut components = self.remove_boxed_filtered(linkings.bundle, other.mask);
 
         // Combine the removed components with the extra components
+        components.extend(extra);
+
+        println!("{}", components.len());
 
         // And insert into Other
         other.insert_with(components, linkings, entity);
