@@ -96,19 +96,32 @@ impl<'a> LinkModifier<'a> {
     }
     // Apply the modifier
     // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
-    pub(crate) fn apply(mut self, linkings: &mut Option<EntityLinkings>) {
+    pub(crate) fn apply(self, linkings: &mut Option<EntityLinkings>) {
         if let Some(linkings) = linkings {
             // The entity is currently part of an archetype
-            let accumulated = linkings.mask | self.added;
+            let accumulated = (linkings.mask | self.added) & !self.removed;
 
-            // Make sure the target archetype is valid
-            self.manager.archetypes.insert_default(accumulated, &self.manager.uniques);
-            
-            // Get the current archetype along the target archetype
-            
+            // Check if we even modified the entity
+            if accumulated != linkings.mask {
+                // Make sure the target archetype is valid
+                self.manager.archetypes.insert_default(accumulated, &self.manager.uniques);
+                
+                // Get the current archetype along the target archetype, then move the entity
+                dbg!(linkings.mask);
+                dbg!(accumulated);
+                let (current, target) = self.manager.archetypes.get_two_mut(linkings.mask, accumulated).unwrap();
+                current.move_entity(self.entity, linkings, target);
+            }
         } else {
             // First time linkings, make sure the target archetype is valid
-            self.manager.archetypes.insert_default(self.added, &self.manager.uniques);
+            let archetype = self.manager.archetypes.insert_default(self.added, &self.manager.uniques);
+
+            // Validate the linkings, then insert the entity into the archetype
+            let linkings = linkings.get_or_insert(EntityLinkings {
+                bundle: 0,
+                mask: self.added,
+            });
+            archetype.insert_with(self.new_components, linkings, self.entity);
         }
         /*
 

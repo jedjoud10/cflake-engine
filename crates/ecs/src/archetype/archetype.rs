@@ -66,17 +66,17 @@ impl Archetype {
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Commons
         let len = self.entities.len() + 1;
-
+        dbg!(self.mask);
         // Add the components using their specific storages
         for (mask, component) in components {
-            let (storage, mutated) = self.components.get_mut(&mask).unwrap();
-
+            let (vec, mutated) = self.components.get_mut(&mask).unwrap();
+            
             // Update length
             mutated.set_len(len);
             // Set the new component state to Added
             mutated.set(len - 1, ComponentState::Added);
             // Insert the component
-            storage.push(component);
+            vec.push(component);
         }
 
         // Update the length
@@ -98,15 +98,18 @@ impl Archetype {
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
-    // This will return the boxed components that were removed
-    fn remove_boxed(&mut self, bundle: usize) -> Vec<(Mask, Box<dyn Any>)> {
+    // This will return the boxed components that were removed, but only the ones that validate the given mask
+    fn remove_boxed_filtered(&mut self, bundle: usize, filter_mask: Mask) -> Vec<(Mask, Box<dyn Any>)> {
         // The boxed components that will be returned
         let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
 
         // Remove the components from the storages
-        for (mask, (storage, _)) in self.components.iter_mut() {
-            let boxed = storage.swap_remove_boxed_bundle(bundle);
-            components.push((*mask, boxed));
+        for (&mask, (storage, _)) in self.components.iter_mut() {
+            // Filter the components that validate the mask
+            if mask & filter_mask == mask {
+                let boxed = storage.swap_remove_boxed_bundle(bundle);
+                components.push((mask, boxed));
+            }
         }
 
         // And then the locally stored entity ID
@@ -139,8 +142,7 @@ impl Archetype {
     // Moves an entity from this archetype to another archetype
     pub(crate) fn move_entity(&mut self, entity: Entity, linkings: &mut EntityLinkings, other: &mut Self) {
         // First, remove the entity from Self directly
-        let components = self.remove_boxed(linkings.bundle);
-
+        let components = self.remove_boxed_filtered(linkings.bundle, other.mask);
         // And insert into Other
         other.insert_with(components, linkings, entity);
     }
