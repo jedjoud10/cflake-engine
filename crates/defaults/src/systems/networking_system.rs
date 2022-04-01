@@ -1,5 +1,5 @@
-use world::{network::register, World};
 use crate::globals::NetworkManager;
+use world::{network::register, World};
 
 // Update the network manager (if we have one)
 fn run(world: &mut World) {

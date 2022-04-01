@@ -1,13 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use std::mem::size_of;
-
-    use rayon::iter::{IndexedParallelIterator, ParallelIterator};
-
-    use crate::*;
-
     #[test]
     fn test() {
+        /*
         // Empty manager
         let mut manager = EcsManager::default();
 
@@ -23,7 +18,6 @@ mod tests {
         #[derive(Component, Debug)]
         struct SimpleValue(usize);
         registry::register::<SimpleValue>();
-
 
         let entity = manager.insert_with(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
@@ -42,7 +36,7 @@ mod tests {
         dbg!(entry.get::<Name>().unwrap());
         dbg!(entry.get::<Tag>().unwrap());
         dbg!(entry.get::<SimpleValue>());
-
+        */
         /*
         // Make a new entity
         const COUNT: usize = 10;

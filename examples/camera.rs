@@ -36,4 +36,4 @@ fn init(world: &mut World) {
     world.ecs.add(group).unwrap();
 }
 */
-fn main() { }
+fn main() {}

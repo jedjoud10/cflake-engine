@@ -1,6 +1,6 @@
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::{hash_map::Entry, HashMap};
 
-use crate::{MaskHasher, Archetype, Mask, UniqueComponentStoragesHashMap};
+use crate::{Archetype, Mask, MaskHasher, UniqueComponentStoragesHashMap};
 
 // The archetype set (HashMap and Vec)
 #[derive(Default)]
@@ -9,13 +9,13 @@ pub struct ArchetypeSet {
     indices: HashMap<Mask, usize, MaskHasher>,
 
     // Archetypes
-    archetypes: Vec<Archetype>
+    archetypes: Vec<Archetype>,
 }
 
 impl ArchetypeSet {
     // Insert a new archetype if it does not exist yet, and return a mutable reference to it
     pub(crate) fn insert_default(&mut self, mask: Mask, uniques: &UniqueComponentStoragesHashMap) -> &mut Archetype {
-        // Check if an archetype with this mask already exists        
+        // Check if an archetype with this mask already exists
         if let Entry::Occupied(index) = self.indices.entry(mask) {
             self.archetypes.get_mut(*index.get()).unwrap()
         } else {
@@ -29,14 +29,18 @@ impl ArchetypeSet {
     // Get two archetypes at the same time
     pub fn get_two_mut(&mut self, m1: Mask, m2: Mask) -> Option<(&mut Archetype, &mut Archetype)> {
         // The archetypes are not disjoint
-        if m1 == m2 { return None; }
+        if m1 == m2 {
+            return None;
+        }
 
         // Get the indices
         let mut i1 = *self.indices.get(&m1)?;
         let mut i2 = *self.indices.get(&m2)?;
 
         // Swap if needed
-        if i2 < i1 { std::mem::swap(&mut i1, &mut i2) }
+        if i2 < i1 {
+            std::mem::swap(&mut i1, &mut i2)
+        }
 
         // Now get the two archetypes
         let (first, second) = self.archetypes.split_at_mut(i2);

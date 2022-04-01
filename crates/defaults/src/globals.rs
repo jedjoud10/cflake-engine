@@ -1,5 +1,5 @@
-mod world;
 mod networking;
+mod world;
 pub use self::world::*;
 pub use networking::*;
 /*

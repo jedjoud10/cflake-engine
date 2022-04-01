@@ -1,7 +1,7 @@
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-use world::{World};
-use world::ecs::{Entity, QueryBuilder, layout};
+use world::ecs::{layout, Entity, QueryBuilder};
+use world::World;
 // The camera system update loop
 fn run(world: &mut World) {
     // Set the main camera entity key in the world global

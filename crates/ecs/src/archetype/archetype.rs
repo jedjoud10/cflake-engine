@@ -1,12 +1,12 @@
-use std::{any::Any, collections::BTreeMap};
+use std::{any::Any};
 
 use getset::{CopyGetters, Getters};
 
+use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap};
 use crate::{
     entity::{Entity, EntityLinkings},
     ComponentState, ComponentStatesBitfield, Mask,
 };
-use super::{ComponentStorage, ComponentStoragesHashMap, UniqueComponentStoragesHashMap};
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters)]
@@ -71,7 +71,7 @@ impl Archetype {
         for (mask, component) in components {
             dbg!(mask);
             let (vec, mutated) = self.components.get_mut(&mask).unwrap();
-            
+
             // Update length
             mutated.set_len(len);
             // Set the new component state to Added

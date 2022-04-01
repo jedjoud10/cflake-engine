@@ -1,4 +1,4 @@
-use cflake_engine::{*};
+use cflake_engine::*;
 
 // An empty game window
 fn main() {

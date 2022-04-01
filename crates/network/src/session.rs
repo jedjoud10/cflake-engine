@@ -9,7 +9,7 @@ pub enum NetworkSession {
     None,
 }
 
-impl Default for NetworkSession { 
+impl Default for NetworkSession {
     fn default() -> Self {
         Self::None
     }
@@ -21,7 +21,7 @@ impl NetworkSession {
         match self {
             NetworkSession::Host(host) => host.poll()?,
             NetworkSession::Client(client) => client.poll()?,
-            NetworkSession::None => { /* No network session */ },
+            NetworkSession::None => { /* No network session */ }
         }
         Ok(())
     }
