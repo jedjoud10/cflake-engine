@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 // The current state of the bundle entity
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BundleEntityState {
+pub enum EntityState {
     // Nothing happened to the entity
     None = 0,
 
@@ -17,12 +17,12 @@ pub enum BundleEntityState {
 
 // Stored entity states
 #[derive(Default)]
-pub(crate) struct BundleEntityStatesBitfield {
+pub(crate) struct EntityStatesBitfield {
     vec: RwLock<Vec<AtomicU64>>,
     length: usize,
 }
 
-impl BundleEntityStatesBitfield {
+impl EntityStatesBitfield {
     // Reset all the bits to 0
     pub fn reset(&mut self) {
         for chunks in self.vec.get_mut().iter_mut() {
@@ -66,7 +66,7 @@ impl BundleEntityStatesBitfield {
     }
     */
     // Set the state of a specific bundle entity
-    pub fn set(&self, bundle: usize, state: BundleEntityState) {
+    pub fn set(&self, bundle: usize, state: EntityState) {
         // Check if the index is valid
         dbg!(bundle);
         dbg!(self.length);
@@ -90,7 +90,7 @@ impl BundleEntityStatesBitfield {
         let zeroed = loaded & !(0b11 << local_pos);
 
         // 00 11 00 00
-        let state = unsafe { std::mem::transmute::<BundleEntityState, u8>(state) as u64 } << local_pos;
+        let state = unsafe { std::mem::transmute::<EntityState, u8>(state) as u64 } << local_pos;
 
         // 11 11 10 00
         let result = zeroed | state;
@@ -99,7 +99,7 @@ impl BundleEntityStatesBitfield {
         atomic.store(result, Ordering::Relaxed);
     }
     // Iterate through the sparse set and return an Iterator full of states
-    pub fn iter(&self) -> impl IntoIterator<Item = BundleEntityState> {
+    pub fn iter(&self) -> impl IntoIterator<Item = EntityState> {
         // We know the length, and each entity is already tightly packed (in the archetype at least)
         let len = self.length;
 
@@ -121,7 +121,7 @@ impl BundleEntityStatesBitfield {
             let mask = 0b11 << local_pos;
             let filtered = bits & mask;
             let shifted = (filtered >> local_pos) as u8;
-            unsafe { std::mem::transmute::<u8, BundleEntityState>(shifted) }
+            unsafe { std::mem::transmute::<u8, EntityState>(shifted) }
         })
     }
 }

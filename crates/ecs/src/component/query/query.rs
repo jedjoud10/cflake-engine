@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use crate::{Component, Entity, QueryBuilder, QueryError, BundleEntityState};
+use crate::{Component, Entity, QueryBuilder, QueryError, EntityState};
 
 // TODO: Fix duplicate code
 
@@ -85,15 +85,15 @@ impl<'a> RefQuery<'a> for Entity {
     }
 }
 
-impl<'a> RefQuery<'a> for BundleEntityState {
+impl<'a> RefQuery<'a> for EntityState {
     // We can also fetch the entity states
-    type Item = BundleEntityState;
+    type Item = EntityState;
     fn query(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError> {
         // Just get the entry mask this time
         let entry_mask = builder.mask;
 
         // A vector full of entity states
-        let mut entities = Vec::<BundleEntityState>::new();
+        let mut entities = Vec::<EntityState>::new();
         for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
             if entry_mask & archetype.mask() == entry_mask {

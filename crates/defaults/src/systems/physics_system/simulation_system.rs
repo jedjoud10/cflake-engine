@@ -1,7 +1,6 @@
 use rapier3d::na::Isometry;
-use world::ecs::component::ComponentQueryParams;
-use world::ecs::component::ComponentQuerySet;
-use world::physics::PHYSICS_TIME_STEP;
+use world::ecs::{layout, EntityState};
+use world::{physics::PHYSICS_TIME_STEP, ecs::QueryBuilder};
 use world::World;
 
 use crate::components::{Collider, RigidBody, Transform};
@@ -9,20 +8,25 @@ use crate::components::{Collider, RigidBody, Transform};
 use super::{quat_to_rotation, rotation_to_quat, vec3_to_translation, vec3_to_vector, vector_to_vec3};
 
 // Run the physics simulation
-fn run(world: &mut World, mut data: ComponentQuerySet) {
+fn run(world: &mut World) {
     // Execute only if we need to
     let physics = world.globals.get_mut::<crate::globals::Physics>().unwrap();
     let current_time = world.time.elapsed();
+
+    // Only step the physics system each 13ms
     if (current_time - physics.last_execution_time) > PHYSICS_TIME_STEP {
         physics.last_execution_time = current_time;
     } else {
         return;
     }
-    physics.active_num = 0;
 
     // Update the position/rotation and attributes of each rigidbody since we might have externally updated them
-    let query = &mut data.get_mut(0).unwrap().all;
-    for (_, components) in query.iter() {
+    let builder = QueryBuilder::new(&mut world.ecs, layout!(Transform, RigidBody, Collider));
+    let rigidbodies = builder.get::<RigidBody>().unwrap();
+    let colliders = builder.get::<Collider>().unwrap();
+    let transforms = builder.get::<Transform>().unwrap();
+
+    for (rb, collider, transform) in world::ecs::join!(rigidbodies, colliders, transforms, states) {
         // Check if we even need to update the transform
         if components.was_mutated::<Transform>().unwrap_or_default() {
             let rigidbody = components.get::<RigidBody>().unwrap();
@@ -75,7 +79,6 @@ fn run(world: &mut World, mut data: ComponentQuerySet) {
                 let mut transform = components.get_mut::<Transform>().unwrap();
                 transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
                 transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
-                physics.active_num += 1;
             }
         }
     }

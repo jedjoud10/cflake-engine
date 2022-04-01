@@ -1,8 +1,8 @@
 use std::{any::Any};
 use getset::{CopyGetters, Getters};
-use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap, states::BundleEntityStatesBitfield};
+use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap, states::EntityStatesBitfield};
 use crate::{
-    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, BundleEntityState},
+    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, EntityState},
 };
 
 // Combination of multiple component types
@@ -18,7 +18,7 @@ pub struct Archetype {
 
     // Bundle entity states
     #[getset(get = "pub(crate)")]
-    states: BundleEntityStatesBitfield,
+    states: EntityStatesBitfield,
 
     // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
@@ -82,7 +82,7 @@ impl Archetype {
 
         // Set the entity state
         self.states.set_len(len);
-        self.states.set(len - 1, BundleEntityState::Added);
+        self.states.set(len - 1, EntityState::Added);
 
         // Update the length
         self.entities.push(entity);
@@ -96,7 +96,7 @@ impl Archetype {
         self.pending_for_removal.push(bundle);
 
         // Set the entity state
-        self.states.set(bundle, BundleEntityState::PendingForRemoval)
+        self.states.set(bundle, EntityState::PendingForRemoval)
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")

@@ -2,7 +2,7 @@ use crate::components::{Collider, ColliderGeometry, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 use rapier3d::na::{Isometry, Point3};
 use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
-use world::ecs::{QueryBuilder, layout};
+use world::ecs::{QueryBuilder, layout, EntityState};
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
@@ -44,10 +44,10 @@ fn run(world: &mut World) {
     let queries = QueryBuilder::new(&mut world.ecs, layout!(RigidBody, Collider, Transform));
 
     // Queries
-    let rigidbodies = queries.get::<RigidBody>().unwrap();
-    let colliders = queries.get::<Collider>().unwrap();
+    let rigidbodies = queries.get_mut::<RigidBody>().unwrap();
+    let colliders = queries.get_mut::<Collider>().unwrap();
     let transforms = queries.get::<Transform>().unwrap();
-    let states = queries.get::<EntityState>
+    let states = queries.get::<EntityState>().unwrap();
 
     // Le physics simulation
     let sim = &mut world.physics;
@@ -78,12 +78,10 @@ fn run(world: &mut World) {
         let collider_handle = sim.colliders.insert_with_parent(r_collider, rigidbody_handle, &mut sim.bodies);
 
         // Set the handles in their respective components
-        let mut rigidbody = components.get_mut::<RigidBody>().unwrap();
         rigidbody.handle = rigidbody_handle;
-        let mut collider = components.get_mut::<Collider>().unwrap();
         collider.handle = collider_handle;
     }
-
+    /*
     let removed = &mut data.get_mut(0).unwrap().delta.removed;
     // Also remove the rigidbodies that we don't need anymore
     for (_, components) in removed {
@@ -92,6 +90,7 @@ fn run(world: &mut World) {
         sim.bodies.remove(rb.handle, &mut sim.islands, &mut sim.colliders, &mut sim.joints).unwrap();
         sim.colliders.remove(collider.handle, &mut sim.islands, &mut sim.bodies, false).unwrap();
     }
+    */
 }
 
 // Create the physics rigidbody & collider system
