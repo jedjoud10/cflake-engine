@@ -6,6 +6,8 @@ mod modifier;
 mod set;
 mod storage;
 mod states;
+mod bundle;
+pub use bundle::*;
 pub use archetype::*;
 pub use common::*;
 pub use error::*;

@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
 };
 
-use crate::Mask;
+use crate::{Mask, ComponentMutationsBitfield};
 
 use super::{Component, ComponentError};
 use lazy_static::lazy_static;

@@ -1,24 +1,24 @@
-use std::{any::Any};
+use std::{any::Any, collections::HashMap, sync::Arc};
 use getset::{CopyGetters, Getters};
-use super::{ComponentStoragesHashMap, UniqueComponentStoragesHashMap, states::EntityStatesBitfield};
+use tinyvec::ArrayVec;
+use super::{UniqueComponentStoragesHashMap, states::EntityStatesBitfield};
 use crate::{
-    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, EntityState},
+    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, EntityState}, ComponentStorage, MaskHasher, ArchetypeStates,
 };
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters)]
 pub struct Archetype {
-    // Component storage
+    // Component vector
     #[getset(get = "pub(crate)")]
-    components: ComponentStoragesHashMap,
+    vector: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
+
+    // Component and entity states
+    states: ArchetypeStates,
 
     // Bundle Index -> Entity
     #[getset(get = "pub")]
     entities: Vec<Entity>,
-
-    // Bundle entity states
-    #[getset(get = "pub(crate)")]
-    states: EntityStatesBitfield,
 
     // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
@@ -44,22 +44,20 @@ impl Archetype {
             } else {
                 None
             }
-        });
+        }).collect::<ArrayVec<[Mask; 64]>>();
 
-        // Use the unique component storages to make new empty storages
-        let storages: ComponentStoragesHashMap = masks
+        // Use the unique component storages to make new empty vetors
+        let vector: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks
+            .iter()
             .map(|mask| {
-                // Create le tuple
-                let vec = uniques.get(&mask).unwrap().new_empty_from_self();
-                let states = ComponentMutationsBitfield::default();
-                (mask, (vec, states))
+                (*mask, uniques.get(mask).unwrap().new_empty_from_self())
             })
             .collect();
         Self {
-            components: storages,
+            vector,
             mask,
             entities: Default::default(),
-            states: Default::default(),
+            states: ArchetypeStates::new(masks.into_iter()),
             pending_for_removal: Default::default(),
         }
     }

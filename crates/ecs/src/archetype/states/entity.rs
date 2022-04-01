@@ -1,5 +1,5 @@
 use parking_lot::RwLock;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering, AtomicUsize};
 
 // The current state of the bundle entity
 #[repr(u8)]
@@ -19,7 +19,7 @@ pub enum EntityState {
 #[derive(Default)]
 pub(crate) struct EntityStatesBitfield {
     vec: RwLock<Vec<AtomicU64>>,
-    length: usize,
+    length: AtomicUsize,
 }
 
 impl EntityStatesBitfield {
@@ -29,50 +29,31 @@ impl EntityStatesBitfield {
             *chunks.get_mut() = 0;
         }
     }
-    // Update the length of the sparse bitfield, and check if we must insert a new chunk
-    pub fn set_len(&mut self, length: usize) {
-        // Check if need to extend the sparse bitfield by one chunk
-        let half = (u64::BITS as usize) / 2;
-        let extend = length.div_ceil(half) > self.length.div_ceil(half);
-
-        // Extend by one chunk
-        if extend {
-            self.vec.get_mut().push(AtomicU64::new(0));
-        }
-
-        // Set length
-        self.length = length;
+    // Extend by one chunk
+    pub fn extend(&self) {
+        self.vec.write().push(AtomicU64::new(0));
     }
-    /*
-    // Get the state of a specific component in the archetype
-    pub fn get(&self, bundle: usize) -> ComponentState {
-        // Check if the index is valid
-        assert!(bundle < self.length, "Archetype bundle index is invalid");
-
+    // Check if a coponent was mutated
+    pub fn get(&self, bundle: usize) -> EntityState {
         // Get the local position, and chunk position
         let half = (u64::BITS as usize) / 2;
         let local_pos = bundle % half;
         let chunk_pos = bundle / half;
 
-        // Read from the vector now
-        let read = self.vec.read();
-        let bits = read.get(chunk_pos as usize).unwrap().load(Ordering::Relaxed);
+        // Be ready to read from the vector
+        let vec = self.vec.read();
+        let atomic = vec.get(chunk_pos as usize).unwrap();
 
-        // Filter the specific bits
-        let mask = 0b11 << local_pos;
-        let filtered = bits & mask;
-        let shifted = (filtered >> local_pos) as u8;
-        unsafe { std::mem::transmute::<u8, ComponentState>(shifted) }
+        // Load the bits from the atomic
+        // 11 [01] 10 00
+        let loaded = atomic.load(Ordering::Relaxed);
+
+        // 00 00 11 [01]
+        let filtered = (loaded >> local_pos) & 0b11;
+        unsafe { std::mem::transmute::<u8, EntityState>(filtered as u8) }
     }
-    */
     // Set the state of a specific bundle entity
     pub fn set(&self, bundle: usize, state: EntityState) {
-        // Check if the index is valid
-        dbg!(bundle);
-        dbg!(self.length);
-        dbg!(state);
-        assert!(bundle < self.length, "Bundle index is invalid");
-
         // Get the local position, and chunk position
         let half = (u64::BITS as usize) / 2;
         let local_pos = bundle % half;
@@ -97,31 +78,5 @@ impl EntityStatesBitfield {
 
         // Store
         atomic.store(result, Ordering::Relaxed);
-    }
-    // Iterate through the sparse set and return an Iterator full of states
-    pub fn iter(&self) -> impl IntoIterator<Item = EntityState> {
-        // We know the length, and each entity is already tightly packed (in the archetype at least)
-        let len = self.length;
-
-        // Load all the chunks
-        let read = self.vec.read();
-        let chunks = read.iter().map(|atomic| atomic.load(Ordering::Relaxed)).collect::<Vec<u64>>();
-
-        // Load each entity state
-        (0..len).into_iter().map(move |bundle| {
-            // Get the local position, and chunk position
-            let half = (u64::BITS as usize) / 2;
-            let local_pos = bundle % half;
-            let chunk_pos = bundle / half;
-
-            // Load the bits from the chunk
-            let bits = chunks.get(chunk_pos).unwrap();
-
-            // Filter the specific bits
-            let mask = 0b11 << local_pos;
-            let filtered = bits & mask;
-            let shifted = (filtered >> local_pos) as u8;
-            unsafe { std::mem::transmute::<u8, EntityState>(shifted) }
-        })
     }
 }

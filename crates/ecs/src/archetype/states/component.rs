@@ -1,11 +1,11 @@
 use parking_lot::RwLock;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering, AtomicUsize};
 
 // Stored component mutation states
 #[derive(Default)]
 pub(crate) struct ComponentMutationsBitfield {
     vec: RwLock<Vec<AtomicU64>>,
-    length: usize,
+    length: AtomicUsize,
 }
 
 impl ComponentMutationsBitfield {
@@ -16,51 +16,30 @@ impl ComponentMutationsBitfield {
         }
     }
     // Reset all the bits to 0
-    pub fn reset(&mut self) {
-        for chunks in self.vec.get_mut().iter_mut() {
-            *chunks.get_mut() = 0;
+    pub fn reset(&self) {
+        for chunks in self.vec.read().iter() {
+            chunks.store(0, Ordering::Relaxed);
         }
     }
-    // Update the length of the sparse bitfield, and check if we must insert a new chunk
-    pub fn set_len(&mut self, length: usize) {
-        // Check if need to extend the sparse bitfield by one chunk
-        let extend = length.div_ceil(u64::BITS as usize) > self.length.div_ceil(u64::BITS as usize);
-
-        // Extend by one chunk
-        if extend {
-            self.vec.get_mut().push(AtomicU64::new(0));
-        }
-
-        // Set length
-        self.length = length;
+    // Extend by one chunk
+    pub fn extend(&self) {
+        self.vec.write().push(AtomicU64::new(0));
     }
-    /*
-    // Get the state of a specific component in the archetype
-    pub fn get(&self, bundle: usize) -> ComponentState {
-        // Check if the index is valid
-        assert!(bundle < self.length, "Archetype bundle index is invalid");
-
+    // Check if a component was mutated
+    pub fn get(&self, bundle: usize) -> bool {
         // Get the local position, and chunk position
-        let half = (u64::BITS as usize) / 2;
-        let local_pos = bundle % half;
-        let chunk_pos = bundle / half;
+        let local_pos = bundle % (u64::BITS as usize);
+        let chunk_pos = bundle / (u64::BITS as usize);
 
         // Read from the vector now
         let read = self.vec.read();
         let bits = read.get(chunk_pos as usize).unwrap().load(Ordering::Relaxed);
 
-        // Filter the specific bits
-        let mask = 0b11 << local_pos;
-        let filtered = bits & mask;
-        let shifted = (filtered >> local_pos) as u8;
-        unsafe { std::mem::transmute::<u8, ComponentState>(shifted) }
+        // Check if it was mutated
+        (bits >> local_pos) % 2 == 1
     }
-    */
     // Set the mutation state of a specific component
-    pub fn set_mutated_state(&self, bundle: usize) {
-        // Check if the index is valid
-        assert!(bundle < self.length, "Bundle index is invalid");
-
+    pub fn set(&self, bundle: usize) {
         // Get the local position, and chunk position
         let local_pos = bundle % u64::BITS as usize;
         let chunk_pos = bundle / u64::BITS as usize;
@@ -71,28 +50,5 @@ impl ComponentMutationsBitfield {
 
         // Write to the vector
         atomic.fetch_or(1 << local_pos, Ordering::Relaxed);
-    }
-    // Iterate through the sparse set and return an Iterator full of mutation states (booleans)
-    pub fn iter(&self) -> impl IntoIterator<Item = bool> {
-        // We know the length, and each component is already tightly packed
-        let len = self.length;
-
-        // Load all the chunks
-        let read = self.vec.read();
-        let chunks = read.iter().map(|atomic| atomic.load(Ordering::Relaxed)).collect::<Vec<u64>>();
-
-        // Load each component state
-        (0..len).into_iter().map(move |bundle| {
-            // Get the local position, and chunk position
-            let local_pos = bundle % (u64::BITS as usize);
-            let chunk_pos = bundle / (u64::BITS as usize);
-
-            // Load the bits from the chunk
-            let bits = chunks.get(chunk_pos).unwrap();
-
-            // Check if it was mutated
-            let was_mutated = (bits >> local_pos) % 2 == 1;
-            was_mutated
-        })
     }
 }
