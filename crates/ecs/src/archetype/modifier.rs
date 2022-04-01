@@ -94,31 +94,22 @@ impl<'a> LinkModifier<'a> {
             
         Ok(())
     }
-    // Makes sure an archetype exists
-    fn archetype_insert_or_default(&mut self, mask: Mask) -> &mut Archetype {
-        // Make sure the target archetype exists
-        self.manager.archetypes.entry(mask).or_insert_with(|| {
-            // Insert a new archetype
-            Archetype::new(mask, &self.manager.uniques)
-        })
-    }
     // Apply the modifier
     // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
     pub(crate) fn apply(mut self, linkings: &mut Option<EntityLinkings>) {
         if let Some(linkings) = linkings {
             // The entity is currently part of an archetype
             let accumulated = linkings.mask | self.added;
-            // Get the current archetype
-            let current = self.manager.archetypes.get_mut(&linkings.mask).unwrap();
 
-            let target = self.archetype_insert_or_default(accumulated);
-            let current = 
-            // Move
+            // Make sure the target archetype is valid
+            self.manager.archetypes.insert_default(accumulated, &self.manager.uniques);
+            
+            // Get the current archetype along the target archetype
+            
         } else {
-            // First time linkings
-            let target = self.archetype_insert_or_default(self.added);
+            // First time linkings, make sure the target archetype is valid
+            self.manager.archetypes.insert_default(self.added, &self.manager.uniques);
         }
-        
         /*
 
         // Insert the components into the archetype
