@@ -15,10 +15,10 @@ type EntityStates = EntityStatesBitfield;
 #[derive(Default)]
 pub(crate) struct ArchetypeStates {
     // The mutated components
-    pub components: Arc<ComponentStates>,
+    pub components: ComponentStates,
 
     // Bundle entity states
-    pub entities: Arc<EntityStates>,
+    pub entities: EntityStates,
 
     // Current bundle length
     pub length: usize,
@@ -37,13 +37,13 @@ impl ArchetypeStates {
         
         // Result
         Self {
-            components: Arc::new(components),
-            entities: Arc::new(entities),
+            components,
+            entities,
             length: 0,
         }
     }
     // Set the length of the bundles stored in the archetype
-    pub fn set_len(&mut self, length: usize) {
+    pub fn set_len(&self, length: usize) {
         // Bit counts
         let full = u64::BITS as usize;
         let half = full / 2;
@@ -59,19 +59,5 @@ impl ArchetypeStates {
             }
         }
         if extend_entities_bitfield { self.entities.extend(); }
-    }
-    // Get the component mutation state of a specific bundle
-    // Get the entity state of a specific bundle
-    pub fn get_entity_state(&self, bundle: usize) -> EntityState {
-        self.entities.get(bundle)
-    }
-    // Set the component mutation state of a specific bundle
-    pub fn set_component_mutated_state(&mut self, mask: Mask, bundle: usize) {
-        let bitfield = self.components.get(&mask).unwrap();
-        bitfield.set(bundle);
-    }
-    // Set the entity state of a specific bundle
-    pub fn set_entity_state(&mut self, bundle: usize, state: EntityState) {
-        self.entities.set(bundle, state);
     }
 }

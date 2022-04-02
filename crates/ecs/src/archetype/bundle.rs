@@ -2,27 +2,23 @@ use std::{sync::Arc, collections::HashMap};
 
 use getset::Getters;
 
-use crate::{Entity, EntityStatesBitfield, Mask, ComponentMutationsBitfield, EcsManager, Archetype};
+use crate::{Entity, EntityStatesBitfield, Mask, ComponentMutationsBitfield, EcsManager, Archetype, ArchetypeStates};
 
 
 // A single archetype bundle identifier
 #[derive(Getters)]
 pub struct ArchetypeBundle {
-    // Entity
+    // The current entity that is linked to this bundle
     #[getset(get = "pub")]
     entity: Entity,
 
-    // Index
+    // Current bundle index of this archetype bundle
     #[getset(get = "pub")]
     index: usize,
 
-    // Entity states
+    // States (Component and entity states)
     #[getset(get = "pub(crate)")]
-    states: Arc<EntityStatesBitfield>,
-
-    // Cloned storaes so we can check the mutated states
-    #[getset(get = "pub(crate)")]
-    cloned: Arc<HashMap<Mask, ComponentMutationsBitfield>>,
+    states: Arc<ArchetypeStates>,
 }
 
 impl ArchetypeBundle {
@@ -31,8 +27,7 @@ impl ArchetypeBundle {
         Self {
             entity,
             index,
-            states: archetype.states(),
-            cloned: todo!(),
+            states: archetype.states().clone(),
         }
     }
 }

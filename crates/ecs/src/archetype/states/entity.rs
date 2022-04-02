@@ -23,10 +23,16 @@ pub(crate) struct EntityStatesBitfield {
 }
 
 impl EntityStatesBitfield {
-    // Reset all the bits to 0
-    pub fn reset(&mut self) {
-        for chunks in self.vec.get_mut().iter_mut() {
-            *chunks.get_mut() = 0;
+    // Reset all the bits to a specific state
+    pub fn reset_to(&self, state: EntityState) {
+        // I don't like this
+        let pattern = match state {
+            EntityState::None => 0,
+            EntityState::Added => 0x5555555555555555,
+            EntityState::PendingForRemoval => u64::MAX,
+        };
+        for chunks in self.vec.read().iter() {
+            chunks.store(pattern, Ordering::Relaxed);
         }
     }
     // Extend by one chunk
@@ -45,10 +51,7 @@ impl EntityStatesBitfield {
         let atomic = vec.get(chunk_pos as usize).unwrap();
 
         // Load the bits from the atomic
-        // 11 [01] 10 00
         let loaded = atomic.load(Ordering::Relaxed);
-
-        // 00 00 11 [01]
         let filtered = (loaded >> local_pos) & 0b11;
         unsafe { std::mem::transmute::<u8, EntityState>(filtered as u8) }
     }
@@ -64,19 +67,10 @@ impl EntityStatesBitfield {
         let atomic = vec.get(chunk_pos as usize).unwrap();
 
         // Load the bits from the atomic
-        // 11 [01] 10 00
         let loaded = atomic.load(Ordering::Relaxed);
-
-        // 11 [00] 10 00
         let zeroed = loaded & !(0b11 << local_pos);
-
-        // 00 11 00 00
         let state = unsafe { std::mem::transmute::<EntityState, u8>(state) as u64 } << local_pos;
-
-        // 11 11 10 00
         let result = zeroed | state;
-
-        // Store
         atomic.store(result, Ordering::Relaxed);
     }
 }

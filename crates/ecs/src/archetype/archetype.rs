@@ -11,10 +11,11 @@ use crate::{
 pub struct Archetype {
     // Component vector
     #[getset(get = "pub(crate)")]
-    vector: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
+    vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
 
     // Component and entity states
-    states: ArchetypeStates,
+    #[getset(get = "pub(crate)")]
+    states: Arc<ArchetypeStates>,
 
     // Bundle Index -> Entity
     #[getset(get = "pub")]
@@ -47,17 +48,17 @@ impl Archetype {
         }).collect::<ArrayVec<[Mask; 64]>>();
 
         // Use the unique component storages to make new empty vetors
-        let vector: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks
+        let vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks
             .iter()
             .map(|mask| {
-                (*mask, uniques.get(mask).unwrap().new_empty_from_self())
+                (*mask, uniques[mask].new_empty_from_self())
             })
             .collect();
         Self {
-            vector,
+            vectors,
             mask,
             entities: Default::default(),
-            states: ArchetypeStates::new(masks.into_iter()),
+            states: Arc::new(ArchetypeStates::new(masks.into_iter())),
             pending_for_removal: Default::default(),
         }
     }
@@ -66,21 +67,20 @@ impl Archetype {
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Commons
         let len = self.entities.len() + 1;
-        dbg!(self.mask);
+        self.states.set_len(len);
+
         // Add the components using their specific storages
         for (mask, component) in components {
             dbg!(mask);
-            let (vec, mutated) = self.components.get_mut(&mask).unwrap();
+            let vec = self.vectors.get_mut(&mask).unwrap();
 
             // Insert the component
-            mutated.set_len(len);
-            mutated.set_mutated_state(len - 1);
+            self.states.components[&mask].set(len - 1);
             vec.push(component);
         }
 
         // Set the entity state
-        self.states.set_len(len);
-        self.states.set(len - 1, EntityState::Added);
+        self.states.entities.set(len - 1, EntityState::Added);
 
         // Update the length
         self.entities.push(entity);
@@ -94,7 +94,7 @@ impl Archetype {
         self.pending_for_removal.push(bundle);
 
         // Set the entity state
-        self.states.set(bundle, EntityState::PendingForRemoval)
+        self.states.entities.set(bundle, EntityState::PendingForRemoval)
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
@@ -104,10 +104,10 @@ impl Archetype {
         let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
 
         // Remove the components from the storages
-        for (&mask, (storage, _)) in self.components.iter_mut() {
+        for (&mask, vec) in self.vectors.iter_mut() {
             // Filter the components that validate the mask
             if mask & filter_mask == mask {
-                let boxed = storage.swap_remove_boxed_bundle(bundle);
+                let boxed = vec.swap_remove_boxed_bundle(bundle);
                 components.push((mask, boxed));
             }
         }
@@ -120,8 +120,8 @@ impl Archetype {
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
     fn remove(&mut self, bundle: usize) {
         // Remove the components from the storages
-        for (_, (storage, _)) in self.components.iter_mut() {
-            storage.swap_remove_bundle(bundle);
+        for (_, vec) in self.vectors.iter_mut() {
+            vec.swap_remove_bundle(bundle);
         }
 
         // And then the locally stored entity ID
@@ -160,12 +160,12 @@ impl Archetype {
         self.remove_all_pending();
 
         // Iterate through the bitfields and reset them
-        for (_, (_storage, states)) in self.components.iter_mut() {
+        for (mask, _vector) in self.vectors.iter() {
             // Reset the states
-            states.reset()
+            self.states.components[mask].reset_to(false);
         }
 
         // Also reset the entity states
-        self.states.reset();
+        self.states.entities.reset_to(EntityState::None);
     }
 }

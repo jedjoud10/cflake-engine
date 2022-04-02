@@ -10,7 +10,7 @@ pub struct QueryBuilder<'a> {
     pub(super) mask: Mask,
 
     // The queries that are currently being mutably borrowed
-    pub(super) borrowed: RefCell<Mask>,
+    pub(super) accessed: RefCell<Mask>,
 }
 
 impl<'a> QueryBuilder<'a> {
@@ -19,7 +19,7 @@ impl<'a> QueryBuilder<'a> {
         Self {
             manager,
             mask,
-            borrowed: Default::default(),
+            accessed: Default::default(),
         }
     }
     // This will get the component mask, not the entry mask
@@ -33,7 +33,7 @@ impl<'a> QueryBuilder<'a> {
         }
 
         // Check if the component is currently mutably borrowed
-        if mask & *self.borrowed.borrow() != Mask::default() {
+        if mask & *self.accessed.borrow() != Mask::default() {
             return Err(QueryError::MutablyBorrowed(registry::name::<T>()));
         }
 
@@ -60,7 +60,7 @@ impl<'a> QueryBuilder<'a> {
             .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(m_archetype, registry::name::<T>()))?;
 
         // Read from the rwlock
-        let (storage, _) = archetype.components().get(&component_mask).unwrap();
+        let storage = archetype.vectors().get(&component_mask).unwrap();
 
         // Just fetch the pointer
         let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();

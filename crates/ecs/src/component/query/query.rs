@@ -1,8 +1,7 @@
 use std::cell::UnsafeCell;
-use crate::{Component, Entity, QueryBuilder, QueryError, EntityState};
+use crate::{Component, Entity, QueryBuilder, QueryError, EntityState, ArchetypeBundle};
 
 // TODO: Fix duplicate code
-
 // Something that can be queried using the query builder
 pub trait RefQuery<'a> {
     // The element of the result vector
@@ -26,42 +25,40 @@ impl<'a, T: Component> RefQuery<'a> for T {
             // Check if the archetype is valid for our query builder
             if entry_mask & archetype.mask() == entry_mask {
                 // Fetch the vector
-                let (storage, _) = archetype.components().get(&component_mask).unwrap();
+                let vec = archetype.vectors().get(&component_mask).unwrap();
 
                 // Extend
-                let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+                let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
                 components.extend(vec.iter().map(|cell| unsafe { &*cell.get() }))
             }
         }
 
-        // The component is currently being borrowed
-        let mut borrowed = builder.borrowed.borrow_mut();
-        *borrowed = *borrowed | component_mask;
+        // The component was borrowed, we cannot access it again
+        let mut accessed = builder.accessed.borrow_mut();
+        *accessed = *accessed | component_mask;
 
         Ok(components)
     }
 }
 
-/*
 impl<'a> RefQuery<'a> for ArchetypeBundle {
     type Item = ArchetypeBundle;
     fn query(builder: &QueryBuilder<'a>) -> Result<Vec<Self::Item>, QueryError> {
         // Just get the entry mask this time
         let entry_mask = builder.mask;
 
-        // A vector full of entity handles
-        let mut entities = Vec::<Entity>::new();
+        // A vector full of archetype bundles
+        let mut bundles = Vec::<ArchetypeBundle>::new();
         for archetype in builder.manager.archetypes.iter() {
             // Check if the archetype is valid for our query builder
             if entry_mask & archetype.mask() == entry_mask {
                 // Extend
-                entities.extend()
+                bundles.extend(archetype.entities().iter().enumerate().map(|(i, entity)| ArchetypeBundle::new(i, *entity, archetype)))
             }
         }
-        Ok(entities)
+        Ok(bundles)
     }
 }
-*/
 
 // Something that can be mutably queried using the query builder
 pub trait MutQuery<'a> {
@@ -86,20 +83,20 @@ impl<'a, T: Component> MutQuery<'a> for T {
             // Check if the archetype is valid for our query builder
             if entry_mask & archetype.mask() == entry_mask {
                 // Fetch the vector and states
-                let (storage, states) = archetype.components().get(&component_mask).unwrap();
+                let vec = &archetype.vectors()[&component_mask];
 
                 // Set all the states to mutated, since we will be reading from this query mutably
-                states.set_all_mutated();
+                archetype.states().components[&component_mask].reset_to(true);
 
                 // Extend
-                let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+                let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
                 components.extend(vec.iter().map(|cell| unsafe { &mut *cell.get() }))
             }
         }
 
-        // The component is currently being borrowed
-        let mut borrowed = builder.borrowed.borrow_mut();
-        *borrowed = *borrowed | component_mask;
+        // The component was borrowed, we cannot access it again
+        let mut accessed = builder.accessed.borrow_mut();
+        *accessed = *accessed | component_mask;
 
         Ok(components)
     }

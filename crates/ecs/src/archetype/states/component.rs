@@ -9,16 +9,12 @@ pub(crate) struct ComponentMutationsBitfield {
 }
 
 impl ComponentMutationsBitfield {
-    // Set all the mutation states to be true
-    pub fn set_all_mutated(&self) {
+    // Reset all the bits to a specific state
+    pub fn reset_to(&self, state: bool) {
+        // If state is true, all the bits are set. If it is false, none of the bits are set
+        let bits = if state { u64::MAX } else { 0 };
         for chunks in self.vec.read().iter() {
-            chunks.store(u64::MAX, Ordering::Relaxed);
-        }
-    }
-    // Reset all the bits to 0
-    pub fn reset(&self) {
-        for chunks in self.vec.read().iter() {
-            chunks.store(0, Ordering::Relaxed);
+            chunks.store(bits, Ordering::Relaxed);
         }
     }
     // Extend by one chunk
