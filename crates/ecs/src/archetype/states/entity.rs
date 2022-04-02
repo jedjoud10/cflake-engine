@@ -1,5 +1,5 @@
 use parking_lot::RwLock;
-use std::sync::atomic::{AtomicU64, Ordering, AtomicUsize};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 // The current state of the bundle entity
 #[repr(u8)]

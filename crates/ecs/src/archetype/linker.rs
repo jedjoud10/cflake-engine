@@ -1,4 +1,4 @@
-use super::{LinkModifierError};
+use super::LinkModifierError;
 use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},

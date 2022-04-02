@@ -1,6 +1,6 @@
 mod component;
 mod entity;
-use std::{sync::Arc, collections::HashMap};
+use std::{collections::HashMap, sync::Arc};
 
 pub use component::*;
 pub use entity::*;
@@ -28,19 +28,13 @@ impl ArchetypeStates {
     // Create some new archetype states from multiple masks
     pub fn new(masks: impl Iterator<Item = Mask>) -> Self {
         // Collect the component state hashmap
-        let components = masks.map(|mask| {
-            (mask, ComponentMutationsBitfield::default())
-        }).collect::<ComponentStates>();
+        let components = masks.map(|mask| (mask, ComponentMutationsBitfield::default())).collect::<ComponentStates>();
 
         // Create a new entity states
         let entities = EntityStates::default();
-        
+
         // Result
-        Self {
-            components,
-            entities,
-            length: 0,
-        }
+        Self { components, entities, length: 0 }
     }
     // Set the length of the bundles stored in the archetype
     pub fn set_len(&self, length: usize) {
@@ -49,7 +43,7 @@ impl ArchetypeStates {
         let half = full / 2;
 
         // Check if we should extend
-        let extend_entities_bitfield = length.div_ceil(half) > self.length.div_ceil(half); 
+        let extend_entities_bitfield = length.div_ceil(half) > self.length.div_ceil(half);
         let extend_components_bitfield = length.div_ceil(full) > self.length.div_ceil(full);
 
         // Extend the bitfields by one AtomicU64 if needed
@@ -58,6 +52,8 @@ impl ArchetypeStates {
                 bitfield.extend()
             }
         }
-        if extend_entities_bitfield { self.entities.extend(); }
+        if extend_entities_bitfield {
+            self.entities.extend();
+        }
     }
 }

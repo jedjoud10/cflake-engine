@@ -5,9 +5,10 @@ use enum_as_inner::EnumAsInner;
 
 use getset::Getters;
 use world::{
+    ecs::Entity,
     math::octrees::DiffOctree,
     rendering::{basics::material::Material, pipeline::Handle},
-    terrain::{ChunkCoords, VoxelDataBufferId}, ecs::Entity,
+    terrain::{ChunkCoords, VoxelDataBufferId},
 };
 
 // Generation state of the current chunk

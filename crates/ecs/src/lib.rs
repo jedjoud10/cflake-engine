@@ -1,11 +1,11 @@
 #![feature(int_roundings)]
 // Modules
-pub mod archetype;
-pub mod component;
-pub mod entity;
-pub mod macros;
-pub mod manager;
-pub mod masks;
+mod archetype;
+mod component;
+mod entity;
+mod macros;
+mod manager;
+mod masks;
 // Use
 pub use archetype::*;
 pub use component::*;

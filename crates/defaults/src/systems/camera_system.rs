@@ -1,6 +1,6 @@
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-use world::ecs::{layout, Entity, QueryBuilder};
+use world::ecs::{layout, ArchetypeBundle, Entity, QueryBuilder};
 use world::World;
 // The camera system update loop
 fn run(world: &mut World) {
@@ -12,11 +12,11 @@ fn run(world: &mut World) {
         let builder = QueryBuilder::new(&mut world.ecs, layout!(Transform, Camera));
 
         // Fetch the entity handles
-        let cameras = builder.get::<Entity>().unwrap();
+        let cameras = builder.get::<ArchetypeBundle>().unwrap();
 
         // And try to get the first valid one
         if let Some(entity) = cameras.first() {
-            global.camera = *entity;
+            global.camera = *entity.entity();
         }
     }
 }

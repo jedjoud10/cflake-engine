@@ -1,6 +1,6 @@
 use crate::{ComponentStorage, Mask};
 
-use super::{states::ComponentMutationsBitfield};
+use super::states::ComponentMutationsBitfield;
 use nohash_hasher::NoHashHasher;
 use std::{collections::HashMap, hash::BuildHasherDefault, sync::Arc};
 

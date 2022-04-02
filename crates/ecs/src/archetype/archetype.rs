@@ -1,10 +1,12 @@
-use std::{any::Any, collections::HashMap, sync::Arc};
-use getset::{CopyGetters, Getters};
-use tinyvec::ArrayVec;
-use super::{UniqueComponentStoragesHashMap, states::EntityStatesBitfield};
+use super::{states::EntityStatesBitfield, UniqueComponentStoragesHashMap};
 use crate::{
-    entity::{Entity, EntityLinkings}, Mask, archetype::states::{ComponentMutationsBitfield, EntityState}, ComponentStorage, MaskHasher, ArchetypeStates,
+    archetype::states::{ComponentMutationsBitfield, EntityState},
+    entity::{Entity, EntityLinkings},
+    ArchetypeStates, ComponentStorage, Mask, MaskHasher,
 };
+use getset::{CopyGetters, Getters};
+use std::{any::Any, collections::HashMap, sync::Arc};
+use tinyvec::ArrayVec;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters)]
@@ -35,25 +37,23 @@ impl Archetype {
     pub(crate) fn new(mask: Mask, uniques: &UniqueComponentStoragesHashMap) -> Self {
         // We must decompose the combined mask into the individual masks
         dbg!(mask);
-        let masks = (0..(u64::BITS as usize)).into_iter().filter_map(|i| {
-            // Get the individual mask
-            let individual = mask >> i;
+        let masks = (0..(u64::BITS as usize))
+            .into_iter()
+            .filter_map(|i| {
+                // Get the individual mask
+                let individual = mask >> i;
 
-            // Filter
-            if individual & Mask::one() == Mask::one() {
-                Some((individual & Mask::one()) << i)
-            } else {
-                None
-            }
-        }).collect::<ArrayVec<[Mask; 64]>>();
+                // Filter
+                if individual & Mask::one() == Mask::one() {
+                    Some((individual & Mask::one()) << i)
+                } else {
+                    None
+                }
+            })
+            .collect::<ArrayVec<[Mask; 64]>>();
 
         // Use the unique component storages to make new empty vetors
-        let vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks
-            .iter()
-            .map(|mask| {
-                (*mask, uniques[mask].new_empty_from_self())
-            })
-            .collect();
+        let vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks.iter().map(|mask| (*mask, uniques[mask].new_empty_from_self())).collect();
         Self {
             vectors,
             mask,
@@ -85,7 +85,7 @@ impl Archetype {
         // Update the length
         self.entities.push(entity);
         linkings.bundle = self.entities.len() - 1;
-        linkings.mask = self.mask;        
+        linkings.mask = self.mask;
     }
 
     // Start the deletion process for components. The component will actually get deleted next frame
