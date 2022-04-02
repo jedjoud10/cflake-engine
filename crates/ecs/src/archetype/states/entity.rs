@@ -41,7 +41,7 @@ impl EntityStatesBitfield {
     }
     // Check if a coponent was mutated
     pub fn get(&self, bundle: usize) -> EntityState {
-        // Get the local position, and chunk position
+        // Get the local position and chunk position
         let half = (u64::BITS as usize) / 2;
         let local_pos = bundle % half;
         let chunk_pos = bundle / half;
@@ -57,7 +57,7 @@ impl EntityStatesBitfield {
     }
     // Set the state of a specific bundle entity
     pub fn set(&self, bundle: usize, state: EntityState) {
-        // Get the local position, and chunk position
+        // Get the local position and chunk position
         let half = (u64::BITS as usize) / 2;
         let local_pos = bundle % half;
         let chunk_pos = bundle / half;

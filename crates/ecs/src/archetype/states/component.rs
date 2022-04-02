@@ -5,7 +5,6 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 #[derive(Default)]
 pub(crate) struct ComponentMutationsBitfield {
     vec: RwLock<Vec<AtomicU64>>,
-    length: AtomicUsize,
 }
 
 impl ComponentMutationsBitfield {
@@ -23,7 +22,7 @@ impl ComponentMutationsBitfield {
     }
     // Check if a component was mutated
     pub fn get(&self, bundle: usize) -> bool {
-        // Get the local position, and chunk position
+        // Get the local position and chunk position
         let local_pos = bundle % (u64::BITS as usize);
         let chunk_pos = bundle / (u64::BITS as usize);
 
@@ -36,7 +35,7 @@ impl ComponentMutationsBitfield {
     }
     // Set the mutation state of a specific component
     pub fn set(&self, bundle: usize) {
-        // Get the local position, and chunk position
+        // Get the local position and chunk position
         let local_pos = bundle % u64::BITS as usize;
         let chunk_pos = bundle / u64::BITS as usize;
 
@@ -46,5 +45,42 @@ impl ComponentMutationsBitfield {
 
         // Write to the vector
         atomic.fetch_or(1 << local_pos, Ordering::Relaxed);
+    }
+    // Iterate through the component states
+    pub fn iter(&self) -> Iter {
+        Iter { states: self, chunk_len: self.vec.read().len(), index: 0, chunk: None }
+    }
+}
+
+// Custom iterator
+pub(crate) struct Iter<'a> {
+    // Bitfield
+    states: &'a ComponentMutationsBitfield,
+    chunk_len: usize,
+
+    // The current bundle index we are on
+    index: usize,
+
+    // The loaded chunk
+    chunk: Option<u64>,
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Get the local position and chunk position
+        let local_pos = self.index % u64::BITS as usize;
+        let chunk_pos = self.index / u64::BITS as usize;
+        if local_pos == 0 { self.chunk.take(); }
+
+        // Check if the chunk position is valid
+        if chunk_pos >= self.chunk_len { return None };
+
+        // Load the chunk into memory if it wasn't already set
+        let bits = self.chunk.get_or_insert_with(|| self.states.vec.read()[chunk_pos].load(Ordering::Relaxed));
+
+        // Check if it is odd
+        Some(*bits % 2 == 1)
     }
 }

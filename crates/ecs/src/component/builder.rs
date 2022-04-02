@@ -1,4 +1,4 @@
-use crate::{registry, Archetype, Component, EcsManager, Entity, Mask, QueryError, EntityState};
+use crate::{registry, Archetype, Component, EcsManager, Entity, Mask, QueryError};
 use std::cell::{RefCell, UnsafeCell};
 
 // Helps us get queries from archetypes
@@ -117,9 +117,8 @@ impl<T: Component> ContainsState for T {
     fn get_states(builder: &QueryBuilder) -> Result<Vec<Self::Item>, QueryError> {
         // Get the component mask
         let mask = builder.get_component_mask::<T>()?;
-        builder.filter_archetypes().flat_map(|archetype| {
-            let bitfield = archetype.states().components[&mask];
-            bitfield.
-        }).cloned().collect::<Vec<_>>()
+        Ok(builder.filter_archetypes().flat_map(|archetype| {
+            archetype.states().components[&mask].iter()
+        }).collect::<Vec<_>>())
     }
 }

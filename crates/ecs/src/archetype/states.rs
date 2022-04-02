@@ -1,10 +1,8 @@
-mod component;
-mod entity;
+pub mod component;
+pub mod entity;
+use component::*;
+use entity::*;
 use std::{collections::HashMap, sync::Arc};
-
-pub use component::*;
-pub use entity::*;
-
 use crate::{Mask, MaskHasher};
 
 // Convenience types aliases
@@ -15,7 +13,7 @@ type EntityStates = EntityStatesBitfield;
 #[derive(Default)]
 pub(crate) struct ArchetypeStates {
     // The mutated components
-    pub components: ComponentStates,
+    pub components: Arc<ComponentStates>,
 
     // Bundle entity states
     pub entities: EntityStates,
@@ -28,7 +26,7 @@ impl ArchetypeStates {
     // Create some new archetype states from multiple masks
     pub fn new(masks: impl Iterator<Item = Mask>) -> Self {
         // Collect the component state hashmap
-        let components = masks.map(|mask| (mask, ComponentMutationsBitfield::default())).collect::<ComponentStates>();
+        let components = Arc::new(masks.map(|mask| (mask, ComponentMutationsBitfield::default())).collect::<ComponentStates>());
 
         // Create a new entity states
         let entities = EntityStates::default();

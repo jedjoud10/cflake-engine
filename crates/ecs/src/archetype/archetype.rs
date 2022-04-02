@@ -1,6 +1,6 @@
-use super::{states::EntityStatesBitfield, UniqueComponentStoragesHashMap};
+use super::{states::entity::EntityStatesBitfield, UniqueComponentStoragesHashMap};
 use crate::{
-    archetype::states::{ComponentMutationsBitfield, EntityState},
+    archetype::states::{component::ComponentMutationsBitfield, entity::EntityState},
     entity::{Entity, EntityLinkings},
     ArchetypeStates, ComponentStorage, Mask, MaskHasher,
 };
@@ -17,7 +17,7 @@ pub struct Archetype {
 
     // Component and entity states
     #[getset(get = "pub(crate)")]
-    states: Arc<ArchetypeStates>,
+    states: ArchetypeStates,
 
     // Bundle Index -> Entity
     #[getset(get = "pub")]
@@ -58,7 +58,7 @@ impl Archetype {
             vectors,
             mask,
             entities: Default::default(),
-            states: Arc::new(ArchetypeStates::new(masks.into_iter())),
+            states: ArchetypeStates::new(masks.into_iter()),
             pending_for_removal: Default::default(),
         }
     }
