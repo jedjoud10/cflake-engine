@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
+    use crate::*;
     #[test]
     fn test() {
-        /*
         // Empty manager
         let mut manager = EcsManager::default();
 
@@ -32,12 +32,16 @@ mod tests {
             modifier.remove::<SimpleValue>().unwrap();
         });
 
-        let entry = manager.entry(entity).unwrap();
+        let builder = Query::<(&Name, &Tag)>::new(&mut manager);
+        for (name, tag) in builder.consume().unwrap() {
+
+        }
+
+        /*
         dbg!(entry.get::<Name>().unwrap());
         dbg!(entry.get::<Tag>().unwrap());
         dbg!(entry.get::<SimpleValue>());
-        */
-        /*
+        let entry = manager.entry(entity).unwrap();
         // Make a new entity
         const COUNT: usize = 10;
         let entity = Entity::default();

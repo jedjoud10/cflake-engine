@@ -5,7 +5,7 @@ use std::{
 };
 
 // Helps us get queries from archetypes
-pub struct QueryBuilder<'a, Layout: LayoutQuery> {
+pub struct Query<'a, Layout: LayoutQuery> {
     // Ecs Manager
     pub(super) manager: &'a EcsManager,
 
@@ -18,8 +18,8 @@ pub struct QueryBuilder<'a, Layout: LayoutQuery> {
     _phantom: PhantomData<Layout>,
 }
 
-impl<'a, Layout: LayoutQuery> QueryBuilder<'a, Layout> {
-    // Create a new query builder from a layout 
+impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
+    // Create a new query builder from a layout
     pub fn new(manager: &'a mut EcsManager) -> Self {
         Self::new_from_mask(manager, Layout::mask())
     }
@@ -33,9 +33,10 @@ impl<'a, Layout: LayoutQuery> QueryBuilder<'a, Layout> {
         }
     }
 
-    // Query
-    pub fn query(mut self) -> Vec<Layout::Layout> {
-        todo!()
+    // Consume the query, returning it's vector
+    pub fn consume(self) -> Result<Vec<Layout::Layout>, QueryError> {
+        let vec = Layout::query(&self)?;
+        Ok(vec)
     }
     /*
     pub fn get<T: Component>(&self) -> Result<Vec<&T>, QueryError> {
@@ -71,6 +72,10 @@ impl<'a, Layout: LayoutQuery> QueryBuilder<'a, Layout> {
     pub(crate) fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
         self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
     }
+    // Get the number of elements that validate our layout
+    pub fn get_component_count(&self) -> usize {
+        self.filter_archetypes().map(|archetype| archetype.entities().len()).sum()
+    }
     // Get a vector full of component references (either & or &mut) by running a function through each UnsafeCell
     pub fn get_component_vec_mapped<T: Component, Res, F: FnMut(&UnsafeCell<T>) -> Res + Copy + 'static>(&self, f: F) -> Result<impl Iterator<Item = Res> + '_, QueryError> {
         let component = self.get_component_mask::<T>()?;
@@ -84,7 +89,7 @@ impl<'a, Layout: LayoutQuery> QueryBuilder<'a, Layout> {
             vec.iter().map(f)
         });
 
-        Ok(flatmap)    
+        Ok(flatmap)
     }
     // Get a singular pointer to a component in an archetype and at a specific bundleindex
     pub fn get_ptr<T: Component>(&self, bundle: usize, mask: Mask) -> Result<*mut T, QueryError> {

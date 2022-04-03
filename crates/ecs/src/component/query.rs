@@ -1,4 +1,4 @@
-mod builder;
+mod query;
 mod traits;
-pub use builder::*;
+pub use query::*;
 pub use traits::*;
