@@ -48,7 +48,12 @@ impl ComponentMutationsBitfield {
     }
     // Iterate through the component states
     pub fn iter(&self) -> Iter {
-        Iter { states: self, chunk_len: self.vec.read().len(), index: 0, chunk: None }
+        Iter {
+            states: self,
+            chunk_len: self.vec.read().len(),
+            index: 0,
+            chunk: None,
+        }
     }
 }
 
@@ -72,10 +77,14 @@ impl<'a> Iterator for Iter<'a> {
         // Get the local position and chunk position
         let local_pos = self.index % u64::BITS as usize;
         let chunk_pos = self.index / u64::BITS as usize;
-        if local_pos == 0 { self.chunk.take(); }
+        if local_pos == 0 {
+            self.chunk.take();
+        }
 
         // Check if the chunk position is valid
-        if chunk_pos >= self.chunk_len { return None };
+        if chunk_pos >= self.chunk_len {
+            return None;
+        };
 
         // Load the chunk into memory if it wasn't already set
         let bits = self.chunk.get_or_insert_with(|| self.states.vec.read()[chunk_pos].load(Ordering::Relaxed));

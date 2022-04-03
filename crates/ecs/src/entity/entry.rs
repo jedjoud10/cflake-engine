@@ -1,16 +1,16 @@
 use super::{Entity, EntityLinkings};
-use crate::{Component, EcsManager, QueryBuilder, QueryError};
+use crate::{Component, EcsManager, QueryBuilder, QueryError, LayoutQuery};
 
 // An entity entry that we can use to access multiple components on a single entity
-pub struct EntityEntry<'a> {
+pub struct EntityEntry<'a, Layout: LayoutQuery> {
     // Specific entity linkings
     linkings: EntityLinkings,
 
     // Internal query builder for fetching components
-    builder: QueryBuilder<'a>,
+    builder: QueryBuilder<'a, Layout>,
 }
 
-impl<'a> EntityEntry<'a> {
+impl<'a, Layout: LayoutQuery> EntityEntry<'a, Layout> {
     // Create self from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         // Fetch the entity linkings and it's state
@@ -24,7 +24,7 @@ impl<'a> EntityEntry<'a> {
         let mask = linkings.mask;
         Some(Self {
             linkings,
-            builder: QueryBuilder::new(manager, mask),
+            builder: QueryBuilder::new_from_mask(manager, mask),
         })
     }
     // Create an immutable component

@@ -1,6 +1,6 @@
 use crate::settings::Settings;
 use audio::player::AudioPlayer;
-use ecs::{manager::EcsManager, SystemSet};
+use ecs::{EcsManager, SystemSet};
 use getset::*;
 use globals::GlobalsSet;
 use gui::GUIManager;

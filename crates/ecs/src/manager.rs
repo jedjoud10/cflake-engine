@@ -55,10 +55,12 @@ impl EcsManager {
         Some(())
     }
 
+    /*
     // Get an entity entry
     pub fn entry(&mut self, entity: Entity) -> Option<EntityEntry> {
         EntityEntry::new(self, entity)
     }
+    */
 
     // Insert an empty entity into the manager
     pub fn insert(&mut self) -> Entity {

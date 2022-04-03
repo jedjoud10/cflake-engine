@@ -1,9 +1,9 @@
 pub mod component;
 pub mod entity;
+use crate::{Mask, MaskHasher};
 use component::*;
 use entity::*;
 use std::{collections::HashMap, sync::Arc};
-use crate::{Mask, MaskHasher};
 
 // Convenience types aliases
 type ComponentStates = HashMap<Mask, ComponentMutationsBitfield, MaskHasher>;

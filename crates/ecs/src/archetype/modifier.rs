@@ -64,8 +64,8 @@ impl<'a> LinkModifier<'a> {
         if let Some(linkings) = self.linkings {
             if linkings.mask & mask != Mask::default() {
                 // The current archetype contains components of this type, so we can simply overwrite
-                let mut entry = self.manager.entry(self.entity).unwrap();
-                *entry.get_mut::<T>().unwrap() = component;
+                //let mut entry = self.manager.entry(self.entity).unwrap();
+                //*entry.get_mut::<T>().unwrap() = component;
                 return Ok(());
             } else { /* Add the component normally */
             }

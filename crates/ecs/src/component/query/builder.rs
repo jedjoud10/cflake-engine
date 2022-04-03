@@ -1,29 +1,43 @@
-use crate::{registry, Archetype, Component, EcsManager, Entity, Mask, QueryError};
-use std::cell::{RefCell, UnsafeCell};
+use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError};
+use std::{
+    cell::{RefCell, UnsafeCell},
+    marker::PhantomData,
+};
 
 // Helps us get queries from archetypes
-pub struct QueryBuilder<'a> {
+pub struct QueryBuilder<'a, Layout: LayoutQuery> {
     // Ecs Manager
     pub(super) manager: &'a EcsManager,
 
-    // Internal entry mask
+    // Internal entry mask (calculated from the Layout)
     pub(super) mask: Mask,
 
     // The queries that are currently being mutably borrowed
     pub(super) accessed: RefCell<Mask>,
+
+    _phantom: PhantomData<Layout>,
 }
 
-impl<'a> QueryBuilder<'a> {
-    // Create self from the Ecs manager and some masks
-    pub fn new(manager: &'a mut EcsManager, mask: Mask) -> Self {
+impl<'a, Layout: LayoutQuery> QueryBuilder<'a, Layout> {
+    // Create a new query builder from a layout 
+    pub fn new(manager: &'a mut EcsManager) -> Self {
+        Self::new_from_mask(manager, Layout::mask())
+    }
+    // Create a query builder directly from a combined mask
+    pub fn new_from_mask(manager: &'a mut EcsManager, mask: Mask) -> Self {
         Self {
             manager,
             mask,
             accessed: Default::default(),
+            _phantom: Default::default(),
         }
     }
 
-    /* #region Queries */
+    // Query
+    pub fn query(mut self) -> Vec<Layout::Layout> {
+        todo!()
+    }
+    /*
     pub fn get<T: Component>(&self) -> Result<Vec<&T>, QueryError> {
         let refs = self.get_vec_mapped::<T, &T, _>(|cell| unsafe { &*cell.get() })?;
         Ok(refs)
@@ -32,15 +46,11 @@ impl<'a> QueryBuilder<'a> {
         let mut_refs = self.get_vec_mapped::<T, &mut T, _>(|cell| unsafe { &mut *cell.get() })?;
         Ok(mut_refs)
     }
-    pub fn get_entities(&self) -> Result<Vec<Entity>, QueryError> {
-        Ok(self.filter_archetypes().flat_map(|archetype| archetype.entities()).cloned().collect::<Vec<_>>())
-    }
-    pub fn get_states<T: ContainsState>(&self) -> Result<Vec<T::Item>, QueryError> {
-        T::get_states(self)
-    }
+    */
     /* #endregion */
-    
+
     /* #region Helper functions */
+    // Get a specific component mask. This might fail
     fn get_component_mask<T: Component>(&self) -> Result<Mask, QueryError> {
         // Component mask
         let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
@@ -57,27 +67,26 @@ impl<'a> QueryBuilder<'a> {
 
         Ok(mask)
     }
-    fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
+    // Filter the archetypes based on the interally stored mask
+    pub(crate) fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
         self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
     }
-    pub fn get_vec_mapped<T: Component, Res, F: FnMut(&UnsafeCell<T>) -> Res + Copy>(&self, f: F) -> Result<Vec<Res>, QueryError> {
-        // Combined results
-        let mut results = Vec::<Res>::new();
-
+    // Get a vector full of component references (either & or &mut) by running a function through each UnsafeCell
+    pub fn get_component_vec_mapped<T: Component, Res, F: FnMut(&UnsafeCell<T>) -> Res + Copy + 'static>(&self, f: F) -> Result<impl Iterator<Item = Res> + '_, QueryError> {
         let component = self.get_component_mask::<T>()?;
-        for archetype in self.filter_archetypes() {
-            // Fetch the components
-            let vec = archetype.vectors().get(&component).unwrap();
-            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-            results.extend(vec.iter().map(f))
-        }
-
         // The component was borrowed, we cannot access it again
         let mut accessed = self.accessed.borrow_mut();
         *accessed = *accessed | component;
+        let flatmap = self.filter_archetypes().flat_map(move |archetype| {
+            // Fetch the components
+            let vec = archetype.vectors().get(&component).unwrap();
+            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+            vec.iter().map(f)
+        });
 
-        Ok(results)
+        Ok(flatmap)    
     }
+    // Get a singular pointer to a component in an archetype and at a specific bundleindex
     pub fn get_ptr<T: Component>(&self, bundle: usize, mask: Mask) -> Result<*mut T, QueryError> {
         // Get the component mask
         let component_mask = self.get_component_mask::<T>()?;
@@ -98,27 +107,4 @@ impl<'a> QueryBuilder<'a> {
         Ok(component.get())
     }
     /* #endregion */
-}
-
-// A trait that will be implemented on structs that can get their states from an archetype bundle.
-// More notably: The "Entity" struct and all components that implement the Component trait
-pub trait ContainsState {
-    type Item: Clone + Copy;
-    // Get states from a single archetype 
-    fn get_states(builder: &QueryBuilder) -> Result<Vec<Self::Item>, QueryError>;
-}
-
-// Components have their "mutation" state
-impl<T: Component> ContainsState for T {
-    // The state of the component (check if it was written)
-    type Item = bool;
-
-    // Get the component states
-    fn get_states(builder: &QueryBuilder) -> Result<Vec<Self::Item>, QueryError> {
-        // Get the component mask
-        let mask = builder.get_component_mask::<T>()?;
-        Ok(builder.filter_archetypes().flat_map(|archetype| {
-            archetype.states().components[&mask].iter()
-        }).collect::<Vec<_>>())
-    }
 }
