@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use rayon::iter::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator};
+
     use crate::*;
     #[test]
     fn test() {
@@ -25,25 +27,23 @@ mod tests {
             //linker.insert(SimpleValue(0)).unwrap();
         });
 
+        /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
             modifier.insert(Name("Trustrutrst")).unwrap();
             modifier.insert(SimpleValue(0)).unwrap();
             modifier.remove::<SimpleValue>().unwrap();
         });
-
-        let builder = Query::<(&Name, &Tag)>::new(&mut manager);
-        for (name, tag) in builder.consume().unwrap() {
-
-        }
+        */
 
         /*
         dbg!(entry.get::<Name>().unwrap());
         dbg!(entry.get::<Tag>().unwrap());
         dbg!(entry.get::<SimpleValue>());
         let entry = manager.entry(entity).unwrap();
+        */
         // Make a new entity
-        const COUNT: usize = 10;
+        const COUNT: usize = u16::MAX as usize;
         let entity = Entity::default();
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
@@ -53,31 +53,22 @@ mod tests {
             });
         }
 
-        // Create a mask layout
-        let mask = crate::layout!(Name, Tag, SimpleValue);
-
         // Query
         let i = std::time::Instant::now();
-        dbg!(size_of::<QueryBuilder>());
-        dbg!(size_of::<EntityEntry>());
-        dbg!(size_of::<EcsManager>());
 
         while i.elapsed().as_secs() < 5 {
             manager.prepare();
-            let _h = std::time::Instant::now();
-            let _entry = EntityEntry::new(&mut manager, entity);
+            let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
-            let builder = QueryBuilder::new(&mut manager, mask);
-            let values = builder.get_mut::<SimpleValue>().unwrap();
-            let tags = builder.get::<(Tag, ComponentState)>().unwrap();
-            let names = builder.get::<Name>().unwrap();
-            values.into_iter().zip(tags.into_iter()).zip(names.into_iter()).for_each(|((value, _tag), _name)| {
-                println!("{}", value.0);
+            
+            let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager);
+            builder.consume().unwrap().into_par_iter().for_each(|(name, tag, value)| {
+                value.0 += 1;
+
             });
 
             //panic!("remove");
-            manager.remove(entity);
 
             /*vec.par_iter().for_each(|value| {
                 let x = value.0;
@@ -111,8 +102,7 @@ mod tests {
                 //dbg!(linked.was_mutated::<Name>().unwrap());
             });
             */
-            //dbg!(h.elapsed().as_micros());
+            dbg!(h.elapsed().as_micros());
         }
-        */
     }
 }

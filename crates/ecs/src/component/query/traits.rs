@@ -61,7 +61,6 @@ unsafe fn unwrap_vec<Input, Output>(vec: Vec<Input>) -> Vec<Output> {
     // We are 100% sure that the vector is filled with Some, so we can just transmute it
     let mut manual = ManuallyDrop::new(vec);
     let vec = Vec::from_raw_parts(manual.as_mut_ptr() as *mut Output, manual.len(), manual.capacity());
-    ManuallyDrop::drop(&mut manual);
     vec
 }
 

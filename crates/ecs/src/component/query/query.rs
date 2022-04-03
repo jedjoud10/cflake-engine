@@ -35,6 +35,7 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
 
     // Consume the query, returning it's vector
     pub fn consume(self) -> Result<Vec<Layout::Layout>, QueryError> {
+        let i = std::time::Instant::now();
         let vec = Layout::query(&self)?;
         Ok(vec)
     }

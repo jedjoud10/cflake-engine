@@ -71,7 +71,6 @@ impl Archetype {
 
         // Add the components using their specific storages
         for (mask, component) in components {
-            dbg!(mask);
             let vec = self.vectors.get_mut(&mask).unwrap();
 
             // Insert the component
