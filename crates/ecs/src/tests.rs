@@ -63,10 +63,7 @@ mod tests {
             //dbg!(entry.state());=
             
             let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager);
-            builder.consume().unwrap().into_par_iter().for_each(|(name, tag, value)| {
-                value.0 += 1;
-
-            });
+            builder.consume().unwrap();
 
             //panic!("remove");
 
