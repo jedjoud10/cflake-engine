@@ -11,6 +11,7 @@ pub struct EntityEntry<'a, Layout: LayoutQuery> {
 }
 
 impl<'a, Layout: LayoutQuery> EntityEntry<'a, Layout> {
+    /*
     // Create self from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         // Fetch the entity linkings and it's state
@@ -39,4 +40,5 @@ impl<'a, Layout: LayoutQuery> EntityEntry<'a, Layout> {
         let ptr = self.builder.get_ptr::<T>(self.linkings.bundle, self.linkings.mask)?;
         Ok(unsafe { &mut *ptr })
     }
+    */
 }
