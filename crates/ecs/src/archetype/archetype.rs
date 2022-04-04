@@ -147,8 +147,6 @@ impl Archetype {
         // Combine the removed components with the extra components
         components.extend(extra);
 
-        println!("{}", components.len());
-
         // And insert into Other
         other.insert_with(components, linkings, entity);
     }

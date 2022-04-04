@@ -11,30 +11,28 @@ mod tests {
         // Simple component
         #[derive(Component, Debug)]
         struct Name(&'static str);
-        registry::register::<Name>();
+        manager.register::<Name>();
 
         #[derive(Component, Debug)]
         struct Tag(&'static str);
-        registry::register::<Tag>();
+        manager.register::<Tag>();
 
         #[derive(Component, Debug)]
         struct SimpleValue(usize);
-        registry::register::<SimpleValue>();
+        manager.register::<SimpleValue>();
 
         let entity = manager.insert_with(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            linker.insert(SimpleValue(0)).unwrap();
+            //linker.insert(SimpleValue(0)).unwrap();
         });
 
-        /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
             modifier.insert(Name("Trustrutrst")).unwrap();
             modifier.insert(SimpleValue(0)).unwrap();
-            modifier.remove::<SimpleValue>().unwrap();
+            //modifier.remove::<SimpleValue>().unwrap();
         });
-        */
 
         /*
         dbg!(entry.get::<Name>().unwrap());

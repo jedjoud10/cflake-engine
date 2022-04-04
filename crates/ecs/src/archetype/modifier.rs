@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::{component_mask, register_unique, registry, Component, EcsManager, Entity, EntityLinkings, LinkModifierError, Mask};
+use crate::{component_mask, register_unique, Component, EcsManager, Entity, EntityLinkings, LinkModifierError, Mask, Registry};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -45,13 +45,12 @@ impl<'a> LinkModifier<'a> {
     }
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
-        // Bits
-        let mask = component_mask::<T>()?;
+        let mask = component_mask::<T>(&self.manager.registry)?;
         let new = self.modified | mask;
 
         // Check for link duplication
         if self.modified == new {
-            return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
+            return Err(LinkModifierError::LinkDuplication(Registry::name::<T>()));
         }
 
         // Always make sure there is a unique vector for this component
@@ -79,8 +78,7 @@ impl<'a> LinkModifier<'a> {
     }
     // Remove a component from the entity
     pub fn remove<T: Component>(&mut self) -> Result<(), LinkModifierError> {
-        // Bits
-        let mask = component_mask::<T>()?;
+        let mask = component_mask::<T>(&self.manager.registry)?;
 
         // Check if we have the component locally stored in this link modifier
         if self.modified & mask != Mask::default() {
@@ -121,39 +119,5 @@ impl<'a> LinkModifier<'a> {
             let linkings = linkings.get_or_insert(EntityLinkings { bundle: 0, mask: self.modified });
             archetype.insert_with(self.new_components, linkings, self.entity);
         }
-        /*
-
-        // Insert the components into the archetype
-        let linkings = self
-            .manager
-            .entities
-            .get_mut(self.entity)
-            .unwrap()
-            .get_or_insert_with(|| EntityLinkings {
-                bundle: 0,
-                mask: Mask::default(),
-            });
-        archetype.insert_with(self.new_components, linkings, self.entity);
-        */
-        /*
-
-
-        // No link duplication. However, there is a chance we removed this component in an earlier call, so we must check for that as well
-        // If we did remove it earlier, just overwrite it
-        if self.removed & mask != Mask::default() {
-            // Remove the component bits from the "removed" mask
-            self.removed = self.removed & !mask;
-
-            // We did remove it, so simply overwrite it (only if we are part of a valid archetype)
-            if let Some(mut entry) = self.manager.entry(self.entity) {
-                // Overwrite
-                let elem = entry.get_mut::<T>().unwrap();
-                *elem = component;
-
-                // Exit early
-                return Ok(());
-            } else { /* We are not part of an archetype, so add the component normally */ }
-        }
-        */
     }
 }

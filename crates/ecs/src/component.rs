@@ -1,7 +1,8 @@
 mod component;
 mod error;
 mod query;
-pub mod registry;
+mod registry;
+pub use registry::*;
 pub use component::*;
 pub use error::*;
 pub use query::*;

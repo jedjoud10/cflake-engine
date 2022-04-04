@@ -6,13 +6,13 @@ pub trait ComponentStorage {
     // As any and as any mut
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
-    // Push a component into the vector
+
+    // Vector shit
     fn push(&mut self, component: Box<dyn Any>);
-    // Remove a component without moving the whole vector
     fn swap_remove_bundle(&mut self, bundle: usize);
-    // Remove a component, but boxes the result
     fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any>;
-    // Create a new empty boxed component storage vec using self
+
+    // Create a new boxed vector (empty)
     fn new_empty_from_self(&self) -> Box<dyn ComponentStorage>;
 }
 
