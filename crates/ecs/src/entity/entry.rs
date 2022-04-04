@@ -12,13 +12,12 @@ impl<'a> EntityEntry<'a> {
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         EntityEntryQuery::new(manager, entity).map(|query| Self { query })
     }
-    /*
     // Create an immutable component
     pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
-        //self.query.
+        self.query.get()
     }
     // Create a mutable component
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+        self.query.get_mut()
     }
-    */
 }

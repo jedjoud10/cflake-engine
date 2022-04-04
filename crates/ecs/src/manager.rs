@@ -1,6 +1,6 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet,
+    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry,
 };
 
 // Manages ECS logic
@@ -54,12 +54,10 @@ impl EcsManager {
         Some(())
     }
 
-    /*
     // Get an entity entry
     pub fn entry(&mut self, entity: Entity) -> Option<EntityEntry> {
         EntityEntry::new(self, entity)
     }
-    */
 
     // Insert an empty entity into the manager
     pub fn insert(&mut self) -> Entity {
