@@ -65,6 +65,14 @@ impl EcsManager {
         // Apply the changes
         linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
+        let states = self.archetypes.get(&copied.mask).unwrap().states().clone();
+
+        // And update the bundle data
+        let mut entry = self.entry(entity).unwrap();
+        let data = entry.get_mut::<BundleData>().unwrap();
+        data.set_bundle(copied.bundle);
+        data.set_states(Some(states));
+
         Some(())
     }
 

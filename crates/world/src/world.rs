@@ -13,7 +13,7 @@ use rendering::pipeline::{Pipeline, SceneRenderer};
 // The current state of the world
 #[derive(Clone, Copy)]
 pub enum WorldState {
-    StartingUp,
+    Init,
     Running,
     Exit,
     Paused,
@@ -55,8 +55,8 @@ impl World {
             pipeline,
             renderer,
             gui,
-            state: WorldState::StartingUp,
-            ecs: EcsManager::default(),
+            state: WorldState::Init,
+            ecs: EcsManager::new(),
             systems: Default::default(),
             globals: Default::default(),
             physics: PhysicsSimulation::new(),
