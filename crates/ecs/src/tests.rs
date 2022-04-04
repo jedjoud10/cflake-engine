@@ -6,7 +6,7 @@ mod tests {
     #[test]
     fn test() {
         // Empty manager
-        let mut manager = EcsManager::default();
+        let mut manager = EcsManager::new();
 
         // Simple component
         #[derive(Component, Debug)]
@@ -24,7 +24,7 @@ mod tests {
         let entity = manager.insert_with(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            //linker.insert(SimpleValue(0)).unwrap();
+            linker.insert(SimpleValue(0)).unwrap();
         });
 
         /*
@@ -40,11 +40,14 @@ mod tests {
         dbg!(entry.get::<Name>().unwrap());
         dbg!(entry.get::<Tag>().unwrap());
         dbg!(entry.get::<SimpleValue>());
-        let entry = manager.entry(entity).unwrap();
         */
+        let mut entry = manager.entry(entity).unwrap();
+        let name = entry.get_mut::<Name>().unwrap();
+        // Get the query
+
+
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize;
-        let entity = Entity::default();
+        const COUNT: usize = u16::MAX as usize * 8;
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
                 modifs.insert(Name("Le Jribi")).unwrap();
@@ -56,15 +59,16 @@ mod tests {
         // Query
         let i = std::time::Instant::now();
 
-        while i.elapsed().as_secs() < 5 {
+        while i.elapsed().as_secs() < 2 {
             manager.prepare();
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
             
-            let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager);
-            builder.consume().unwrap();
-
+            let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager).unwrap();
+            for (name, _, x) in builder.fetch().unwrap() {
+                //dbg!(name);
+            }
             //panic!("remove");
 
             /*vec.par_iter().for_each(|value| {

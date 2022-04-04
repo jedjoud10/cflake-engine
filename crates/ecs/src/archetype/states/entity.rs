@@ -19,7 +19,6 @@ pub enum EntityState {
 #[derive(Default)]
 pub(crate) struct EntityStatesBitfield {
     vec: RwLock<Vec<AtomicU64>>,
-    length: AtomicUsize,
 }
 
 impl EntityStatesBitfield {

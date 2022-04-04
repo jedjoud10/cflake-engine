@@ -887,11 +887,13 @@ version = "0.1.0"
 dependencies = [
  "ecs-derive",
  "getset",
+ "itertools",
  "lazy_static",
  "nohash-hasher",
  "parking_lot 0.12.0",
  "rayon",
  "slotmap",
+ "smallvec",
  "tinyvec",
 ]
 

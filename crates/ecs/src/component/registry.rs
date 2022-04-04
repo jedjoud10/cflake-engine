@@ -2,15 +2,13 @@ use std::{
     any::{type_name, TypeId},
     collections::HashMap,
 };
-
 use crate::Mask;
-
 use super::{Component, ComponentError};
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
 // Registered components
 lazy_static! {
-    static ref NEXT: Mutex<Mask> = Mutex::new(Mask(1));
+    static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<HashMap<TypeId, Mask>> = RwLock::new(HashMap::new());
 }
 // Return the registered mask of the component
