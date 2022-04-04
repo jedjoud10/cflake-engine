@@ -10,13 +10,13 @@ type ComponentStates = HashMap<Mask, ComponentMutationsBitfield, MaskHasher>;
 type EntityStates = EntityStatesBitfield;
 
 // Struct for organization
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct ArchetypeStates {
     // The mutated components
     pub components: Arc<ComponentStates>,
 
     // Bundle entity states
-    pub entities: EntityStates,
+    pub entities: Arc<EntityStates>,
 
     // Current bundle length
     pub length: usize,
@@ -29,7 +29,7 @@ impl ArchetypeStates {
         let components = Arc::new(masks.map(|mask| (mask, ComponentMutationsBitfield::default())).collect::<ComponentStates>());
 
         // Create a new entity states
-        let entities = EntityStates::default();
+        let entities = Arc::new(EntityStates::default());
 
         // Result
         Self { components, entities, length: 0 }

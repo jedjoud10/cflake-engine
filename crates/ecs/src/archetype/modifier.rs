@@ -45,7 +45,6 @@ impl<'a> LinkModifier<'a> {
     }
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
-        // Bits
         let mask = component_mask::<T>()?;
         let new = self.modified | mask;
 
@@ -79,7 +78,6 @@ impl<'a> LinkModifier<'a> {
     }
     // Remove a component from the entity
     pub fn remove<T: Component>(&mut self) -> Result<(), LinkModifierError> {
-        // Bits
         let mask = component_mask::<T>()?;
 
         // Check if we have the component locally stored in this link modifier

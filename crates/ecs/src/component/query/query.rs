@@ -1,116 +1,101 @@
-use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError};
+use smallvec::SmallVec;
+
+use crate::{Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ComponentError, EntityLinkings, registry};
 use std::{
-    cell::{RefCell, UnsafeCell},
+    cell::{RefCell, UnsafeCell, Ref, RefMut},
     marker::PhantomData,
 };
 
+// Helper functions for Query and EntryQuery
+// Get a specific component mask using our current query mask (faillable)
+// This function cannot be called two or more times with the same component type
+fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
+    // Component mask
+    let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
+
+    // Check if the component mask is even valid
+    if entry & mask == Mask::default() {
+        return Err(QueryError::NotLinked(registry::name::<T>()));
+    }
+
+    Ok(mask)
+}
+
 // Helps us get queries from archetypes
 pub struct Query<'a, Layout: LayoutQuery> {
-    // Ecs Manager
-    pub(super) manager: &'a EcsManager,
-
-    // Internal entry mask (calculated from the Layout)
-    pub(super) mask: Mask,
-
-    // The queries that are currently being mutably borrowed
-    pub(super) accessed: RefCell<Mask>,
-
+    manager: &'a EcsManager,
+    mask: Mask,
     _phantom: PhantomData<Layout>,
 }
 
 impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
     // Create a new query builder from a layout
-    pub fn new(manager: &'a mut EcsManager) -> Self {
-        Self::new_from_mask(manager, Layout::mask())
-    }
-    // Create a query builder directly from a combined mask
-    pub fn new_from_mask(manager: &'a mut EcsManager, mask: Mask) -> Self {
-        Self {
+    pub fn new(manager: &'a mut EcsManager) -> Result<Self, QueryError> {
+        Ok(Self {
             manager,
-            mask,
-            accessed: Default::default(),
+            mask: Layout::mask().map_err(QueryError::ComponentError)?,
             _phantom: Default::default(),
-        }
+        })
     }
-
-    // Consume the query, returning it's vector
-    pub fn consume(self) -> Result<Vec<Layout::Layout>, QueryError> {
-        let i = std::time::Instant::now();
-        let vec = Layout::query(&self)?;
-        Ok(vec)
-    }
-    /*
-    pub fn get<T: Component>(&self) -> Result<Vec<&T>, QueryError> {
-        let refs = self.get_vec_mapped::<T, &T, _>(|cell| unsafe { &*cell.get() })?;
-        Ok(refs)
-    }
-    pub fn get_mut<T: Component>(&self) -> Result<Vec<&mut T>, QueryError> {
-        let mut_refs = self.get_vec_mapped::<T, &mut T, _>(|cell| unsafe { &mut *cell.get() })?;
-        Ok(mut_refs)
-    }
-    */
-    /* #endregion */
-
-    /* #region Helper functions */
-    // Get a specific component mask. This might fail
-    fn get_component_mask<T: Component>(&self) -> Result<Mask, QueryError> {
-        // Component mask
-        let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
-
-        // Check if the component mask is even valid
-        if mask & self.mask == Mask::default() {
-            return Err(QueryError::Unlinked(registry::name::<T>()));
-        }
-
-        // Check if the component is currently mutably borrowed
-        if mask & *self.accessed.borrow() != Mask::default() {
-            return Err(QueryError::MutablyBorrowed(registry::name::<T>()));
-        }
-
-        Ok(mask)
+    // Get the query components in their respective layout
+    pub fn fetch(self) -> Result<Vec<Layout>, QueryError> {
+        Layout::query(&self)
     }
     // Filter the archetypes based on the interally stored mask
-    pub(crate) fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
+    fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
         self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
     }
-    // Get the number of elements that validate our layout
-    pub fn get_component_count(&self) -> usize {
-        self.filter_archetypes().map(|archetype| archetype.entities().len()).sum()
+    // Count the number of entities
+    pub fn count(&self) -> usize {
+        self.filter_archetypes().map(|archetype| archetype.entities().len()).sum::<usize>()
     }
-    // Get a vector full of component references (either & or &mut) by running a function through each UnsafeCell
-    pub fn get_component_vec_mapped<T: Component, Res, F: FnMut(&UnsafeCell<T>) -> Res + Copy + 'static>(&self, f: F) -> Result<impl Iterator<Item = Res> + '_, QueryError> {
-        let component = self.get_component_mask::<T>()?;
-        // The component was borrowed, we cannot access it again
-        let mut accessed = self.accessed.borrow_mut();
-        *accessed = *accessed | component;
-        let flatmap = self.filter_archetypes().flat_map(move |archetype| {
-            // Fetch the components
-            let vec = archetype.vectors().get(&component).unwrap();
-            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-            vec.iter().map(f)
-        });
+    // Get a vector that contains all the underlying components
+    pub(super) fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
+        let mask = get_component_mask::<T>(self.mask)?;
 
-        Ok(flatmap)
+        Ok(self.filter_archetypes().flat_map(move |archetype| {
+            // Fetch the components
+            let vec = archetype.vectors().get(&mask).unwrap();
+            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+            vec.iter()
+        }))
     }
-    // Get a singular pointer to a component in an archetype and at a specific bundleindex
-    pub fn get_ptr<T: Component>(&self, bundle: usize, mask: Mask) -> Result<*mut T, QueryError> {
-        // Get the component mask
-        let component_mask = self.get_component_mask::<T>()?;
+}
+
+// Query for use inside an entry
+pub(crate) struct EntityEntryQuery<'a> {
+    bundle: usize,
+    archetype: &'a Archetype,
+}
+
+impl<'a> EntityEntryQuery<'a> {
+    // Create a new query from a specific entity
+    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
+        // Get the entity linkings
+        let linkings = manager.entities.get(entity).and_then(|x| x.as_ref())?;
+        if !linkings.is_valid() { return None }
 
         // And then get the singular component
-        let archetype = self
-            .manager
-            .archetypes
-            .get(&mask)
-            .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(mask, registry::name::<T>()))?;
+        let archetype = manager.archetypes.get(&linkings.mask).unwrap();
 
-        // Read from the rwlock
-        let storage = archetype.vectors().get(&component_mask).unwrap();
-
-        // Just fetch the pointer
+        Some(Self {
+            archetype,
+            bundle: linkings.bundle,
+        })
+    }
+    // Get a pointer to a component that is linked to our entity
+    fn get_ptr<T: Component>(&self) -> Result<*mut T, QueryError> {
+        let component_mask = get_component_mask::<T>(self.archetype.mask())?;
+        let storage = self.archetype.vectors().get(&component_mask).unwrap();
         let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        let component = vec.get(bundle).ok_or_else(|| QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>()))?;
+        let component = vec.get(self.bundle).unwrap();
         Ok(component.get())
     }
-    /* #endregion */
+    // Get (immutable) and get mut (mutable)
+    pub(crate) fn get<T: Component>(&self) -> Result<&T, QueryError> {
+        self.get_ptr().map(|ptr| unsafe { &*ptr })
+    }
+    pub(crate) fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+        self.get_ptr().map(|ptr| unsafe { &mut *ptr })
+    }
 }
