@@ -1,6 +1,7 @@
 use super::{Entity, EntityLinkings};
 use crate::{Component, EcsManager, LayoutQuery, Query, QueryError};
 
+/*
 // An entity entry that we can use to access multiple components on a single entity
 pub struct EntityEntry<'a, Layout: LayoutQuery> {
     // Specific entity linkings
@@ -42,3 +43,4 @@ impl<'a, Layout: LayoutQuery> EntityEntry<'a, Layout> {
     }
     */
 }
+*/

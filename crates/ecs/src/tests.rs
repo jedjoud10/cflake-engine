@@ -42,8 +42,11 @@ mod tests {
         dbg!(entry.get::<SimpleValue>());
         let entry = manager.entry(entity).unwrap();
         */
+        // Get the query
+
+
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize;
+        const COUNT: usize = u16::MAX as usize * 8;
         let entity = Entity::default();
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
@@ -63,7 +66,7 @@ mod tests {
             //dbg!(entry.state());=
             
             let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager).unwrap();
-            builder.consume();
+            builder.fetch().unwrap();
 
             //panic!("remove");
 

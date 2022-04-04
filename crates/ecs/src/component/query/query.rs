@@ -6,9 +6,6 @@ use std::{
     marker::PhantomData,
 };
 
-// Type aliases
-pub type InlinedStorages<'a, T> = SmallVec<[&'a [UnsafeCell<T>]; ARCHETYPE_INLINE_SIZE]>;
-
 // Helps us get queries from archetypes
 pub struct Query<'a, Layout: LayoutQuery> {
     // Ecs Manager
@@ -19,7 +16,6 @@ pub struct Query<'a, Layout: LayoutQuery> {
 
     // The queries that are currently being mutably borrowed
     pub(super) accessed: RefCell<Mask>,
-
     _phantom: PhantomData<Layout>,
 }
 
@@ -33,13 +29,9 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
             _phantom: Default::default(),
         })
     }
-
-    // Consume the query, returning it's vector
-    pub fn consume(self) -> Vec<Layout::Layout> {
-        let i = std::time::Instant::now();
-        let vec = Layout::query(&self).unwrap();
-        dbg!(i.elapsed());
-        vec
+    // Get the query components in their respective layout
+    pub fn fetch(mut self) -> Result<Vec<Layout>, QueryError> {
+        Layout::query(&self)
     }
 
     /* #region Helper functions */
@@ -61,21 +53,21 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
         Ok(mask)
     }
     // Filter the archetypes based on the interally stored mask
-    pub(super) fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
+    pub fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
         self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
     }
-    // Get a vector that contains all the underlying storages
-    pub(super) fn get_storages<T: Component>(&self) -> InlinedStorages<T> {
-        let component = self.get_component_mask::<T>().unwrap();
+    // Get a vector that contains all the underlying components
+    pub fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
+        let component = self.get_component_mask::<T>()?;
         // The component was borrowed, we cannot access it again
         let mut accessed = self.accessed.borrow_mut();
         *accessed = *accessed | component;
-        self.filter_archetypes().map(move |archetype| {
+        Ok(self.filter_archetypes().flat_map(move |archetype| {
             // Fetch the components
             let vec = archetype.vectors().get(&component).unwrap();
             let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-            vec.as_slice()
-        }).collect::<InlinedStorages<T>>()
+            vec.iter()
+        }))
     }
     // Get a singular pointer to a component in an archetype and at a specific bundleindex
     pub fn get_ptr<T: Component>(&self, bundle: usize, mask: Mask) -> Result<*mut T, QueryError> {
