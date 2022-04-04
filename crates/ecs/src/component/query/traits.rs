@@ -1,7 +1,7 @@
 use std::{mem::ManuallyDrop, cell::UnsafeCell};
 use itertools::{izip, Itertools};
 use smallvec::SmallVec;
-use crate::{Component, Entity, Mask, Query, QueryError, ComponentError, Registry};
+use crate::{Component, Entity, Mask, Query, QueryError, ComponentError, registry};
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component)
 pub trait QueryItem: Sized {
@@ -39,7 +39,7 @@ impl QueryItem for Entity {
 // Layout query that contains multiple QueryItems
 pub trait LayoutQuery: Sized {
     // Calculate the mask using the current layout
-    fn mask(reg: &Registry) -> Result<Mask, ComponentError>;
+    fn mask() -> Result<Mask, ComponentError>;
     // Create a query using the mask
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError>;
 }
@@ -54,8 +54,8 @@ fn into_vec<Item>(num: usize, iter: impl Iterator<Item = Item>) -> Vec<Item> {
 // LayoutQuery implementations
 // This could really use some macro magic, though I have no idea how I would make it work
 impl<A: QueryItem> LayoutQuery for A {
-    fn mask(reg: &Registry) -> Result<Mask, ComponentError> {
-        reg.mask::<A::Component>()
+    fn mask() -> Result<Mask, ComponentError> {
+        registry::mask::<A::Component>()
     }
 
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError> {
@@ -64,8 +64,8 @@ impl<A: QueryItem> LayoutQuery for A {
     }
 }
 impl<A: QueryItem, B: QueryItem> LayoutQuery for (A, B) {
-    fn mask(reg: &Registry) -> Result<Mask, ComponentError> {
-        Ok(reg.mask::<A::Component>()? | reg.mask::<B::Component>()?)
+    fn mask() -> Result<Mask, ComponentError> {
+        Ok(registry::mask::<A::Component>()? | registry::mask::<B::Component>()?)
     }
 
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError> {
@@ -76,8 +76,8 @@ impl<A: QueryItem, B: QueryItem> LayoutQuery for (A, B) {
     }
 }
 impl<A: QueryItem, B: QueryItem, C: QueryItem> LayoutQuery for (A, B, C) {
-    fn mask(reg: &Registry) -> Result<Mask, ComponentError> {
-        Ok(reg.mask::<A::Component>()? | reg.mask::<B::Component>()? | reg.mask::<C::Component>()?)
+    fn mask() -> Result<Mask, ComponentError> {
+        Ok(registry::mask::<A::Component>()? | registry::mask::<B::Component>()? | registry::mask::<C::Component>()?)
     }
 
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError> {

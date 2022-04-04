@@ -6,33 +6,35 @@ mod tests {
     #[test]
     fn test() {
         // Empty manager
-        let mut manager = EcsManager::default();
+        let mut manager = EcsManager::new();
 
         // Simple component
         #[derive(Component, Debug)]
         struct Name(&'static str);
-        manager.register::<Name>();
+        registry::register::<Name>();
 
         #[derive(Component, Debug)]
         struct Tag(&'static str);
-        manager.register::<Tag>();
+        registry::register::<Tag>();
 
         #[derive(Component, Debug)]
         struct SimpleValue(usize);
-        manager.register::<SimpleValue>();
+        registry::register::<SimpleValue>();
 
         let entity = manager.insert_with(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            //linker.insert(SimpleValue(0)).unwrap();
+            linker.insert(SimpleValue(0)).unwrap();
         });
 
+        /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
             modifier.insert(Name("Trustrutrst")).unwrap();
             modifier.insert(SimpleValue(0)).unwrap();
-            //modifier.remove::<SimpleValue>().unwrap();
+            modifier.remove::<SimpleValue>().unwrap();
         });
+        */
 
         /*
         dbg!(entry.get::<Name>().unwrap());

@@ -1,6 +1,6 @@
 use smallvec::SmallVec;
 
-use crate::{Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ComponentError, EntityLinkings, Registry};
+use crate::{Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ComponentError, EntityLinkings, registry};
 use std::{
     cell::{RefCell, UnsafeCell, Ref, RefMut},
     marker::PhantomData,
@@ -9,13 +9,13 @@ use std::{
 // Helper functions for Query and EntryQuery
 // Get a specific component mask using our current query mask (faillable)
 // This function cannot be called two or more times with the same component type
-fn get_component_mask<T: Component>(entry: Mask, reg: &Registry) -> Result<Mask, QueryError> {
+fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
     // Component mask
-    let mask = reg.mask::<T>().map_err(QueryError::ComponentError)?;
+    let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
 
     // Check if the component mask is even valid
     if entry & mask == Mask::default() {
-        return Err(QueryError::NotLinked(Registry::name::<T>()));
+        return Err(QueryError::NotLinked(registry::name::<T>()));
     }
 
     Ok(mask)
@@ -33,7 +33,7 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
     pub fn new(manager: &'a mut EcsManager) -> Result<Self, QueryError> {
         Ok(Self {
             manager,
-            mask: Layout::mask(&manager.registry).map_err(QueryError::ComponentError)?,
+            mask: Layout::mask().map_err(QueryError::ComponentError)?,
             _phantom: Default::default(),
         })
     }
@@ -51,7 +51,7 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
     }
     // Get a vector that contains all the underlying components
     pub(super) fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
-        let mask = get_component_mask::<T>(self.mask, &self.manager.registry)?;
+        let mask = get_component_mask::<T>(self.mask)?;
 
         Ok(self.filter_archetypes().flat_map(move |archetype| {
             // Fetch the components
@@ -64,7 +64,6 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
 
 // Query for use inside an entry
 pub(crate) struct EntityEntryQuery<'a> {
-    registry: &'a Registry,
     bundle: usize,
     archetype: &'a Archetype,
 }
@@ -80,14 +79,13 @@ impl<'a> EntityEntryQuery<'a> {
         let archetype = manager.archetypes.get(&linkings.mask).unwrap();
 
         Some(Self {
-            registry: &manager.registry,
             archetype,
             bundle: linkings.bundle,
         })
     }
     // Get a pointer to a component that is linked to our entity
     fn get_ptr<T: Component>(&self) -> Result<*mut T, QueryError> {
-        let component_mask = get_component_mask::<T>(self.archetype.mask(), self.registry)?;
+        let component_mask = get_component_mask::<T>(self.archetype.mask())?;
         let storage = self.archetype.vectors().get(&component_mask).unwrap();
         let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
         let component = vec.get(self.bundle).unwrap();

@@ -1,15 +1,15 @@
 use super::LinkModifierError;
 use crate::{
-    component::{Component},
+    component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
-    Mask, Registry,
+    Mask,
 };
 use std::{any::Any, cell::UnsafeCell};
 
 // Get the mask of a specific component
-pub fn component_mask<T: Component>(reg: &Registry) -> Result<Mask, LinkModifierError> {
-    reg.mask::<T>().map_err(LinkModifierError::ComponentError)
+pub fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {
+    registry::mask::<T>().map_err(LinkModifierError::ComponentError)
 }
 
 // Make sure there is an emtpy unique component vector at our disposal
@@ -46,12 +46,12 @@ impl<'a> Linker<'a> {
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
         // Bits
-        let mask = component_mask::<T>(&self.manager.registry)?;
+        let mask = component_mask::<T>()?;
         let new = self.mask | mask;
 
         // Check for link duplication
         if self.mask == new {
-            return Err(LinkModifierError::LinkDuplication(Registry::name::<T>()));
+            return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
         } else {
             // No link duplication, we can apply the new mask
             self.mask = new;

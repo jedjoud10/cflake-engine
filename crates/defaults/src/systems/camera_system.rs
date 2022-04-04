@@ -9,7 +9,7 @@ fn run(world: &mut World) {
     // If there isn't a main camera assigned already, we can be the main one
     if global.camera == Entity::default() {
         // Query
-        let builder = Query::<(&Transform, &Camera, Entity)>::new(&mut world.ecs);
+        let builder = Query::<(&Transform, &Camera, &BundleData)>::new(&mut world.ecs);
 
         let query = builder.query();
 

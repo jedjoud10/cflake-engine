@@ -1,10 +1,9 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry, Registry, Component,
+    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry, Component, registry,
 };
 
 // Manages ECS logic
-#[derive(Default)]
 pub struct EcsManager {
     // Entities
     pub(crate) entities: EntitySet,
@@ -14,15 +13,19 @@ pub struct EcsManager {
 
     // Unique component storages
     pub(crate) uniques: UniqueComponentStoragesHashMap,
-
-    // The component registry
-    pub(crate) registry: Registry,
 }
 
 impl EcsManager {
-    // Register a component
-    pub fn register<T: Component>(&mut self) { 
-        self.registry.register::<T>();
+    // Create a new ecs manager
+    pub fn new() -> Self {
+        // Pre-init
+        registry::register::<crate::BundleData>();
+
+        Self {
+            entities: Default::default(),
+            archetypes: Default::default(),
+            uniques: Default::default(),
+        }
     }
 
     // Prepare the Ecs Manager for one execution
