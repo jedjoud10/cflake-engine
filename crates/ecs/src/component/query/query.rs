@@ -1,10 +1,33 @@
 use smallvec::SmallVec;
 
-use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ARCHETYPE_INLINE_SIZE, ComponentError};
+use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ARCHETYPE_INLINE_SIZE, ComponentError, EntityLinkings};
 use std::{
-    cell::{RefCell, UnsafeCell},
+    cell::{RefCell, UnsafeCell, Ref, RefMut},
     marker::PhantomData,
 };
+
+// Helper functions for Query and EntryQuery
+// Get a specific component mask using our current query mask (faillable)
+// This function cannot be called two or more times with the same component type
+fn steal_component_mask<T: Component>(mask: Mask, accessed: RefMut<Mask>) -> Result<Mask, QueryError> {
+    // Component mask
+    let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
+
+    // Check if the component mask is even valid
+    if mask & mask == Mask::default() {
+        return Err(QueryError::NotLinked(registry::name::<T>()));
+    }
+
+    // Check if the component is currently mutably borrowed
+    if mask & *accessed != Mask::default() {
+        return Err(QueryError::AlreadyBorrowed(registry::name::<T>()));
+    }
+
+    // The component was borrowed, we cannot access it again
+    *accessed = *accessed | mask;
+
+    Ok(mask)
+}
 
 // Helps us get queries from archetypes
 pub struct Query<'a, Layout: LayoutQuery> {
@@ -30,64 +53,84 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
         })
     }
     // Get the query components in their respective layout
-    pub fn fetch(mut self) -> Result<Vec<Layout>, QueryError> {
+    pub fn fetch(self) -> Result<Vec<Layout>, QueryError> {
         Layout::query(&self)
     }
 
     /* #region Helper functions */
-    // Get a specific component mask. This might fail
-    fn get_component_mask<T: Component>(&self) -> Result<Mask, QueryError> {
-        // Component mask
-        let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
 
-        // Check if the component mask is even valid
-        if mask & self.mask == Mask::default() {
-            return Err(QueryError::Unlinked(registry::name::<T>()));
-        }
-
-        // Check if the component is currently mutably borrowed
-        if mask & *self.accessed.borrow() != Mask::default() {
-            return Err(QueryError::MutablyBorrowed(registry::name::<T>()));
-        }
-
-        Ok(mask)
-    }
     // Filter the archetypes based on the interally stored mask
-    pub fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
+    fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
         self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
     }
+    // Count the number of entities
+    pub fn count(&self) -> usize {
+        self.filter_archetypes().map(|archetype| archetype.entities().len()).sum::<usize>()
+    }
     // Get a vector that contains all the underlying components
-    pub fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
-        let component = self.get_component_mask::<T>()?;
-        // The component was borrowed, we cannot access it again
-        let mut accessed = self.accessed.borrow_mut();
-        *accessed = *accessed | component;
+    pub(crate) fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
+        let mask = steal_component_mask::<T>(self.mask, self.accessed.borrow_mut())?;
+
         Ok(self.filter_archetypes().flat_map(move |archetype| {
             // Fetch the components
-            let vec = archetype.vectors().get(&component).unwrap();
+            let vec = archetype.vectors().get(&mask).unwrap();
             let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
             vec.iter()
         }))
     }
-    // Get a singular pointer to a component in an archetype and at a specific bundleindex
-    pub fn get_ptr<T: Component>(&self, bundle: usize, mask: Mask) -> Result<*mut T, QueryError> {
-        // Get the component mask
-        let component_mask = self.get_component_mask::<T>()?;
+    /* #endregion */
+}
+
+// Query for use inside an entry
+pub struct EntityEntryQuery<'a> {
+    // Ecs Manager
+    pub(super) manager: &'a EcsManager,
+
+    // The entity bundle index
+    pub(super) bundle: usize,
+
+    // The archetype where our entity components are stored
+    pub(super) archetype: &'a Archetype,
+
+    // The queries that are currently being mutably borrowed
+    pub(super) accessed: RefCell<Mask>,
+}
+
+impl<'a> EntityEntryQuery<'a> {
+    // Create a new query from a specific entity
+    pub fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
+        // Get the entity linkings
+        let linkings = manager.entities.get(entity).and_then(|x| x.as_ref())?;
+        if !linkings.is_valid() { return None }
 
         // And then get the singular component
-        let archetype = self
-            .manager
-            .archetypes
-            .get(&mask)
-            .ok_or_else(|| QueryError::DirectAccessArchetypeMissing(mask, registry::name::<T>()))?;
+        let archetype = manager.archetypes.get(&linkings.mask).unwrap();
 
-        // Read from the rwlock
-        let storage = archetype.vectors().get(&component_mask).unwrap();
-
-        // Just fetch the pointer
+        Some(Self {
+            manager,
+            archetype,
+            bundle: linkings.bundle,
+            accessed: Default::default(),
+        })
+    }
+    // Get a pointer to a component that is linked to our entity
+    fn get_ptr<T: Component>(&self) -> Result<*mut T, QueryError> {
+        let component_mask = steal_component_mask::<T>(self.linkings.mask, self.accessed.borrow_mut())?;
+        let storage = self.archetype.vectors().get(&component_mask).unwrap();
         let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        let component = vec.get(bundle).ok_or_else(|| QueryError::DirectAccessBundleIndexInvalid(bundle, registry::name::<T>()))?;
+        let component = vec.get(self.bundle).unwrap();
+        
+        
+        
+
+
         Ok(component.get())
     }
-    /* #endregion */
+    // Get (immutable) and get mut (mutable)
+    pub(super) fn get<T: Component>() -> Result<&T, QueryError> {
+
+    }
+    pub(super) fn get<T: Component>() -> Result<&T, QueryError> {
+        
+    }
 }

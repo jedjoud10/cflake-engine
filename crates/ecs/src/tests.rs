@@ -46,7 +46,7 @@ mod tests {
 
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 8;
+        const COUNT: usize = u16::MAX as usize;
         let entity = Entity::default();
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
@@ -59,14 +59,16 @@ mod tests {
         // Query
         let i = std::time::Instant::now();
 
-        while i.elapsed().as_secs() < 5 {
+        while i.elapsed().as_secs() < 2 {
             manager.prepare();
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
             
             let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager).unwrap();
-            builder.fetch().unwrap();
+            for (_, _, x) in builder.fetch().unwrap() {
+                x.0 += 1;
+            }
 
             //panic!("remove");
 

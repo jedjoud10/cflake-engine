@@ -44,6 +44,13 @@ pub trait LayoutQuery: Sized {
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError>;
 }
 
+// Convert an iterator into the a properly sized vector
+fn into_vec<Item>(num: usize, iter: impl Iterator<Item = Item>) -> Vec<Item> {
+    let mut vec = Vec::<Item>::with_capacity(num);
+    iter.for_each(|x| vec.push(x));
+    vec
+}
+
 // LayoutQuery implementations
 // This could really use some macro magic, though I have no idea how I would make it work
 impl<A: QueryItem> LayoutQuery for A {
@@ -53,7 +60,7 @@ impl<A: QueryItem> LayoutQuery for A {
 
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError> {
         let a = query.get_cells()?.map(A::convert);
-        Ok(a.collect::<Vec<_>>())
+        Ok(into_vec(query.count(), a))
     }
 }
 impl<A: QueryItem, B: QueryItem> LayoutQuery for (A, B) {
@@ -64,7 +71,8 @@ impl<A: QueryItem, B: QueryItem> LayoutQuery for (A, B) {
     fn query(query: &Query<impl LayoutQuery>) -> Result<Vec<Self>, QueryError> {
         let a = query.get_cells()?.map(A::convert);
         let b = query.get_cells()?.map(B::convert);
-        Ok(izip!(a, b).collect::<Vec<_>>())
+        let zipped = izip!(a, b);
+        Ok(into_vec(query.count(), zipped))
     }
 }
 impl<A: QueryItem, B: QueryItem, C: QueryItem> LayoutQuery for (A, B, C) {
@@ -77,10 +85,6 @@ impl<A: QueryItem, B: QueryItem, C: QueryItem> LayoutQuery for (A, B, C) {
         let b = query.get_cells()?.map(B::convert);
         let c = query.get_cells()?.map(C::convert);
         let zipped = izip!(a, b, c);
-        //zipped.for_each(|(a, b, c)| {});
-        let i = std::time::Instant::now();
-        let res = Ok(zipped.collect::<Vec<_>>());
-        dbg!(i.elapsed());
-        res
+        Ok(into_vec(query.count(), zipped))
     }
 }
