@@ -11,7 +11,7 @@ pub struct LinkModifier<'a> {
     new_components: Vec<(Mask, Box<dyn Any>)>,
 
     // Linkings
-    linkings: Option<EntityLinkings>,
+    linkings: EntityLinkings,
 
     // The modified linking mask of the entity
     modified: Mask,
@@ -30,18 +30,17 @@ impl<'a> LinkModifier<'a> {
     // Nothing
 
     // Create a new extra link modifier
-    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Self {
+    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         // Fetch the entity's linking mask
-        let linkings = manager.entities.get(entity).and_then(|x| x.as_ref());
-        let mask = linkings.map(|linkings| linkings.mask).unwrap_or_default();
+        let linkings = *manager.entities.get(entity)?;
 
-        Self {
-            linkings: linkings.cloned(),
-            modified: mask,
+        Some(Self {
+            linkings,
+            modified: linkings.mask,
             manager,
             new_components: Default::default(),
             entity,
-        }
+        })
     }
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
@@ -60,14 +59,11 @@ impl<'a> LinkModifier<'a> {
         self.modified = new;
 
         // Check if we can simply overwrite the data
-        if let Some(linkings) = self.linkings {
-            if linkings.mask & mask != Mask::default() {
-                // The current archetype contains components of this type, so we can simply overwrite
-                //let mut entry = self.manager.entry(self.entity).unwrap();
-                //*entry.get_mut::<T>().unwrap() = component;
-                return Ok(());
-            } else { /* Add the component normally */
-            }
+        if self.linkings.mask & mask != Mask::default() {
+            // The current archetype contains components of this type, so we can simply overwrite
+            //let mut entry = self.manager.entry(self.entity).unwrap();
+            //*entry.get_mut::<T>().unwrap() = component;
+            return Ok(());
         } else { /* Add the component normally */
         }
 
@@ -93,32 +89,37 @@ impl<'a> LinkModifier<'a> {
     }
     // Apply the modifier
     // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
-    pub(crate) fn apply(self, linkings: &mut Option<EntityLinkings>) {
-        if let Some(linkings) = linkings {
-            // The entity is currently part of an archetype
-            let old = linkings.mask;
-            let new = self.modified;
+    pub(crate) fn apply(self, linkings: &mut EntityLinkings) {
+        // The entity is currently part of an archetype
+        let old = self.linkings.mask;
+        let new = self.modified;
 
-            // Check if we even modified the entity
-            if new != old {
-                // Make sure the target archetype is valid
-                self.manager.archetypes.insert_default(new, &self.manager.uniques);
+        // Check if we even modified the entity
+        if new != old {
+            // Make sure the target archetype is valid
+            self.manager.archetypes.insert_default(new, &self.manager.uniques);
 
-                // Get the current archetype along the target archetype, then move the entity
-                dbg!(old);
-                dbg!(new);
-                let (current, target) = self.manager.archetypes.get_two_mut(old, new).unwrap();
-                println!("Moved entity from {} to {}", old, new);
-                current.move_entity(self.entity, linkings, self.new_components, target);
-            }
+            // Get the current archetype along the target archetype, then move the entity
+            dbg!(old);
+            dbg!(new);
+            let (current, target) = self.manager.archetypes.get_two_mut(old, new).unwrap();
+            println!("Moved entity from {} to {}", old, new);
+            current.move_entity(self.entity, linkings, self.new_components, target);
+        }
+        /*
+        
+        if let (mask, Some(bundle)) = (&mut linkings.mask, linkings.bundle) {
+            
         } else {
             // First time linkings, make sure the target archetype is valid
             let archetype = self.manager.archetypes.insert_default(self.modified, &self.manager.uniques);
 
             // Validate the linkings, then insert the entity into the archetype
-            let linkings = linkings.get_or_insert(EntityLinkings { bundle: 0, mask: self.modified });
+            linkings.bundle.get_or_insert(0);
+            linkings.mask = self.modified;
             archetype.insert_with(self.new_components, linkings, self.entity);
         }
+        */
         /*
 
         // Insert the components into the archetype

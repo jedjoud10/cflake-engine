@@ -68,7 +68,7 @@ impl<'a> Linker<'a> {
         Ok(())
     }
     // Apply the linker
-    pub(crate) fn apply(self) {
+    pub(crate) fn apply(self) -> EntityLinkings {
         // Make sure the archetype exists
         let archetype = self.manager.archetypes.insert_default(self.mask, &self.manager.uniques);
 
@@ -77,8 +77,8 @@ impl<'a> Linker<'a> {
             .manager
             .entities
             .get_mut(self.entity)
-            .unwrap()
-            .get_or_insert_with(|| EntityLinkings { bundle: 0, mask: Mask::default() });
+            .unwrap();
         archetype.insert_with(self.new_components, linkings, self.entity);
+        return linkings.clone()
     }
 }

@@ -19,9 +19,9 @@ pub struct Archetype {
     #[getset(get = "pub(crate)")]
     states: ArchetypeStates,
 
-    // Bundle Index -> Entity
+    // Bundle Index -> (Entity, Pending for Removal)
     #[getset(get = "pub")]
-    entities: Vec<Entity>,
+    entities: Vec<(Entity, bool)>,
 
     // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
@@ -63,6 +63,11 @@ impl Archetype {
         }
     }
 
+    // Check if an entity is valid
+    pub(crate) fn is_valid(&self, bundle: usize) -> bool {
+        !self.entities().get(bundle).unwrap().1
+    }
+
     // Insert an entity into the arhcetype using a ComponentLinker
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Commons
@@ -82,7 +87,7 @@ impl Archetype {
         self.states.entities.set(len - 1, EntityState::Added);
 
         // Update the length
-        self.entities.push(entity);
+        self.entities.push((entity, false));
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
     }
@@ -93,7 +98,8 @@ impl Archetype {
         self.pending_for_removal.push(bundle);
 
         // Set the entity state
-        self.states.entities.set(bundle, EntityState::PendingForRemoval)
+        self.states.entities.set(bundle, EntityState::PendingForRemoval);
+        self.entities.get_mut(bundle).unwrap().1 = true;
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")

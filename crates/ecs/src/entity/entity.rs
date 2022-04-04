@@ -5,20 +5,14 @@ new_key_type! {
 }
 
 // Entity set
-pub type EntitySet = SlotMap<Entity, Option<EntityLinkings>>;
+pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 
 // Entity linking data that we will use to link entities to their specified components
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct EntityLinkings {
     // The component mask of this entity
     pub mask: Mask,
 
     // The index of the components in said archetype
     pub bundle: usize,
-}
-impl EntityLinkings {
-    // Check if the entity linkings are valid
-    pub fn is_valid(&self) -> bool {
-        self.mask != Default::default()
-    }
 }

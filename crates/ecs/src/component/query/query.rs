@@ -72,8 +72,7 @@ impl<'a> EntityEntryQuery<'a> {
     // Create a new query from a specific entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         // Get the entity linkings
-        let linkings = manager.entities.get(entity).and_then(|x| x.as_ref())?;
-        if !linkings.is_valid() { return None }
+        let linkings = manager.entities.get(entity)?;
 
         // And then get the singular component
         let archetype = manager.archetypes.get(&linkings.mask).unwrap();

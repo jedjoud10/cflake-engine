@@ -21,7 +21,7 @@ mod tests {
         struct SimpleValue(usize);
         registry::register::<SimpleValue>();
 
-        let entity = manager.insert_with(|_, linker| {
+        let entity = manager.insert(|_, linker| {
             linker.insert(Name("Le Jribi")).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
             linker.insert(SimpleValue(0)).unwrap();
@@ -47,19 +47,19 @@ mod tests {
 
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 8;
+        const COUNT: usize = 16;
         for x in 0..COUNT {
-            let _ = manager.insert_with(|_, modifs| {
-                modifs.insert(Name("Le Jribi")).unwrap();
-                modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                modifs.insert(SimpleValue(x)).unwrap();
+            let entity = manager.insert(|_, modifs| {
+                //modifs.insert(Name("Le Jribi")).unwrap();
+                //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
+                //modifs.insert(SimpleValue(x)).unwrap();
             });
         }
 
         // Query
         let i = std::time::Instant::now();
 
-        while i.elapsed().as_secs() < 2 {
+        for _ in 0..5 {
             manager.prepare();
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
