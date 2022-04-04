@@ -47,7 +47,7 @@ mod tests {
 
 
         // Make a new entity
-        const COUNT: usize = 2 as usize;
+        const COUNT: usize = u16::MAX as usize * 8;
         for x in 0..COUNT {
             let _ = manager.insert_with(|_, modifs| {
                 modifs.insert(Name("Le Jribi")).unwrap();

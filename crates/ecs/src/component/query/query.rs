@@ -9,12 +9,12 @@ use std::{
 // Helper functions for Query and EntryQuery
 // Get a specific component mask using our current query mask (faillable)
 // This function cannot be called two or more times with the same component type
-fn get_component_mask<T: Component>(mask: Mask) -> Result<Mask, QueryError> {
+fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
     // Component mask
     let mask = registry::mask::<T>().map_err(QueryError::ComponentError)?;
 
     // Check if the component mask is even valid
-    if mask & mask == Mask::default() {
+    if entry & mask == Mask::default() {
         return Err(QueryError::NotLinked(registry::name::<T>()));
     }
 
@@ -67,9 +67,6 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
 
 // Query for use inside an entry
 pub(crate) struct EntityEntryQuery<'a> {
-    // Ecs Manager
-    manager: &'a EcsManager,
-
     // The entity bundle index
     bundle: usize,
 
@@ -88,7 +85,6 @@ impl<'a> EntityEntryQuery<'a> {
         let archetype = manager.archetypes.get(&linkings.mask).unwrap();
 
         Some(Self {
-            manager,
             archetype,
             bundle: linkings.bundle,
         })
