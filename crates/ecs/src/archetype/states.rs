@@ -6,17 +6,17 @@ use entity::*;
 use std::{collections::HashMap, sync::Arc};
 
 // Convenience types aliases
-type ComponentStates = HashMap<Mask, ComponentMutationsBitfield, MaskHasher>;
-type EntityStates = EntityStatesBitfield;
+pub(crate) type ComponentStates = HashMap<Mask, ComponentMutationsBitfield, MaskHasher>;
+pub(crate) type EntityStates = EntityStatesBitfield;
 
 // Struct for organization
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub(crate) struct ArchetypeStates {
     // The mutated components
     pub components: Arc<ComponentStates>,
 
     // Bundle entity states
-    pub entities: Arc<EntityStates>,
+    pub entities: EntityStates,
 
     // Current bundle length
     pub length: usize,
@@ -29,7 +29,7 @@ impl ArchetypeStates {
         let components = Arc::new(masks.map(|mask| (mask, ComponentMutationsBitfield::default())).collect::<ComponentStates>());
 
         // Create a new entity states
-        let entities = Arc::new(EntityStates::default());
+        let entities = EntityStates::default();
 
         // Result
         Self { components, entities, length: 0 }

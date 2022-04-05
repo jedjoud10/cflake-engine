@@ -1,7 +1,7 @@
 use std::{mem::ManuallyDrop, cell::UnsafeCell, iter::FlatMap, slice::Iter};
 use itertools::{izip, Itertools};
 use smallvec::SmallVec;
-use crate::{Component, Entity, Mask, Query, QueryError, ComponentError, registry, Archetype};
+use crate::{Component, Entity, Mask, Query, QueryError, ComponentError, registry, Archetype, BundleState};
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
 pub trait QueryItem<'a>: Sized {
@@ -51,6 +51,19 @@ impl<'a> QueryItem<'a> for &'a Entity {
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
         archetype.entities().iter().map(|(entity, _)| entity)
     }
+    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
+}
+impl<'a> QueryItem<'a> for &'a BundleState {
+    type Output;
+
+    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+        // Get the two states and zip them into a BundleState
+        let entities = archetype.states().entities.iter();
+        let components = archetype.states().components.get().iter();
+        (0..archetype.entities().len()).into_iter().map(|index| {
+        })
+    }
+
     fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
 

@@ -20,13 +20,18 @@ impl ComponentMutationsBitfield {
     pub fn extend(&self) {
         self.vec.write().push(AtomicU64::new(0));
     }
+    // Bunde index into local pos and chunk pos
+    const fn to_indices(bundle: usize) -> (usize, usize) {
+        // Get the local position and chunk position
+        const FULL: usize = (u64::BITS as usize);
+        let local = bundle % FULL;
+        let chunk = bundle / FULL;
+        return (local, chunk)
+    }
     // Check if a component was mutated
     pub fn get(&self, bundle: usize) -> bool {
-        // Get the local position and chunk position
-        let local_pos = bundle % (u64::BITS as usize);
-        let chunk_pos = bundle / (u64::BITS as usize);
-
-        // Read from the vector now
+        // Be ready to read from the vector
+        let (local_pos, chunk_pos) = Self::to_indices(bundle);
         let read = self.vec.read();
         let bits = read.get(chunk_pos as usize).unwrap().load(Ordering::Relaxed);
 
@@ -35,39 +40,30 @@ impl ComponentMutationsBitfield {
     }
     // Set the mutation state of a specific component
     pub fn set(&self, bundle: usize) {
-        // Get the local position and chunk position
-        let local_pos = bundle % u64::BITS as usize;
-        let chunk_pos = bundle / u64::BITS as usize;
-
-        // Be ready to write to the vector
+        // Be ready to read from the vector
+        let (local_pos, chunk_pos) = Self::to_indices(bundle);
         let vec = self.vec.read();
         let atomic = vec.get(chunk_pos as usize).unwrap();
 
         // Write to the vector
         atomic.fetch_or(1 << local_pos, Ordering::Relaxed);
     }
-    // Iterate through the component states
+    // Iterate through the stored component states
     pub fn iter(&self) -> Iter {
-        Iter {
-            states: self,
-            chunk_len: self.vec.read().len(),
-            index: 0,
-            chunk: None,
-        }
+        Iter { states: self, len: self.vec.read().len(), bundle: 0, loaded: None }
     }
 }
 
+
 // Custom iterator
 pub(crate) struct Iter<'a> {
-    // Bitfield
+    // The main bitfield
     states: &'a ComponentMutationsBitfield,
-    chunk_len: usize,
+    len: usize,
 
-    // The current bundle index we are on
-    index: usize,
-
-    // The loaded chunk
-    chunk: Option<u64>,
+    // Iteration values
+    bundle: usize,
+    loaded: Option<u64>,
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -75,21 +71,22 @@ impl<'a> Iterator for Iter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Get the local position and chunk position
-        let local_pos = self.index % u64::BITS as usize;
-        let chunk_pos = self.index / u64::BITS as usize;
-        if local_pos == 0 {
-            self.chunk.take();
-        }
+        let (local_pos, chunk_pos) = ComponentMutationsBitfield::to_indices(self.bundle);
 
-        // Check if the chunk position is valid
-        if chunk_pos >= self.chunk_len {
-            return None;
-        };
+        // Clear the loaded chunk
+        if local_pos == 63 { self.loaded.take()?; }
 
-        // Load the chunk into memory if it wasn't already set
-        let bits = self.chunk.get_or_insert_with(|| self.states.vec.read()[chunk_pos].load(Ordering::Relaxed));
+        // Invalid chunk pos
+        if chunk_pos >= self.len { return None }
 
-        // Check if it is odd
-        Some(*bits % 2 == 1)
+        // Try to load a chunk into memory
+        self.loaded.get_or_insert_with(|| {
+            let chunks = self.states.vec.read();
+            chunks.get(chunk_pos).unwrap().load(Ordering::Relaxed)
+        });
+
+        // Read the mutation bit
+        let filtered = (self.loaded.unwrap() >> local_pos) % 2 == 1;
+        Some(filtered)
     }
 }
