@@ -47,12 +47,13 @@ impl<'a, T: Component> QueryItem<'a> for &'a mut T {
     fn try_get_mask() -> Result<Mask, ComponentError> { registry::mask::<T>() }
 }
 impl<'a> QueryItem<'a> for &'a Entity {
-    type Output = std::iter::Map<std::slice::Iter<'a, (Entity, bool)>, fn(&'a (Entity, bool)) -> Self>;
+    type Output = std::slice::Iter<'a, Entity>;
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
-        archetype.entities().iter().map(|(entity, _)| entity)
+        archetype.entities().iter()
     }
     fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
+/*
 impl<'a> QueryItem<'a> for &'a BundleState {
     type Output;
 
@@ -66,7 +67,7 @@ impl<'a> QueryItem<'a> for &'a BundleState {
 
     fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
-
+*/
 // Layout query that contains multiple QueryItems
 pub trait LayoutQuery<'a>: Sized {
     // Calculate the mask using the current layout

@@ -1,6 +1,6 @@
 use getset::CopyGetters;
 
-use crate::{archetype::entity::EntityState, Mask, Component, ComponentError, registry};
+use crate::{archetype::EntityState, Mask, Component, ComponentError, registry};
 
 // The bundle states that can be accessed using a query
 pub struct BundleState {
@@ -21,10 +21,11 @@ impl BundleState {
         self.components = components;
     } 
 
-    // State getters
+    // Get the current entity state
     pub fn entity(&self) -> EntityState { self.entity }
+
+    // Check if a component was mutated since the start of the frame
     pub fn was_mutated<T: Component>(&self) -> Result<bool, ComponentError> {
-        // Get the shift index of the component, so we can search for it's specific mutation bit
         let shifted = registry::mask::<T>()?.0.trailing_zeros();
         Ok((self.components >> shifted) & 1 == 1)
     }

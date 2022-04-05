@@ -1,8 +1,6 @@
-use super::{states::entity::EntityStatesBitfield, UniqueComponentStoragesHashMap};
+use super::{UniqueComponentStoragesHashMap};
 use crate::{
-    archetype::states::{component::ComponentMutationsBitfield, entity::EntityState},
-    entity::{Entity, EntityLinkings},
-    ArchetypeStates, ComponentStorage, Mask, MaskHasher,
+    entity::{Entity, EntityLinkings}, ComponentStorage, Mask, MaskHasher, ArchetypeStates, EntityState,
 };
 use getset::{CopyGetters, Getters};
 use std::{any::Any, collections::HashMap, sync::Arc};
@@ -15,13 +13,13 @@ pub struct Archetype {
     #[getset(get = "pub(crate)")]
     vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
 
-    // Component and entity states
-    #[getset(get = "pub(crate)")]
-    states: ArchetypeStates,
-
-    // Bundle Index -> (Entity, Pending for Removal)
+    // Bundle Index -> Entity
     #[getset(get = "pub")]
-    entities: Vec<(Entity, bool)>,
+    entities: Vec<Entity>,
+
+    // Stores the entity states and components states
+    #[getset(get = "pub")]
+    states: ArchetypeStates,
 
     // Bundles that must be removed by the next iteration
     #[getset(get = "pub")]
@@ -57,37 +55,33 @@ impl Archetype {
         Self {
             vectors,
             mask,
+            states: Default::default(),
             entities: Default::default(),
-            states: ArchetypeStates::new(masks.into_iter()),
             pending_for_removal: Default::default(),
         }
     }
 
     // Check if an entity is valid
     pub(crate) fn is_valid(&self, bundle: usize) -> bool {
-        !self.entities().get(bundle).unwrap().1
+        self.states.get_entity_state(bundle).unwrap() != EntityState::PendingForRemoval
     }
 
     // Insert an entity into the arhcetype using a ComponentLinker
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Commons
         let len = self.entities.len() + 1;
-        self.states.set_len(len);
 
         // Add the components using their specific storages
         for (mask, component) in components {
             let vec = self.vectors.get_mut(&mask).unwrap();
 
             // Insert the component
-            self.states.components[&mask].set(len - 1);
             vec.push(component);
         }
 
-        // Set the entity state
-        self.states.entities.set(len - 1, EntityState::Added);
-
         // Update the length
-        self.entities.push((entity, false));
+        self.entities.push(entity);
+        self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
     }
@@ -98,8 +92,7 @@ impl Archetype {
         self.pending_for_removal.push(bundle);
 
         // Set the entity state
-        self.states.entities.set(bundle, EntityState::PendingForRemoval);
-        self.entities.get_mut(bundle).unwrap().1 = true;
+        self.states.set_entity_state(bundle, EntityState::PendingForRemoval);
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
@@ -162,13 +155,8 @@ impl Archetype {
         // Remove "pending for deletion" components
         self.remove_all_pending();
 
-        // Iterate through the bitfields and reset them
-        for (mask, _vector) in self.vectors.iter() {
-            // Reset the states
-            self.states.components[mask].reset_to(false);
-        }
-
-        // Also reset the entity states
-        self.states.entities.reset_to(EntityState::None);
+        // Reset the component and entity states
+        self.vectors.iter().for_each(|(m, _)| self.states.reset_component_states(*m));
+        self.states.reset_entity_states();
     }
 }
