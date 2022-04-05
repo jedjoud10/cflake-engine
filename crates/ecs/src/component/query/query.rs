@@ -22,13 +22,13 @@ fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
 }
 
 // Helps us get queries from archetypes
-pub struct Query<'a, Layout: LayoutQuery> {
+pub struct Query<'a, Layout: LayoutQuery<'a>> {
     manager: &'a EcsManager,
     mask: Mask,
     _phantom: PhantomData<Layout>,
 }
 
-impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
+impl<'a, Layout: LayoutQuery<'a> + 'a> Query<'a, Layout> {
     // Create a new query builder from a layout
     pub fn new(manager: &'a mut EcsManager) -> Result<Self, QueryError> {
         Ok(Self {
@@ -39,26 +39,15 @@ impl<'a, Layout: LayoutQuery> Query<'a, Layout> {
     }
     // Get the query components in their respective layout
     pub fn fetch(self) -> Result<Vec<Layout>, QueryError> {
-        Layout::query(&self)
+        Layout::query_from_archetypes(self.get_filtered_archetypes(), self.count())
     }
-    // Filter the archetypes based on the interally stored mask
-    fn filter_archetypes(&self) -> impl Iterator<Item = &Archetype> {
-        self.manager.archetypes.iter().filter(move |archetype| self.mask & archetype.mask() == self.mask)
+    // Get the filtered archetypes
+    fn get_filtered_archetypes(&self) -> impl Iterator<Item = &'a Archetype> + '_ { 
+        self.manager.archetypes.iter().filter(|archetype| self.mask & archetype.mask() == self.mask)
     }
-    // Count the number of entities
-    pub fn count(&self) -> usize {
-        self.filter_archetypes().map(|archetype| archetype.entities().len()).sum::<usize>()
-    }
-    // Get a vector that contains all the underlying components
-    pub(super) fn get_cells<T: Component>(&self) -> Result<impl Iterator<Item = &UnsafeCell<T>>, QueryError> {
-        let mask = get_component_mask::<T>(self.mask)?;
-
-        Ok(self.filter_archetypes().flat_map(move |archetype| {
-            // Fetch the components
-            let vec = archetype.vectors().get(&mask).unwrap();
-            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-            vec.iter()
-        }))
+    // Count the number of entities that are valid for this query
+    fn count(&self) -> usize {
+        self.get_filtered_archetypes().map(|archetype| archetype.entities().len()).sum::<usize>()
     }
 }
 

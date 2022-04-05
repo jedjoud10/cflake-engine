@@ -28,7 +28,6 @@ mod tests {
         });
 
         /*
-        /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
             modifier.insert(Name("Trustrutrst")).unwrap();
@@ -48,12 +47,12 @@ mod tests {
 
 
         // Make a new entity
-        const COUNT: usize = 16;
+        const COUNT: usize = u16::MAX as usize * 1;
         for x in 0..COUNT {
             let entity = manager.insert(|_, modifs| {
-                //modifs.insert(Name("Le Jribi")).unwrap();
-                //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                //modifs.insert(SimpleValue(x)).unwrap();
+                modifs.insert(Name("Le Jribi")).unwrap();
+                modifs.insert(Tag("Jed est cool (trust)")).unwrap();
+                modifs.insert(SimpleValue(x)).unwrap();
             });
         }
 
@@ -66,10 +65,15 @@ mod tests {
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
             
-            let builder = Query::<(&Name, &Tag, &mut SimpleValue)>::new(&mut manager).unwrap();
-            for (name, _, x) in builder.fetch().unwrap() {
+            let builder = Query::<(&Name, &mut SimpleValue, &Entity)>::new(&mut manager).unwrap();
+            for (x, _, entity) in builder.fetch().unwrap() {
+                //println!("{:?}", entity);
+            }
+            /*
+            for (name, val) in .unwrap() {
                 //dbg!(name);
             }
+            */
             //panic!("remove");
 
             /*vec.par_iter().for_each(|value| {
@@ -106,7 +110,5 @@ mod tests {
             */
             dbg!(h.elapsed().as_micros());
         }
-    }
-    */
     }
 }

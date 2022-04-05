@@ -55,10 +55,10 @@ impl ArchetypeSet {
         self.archetypes.get_mut(*self.indices.get(mask)?)
     }
     // Iterate through each archetype
-    pub fn iter(&self) -> impl Iterator<Item = &Archetype> {
+    pub fn iter(&self) -> std::slice::Iter<Archetype> {
         self.archetypes.iter()
     }
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Archetype> {
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<Archetype> {
         self.archetypes.iter_mut()
     }
 }
