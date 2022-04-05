@@ -1,3 +1,5 @@
+use rayon::iter::{ParallelIterator, IntoParallelIterator};
+
 use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
@@ -18,7 +20,6 @@ fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
 
 // Query iterator because we need to assure that the EcsManager does not get mutated while we have a valid query
 pub struct QueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
-    manager: &'a EcsManager,
     iterator: std::vec::IntoIter<Layout>,
     _phantom: PhantomData<&'a mut EcsManager>,
 }
@@ -28,6 +29,23 @@ impl<'a, Layout: LayoutQuery<'a> + 'a> Iterator for QueryIterator<'a, Layout> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iterator.next()
+    }
+}
+
+// A query iterator that can be used in parallel using rayon
+pub struct ParQueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
+    iterator: rayon::vec::IntoIter<Layout>,
+    _phantom: PhantomData<&'a mut ()>,
+}
+
+impl<'a, Layout: LayoutQuery<'a> + 'a> ParallelIterator for ParQueryIterator<'a, Layout> {
+    type Item = Layout;
+
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item> {
+        self.iterator.drive_unindexed(consumer)
     }
 }
 
@@ -42,8 +60,8 @@ impl<'a> Query {
             .iter()
             .filter(move |archetype| mask & archetype.mask() == mask)
     }
-    // Create a new query builder from a layout
-    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<QueryIterator<'a, Layout>, QueryError> {
+    // Get a Vec<Layout> from the manager. This is it's own internal function because it will be used by new and par_new
+    fn internal<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<Vec<Layout>, QueryError> {
         // Get layout mask since we must do validity checks on each archetype
         let mask = Layout::mask().map_err(QueryError::ComponentError)?;
 
@@ -54,10 +72,20 @@ impl<'a> Query {
         
         // Get the iterator for the layout
         let iter = Self::filtered(manager, mask);
-        let iter = Layout::query_from_archetypes(iter, count)?.into_iter();
+        Layout::query_from_archetypes(iter, count)
+    }
+
+    // Create a new singlethreaded query from a layout
+    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<QueryIterator<'a, Layout>, QueryError> {
         Ok(QueryIterator {
-            manager,
-            iterator: iter,
+            iterator: Self::internal(manager)?.into_iter(),
+            _phantom: PhantomData::default(),
+        })
+    }
+    // Create a new multithreaded (using rayon) query from a layout
+    pub fn par_new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<ParQueryIterator<'a, Layout>, QueryError> {
+        Ok(ParQueryIterator {
+            iterator: Self::internal(manager)?.into_par_iter(),
             _phantom: PhantomData::default(),
         })
     }

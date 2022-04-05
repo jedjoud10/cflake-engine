@@ -5,7 +5,7 @@ use std::cell::UnsafeCell;
 // Pls don't touch dis. -Jed 11:49pm 04/04/2022
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
-pub trait QueryItem<'a>: Sized {
+pub trait QueryItem<'a>: Sized + Send {
     // Create a new iterator out of an archetype
     type Output: Iterator<Item = Self>;
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output;
@@ -68,7 +68,7 @@ impl<'a> QueryItem<'a> for &'a BundleState {
 }
 */
 // Layout query that contains multiple QueryItems
-pub trait LayoutQuery<'a>: Sized {
+pub trait LayoutQuery<'a>: Sized + Send {
     // Calculate the mask using the current layout
     fn mask() -> Result<Mask, ComponentError>;
     // Create a query using the mask
