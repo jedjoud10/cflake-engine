@@ -1,4 +1,4 @@
-use super::{Entity};
+use super::Entity;
 use crate::{Component, EcsManager, EntityEntryQuery, QueryError};
 
 // An entity entry that we can use to access multiple components on a single entity

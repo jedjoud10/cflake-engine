@@ -1,6 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet}, EntityEntry, EntityLinkings, LinkModifier, Linker, SystemSet,
+    entity::{Entity, EntitySet},
+    EntityEntry, EntityLinkings, LinkModifier, Linker, SystemSet,
 };
 
 // Manages ECS logic

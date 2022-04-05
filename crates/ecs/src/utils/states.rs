@@ -1,5 +1,3 @@
-
-
 use crate::{archetype::EntityState, registry, Component, ComponentError};
 
 // The bundle states that can be accessed using a query

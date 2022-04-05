@@ -1,5 +1,3 @@
-
-
 // Specific component errors
 pub enum ComponentError {
     // Component is not registered

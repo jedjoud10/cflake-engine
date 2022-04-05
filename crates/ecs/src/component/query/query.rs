@@ -1,10 +1,5 @@
-
-
 use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError};
-use std::{
-    cell::{UnsafeCell},
-    marker::PhantomData,
-};
+use std::{cell::UnsafeCell, marker::PhantomData};
 
 // Helper functions for Query and EntryQuery
 // Get a specific component mask using our current query mask (faillable)

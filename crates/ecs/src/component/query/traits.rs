@@ -1,7 +1,7 @@
 use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError};
-use itertools::{izip};
+use itertools::izip;
 
-use std::{cell::UnsafeCell};
+use std::cell::UnsafeCell;
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
 pub trait QueryItem<'a>: Sized {
