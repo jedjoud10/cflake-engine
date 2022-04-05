@@ -1,0 +1,36 @@
+use std::marker::PhantomData;
+
+use rayon::iter::ParallelIterator;
+
+use crate::{LayoutQuery, EcsManager};
+
+// Query iterator because we need to assure that the EcsManager does not get mutated while we have a valid query
+pub struct QueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
+    pub(super) iterator: std::vec::IntoIter<Layout>,
+    pub(super) _phantom: PhantomData<&'a mut EcsManager>,
+}
+
+impl<'a, Layout: LayoutQuery<'a> + 'a> Iterator for QueryIterator<'a, Layout> {
+    type Item = Layout;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iterator.next()
+    }
+}
+
+// A query iterator that can be used in parallel using rayon
+pub struct ParQueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
+    pub(super) iterator: rayon::vec::IntoIter<Layout>,
+    pub(super) _phantom: PhantomData<&'a mut ()>,
+}
+
+impl<'a, Layout: LayoutQuery<'a> + 'a> ParallelIterator for ParQueryIterator<'a, Layout> {
+    type Item = Layout;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item>,
+    {
+        self.iterator.drive_unindexed(consumer)
+    }
+}

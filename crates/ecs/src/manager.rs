@@ -84,7 +84,7 @@ impl EcsManager {
         function(entity, &mut linker);
 
         // Apply the changes (adds it to the archetype)
-        let new = linker.apply();
+        linker.apply();
 
         entity
     }

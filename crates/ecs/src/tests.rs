@@ -67,9 +67,7 @@ mod tests {
             //dbg!(entry.state());=
 
             let builder = Query::par_new::<(&Name, &mut SimpleValue, &Entity)>(&mut manager).unwrap();
-            builder.for_each(|(_x, _, _entity)| {
-
-            });
+            builder.for_each(|(_x, _, _entity)| {});
             /*
             for (name, val) in .unwrap() {
                 //dbg!(name);
