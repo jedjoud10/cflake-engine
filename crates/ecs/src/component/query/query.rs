@@ -17,32 +17,30 @@ fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
 }
 
 // Helps us get queries from archetypes
-pub struct Query<'a, Layout: LayoutQuery<'a>> {
-    manager: &'a EcsManager,
-    mask: Mask,
-    _phantom: PhantomData<Layout>,
-}
+pub struct Query;
 
-impl<'a, Layout: LayoutQuery<'a> + 'a> Query<'a, Layout> {
-    // Create a new query builder from a layout
-    pub fn new(manager: &'a mut EcsManager) -> Result<Self, QueryError> {
-        Ok(Self {
-            manager,
-            mask: Layout::mask().map_err(QueryError::ComponentError)?,
-            _phantom: Default::default(),
-        })
-    }
-    // Get the query components in their respective layout
-    pub fn fetch(self) -> Result<Vec<Layout>, QueryError> {
-        Layout::query_from_archetypes(self.get_filtered_archetypes(), self.count())
-    }
+impl<'a> Query {
     // Get the filtered archetypes
-    fn get_filtered_archetypes(&self) -> impl Iterator<Item = &'a Archetype> + '_ {
-        self.manager.archetypes.iter().filter(|archetype| self.mask & archetype.mask() == self.mask)
+    fn filtered(manager: &'a EcsManager, mask: Mask) -> impl Iterator<Item = &'a Archetype> {
+        manager
+            .archetypes
+            .iter()
+            .filter(move |archetype| mask & archetype.mask() == mask)
     }
-    // Count the number of entities that are valid for this query
-    fn count(&self) -> usize {
-        self.get_filtered_archetypes().map(|archetype| archetype.entities().len()).sum::<usize>()
+    // Create a new query builder from a layout
+    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<Vec<Layout>, QueryError> {
+        // Get layout mask since we must do validity checks on each archetype
+        let mask = Layout::mask().map_err(QueryError::ComponentError)?;
+
+        // Entity count first
+        let count = Self::filtered(manager, mask)
+            .map(|archetype| archetype.entities().len())
+            .sum::<usize>();
+        
+        // Get the iterator for the layout
+        let iter = Self::filtered(manager, mask);
+
+        Layout::query_from_archetypes(iter, count)
     }
 }
 

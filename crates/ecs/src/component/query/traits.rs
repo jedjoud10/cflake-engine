@@ -1,7 +1,8 @@
 use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError};
 use itertools::izip;
-
 use std::cell::UnsafeCell;
+
+// Pls don't touch dis. -Jed 11:49pm 04/04/2022
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
 pub trait QueryItem<'a>: Sized {
@@ -12,11 +13,12 @@ pub trait QueryItem<'a>: Sized {
     fn try_get_mask() -> Result<Mask, ComponentError>;
 }
 
+// TODO: Cache "let mask = registry::mask::<T>().unwrap();" somehow
+
 // QueryItem implementations
 impl<'a, T: Component> QueryItem<'a> for &'a T {
     type Output = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
-        // This result can be cached, but idk how
         let mask = registry::mask::<T>().unwrap();
         let vec = archetype.vectors().get(&mask).unwrap();
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
@@ -25,25 +27,16 @@ impl<'a, T: Component> QueryItem<'a> for &'a T {
     fn try_get_mask() -> Result<Mask, ComponentError> {
         registry::mask::<T>()
     }
-    /*
-    fn convert<'a, Input: Iterator<Item = &'a Archetype>, Output: Iterator<Item = Self>>(input: Input) -> Output {
-        let mask = registry::mask::<T>().unwrap();
-        input.flat_map(move |archetype| {
-            // Fetch the components
-            let vec = archetype.vectors().get(&mask).unwrap();
-            let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-            vec.iter()
-        })
-    }
-    */
 }
 impl<'a, T: Component> QueryItem<'a> for &'a mut T {
     type Output = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
-        // This result can be cached, but idk how
         let mask = registry::mask::<T>().unwrap();
         let vec = archetype.vectors().get(&mask).unwrap();
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
+        
+        // Set the proper component states
+
         vec.iter().map(|cell| unsafe { &mut *cell.get() })
     }
     fn try_get_mask() -> Result<Mask, ComponentError> {

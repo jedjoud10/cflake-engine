@@ -3,12 +3,12 @@ use crate::{
     entity::{Entity, EntityLinkings},
     ArchetypeStates, ComponentStorage, EntityState, Mask, MaskHasher,
 };
-use getset::{CopyGetters, Getters};
+use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, collections::HashMap};
 use tinyvec::ArrayVec;
 
 // Combination of multiple component types
-#[derive(Getters, CopyGetters)]
+#[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
     // Component vector
     #[getset(get = "pub(crate)")]
@@ -19,7 +19,7 @@ pub struct Archetype {
     entities: Vec<Entity>,
 
     // Stores the entity states and components states
-    #[getset(get = "pub")]
+    #[getset(get = "pub", get_mut = "pub")]
     states: ArchetypeStates,
 
     // Bundles that must be removed by the next iteration

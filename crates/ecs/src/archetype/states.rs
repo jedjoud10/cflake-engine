@@ -14,15 +14,16 @@ pub enum EntityState {
     PendingForRemoval = 2,
 }
 
-// Write entity state to a u64
-fn write_entity_state_u64(chunk: &mut u64, shift: usize, state: EntityState) {
-    let masked = *chunk & !(0b11 << shift);
-    let inserted = masked | unsafe { std::mem::transmute::<EntityState, u8>(state) as u64 };
+// Write entity state to a u64 (offset is the element shift, not raw bit shift)
+fn write_entity_state_u64(chunk: &mut u64, index: usize, state: EntityState) {
+    let masked = *chunk & !(0b11 << (index * 2));
+    let shifted = unsafe { std::mem::transmute::<EntityState, u8>(state) as u64 } << (index * 2);
+    let inserted = masked | shifted;
     *chunk = inserted;
 }
-// Read entity state from a u64
-fn read_entity_state_u64(chunk: u64, shift: usize) -> EntityState {
-    let filtered = (chunk >> shift) & 0b11;
+// Read entity state from a u64 (offset is the element shift, not raw bit shift)
+fn read_entity_state_u64(chunk: u64, index: usize) -> EntityState {
+    let filtered = (chunk >> (index * 2)) & 0b11;
     unsafe { std::mem::transmute::<u8, EntityState>(filtered as u8) }
 }
 // Write the value to a bit stored in a u8
@@ -36,14 +37,19 @@ fn write_bit_u8(chunk: &mut u8, state: bool, shift: usize) {
         *chunk &= !(1 << shift);
     }
 }
+// Get the shift counter of a specific unit mask
+const fn get_shift_count(mask: Mask) -> usize {
+    mask.0.trailing_zeros() as usize
+}
 // Read a bit stored in a u8
 const fn read_bit_u8(chunk: u8, shift: usize) -> bool {
     ((chunk >> shift) & 1) == 1
 }
 
-// Consts
-const HALF: usize = (u64::BITS as usize) / 2;
-const MINI: usize = u8::BITS as usize;
+// Constant bit counts
+const C64: usize = u64::BITS as usize;
+const C32: usize = C64 / 2;
+const C8: usize = u8::BITS as usize;
 
 // Contrains an EntityState bitfield and a ComponentMutatedState bitfield
 #[derive(Default)]
@@ -67,7 +73,7 @@ impl ArchetypeStates {
         self.length = new;
 
         // Check if we need to add a new entity states chunk
-        if new.div_ceil(HALF) > old.div_ceil(HALF) {
+        if new.div_ceil(C32) > old.div_ceil(C32) {
             self.entities.push(0);
         }
 
@@ -84,13 +90,13 @@ impl ArchetypeStates {
     // Set the entity state of a bundle
     pub fn set_entity_state(&mut self, bundle: usize, state: EntityState) {
         // Write the bit to the chunk
-        let chunk = self.entities.get_mut(bundle / HALF).unwrap();
-        write_entity_state_u64(chunk, bundle % HALF, state);
+        let chunk = self.entities.get_mut(bundle / C32).unwrap();
+        write_entity_state_u64(chunk, bundle % C32, state);
     }
     // Set the component state of a bundle using a specific component type
     pub fn set_component_state(&mut self, bundle: usize, mask: Mask, state: bool) {
         // We might need to extend the main vector
-        let shift = mask.0.trailing_zeros() as usize;
+        let shift = get_shift_count(mask);
         if shift >= self.components.len() {
             // Extend the main vector with many empty chunks
             self.components.resize_with(shift + 1, || None);
@@ -101,18 +107,16 @@ impl ArchetypeStates {
         let row = collumn.get_mut(bundle).unwrap();
 
         // Set the bit
-        write_bit_u8(row, state, shift % MINI);
+        write_bit_u8(row, state, shift % C8);
     }
     // Set all the components states of a specific component type to "state"
-    pub fn set_all_component_states(&mut self, mask: Mask, state: bool) {
-        // We are 100% sure that we have a valid collumn
-        let shift = mask.0.trailing_zeros() as usize;
-        let collumn = self.components[shift].as_mut().unwrap();
+    pub fn set_all_component_states(&mut self, mask: Mask, state: bool) -> Option<()> {
+        let shift = get_shift_count(mask);
+        let collumn = self.components.get_mut(shift)?.as_mut().unwrap();
 
         // Set all the states of a specific bit
-        for row in collumn {
-            write_bit_u8(row, state, shift % MINI);
-        }
+        collumn.iter_mut().for_each(|row| write_bit_u8(row, state, shift % C8));
+        Some(())
     }
 
     // Get the state of an entity
@@ -123,7 +127,7 @@ impl ArchetypeStates {
         }
 
         // We are 100% sure that we have a valid collumn
-        let state = read_entity_state_u64(*self.entities.get(bundle / HALF).unwrap(), bundle % HALF);
+        let state = read_entity_state_u64(*self.entities.get(bundle / C32).unwrap(), bundle % C32);
         Some(state)
     }
     // Get the state of a component
@@ -134,9 +138,9 @@ impl ArchetypeStates {
         }
 
         // We are 100% sure that we have a valid collumn
-        let shift = mask.0.trailing_zeros() as usize;
+        let shift = get_shift_count(mask);
         let chunk = self.components[shift].as_ref().unwrap()[bundle];
-        Some(read_bit_u8(chunk, shift % MINI))
+        Some(read_bit_u8(chunk, shift % C8))
     }
 
     // Reset all the entity states to their default value
@@ -150,7 +154,7 @@ impl ArchetypeStates {
         self.set_all_component_states(mask, false);
     }
 
-    // Iterators
+    // Iterate through the entity states using a cached iterator
     pub fn iter_entities(&self) -> EntityStatesIter {
         EntityStatesIter {
             states: self,
@@ -158,14 +162,20 @@ impl ArchetypeStates {
             bundle: 0,
         }
     }
-    /*
-    pub fn iter_components(&self) -> ComponentStatesIter {
+    // Iterate through the component mutation states using a cached iterator
+    pub fn iter_components(&self, mask: Mask) -> Option<ComponentStatesIter> {
+        let collumn = self.components.get(get_shift_count(mask)).and_then(|x| x.as_ref())?.as_slice();
 
+        Some(ComponentStatesIter {
+            states: self,
+            collumn,
+            chunk: None,
+            bundle: 0,
+        })
     }
-    */
 }
 
-// Entity state iterator
+// Custom cached iterators for better performace
 pub struct EntityStatesIter<'a> {
     states: &'a ArchetypeStates,
     chunk: Option<u64>,
@@ -181,16 +191,47 @@ impl<'a> Iterator for EntityStatesIter<'a> {
             return None;
         }
 
-        // Invalidate when we reach the end of the chunk
-        if self.bundle == HALF - 1 {
-            dbg!("reset");
-            self.chunk.take();
+        // Invalidate when we reach the start of a new chunk
+        if self.bundle % C32 == 0 {
+            self.chunk = None
         }
 
         // Load a chunk into memory when needed
-        let chunk = self.chunk.get_or_insert_with(|| *self.states.entities.get(self.bundle / HALF).unwrap());
+        let chunk = self.chunk.get_or_insert_with(|| self.states.entities[self.bundle / C32]);
+        // Super ez
+        let res = read_entity_state_u64(*chunk, self.bundle % C32);
+        self.bundle += 1;
+        Some(res)
+    }
+}
+
+pub struct ComponentStatesIter<'a> {
+    states: &'a ArchetypeStates,
+    collumn: &'a [u8],
+    chunk: Option<u8>,
+    bundle: usize,
+}
+
+impl<'a> Iterator for ComponentStatesIter<'a> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Check if the index is valid
+        if self.bundle >= self.states.length {
+            return None;
+        }
+
+        // Invalidate when we reach the start of a new chunk
+        if self.bundle % C8 == 0 {
+            self.chunk = None
+        }
+
+        // Load a chunk into memory when needed
+        let chunk = self.chunk.get_or_insert_with(|| self.collumn[self.bundle / C8]);
 
         // Super ez
-        Some(read_entity_state_u64(*chunk, self.bundle % HALF))
+        let res = read_bit_u8(*chunk, self.bundle % C8);
+        self.bundle += 1;
+        Some(res)
     }
 }
