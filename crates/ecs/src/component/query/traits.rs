@@ -1,7 +1,7 @@
-use crate::{registry, Archetype, BundleState, Component, ComponentError, Entity, Mask, Query, QueryError};
-use itertools::{izip, Itertools};
-use smallvec::SmallVec;
-use std::{cell::UnsafeCell, iter::FlatMap, mem::ManuallyDrop, slice::Iter};
+use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError};
+use itertools::{izip};
+
+use std::{cell::UnsafeCell};
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
 pub trait QueryItem<'a>: Sized {

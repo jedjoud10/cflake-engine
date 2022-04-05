@@ -1,8 +1,8 @@
-use smallvec::SmallVec;
 
-use crate::{registry, Archetype, Component, ComponentError, EcsManager, Entity, EntityLinkings, LayoutQuery, Mask, QueryError};
+
+use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError};
 use std::{
-    cell::{Ref, RefCell, RefMut, UnsafeCell},
+    cell::{UnsafeCell},
     marker::PhantomData,
 };
 

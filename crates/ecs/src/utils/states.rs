@@ -1,6 +1,6 @@
-use getset::CopyGetters;
 
-use crate::{archetype::EntityState, registry, Component, ComponentError, Mask};
+
+use crate::{archetype::EntityState, registry, Component, ComponentError};
 
 // The bundle states that can be accessed using a query
 pub struct BundleState {

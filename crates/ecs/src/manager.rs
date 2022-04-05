@@ -1,7 +1,6 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet},
-    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, SystemSet,
+    entity::{Entity, EntitySet}, EntityEntry, EntityLinkings, LinkModifier, Linker, SystemSet,
 };
 
 // Manages ECS logic
@@ -66,7 +65,6 @@ impl EcsManager {
         // Apply the changes
         linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
-        let states = self.archetypes.get(&copied.mask).unwrap().states().clone();
 
         Some(())
     }
@@ -86,7 +84,6 @@ impl EcsManager {
 
         // Apply the changes (adds it to the archetype)
         let new = linker.apply();
-        let states = self.archetypes.get(&new.mask).unwrap().states().clone();
 
         entity
     }

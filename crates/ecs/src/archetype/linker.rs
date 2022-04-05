@@ -75,6 +75,6 @@ impl<'a> Linker<'a> {
         // Insert the components into the archetype
         let linkings = self.manager.entities.get_mut(self.entity).unwrap();
         archetype.insert_with(self.new_components, linkings, self.entity);
-        return linkings.clone();
+        *linkings
     }
 }

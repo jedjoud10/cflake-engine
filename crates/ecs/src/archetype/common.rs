@@ -1,6 +1,6 @@
 use crate::{ComponentStorage, Mask};
 use nohash_hasher::NoHashHasher;
-use std::{collections::HashMap, hash::BuildHasherDefault, sync::Arc};
+use std::{collections::HashMap, hash::BuildHasherDefault};
 
 // NoHash hasher that works with Mask
 pub type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
