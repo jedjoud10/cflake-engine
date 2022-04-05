@@ -64,8 +64,8 @@ mod tests {
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
 
-            let builder = Query::<(&Name, &mut SimpleValue, &Entity)>::new(&mut manager).unwrap();
-            for (_x, _, _entity) in builder.fetch().unwrap() {
+            let builder = Query::new::<(&Name, &mut SimpleValue, &Entity)>(&mut manager).unwrap();
+            for (_x, _, _entity) in builder {
                 //println!("{:?}", entity);
             }
             /*

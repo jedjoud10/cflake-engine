@@ -16,7 +16,22 @@ fn get_component_mask<T: Component>(entry: Mask) -> Result<Mask, QueryError> {
     Ok(mask)
 }
 
-// Helps us get queries from archetypes
+// Query iterator because we need to assure that the EcsManager does not get mutated while we have a valid query
+pub struct QueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
+    manager: &'a EcsManager,
+    iterator: std::vec::IntoIter<Layout>,
+    _phantom: PhantomData<&'a mut EcsManager>,
+}
+
+impl<'a, Layout: LayoutQuery<'a> + 'a> Iterator for QueryIterator<'a, Layout> {
+    type Item = Layout;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iterator.next()
+    }
+}
+
+// A more efficient method to iterate through all the components in the world 
 pub struct Query;
 
 impl<'a> Query {
@@ -28,7 +43,7 @@ impl<'a> Query {
             .filter(move |archetype| mask & archetype.mask() == mask)
     }
     // Create a new query builder from a layout
-    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<Vec<Layout>, QueryError> {
+    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<QueryIterator<'a, Layout>, QueryError> {
         // Get layout mask since we must do validity checks on each archetype
         let mask = Layout::mask().map_err(QueryError::ComponentError)?;
 
@@ -39,8 +54,12 @@ impl<'a> Query {
         
         // Get the iterator for the layout
         let iter = Self::filtered(manager, mask);
-
-        Layout::query_from_archetypes(iter, count)
+        let iter = Layout::query_from_archetypes(iter, count)?.into_iter();
+        Ok(QueryIterator {
+            manager,
+            iterator: iter,
+            _phantom: PhantomData::default(),
+        })
     }
 }
 
