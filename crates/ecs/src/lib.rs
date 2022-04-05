@@ -1,5 +1,6 @@
 #![feature(int_roundings)]
 #![feature(bool_to_option)]
+#![feature(test)]
 // Modules
 mod archetype;
 mod component;

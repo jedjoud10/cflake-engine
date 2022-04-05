@@ -1,3 +1,4 @@
+/*
 #[cfg(test)]
 mod tests {
     use rayon::iter::ParallelIterator;
@@ -110,4 +111,31 @@ mod tests {
             dbg!(h.elapsed().as_micros());
         }
     }
+}
+*/
+
+
+extern crate test;
+use test::Bencher;
+
+use crate::{ArchetypeStates, Mask};
+
+#[bench]
+fn test_states(b: &mut Bencher) {
+    let mut states = ArchetypeStates::default();
+    for x in 0..512 {
+        states.push();
+        states.set_component_state(x, Mask(1), x % 2 == 0);
+        //states.set_component_state(x, Mask(2), x % 4 == 0);
+        //states.set_component_state(x, Mask(4), x % 8 == 0);
+        /*
+        for y in 0..1 {
+        }
+        */
+    }
+    b.iter(|| {
+        for x in states.iter_component_states_lanes() {
+            //println!("{:b}", x);
+        }
+    })
 }

@@ -1,4 +1,4 @@
-use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError};
+use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError, EntityState, ComponentStatesLane, ComponentStatesLaneIter};
 use itertools::izip;
 use std::cell::UnsafeCell;
 
@@ -51,6 +51,15 @@ impl<'a> QueryItem<'a> for &'a Entity {
     fn try_get_mask() -> Result<Mask, ComponentError> {
         Ok(Mask::default())
     }
+}
+impl<'a> QueryItem<'a> for &'a ComponentStatesLane {
+    type Output = ComponentStatesLaneIter<'a>;
+
+    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+        archetype.states().iter_component_states_lanes()
+    }
+
+    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
 /*
 impl<'a> QueryItem<'a> for &'a BundleState {

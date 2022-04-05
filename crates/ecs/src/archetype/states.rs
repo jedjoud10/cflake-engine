@@ -1,4 +1,4 @@
-use crate::Mask;
+use crate::{Mask, Component, registry, ComponentError};
 
 // Entity state of a stored bundle in the archetype
 #[repr(u8)]
@@ -103,7 +103,7 @@ impl ArchetypeStates {
         }
 
         // Make sure the current collumn is valid
-        let collumn = (&mut self.components[shift]).get_or_insert(vec![0; self.length]);
+        let collumn = (&mut self.components[shift / C8]).get_or_insert(vec![0; self.length]);
         let row = collumn.get_mut(bundle).unwrap();
 
         // Set the bit
@@ -165,13 +165,14 @@ impl ArchetypeStates {
     }
     // Iterate through the component states of a unique component mask using a cached iterator
     pub fn iter_component_states(&self, mask: Mask) -> Option<ComponentStatesIter> {
-        let collumn = self.components.get(get_shift_count(mask)).and_then(|x| x.as_ref())?.as_slice();
+        let shift = get_shift_count(mask);
+        let collumn = self.components.get(shift).and_then(|x| x.as_ref())?.as_slice();
 
         Some(ComponentStatesIter {
             collumn,
-            chunk: None,
             bundle: 0,
             length: self.length,
+            mask_shift: shift,
         })
     }
     // Iterate through the component states of all the components at the same time
@@ -218,8 +219,8 @@ impl<'a> Iterator for EntityStatesIter<'a> {
 // Iterates through the states of a specific component type
 pub struct ComponentStatesIter<'a> {
     collumn: &'a [u8],
-    chunk: Option<u8>,
     bundle: usize,
+    mask_shift: usize,
     length: usize,
 }
 
@@ -232,18 +233,24 @@ impl<'a> Iterator for ComponentStatesIter<'a> {
             return None;
         }
 
-        // Invalidate when we reach the start of a new chunk
-        if self.bundle % C8 == 0 {
-            self.chunk = None
-        }
-
-        // Load a sub-row into memory when needed
-        let chunk = self.chunk.get_or_insert_with(|| self.collumn[self.bundle / C8]);
+        // Always load the row first
+        let row = self.collumn[self.bundle];
 
         // Super ez
-        let res = read_bit_u8(*chunk, self.bundle % C8);
+        let res = read_bit_u8(row, self.mask_shift % C8);
         self.bundle += 1;
         Some(res)
+    }
+}
+
+// Component states lane that contains the states for multiple component types
+pub struct ComponentStatesLane(u64);
+
+impl ComponentStatesLane {
+    // Check if a component was mutated since the start of the frame
+    pub fn was_mutated<T: Component>(&self) -> Result<bool, ComponentError> {
+        let shifted = registry::mask::<T>()?.0.trailing_zeros();
+        Ok((self.0 >> shifted) & 1 == 1)
     }
 }
 
@@ -269,6 +276,7 @@ impl<'a> Iterator for ComponentStatesLaneIter<'a> {
             let row = collumn.as_ref().map(|c| c[self.bundle]).unwrap_or_default() as u64;
             (row << (collumn_offset * 8)) | lane
         });
+        self.bundle += 1;
         Some(lane)
     }
 }
