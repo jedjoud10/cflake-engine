@@ -155,31 +155,41 @@ impl ArchetypeStates {
     }
 
     // Iterate through the entity states using a cached iterator
-    pub fn iter_entities(&self) -> EntityStatesIter {
+    pub fn iter_entity_states(&self) -> EntityStatesIter {
         EntityStatesIter {
-            states: self,
+            states: self.entities.as_slice(),
             chunk: None,
             bundle: 0,
+            length: self.length,
         }
     }
-    // Iterate through the component mutation states using a cached iterator
-    pub fn iter_components(&self, mask: Mask) -> Option<ComponentStatesIter> {
+    // Iterate through the component states of a unique component mask using a cached iterator
+    pub fn iter_component_states(&self, mask: Mask) -> Option<ComponentStatesIter> {
         let collumn = self.components.get(get_shift_count(mask)).and_then(|x| x.as_ref())?.as_slice();
 
         Some(ComponentStatesIter {
-            states: self,
             collumn,
             chunk: None,
             bundle: 0,
+            length: self.length,
         })
+    }
+    // Iterate through the component states of all the components at the same time
+    pub fn iter_component_states_lanes(&self) -> ComponentStatesLaneIter {
+        ComponentStatesLaneIter {
+            collumns: self.components.as_slice(),
+            bundle: 0,
+            length: self.length,
+        }
     }
 }
 
 // Custom cached iterators for better performace
 pub struct EntityStatesIter<'a> {
-    states: &'a ArchetypeStates,
+    states: &'a [u64],
     chunk: Option<u64>,
     bundle: usize,
+    length: usize,
 }
 
 impl<'a> Iterator for EntityStatesIter<'a> {
@@ -187,7 +197,7 @@ impl<'a> Iterator for EntityStatesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Check if the index is valid
-        if self.bundle >= self.states.length {
+        if self.bundle >= self.length {
             return None;
         }
 
@@ -197,7 +207,7 @@ impl<'a> Iterator for EntityStatesIter<'a> {
         }
 
         // Load a chunk into memory when needed
-        let chunk = self.chunk.get_or_insert_with(|| self.states.entities[self.bundle / C32]);
+        let chunk = self.chunk.get_or_insert_with(|| self.states[self.bundle / C32]);
         // Super ez
         let res = read_entity_state_u64(*chunk, self.bundle % C32);
         self.bundle += 1;
@@ -205,11 +215,12 @@ impl<'a> Iterator for EntityStatesIter<'a> {
     }
 }
 
+// Iterates through the states of a specific component type
 pub struct ComponentStatesIter<'a> {
-    states: &'a ArchetypeStates,
     collumn: &'a [u8],
     chunk: Option<u8>,
     bundle: usize,
+    length: usize,
 }
 
 impl<'a> Iterator for ComponentStatesIter<'a> {
@@ -217,7 +228,7 @@ impl<'a> Iterator for ComponentStatesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Check if the index is valid
-        if self.bundle >= self.states.length {
+        if self.bundle >= self.length {
             return None;
         }
 
@@ -226,12 +237,38 @@ impl<'a> Iterator for ComponentStatesIter<'a> {
             self.chunk = None
         }
 
-        // Load a chunk into memory when needed
+        // Load a sub-row into memory when needed
         let chunk = self.chunk.get_or_insert_with(|| self.collumn[self.bundle / C8]);
 
         // Super ez
         let res = read_bit_u8(*chunk, self.bundle % C8);
         self.bundle += 1;
         Some(res)
+    }
+}
+
+// Iterates through all the components states, and pack each unique state into a u64 lane
+pub struct ComponentStatesLaneIter<'a> {
+    collumns: &'a [Option<Vec<u8>>],
+    bundle: usize,
+    length: usize,
+}
+
+impl<'a> Iterator for ComponentStatesLaneIter<'a> {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Check if the index is valid
+        if self.bundle >= self.length {
+            return None;
+        }
+
+        // No caching, we must always load a new lane into memory
+        let lane = self.collumns.iter().enumerate().fold(0u64, |lane, (collumn_offset, collumn)| {
+            // Collumn row -> Global lane
+            let row = collumn.as_ref().map(|c| c[self.bundle]).unwrap_or_default() as u64;
+            (row << (collumn_offset * 8)) | lane
+        });
+        Some(lane)
     }
 }
