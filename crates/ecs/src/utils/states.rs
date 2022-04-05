@@ -1,6 +1,6 @@
 use getset::CopyGetters;
 
-use crate::{archetype::EntityState, Mask, Component, ComponentError, registry};
+use crate::{archetype::EntityState, registry, Component, ComponentError, Mask};
 
 // The bundle states that can be accessed using a query
 pub struct BundleState {
@@ -10,7 +10,10 @@ pub struct BundleState {
 
 impl Default for BundleState {
     fn default() -> Self {
-        Self { entity: EntityState::Added, components: Default::default() }
+        Self {
+            entity: EntityState::Added,
+            components: Default::default(),
+        }
     }
 }
 
@@ -19,10 +22,12 @@ impl BundleState {
     pub(crate) fn update(&mut self, entity: EntityState, components: u64) {
         self.entity = entity;
         self.components = components;
-    } 
+    }
 
     // Get the current entity state
-    pub fn entity(&self) -> EntityState { self.entity }
+    pub fn entity(&self) -> EntityState {
+        self.entity
+    }
 
     // Check if a component was mutated since the start of the frame
     pub fn was_mutated<T: Component>(&self) -> Result<bool, ComponentError> {

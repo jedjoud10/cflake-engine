@@ -1,6 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry, Component, registry, EntityLinkings,
+    entity::{Entity, EntitySet},
+    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, SystemSet,
 };
 
 // Manages ECS logic
@@ -54,7 +55,9 @@ impl EcsManager {
     pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
-        if !self.is_valid(entity).unwrap() { return None }
+        if !self.is_valid(entity).unwrap() {
+            return None;
+        }
 
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity).unwrap();
@@ -94,9 +97,11 @@ impl EcsManager {
         // Get the archetype and the linkings, and check if the latter is valid
         let linkings = self.entities.get_mut(entity)?;
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        if !archetype.is_valid(linkings.bundle) { return None }
+        if !archetype.is_valid(linkings.bundle) {
+            return None;
+        }
 
-        // Apply the "pending for removal" state                
+        // Apply the "pending for removal" state
         archetype.add_pending_for_removal(linkings.bundle);
         linkings.mask = Default::default();
         Some(())

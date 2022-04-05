@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use rayon::iter::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator};
+    use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
     use crate::*;
     #[test]
@@ -45,7 +45,6 @@ mod tests {
         let name = entry.get_mut::<Name>().unwrap();
         // Get the query
 
-
         // Make a new entity
         const COUNT: usize = u16::MAX as usize * 1;
         for x in 0..COUNT {
@@ -64,7 +63,7 @@ mod tests {
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
-            
+
             let builder = Query::<(&Name, &mut SimpleValue, &Entity)>::new(&mut manager).unwrap();
             for (x, _, entity) in builder.fetch().unwrap() {
                 //println!("{:?}", entity);

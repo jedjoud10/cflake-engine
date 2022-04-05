@@ -107,9 +107,9 @@ impl<'a> LinkModifier<'a> {
             current.move_entity(self.entity, linkings, self.new_components, target);
         }
         /*
-        
+
         if let (mask, Some(bundle)) = (&mut linkings.mask, linkings.bundle) {
-            
+
         } else {
             // First time linkings, make sure the target archetype is valid
             let archetype = self.manager.archetypes.insert_default(self.modified, &self.manager.uniques);

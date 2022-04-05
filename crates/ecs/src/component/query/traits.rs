@@ -1,7 +1,7 @@
-use std::{mem::ManuallyDrop, cell::UnsafeCell, iter::FlatMap, slice::Iter};
+use crate::{registry, Archetype, BundleState, Component, ComponentError, Entity, Mask, Query, QueryError};
 use itertools::{izip, Itertools};
 use smallvec::SmallVec;
-use crate::{Component, Entity, Mask, Query, QueryError, ComponentError, registry, Archetype, BundleState};
+use std::{cell::UnsafeCell, iter::FlatMap, mem::ManuallyDrop, slice::Iter};
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
 pub trait QueryItem<'a>: Sized {
@@ -22,7 +22,9 @@ impl<'a, T: Component> QueryItem<'a> for &'a T {
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
         vec.iter().map(|cell| unsafe { &*cell.get() })
     }
-    fn try_get_mask() -> Result<Mask, ComponentError> { registry::mask::<T>() }
+    fn try_get_mask() -> Result<Mask, ComponentError> {
+        registry::mask::<T>()
+    }
     /*
     fn convert<'a, Input: Iterator<Item = &'a Archetype>, Output: Iterator<Item = Self>>(input: Input) -> Output {
         let mask = registry::mask::<T>().unwrap();
@@ -44,14 +46,18 @@ impl<'a, T: Component> QueryItem<'a> for &'a mut T {
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
         vec.iter().map(|cell| unsafe { &mut *cell.get() })
     }
-    fn try_get_mask() -> Result<Mask, ComponentError> { registry::mask::<T>() }
+    fn try_get_mask() -> Result<Mask, ComponentError> {
+        registry::mask::<T>()
+    }
 }
 impl<'a> QueryItem<'a> for &'a Entity {
     type Output = std::slice::Iter<'a, Entity>;
     fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
         archetype.entities().iter()
     }
-    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
+    fn try_get_mask() -> Result<Mask, ComponentError> {
+        Ok(Mask::default())
+    }
 }
 /*
 impl<'a> QueryItem<'a> for &'a BundleState {
@@ -91,9 +97,7 @@ impl<'a, A: QueryItem<'a>> LayoutQuery<'a> for A {
     }
 
     fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
-        Ok(into_vec(count, archetypes.flat_map(|archetype| {
-            A::archetype_into_iter(archetype)
-        })))
+        Ok(into_vec(count, archetypes.flat_map(|archetype| A::archetype_into_iter(archetype))))
     }
 }
 impl<'a, A: QueryItem<'a>, B: QueryItem<'a>> LayoutQuery<'a> for (A, B) {
@@ -102,9 +106,10 @@ impl<'a, A: QueryItem<'a>, B: QueryItem<'a>> LayoutQuery<'a> for (A, B) {
     }
 
     fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
-        Ok(into_vec(count, archetypes.flat_map(|archetype| {
-            izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype))
-        })))
+        Ok(into_vec(
+            count,
+            archetypes.flat_map(|archetype| izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype))),
+        ))
     }
 }
 impl<'a, A: QueryItem<'a>, B: QueryItem<'a>, C: QueryItem<'a>> LayoutQuery<'a> for (A, B, C) {
@@ -113,8 +118,9 @@ impl<'a, A: QueryItem<'a>, B: QueryItem<'a>, C: QueryItem<'a>> LayoutQuery<'a> f
     }
 
     fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
-        Ok(into_vec(count, archetypes.flat_map(|archetype| {
-            izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype), C::archetype_into_iter(archetype))
-        })))
+        Ok(into_vec(
+            count,
+            archetypes.flat_map(|archetype| izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype), C::archetype_into_iter(archetype))),
+        ))
     }
 }

@@ -1,6 +1,6 @@
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-use world::ecs::{Entity, Query, BundleData};
+use world::ecs::{BundleData, Entity, Query};
 use world::World;
 // The camera system update loop
 fn run(world: &mut World) {

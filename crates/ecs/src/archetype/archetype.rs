@@ -1,6 +1,7 @@
-use super::{UniqueComponentStoragesHashMap};
+use super::UniqueComponentStoragesHashMap;
 use crate::{
-    entity::{Entity, EntityLinkings}, ComponentStorage, Mask, MaskHasher, ArchetypeStates, EntityState,
+    entity::{Entity, EntityLinkings},
+    ArchetypeStates, ComponentStorage, EntityState, Mask, MaskHasher,
 };
 use getset::{CopyGetters, Getters};
 use std::{any::Any, collections::HashMap, sync::Arc};

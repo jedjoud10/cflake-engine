@@ -73,12 +73,8 @@ impl<'a> Linker<'a> {
         let archetype = self.manager.archetypes.insert_default(self.mask, &self.manager.uniques);
 
         // Insert the components into the archetype
-        let linkings = self
-            .manager
-            .entities
-            .get_mut(self.entity)
-            .unwrap();
+        let linkings = self.manager.entities.get_mut(self.entity).unwrap();
         archetype.insert_with(self.new_components, linkings, self.entity);
-        return linkings.clone()
+        return linkings.clone();
     }
 }

@@ -1,8 +1,8 @@
 use smallvec::SmallVec;
 
-use crate::{Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, ComponentError, EntityLinkings, registry};
+use crate::{registry, Archetype, Component, ComponentError, EcsManager, Entity, EntityLinkings, LayoutQuery, Mask, QueryError};
 use std::{
-    cell::{RefCell, UnsafeCell, Ref, RefMut},
+    cell::{Ref, RefCell, RefMut, UnsafeCell},
     marker::PhantomData,
 };
 
@@ -42,7 +42,7 @@ impl<'a, Layout: LayoutQuery<'a> + 'a> Query<'a, Layout> {
         Layout::query_from_archetypes(self.get_filtered_archetypes(), self.count())
     }
     // Get the filtered archetypes
-    fn get_filtered_archetypes(&self) -> impl Iterator<Item = &'a Archetype> + '_ { 
+    fn get_filtered_archetypes(&self) -> impl Iterator<Item = &'a Archetype> + '_ {
         self.manager.archetypes.iter().filter(|archetype| self.mask & archetype.mask() == self.mask)
     }
     // Count the number of entities that are valid for this query

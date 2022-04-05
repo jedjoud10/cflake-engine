@@ -1,11 +1,11 @@
+use super::{Component, ComponentError};
+use crate::Mask;
+use lazy_static::lazy_static;
+use parking_lot::{Mutex, RwLock};
 use std::{
     any::{type_name, TypeId},
     collections::HashMap,
 };
-use crate::Mask;
-use super::{Component, ComponentError};
-use lazy_static::lazy_static;
-use parking_lot::{Mutex, RwLock};
 // Registered components
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
