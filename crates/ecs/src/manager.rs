@@ -1,9 +1,10 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry, Component, registry, BundleData, EntityLinkings,
+    entity::{Entity, EntitySet}, LinkModifier, Linker, SystemSet, EntityEntry, Component, registry, EntityLinkings,
 };
 
 // Manages ECS logic
+#[derive(Default)]
 pub struct EcsManager {
     // Entities
     pub(crate) entities: EntitySet,
@@ -18,9 +19,6 @@ pub struct EcsManager {
 impl EcsManager {
     // Create a new ecs manager
     pub fn new() -> Self {
-        // Pre-init
-        registry::register::<crate::BundleData>();
-
         Self {
             entities: Default::default(),
             archetypes: Default::default(),
@@ -67,12 +65,6 @@ impl EcsManager {
         *self.entities.get_mut(entity).unwrap() = copied;
         let states = self.archetypes.get(&copied.mask).unwrap().states().clone();
 
-        // And update the bundle data
-        let mut entry = self.entry(entity).unwrap();
-        let data = entry.get_mut::<BundleData>().unwrap();
-        data.set_bundle(copied.bundle);
-        data.set_states(Some(states));
-
         Some(())
     }
 
@@ -89,18 +81,9 @@ impl EcsManager {
         let mut linker = Linker::new(self, entity);
         function(entity, &mut linker);
 
-        // Add the default data as well
-        linker.insert(BundleData::default()).unwrap();
-
         // Apply the changes (adds it to the archetype)
         let new = linker.apply();
         let states = self.archetypes.get(&new.mask).unwrap().states().clone();
-
-        // Update the bundle data
-        let mut entry = self.entry(entity).unwrap();
-        let data = entry.get_mut::<BundleData>().unwrap();
-        data.set_bundle(new.bundle);
-        data.set_states(Some(states));
 
         entity
     }

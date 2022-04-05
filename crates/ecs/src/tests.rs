@@ -28,6 +28,7 @@ mod tests {
         });
 
         /*
+        /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
             modifier.insert(Name("Trustrutrst")).unwrap();
@@ -105,5 +106,7 @@ mod tests {
             */
             dbg!(h.elapsed().as_micros());
         }
+    }
+    */
     }
 }
