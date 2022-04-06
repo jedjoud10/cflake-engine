@@ -34,7 +34,7 @@ pub struct World {
     // Logic
     pub state: WorldState,
     pub ecs: EcsManager,
-    pub systems: SystemSet<Self>,
+    pub events: SystemSet<Self>,
     pub globals: GlobalsSet,
     pub physics: PhysicsSimulation,
 
@@ -57,7 +57,7 @@ impl World {
             gui,
             state: WorldState::Init,
             ecs: EcsManager::new(),
-            systems: Default::default(),
+            events: Default::default(),
             globals: Default::default(),
             physics: PhysicsSimulation::new(),
             time: Default::default(),
@@ -83,7 +83,7 @@ impl World {
         self.ecs.prepare();
 
         // Execute
-        let systems = self.systems.clone();
+        let systems = self.events.clone();
         EcsManager::execute(self, systems);
 
         // Late update

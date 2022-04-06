@@ -1,5 +1,5 @@
 use super::Entity;
-use crate::{Component, EcsManager, EntityEntryQuery, QueryError, EntityState};
+use crate::{Component, EcsManager, EntityEntryQuery, EntityState, QueryError};
 
 // An entity entry that we can use to access multiple components on a single entity
 pub struct EntityEntry<'a> {

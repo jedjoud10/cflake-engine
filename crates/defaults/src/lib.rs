@@ -1,5 +1,5 @@
 use systems::*;
-use world::{assets::persistent, World};
+use world::{assets::persistent, World, ecs::EventExecutionOrder};
 // Default components
 pub mod components;
 // Default globals
@@ -55,36 +55,40 @@ pub fn preload_default_assets() {
 
     println!("Finished pre-loading default assets!");
 }
-/*
 // Load default systems
 pub fn load_default_systems(world: &mut World) {
     // Engine defaults
-    SystemExecutionOrder::set(i32::MIN);
-    networking_system::polling_system::system(world);
+    EventExecutionOrder::set(i32::MIN);
+    networking_system::system(world);
     camera_system::system(world);
     window_system::system(world);
     audio_system::system(world);
 
+    // User defined systems should start at execution order 0
+    EventExecutionOrder::set(0);
     // Terrain
+    /*
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
 
-    // User defined systems should start at ordering 0
 
-    SystemExecutionOrder::set(i32::MAX - 10);
     terrain_system::editing_system::system(world);
     physics_system::rigidbody_system::system(world);
     physics_system::simulation_system::system(world);
-    rendering_system::system(world);
-    gui_system::system(world);
-    screenshot_system::system(world);
+
 
     // We gotta add the default globals
     world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
     world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
     world.globals.insert(crate::globals::Physics::default()).unwrap();
+    */
+    EventExecutionOrder::set(i32::MAX - 10);
+    rendering_system::system(world);
+    gui_system::system(world);
+    screenshot_system::system(world);
 }
+/*
 // Load the debugging systems
 pub fn load_debugging_systems(world: &mut World) {
     SystemExecutionOrder::set(0);

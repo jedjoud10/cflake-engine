@@ -7,7 +7,7 @@ fn main() {
 
 // Init the empty world
 fn init(world: &mut World) {
-    world.systems.insert(run);
+    world.events.insert(run);
 }
 
 // Function that gets executed each frame

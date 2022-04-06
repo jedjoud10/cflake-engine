@@ -1,6 +1,6 @@
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-use world::ecs::{BundleData, Entity, Query};
+use world::ecs::{Entity, Query};
 use world::World;
 // The camera system update loop
 fn run(world: &mut World) {
@@ -9,15 +9,15 @@ fn run(world: &mut World) {
     // If there isn't a main camera assigned already, we can be the main one
     if global.camera == Entity::default() {
         // Query all the cameras in the world and get the first one
-        let query = Query::<(&Transform, &Camera, &BundleData)>::new(&mut world.ecs).unwrap();
+        let mut query = Query::new::<(&Transform, &Camera, &Entity)>(&mut world.ecs).unwrap();
 
         // And try to get the first valid one
-        if let Some((_, _, data)) = query.fetch().unwrap().first() {
-            global.camera = data.entity();
+        if let Some((_, _, entity)) = query.next() {
+            global.camera = *entity;
         }
     }
 }
 // Create the camera system
 pub fn system(world: &mut World) {
-    world.systems.insert(run);
+    world.events.insert(run);
 }

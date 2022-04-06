@@ -1,6 +1,6 @@
-use std::cell::{RefCell, Ref};
+use std::cell::{Ref, RefCell};
 
-use crate::{Mask, Component, registry, ComponentError};
+use crate::{registry, Component, ComponentError, Mask};
 
 // Entity state of a stored bundle in the archetype
 #[repr(u8)]
@@ -168,6 +168,7 @@ impl ArchetypeStates {
         }
     }
     // Iterate through the component states of a unique component mask using a cached iterator
+    #[allow(dead_code)]
     pub fn iter_component_states(&self, mask: Mask) -> Option<ComponentStatesIter> {
         let shift = get_shift_count(mask);
         let borrowed = self.components.borrow();

@@ -72,7 +72,7 @@ fn run(world: &mut World) {
 
 // Create the flycam system
 pub fn system(world: &mut World) {
-    world.systems.insert(run);
+    world.events.insert(run);
     world.input.bind(Keys::W, "camera_forward");
     world.input.bind(Keys::S, "camera_backwards");
     world.input.bind(Keys::D, "camera_right");

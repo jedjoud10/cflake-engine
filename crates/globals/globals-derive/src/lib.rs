@@ -9,12 +9,6 @@ pub fn derive_global(input: TokenStream) -> TokenStream {
     let output = quote! {
         // Main traits implemented
         impl #impl_generics Global for #ident #ty_generics #where_clause {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
         }
     };
     output.into()

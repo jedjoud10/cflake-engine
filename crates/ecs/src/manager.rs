@@ -45,7 +45,7 @@ impl EcsManager {
     // Execute the systems in sequence
     pub fn execute<World>(world: &mut World, systems: SystemSet<World>) {
         let borrowed = systems.inner.borrow();
-        for event in borrowed.as_slice() {
+        for (_, event) in borrowed.as_slice() {
             // Execute the system
             event(world)
         }

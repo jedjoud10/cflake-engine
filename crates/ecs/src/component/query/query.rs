@@ -1,6 +1,6 @@
 use rayon::iter::IntoParallelIterator;
 
-use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator, EntityState};
+use crate::{registry, Archetype, Component, EcsManager, Entity, EntityState, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
 // A more efficient method to iterate through all the components in the world

@@ -7,6 +7,9 @@ fn run(world: &mut World) {
     let global = world.globals.get::<GlobalWorldData>().unwrap();
     let entry = world.ecs.entry(global.camera);
     if let Some(entry) = entry {
+        if !entry.was_mutated::<Transform>().unwrap() {
+            return;
+        }
         // Get the component
         let transform = entry.get::<Transform>().unwrap();
 
@@ -19,5 +22,5 @@ fn run(world: &mut World) {
 
 // Create the audio system
 pub fn system(world: &mut World) {
-    world.systems.insert(run);
+    world.events.insert(run);
 }

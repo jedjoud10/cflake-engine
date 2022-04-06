@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use crate::*;
     use rayon::iter::ParallelIterator;
     #[test]
     fn test() {
@@ -64,8 +63,8 @@ mod tests {
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
 
-            let builder = Query::par_new::<(&FlagLane)>(&mut manager).unwrap();
-            builder.for_each(|(_)| {});
+            let builder = Query::par_new::<&FlagLane>(&mut manager).unwrap();
+            builder.for_each(|_| {});
             /*
             for (name, val) in .unwrap() {
                 //dbg!(name);

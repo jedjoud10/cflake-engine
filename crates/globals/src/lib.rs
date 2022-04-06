@@ -1,4 +1,3 @@
-mod error;
 mod global;
 mod set;
 pub use global::*;

@@ -24,5 +24,5 @@ pub fn system(world: &mut World) {
     register::<i128>();
     register::<String>();
 
-    world.systems.insert(run);
+    world.events.insert(run);
 }
