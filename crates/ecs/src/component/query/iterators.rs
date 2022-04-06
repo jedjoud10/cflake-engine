@@ -7,6 +7,7 @@ use crate::{EcsManager, LayoutQuery};
 // Query iterator because we need to assure that the EcsManager does not get mutated while we have a valid query
 pub struct QueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {
     pub(super) iterator: std::vec::IntoIter<Layout::Item>,
+    pub(super) length: usize,
     pub(super) _phantom: PhantomData<&'a mut EcsManager>,
 }
 
@@ -16,7 +17,15 @@ impl<'a, Layout: LayoutQuery<'a> + 'a> Iterator for QueryIterator<'a, Layout> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iterator.next()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
 }
+
+impl<'a, Layout: LayoutQuery<'a> + 'a> ExactSizeIterator for QueryIterator<'a, Layout> { }
+
+
 
 // A query iterator that can be used in parallel using rayon
 pub struct ParQueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {

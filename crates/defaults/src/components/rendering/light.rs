@@ -1,4 +1,4 @@
-use world::ecs::component::Component;
+use world::ecs::Component;
 
 use world::rendering::basics::lights::LightType;
 

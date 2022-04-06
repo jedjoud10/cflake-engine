@@ -9,7 +9,7 @@ mod tests {
 
         // Simple component
         #[derive(Component, Debug)]
-        struct Name(&'static str);
+        struct Name(&'static str, [i32; 64]);
         registry::register::<Name>();
 
         #[derive(Component, Debug)]
@@ -21,7 +21,7 @@ mod tests {
         registry::register::<SimpleValue>();
 
         let entity = manager.insert(|_, linker| {
-            linker.insert(Name("Le Jribi")).unwrap();
+            linker.insert(Name("Le Jribi", [0; 64])).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
             linker.insert(SimpleValue(0)).unwrap();
         });
@@ -45,10 +45,10 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 16;
+        const COUNT: usize = u16::MAX as usize * 12;
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
-                modifs.insert(Name("Le Jribi")).unwrap();
+                modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
                 modifs.insert(Tag("Jed est cool (trust)")).unwrap();
                 modifs.insert(SimpleValue(x)).unwrap();
             });
@@ -63,7 +63,7 @@ mod tests {
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
 
-            let builder = Query::par_new::<&FlagLane>(&mut manager).unwrap();
+            let builder = Query::par_new::<&Name>(&manager).unwrap();
             builder.for_each(|_| {});
             /*
             for (name, val) in .unwrap() {

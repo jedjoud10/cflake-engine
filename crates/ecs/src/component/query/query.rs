@@ -12,7 +12,7 @@ impl<'a> Query {
         manager.archetypes.iter().filter(move |archetype| mask & archetype.mask() == mask)
     }
     // Get a Vec<Layout> from the manager. This is it's own internal function because it will be used by new and par_new
-    fn internal<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<Vec<Layout::Item>, QueryError> {
+    fn internal<Layout: LayoutQuery<'a>>(manager: &'a EcsManager) -> Result<Vec<Layout::Item>, QueryError> {
         // Get layout mask since we must do validity checks on each archetype
         let mask = Layout::mask().map_err(QueryError::ComponentError)?;
 
@@ -25,14 +25,17 @@ impl<'a> Query {
     }
 
     // Create a new singlethreaded query from a layout
-    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<QueryIterator<'a, Layout>, QueryError> {
+    pub fn new<Layout: LayoutQuery<'a>>(manager: &'a EcsManager) -> Result<QueryIterator<'a, Layout>, QueryError> {
+        let vec = Self::internal::<Layout>(manager)?;
+        let length = vec.len();
         Ok(QueryIterator {
-            iterator: Self::internal::<Layout>(manager)?.into_iter(),
+            iterator: vec.into_iter(),
+            length,
             _phantom: PhantomData::default(),
         })
     }
     // Create a new multithreaded (using rayon) query from a layout
-    pub fn par_new<Layout: LayoutQuery<'a>>(manager: &'a mut EcsManager) -> Result<ParQueryIterator<'a, Layout>, QueryError> {
+    pub fn par_new<Layout: LayoutQuery<'a>>(manager: &'a EcsManager) -> Result<ParQueryIterator<'a, Layout>, QueryError> {
         Ok(ParQueryIterator {
             iterator: Self::internal::<Layout>(manager)?.into_par_iter(),
             _phantom: PhantomData::default(),
