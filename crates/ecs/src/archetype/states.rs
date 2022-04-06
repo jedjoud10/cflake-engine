@@ -60,7 +60,7 @@ pub(crate) struct ArchetypeStates {
     entities: Vec<u64>,
 
     // Component states: 8 bit per entity (row), can fit 8 states per row, and multiple chunks per collumn
-    components: RefCell<Vec<Option<Vec<u8>>>>,
+    components: RefCell<Vec<Vec<u8>>>,
 
     // Current entity length
     length: usize,
@@ -80,12 +80,12 @@ impl ArchetypeStates {
         }
 
         // Always add the new component states
-        for subchunk in self.components.get_mut().iter_mut().filter_map(|x| x.as_mut()) {
+        for subchunk in self.components.get_mut().iter_mut() {
             subchunk.push(0);
         }
 
         // Update the entity's default state
-        self.set_entity_state(self.length - 1, EntityState::Added);
+        self.set_entity_state(old, EntityState::Added);
     }
 
     // State setters
@@ -99,15 +99,20 @@ impl ArchetypeStates {
     pub fn set_component_state(&self, bundle: usize, mask: Mask, state: bool) {
         // We might need to extend the main vector
         let shift = get_shift_count(mask);
+        let index = shift / C8;
+        //dbg!(mask);
+        //dbg!(shift);
+        //dbg!(index);
         let mut components = self.components.borrow_mut();
-        if shift >= components.len() {
+        //dbg!(components.len());
+        if index >= components.len() {
             // Extend the main vector with many empty chunks
-            components.resize_with(shift + 1, || None);
+            components.resize_with(shift + 1, || vec![0; self.length]);
         }
 
         // Make sure the current collumn is valid
-        let collumn = (&mut components[shift / C8]).get_or_insert(vec![0; self.length]);
-        let row = collumn.get_mut(bundle).unwrap();
+        let collumn = (&mut components[index]);
+        let row = &mut collumn[bundle];
 
         // Set the bit
         write_bit_u8(row, state, shift % C8);
@@ -116,7 +121,9 @@ impl ArchetypeStates {
     pub fn set_all_component_states(&self, mask: Mask, state: bool) -> Option<()> {
         let shift = get_shift_count(mask);
         let mut borrowed = self.components.borrow_mut();
-        let collumn = borrowed.get_mut(shift)?.as_mut().unwrap();
+        //dbg!(&*borrowed);
+        //dbg!(shift);
+        let collumn = borrowed.get_mut(shift)?;
 
         // Set all the states of a specific bit
         collumn.iter_mut().for_each(|row| write_bit_u8(row, state, shift % C8));
@@ -143,7 +150,8 @@ impl ArchetypeStates {
 
         // We are 100% sure that we have a valid collumn
         let shift = get_shift_count(mask);
-        let chunk = self.components.borrow()[shift].as_ref().unwrap()[bundle];
+        //dbg!(self.components.borrow().len());
+        let chunk = self.components.borrow()[shift][bundle];
         Some(read_bit_u8(chunk, shift % C8))
     }
 
@@ -174,8 +182,8 @@ impl ArchetypeStates {
         let borrowed = self.components.borrow();
 
         // Makes sure the collumn is valid (useful for the next step)
-        borrowed.get(shift).and_then(|x| x.as_ref())?;
-        let collumn = std::cell::Ref::map(borrowed, |b| b.get(shift).unwrap().as_ref().unwrap().as_slice());
+        borrowed.get(shift)?;
+        let collumn = std::cell::Ref::map(borrowed, |b| b.get(shift).unwrap().as_slice());
 
         Some(ComponentStatesIter {
             collumn,
@@ -265,7 +273,7 @@ impl FlagLane {
 
 // Iterates through all the components states, and pack each unique state into a u64 lane
 pub struct ComponentFlagLanesIter<'a> {
-    collumns: Ref<'a, Vec<Option<Vec<u8>>>>,
+    collumns: Ref<'a, Vec<Vec<u8>>>,
     bundle: usize,
     length: usize,
 }
@@ -282,7 +290,7 @@ impl<'a> Iterator for ComponentFlagLanesIter<'a> {
         // No caching, we must always load a new lane into memory
         let lane = self.collumns.iter().enumerate().fold(0u64, |lane, (collumn_offset, collumn)| {
             // Collumn row -> Global lane
-            let row = collumn.as_ref().map(|c| c[self.bundle]).unwrap_or_default() as u64;
+            let row = collumn[self.bundle] as u64;
             (row << (collumn_offset * 8)) | lane
         });
         self.bundle += 1;

@@ -42,7 +42,7 @@ impl<'a, T: Component> QueryItem<'a> for &'a mut T {
         let mask = registry::mask::<T>().unwrap();
         let vec = archetype.vectors().get(&mask).unwrap();
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        archetype.states().set_all_component_states(mask, true).unwrap();
+        //archetype.states().set_all_component_states(mask, true).unwrap();
 
         vec.iter().map(|cell| unsafe { &mut *cell.get() })
     }

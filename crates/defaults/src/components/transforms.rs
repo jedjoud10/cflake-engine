@@ -38,6 +38,15 @@ impl From<vek::Vec3<f32>> for Transform {
     }
 }
 
+impl From<(f32, f32, f32)> for Transform {
+    fn from(vec: (f32, f32, f32)) -> Self {
+        Self {
+            position: vec.into(),
+            ..Default::default()
+        }
+    }
+}
+
 impl Transform {
     // Calculate the transform matrix and return it
     pub fn transform_matrix(&self) -> vek::Mat4<f32> {
@@ -62,5 +71,24 @@ impl Transform {
     }
     pub fn right(&self) -> vek::Vec3<f32> {
         self.rotation_matrix().mul_point(vek::Vec3::unit_x())
+    }
+    // Helper Constructors
+    pub fn rotation_x(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_x(angle_radians),
+            ..Default::default()
+        }
+    }
+    pub fn rotation_y(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_y(angle_radians),
+            ..Default::default()
+        }
+    }
+    pub fn rotation_z(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_z(angle_radians),
+            ..Default::default()
+        }
     }
 }

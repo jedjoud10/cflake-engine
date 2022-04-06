@@ -26,6 +26,15 @@ pub struct Renderer {
     pub flags: RendererFlags,
 }
 
+impl From<Handle<Mesh>> for Renderer {
+    fn from(mesh: Handle<Mesh>) -> Self {
+        Self {
+            mesh,
+            ..Default::default()
+        }
+    }
+}
+
 impl Default for Renderer {
     fn default() -> Self {
         Self {

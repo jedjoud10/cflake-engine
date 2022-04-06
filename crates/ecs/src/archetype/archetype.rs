@@ -69,22 +69,20 @@ impl Archetype {
 
     // Insert an entity into the arhcetype using a ComponentLinker
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
-        // Commons
-        let _len = self.entities.len() + 1;
-
+        // Push first
+        self.entities.push(entity);
+        self.states.push();        
+        linkings.bundle = self.entities.len() - 1;
+        linkings.mask = self.mask;
+        
         // Add the components using their specific storages
         for (mask, component) in components {
             let vec = self.vectors.get_mut(&mask).unwrap();
-
+            
             // Insert the component
             vec.push(component);
+            self.states.set_component_state(linkings.bundle, mask, true);
         }
-
-        // Update the length
-        self.entities.push(entity);
-        self.states.push();
-        linkings.bundle = self.entities.len() - 1;
-        linkings.mask = self.mask;
     }
 
     // Start the deletion process for components. The component will actually get deleted next frame
