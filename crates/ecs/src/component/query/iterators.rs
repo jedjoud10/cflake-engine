@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use rayon::iter::ParallelIterator;
 
-use crate::{LayoutQuery, EcsManager};
+use crate::{EcsManager, LayoutQuery};
 
 // Query iterator because we need to assure that the EcsManager does not get mutated while we have a valid query
 pub struct QueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {

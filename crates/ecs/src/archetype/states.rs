@@ -1,3 +1,5 @@
+use std::cell::{RefCell, Ref};
+
 use crate::{Mask, Component, registry, ComponentError};
 
 // Entity state of a stored bundle in the archetype
@@ -53,12 +55,12 @@ const C8: usize = u8::BITS as usize;
 
 // Contrains an EntityState bitfield and a ComponentMutatedState bitfield
 #[derive(Default)]
-pub struct ArchetypeStates {
+pub(crate) struct ArchetypeStates {
     // Entity states: 2 bits per entity, can fit 32 states per chunk
     entities: Vec<u64>,
 
     // Component states: 8 bit per entity (row), can fit 8 states per row, and multiple chunks per collumn
-    components: Vec<Option<Vec<u8>>>,
+    components: RefCell<Vec<Option<Vec<u8>>>>,
 
     // Current entity length
     length: usize,
@@ -78,7 +80,7 @@ impl ArchetypeStates {
         }
 
         // Always add the new component states
-        for subchunk in self.components.iter_mut().filter_map(|x| x.as_mut()) {
+        for subchunk in self.components.get_mut().iter_mut().filter_map(|x| x.as_mut()) {
             subchunk.push(0);
         }
 
@@ -94,25 +96,27 @@ impl ArchetypeStates {
         write_entity_state_u64(chunk, bundle % C32, state);
     }
     // Set the component state of a bundle using a specific component type
-    pub fn set_component_state(&mut self, bundle: usize, mask: Mask, state: bool) {
+    pub fn set_component_state(&self, bundle: usize, mask: Mask, state: bool) {
         // We might need to extend the main vector
         let shift = get_shift_count(mask);
-        if shift >= self.components.len() {
+        let mut components = self.components.borrow_mut();
+        if shift >= components.len() {
             // Extend the main vector with many empty chunks
-            self.components.resize_with(shift + 1, || None);
+            components.resize_with(shift + 1, || None);
         }
 
         // Make sure the current collumn is valid
-        let collumn = (&mut self.components[shift / C8]).get_or_insert(vec![0; self.length]);
+        let collumn = (&mut components[shift / C8]).get_or_insert(vec![0; self.length]);
         let row = collumn.get_mut(bundle).unwrap();
 
         // Set the bit
         write_bit_u8(row, state, shift % C8);
     }
     // Set all the components states of a specific component type to "state"
-    pub fn set_all_component_states(&mut self, mask: Mask, state: bool) -> Option<()> {
+    pub fn set_all_component_states(&self, mask: Mask, state: bool) -> Option<()> {
         let shift = get_shift_count(mask);
-        let collumn = self.components.get_mut(shift)?.as_mut().unwrap();
+        let mut borrowed = self.components.borrow_mut();
+        let collumn = borrowed.get_mut(shift)?.as_mut().unwrap();
 
         // Set all the states of a specific bit
         collumn.iter_mut().for_each(|row| write_bit_u8(row, state, shift % C8));
@@ -139,7 +143,7 @@ impl ArchetypeStates {
 
         // We are 100% sure that we have a valid collumn
         let shift = get_shift_count(mask);
-        let chunk = self.components[shift].as_ref().unwrap()[bundle];
+        let chunk = self.components.borrow()[shift].as_ref().unwrap()[bundle];
         Some(read_bit_u8(chunk, shift % C8))
     }
 
@@ -166,7 +170,11 @@ impl ArchetypeStates {
     // Iterate through the component states of a unique component mask using a cached iterator
     pub fn iter_component_states(&self, mask: Mask) -> Option<ComponentStatesIter> {
         let shift = get_shift_count(mask);
-        let collumn = self.components.get(shift).and_then(|x| x.as_ref())?.as_slice();
+        let borrowed = self.components.borrow();
+
+        // Makes sure the collumn is valid (useful for the next step)
+        borrowed.get(shift).and_then(|x| x.as_ref())?;
+        let collumn = std::cell::Ref::map(borrowed, |b| b.get(shift).unwrap().as_ref().unwrap().as_slice());
 
         Some(ComponentStatesIter {
             collumn,
@@ -176,9 +184,9 @@ impl ArchetypeStates {
         })
     }
     // Iterate through the component states of all the components at the same time
-    pub fn iter_component_states_lanes(&self) -> ComponentStatesLaneIter {
-        ComponentStatesLaneIter {
-            collumns: self.components.as_slice(),
+    pub fn iter_component_states_lanes(&self) -> ComponentFlagLanesIter {
+        ComponentFlagLanesIter {
+            collumns: self.components.borrow(),
             bundle: 0,
             length: self.length,
         }
@@ -218,7 +226,7 @@ impl<'a> Iterator for EntityStatesIter<'a> {
 
 // Iterates through the states of a specific component type
 pub struct ComponentStatesIter<'a> {
-    collumn: &'a [u8],
+    collumn: Ref<'a, [u8]>,
     bundle: usize,
     mask_shift: usize,
     length: usize,
@@ -244,9 +252,9 @@ impl<'a> Iterator for ComponentStatesIter<'a> {
 }
 
 // Component states lane that contains the states for multiple component types
-pub struct ComponentStatesLane(u64);
+pub struct FlagLane(u64);
 
-impl ComponentStatesLane {
+impl FlagLane {
     // Check if a component was mutated since the start of the frame
     pub fn was_mutated<T: Component>(&self) -> Result<bool, ComponentError> {
         let shifted = registry::mask::<T>()?.0.trailing_zeros();
@@ -255,14 +263,14 @@ impl ComponentStatesLane {
 }
 
 // Iterates through all the components states, and pack each unique state into a u64 lane
-pub struct ComponentStatesLaneIter<'a> {
-    collumns: &'a [Option<Vec<u8>>],
+pub struct ComponentFlagLanesIter<'a> {
+    collumns: Ref<'a, Vec<Option<Vec<u8>>>>,
     bundle: usize,
     length: usize,
 }
 
-impl<'a> Iterator for ComponentStatesLaneIter<'a> {
-    type Item = ComponentStatesLane;
+impl<'a> Iterator for ComponentFlagLanesIter<'a> {
+    type Item = FlagLane;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Check if the index is valid
@@ -277,6 +285,6 @@ impl<'a> Iterator for ComponentStatesLaneIter<'a> {
             (row << (collumn_offset * 8)) | lane
         });
         self.bundle += 1;
-        Some(ComponentStatesLane(lane))
+        Some(FlagLane(lane))
     }
 }

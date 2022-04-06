@@ -1,6 +1,6 @@
-use rayon::iter::{IntoParallelIterator};
+use rayon::iter::IntoParallelIterator;
 
-use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, QueryError, QueryIterator, ParQueryIterator};
+use crate::{registry, Archetype, Component, EcsManager, Entity, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator, EntityState};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
 // A more efficient method to iterate through all the components in the world
@@ -79,10 +79,21 @@ impl<'a> EntityEntryQuery<'a> {
     }
 
     // Get (immutable) and get mut (mutable)
-    pub(crate) fn get<T: Component>(&self) -> Result<&T, QueryError> {
+    pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
         self.get_ptr().map(|ptr| unsafe { &*ptr })
     }
-    pub(crate) fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+    pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+        let mask = self.get_component_mask::<T>()?;
+        self.archetype.states().set_component_state(self.bundle, mask, true);
         self.get_ptr().map(|ptr| unsafe { &mut *ptr })
+    }
+
+    // State getter
+    pub fn was_mutated<T: Component>(&self) -> Result<bool, QueryError> {
+        let mask = self.get_component_mask::<T>()?;
+        Ok(self.archetype.states().get_component_state(self.bundle, mask).unwrap())
+    }
+    pub fn entity_state(&self) -> EntityState {
+        self.archetype.states().get_entity_state(self.bundle).unwrap()
     }
 }

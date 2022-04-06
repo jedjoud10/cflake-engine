@@ -1,11 +1,8 @@
-/*
 #[cfg(test)]
 mod tests {
+    use crate::*;
+    use crate::*;
     use rayon::iter::ParallelIterator;
-
-    use crate::*;
-
-    use crate::*;
     #[test]
     fn test() {
         // Empty manager
@@ -49,7 +46,7 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 1;
+        const COUNT: usize = u16::MAX as usize * 16;
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
                 modifs.insert(Name("Le Jribi")).unwrap();
@@ -67,8 +64,8 @@ mod tests {
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
 
-            let builder = Query::par_new::<(&Name, &mut SimpleValue, &Entity)>(&mut manager).unwrap();
-            builder.for_each(|(_x, _, _entity)| {});
+            let builder = Query::par_new::<(&FlagLane)>(&mut manager).unwrap();
+            builder.for_each(|(_)| {});
             /*
             for (name, val) in .unwrap() {
                 //dbg!(name);
@@ -111,31 +108,4 @@ mod tests {
             dbg!(h.elapsed().as_micros());
         }
     }
-}
-*/
-
-
-extern crate test;
-use test::Bencher;
-
-use crate::{ArchetypeStates, Mask};
-
-#[bench]
-fn test_states(b: &mut Bencher) {
-    let mut states = ArchetypeStates::default();
-    for x in 0..512 {
-        states.push();
-        states.set_component_state(x, Mask(1), x % 2 == 0);
-        //states.set_component_state(x, Mask(2), x % 4 == 0);
-        //states.set_component_state(x, Mask(4), x % 8 == 0);
-        /*
-        for y in 0..1 {
-        }
-        */
-    }
-    b.iter(|| {
-        for x in states.iter_component_states_lanes() {
-            //println!("{:b}", x);
-        }
-    })
 }

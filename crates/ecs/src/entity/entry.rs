@@ -1,5 +1,5 @@
 use super::Entity;
-use crate::{Component, EcsManager, EntityEntryQuery, QueryError};
+use crate::{Component, EcsManager, EntityEntryQuery, QueryError, EntityState};
 
 // An entity entry that we can use to access multiple components on a single entity
 pub struct EntityEntry<'a> {
@@ -12,12 +12,17 @@ impl<'a> EntityEntry<'a> {
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         EntityEntryQuery::new(manager, entity).map(|query| Self { query })
     }
-    // Create an immutable component
+    // Certified wrapper moment
     pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
         self.query.get()
     }
-    // Create a mutable component
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
         self.query.get_mut()
+    }
+    pub fn was_mutated<T: Component>(&self) -> Result<bool, QueryError> {
+        self.query.was_mutated::<T>()
+    }
+    pub fn state(&self) -> EntityState {
+        self.query.entity_state()
     }
 }

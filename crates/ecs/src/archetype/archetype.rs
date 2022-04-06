@@ -19,7 +19,7 @@ pub struct Archetype {
     entities: Vec<Entity>,
 
     // Stores the entity states and components states
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub(crate)")]
     states: ArchetypeStates,
 
     // Bundles that must be removed by the next iteration
