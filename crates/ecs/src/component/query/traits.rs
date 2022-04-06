@@ -1,24 +1,29 @@
-use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError, EntityState, ComponentStatesLane, ComponentStatesLaneIter};
+use crate::{registry, Archetype, Component, ComponentError, Entity, Mask, QueryError, EntityState, ComponentStatesLane, ComponentStatesLaneIter, EntityStatesIter};
 use itertools::izip;
 use std::cell::UnsafeCell;
 
+// This hurts my eyes
 // Pls don't touch dis. -Jed 11:49pm 04/04/2022
 
 // Something that can be queried. This will be implement on &T and &mut T (where T is Component). This will also be implemented on &Entity and &BundleData
-pub trait QueryItem<'a>: Sized + Send {
-    // Create a new iterator out of an archetype
-    type Output: Iterator<Item = Self>;
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output;
-    // Get mask influence
-    fn try_get_mask() -> Result<Mask, ComponentError>;
+pub trait QueryItem<'a> {
+    // Iterator shit
+    type Iter: Iterator<Item = Self::Item>;
+    type Item: Send;
+
+    // Get a custom iterator from an archetype 
+    // This will later be zipped with other iterators to form a query
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter;
+    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
 
 // TODO: Cache "let mask = registry::mask::<T>().unwrap();" somehow
 
 // QueryItem implementations
 impl<'a, T: Component> QueryItem<'a> for &'a T {
-    type Output = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+    type Iter = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
+    type Item = Self;
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
         let mask = registry::mask::<T>().unwrap();
         let vec = archetype.vectors().get(&mask).unwrap();
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
@@ -29,8 +34,9 @@ impl<'a, T: Component> QueryItem<'a> for &'a T {
     }
 }
 impl<'a, T: Component> QueryItem<'a> for &'a mut T {
-    type Output = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+    type Iter = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
+    type Item = Self;
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
         let mask = registry::mask::<T>().unwrap();
         let vec = archetype.vectors().get(&mask).unwrap();
         let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
@@ -44,44 +50,32 @@ impl<'a, T: Component> QueryItem<'a> for &'a mut T {
     }
 }
 impl<'a> QueryItem<'a> for &'a Entity {
-    type Output = std::slice::Iter<'a, Entity>;
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+    type Iter = std::slice::Iter<'a, Entity>;
+    type Item = Self;
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
         archetype.entities().iter()
     }
-    fn try_get_mask() -> Result<Mask, ComponentError> {
-        Ok(Mask::default())
+}
+impl<'a> QueryItem<'a> for &'a EntityState {
+    type Iter = EntityStatesIter<'a>;
+    type Item = EntityState;
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
+        archetype.states().iter_entity_states()
     }
 }
 impl<'a> QueryItem<'a> for &'a ComponentStatesLane {
-    type Output = ComponentStatesLaneIter<'a>;
-
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
+    type Iter = ComponentStatesLaneIter<'a>;
+    type Item = ComponentStatesLane;
+    fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
         archetype.states().iter_component_states_lanes()
     }
-
-    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
 }
-/*
-impl<'a> QueryItem<'a> for &'a BundleState {
-    type Output;
 
-    fn archetype_into_iter(archetype: &'a Archetype) -> Self::Output {
-        // Get the two states and zip them into a BundleState
-        let entities = archetype.states().entities.iter();
-        let components = archetype.states().components.get().iter();
-        (0..archetype.entities().len()).into_iter().map(|index| {
-        })
-    }
-
-    fn try_get_mask() -> Result<Mask, ComponentError> { Ok(Mask::default()) }
-}
-*/
 // Layout query that contains multiple QueryItems
-pub trait LayoutQuery<'a>: Sized + Send {
-    // Calculate the mask using the current layout
+pub trait LayoutQuery<'a> {
+    type Item: Send;
     fn mask() -> Result<Mask, ComponentError>;
-    // Create a query using the mask
-    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError>;
+    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self::Item>, QueryError>;
 }
 
 // Convert an iterator into the a properly sized vector
@@ -94,35 +88,41 @@ fn into_vec<Item>(num: usize, iter: impl Iterator<Item = Item>) -> Vec<Item> {
 // LayoutQuery implementations
 // This could really use some macro magic, though I have no idea how I would make it work
 impl<'a, A: QueryItem<'a>> LayoutQuery<'a> for A {
+    type Item = A::Item;
+
     fn mask() -> Result<Mask, ComponentError> {
         A::try_get_mask()
     }
 
-    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
-        Ok(into_vec(count, archetypes.flat_map(|archetype| A::archetype_into_iter(archetype))))
+    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self::Item>, QueryError> {
+        Ok(into_vec(count, archetypes.flat_map(|archetype| A::archetype_map_iter(archetype))))
     }
 }
 impl<'a, A: QueryItem<'a>, B: QueryItem<'a>> LayoutQuery<'a> for (A, B) {
+    type Item = (A::Item, B::Item);
+
     fn mask() -> Result<Mask, ComponentError> {
         Ok(A::try_get_mask()? | B::try_get_mask()?)
     }
 
-    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
+    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self::Item>, QueryError> {
         Ok(into_vec(
             count,
-            archetypes.flat_map(|archetype| izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype))),
+            archetypes.flat_map(|archetype| izip!(A::archetype_map_iter(archetype), B::archetype_map_iter(archetype))),
         ))
     }
 }
 impl<'a, A: QueryItem<'a>, B: QueryItem<'a>, C: QueryItem<'a>> LayoutQuery<'a> for (A, B, C) {
+    type Item = (A::Item, B::Item, C::Item);
+
     fn mask() -> Result<Mask, ComponentError> {
         Ok(A::try_get_mask()? | B::try_get_mask()? | C::try_get_mask()?)
     }
 
-    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self>, QueryError> {
+    fn query_from_archetypes(archetypes: impl Iterator<Item = &'a Archetype>, count: usize) -> Result<Vec<Self::Item>, QueryError> {
         Ok(into_vec(
             count,
-            archetypes.flat_map(|archetype| izip!(A::archetype_into_iter(archetype), B::archetype_into_iter(archetype), C::archetype_into_iter(archetype))),
+            archetypes.flat_map(|archetype| izip!(A::archetype_map_iter(archetype), B::archetype_map_iter(archetype), C::archetype_map_iter(archetype))),
         ))
     }
 }

@@ -1,6 +1,6 @@
 mod query;
 mod traits;
-mod iters;
-pub use iters::*;
+mod iterators;
+pub use iterators::*;
 pub use query::*;
 pub use traits::*;

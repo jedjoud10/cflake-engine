@@ -262,7 +262,7 @@ pub struct ComponentStatesLaneIter<'a> {
 }
 
 impl<'a> Iterator for ComponentStatesLaneIter<'a> {
-    type Item = u64;
+    type Item = ComponentStatesLane;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Check if the index is valid
@@ -277,6 +277,6 @@ impl<'a> Iterator for ComponentStatesLaneIter<'a> {
             (row << (collumn_offset * 8)) | lane
         });
         self.bundle += 1;
-        Some(lane)
+        Some(ComponentStatesLane(lane))
     }
 }
