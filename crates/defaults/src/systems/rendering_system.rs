@@ -1,10 +1,11 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
+    ecs::{FlagLane, Query},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     },
-    World, ecs::{Query, FlagLane},
+    World,
 };
 
 // The 3D scene renderer
@@ -72,12 +73,14 @@ fn run(world: &mut World) {
                 matrix: &renderer.matrix,
                 material: &renderer.material,
             })
-        } else { None }
+        } else {
+            None
+        }
     }));
 
     // Next, get all the shadowed models (used for shadow-mapping)
     let query = Query::new::<&Renderer>(&world.ecs).unwrap();
-    let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(query.len());    
+    let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(query.len());
     let mut redraw_shadows = false;
     shadowed.extend(query.filter_map(|renderer| {
         // No need to draw shadows for invisible renderers
@@ -88,8 +91,10 @@ fn run(world: &mut World) {
             Some(ShadowedModel {
                 mesh: &renderer.mesh,
                 matrix: &renderer.matrix,
-            }) 
-        } else { None }
+            })
+        } else {
+            None
+        }
     }));
 
     // Get all the lights that are in the scene
@@ -97,7 +102,7 @@ fn run(world: &mut World) {
     let lights = query
         .map(|(transform, light)| {
             // Convert into rendering structs
-            let _type = &light.light;
+            let _type = &light.0;
             let transform = LightTransform {
                 position: &transform.position,
                 rotation: &transform.rotation,
@@ -105,7 +110,8 @@ fn run(world: &mut World) {
 
             // And pack into a tuple
             (_type, transform)
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     // Rendering settings
     let settings = RenderingSettings {

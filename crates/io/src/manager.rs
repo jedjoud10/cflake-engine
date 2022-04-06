@@ -15,9 +15,8 @@ pub struct IOManager {
 
 impl IOManager {
     // Get a new copy of the saver loader
-    pub fn new(author_name: &str, app_name: &str) -> Self {
-        let old_path = format!("{}/{}/", author_name, app_name);
-        let path = AppDirs::new(Some(&old_path), false).unwrap();
+    pub fn new(title: &str) -> Self {
+        let path = AppDirs::new(Some(title), false).unwrap();
         println!("Init saver-loader with path: '{:?}'", path.config_dir);
         IOManager {
             local_path: Some(path.config_dir),

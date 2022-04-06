@@ -2,7 +2,7 @@ use cflake_engine::*;
 
 // An empty game window
 fn main() {
-    cflake_engine::start("cflake-examples", "empty", init)
+    cflake_engine::start("cflake-examples/empty", init)
 }
 
 // Init the empty world

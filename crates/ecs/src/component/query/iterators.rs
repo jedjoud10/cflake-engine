@@ -23,9 +23,7 @@ impl<'a, Layout: LayoutQuery<'a> + 'a> Iterator for QueryIterator<'a, Layout> {
     }
 }
 
-impl<'a, Layout: LayoutQuery<'a> + 'a> ExactSizeIterator for QueryIterator<'a, Layout> { }
-
-
+impl<'a, Layout: LayoutQuery<'a> + 'a> ExactSizeIterator for QueryIterator<'a, Layout> {}
 
 // A query iterator that can be used in parallel using rayon
 pub struct ParQueryIterator<'a, Layout: LayoutQuery<'a> + 'a> {

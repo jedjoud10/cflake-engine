@@ -1,5 +1,6 @@
+use components::*;
 use systems::*;
-use world::{assets::persistent, World, ecs::EventExecutionOrder};
+use world::{assets::persistent, ecs::{EventExecutionOrder, registry}, World};
 // Default components
 pub mod components;
 // Default globals
@@ -57,6 +58,12 @@ pub fn preload_default_assets() {
 }
 // Load default systems
 pub fn load_default_systems(world: &mut World) {
+    // Register the main components
+    registry::register::<Transform>();
+    registry::register::<Camera>();
+    registry::register::<Renderer>();
+    registry::register::<Light>();
+
     // Engine defaults
     EventExecutionOrder::set(i32::MIN);
     networking_system::system(world);
@@ -79,14 +86,16 @@ pub fn load_default_systems(world: &mut World) {
 
 
     // We gotta add the default globals
-    world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
-    world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
-    world.globals.insert(crate::globals::Physics::default()).unwrap();
     */
+
     EventExecutionOrder::set(i32::MAX - 10);
     rendering_system::system(world);
     gui_system::system(world);
     screenshot_system::system(world);
+
+    world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
+    world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
+    world.globals.insert(crate::globals::Physics::default()).unwrap();
 }
 /*
 // Load the debugging systems

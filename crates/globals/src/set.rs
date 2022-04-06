@@ -1,5 +1,5 @@
-use anymap::AnyMap;
 use crate::Global;
+use anymap::AnyMap;
 
 pub struct GlobalsSet {
     anymap: AnyMap,

@@ -1,4 +1,4 @@
-use world::{World};
+use world::World;
 
 // Draw the GUI
 pub fn system(world: &mut World) {
