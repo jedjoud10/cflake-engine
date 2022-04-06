@@ -1,5 +1,5 @@
 use world::{
-    ecs::component::Component,
+    ecs::Component,
     terrain::{ChunkCoords, PersistentVoxelData, VoxelDataBufferId},
 };
 

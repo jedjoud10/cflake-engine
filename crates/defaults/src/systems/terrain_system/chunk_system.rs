@@ -5,11 +5,6 @@ use crate::{
     globals::{GlobalWorldData, Terrain},
 };
 use world::{
-    ecs::{
-        component::{ComponentQueryParams, ComponentQuerySet},
-        entity::{ComponentLinkingGroup, EntityKey},
-        EcsManager,
-    },
     input::Keys,
     terrain::ChunkCoords,
     World,
@@ -44,17 +39,9 @@ fn add_chunk(ecs: &mut EcsManager, camera_position: vek::Vec3<f32>, camera_forwa
     let id = ecs.add(group).unwrap();
     (id, priority)
 }
-// Remove a single chunk
-fn remove_chunk(ecs: &mut EcsManager, id: EntityKey) {
-    // Make sure that the chunk entity even exists
-    if ecs.entities.get(id).is_ok() {
-        // Remove the chunk entity at that specific EntityID
-        ecs.remove(id).unwrap();
-    }
-}
 
 // The chunk systems' update loop
-fn run(world: &mut World, data: ComponentQuerySet) {
+fn run(world: &mut World) {
     // Get the global terrain component
     // Get the camera position
     let (camera_position, camera_forward) = {
@@ -115,13 +102,6 @@ fn run(world: &mut World, data: ComponentQuerySet) {
 
 // Create a chunk system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
-        .event(run)
-        .build()
-        .unwrap();
+    world.events.insert(run);
     world.input.bind_toggle(Keys::Y, "update_terrain");
 }
