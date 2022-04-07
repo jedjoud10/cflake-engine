@@ -1,6 +1,6 @@
 use rapier3d::prelude::RigidBodyForces;
 pub use rapier3d::prelude::{RigidBodyHandle, RigidBodyType};
-use world::ecs::component::Component;
+use world::ecs::Component;
 
 use crate::systems::physics_system::{vec3_to_vector, vector_to_vec3};
 // RigidBody component

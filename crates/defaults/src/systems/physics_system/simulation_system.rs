@@ -1,7 +1,5 @@
 use rapier3d::na::Isometry;
-use world::ecs::{layout, EntityState};
-use world::{physics::PHYSICS_TIME_STEP, ecs::QueryBuilder};
-use world::World;
+use world::{World, physics::PHYSICS_TIME_STEP, ecs::{Query, FlagLane}};
 
 use crate::components::{Collider, RigidBody, Transform};
 
@@ -21,16 +19,11 @@ fn run(world: &mut World) {
     }
 
     // Update the position/rotation and attributes of each rigidbody since we might have externally updated them
-    let builder = QueryBuilder::new(&mut world.ecs, layout!(Transform, RigidBody, Collider));
-    let rigidbodies = builder.get::<RigidBody>().unwrap();
-    let colliders = builder.get::<Collider>().unwrap();
-    let transforms = builder.get::<Transform>().unwrap();
+    let query = Query::new::<(&RigidBody, &Collider, &Transform, &FlagLane)>(&world.ecs).unwrap();
 
-    for (rb, collider, transform) in world::ecs::join!(rigidbodies, colliders, transforms, states) {
+    for (rigidbody, collider, transform, lane) in query {
         // Check if we even need to update the transform
-        if components.was_mutated::<Transform>().unwrap_or_default() {
-            let rigidbody = components.get::<RigidBody>().unwrap();
-            let transform = components.get::<Transform>().unwrap();
+        if lane.was_mutated::<Transform>().unwrap() {
             let isometry = Isometry {
                 rotation: quat_to_rotation(transform.rotation),
                 translation: vec3_to_translation(transform.position),
@@ -41,8 +34,7 @@ fn run(world: &mut World) {
             }
         }
         // Check if we even need to update the attributes
-        if components.was_mutated::<RigidBody>().unwrap_or_default() {
-            let rigidbody = components.get::<RigidBody>().unwrap();
+        if lane.was_mutated::<RigidBody>().unwrap() {
             // Update the Rapier3D rigibody
             if let Some(r_rigidbody) = world.physics.bodies.get_mut(rigidbody.handle) {
                 r_rigidbody.set_linvel(vec3_to_vector(rigidbody.velocity), true);
@@ -51,8 +43,7 @@ fn run(world: &mut World) {
             }
         }
         // Check if we even need to update the collider
-        if components.was_mutated::<Collider>().unwrap_or_default() {
-            let collider = components.get::<Collider>().unwrap();
+        if lane.was_mutated::<Collider>().unwrap() {
             // Update the Rapier3D collider
             if let Some(r_collider) = world.physics.colliders.get_mut(collider.handle) {
                 r_collider.set_friction(collider.material.friction);
@@ -66,17 +57,16 @@ fn run(world: &mut World) {
     // Step the simulation once
     world.physics.step();
 
+    
     // After each step, we must update the components with their new values
-    for (_, components) in query.iter_mut() {
+    let query = Query::new::<(&mut RigidBody, &mut Collider, &mut Transform)>(&world.ecs).unwrap();
+    for (rigidbody, collider, transform) in query {
         // Get the handle only
-        let handle = components.get::<RigidBody>().unwrap().handle;
-        if let Some(r_rigidbody) = world.physics.bodies.get(handle) {
+        if let Some(r_rigidbody) = world.physics.bodies.get(rigidbody.handle) {
             if !r_rigidbody.is_sleeping() {
                 // Update the components
-                let mut rigidbody = components.get_mut_silent::<RigidBody>().unwrap();
                 rigidbody.velocity = vector_to_vec3(*r_rigidbody.linvel());
                 rigidbody.angular_velocity = vector_to_vec3(*r_rigidbody.angvel());
-                let mut transform = components.get_mut::<Transform>().unwrap();
                 transform.position = vector_to_vec3(r_rigidbody.position().translation.vector);
                 transform.rotation = rotation_to_quat(*r_rigidbody.rotation());
             }
@@ -86,12 +76,5 @@ fn run(world: &mut World) {
 
 // Create the physics simulation system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .query(ComponentQueryParams::default().link::<RigidBody>().link::<Collider>().link::<Transform>())
-        .event(run)
-        .build()
-        .unwrap();
+    world.events.insert(run)
 }

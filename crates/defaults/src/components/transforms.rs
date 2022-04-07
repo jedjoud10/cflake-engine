@@ -72,7 +72,7 @@ impl Transform {
     pub fn right(&self) -> vek::Vec3<f32> {
         self.rotation_matrix().mul_point(vek::Vec3::unit_x())
     }
-    // Helper Constructors
+    // Rotation constructors
     pub fn rotation_x(angle_radians: f32) -> Self {
         Self {
             rotation: vek::Quaternion::rotation_x(angle_radians),
@@ -90,5 +90,37 @@ impl Transform {
             rotation: vek::Quaternion::rotation_z(angle_radians),
             ..Default::default()
         }
+    }
+    // Scale constructors
+    pub fn scale_x(width: f32) -> Self {
+        Self {
+            scale: vek::Vec3::unit_x() * width,
+            ..Default::default()
+        }
+    }
+    pub fn scale_y(height: f32) -> Self {
+        Self {
+            scale: vek::Vec3::unit_y() * height,
+            ..Default::default()
+        }
+    }
+    pub fn scale_z(depth: f32) -> Self {
+        Self {
+            scale: vek::Vec3::unit_z() * depth,
+            ..Default::default()
+        }
+    }
+    // Kinda like constructor modifiers
+    pub fn scaled_by(mut self, mul: vek::Vec3<f32>) -> Self {
+        self.scale *= mul;
+        self
+    }
+    pub fn offsetted_by(mut self, offset: vek::Vec3<f32>) -> Self {
+        self.position += offset;
+        self
+    }
+    pub fn rotated_by(mut self, rot: vek::Quaternion<f32>) -> Self {
+        self.rotation = self.rotation * rot;
+        self
     }
 }

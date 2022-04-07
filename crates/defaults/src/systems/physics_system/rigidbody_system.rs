@@ -2,29 +2,30 @@ use crate::components::{Collider, ColliderGeometry, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 use rapier3d::na::{Isometry, Point3};
 use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
-use world::ecs::{QueryBuilder, layout, EntityState};
+use world::ecs::{Query, EntityState};
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
-
 use super::vec3_to_point;
 
+/*
 // Convert a rendering mesh to it's SharedShape counterpart
 fn get_mesh(scale_matrix: &vek::Mat4<f32>, mesh: &Mesh) -> SharedShape {
     // Convert vertices and indices
     let vertices = mesh
-        .vertices()
-        .positions
-        .iter()
-        // Scale the points by the scale matrix
-        .map(|&vertex| scale_matrix.mul_point(vertex))
+    .vertices()
+    .positions
+    .iter()
+    // Scale the points by the scale matrix
+    .map(|&vertex| scale_matrix.mul_point(vertex))
         .map(|vertex| Point3::new(vertex.x, vertex.y, vertex.z))
         .collect::<Vec<Point3<f32>>>();
-    let indices = mesh.indices().chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
-    // Done
-    SharedShape::trimesh(vertices, indices)
-}
+        let indices = mesh.indices().chunks_exact(3).map(|slice| slice.try_into().unwrap()).collect::<Vec<[u32; 3]>>();
+        // Done
+        SharedShape::trimesh(vertices, indices)
+    }
+    */
 
 // Get the Rapier3D shared shape from a collider components
 fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider: &Collider) -> SharedShape {
@@ -34,24 +35,18 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
             ShapeType::Sphere(sphere) => SharedShape::ball(sphere.radius),
             ShapeType::VerticalCapsule(capsule) => SharedShape::capsule(vec3_to_point(capsule.bottom()), vec3_to_point(capsule.top()), capsule.radius),
         },
-        ColliderGeometry::Mesh { mesh, mass: _, com_offset: _ } => get_mesh(scale_matrix, pipeline.get(mesh).unwrap()),
+        ColliderGeometry::Mesh { mesh, mass: _, com: _ } => todo!(),
     }
 }
 
 // Whenever we add a rigidbody that has a collider attached to it, we must add them to the Rapier3D simulation
 fn run(world: &mut World) {
     // Add each rigidbody and it's corresponding collider
-    let queries = QueryBuilder::new(&mut world.ecs, layout!(RigidBody, Collider, Transform));
-
-    // Queries
-    let rigidbodies = queries.get_mut::<RigidBody>().unwrap();
-    let colliders = queries.get_mut::<Collider>().unwrap();
-    let transforms = queries.get::<Transform>().unwrap();
-    let states = queries.get::<EntityState>().unwrap();
+    let query = Query::new::<(&mut RigidBody, &mut Collider, &Transform)>(&mut world.ecs).unwrap();
 
     // Le physics simulation
     let sim = &mut world.physics;
-    for (rigidbody, collider, transform) in world::ecs::join!(rigidbodies, colliders, transforms) {
+    for (rigidbody, collider, transform) in query {
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)
             .position(Isometry {
@@ -95,5 +90,5 @@ fn run(world: &mut World) {
 
 // Create the physics rigidbody & collider system
 pub fn system(world: &mut World) {
-    world.systems.insert(run);
+    world.events.insert(run);
 }

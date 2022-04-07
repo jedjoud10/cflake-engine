@@ -4,10 +4,6 @@ use crate::{
 };
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
 use world::{
-    ecs::{
-        component::{ComponentQueryParams, ComponentQuerySet},
-        entity::{ComponentLinkingGroup, ComponentUnlinkGroup},
-    },
     rendering::{
         basics::{material::Material, mesh::Mesh},
         pipeline::Handle,
@@ -17,8 +13,7 @@ use world::{
 };
 
 // The mesher systems' update loop
-fn run(world: &mut World, mut data: ComponentQuerySet) {
-    let query = &mut data.get_mut(0).unwrap().all;
+fn run(world: &mut World) {
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
     if let Ok(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
