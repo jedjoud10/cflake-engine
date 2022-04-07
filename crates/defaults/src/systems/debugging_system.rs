@@ -1,10 +1,9 @@
-use world::{ecs::component::ComponentQuerySet, gui::egui, terrain, World, WorldState};
+use world::{gui::egui, terrain, World, WorldState};
 
 use crate::globals::{Physics, Terrain};
 
-// The debugging system's update loop
-fn run(world: &mut World, _data: ComponentQuerySet) {
-    // Check if we need to debug
+// Smol gui
+fn run(world: &mut World) {
     let gui = &world.gui.egui;
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
@@ -23,9 +22,11 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
-        ui.label(format!("Component: '{}'", world.ecs.components.len()));
-        ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
-        ui.label(format!("Systems: '{}'", world.ecs.systems.inner().borrow().len()));
+        let timings = world.events.get_timings();
+        for profiled in &*timings.0 {
+            ui.label(format!("{}", profiled));
+        }
+        /*
         // Terrain
         let terrain = world.globals.get_mut::<Terrain>();
         if let Ok(terrain) = terrain {
@@ -41,16 +42,16 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
             ui.label(format!("Active Mesh Tasks Count: '{}'", terrain.scheduler.active_mesh_tasks_count()));
             ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
         }
+        */
         // Physics
         let physics = world.globals.get_mut::<Physics>();
-        if let Ok(physics) = physics {
+        if let Some(physics) = physics {
             ui.separator();
             ui.heading("Physics");
-            ui.label(format!("Active Count: '{}'", physics.active_num));
         }
     });
 }
 // Create the debugging system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
+    world.events.insert(run);
 }

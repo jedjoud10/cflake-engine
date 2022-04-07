@@ -92,6 +92,7 @@ pub fn load_default_systems(world: &mut World) {
 
     // We gotta add the default globals
     */
+    debugging_system::system(world);
 
     EventExecutionOrder::set(i32::MAX - 10);
     rendering_system::system(world);
