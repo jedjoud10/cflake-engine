@@ -57,14 +57,16 @@ mod tests {
         // Query
         let _i = std::time::Instant::now();
 
+        manager.prepare();
+        let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
         for _ in 0..5 {
-            manager.prepare();
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
+            query.iter_mut().for_each(|(name, value)| {
+                value.0 += 1;
+            });
 
-            let builder = Query::par_new::<&Name>(&manager).unwrap();
-            builder.for_each(|_| {});
             /*
             for (name, val) in .unwrap() {
                 //dbg!(name);
