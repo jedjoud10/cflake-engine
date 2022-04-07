@@ -7,7 +7,7 @@ pub type Event<World> = fn(&mut World);
 
 // Multiple events that will be stored in the world
 pub struct SystemSet<World> {
-    pub(crate) inner: Rc<RefCell<Vec<(i32, Event<World>)>>>,
+    inner: Rc<RefCell<Vec<(i32, Event<World>)>>>,
 }
 
 impl<World> SystemSet<World> {
@@ -20,10 +20,17 @@ impl<World> SystemSet<World> {
     pub fn insert_with(&mut self, evn: fn(&mut World), order: i32) {
         self.inner.borrow_mut().push((order, evn));
     }
-    // Sort the systems based on their execution order index
+    // Sort the events based on their execution order index
     pub fn sort(&mut self) {
         let mut borrowed = self.inner.borrow_mut();
         borrowed.sort_by(|(a, _), (b, _)| i32::cmp(a, b));
+    }
+    // Run all the events, in order
+    pub fn execute(&self, world: &mut World) {
+        let events = self.inner.borrow();
+        for (_, f) in &*events {
+            f(world);
+        }
     }
 }
 

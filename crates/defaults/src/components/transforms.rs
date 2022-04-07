@@ -94,21 +94,43 @@ impl Transform {
     // Scale constructors
     pub fn scale_x(width: f32) -> Self {
         Self {
-            scale: vek::Vec3::unit_x() * width,
+            scale: vek::Vec3::new(width, 1.0, 1.0),
             ..Default::default()
         }
     }
     pub fn scale_y(height: f32) -> Self {
         Self {
-            scale: vek::Vec3::unit_y() * height,
+            scale: vek::Vec3::new(1.0, height, 1.0),
             ..Default::default()
         }
     }
     pub fn scale_z(depth: f32) -> Self {
         Self {
-            scale: vek::Vec3::unit_z() * depth,
+            scale: vek::Vec3::new(1.0, 1.0, depth),
             ..Default::default()
         }
+    }
+    // Position constructors
+    pub fn at_x(x: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(x, 0.0, 0.0),
+           ..Default::default() 
+        }
+    }
+    pub fn at_y(y: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(0.0, y, 0.0),
+           ..Default::default() 
+        }
+    }
+    pub fn at_z(z: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(0.0, 0.0, z),
+           ..Default::default() 
+        }
+    }
+    pub fn new_xyz(x: f32, y: f32, z: f32) -> Self {
+        Self::from((x, y, z))
     }
     // Kinda like constructor modifiers
     pub fn scaled_by(mut self, mul: vek::Vec3<f32>) -> Self {

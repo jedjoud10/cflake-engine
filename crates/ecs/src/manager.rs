@@ -13,6 +13,9 @@ pub struct EcsManager {
     // Archetypes
     pub(crate) archetypes: ArchetypeSet,
 
+    // Iteration count
+    count: u64,
+
     // Unique component storages
     pub(crate) uniques: UniqueComponentStoragesHashMap,
 }
@@ -21,6 +24,7 @@ impl EcsManager {
     // Create a new ecs manager
     pub fn new() -> Self {
         Self {
+            count:0 ,
             entities: Default::default(),
             archetypes: Default::default(),
             uniques: Default::default(),
@@ -38,17 +42,11 @@ impl EcsManager {
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
         for archetype in self.archetypes.iter_mut() {
-            archetype.prepare()
+            archetype.prepare(self.count)
         }
-    }
 
-    // Execute the systems in sequence
-    pub fn execute<World>(world: &mut World, systems: SystemSet<World>) {
-        let borrowed = systems.inner.borrow();
-        for (_, event) in borrowed.as_slice() {
-            // Execute the system
-            event(world)
-        }
+        // Iteration counter that keeps track how many times we've run the ECS system
+        self.count += 1;
     }
 
     // Modify an entity's component layout

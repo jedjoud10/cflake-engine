@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets,
     defaults,
-    defaults::components::{Camera, Light, Transform, Renderer, Collider, ColliderGeometry, ColliderBuilder},
+    defaults::components::{Camera, Light, Transform, Renderer, Collider, ColliderGeometry, ColliderBuilder, RigidBody, RigidBodyType},
     rendering::basics::lights::LightType,
     vek, World,
 };
@@ -29,14 +29,31 @@ fn init(world: &mut World) {
         linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
     });
 
-    // A flat plane
+    // Create a flat plane
     let cube = world.pipeline.defaults().cube.clone();
     world.ecs.insert(|_, linker| {
-        let transform = Transform::scale_y(1.0).scaled_by(vek::Vec3::one() * 10.0);
+        let transform = Transform::scale_y(0.01).scaled_by(vek::Vec3::one() * 50.0);
         linker.insert(ColliderBuilder::cuboid(transform.scale).build()).unwrap();
         linker.insert(transform).unwrap();
-        linker.insert(Renderer::from(cube)).unwrap();
+        linker.insert(Renderer::from(cube.clone())).unwrap();
+        linker.insert(RigidBody::new(RigidBodyType::Static)).unwrap();
     });
+
+    // Create a few physics cubes
+    for x in 0..5 {
+        for z in 0..5 {
+            for y in 0..20 {
+                world.ecs.insert(|_, linker| {
+                    linker.insert(ColliderBuilder::cuboid(vek::Vec3::one()).build()).unwrap();
+                    linker.insert(Transform::new_xyz(x as f32, y as f32 * 1.2 + 50.0, z as f32)).unwrap();
+                    linker.insert(Renderer::from(cube.clone())).unwrap();
+                    linker.insert(RigidBody::new(RigidBodyType::Dynamic)).unwrap();
+                });
+            }
+        }
+    }
+
+
 
     
 }

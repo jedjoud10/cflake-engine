@@ -150,7 +150,10 @@ impl Archetype {
     }
 
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
-    pub fn prepare(&mut self) {
+    pub fn prepare(&mut self, count: u64) {
+        // Don't do anything for the first frame of execution
+        if count == 0 { return; }
+
         // Remove "pending for deletion" components
         self.remove_all_pending();
 

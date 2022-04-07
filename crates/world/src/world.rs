@@ -84,8 +84,8 @@ impl World {
 
         // Execute
         let systems = self.events.clone();
-        EcsManager::execute(self, systems);
-
+        systems.execute(self);
+        
         // Late update
         self.pipeline.end_frame();
         self.input.late_update();

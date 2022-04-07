@@ -42,11 +42,13 @@ fn get_shared_shape(pipeline: &Pipeline, scale_matrix: &vek::Mat4<f32>, collider
 // Whenever we add a rigidbody that has a collider attached to it, we must add them to the Rapier3D simulation
 fn run(world: &mut World) {
     // Add each rigidbody and it's corresponding collider
-    let query = Query::new::<(&mut RigidBody, &mut Collider, &Transform)>(&mut world.ecs).unwrap();
+    let query = Query::new::<(&mut RigidBody, &mut Collider, &Transform, &EntityState)>(&mut world.ecs).unwrap();
 
     // Le physics simulation
     let sim = &mut world.physics;
-    for (rigidbody, collider, transform) in query {
+    for (rigidbody, collider, transform, state) in query {
+        if state != EntityState::Added { return; }
+
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)
             .position(Isometry {
