@@ -1,23 +1,25 @@
 use std::marker::PhantomData;
-
 use crate::Component;
 
-// (Read, Write) access types. By default, the write access type will also write to the component mutation bitfield
-pub trait AccessType {
-    // The component that we wish to access
+// Gets a "&" reference to the component (or entity)
+pub struct Read<'a, T>(&'a T);
+
+// Gets a "&mut" reference to the data
+pub struct Write<'a, T, const SILENT: bool = false>(&'a mut T);
+
+pub trait ComponentBorrower<'a> {
     type Component;
+    
+    // The borrwoed component, either &'a T or &'a mut T
+    type Borrowed: 'a;
 }
 
-// Gets a "&" reference to the component
-pub struct Read<T: Component>(PhantomData<*const T>);
-
-impl<T: Component> AccessType for Read<T> {
+impl<'a, T: Component> ComponentBorrower<'a> for Read<'a, T> {
     type Component = T;
+    type Borrowed = &'a T;
 }
 
-// Gets a "&mut" reference to the component
-pub struct Write<T: Component, const SILENT: bool = false>(PhantomData<*const T>);
-
-impl<T: Component> AccessType for Write<T> {
+impl<'a, T: Component> ComponentBorrower<'a> for Write<'a, T> {
     type Component = T;
+    type Borrowed = &'a mut T;
 }

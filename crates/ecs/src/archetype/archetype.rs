@@ -54,11 +54,12 @@ impl Archetype {
         // Use the unique component storages to make new empty vetors
         let vectors: HashMap<Mask, StorageColumn, MaskHasher> = masks
             .iter()
-            .map(|mask|  {
+            .map(|mask| {
                 let boxed = uniques[mask].new_empty_from_self();
                 let column = StorageColumn::new(*mask, boxed);
                 (*mask, column)
-            }).collect();
+            })
+            .collect();
         Self {
             vectors,
             mask,
