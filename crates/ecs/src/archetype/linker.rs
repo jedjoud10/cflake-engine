@@ -15,7 +15,7 @@ pub fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {
 // Make sure there is an emtpy unique component vector at our disposal
 pub fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
     // Create a new unique component storage if it is missing
-    manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
+    manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
 }
 
 // Component linker that will simply link components to an entity
@@ -64,7 +64,7 @@ impl<'a> Linker<'a> {
         self.new_components.push((mask, Box::new(component)));
 
         // Create a new unique component storage if it is missing
-        self.manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<UnsafeCell<T>>::new()));
+        self.manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
         Ok(())
     }
     // Apply the linker

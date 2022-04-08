@@ -11,7 +11,7 @@ use tinyvec::ArrayVec;
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
     // Component vector
-    #[getset(get = "pub(crate)")]
+    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
     vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
 
     // Bundle Index -> Entity

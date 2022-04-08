@@ -1,4 +1,4 @@
-use std::{cell::{RefCell, Ref}, rc::Rc, time::{Duration, Instant}, cmp::Ordering, fmt::{Display, Debug}};
+use std::{cell::{RefCell, Ref}, rc::Rc, time::{Duration, Instant}, fmt::{Display, Debug}};
 
 use crate::EventExecutionOrder;
 
