@@ -20,12 +20,6 @@ mod tests {
         struct SimpleValue(usize);
         registry::register::<SimpleValue>();
 
-        let entity = manager.insert(|_, linker| {
-            linker.insert(Name("Le Jribi", [0; 64])).unwrap();
-            linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            linker.insert(SimpleValue(0)).unwrap();
-        });
-
         /*
         manager.modify(entity, |_, modifier| {
             modifier.remove::<Name>().unwrap();
@@ -40,8 +34,6 @@ mod tests {
         dbg!(entry.get::<Tag>().unwrap());
         dbg!(entry.get::<SimpleValue>());
         */
-        let mut entry = manager.entry(entity).unwrap();
-        let _name = entry.get_mut::<Name>().unwrap();
         // Get the query
 
         // Make a new entity
@@ -58,14 +50,20 @@ mod tests {
         let _i = std::time::Instant::now();
 
         manager.prepare();
-        let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
+        let mut query = Query::new::<(&mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
+        let mut avg = 0u128;
         for _ in 0..5 {
             let h = std::time::Instant::now();
             //dbg!(entry.get::<Tag>().unwrap().0);
             //dbg!(entry.state());=
-            query.iter_mut().for_each(|(name, value)| {
-                value.0 += 1;
-            });
+            avg = 0;
+            for _ in 0..512 {
+                let h = std::time::Instant::now();
+                for x in query.iter_mut().step_by(8) {
+                    x.0 += 1;
+                }
+                avg += h.elapsed().as_micros();
+            }
 
             /*
             for (name, val) in .unwrap() {
@@ -106,7 +104,7 @@ mod tests {
                 //dbg!(linked.was_mutated::<Name>().unwrap());
             });
             */
-            dbg!(h.elapsed().as_micros());
+            dbg!(avg / 512);
         }
     }
 }
