@@ -1,5 +1,3 @@
-//#[cfg(test)]
-/*
 #[cfg(test)]
 mod tests {
     use std::cell::UnsafeCell;
@@ -55,77 +53,16 @@ mod tests {
             let _entity = manager.insert(|_, modifs| {
                 //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
                 //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                modifs.insert(SimpleValue((x % 255) as u8)).unwrap();
+                modifs.insert(SimpleValue((x % 255) as i32)).unwrap();
             });
         }
 
         // Query
         let _i = std::time::Instant::now();
-        let mut t = vec![0; u16::MAX as usize * 12];
-        let mut avg = 0u128;
         manager.prepare();
         //let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
         for _ in 0..5 {
-            //dbg!(entry.get::<Tag>().unwrap().0);
-            //dbg!(entry.state());=
-            let archetype = manager.archetypes.get_mut(&Mask(4)).unwrap();
-            let vec = archetype.vectors_mut().get_mut(&Mask(4)).unwrap();
-            let vec = vec.as_any_mut().downcast_mut::<Vec<SimpleValue>>().unwrap();
-            avg = 0;
-            for _ in 0..512 {
-                let h = std::time::Instant::now();
-                for x in vec.iter_mut() {
-                    x.0 += 1;
-                }
-                avg += h.elapsed().as_micros();
-            }
-            /*
-            for (name, value) in query.iter_mut() {
-                value.0 += 1;
-            }
-            */
-
-            /*
-            for (name, val) in .unwrap() {
-                //dbg!(name);
-            }
-            */
-            //panic!("remove");
-
-            /*vec.par_iter().for_each(|value| {
-                let x = value.0;
-                let y = value.0 + 6;
-                value.0 += 2 - y;
-            });
-            */
-            /*
-            vec.par_iter_mut().for_each(|value| {
-                let x = value.0;
-                let y = value.0 + 6;
-                value.0 += 2 - y;
-            });
-            */
-            /*
-            vec2.par_iter_mut().for_each(|linked| {
-                //let name = linked.get::<SimpleValue>().unwrap();
-                let val = &mut linked.0;
-                *val += 1;
-                //linked.get_component_bits::<Name>().unwrap();
-                //dbg!(name.0);
-                //dbg!(linked.was_mutated::<Name>().unwrap());
-            });
-            vec2.par_iter_mut().for_each(|linked| {
-                //let name = linked.get::<SimpleValue>().unwrap();
-                let val = &mut linked.0;
-                *val += 1;
-                *val *= 3;
-                //linked.get_component_bits::<Name>().unwrap();
-                //dbg!(name.0);
-                //dbg!(linked.was_mutated::<Name>().unwrap());
-            });
-            */
-            dbg!(avg / 512);
+            type Test = Read<SimpleValue>;
         }
     }
 }
-*/
