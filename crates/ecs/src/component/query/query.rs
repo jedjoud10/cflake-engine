@@ -1,6 +1,6 @@
 use rayon::iter::IntoParallelIterator;
 
-use crate::{registry, Archetype, Component, EcsManager, Entity, EntityState, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator};
+use crate::{registry, Archetype, Component, EcsManager, Entity, EntityState, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator, StorageVecPtr};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
 // A more efficient method to iterate through all the components in the world
@@ -56,7 +56,7 @@ impl<'a> EntityEntryQuery<'a> {
         let linkings = manager.entities.get(entity)?;
 
         // And then get the singular component
-        let archetype = manager.archetypes.get(&linkings.mask).unwrap();
+        let archetype = manager.archetypes.get_mut(&linkings.mask).unwrap();
 
         Some(Self {
             archetype,
@@ -71,24 +71,23 @@ impl<'a> EntityEntryQuery<'a> {
         }
         Ok(mask)
     }
-    // Get a pointer to a component that is linked to our entity
-    fn get_ptr<T: Component>(&self) -> Result<*mut T, QueryError> {
+    // Get the storage vec pointer from our internal archetype
+    fn get_storage_vec_ptr<T: Component>(&self) -> Result<StorageVecPtr, QueryError> {
         let mask = self.get_component_mask::<T>()?;
         let component_mask = mask;
         let storage = self.archetype.vectors().get(&component_mask).unwrap();
-        let vec = storage.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        let component = vec.get(self.bundle).unwrap();
-        Ok(component.get())
+        Ok(storage.ptr.as_ref().cloned().unwrap())
     }
-
     // Get (immutable) and get mut (mutable)
     pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
-        self.get_ptr().map(|ptr| unsafe { &*ptr })
+        self.get_storage_vec_ptr::<T>().map(|ptr| unsafe { &*ptr.get_ptr_unchecked(self.bundle) })
     }
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
+        self.get_storage_vec_ptr::<T>().map(|ptr| unsafe { &mut *ptr.get_ptr_unchecked(self.bundle) })
+        /*
         let mask = self.get_component_mask::<T>()?;
         self.archetype.states().set_component_state(self.bundle, mask, true);
-        self.get_ptr().map(|ptr| unsafe { &mut *ptr })
+         */
     }
 
     // State getter

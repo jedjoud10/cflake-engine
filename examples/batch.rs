@@ -1,7 +1,6 @@
 use cflake_engine::{
-    assets,
-    defaults,
-    defaults::components::{Camera, Light, Transform, Renderer},
+    assets, defaults,
+    defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::lights::LightType,
     vek, World,
 };
@@ -17,14 +16,18 @@ fn init(world: &mut World) {
     defaults::systems::flycam_system::system(world);
 
     world.events.insert(|world| {
-        cflake_engine::gui::egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(&mut world.gui.egui, |ui| {
-            // Timings
-            ui.separator();
-            ui.heading("Timings");
-            ui.label(format!("Time: {:.1}", world.time.elapsed()));
-            ui.label(format!("Delta: {:.3}", world.time.average_delta()));
-            ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta()));
-        });
+        cflake_engine::gui::egui::Window::new("Debug Window")
+            .vscroll(false)
+            .hscroll(false)
+            .resizable(false)
+            .show(&mut world.gui.egui, |ui| {
+                // Timings
+                ui.separator();
+                ui.heading("Timings");
+                ui.label(format!("Time: {:.1}", world.time.elapsed()));
+                ui.label(format!("Delta: {:.3}", world.time.average_delta()));
+                ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta()));
+            });
     });
 
     // Create a simple camera entity
@@ -51,5 +54,5 @@ fn init(world: &mut World) {
                 });
             }
         }
-    }    
+    }
 }

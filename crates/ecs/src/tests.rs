@@ -1,3 +1,4 @@
+/*
 #[cfg(test)]
 mod tests {
     use std::cell::UnsafeCell;
@@ -19,7 +20,7 @@ mod tests {
         registry::register::<Tag>();
 
         #[derive(Component, Debug)]
-        struct SimpleValue(usize);
+        struct SimpleValue(i32);
         registry::register::<SimpleValue>();
         /*
         let entity = manager.insert(|_, linker| {
@@ -48,18 +49,18 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 1;
+        const COUNT: usize = u16::MAX as usize * 12;
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
                 //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
                 //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                modifs.insert(SimpleValue(x)).unwrap();
+                modifs.insert(SimpleValue((x % 255) as u8)).unwrap();
             });
         }
 
         // Query
         let _i = std::time::Instant::now();
-        let mut t = vec![0; u16::MAX as usize];
+        let mut t = vec![0; u16::MAX as usize * 12];
         let mut avg = 0u128;
         manager.prepare();
         //let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
@@ -72,7 +73,7 @@ mod tests {
             avg = 0;
             for _ in 0..512 {
                 let h = std::time::Instant::now();
-                for x in vec.iter_mut().step_by(8) {
+                for x in vec.iter_mut() {
                     x.0 += 1;
                 }
                 avg += h.elapsed().as_micros();
@@ -126,3 +127,4 @@ mod tests {
         }
     }
 }
+*/

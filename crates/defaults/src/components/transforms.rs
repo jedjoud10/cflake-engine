@@ -114,19 +114,19 @@ impl Transform {
     pub fn at_x(x: f32) -> Self {
         Self {
             position: vek::Vec3::new(x, 0.0, 0.0),
-           ..Default::default() 
+            ..Default::default()
         }
     }
     pub fn at_y(y: f32) -> Self {
         Self {
             position: vek::Vec3::new(0.0, y, 0.0),
-           ..Default::default() 
+            ..Default::default()
         }
     }
     pub fn at_z(z: f32) -> Self {
         Self {
             position: vek::Vec3::new(0.0, 0.0, z),
-           ..Default::default() 
+            ..Default::default()
         }
     }
     pub fn new_xyz(x: f32, y: f32, z: f32) -> Self {

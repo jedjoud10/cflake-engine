@@ -1,9 +1,10 @@
 use cflake_engine::{
     assets,
+    audio::AudioSource,
     defaults,
     defaults::components::{Camera, Light, Transform},
     rendering::basics::lights::LightType,
-    vek, World, audio::AudioSource,
+    vek, World,
 };
 // An example with a test camera and some sounds
 fn main() {

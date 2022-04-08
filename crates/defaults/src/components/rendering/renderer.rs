@@ -28,10 +28,7 @@ pub struct Renderer {
 
 impl From<Handle<Mesh>> for Renderer {
     fn from(mesh: Handle<Mesh>) -> Self {
-        Self {
-            mesh,
-            ..Default::default()
-        }
+        Self { mesh, ..Default::default() }
     }
 }
 

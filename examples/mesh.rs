@@ -1,7 +1,6 @@
 use cflake_engine::{
-    assets,
-    defaults,
-    defaults::components::{Camera, Light, Transform, Renderer},
+    assets, defaults,
+    defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::lights::LightType,
     vek, World,
 };

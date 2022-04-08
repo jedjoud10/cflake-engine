@@ -1,7 +1,6 @@
 use cflake_engine::{
-    assets,
-    defaults,
-    defaults::components::{Camera, Light, Transform, Renderer, Collider, ColliderGeometry, ColliderBuilder, RigidBody, RigidBodyType},
+    assets, defaults,
+    defaults::components::{Camera, Collider, ColliderBuilder, ColliderGeometry, Light, Renderer, RigidBody, RigidBodyType, Transform},
     rendering::basics::lights::LightType,
     vek, World,
 };
@@ -52,8 +51,4 @@ fn init(world: &mut World) {
             }
         }
     }
-
-
-
-    
 }

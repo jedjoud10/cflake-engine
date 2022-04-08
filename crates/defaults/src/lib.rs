@@ -1,6 +1,10 @@
 use components::*;
 use systems::*;
-use world::{assets::persistent, ecs::{EventExecutionOrder, registry}, World};
+use world::{
+    assets::persistent,
+    ecs::{registry, EventExecutionOrder},
+    World,
+};
 // Default components
 pub mod components;
 // Default globals

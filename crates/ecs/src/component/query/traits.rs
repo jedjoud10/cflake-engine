@@ -26,10 +26,7 @@ impl<'a, T: Component> QueryItem<'a> for &'a T {
     type Iter = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
     type Item = Self;
     fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
-        let mask = registry::mask::<T>().unwrap();
-        let vec = archetype.vectors().get(&mask).unwrap();
-        let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        vec.iter().map(|cell| unsafe { &*cell.get() })
+        todo!()
     }
     fn try_get_mask() -> Result<Mask, ComponentError> {
         registry::mask::<T>()
@@ -39,12 +36,9 @@ impl<'a, T: Component> QueryItem<'a> for &'a mut T {
     type Iter = std::iter::Map<std::slice::Iter<'a, UnsafeCell<T>>, fn(&UnsafeCell<T>) -> Self>;
     type Item = Self;
     fn archetype_map_iter(archetype: &'a Archetype) -> Self::Iter {
-        let mask = registry::mask::<T>().unwrap();
-        let vec = archetype.vectors().get(&mask).unwrap();
-        let vec = vec.as_any().downcast_ref::<Vec<UnsafeCell<T>>>().unwrap();
-        //archetype.states().set_all_component_states(mask, true).unwrap();
+        todo!();
 
-        vec.iter().map(|cell| unsafe { &mut *cell.get() })
+        //vec.iter().map(|cell| unsafe { &mut *cell.get() })
     }
     fn try_get_mask() -> Result<Mask, ComponentError> {
         registry::mask::<T>()

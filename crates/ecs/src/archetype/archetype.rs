@@ -1,7 +1,7 @@
 use super::UniqueComponentStoragesHashMap;
 use crate::{
     entity::{Entity, EntityLinkings},
-    ArchetypeStates, ComponentStorage, EntityState, Mask, MaskHasher,
+    ArchetypeStates, EntityState, Mask, MaskHasher, StorageColumn, StorageVec,
 };
 use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, collections::HashMap};
@@ -12,7 +12,7 @@ use tinyvec::ArrayVec;
 pub struct Archetype {
     // Component vector
     #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
-    vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher>,
+    vectors: HashMap<Mask, StorageColumn, MaskHasher>,
 
     // Bundle Index -> Entity
     #[getset(get = "pub")]
@@ -52,7 +52,13 @@ impl Archetype {
             .collect::<ArrayVec<[Mask; 64]>>();
 
         // Use the unique component storages to make new empty vetors
-        let vectors: HashMap<Mask, Box<dyn ComponentStorage>, MaskHasher> = masks.iter().map(|mask| (*mask, uniques[mask].new_empty_from_self())).collect();
+        let vectors: HashMap<Mask, StorageColumn, MaskHasher> = masks
+            .iter()
+            .map(|mask|  {
+                let boxed = uniques[mask].new_empty_from_self();
+                let column = StorageColumn::new(*mask, boxed);
+                (*mask, column)
+            }).collect();
         Self {
             vectors,
             mask,
@@ -71,14 +77,14 @@ impl Archetype {
     pub(crate) fn insert_with(&mut self, components: Vec<(Mask, Box<dyn Any>)>, linkings: &mut EntityLinkings, entity: Entity) {
         // Push first
         self.entities.push(entity);
-        self.states.push();        
+        self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
-        
+
         // Add the components using their specific storages
         for (mask, component) in components {
             let vec = self.vectors.get_mut(&mask).unwrap();
-            
+
             // Insert the component
             vec.push(component);
             self.states.set_component_state(linkings.bundle, mask, true);
@@ -152,7 +158,9 @@ impl Archetype {
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
     pub fn prepare(&mut self, count: u64) {
         // Don't do anything for the first frame of execution
-        if count == 0 { return; }
+        if count == 0 {
+            return;
+        }
 
         // Remove "pending for deletion" components
         self.remove_all_pending();

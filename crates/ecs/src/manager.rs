@@ -24,7 +24,7 @@ impl EcsManager {
     // Create a new ecs manager
     pub fn new() -> Self {
         Self {
-            count:0 ,
+            count: 0,
             entities: Default::default(),
             archetypes: Default::default(),
             uniques: Default::default(),
