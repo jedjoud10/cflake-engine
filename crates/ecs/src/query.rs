@@ -4,6 +4,8 @@ mod filters;
 mod item;
 mod layout;
 mod query;
+mod chunk;
+pub use chunk::*;
 pub use access::*;
 pub use cache::*;
 pub use filters::*;

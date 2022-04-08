@@ -21,9 +21,11 @@ impl StorageColumn {
         self.boxed.push(component);
         self.ptr.insert(self.boxed.as_storage_ptr().unwrap());
     }
+    // Swap remove a specific component
     pub fn swap_remove_bundle(&mut self, bundle: usize) {
         self.boxed.swap_remove_bundle(bundle)
     }
+    // Swap remove a specific component, but boxes the result so we can return it
     pub fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
         self.boxed.swap_remove_boxed_bundle(bundle)
     }

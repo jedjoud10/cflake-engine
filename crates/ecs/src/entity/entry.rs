@@ -7,7 +7,7 @@ use crate::{Component, EcsManager, /*EntityEntryQuery*/ EntityState, QueryError}
 pub struct EntityEntry<'a> {
     // Internal query for fetching components
     //query: EntityEntryQuery<'a>,
-    _phantom: PhantomData<&'a ()>
+    _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> EntityEntry<'a> {

@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use crate::Component;
+use std::marker::PhantomData;
 
 // Gets a "&" reference to the component (or entity)
 pub struct Read<'a, T>(&'a T);
@@ -9,7 +9,7 @@ pub struct Write<'a, T, const SILENT: bool = false>(&'a mut T);
 
 pub trait ComponentBorrower<'a> {
     type Component;
-    
+
     // The borrwoed component, either &'a T or &'a mut T
     type Borrowed: 'a;
 }

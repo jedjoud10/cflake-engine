@@ -1,7 +1,10 @@
-use crate::{Archetype, Mask, QueryCache, QueryItem, registry, ComponentError};
+use crate::{registry, Archetype, ComponentError, Mask, QueryCache, QueryItem};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 pub trait QueryLayout<'a> {
+    // The tuple that will be given to the user
+    type Tuple;
+
     // Get the combined mask of the query layout.
     fn layout_mask() -> Result<Mask, ComponentError>;
 
@@ -9,7 +12,9 @@ pub trait QueryLayout<'a> {
     fn cache_items(archetype: &Archetype, cache: &mut QueryCache);
 }
 
-impl<A: QueryItem> QueryLayout<'_> for (A) {
+impl<A: QueryItem> QueryLayout<'_> for A {
+    type Tuple = A::Item;
+    
     fn layout_mask() -> Result<Mask, ComponentError> {
         A::item_mask()
     }
@@ -17,4 +22,4 @@ impl<A: QueryItem> QueryLayout<'_> for (A) {
     fn cache_items(archetype: &Archetype, cache: &mut QueryCache) {
         A::cache(archetype, cache)
     }
-} 
+}

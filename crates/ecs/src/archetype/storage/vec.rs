@@ -52,9 +52,7 @@ impl<T: Component> StorageVec for Vec<T> {
 
     // Le storage vec pointer
     fn as_storage_ptr(&mut self) -> Result<StorageVecPtr, ComponentError> {
-        Ok(StorageVecPtr {
-            ptr: self.as_mut_ptr() as *mut c_void,
-        })
+        Ok(StorageVecPtr:: new(self))
     }
 
     // Create a new boxed component storage of an empty vec
