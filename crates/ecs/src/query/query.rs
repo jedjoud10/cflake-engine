@@ -1,5 +1,5 @@
 use rayon::iter::IntoParallelIterator;
-
+/*
 use crate::{registry, Archetype, Component, EcsManager, Entity, EntityState, LayoutQuery, Mask, ParQueryIterator, QueryError, QueryIterator, StorageVecPtr};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
@@ -99,3 +99,4 @@ impl<'a> EntityEntryQuery<'a> {
         self.archetype.states().get_entity_state(self.bundle).unwrap()
     }
 }
+*/
