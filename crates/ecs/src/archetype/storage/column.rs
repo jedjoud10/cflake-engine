@@ -1,4 +1,8 @@
-use std::{any::Any, ptr::{null_mut, null}, ffi::c_void};
+use std::{
+    any::Any,
+    ffi::c_void,
+    ptr::{null, null_mut},
+};
 
 use smallvec::SmallVec;
 

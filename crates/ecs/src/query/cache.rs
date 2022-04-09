@@ -2,15 +2,16 @@ use parking_lot::RwLock;
 use smallvec::SmallVec;
 use tinyvec::ArrayVec;
 
-use crate::{Mask, MaskHasher, QueryLayout, Archetype, StorageVecPtr, registry, Component};
+use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryLayout, StorageVecPtr};
 use std::{
     any::Any,
-    collections::{hash_map::Entry, HashMap}, sync::atomic::AtomicPtr, ffi::c_void,
+    collections::{hash_map::Entry, HashMap},
+    ffi::c_void,
+    sync::atomic::AtomicPtr,
 };
 
-
 #[derive(Default)]
-pub(crate) struct QueryCache {
+pub struct QueryCache {
     // Waste of memory but it works decently
     rows: ArrayVec<[Vec<Option<*mut c_void>>; 64]>,
     lengths: Vec<usize>,
@@ -21,8 +22,8 @@ impl QueryCache {
     pub fn insert(&mut self, archetype: &mut Archetype) {
         // Insert the pointers
         for (offset, row) in self.rows.iter_mut().enumerate() {
-            let mask = Mask::from_offset(offset);            
-            
+            let mask = Mask::from_offset(offset);
+
             // Get the component vector's pointer
             let ptr = archetype.vectors[&mask].get_ptr();
             row.push(Some(ptr));
@@ -38,7 +39,7 @@ impl QueryCache {
             // Get the corresponding chunk for each component type
             for (offset, row) in self.rows.iter_mut().enumerate() {
                 let mask = Mask::from_offset(offset);
-                
+
                 // Overwrite el pointer
                 let ptr = &mut row[archetype.query_cache_index];
                 *ptr = Some(archetype.vectors[&mask].get_ptr())
@@ -47,7 +48,14 @@ impl QueryCache {
     }
 
     // Get the row for a specific component type
-    pub fn get_row<T: Component>(&self) -> &Vec<Option<*mut c_void>> {
-        &self.rows[registry::mask::<T>().unwrap().offset()]
+    pub fn get_row<T: Component>(&self) -> &[Option<*mut c_void>] {
+        let offset = registry::mask::<T>().unwrap().offset();
+        let row = &self.rows[offset];
+        row
+    }
+
+    // Get the lengths for each chunk
+    pub fn get_lengths(&self) -> &[usize] {
+        &self.lengths
     }
 }

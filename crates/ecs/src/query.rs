@@ -1,12 +1,10 @@
 mod access;
 mod cache;
 mod filters;
-mod layout;
-mod query;
 mod iter;
-pub use iter::*;
+mod layout;
 pub use access::*;
 pub use cache::*;
 pub use filters::*;
+pub use iter::*;
 pub use layout::*;
-pub use query::*;

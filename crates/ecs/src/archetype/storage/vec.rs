@@ -4,7 +4,8 @@ use std::{
     any::Any,
     cell::UnsafeCell,
     ffi::c_void,
-    mem::{align_of, size_of}, ptr::NonNull,
+    mem::{align_of, size_of},
+    ptr::NonNull,
 };
 
 // A component storage that is implemented for Vec<UnsafeCell<T>>
@@ -52,7 +53,7 @@ impl<T: Component> StorageVec for Vec<T> {
         Box::new(element)
     }
 
-    // Pointer shit 
+    // Pointer shit
     fn as_mut_typeless_ptr(&mut self) -> *mut c_void {
         self.as_mut_ptr() as *mut c_void
     }
