@@ -11,24 +11,19 @@ use tinyvec::ArrayVec;
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
     // Component vector
-    #[getset(get = "pub(crate)", get_mut = "pub(crate)")]
-    vectors: HashMap<Mask, StorageColumn, MaskHasher>,
+    pub(crate) vectors: HashMap<Mask, StorageColumn, MaskHasher>,
 
     // Bundle Index -> Entity
-    #[getset(get = "pub")]
-    entities: Vec<Entity>,
+    pub(crate) entities: Vec<Entity>,
 
     // Stores the entity states and components states
-    #[getset(get = "pub(crate)")]
-    states: ArchetypeStates,
+    pub(crate) states: ArchetypeStates,
 
     // Bundles that must be removed by the next iteration
-    #[getset(get = "pub")]
-    pending_for_removal: Vec<usize>,
+    pub(crate) pending_for_removal: Vec<usize>,
 
     // Combined component masks
-    #[getset(get_copy = "pub")]
-    mask: Mask,
+    pub(crate) mask: Mask,
 }
 
 impl Archetype {

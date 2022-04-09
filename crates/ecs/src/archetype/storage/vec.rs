@@ -19,7 +19,7 @@ pub(crate) trait StorageVec {
     fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any>;
 
     // Get a pointer to the underlying data
-    fn as_storage_ptr(&mut self) -> Result<StorageVecPtr, ComponentError>;
+    fn as_storage_ptr(&mut self) -> StorageVecPtr;
 
     // Create a new boxed vector (empty)
     fn new_empty_from_self(&self) -> Box<dyn StorageVec>;
@@ -51,8 +51,8 @@ impl<T: Component> StorageVec for Vec<T> {
     }
 
     // Le storage vec pointer
-    fn as_storage_ptr(&mut self) -> Result<StorageVecPtr, ComponentError> {
-        Ok(StorageVecPtr:: new(self))
+    fn as_storage_ptr(&mut self) -> StorageVecPtr {
+        StorageVecPtr(self.as_mut_ptr() as *mut c_void)
     }
 
     // Create a new boxed component storage of an empty vec

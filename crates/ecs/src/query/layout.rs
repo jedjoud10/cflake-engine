@@ -1,5 +1,6 @@
-use crate::{registry, Archetype, ComponentError, Mask, QueryCache, QueryItem};
+use smallvec::SmallVec;
 
+use crate::{registry, Archetype, ComponentError, Mask, QueryCache, QueryItem, StorageVecPtr};
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 pub trait QueryLayout<'a> {
     // The tuple that will contain the pointers types of the specific query items
@@ -10,14 +11,16 @@ pub trait QueryLayout<'a> {
 
     // Get the number of entities that validate this query layout
     fn entity_len(archetype: &Archetype) -> usize {
-        archetype.entities().len()
+        archetype.entities.len()
     }
 
     // Get the combined mask of the query layout.
     fn layout_mask() -> Result<Mask, ComponentError>;
 
     // Run the cache() function for each of the generic QueryItems
-    fn cache_items(archetype: &Archetype, cache: &mut QueryCache);
+    fn update_cache(archetype: &mut Archetype, cache: &mut QueryCache) where Self: Sized {
+        cache.update::<Self>(archetype);
+    }
 }
 
 impl<'a, A: QueryItem<'a>> QueryLayout<'a> for A {
@@ -26,14 +29,5 @@ impl<'a, A: QueryItem<'a>> QueryLayout<'a> for A {
     
     fn layout_mask() -> Result<Mask, ComponentError> {
         A::item_mask()
-    }
-
-    fn cache_items(archetype: &Archetype, cache: &mut QueryCache) {
-        // Make sure the query layout is cached
-        cache.insert_with_capacity::<Self>(Self::entity_len(archetype));
-        let chunk = cache.get_mut::<Self>().unwrap();
-
-        // Insert the component pointers into the cache chunk
-        A::cache(archetype, chunk)
     }
 }

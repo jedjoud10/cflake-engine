@@ -1,14 +1,16 @@
-use std::{any::Any, ptr::null_mut};
+use std::{any::Any, ptr::null_mut, ffi::c_void};
+
+use smallvec::SmallVec;
 
 use crate::{Mask, StorageVec, StorageVecPtr};
 
 // A storage column, it contains a pointer along side the boxed storage
 pub(crate) struct StorageColumn {
     // Boxed vector storage
-    pub boxed: Box<dyn StorageVec>,
+    boxed: Box<dyn StorageVec>,
 
-    // It's raw ptr. This will change everytime the vector reallocates
-    pub ptr: Option<StorageVecPtr>,
+    // Our raw pointer
+    ptr: Option<StorageVecPtr>,
 }
 
 impl StorageColumn {
@@ -19,7 +21,7 @@ impl StorageColumn {
     // Push a new boxed element into the vector, and update the internally stored ptr in case we reallocate
     pub fn push(&mut self, component: Box<dyn Any>) {
         self.boxed.push(component);
-        self.ptr.insert(self.boxed.as_storage_ptr().unwrap());
+        self.ptr.insert(self.boxed.as_storage_ptr());
     }
     // Swap remove a specific component
     pub fn swap_remove_bundle(&mut self, bundle: usize) {
@@ -28,5 +30,9 @@ impl StorageColumn {
     // Swap remove a specific component, but boxes the result so we can return it
     pub fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
         self.boxed.swap_remove_boxed_bundle(bundle)
+    }
+    // Try to get the underlying raw pointer
+    pub fn get_ptr(&self) -> Option<StorageVecPtr> {
+        self.ptr
     }
 }

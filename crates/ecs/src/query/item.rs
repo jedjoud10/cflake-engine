@@ -10,8 +10,6 @@ pub trait QueryItem<'a> {
 
     // Try to get the mask of this query item (this might fail since Read<Entity> doesn't have a mask)
     fn item_mask() -> Result<Mask, ComponentError>;
-    // Add the necessary data into the query cache
-    fn cache(archetype: &Archetype, cache: &mut QueryCache);
 }
 
 impl<'a, T: Component> QueryItem<'a> for crate::Read<T> {
@@ -20,8 +18,6 @@ impl<'a, T: Component> QueryItem<'a> for crate::Read<T> {
     fn item_mask() -> Result<Mask, ComponentError> {
         registry::mask::<T>()
     }
-
-    fn cache(archetype: &Archetype, cache: &mut QueryCache) {}
 }
 
 impl<'a, T: Component> QueryItem<'a> for crate::Write< T> {
@@ -30,8 +26,6 @@ impl<'a, T: Component> QueryItem<'a> for crate::Write< T> {
     fn item_mask() -> Result<Mask, ComponentError> {
         registry::mask::<T>()
     }
-
-    fn cache(archetype: &Archetype, cache: &mut QueryCache) {}
 }
 
 impl<'a> QueryItem<'a> for crate::Read<Entity> {
@@ -40,6 +34,4 @@ impl<'a> QueryItem<'a> for crate::Read<Entity> {
     fn item_mask() -> Result<Mask, ComponentError> {
         Ok(Mask::default())
     }
-
-    fn cache(archetype: &Archetype, cache: &mut QueryCache) {}
 }
