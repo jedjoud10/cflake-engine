@@ -22,6 +22,9 @@ pub struct Archetype {
     // Bundles that must be removed by the next iteration
     pub(crate) pending_for_removal: Vec<usize>,
 
+    // Index of this archetype inside the query cache
+    pub(crate) query_cache_index: usize,
+
     // Combined component masks
     pub(crate) mask: Mask,
 }
@@ -60,6 +63,7 @@ impl Archetype {
             mask,
             states: Default::default(),
             entities: Default::default(),
+            query_cache_index: 0,
             pending_for_removal: Default::default(),
         }
     }

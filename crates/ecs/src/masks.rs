@@ -11,7 +11,6 @@ pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
-    // One and zero masks
     pub fn one() -> Mask {
         Mask(1)
     }
@@ -19,9 +18,16 @@ impl Mask {
         Mask(0)
     }
 
-    // All
     pub fn all() -> Mask {
         Mask(u64::MAX)
+    }
+
+    pub fn from_offset(offset: usize) -> Mask {
+        Mask(1 << offset)
+    }
+
+    pub fn offset(&self) -> usize {
+        self.0.trailing_zeros() as usize
     }
 }
 

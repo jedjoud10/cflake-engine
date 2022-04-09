@@ -1,4 +1,4 @@
-use std::{any::Any, ptr::null_mut, ffi::c_void};
+use std::{any::Any, ptr::{null_mut, null}, ffi::c_void};
 
 use smallvec::SmallVec;
 
@@ -9,19 +9,20 @@ pub(crate) struct StorageColumn {
     // Boxed vector storage
     boxed: Box<dyn StorageVec>,
 
-    // Our raw pointer
-    ptr: Option<StorageVecPtr>,
+    // Our raw pointer (this is null)
+    ptr: *mut c_void,
 }
 
 impl StorageColumn {
     // Create a new storage column from a boxed storage vec
     pub fn new(mask: Mask, boxed: Box<dyn StorageVec>) -> Self {
-        Self { boxed, ptr: None }
+        let ptr = boxed.get_null_mut_typeless_ptr();
+        Self { boxed, ptr }
     }
     // Push a new boxed element into the vector, and update the internally stored ptr in case we reallocate
     pub fn push(&mut self, component: Box<dyn Any>) {
         self.boxed.push(component);
-        self.ptr.insert(self.boxed.as_storage_ptr());
+        self.ptr = self.boxed.as_mut_typeless_ptr();
     }
     // Swap remove a specific component
     pub fn swap_remove_bundle(&mut self, bundle: usize) {
@@ -31,8 +32,8 @@ impl StorageColumn {
     pub fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
         self.boxed.swap_remove_boxed_bundle(bundle)
     }
-    // Try to get the underlying raw pointer
-    pub fn get_ptr(&self) -> Option<StorageVecPtr> {
+    // Get the cached pointer, since we only have a &self context
+    pub fn get_ptr(&self) -> *mut c_void {
         self.ptr
     }
 }

@@ -7,19 +7,18 @@ pub struct Read<T: 'static>(&'static T);
 // Gets a "&mut" reference to the data
 pub struct Write<T: 'static, const SILENT: bool = false>(&'static mut T);
 
-pub trait ComponentBorrower<'a> {
-    type Component;
-
-    // The borrwoed component, either &'a T or &'a mut T
+// Trait that will be implmenented for Read<T> and Write<T>
+pub trait BorrowedItem<'a> {
+    type Component: 'static + Component;
     type Borrowed: 'a;
 }
 
-impl<'a, T: Component> ComponentBorrower<'a> for Read<T> where Self: 'a {
+impl<'a, T: Component> BorrowedItem<'a> for Read<T> where Self: 'a {
     type Component = T;
     type Borrowed = &'a T;
 }
 
-impl<'a, T: Component> ComponentBorrower<'a> for Write<T> where Self: 'a {
+impl<'a, T: Component> BorrowedItem<'a> for Write<T> where Self: 'a {
     type Component = T;
     type Borrowed = &'a mut T;
 }

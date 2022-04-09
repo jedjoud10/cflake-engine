@@ -10,14 +10,12 @@ lazy_static! {
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
 }
 // Return the registered mask of the component
-#[inline(always)]
 pub fn mask<T: Component>() -> Result<Mask, ComponentError> {
     let locked = REGISTERED.read();
     let id = TypeId::of::<T>();
     locked.get(&id).ok_or(ComponentError::NotRegistered(name::<T>())).cloned()
 }
 // Registers the component if it wasn't already registered
-#[inline(always)]
 pub fn register<T: Component>() -> Mask {
     let mut locked = REGISTERED.write();
     let id = TypeId::of::<T>();
@@ -35,7 +33,10 @@ pub fn register<T: Component>() -> Mask {
     copy
 }
 // Get the name of a component
-#[inline(always)]
 pub fn name<T: Component>() -> &'static str {
     type_name::<T>()
+}
+// Get the number of registered components
+pub fn count() -> usize {
+    REGISTERED.read().len()
 }

@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming,
+    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryLayout,
 };
 
 // Manages ECS logic
@@ -18,19 +18,12 @@ pub struct EcsManager {
 
     // Unique component storages
     pub(crate) uniques: UniqueComponentStoragesHashMap,
+
+    // Query cache for bRRRR type performance
+    cache: QueryCache,
 }
 
 impl EcsManager {
-    // Create a new ecs manager
-    pub fn new() -> Self {
-        Self {
-            count: 0,
-            entities: Default::default(),
-            archetypes: Default::default(),
-            uniques: Default::default(),
-        }
-    }
-
     // Check if an entity is valid
     pub fn is_valid(&self, entity: Entity) -> Option<bool> {
         let linkings = self.entities.get(entity)?;
@@ -101,5 +94,10 @@ impl EcsManager {
         archetype.add_pending_for_removal(linkings.bundle);
         linkings.mask = Default::default();
         Some(())
+    }
+
+    // Create a query for a specific layout
+    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> () {
+
     }
 }

@@ -7,7 +7,7 @@ mod tests {
     #[test]
     fn test() {
         // Empty manager
-        let mut manager = EcsManager::new();
+        let mut manager = EcsManager::default();
 
         // Simple component
         #[derive(Component, Debug)]
@@ -21,6 +21,7 @@ mod tests {
         #[derive(Component, Debug)]
         struct SimpleValue(i32);
         registry::register::<SimpleValue>();
+
         /*
         let entity = manager.insert(|_, linker| {
             linker.insert(Name("Le Jribi", [0; 64])).unwrap();

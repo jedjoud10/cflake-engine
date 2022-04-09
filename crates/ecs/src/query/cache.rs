@@ -1,60 +1,53 @@
 use parking_lot::RwLock;
 use smallvec::SmallVec;
+use tinyvec::ArrayVec;
 
-use crate::{Mask, MaskHasher, QueryLayout, Archetype, StorageVecPtr};
+use crate::{Mask, MaskHasher, QueryLayout, Archetype, StorageVecPtr, registry, Component};
 use std::{
     any::Any,
     collections::{hash_map::Entry, HashMap}, sync::atomic::AtomicPtr, ffi::c_void,
 };
 
-// Small vec for storing pointers to the component vec columns
-type ColumnPtrs = SmallVec<[(Mask, Option<StorageVecPtr>); 8]>;
-type Chunk = (usize, ColumnPtrs);
 
-// Query cache that stores a local copy of the generated queries, so we can iterate through them more efficiently
-pub struct QueryCache {
-    // Layout mask -> Chunks
-    collumns: HashMap<Mask, Vec<Chunk>, MaskHasher>,
+#[derive(Default)]
+pub(crate) struct QueryCache {
+    // Waste of memory but it works decently
+    rows: ArrayVec<[Vec<Option<*mut c_void>>; 64]>,
+    lengths: Vec<usize>,
 }
 
 impl QueryCache {
-    // Creates a new chunk from an arhcetype and a layout entry mask
-    fn new_chunk(layout: Mask, archetype: &Archetype) -> Chunk {
-        let ptrs = archetype
-            .vectors
-            .iter()
-            .filter_map(|(&mask, column)| 
-                // It must validate the layout mask
-                if mask & layout == Default::default() { None }
-                else { Some((mask, column.get_ptr())) }
-            )
-        .collect::<ColumnPtrs>();
-
-        return (archetype.entities.len(), ptrs)
-    }
-    // Makes a new collumn that can contains multiple chunks
-    fn insert_default(&mut self, mask: Mask) {
-        self.collumns.entry(mask).or_default();
-    }
-    // Update the internal cache using the archetype we initialized it with
-    pub fn update<'a, Layout: QueryLayout<'a>>(&mut self, archetype: &mut Archetype) -> Option<()> {
-        // Validate the collumn if it is new
-        let mask = Layout::layout_mask().ok()?;
-        self.insert_default(mask);
-
-        /*
-        // Fetch the specific chunk
-        let collumn = self.collumns.get_mut(&mask)?;
-        let idx = archetype.query_cache_indices[&mask];
-        let (len, chunk) = collumn.get_mut(idx)?;
-
-        // Update the chunk data
-        *len = archetype.entities.len();
-        for (mask, column) in archetype.vectors.iter() {
-            chunk[] 
+    // Register a new archetype into the cache
+    pub fn insert(&mut self, archetype: &mut Archetype) {
+        // Insert the pointers
+        for (offset, row) in self.rows.iter_mut().enumerate() {
+            let mask = Mask::from_offset(offset);            
+            
+            // Get the component vector's pointer
+            let ptr = archetype.vectors[&mask].get_ptr();
+            row.push(Some(ptr));
         }
-        */
+        // And the length
+        self.lengths.push(archetype.entities.len());
+    }
 
-        Some(())
+    // Update the cache using some new archetypes
+    pub fn update(&mut self, archetypes: &[Archetype]) {
+        // Update the pointers and chunk lengths
+        for archetype in archetypes {
+            // Get the corresponding chunk for each component type
+            for (offset, row) in self.rows.iter_mut().enumerate() {
+                let mask = Mask::from_offset(offset);
+                
+                // Overwrite el pointer
+                let ptr = &mut row[archetype.query_cache_index];
+                *ptr = Some(archetype.vectors[&mask].get_ptr())
+            }
+        }
+    }
+
+    // Get the row for a specific component type
+    pub fn get_row<T: Component>(&self) -> &Vec<Option<*mut c_void>> {
+        &self.rows[registry::mask::<T>().unwrap().offset()]
     }
 }
