@@ -1,10 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::QueryLayout;
+use crate::{QueryLayout, QueryCache};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
-    tuples: &'a [(Layout::PtrTuple, usize)],
+    tuples: Vec<(Layout::PtrTuple, usize)>,
     _phantom: PhantomData<&'a ()>,
 
     // Maximum number of bundles
@@ -19,10 +19,10 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
-    // Creates a new iterator
-    pub fn new(tuples: &'a [(Layout::PtrTuple, usize)]) -> Self {
+    // Creates a new iterator using the cache
+    pub fn new(cache: &'a QueryCache) -> Self {
         Self {
-            tuples,
+            tuples: Layout::get_filtered_chunks(cache),
             _phantom: Default::default(),
             count: 0,
             bundle: 0,

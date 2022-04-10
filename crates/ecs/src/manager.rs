@@ -31,6 +31,11 @@ impl EcsManager {
         Some(archetype.is_valid(linkings.bundle))
     }
 
+    // Force a cache update
+    pub fn update_cache(&mut self) {
+        self.archetypes.iter_mut().for_each(|x| self.cache.update(x));
+    }
+
     // Prepare the Ecs Manager for one execution
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
@@ -55,9 +60,13 @@ impl EcsManager {
         function(entity, &mut linker);
 
         // Apply the changes
-        linker.apply(&mut copied);
+        let (old, new) = linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
 
+        // Update the old archetype and new archetype
+        let (old, new) = self.archetypes.get_two_mut(old, new).unwrap();
+        self.cache.update(old);
+        self.cache.update(new);
         Some(())
     }
 
@@ -75,7 +84,11 @@ impl EcsManager {
         function(entity, &mut linker);
 
         // Apply the changes (adds it to the archetype)
-        linker.apply();
+        let linkings = linker.apply();
+
+        // Update the cache of the receiving archetype
+        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+        self.cache.update(archetype);
 
         entity
     }
@@ -93,11 +106,16 @@ impl EcsManager {
         // Apply the "pending for removal" state
         archetype.add_pending_for_removal(linkings.bundle);
         linkings.mask = Default::default();
+
+        // Zad
+        self.update_cache();
+
+
         Some(())
     }
 
     // Get a component query that we will use to read/write to certain components
     pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
-        QueryIter::new(todo!())
+        QueryIter::new(&self.cache)
     }
 }

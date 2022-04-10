@@ -89,7 +89,8 @@ impl<'a> LinkModifier<'a> {
     }
     // Apply the modifier
     // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
-    pub(crate) fn apply(self, linkings: &mut EntityLinkings) {
+    // This returns the old mask and new mask
+    pub(crate) fn apply(self, linkings: &mut EntityLinkings) -> (Mask, Mask) {
         // The entity is currently part of an archetype
         let old = self.linkings.mask;
         let new = self.modified;
@@ -106,6 +107,8 @@ impl<'a> LinkModifier<'a> {
             println!("Moved entity from {} to {}", old, new);
             current.move_entity(self.entity, linkings, self.new_components, target);
         }
+
+        (old, new)
         /*
 
         if let (mask, Some(bundle)) = (&mut linkings.mask, linkings.bundle) {
