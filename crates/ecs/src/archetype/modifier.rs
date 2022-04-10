@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::{component_mask, register_unique, registry, Component, EcsManager, Entity, EntityLinkings, LinkModifierError, Mask};
+use crate::{component_mask, register_unique, registry, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -43,13 +43,13 @@ impl<'a> LinkModifier<'a> {
         })
     }
     // Insert a component into the modifier, thus linking it to the entity
-    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
+    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
         let mask = component_mask::<T>()?;
         let new = self.modified | mask;
 
         // Check for link duplication
         if self.modified == new {
-            return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
+            return Err(LinkError::LinkDuplication(registry::name::<T>()));
         }
 
         // Always make sure there is a unique vector for this component
@@ -73,7 +73,7 @@ impl<'a> LinkModifier<'a> {
         Ok(())
     }
     // Remove a component from the entity
-    pub fn remove<T: Component>(&mut self) -> Result<(), LinkModifierError> {
+    pub fn remove<T: Component>(&mut self) -> Result<(), LinkError> {
         let mask = component_mask::<T>()?;
 
         // Check if we have the component locally stored in this link modifier

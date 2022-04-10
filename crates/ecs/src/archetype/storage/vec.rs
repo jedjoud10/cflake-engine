@@ -9,8 +9,9 @@ pub(crate) trait StorageVec {
 
     // Vector shit
     fn push(&mut self, component: Box<dyn Any>);
-    fn swap_remove_bundle(&mut self, bundle: usize);
-    fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any>;
+    fn swap_remove(&mut self, bundle: usize);
+    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
+    fn reserve(&mut self, additional: usize);
 
     // Pointer shit
     fn as_mut_typeless_ptr(&mut self) -> *mut c_void;
@@ -37,13 +38,16 @@ impl<T: Component> StorageVec for Vec<T> {
         self.push(component);
     }
     // Swap remove an element
-    fn swap_remove_bundle(&mut self, bundle: usize) {
+    fn swap_remove(&mut self, bundle: usize) {
         self.swap_remove(bundle);
     }
     // Swap remove an element, but box the result
-    fn swap_remove_boxed_bundle(&mut self, bundle: usize) -> Box<dyn Any> {
+    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any> {
         let element = self.swap_remove(bundle);
         Box::new(element)
+    }
+    fn reserve(&mut self, additional: usize) {
+        self.reserve(additional)
     }
 
     // Pointer shit

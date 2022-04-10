@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, QueryCache, QueryError, QueryIter, QueryLayout,
+    registry, Component, EntityEntry, EntityLinkings, LinkModifier, SimpleLinker, QueryCache, QueryError, QueryIter, QueryLayout, StrictLinker, Linker,
 };
 
 // Manages ECS logic
@@ -81,11 +81,11 @@ impl EcsManager {
     }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
-    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
+    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut SimpleLinker)) -> Entity {
         let entity = self.entities.insert(EntityLinkings::default());
 
         // Create a linker, so we can insert components and link them to the entity
-        let mut linker = Linker::new(self, entity);
+        let mut linker = SimpleLinker::new(self, entity);
         function(entity, &mut linker);
 
         // Apply the changes (adds it to the archetype)
@@ -97,14 +97,37 @@ impl EcsManager {
 
         entity
     }
-
+    /*
     // Insert multiple entities in batch. The entities must have the same component layout
-    pub fn insert_batch(&mut self, _count: usize, function: impl FnMut(Entity, &mut Linker)) -> &[Entity] {
+    pub fn insert_batch(&mut self, count: usize, mut function: impl FnMut(usize, Entity, &mut StrictLinker)) -> Option<&[Entity]> {
         // Add the first entity normally, so we can get the output archetype
-        let _entity = self.insert(function);
+        let entity = self.insert(|entity, linker| {
+            function(0, entity, linker)
+        });
+        let archetype = self.archetypes.get_mut(&self.entities[entity].mask).unwrap();
+        let start_index = archetype.entities.len();
 
-        todo!()
+        // Make sure the archetype has enough space allocated, so it won't reallocate as many times
+        archetype.reserve(count-1);
+
+        // Add the entities, and make sure that they all have the same layout
+        for x in 0..(count-1) {
+            // Create a strict linker, since we know the target archetype now
+            let mut linker = StrictLinker::new(archetype, &mut self.entities[entity], entity);
+            function(x+1, entity, &mut linker);
+
+            // Apply the changes (adds it to the archetype)
+            let linkings = linker.apply();
+
+            // Update the cache of the receiving archetype
+            let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+
+            self.cache.update(archetype);
+        }        
+
+        Some(&archetype.entities[start_index..])
     }
+    */
 
     // Remove an entity from the world
     // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration

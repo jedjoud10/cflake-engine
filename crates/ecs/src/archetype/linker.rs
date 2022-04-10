@@ -1,15 +1,15 @@
-use super::LinkModifierError;
+use super::LinkError;
 use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
-    Mask,
+    Mask, Archetype, EntitySet,
 };
 use std::any::Any;
 
 // Get the mask of a specific component
-pub fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {
-    registry::mask::<T>().map_err(LinkModifierError::ComponentError)
+pub fn component_mask<T: Component>() -> Result<Mask, LinkError> {
+    registry::mask::<T>().map_err(LinkError::ComponentError)
 }
 
 // Make sure there is an emtpy unique component vector at our disposal
@@ -18,8 +18,17 @@ pub fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
     manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
 }
 
+// Linker trait that will be implemented for SimpleLinker and StrictLinker
+pub trait Linker<'a> {    
+    // Yk, linker shit
+    type Input: 'a;
+    fn new(input: Self::Input) -> Self;
+    fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError>;
+    fn apply(self) -> EntityLinkings;    
+}
+
 // Component linker that will simply link components to an entity
-pub struct Linker<'a> {
+pub struct SimpleLinker<'a> {
     // Manager
     manager: &'a mut EcsManager,
 
@@ -33,9 +42,10 @@ pub struct Linker<'a> {
     entity: Entity,
 }
 
-impl<'a> Linker<'a> {
-    // Create a new component linker
-    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Self {
+impl<'a> Linker<'a> for SimpleLinker<'a> {
+    // Create a new linker
+    fn new(manager: &'a mut EcsManager, entity: Entity) -> Self {
+        type Input;
         Self {
             manager,
             new_components: Default::default(),
@@ -43,15 +53,15 @@ impl<'a> Linker<'a> {
             entity,
         }
     }
-    // Insert a component into the modifier, thus linking it to the entity
-    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
+    // Insert a component into the linker (internally), thus linking it to the entity
+    fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
         // Bits
         let mask = component_mask::<T>()?;
         let new = self.mask | mask;
 
         // Check for link duplication
         if self.mask == new {
-            return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
+            return Err(LinkError::LinkDuplication(registry::name::<T>()));
         } else {
             // No link duplication, we can apply the new mask
             self.mask = new;
@@ -68,21 +78,23 @@ impl<'a> Linker<'a> {
         Ok(())
     }
     // Apply the linker
-    pub(crate) fn apply(self) -> EntityLinkings {
+    fn apply(self) -> EntityLinkings {
         // Make sure the archetype exists
         let archetype = self.manager.archetypes.insert_default(self.mask, &self.manager.uniques);
 
         // Insert the components into the archetype
         let linkings = self.manager.entities.get_mut(self.entity).unwrap();
-        archetype.insert_with(self.new_components, linkings, self.entity);
+        archetype.insert_boxed(self.new_components, linkings, self.entity);
         *linkings
     }
+
 }
 
-// An exact linker that knows what the target archetype before hand
-pub struct ExactLinker<'a> {
-    // Manager
-    manager: &'a mut EcsManager,
+// A linker that knows what the target archetype before hand
+pub struct StrictLinker<'a> {
+    // Archetype and linkings
+    archetype: &'a mut Archetype,
+    linkings: &'a mut EntityLinkings,
 
     // Bits of the components that were successfully added
     mask: Mask,
@@ -91,48 +103,46 @@ pub struct ExactLinker<'a> {
     entity: Entity,
 }
 
-impl<'a> Linker<'a> {
-    // Create a new component linker
-    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Self {
+impl<'a> Linker<'a> for StrictLinker<'a> {
+    // Create a new exact linker
+    fn new(manager: &'a mut EcsManager, entity: Entity) -> Self {
+        let linkings = manager.entities.get_mut(entity).unwrap();
+        let archetype = manager.archetypes.get_mut(linkings.mask).unwrap();
         Self {
-            manager,
-            new_components: Default::default(),
+            archetype: manager.archetypes.get_mut(),
+            linkings,
             mask: Default::default(),
             entity,
         }
     }
-    // Insert a component into the modifier, thus linking it to the entity
-    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkModifierError> {
+    // Insert a component into the target archetype directly
+    pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
         // Bits
         let mask = component_mask::<T>()?;
         let new = self.mask | mask;
 
+        // Return an error if we try to add a component that doesn't belong to our archetype
+        if mask & self.archetype.mask == Mask::default() {
+            return Err(LinkError::StrictLinkOutlier(registry::name::<T>()))
+        }
+
         // Check for link duplication
         if self.mask == new {
-            return Err(LinkModifierError::LinkDuplication(registry::name::<T>()));
+            return Err(LinkError::LinkDuplication(registry::name::<T>()));
         } else {
             // No link duplication, we can apply the new mask
             self.mask = new;
         }
 
-        // Always make sure there is a unique vector for this component
-        register_unique::<T>(self.manager, mask);
+        // Push the component into the target archetype 
+        self.archetype.insert_component::<T>(component).map_err(LinkError::ComponentError)?;
 
-        // Temporarily store the components
-        self.new_components.push((mask, Box::new(component)));
-
-        // Create a new unique component storage if it is missing
-        self.manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
         Ok(())
     }
-    // Apply the linker
+    // Apply the strict linker
     pub(crate) fn apply(self) -> EntityLinkings {
-        // Make sure the archetype exists
-        let archetype = self.manager.archetypes.insert_default(self.mask, &self.manager.uniques);
-
-        // Insert the components into the archetype
-        let linkings = self.manager.entities.get_mut(self.entity).unwrap();
-        archetype.insert_with(self.new_components, linkings, self.entity);
-        *linkings
+        // Just update the linkings
+        self.archetype.push_entity(self.linkings, self.entity);
+        *self.linkings
     }
 }

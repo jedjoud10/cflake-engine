@@ -9,20 +9,22 @@ pub struct EntityEntry<'a> {
     //query: EntityEntryQuery<'a>,
     archetype: &'a Archetype,
     bundle: usize,
-    _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> EntityEntry<'a> {
     // Create an entry from the Ecs manager and an entity
-    pub(crate) fn new(_manager: &'a mut EcsManager, _entity: Entity) -> Option<Self> {
-        //EntityEntryQuery::new(manager, entity).map(|query| Self { query })
-        todo!()
+    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
+        let linkings = manager.entities.get(entity)?;
+        Some(Self {
+            archetype: manager.archetypes.get(&linkings.mask)?,
+            bundle: linkings.bundle,
+        })
     }
     // Get a pointer to a linked component of this entity
     pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntityEntryError> {
         let mask = registry::mask::<T>().map_err(EntityEntryError::ComponentError)?;
-        let column = &self.archetype.vectors[&mask];
-        let ptr = column.get_ptr() as *mut T;
+        let (_, ptr) = &self.archetype.vectors[&mask];
+        let ptr = *ptr as *mut T;
         Ok(ptr.add(self.bundle))
     }
     // Get an immutable reference to a linked component

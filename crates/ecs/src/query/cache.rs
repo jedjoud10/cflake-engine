@@ -40,8 +40,8 @@ impl QueryCache {
             let mask = Mask::from_offset(offset);
 
             // Get the component vector's pointer only if it valid in the archetype
-            if let Some(vector) = archetype.vectors.get(&mask) {
-                row[idx].replace(vector.get_ptr());
+            if let Some((_, ptr)) = archetype.vectors.get(&mask) {
+                row[idx].replace(*ptr);
             }
         }
     }
