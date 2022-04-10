@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry,
+    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry, QueryError,
 };
 
 // Manages ECS logic
@@ -122,7 +122,7 @@ impl EcsManager {
     }
 
     // Get a component query that we will use to read/write to certain components
-    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
+    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> Result<QueryIter<'a, Layout>, QueryError> {
         QueryIter::new(&self.cache)
     }
 }

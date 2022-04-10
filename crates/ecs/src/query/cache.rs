@@ -2,7 +2,7 @@ use parking_lot::RwLock;
 use smallvec::SmallVec;
 use tinyvec::ArrayVec;
 
-use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryLayout, StorageVecPtr};
+use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryLayout, StorageVecPtr, QueryError};
 use std::{
     any::Any,
     collections::{hash_map::Entry, HashMap, HashSet},
@@ -52,10 +52,10 @@ impl QueryCache {
     } 
 
     // Get the row for a specific component type
-    pub(crate) fn get_row<T: Component>(&self) -> &[Option<*mut c_void>] {
-        let offset = registry::mask::<T>().unwrap().offset();
+    pub(crate) fn get_row<T: Component>(&self) -> Result<&[Option<*mut c_void>], QueryError> {
+        let offset = registry::mask::<T>().map_err(QueryError::ComponentError)?.offset();
         let row = &self.rows[offset];
-        row
+        Ok(row)
     }
 
     // Get the lengths for each chunk

@@ -30,9 +30,6 @@ impl std::error::Error for ComponentError {}
 pub enum QueryError {
     // Specific Component error
     ComponentError(ComponentError),
-
-    // Error that occurs when we try to get a query of a component that was not specified in the entry masks
-    NotLinked(&'static str),
 }
 
 impl std::fmt::Display for QueryError {
@@ -45,7 +42,6 @@ impl std::fmt::Debug for QueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             QueryError::ComponentError(err) => std::fmt::Debug::fmt(err, f),
-            QueryError::NotLinked(name) => write!(f, "Query of '{}' is not available in the query builder", name),
         }
     }
 }

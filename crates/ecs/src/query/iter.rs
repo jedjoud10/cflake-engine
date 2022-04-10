@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{QueryLayout, QueryCache};
+use crate::{QueryLayout, QueryCache, QueryError};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
@@ -20,15 +20,15 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new iterator using the cache
-    pub fn new(cache: &'a QueryCache) -> Self {
-        Self {
-            tuples: Layout::get_filtered_chunks(cache),
+    pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
+        Ok(Self {
+            tuples: Layout::get_filtered_chunks(cache)?,
             _phantom: Default::default(),
             count: 0,
             bundle: 0,
             chunk: 0,
             loaded: None,
-        }
+        })
     }
 }
 
