@@ -23,7 +23,6 @@ impl ArchetypeSet {
             let index = self.archetypes.len();
             self.archetypes.push(Archetype::new(mask, uniques));
             self.indices.insert(mask, index);
-            println!("Insert new archetype");
             self.archetypes.get_mut(index).unwrap()
         }
     }

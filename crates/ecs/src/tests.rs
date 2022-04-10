@@ -47,14 +47,31 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 8;
+        const COUNT: usize = 10;
+        /*
         for x in 0..COUNT {
-            let _entity = manager.insert(|_, modifs| {
-                //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
-                modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                modifs.insert(SimpleValue((x) as i32)).unwrap();
+            let _entity = manager.insert(|_, linker| {
+                //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
+                linker.insert(Tag("Jed est cool (trust)")).unwrap();
+                linker.insert(SimpleValue((x) as i32)).unwrap();
             });
         }
+        */
+        let i = std::time::Instant::now();
+        let _entity = manager.insert(|_, linker| {
+            //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
+            linker.insert(Tag("Jed est cool (trust)")).unwrap();
+            linker.insert(SimpleValue((0) as i32)).unwrap();
+        });
+        dbg!(i.elapsed());
+        /*
+        manager.insert_batch(COUNT, |x, _, linker| {
+            //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
+            linker.insert(Tag("Jed est cool (trust)")).unwrap();
+            linker.insert(SimpleValue((x) as i32)).unwrap();
+        });
+        */
+        /*
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
                 //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
@@ -69,6 +86,7 @@ mod tests {
                 modifs.insert(SimpleValue((x) as i32)).unwrap();
             });
         }
+        */
 
         // Query
         //let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
@@ -78,7 +96,7 @@ mod tests {
             for (write, _read) in manager.query::<(Write<SimpleValue>, Read<Tag>)>().unwrap() {
                 write.0 = 6;
             }
-            eprintln!("{:?}", i.elapsed());
+            //eprintln!("{:?}", i.elapsed());
         }
     }
 }
