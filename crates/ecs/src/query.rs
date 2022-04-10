@@ -3,6 +3,8 @@ mod cache;
 mod filters;
 mod iter;
 mod layout;
+mod error;
+pub use error::*;
 pub use access::*;
 pub use cache::*;
 pub use filters::*;

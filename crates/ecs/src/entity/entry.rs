@@ -1,12 +1,14 @@
 use std::marker::PhantomData;
 
 use super::Entity;
-use crate::{Component, EcsManager, /*EntityEntryQuery*/ EntityState, QueryError};
+use crate::{Component, EcsManager, /*EntityEntryQuery*/ EntityState, QueryError, EntityEntryError, Archetype, registry, EntityLinkings};
 
 // An entity entry that we can use to access multiple components on a single entity
 pub struct EntityEntry<'a> {
     // Internal query for fetching components
     //query: EntityEntryQuery<'a>,
+    archetype: &'a Archetype,
+    bundle: usize,
     _phantom: PhantomData<&'a ()>,
 }
 
@@ -16,21 +18,19 @@ impl<'a> EntityEntry<'a> {
         //EntityEntryQuery::new(manager, entity).map(|query| Self { query })
         todo!()
     }
-    // Certified wrapper moment
-    pub fn get<T: Component>(&self) -> Result<&T, QueryError> {
-        //self.query.get()
-        todo!()
+    // Get a pointer to a linked component of this entity
+    pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntityEntryError> {
+        let mask = registry::mask::<T>().map_err(EntityEntryError::ComponentError)?;
+        let column = &self.archetype.vectors[&mask];
+        let ptr = column.get_ptr() as *mut T;
+        Ok(ptr.add(self.bundle))
     }
-    pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, QueryError> {
-        //self.query.get_mut()
-        todo!()
+    // Get an immutable reference to a linked component
+    pub fn get<T: Component>(&self) -> Result<&T, EntityEntryError> {        
+        unsafe { self.get_ptr::<T>().map(|ptr| &*ptr ) }
     }
-    pub fn was_mutated<T: Component>(&self) -> Result<bool, QueryError> {
-        //self.query.was_mutated::<T>()
-        todo!()
-    }
-    pub fn state(&self) -> EntityState {
-        todo!()
-        //self.query.entity_state()
+    // Get a mutable reference to a linked component
+    pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, EntityEntryError> {
+        unsafe { self.get_ptr::<T>().map(|ptr| &mut *ptr ) }
     }
 }

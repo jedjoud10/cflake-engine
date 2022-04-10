@@ -98,6 +98,14 @@ impl EcsManager {
         entity
     }
 
+    // Insert multiple entities in batch. The entities must have the same component layout
+    pub fn insert_batch(&mut self, count: usize, function: impl FnMut(Entity, &mut Linker)) -> &[Entity] {
+        // Add the first entity normally, so we can get the output archetype
+        let entity = self.insert(function);
+        
+        todo!()
+    } 
+
     // Remove an entity from the world
     // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
