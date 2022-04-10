@@ -54,7 +54,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
         // Read the pointers
         self.bundle += 1;
-        Some(Layout::read(self.loaded.unwrap().0, self.bundle))
+        Some(Layout::read_tuple(self.loaded.unwrap().0, self.bundle))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

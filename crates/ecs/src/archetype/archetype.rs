@@ -23,7 +23,7 @@ pub struct Archetype {
     pub(crate) pending_for_removal: Vec<usize>,
 
     // Index of this archetype inside the query cache
-    pub(crate) query_cache_index: usize,
+    pub(crate) cache_index: usize,
 
     // Combined component masks
     pub(crate) mask: Mask,
@@ -63,7 +63,7 @@ impl Archetype {
             mask,
             states: Default::default(),
             entities: Default::default(),
-            query_cache_index: 0,
+            cache_index: 0,
             pending_for_removal: Default::default(),
         }
     }

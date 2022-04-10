@@ -34,12 +34,12 @@ impl QueryCache {
             self.archetypes.insert(archetype.mask);
             
             // Chunk len, horizontal
-            archetype.query_cache_index = self.lengths.len()-1;
+            archetype.cache_index = self.lengths.len()-1;
         }
 
         // Always update the chunk length and rows
-        let idx = archetype.query_cache_index;
-        self.lengths[archetype.query_cache_index] = archetype.entities.len();
+        let idx = archetype.cache_index;
+        self.lengths[archetype.cache_index] = archetype.entities.len();
 
         for (offset, row) in self.rows.iter_mut().enumerate() {
             let mask = Mask::from_offset(offset);
