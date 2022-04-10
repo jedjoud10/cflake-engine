@@ -56,7 +56,7 @@ impl World {
             renderer,
             gui,
             state: WorldState::Init,
-            ecs: EcsManager::new(),
+            ecs: EcsManager::default(),
             events: Default::default(),
             globals: Default::default(),
             physics: PhysicsSimulation::new(),

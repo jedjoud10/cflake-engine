@@ -111,7 +111,7 @@ impl ArchetypeStates {
         }
 
         // Make sure the current collumn is valid
-        let collumn = (&mut components[index]);
+        let collumn = &mut components[index];
         let row = &mut collumn[bundle];
 
         // Set the bit

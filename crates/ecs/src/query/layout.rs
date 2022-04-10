@@ -9,19 +9,14 @@ pub trait QueryLayout<'a> {
     // The safe tuple that will be given to the user
     type SafeTuple: 'a;
 
-    // Get the number of entities that validate this query layout
-    fn entity_len(archetype: &Archetype) -> usize {
-        archetype.entities.len()
-    }
-
     // Get the ptr tuple chunks from the cache
     fn get_filtered_chunks(cache: &QueryCache) -> Vec<(Self::PtrTuple, usize)>;
 
     // Get the combined mask of the query layout.
     fn layout_mask() -> Result<Mask, ComponentError>;
 
-    // Read the references from the pointer tuple
-    fn read(tuple: Self::PtrTuple) -> Self::SafeTuple;
+    // Read the references from the pointer tuple using a specified offset
+    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
 impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
@@ -45,8 +40,8 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
         registry::mask::<A::Component>()
     }
 
-    fn read(tuple: Self::PtrTuple) -> Self::SafeTuple {
-        <A as BorrowedItem>::read(tuple)
+    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+        <A as BorrowedItem>::read(tuple, bundle)
     }
 }
 
@@ -73,7 +68,7 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
         Ok(registry::mask::<A::Component>()? | registry::mask::<A::Component>()?)
     }
 
-    fn read(tuple: Self::PtrTuple) -> Self::SafeTuple {
-        (<A as BorrowedItem>::read(tuple.0), <B as BorrowedItem>::read(tuple.1))
+    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+        (<A as BorrowedItem>::read(tuple.0, bundle), <B as BorrowedItem>::read(tuple.1, bundle))
     }
 }

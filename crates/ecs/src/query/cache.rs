@@ -19,12 +19,22 @@ pub struct QueryCache {
 }
 
 impl QueryCache {
+    // Initialize the cache with the amount of registered components in global
+    pub(crate) fn late_init(&mut self, count: usize) {
+        for _ in 0..count {
+            self.rows.push(Vec::new());
+        }
+    }
     // Inserts or updates an archetype, depending if it is currently present in the cache
-    pub fn update(&mut self, archetype: &mut Archetype) {
+    pub(crate) fn update(&mut self, archetype: &mut Archetype) {
         // Insert the chunk if it is not present
         if !self.archetypes.contains(&archetype.mask) {
             self.rows.iter_mut().for_each(|row| row.push(None));
             self.lengths.push(0);
+            self.archetypes.insert(archetype.mask);
+            
+            // Chunk len, horizontal
+            archetype.query_cache_index = self.lengths.len()-1;
         }
 
         // Always update the chunk length and rows
@@ -42,14 +52,14 @@ impl QueryCache {
     } 
 
     // Get the row for a specific component type
-    pub fn get_row<T: Component>(&self) -> &[Option<*mut c_void>] {
+    pub(crate) fn get_row<T: Component>(&self) -> &[Option<*mut c_void>] {
         let offset = registry::mask::<T>().unwrap().offset();
         let row = &self.rows[offset];
         row
     }
 
     // Get the lengths for each chunk
-    pub fn get_lengths(&self) -> &[usize] {
+    pub(crate) fn get_lengths(&self) -> &[usize] {
         &self.lengths
     }
 }

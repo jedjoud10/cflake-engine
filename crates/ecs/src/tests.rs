@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::cell::UnsafeCell;
-
     use crate::*;
     use rayon::iter::ParallelIterator;
     #[test]
@@ -21,6 +19,8 @@ mod tests {
         #[derive(Component, Debug)]
         struct SimpleValue(i32);
         registry::register::<SimpleValue>();
+
+        manager.setup();
 
         /*
         let entity = manager.insert(|_, linker| {
@@ -49,21 +49,24 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 12;
+        const COUNT: usize = u16::MAX as usize * 32;
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
                 //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
                 //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
-                modifs.insert(SimpleValue((x % 255) as i32)).unwrap();
+                modifs.insert(SimpleValue((x) as i32)).unwrap();
             });
         }
 
         // Query
-        let _i = std::time::Instant::now();
-        manager.prepare();
         //let mut query = Query::new::<(&Name, &mut SimpleValue)>(&manager).unwrap().collect::<Vec<_>>();
         for _ in 0..5 {
-            type Test = Read<SimpleValue>;
+            manager.prepare();
+            let i = std::time::Instant::now();
+            manager.query::<Write<SimpleValue>>().for_each(|x| {
+                x.0 += 1;
+            });
+            println!("{:?}", i.elapsed());
         }
     }
 }

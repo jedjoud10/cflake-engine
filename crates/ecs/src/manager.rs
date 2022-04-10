@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout,
+    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry,
 };
 
 // Manages ECS logic
@@ -24,6 +24,13 @@ pub struct EcsManager {
 }
 
 impl EcsManager {
+    // Setup is called right before we start the game loop
+    pub fn setup(&mut self) {
+        dbg!("late init");
+        registry::disable();
+        self.cache.late_init(registry::count());
+    }
+
     // Check if an entity is valid
     pub fn is_valid(&self, entity: Entity) -> Option<bool> {
         let linkings = self.entities.get(entity)?;

@@ -12,8 +12,8 @@ pub trait BorrowedItem<'a> {
     type Component: 'static + Component;
     type Borrowed: 'a;
 
-    // Get the reference from a pointer
-    fn read(ptr: *mut Self::Component) -> Self::Borrowed;
+    // Convert a raw pointer into a borrow (either immutable or mutable) using a specified offset
+    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed;
 }
 
 impl<'a, T: Component> BorrowedItem<'a> for Read<T>
@@ -23,8 +23,8 @@ where
     type Component = T;
     type Borrowed = &'a T;
 
-    fn read(ptr: *mut Self::Component) -> Self::Borrowed {
-        unsafe { &*ptr }
+    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
+        unsafe { &*ptr.add(bundle) }
     }
 }
 
@@ -35,7 +35,7 @@ where
     type Component = T;
     type Borrowed = &'a mut T;
 
-    fn read(ptr: *mut Self::Component) -> Self::Borrowed {
-        unsafe { &mut *ptr }
+    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
+        unsafe { &mut *ptr.add(bundle) }
     }
 }

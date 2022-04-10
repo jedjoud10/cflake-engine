@@ -36,12 +36,8 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
     type Item = Layout::SafeTuple;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // We've reached the end of the query
-        if self.chunk == self.tuples.len() {
-            return None;
-        }
-
         // Try to load a new chunk
+        if self.tuples.is_empty() { return None; }
         self.loaded.get_or_insert_with(|| self.tuples[self.chunk]);
 
         // We've reached the end of the current chunk, reset
@@ -49,11 +45,16 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
             self.bundle = 0;
             self.chunk += 1;
             self.loaded = None;
+
+            // Check if we've reached the end of the query
+            if self.chunk == self.tuples.len() {
+                return None;
+            }
         }
 
         // Read the pointers
         self.bundle += 1;
-        Some(Layout::read(self.loaded.unwrap().0))
+        Some(Layout::read(self.loaded.unwrap().0, self.bundle))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
