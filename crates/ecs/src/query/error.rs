@@ -2,7 +2,6 @@ use crate::ComponentError;
 
 pub enum QueryError {
     ComponentError(ComponentError),
-    
 }
 
 impl std::fmt::Display for QueryError {

@@ -3,7 +3,7 @@ use crate::Mask;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
-use std::{any::{type_name, TypeId}, sync::atomic::{AtomicBool, Ordering}};
+use std::any::{type_name, TypeId};
 // Registered components
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());

@@ -1,5 +1,4 @@
 use crate::Component;
-use std::marker::PhantomData;
 
 // Gets a "&" reference to the component (or entity)
 pub struct Read<T: 'static>(&'static T);

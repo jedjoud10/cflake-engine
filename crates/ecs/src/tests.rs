@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    use rayon::iter::ParallelIterator;
+
     #[test]
     fn test() {
         // Empty manager
@@ -75,7 +75,7 @@ mod tests {
         for _ in 0..5 {
             manager.prepare();
             let i = std::time::Instant::now();
-            for (write, read) in manager.query::<(Write<SimpleValue>, Read<Tag>)>().unwrap() {
+            for (write, _read) in manager.query::<(Write<SimpleValue>, Read<Tag>)>().unwrap() {
                 write.0 = 6;
             }
             eprintln!("{:?}", i.elapsed());

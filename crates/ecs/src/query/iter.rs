@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{QueryLayout, QueryCache, QueryError};
+use crate::{QueryCache, QueryError, QueryLayout};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
@@ -37,7 +37,9 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Try to load a new chunk
-        if self.tuples.is_empty() { return None; }
+        if self.tuples.is_empty() {
+            return None;
+        }
         self.loaded.get_or_insert_with(|| self.tuples[self.chunk]);
 
         // We've reached the end of the current chunk, reset

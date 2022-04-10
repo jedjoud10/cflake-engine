@@ -5,7 +5,7 @@ use crate::{
     manager::EcsManager,
     Mask,
 };
-use std::{any::Any, cell::UnsafeCell};
+use std::any::Any;
 
 // Get the mask of a specific component
 pub fn component_mask<T: Component>() -> Result<Mask, LinkModifierError> {

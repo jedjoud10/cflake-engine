@@ -1,14 +1,5 @@
-use parking_lot::RwLock;
-use smallvec::SmallVec;
-use tinyvec::ArrayVec;
-
-use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryLayout, StorageVecPtr, QueryError};
-use std::{
-    any::Any,
-    collections::{hash_map::Entry, HashMap, HashSet},
-    ffi::c_void,
-    sync::atomic::AtomicPtr,
-};
+use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryError};
+use std::{collections::HashSet, ffi::c_void};
 
 pub struct QueryCache {
     // Waste of memory but it works decently
@@ -20,7 +11,11 @@ pub struct QueryCache {
 impl Default for QueryCache {
     fn default() -> Self {
         const DEFAULT: Vec<Option<*mut c_void>> = Vec::new();
-        Self { rows: [DEFAULT; 64], lengths: Default::default(), archetypes: Default::default() }
+        Self {
+            rows: [DEFAULT; 64],
+            lengths: Default::default(),
+            archetypes: Default::default(),
+        }
     }
 }
 
@@ -32,9 +27,9 @@ impl QueryCache {
             self.rows.iter_mut().for_each(|row| row.push(None));
             self.lengths.push(0);
             self.archetypes.insert(archetype.mask);
-            
+
             // Chunk len, horizontal
-            archetype.cache_index = self.lengths.len()-1;
+            archetype.cache_index = self.lengths.len() - 1;
         }
 
         // Always update the chunk length and rows
@@ -49,7 +44,7 @@ impl QueryCache {
                 row[idx].replace(vector.get_ptr());
             }
         }
-    } 
+    }
 
     // Get the row for a specific component type
     pub(crate) fn get_row<T: Component>(&self) -> Result<&[Option<*mut c_void>], QueryError> {

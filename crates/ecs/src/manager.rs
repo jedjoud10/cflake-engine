@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry, QueryError, Component,
+    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, QueryCache, QueryError, QueryIter, QueryLayout,
 };
 
 // Manages ECS logic
@@ -99,12 +99,12 @@ impl EcsManager {
     }
 
     // Insert multiple entities in batch. The entities must have the same component layout
-    pub fn insert_batch(&mut self, count: usize, function: impl FnMut(Entity, &mut Linker)) -> &[Entity] {
+    pub fn insert_batch(&mut self, _count: usize, function: impl FnMut(Entity, &mut Linker)) -> &[Entity] {
         // Add the first entity normally, so we can get the output archetype
-        let entity = self.insert(function);
-        
+        let _entity = self.insert(function);
+
         todo!()
-    } 
+    }
 
     // Remove an entity from the world
     // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
@@ -122,7 +122,6 @@ impl EcsManager {
 
         // Zad
         self.update_cache();
-
 
         Some(())
     }

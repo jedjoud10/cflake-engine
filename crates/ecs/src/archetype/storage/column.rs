@@ -1,12 +1,6 @@
-use std::{
-    any::Any,
-    ffi::c_void,
-    ptr::{null, null_mut},
-};
+use std::{any::Any, ffi::c_void};
 
-use smallvec::SmallVec;
-
-use crate::{Mask, StorageVec, StorageVecPtr};
+use crate::{Mask, StorageVec};
 
 // A storage column, it contains a pointer along side the boxed storage
 pub(crate) struct StorageColumn {
@@ -19,7 +13,7 @@ pub(crate) struct StorageColumn {
 
 impl StorageColumn {
     // Create a new storage column from a boxed storage vec
-    pub fn new(mask: Mask, boxed: Box<dyn StorageVec>) -> Self {
+    pub fn new(_mask: Mask, boxed: Box<dyn StorageVec>) -> Self {
         let ptr = boxed.get_null_mut_typeless_ptr();
         Self { boxed, ptr }
     }

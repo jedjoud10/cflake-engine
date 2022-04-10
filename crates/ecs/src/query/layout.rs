@@ -1,7 +1,6 @@
 use itertools::izip;
-use smallvec::SmallVec;
 
-use crate::{registry, Archetype, BorrowedItem, ComponentError, Mask, QueryCache, StorageVecPtr, QueryError};
+use crate::{BorrowedItem, QueryCache, QueryError};
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 pub trait QueryLayout<'a> {
     // The tuple that will contain the pointers types of the specific query items
@@ -25,13 +24,14 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
         let ptrs = cache.get_row::<A::Component>()?;
         let lengths = cache.get_lengths();
 
-        let vec =  ptrs
+        let vec = ptrs
             .iter()
             .zip(lengths.iter())
             .filter_map(|(&ptr, &len)| {
                 let a = ptr? as *mut A::Component;
                 Some((a, len))
-            }).collect::<Vec<_>>();        
+            })
+            .collect::<Vec<_>>();
         Ok(vec)
     }
 
@@ -55,7 +55,8 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
                 let a = a? as *mut A::Component;
                 let b = b? as *mut B::Component;
                 Some(((a, b), len))
-            }).collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
         Ok(vec)
     }
 
@@ -81,7 +82,8 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
                 let b = b? as *mut B::Component;
                 let c = c? as *mut C::Component;
                 Some(((a, b, c), len))
-            }).collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
         Ok(vec)
     }
 

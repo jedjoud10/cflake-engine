@@ -1,12 +1,5 @@
-use crate::{component::Component, registry, ComponentError, StorageVecPtr};
-use std::{
-    alloc::Layout,
-    any::Any,
-    cell::UnsafeCell,
-    ffi::c_void,
-    mem::{align_of, size_of},
-    ptr::NonNull,
-};
+use crate::component::Component;
+use std::{any::Any, ffi::c_void, ptr::NonNull};
 
 // A component storage that is implemented for Vec<UnsafeCell<T>>
 pub(crate) trait StorageVec {
