@@ -26,13 +26,13 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
         let collumns = cache.get_row::<A::Component>()?;
         let lengths = cache.get_lengths();
-        let mut vec = Vec::with_capacity(collumns.len());
-        vec.extend(
-            collumns
-                .iter()
-                .zip(lengths.iter())
-                .filter_map(|(&ptr, &len)| ptr.map(|ptr| (ptr as *mut A::Component, len))),
-        );
+        let vec =  collumns
+            .iter()
+            .zip(lengths.iter())
+            .filter_map(|(&ptr, &len)| {
+                let a = ptr? as *mut A::Component;
+                Some((a, len))
+            }).collect::<Vec<_>>();        
         Ok(vec)
     }
 
@@ -53,14 +53,11 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
         let collumns_a = cache.get_row::<A::Component>()?;
         let collumns_b = cache.get_row::<B::Component>()?;
         let lengths = cache.get_lengths();
-
-        let mut vec = Vec::with_capacity(lengths.len());
-
-        vec.extend(collumns_a.iter().zip(collumns_b.iter()).zip(lengths.iter()).filter_map(|((&a, &b), &len)| {
+        let vec = collumns_a.iter().zip(collumns_b.iter()).zip(lengths.iter()).filter_map(|((&a, &b), &len)| {
             let a = a? as *mut A::Component;
             let b = b? as *mut B::Component;
             Some(((a, b), len))
-        }));
+        }).collect::<Vec<_>>();
         Ok(vec)
     }
 

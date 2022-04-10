@@ -10,21 +10,21 @@ use std::{
     sync::atomic::AtomicPtr,
 };
 
-#[derive(Default)]
 pub struct QueryCache {
     // Waste of memory but it works decently
-    rows: ArrayVec<[Vec<Option<*mut c_void>>; 64]>,
+    rows: [Vec<Option<*mut c_void>>; 64],
     lengths: Vec<usize>,
     archetypes: HashSet<Mask, MaskHasher>,
 }
 
-impl QueryCache {
-    // Initialize the cache with the amount of registered components in global
-    pub(crate) fn late_init(&mut self, count: usize) {
-        for _ in 0..count {
-            self.rows.push(Vec::new());
-        }
+impl Default for QueryCache {
+    fn default() -> Self {
+        const DEFAULT: Vec<Option<*mut c_void>> = Vec::new();
+        Self { rows: [DEFAULT; 64], lengths: Default::default(), archetypes: Default::default() }
     }
+}
+
+impl QueryCache {
     // Inserts or updates an archetype, depending if it is currently present in the cache
     pub(crate) fn update(&mut self, archetype: &mut Archetype) {
         // Insert the chunk if it is not present

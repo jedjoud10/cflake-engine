@@ -10,17 +10,15 @@ mod tests {
         // Simple component
         #[derive(Component, Debug)]
         struct Name(&'static str, [i32; 64]);
-        registry::register::<Name>();
+        manager.register::<Name>();
 
         #[derive(Component, Debug)]
         struct Tag(&'static str);
-        registry::register::<Tag>();
+        manager.register::<Tag>();
 
         #[derive(Component, Debug)]
         struct SimpleValue(i32);
-        registry::register::<SimpleValue>();
-
-        manager.setup();
+        manager.register::<SimpleValue>();
 
         /*
         let entity = manager.insert(|_, linker| {
@@ -49,10 +47,24 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 32;
+        const COUNT: usize = u16::MAX as usize * 8;
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
                 //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
+                modifs.insert(Tag("Jed est cool (trust)")).unwrap();
+                modifs.insert(SimpleValue((x) as i32)).unwrap();
+            });
+        }
+        for x in 0..COUNT {
+            let _entity = manager.insert(|_, modifs| {
+                //modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
+                //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
+                modifs.insert(SimpleValue((x) as i32)).unwrap();
+            });
+        }
+        for x in 0..COUNT {
+            let _entity = manager.insert(|_, modifs| {
+                modifs.insert(Name("Le Jribi", [1; 64])).unwrap();
                 //modifs.insert(Tag("Jed est cool (trust)")).unwrap();
                 modifs.insert(SimpleValue((x) as i32)).unwrap();
             });
@@ -63,10 +75,10 @@ mod tests {
         for _ in 0..5 {
             manager.prepare();
             let i = std::time::Instant::now();
-            manager.query::<Write<SimpleValue>>().for_each(|x| {
-                x.0 += 1;
-            });
-            println!("{:?}", i.elapsed());
+            for (write, read) in manager.query::<(Write<SimpleValue>, Read<Tag>)>().unwrap() {
+                write.0 = 6;
+            }
+            eprintln!("{:?}", i.elapsed());
         }
     }
 }

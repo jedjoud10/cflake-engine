@@ -6,13 +6,8 @@ use parking_lot::{Mutex, RwLock};
 use std::{any::{type_name, TypeId}, sync::atomic::{AtomicBool, Ordering}};
 // Registered components
 lazy_static! {
-    static ref ENABLED: AtomicBool = AtomicBool::new(true);
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
-}
-// Disable registering
-pub fn disable() {
-    ENABLED.store(false, Ordering::Relaxed);
 }
 
 // Return the registered mask of the component
@@ -22,9 +17,7 @@ pub fn mask<T: Component>() -> Result<Mask, ComponentError> {
     locked.get(&id).ok_or(ComponentError::NotRegistered(name::<T>())).cloned()
 }
 // Registers the component if it wasn't already registered
-pub fn register<T: Component>() -> Mask {
-    if !ENABLED.load(Ordering::Relaxed) { panic!("Not allowed to register") }
-
+pub(crate) fn register<T: Component>() -> Mask {
     let mut locked = REGISTERED.write();
     let id = TypeId::of::<T>();
     // If the component was already registered, no need to do anything

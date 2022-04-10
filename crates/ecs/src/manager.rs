@@ -1,7 +1,7 @@
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
     entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry, QueryError,
+    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming, QueryCache, QueryIter, QueryLayout, registry, QueryError, Component,
 };
 
 // Manages ECS logic
@@ -24,11 +24,9 @@ pub struct EcsManager {
 }
 
 impl EcsManager {
-    // Setup is called right before we start the game loop
-    pub fn setup(&mut self) {
-        dbg!("late init");
-        registry::disable();
-        self.cache.late_init(registry::count());
+    // Register a component
+    pub fn register<T: Component>(&mut self) {
+        registry::register::<T>();
     }
 
     // Check if an entity is valid
