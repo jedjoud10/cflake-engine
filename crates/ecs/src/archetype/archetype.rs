@@ -71,7 +71,7 @@ impl Archetype {
 
     // Check if an entity is valid
     pub(crate) fn is_valid(&self, bundle: usize) -> bool {
-        self.states.get_entity_state(bundle).unwrap() != EntityState::PendingForRemoval
+        self.states.get_entity_state(bundle) != EntityState::PendingForRemoval
     }
 
     // Add an entity by itself and updates it's linkings
@@ -114,6 +114,9 @@ impl Archetype {
 
     // Reserve enough space to fit "n" number of new entities into this archetype
     pub(crate) fn reserve(&mut self, additional: usize) {
+        self.entities.reserve(additional);
+        self.states.reserve(additional);
+
         // Reallocate if needed
         for (_, (vec, ptr)) in self.vectors.iter_mut() {
             vec.reserve(additional);

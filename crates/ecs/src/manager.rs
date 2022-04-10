@@ -94,22 +94,20 @@ impl EcsManager {
         // Update the cache of the receiving archetype
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
         self.cache.update(archetype);
-
         entity
     }
     // Insert multiple entities in batch. The entities must have the same component layout
     pub fn insert_batch(&mut self, count: usize, mut function: impl FnMut(usize, Entity, &mut Linker)) -> Option<&[Entity]> {
         // Add the first entity normally, so we can get the output archetype
-        let i = std::time::Instant::now();
+        self.entities.reserve(count);
         let entity = self.insert(|entity, linker| {
             function(0, entity, linker)
         });
-        dbg!(i.elapsed());
+        let init_linkings = *self.entities.get(entity).unwrap();
 
+        // Archetype moment
         let archetype = self.archetypes.get_mut(&self.entities[entity].mask).unwrap();
         let start_index = archetype.entities.len();
-
-        // Make sure the archetype has enough space allocated, so it won't reallocate as many times
         archetype.reserve(count-1);
 
         // Add the entities, and make sure that they all have the same layout
@@ -117,8 +115,13 @@ impl EcsManager {
             // Create a strict linker, since we know the target archetype now
             let mut linker = Linker::new_strict(archetype, &mut self.entities[entity], entity);
             function(x+1, entity, &mut linker);
-            linker.apply();
+            
+            // Check if the component layouts are the same
+            if init_linkings.mask != linker.apply().mask {
+                return None;
+            }
         }        
+
         // Update the archetype cache at the end
         self.cache.update(archetype);
 

@@ -47,8 +47,8 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = 10;
-        /*
+        const COUNT: usize = 8196;
+        let i = std::time::Instant::now();
         for x in 0..COUNT {
             let _entity = manager.insert(|_, linker| {
                 //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
@@ -56,21 +56,21 @@ mod tests {
                 linker.insert(SimpleValue((x) as i32)).unwrap();
             });
         }
-        */
-        let i = std::time::Instant::now();
+        dbg!(i.elapsed());
+        /*
         let _entity = manager.insert(|_, linker| {
             //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
             linker.insert(SimpleValue((0) as i32)).unwrap();
         });
-        dbg!(i.elapsed());
-        /*
+        */
+        let i = std::time::Instant::now();
         manager.insert_batch(COUNT, |x, _, linker| {
             //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
             linker.insert(SimpleValue((x) as i32)).unwrap();
         });
-        */
+        dbg!(i.elapsed());
         /*
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {

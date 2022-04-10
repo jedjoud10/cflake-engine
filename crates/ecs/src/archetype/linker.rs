@@ -45,7 +45,7 @@ impl<'a> Linker<'a> {
     // Create a new simple linker
     pub(crate) fn new_simple(manager: &'a mut EcsManager, entity: Entity) -> Self {
         Self {
-            internal: InternalLinker::Simple { manager, new_components: Vec::with_capacity(16) },
+            internal: InternalLinker::Simple { manager, new_components: Default::default() },
             mask: Default::default(),
             entity,
         }
