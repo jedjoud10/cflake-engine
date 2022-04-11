@@ -7,9 +7,6 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     tuples: Vec<(Layout::PtrTuple, usize)>,
     _phantom: PhantomData<&'a ()>,
 
-    // Maximum number of bundles
-    count: usize,
-
     // Current main index, bundle index, and chunk index
     bundle: usize,
     chunk: usize,
@@ -24,7 +21,6 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
         Ok(Self {
             tuples: Layout::get_filtered_chunks(cache)?,
             _phantom: Default::default(),
-            count: 0,
             bundle: 0,
             chunk: 0,
             loaded: None,
@@ -58,10 +54,4 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         self.bundle += 1;
         Some(Layout::read_tuple(self.loaded.unwrap().0, self.bundle))
     }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.count, Some(self.count))
-    }
 }
-
-impl<'a, Layout: QueryLayout<'a>> ExactSizeIterator for QueryIter<'a, Layout> {}
