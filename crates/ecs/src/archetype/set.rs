@@ -60,4 +60,11 @@ impl ArchetypeSet {
     pub fn iter_mut(&mut self) -> std::slice::IterMut<Archetype> {
         self.archetypes.iter_mut()
     }
+    // Fetch as slice
+    pub fn as_slice(&self) -> &[Archetype] {
+        self.archetypes.as_slice()
+    }
+    pub fn as_mut_slice(&mut self) -> &mut [Archetype] {
+        self.archetypes.as_mut_slice()
+    }
 }

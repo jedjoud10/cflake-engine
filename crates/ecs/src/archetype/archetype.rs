@@ -27,6 +27,9 @@ pub struct Archetype {
     // Index of this archetype inside the query cache
     pub(crate) cache_index: usize,
 
+    // Check if we need to update the cache chunk that is in relation with this archetype
+    pub(crate) cache_pending_update: bool,
+
     // Combined component masks
     pub(crate) mask: Mask,
 }
@@ -65,6 +68,7 @@ impl Archetype {
             states: Default::default(),
             entities: Default::default(),
             cache_index: 0,
+            cache_pending_update: true,
             pending_for_removal: Default::default(),
         }
     }
@@ -76,10 +80,15 @@ impl Archetype {
 
     // Add an entity by itself and updates it's linkings
     pub(crate) fn push_entity(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
+        let old = self.entities.capacity();         
         self.entities.push(entity);
         self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
+
+        // Check if we've reallocated the vectors
+        // Since the lengths of the component vectors and entity vector are synced, when one reallocates, the other will surely reallocate
+        self.cache_pending_update |= self.entities.capacity() > old; 
     }
 
     // Insert a component direclty into the archetype storage

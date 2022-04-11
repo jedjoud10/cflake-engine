@@ -20,30 +20,36 @@ impl Default for QueryCache {
 }
 
 impl QueryCache {
-    // Inserts or updates an archetype, depending if it is currently present in the cache
-    pub(crate) fn update(&mut self, archetype: &mut Archetype) {
-        // Insert the chunk if it is not present
-        if !self.archetypes.contains(&archetype.mask) {
-            self.rows.iter_mut().for_each(|row| row.push(None));
-            self.lengths.push(0);
-            self.archetypes.insert(archetype.mask);
+    // Update the cache using some archetypes
+    pub(crate) fn update(&mut self, archetypes: &mut [Archetype]) {
+        // Only certain archetypes are useful
+        for archetype in archetypes.iter_mut().filter(|a| a.cache_pending_update) {
+            // Reset state
+            archetype.cache_pending_update = false;
 
-            // Chunk len, horizontal
-            archetype.cache_index = self.lengths.len() - 1;
-        }
+            // Insert the chunk if it is not present
+            if !self.archetypes.contains(&archetype.mask) {
+                self.rows.iter_mut().for_each(|row| row.push(None));
+                self.lengths.push(0);
+                self.archetypes.insert(archetype.mask);
 
-        // Always update the chunk length and rows
-        let idx = archetype.cache_index;
-        self.lengths[archetype.cache_index] = archetype.entities.len();
-
-        for (offset, row) in self.rows.iter_mut().enumerate() {
-            let mask = Mask::from_offset(offset);
-
-            // Get the component vector's pointer only if it valid in the archetype
-            if let Some((_, ptr)) = archetype.vectors.get(&mask) {
-                row[idx].replace(*ptr);
+                // Chunk len, horizontal
+                archetype.cache_index = self.lengths.len() - 1;
             }
-        }
+
+            // Always update the chunk length and rows
+            let idx = archetype.cache_index;
+            self.lengths[archetype.cache_index] = archetype.entities.len();
+
+            for (offset, row) in self.rows.iter_mut().enumerate().take(registry::count()) {
+                let mask = Mask::from_offset(offset);
+
+                // Get the component vector's pointer only if it valid in the archetype
+                if let Some((_, ptr)) = archetype.vectors.get(&mask) {
+                    row[idx].replace(*ptr);
+                }
+            }
+        }        
     }
 
     // Get the row for a specific component type

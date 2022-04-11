@@ -36,11 +36,6 @@ impl EcsManager {
         Some(archetype.is_valid(linkings.bundle))
     }
 
-    // Force a cache update
-    pub fn update_cache(&mut self) {
-        self.archetypes.iter_mut().for_each(|x| self.cache.update(x));
-    }
-
     // Prepare the Ecs Manager for one execution
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
@@ -67,11 +62,6 @@ impl EcsManager {
         // Apply the changes
         let (old, new) = linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
-
-        // Update the old archetype and new archetype
-        let (old, new) = self.archetypes.get_two_mut(old, new).unwrap();
-        self.cache.update(old);
-        self.cache.update(new);
         Some(())
     }
 
@@ -90,10 +80,6 @@ impl EcsManager {
 
         // Apply the changes (adds it to the archetype)
         let linkings = linker.apply();
-
-        // Update the cache of the receiving archetype
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        self.cache.update(archetype);
         entity
     }
     // Insert multiple entities in batch. The entities must have the same component layout
@@ -115,15 +101,12 @@ impl EcsManager {
             // Create a strict linker, since we know the target archetype now
             let mut linker = Linker::new_strict(archetype, &mut self.entities[entity], entity);
             function(x+1, entity, &mut linker);
-            
+
             // Check if the component layouts are the same
             if init_linkings.mask != linker.apply().mask {
                 return None;
             }
-        }        
-
-        // Update the archetype cache at the end
-        self.cache.update(archetype);
+        }
 
         Some(&archetype.entities[start_index..])
     }
@@ -142,14 +125,12 @@ impl EcsManager {
         archetype.add_pending_for_removal(linkings.bundle);
         linkings.mask = Default::default();
 
-        // Zad
-        self.update_cache();
-
         Some(())
     }
 
     // Get a component query that we will use to read/write to certain components
     pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> Result<QueryIter<'a, Layout>, QueryError> {
+        self.cache.update(self.archetypes.as_mut_slice());
         QueryIter::new(&self.cache)
     }
 }
