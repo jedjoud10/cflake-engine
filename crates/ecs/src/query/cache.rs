@@ -1,11 +1,12 @@
-use crate::{registry, Archetype, Component, Mask, MaskHasher, QueryError};
-use std::{collections::HashSet, ffi::c_void};
+use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError};
+use std::{collections::HashSet, ffi::c_void, rc::Rc};
 
 pub struct QueryCache {
     // Waste of memory but it works decently
     rows: [Vec<Option<*mut c_void>>; 64],
+    states: Vec<Rc<ComponentStateSet>>,
     lengths: Vec<usize>,
-    archetypes: HashSet<Mask, MaskHasher>,
+    archetypes: MaskSet,
 }
 
 impl Default for QueryCache {
@@ -13,6 +14,7 @@ impl Default for QueryCache {
         const DEFAULT: Vec<Option<*mut c_void>> = Vec::new();
         Self {
             rows: [DEFAULT; 64],
+            states: Default::default(),
             lengths: Default::default(),
             archetypes: Default::default(),
         }
@@ -21,9 +23,9 @@ impl Default for QueryCache {
 
 impl QueryCache {
     // Update the cache using some archetypes
-    pub(crate) fn update(&mut self, archetypes: &mut [Archetype]) {
+    pub(crate) fn update(&mut self, archetypes: &mut ArchetypeSet) {
         // Only certain archetypes are useful
-        for archetype in archetypes.iter_mut().filter(|a| a.cache_pending_update) {
+        for (_, archetype) in archetypes.iter_mut().filter(|(_, a)| a.cache_pending_update) {
             // Reset state
             archetype.cache_pending_update = false;
 
@@ -49,13 +51,16 @@ impl QueryCache {
                     row[idx].replace(*ptr);
                 }
             }
-        }        
+        }
     }
 
-    // Get the row for a specific component type
-    pub(crate) fn get_row<T: Component>(&self) -> Result<&[Option<*mut c_void>], QueryError> {
-        let offset = registry::mask::<T>().map_err(QueryError::ComponentError)?.offset();
+    // Get the row for a specific component type using a borrowed item
+    pub(crate) fn get_row<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<*mut c_void>], QueryError> {
+        let offset = registry::mask::<T::Component>().map_err(QueryError::ComponentError)?.offset();
         let row = &self.rows[offset];
+
+        // Write le mutation state here
+
         Ok(row)
     }
 
