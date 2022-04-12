@@ -1,5 +1,5 @@
 use crate::component::Component;
-use std::{any::Any, ffi::c_void, ptr::NonNull};
+use std::{any::Any, ffi::c_void, ptr::NonNull, ops::Range};
 
 // A component storage that is implemented for Vec<UnsafeCell<T>>
 pub(crate) trait StorageVec {
@@ -12,6 +12,11 @@ pub(crate) trait StorageVec {
     fn swap_remove(&mut self, bundle: usize);
     fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
     fn reserve(&mut self, additional: usize);
+    fn swap_remove_range(&mut self, range: Range<usize>) {
+        for i in range {
+            self.swap_remove(i);
+        }
+    }
 
     // Pointer shit
     fn as_mut_typeless_ptr(&mut self) -> *mut c_void;

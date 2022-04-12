@@ -3,7 +3,7 @@ use crate::{
     registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, collections::HashMap, ffi::c_void, rc::Rc};
+use std::{any::Any, collections::HashMap, ffi::c_void, rc::Rc, ops::Range};
 use tinyvec::ArrayVec;
 
 type ComponentColumns = MaskMap<(Box<dyn StorageVec>, *mut c_void)>;
@@ -186,6 +186,13 @@ impl Archetype {
 
         // And insert into Other
         other.insert_boxed(components, linkings, entity);
+    }
+
+    // Remove a lot of components at the same time
+    pub(crate) fn remove_batch(&mut self, range: Range<usize>) {
+        for (_, (vec, _)) in self.vectors.iter_mut() {
+            vec.swap_remove_range(range);
+        }
     }
 
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
