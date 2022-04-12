@@ -12,11 +12,6 @@ pub(crate) trait StorageVec {
     fn swap_remove(&mut self, bundle: usize);
     fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
     fn reserve(&mut self, additional: usize);
-    fn swap_remove_range(&mut self, range: Range<usize>) {
-        for i in range {
-            self.swap_remove(i);
-        }
-    }
 
     // Pointer shit
     fn as_mut_typeless_ptr(&mut self) -> *mut c_void;

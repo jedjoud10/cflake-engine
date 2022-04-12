@@ -188,13 +188,6 @@ impl Archetype {
         other.insert_boxed(components, linkings, entity);
     }
 
-    // Remove a lot of components at the same time
-    pub(crate) fn remove_batch(&mut self, range: Range<usize>) {
-        for (_, (vec, _)) in self.vectors.iter_mut() {
-            vec.swap_remove_range(range);
-        }
-    }
-
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
     pub(crate) fn prepare(&mut self, count: u64) {
         // Don't do anything for the first frame of execution

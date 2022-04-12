@@ -57,10 +57,9 @@ mod tests {
         */
         let i = std::time::Instant::now();
         let entities = manager.insert_batch(COUNT, |x, _, linker| {
-            //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
             linker.insert(Tag("Jed est cool (trust)")).unwrap();
             linker.insert(SimpleValue((x) as i32)).unwrap();
-        }).unwrap();
+        });
         dbg!(i.elapsed());
         /*
         for x in 0..COUNT {

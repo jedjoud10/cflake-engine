@@ -26,7 +26,7 @@ enum InternalLinker<'a> {
     },
     Strict {
         archetype: &'a mut Archetype,
-        linkings: EntityLinkings,
+        linkings: &'a mut EntityLinkings,
     },
 }
 
@@ -38,7 +38,7 @@ pub struct Linker<'a> {
     mask: Mask,
 
     // Entity
-    entity: Entity,
+    entity: Entity,    
 }
 
 impl<'a> Linker<'a> {
@@ -54,10 +54,9 @@ impl<'a> Linker<'a> {
         }
     }
     // Create a new strict linker
-    pub(crate) fn new_strict(archetype: &'a mut Archetype, linkings: &'a mut EntityLinkings, entity: Entity) -> Self {
-        archetype.push_entity(linkings, entity);
+    pub(crate) fn new_strict(entity: Entity, archetype: &'a mut Archetype, linkings: &'a mut EntityLinkings) -> Self {
         Self {
-            internal: InternalLinker::Strict { archetype, linkings: *linkings },
+            internal: InternalLinker::Strict { archetype, linkings, },
             mask: Default::default(),
             entity,
         }
@@ -86,7 +85,7 @@ impl<'a> Linker<'a> {
                 new_components.push((mask, Box::new(component)));
                 //dbg!(i.elapsed());
             }
-            InternalLinker::Strict { archetype, linkings: _ } => {
+            InternalLinker::Strict { archetype, linkings } => {
                 // Return an error if we try to add a component that doesn't belong to our archetype
                 if mask & archetype.mask == Mask::default() {
                     return Err(LinkError::StrictLinkInvalid(registry::name::<T>()));
@@ -94,6 +93,9 @@ impl<'a> Linker<'a> {
 
                 // Insert the component directly into the arhcetype
                 archetype.insert_component(component).map_err(LinkError::ComponentError)?;
+
+                // And do a bit of trolling
+                linkings.mask = new;
             }
         }
 
@@ -111,9 +113,18 @@ impl<'a> Linker<'a> {
                 archetype.insert_boxed(new_components, linkings, self.entity);
                 *linkings
             }
-            InternalLinker::Strict { archetype: _, linkings } => {
-                // We've already added the entity when we made this linker, so don't do anything
-                linkings
+            InternalLinker::Strict { archetype, linkings } => {
+                // Handle component mismatch
+                if archetype.mask != linkings.mask {
+                    panic!("Cannot insert entity batch that contains different component layouts. Mismatched layout: {:?}, archetype-layout: {:?}", linkings.mask, archetype.mask);
+                }
+
+                // Just in case
+                assert_eq!(linkings.mask, self.mask);
+
+                // Otherwise, insert the entity normally
+                archetype.push_entity(linkings, self.entity);
+                *linkings
             }
         }
     }

@@ -102,28 +102,30 @@ impl EcsManager {
         entity
     }
     // Insert multiple entities in batch. The entities must have the same component layout
+    // This will panic if one of the entities contains a different component layout than the others
     pub fn insert_batch(&mut self, count: usize, mut function: impl FnMut(usize, Entity, &mut Linker)) -> &[Entity] {
         // Add the first entity normally, so we can get the output archetype
         self.entities.reserve(count);
         self.states.reserve(count);
-        let entity = self.insert(|entity, linker| function(0, entity, linker));
-        let init_linkings = *self.entities.get(entity).unwrap();
+        let main_entity = self.insert(|entity, linker| function(0, entity, linker));
 
         // Archetype moment
-        let archetype = self.archetypes.get_mut(&self.entities[entity].mask).unwrap();
+        let archetype = self.archetypes.get_mut(&self.entities[main_entity].mask).unwrap();
         let start_index = archetype.entities.len();
         archetype.reserve(count - 1);
 
         // Add the entities, and make sure that they all have the same layout
         for x in 0..(count - 1) {
             // Create a strict linker, since we know the target archetype now
-            let mut linker = Linker::new_strict(archetype, &mut self.entities[entity], entity);
+            let entity = self.entities.insert(EntityLinkings::default());   
+            let mut linker = Linker::new_strict(entity, archetype, &mut self.entities[entity]);
             function(x + 1, entity, &mut linker);
-
-            // Check if the component layouts are the same
-            if init_linkings.mask != linker.apply().mask {
-            }
+            linker.apply();
         }
+        
+        // Don't forget to set the states of all the new entities
+        //self.states.extend_if_needed(entity);
+        //self.states.set(EntityState::DEFAULT_STATE, entity);
 
         &archetype.entities[start_index..]
     }
