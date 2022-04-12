@@ -82,7 +82,6 @@ impl<'a> Linker<'a> {
 
                 // Temporarily store the components
                 new_components.push((mask, Box::new(component)));
-                //dbg!(i.elapsed());
             }
             InternalLinker::Strict { archetype, linkings } => {
                 // Return an error if we try to add a component that doesn't belong to our archetype
@@ -112,19 +111,7 @@ impl<'a> Linker<'a> {
                 archetype.insert_boxed(new_components, linkings, self.entity);
                 *linkings
             }
-            InternalLinker::Strict { archetype, linkings } => {
-                // Handle component mismatch
-                /*
-                if archetype.mask != linkings.mask {
-                    panic!("Cannot insert entity batch that contains different component layouts. Mismatched layout: {:?}, archetype-layout: {:?}", linkings.mask, archetype.mask);
-                }
-                */
-
-                // Just in case
-                //assert_eq!(linkings.mask, self.mask);
-
-                // Otherwise, insert the entity normally
-                //archetype.push_entity(linkings, self.entity);
+            InternalLinker::Strict { archetype: _, linkings } => {
                 *linkings
             }
         }

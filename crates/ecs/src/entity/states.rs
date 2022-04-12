@@ -69,11 +69,7 @@ impl EntityStateSet {
     pub fn extend_by(&mut self, additional: usize, state: EntityState) {
         // Calculate how many new chunks we need
         let old_len = self.chunks.len();
-        let new_len = (self.length + additional) / STATES_PER_CHUNK;
-        dbg!(old_len);
-        dbg!(new_len);
-        dbg!(self.length);
-        dbg!(additional);
+        let new_len = ((self.length + additional) / STATES_PER_CHUNK) + 1;
 
         // Create a default states u64
         let def = (0..BITS_PER_CHUNK).into_iter().step_by(BITS_PER_STATE).fold(0u64, |a, offset| {

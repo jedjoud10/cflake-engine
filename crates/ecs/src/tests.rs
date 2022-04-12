@@ -49,7 +49,7 @@ mod tests {
         // Make a new entity
         const COUNT: usize = u16::MAX as usize;
         let i = std::time::Instant::now();
-        for x in 0..0 {
+        for x in 0..COUNT {
             let _entity = manager.insert(|_, linker| {
                 //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
                 linker.insert(Tag("Jed est cool (trust)")).unwrap();
@@ -63,6 +63,7 @@ mod tests {
             linker.insert(SimpleValue((x) as i32)).unwrap();
         });
         dbg!(i.elapsed());
+        dbg!(manager.entities.len());
         /*
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {

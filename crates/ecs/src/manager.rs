@@ -1,4 +1,4 @@
-use std::collections::hash_map::Entry;
+use std::{collections::hash_map::Entry, slice};
 
 use slotmap::SlotMap;
 
@@ -103,7 +103,11 @@ impl EcsManager {
     }
     // Insert multiple entities in batch. The entities must have the same component layout
     // This will panic if one of the entities contains a different component layout than the others
+    // Will also panic if count is equal to 0
     pub fn insert_batch(&mut self, count: usize, mut function: impl FnMut(usize, Entity, &mut Linker)) -> &[Entity] {
+        // Bruh count
+        assert_ne!(count, 0, "Cannot insert a batch of 0 entities");
+
         // Add the first entity normally, so we can get the output archetype
         self.entities.reserve(count);
         self.states.extend_by(count, EntityState::DEFAULT_STATE);
@@ -112,7 +116,13 @@ impl EcsManager {
         // Archetype moment
         let archetype = self.archetypes.get_mut(&self.entities[entity].mask).unwrap();
         let start_index = archetype.entities.len();
-        archetype.reserve(count - 1);
+        archetype.reserve(count);
+
+        // If we only added one entity, return early
+        if count == 1 {
+            let elem = &archetype.entities[start_index-1];
+            return slice::from_ref(elem);
+        }
 
         // Add the entities, and make sure that they all have the same layout
         for x in 1..count {
@@ -120,8 +130,7 @@ impl EcsManager {
             let entity = self.entities.insert(EntityLinkings::default());   
             let mut linker = Linker::new_strict(entity, archetype, &mut self.entities[entity]);
             function(x, entity, &mut linker);
-            self.states.get(entity).unwrap();
-            linker.apply();
+            //linker.apply();
         }
         &archetype.entities[start_index..]
     }
