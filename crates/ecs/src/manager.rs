@@ -133,11 +133,4 @@ impl EcsManager {
         self.cache.update(self.archetypes.as_mut_slice());
         QueryIter::new(&self.cache)
     }
-    /*
-    // Get a component query with specific filter
-    pub fn query_with<'a, Layout: QueryLayout<'a>>(&'a mut self, filters: QueryFilter) -> Result<QueryIter<'a, Layout>, QueryError> {
-        self.cache.update(self.archetypes.as_mut_slice());
-        QueryIter::new(&self.cache)
-    }
-    */
 }
