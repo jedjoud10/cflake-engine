@@ -1,12 +1,12 @@
 use std::collections::{hash_map::Entry, HashMap};
 
-use crate::{Archetype, Mask, MaskHasher, UniqueComponentStoragesHashMap};
+use crate::{Archetype, Mask, UniqueComponentStoragesHashMap, MaskMap};
 
 // The archetype set (HashMap and Vec)
 #[derive(Default)]
 pub struct ArchetypeSet {
     // Masks -> Archetype Index
-    indices: HashMap<Mask, usize, MaskHasher>,
+    indices: MaskMap<usize>,
 
     // Archetypes
     archetypes: Vec<Archetype>,
@@ -43,6 +43,7 @@ impl ArchetypeSet {
         }
 
         // Now get the two archetypes
+        self.indices.
         let (first, second) = self.archetypes.split_at_mut(i2);
         Some((first.get_mut(i1).unwrap(), second.get_mut(0).unwrap()))
     }

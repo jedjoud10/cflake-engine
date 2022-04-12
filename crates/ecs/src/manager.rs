@@ -1,25 +1,21 @@
+use slotmap::SlotMap;
+
 use crate::{
     archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet},
-    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, QueryCache, QueryError, QueryIter, QueryLayout,
+    entity::{Entity},
+    registry, Component, EntityEntry, EntityLinkings, LinkModifier, Linker, QueryCache, QueryError, QueryIter, QueryLayout, EntityStateSet,
 };
 
-// Manages ECS logic
 #[derive(Default)]
 pub struct EcsManager {
-    // Entities
-    pub(crate) entities: EntitySet,
-
-    // Archetypes
+    // Hmmm
+    pub(crate) entities: SlotMap<Entity, EntityLinkings>,
     pub(crate) archetypes: ArchetypeSet,
-
-    // Iteration count
-    count: u64,
-
-    // Unique component storages
     pub(crate) uniques: UniqueComponentStoragesHashMap,
-
-    // Query cache for bRRRR type performance
+    
+    // Others
+    states: EntityStateSet,
+    count: u64,
     cache: QueryCache,
 }
 
@@ -31,9 +27,7 @@ impl EcsManager {
 
     // Check if an entity is valid
     pub fn is_valid(&self, entity: Entity) -> Option<bool> {
-        let linkings = self.entities.get(entity)?;
-        let archetype = self.archetypes.get(&linkings.mask).unwrap();
-        Some(archetype.is_valid(linkings.bundle))
+        self.states
     }
 
     // Prepare the Ecs Manager for one execution
