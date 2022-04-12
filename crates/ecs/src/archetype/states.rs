@@ -1,34 +1,44 @@
 use std::cell::RefCell;
 
+use crate::Mask;
+
 // Component states (their mutation state)
 #[derive(Default)]
-pub struct ComponentStates {
+pub struct ComponentStateSet {
     rows: RefCell<Vec<u64>>,
 }
 
-impl ComponentStates {
-    // Reserve enough space to hold "additional" more elements
+impl ComponentStateSet {
+    // Reset all the states
+    pub fn reset(&self) {
+        self.rows.borrow_mut().iter_mut().for_each(|x| *x = 0);
+    }
+    // Reserve enough capacity to hold "additional" more elements
     pub fn reserve(&self, additional: usize) {
         self.rows.borrow_mut().reserve(additional);
     }
+    // Adds a new component row
+    pub fn push(&self) {
+        self.rows.borrow_mut().push(0);
+    }
     // Set a component state by bitshifting
     // This will return the old state value at that index
-    pub fn set(&self, state: bool, bundle: usize) -> Option<bool> {
+    pub fn set(&self, state: bool, bundle: usize, mask: Mask) -> Option<()> {
         // Get the row
         let mut borrowed = self.rows.borrow_mut();
+        let offset = mask.offset();
         let old_row = borrowed.get_mut(bundle)?;
-        let old_state = ((*old_row >> bundle) & 1) == 1; 
-        
-        // Overwrite the bit
-        *old_row &= !(1 << bundle); 
-        *old_row |= (state as u64) << bundle;
 
-        Some(old_state)
+        // Overwrite the bit
+        *old_row &= !(1 << offset);
+        *old_row |= (state as u64) << offset;
+        Some(())
     }
     // Read a component state by bitshifting
-    pub fn get(&self, bundle: usize) -> Option<bool> {
+    pub fn get(&self, bundle: usize, mask: Mask) -> Option<bool> {
         let borrowed = self.rows.borrow();
+        let offset = mask.offset();
         let row = borrowed.get(bundle)?;
-        Some(((*row >> bundle) & 1) == 1) 
+        Some(((*row >> offset) & 1) == 1)
     }
 }

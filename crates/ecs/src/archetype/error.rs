@@ -48,7 +48,7 @@ impl std::fmt::Debug for LinkError {
             LinkError::ComponentError(err) => std::fmt::Debug::fmt(err, f),
             LinkError::LinkDuplication(name) => write!(f, "Component of type '{}' is already linked to the entity", name),
             LinkError::ComponentMissing(name) => write!(f, "Unable to remove component of type '{}' because it is missing", name),
-            LinkError::StrictLinkInvalid(name) => write!(f, "Unable to add component of type '{}' because the target archetype does not accept it", name)
+            LinkError::StrictLinkInvalid(name) => write!(f, "Unable to add component of type '{}' because the target archetype does not accept it", name),
         }
     }
 }

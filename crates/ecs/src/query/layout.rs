@@ -21,7 +21,7 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     type SafeTuple = A::Borrowed;
 
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs = cache.get_row::<A::Component>()?;
+        let ptrs = cache.get_row::<A>()?;
         let lengths = cache.get_lengths();
 
         let vec = ptrs
@@ -45,8 +45,8 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
     type SafeTuple = (A::Borrowed, B::Borrowed);
 
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs_a = cache.get_row::<A::Component>()?;
-        let ptrs_b = cache.get_row::<B::Component>()?;
+        let ptrs_a = cache.get_row::<A>()?;
+        let ptrs_b = cache.get_row::<B>()?;
         let lengths = cache.get_lengths();
 
         let vec = izip!(ptrs_a, ptrs_b)
@@ -70,9 +70,9 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
     type SafeTuple = (A::Borrowed, B::Borrowed, C::Borrowed);
 
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs_a = cache.get_row::<A::Component>()?;
-        let ptrs_b = cache.get_row::<B::Component>()?;
-        let ptrs_c = cache.get_row::<C::Component>()?;
+        let ptrs_a = cache.get_row::<A>()?;
+        let ptrs_b = cache.get_row::<B>()?;
+        let ptrs_c = cache.get_row::<C>()?;
         let lengths = cache.get_lengths();
 
         let vec = izip!(ptrs_a, ptrs_b, ptrs_c)

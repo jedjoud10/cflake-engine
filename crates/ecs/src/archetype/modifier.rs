@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use crate::{component_mask, register_unique, registry, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
+use crate::{component_mask, register_unique, registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -61,8 +61,8 @@ impl<'a> LinkModifier<'a> {
         // Check if we can simply overwrite the data
         if self.linkings.mask & mask != Mask::default() {
             // The current archetype contains components of this type, so we can simply overwrite
-            //let mut entry = self.manager.entry(self.entity).unwrap();
-            //*entry.get_mut::<T>().unwrap() = component;
+            let mut entry = self.manager.entry(self.entity).unwrap();
+            *entry.get_mut::<T>().unwrap() = component;
             return Ok(());
         } else { /* Add the component normally */
         }
@@ -98,12 +98,12 @@ impl<'a> LinkModifier<'a> {
         // Check if we even modified the entity
         if new != old {
             // Make sure the target archetype is valid
-            self.manager.archetypes.insert_default(new, &self.manager.uniques);
+            self.manager.archetypes.entry(new).or_insert_with(|| Archetype::new(new, &self.manager.uniques));
 
             // Get the current archetype along the target archetype, then move the entity
             dbg!(old);
             dbg!(new);
-            let (current, target) = self.manager.archetypes.get_two_mut(old, new).unwrap();
+            let (current, target) = self.manager.get_disjoint_archetypes(old, new).unwrap();
             println!("Moved entity from {} to {}", old, new);
             current.move_entity(self.entity, linkings, self.new_components, target);
         }

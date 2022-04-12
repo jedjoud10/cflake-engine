@@ -1,12 +1,12 @@
 mod access;
 mod cache;
 mod error;
+mod filters;
 mod iter;
 mod layout;
-mod filters;
-pub use filters::*;
 pub use access::*;
 pub use cache::*;
 pub use error::*;
+pub use filters::*;
 pub use iter::*;
 pub use layout::*;

@@ -38,15 +38,3 @@ where
         unsafe { &mut *ptr.add(bundle) }
     }
 }
-
-// Component filters that only let some components through the query
-pub struct Changed<'a, T: BorrowedItem<'a>>(T::Borrowed);
-
-impl<'a, T: BorrowedItem<'a>> BorrowedItem<'a> for Changed<'a, T> {
-    type Component = T::Component;
-    type Borrowed = T::Borrowed;
-
-    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
-        T::read(ptr, bundle)
-    }
-}

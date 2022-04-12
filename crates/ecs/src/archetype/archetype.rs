@@ -1,12 +1,12 @@
-use super::UniqueComponentStoragesHashMap;
 use crate::{
-    entity::{Entity, EntityLinkings}, Mask, MaskHasher, StorageVec, Component, ComponentError, registry, ComponentStates,
+    entity::{Entity, EntityLinkings},
+    registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, collections::HashMap, ffi::c_void};
+use std::{any::Any, collections::HashMap, ffi::c_void, rc::Rc};
 use tinyvec::ArrayVec;
 
-type ComponentColumns = HashMap<Mask, (Box<dyn StorageVec>, *mut c_void), MaskHasher>;
+type ComponentColumns = MaskMap<(Box<dyn StorageVec>, *mut c_void)>;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters, MutGetters)]
@@ -18,7 +18,7 @@ pub struct Archetype {
     pub(crate) entities: Vec<Entity>,
 
     // Component mutation states
-    pub(crate) states: ComponentStates,
+    pub(crate) states: Rc<ComponentStateSet>,
 
     // Bundles that must be removed by the next iteration
     pub(crate) pending_for_removal: Vec<usize>,
@@ -35,7 +35,7 @@ pub struct Archetype {
 
 impl Archetype {
     // Create new a archetype based on it's combined mask
-    pub(crate) fn new(mask: Mask, uniques: &UniqueComponentStoragesHashMap) -> Self {
+    pub(crate) fn new(mask: Mask, uniques: &UniqueStoragesSet) -> Self {
         // We must decompose the combined mask into the individual masks
         let masks = (0..(u64::BITS as usize))
             .into_iter()
@@ -72,23 +72,17 @@ impl Archetype {
         }
     }
 
-    // Check if an entity is valid
-    pub(crate) fn is_valid(&self, bundle: usize) -> bool {
-        todo!()
-        //self.states.get_entity_state(bundle) != EntityState::PendingForRemoval
-    }
-
     // Add an entity by itself and updates it's linkings
     pub(crate) fn push_entity(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
-        let old = self.entities.capacity();         
+        let old = self.entities.capacity();
         self.entities.push(entity);
-        //self.states.push();
+        self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
 
         // Check if we've reallocated the vectors
         // Since the lengths of the component vectors and entity vector are synced, when one reallocates, the other will surely reallocate
-        self.cache_pending_update |= self.entities.capacity() > old; 
+        self.cache_pending_update |= self.entities.capacity() > old;
     }
 
     // Insert a component direclty into the archetype storage
@@ -99,7 +93,7 @@ impl Archetype {
         // Cast to the actual vector, then push
         let (boxed, ptr) = self.vectors.get_mut(&mask).unwrap();
         let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
-        //self.states.set_component_state(vec.len(), mask, true);
+        self.states.set(true, vec.len(), mask);
 
         // Push and update the pointer
         vec.push(component);
@@ -137,11 +131,6 @@ impl Archetype {
     pub(crate) fn add_pending_for_removal(&mut self, bundle: usize) {
         // Pending for removal push
         self.pending_for_removal.push(bundle);
-
-        // Set the entity state
-        self.reserve()
-        
-        //self.states.set_entity_state(bundle, EntityState::PendingForRemoval);
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
@@ -209,8 +198,7 @@ impl Archetype {
         // Remove "pending for deletion" components
         self.remove_all_pending();
 
-        // Reset the component and entity states
-        //self.vectors.iter().for_each(|(m, _)| self.states.reset_component_states(*m));
-        //self.states.reset_entity_states();
+        // Reset the component states
+        self.states.reset();
     }
 }

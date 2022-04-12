@@ -1,9 +1,11 @@
 use std::{
+    collections::{HashMap, HashSet},
     fmt::{Debug, Display},
+    hash::BuildHasherDefault,
     ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr},
 };
 
-use nohash_hasher::IsEnabled;
+use nohash_hasher::{IsEnabled, NoHashHasher};
 
 // A simple mask
 #[derive(Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -11,25 +13,30 @@ pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
-    pub fn one() -> Mask {
+    pub const fn one() -> Mask {
         Mask(1)
     }
-    pub fn zero() -> Mask {
+    pub const fn zero() -> Mask {
         Mask(0)
     }
 
-    pub fn all() -> Mask {
+    pub const fn all() -> Mask {
         Mask(u64::MAX)
     }
 
-    pub fn from_offset(offset: usize) -> Mask {
+    pub const fn from_offset(offset: usize) -> Mask {
         Mask(1 << offset)
     }
 
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.0.trailing_zeros() as usize
     }
 }
+
+// NoHash hasher that works with Mask
+type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
+pub type MaskMap<E> = HashMap<Mask, E, MaskHasher>;
+pub type MaskSet = HashSet<Mask, MaskHasher>;
 
 impl BitAnd for Mask {
     type Output = Self;

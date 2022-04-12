@@ -33,6 +33,10 @@ impl<'a> EntityEntry<'a> {
     }
     // Get a mutable reference to a linked component
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, EntityEntryError> {
+        // Update the mutation state
+        let mask = registry::mask::<T>().map_err(EntityEntryError::ComponentError)?;
+        self.archetype.states.set(true, self.bundle, mask);
+
         unsafe { self.get_ptr::<T>().map(|ptr| &mut *ptr) }
     }
 }
