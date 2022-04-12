@@ -1,7 +1,6 @@
 use super::UniqueComponentStoragesHashMap;
 use crate::{
-    entity::{Entity, EntityLinkings},
-    ArchetypeStates, EntityState, Mask, MaskHasher, StorageVec, Component, ComponentError, registry,
+    entity::{Entity, EntityLinkings}, Mask, MaskHasher, StorageVec, Component, ComponentError, registry, ComponentStates,
 };
 use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, collections::HashMap, ffi::c_void};
@@ -18,8 +17,8 @@ pub struct Archetype {
     // Bundle Index -> Entity
     pub(crate) entities: Vec<Entity>,
 
-    // Stores the entity states and components states
-    pub(crate) states: ArchetypeStates,
+    // Component mutation states
+    pub(crate) states: ComponentStates,
 
     // Bundles that must be removed by the next iteration
     pub(crate) pending_for_removal: Vec<usize>,
@@ -75,14 +74,15 @@ impl Archetype {
 
     // Check if an entity is valid
     pub(crate) fn is_valid(&self, bundle: usize) -> bool {
-        self.states.get_entity_state(bundle) != EntityState::PendingForRemoval
+        todo!()
+        //self.states.get_entity_state(bundle) != EntityState::PendingForRemoval
     }
 
     // Add an entity by itself and updates it's linkings
     pub(crate) fn push_entity(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
         let old = self.entities.capacity();         
         self.entities.push(entity);
-        self.states.push();
+        //self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
 
@@ -99,7 +99,7 @@ impl Archetype {
         // Cast to the actual vector, then push
         let (boxed, ptr) = self.vectors.get_mut(&mask).unwrap();
         let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
-        self.states.set_component_state(vec.len(), mask, true);
+        //self.states.set_component_state(vec.len(), mask, true);
 
         // Push and update the pointer
         vec.push(component);
@@ -117,7 +117,7 @@ impl Archetype {
             // Insert the component (and update the pointer if it changed)
             vec.push(component);
             *ptr = vec.as_mut_typeless_ptr();
-            self.states.set_component_state(linkings.bundle, mask, true);
+            //self.states.set_component_state(linkings.bundle, mask, true);
         }
     }
 
@@ -139,7 +139,9 @@ impl Archetype {
         self.pending_for_removal.push(bundle);
 
         // Set the entity state
-        self.states.set_entity_state(bundle, EntityState::PendingForRemoval);
+        self.reserve()
+        
+        //self.states.set_entity_state(bundle, EntityState::PendingForRemoval);
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
@@ -208,7 +210,7 @@ impl Archetype {
         self.remove_all_pending();
 
         // Reset the component and entity states
-        self.vectors.iter().for_each(|(m, _)| self.states.reset_component_states(*m));
-        self.states.reset_entity_states();
+        //self.vectors.iter().for_each(|(m, _)| self.states.reset_component_states(*m));
+        //self.states.reset_entity_states();
     }
 }

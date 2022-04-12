@@ -84,8 +84,8 @@ mod tests {
         for _ in 0..5 {
             manager.prepare();
             let i = std::time::Instant::now();
-            let filters = changed::<SimpleValue>() | state(EntityState::Added);
-            manager.query_with::<(Changed<Write<SimpleValue>>, Read<Tag>)>(filters).unwrap();
+            //let filters = changed::<SimpleValue>() | state(EntityState::Added);
+            //manager.query_with::<(Changed<Write<SimpleValue>>, Read<Tag>)>(filters).unwrap();
             eprintln!("{:?}", i.elapsed());
         }
     }
