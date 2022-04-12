@@ -47,14 +47,16 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 16;
-        /*
-        let _entity = manager.insert(|_, linker| {
-            //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
-            linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            linker.insert(SimpleValue((0) as i32)).unwrap();
-        });
-        */
+        const COUNT: usize = u16::MAX as usize;
+        let i = std::time::Instant::now();
+        for x in 0..0 {
+            let _entity = manager.insert(|_, linker| {
+                //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
+                linker.insert(Tag("Jed est cool (trust)")).unwrap();
+                linker.insert(SimpleValue((x) as i32)).unwrap();
+            });
+        }
+        dbg!(i.elapsed());
         let i = std::time::Instant::now();
         let entities = manager.insert_batch(COUNT, |x, _, linker| {
             linker.insert(Tag("Jed est cool (trust)")).unwrap();

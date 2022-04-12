@@ -77,7 +77,6 @@ impl<'a> Linker<'a> {
 
         match &mut self.internal {
             InternalLinker::Simple { manager, new_components } => {
-                let i = std::time::Instant::now();
                 // Always make sure there is a unique vector for this component
                 register_unique::<T>(*manager, mask);
 
@@ -115,15 +114,17 @@ impl<'a> Linker<'a> {
             }
             InternalLinker::Strict { archetype, linkings } => {
                 // Handle component mismatch
+                /*
                 if archetype.mask != linkings.mask {
                     panic!("Cannot insert entity batch that contains different component layouts. Mismatched layout: {:?}, archetype-layout: {:?}", linkings.mask, archetype.mask);
                 }
+                */
 
                 // Just in case
-                assert_eq!(linkings.mask, self.mask);
+                //assert_eq!(linkings.mask, self.mask);
 
                 // Otherwise, insert the entity normally
-                archetype.push_entity(linkings, self.entity);
+                //archetype.push_entity(linkings, self.entity);
                 *linkings
             }
         }

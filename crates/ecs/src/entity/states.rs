@@ -60,16 +60,32 @@ pub struct EntityStateSet {
     length: usize,
 }
 
-const STATES_PER_CHUNK: usize = u16::BITS as usize;
-const BITS_PER_CHUNK: usize = u64::BITS as usize;
+const STATES_PER_CHUNK: usize = 16;
+const BITS_PER_CHUNK: usize = 64;
+const BITS_PER_STATE: usize = 4;
 
 impl EntityStateSet {
-    // Reserve enough capacity to hold "additional" more entity states
-    pub fn reserve(&mut self, additional: usize) {
+    // Extend the entity states by a specific amount of new elements and fill the states with a given state
+    pub fn extend_by(&mut self, additional: usize, state: EntityState) {
         // Calculate how many new chunks we need
-        let old_cap = self.chunks.capacity();
-        let new_cap = (self.length + additional) / STATES_PER_CHUNK;
-        self.chunks.reserve(new_cap - old_cap)
+        let old_len = self.chunks.len();
+        let new_len = (self.length + additional) / STATES_PER_CHUNK;
+        dbg!(old_len);
+        dbg!(new_len);
+        dbg!(self.length);
+        dbg!(additional);
+
+        // Create a default states u64
+        let def = (0..BITS_PER_CHUNK).into_iter().step_by(BITS_PER_STATE).fold(0u64, |a, offset| {
+            // Get the 4 bits and bitshift them, then combine them
+            let bits = state.0 as u64;
+            a | (bits << offset)
+        });
+        
+        // Default chunk iterator
+        let iter = (0..(new_len-old_len)).into_iter().map(|_| def);
+        self.chunks.extend(iter);
+        self.length += additional;
     }
     // Use a new entity id to see if we should extend the chunks
     pub fn extend_if_needed(&mut self, entity: Entity) {
@@ -77,7 +93,7 @@ impl EntityStateSet {
         let index = (entity.data().as_ffi() & 0xffff_ffff) as usize;
 
         // Extend automatically 
-        if index > self.length {
+        if index >= self.length {
             self.length += 1;
 
             // Add a new chunk if needed
@@ -109,12 +125,12 @@ impl EntityStateSet {
         let index = (entity.data().as_ffi() & 0xffff_ffff) as usize;
 
         // Read the chunk, calculate local element offset, bit offset
-        let chunk = self.chunks.get(index / STATES_PER_CHUNK)?;
+        let chunk = self.chunks.get(index / STATES_PER_CHUNK).expect(&format!("{index}"));
         let local_offset = index % STATES_PER_CHUNK;
         let bit_offset = local_offset * 4;
 
         // Read the state from the chunk
-        let state: EntityState = unsafe { transmute::<u8, EntityState>(((*chunk >> index) & 0b1111) as u8) };
+        let state: EntityState = unsafe { transmute::<u8, EntityState>(((*chunk >> bit_offset) & 0b1111) as u8) };
         Some(state)
     }
 }
