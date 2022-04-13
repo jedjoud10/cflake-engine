@@ -3,34 +3,27 @@ use crate::{
     registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, collections::HashMap, ffi::c_void, rc::Rc, ops::Range};
+use std::{any::Any, collections::HashMap, ffi::c_void, ops::Range, ptr::NonNull, rc::Rc};
 use tinyvec::ArrayVec;
 
-type ComponentColumns = MaskMap<(Box<dyn StorageVec>, *mut c_void)>;
+type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
-    // Component vector
-    pub(crate) vectors: ComponentColumns,
-
-    // Bundle Index -> Entity
-    pub(crate) entities: Vec<Entity>,
-
-    // Component mutation states
-    pub(crate) states: Rc<ComponentStateSet>,
-
-    // Bundles that must be removed by the next iteration
-    pub(crate) pending_for_removal: Vec<usize>,
-
-    // Index of this archetype inside the query cache
-    pub(crate) cache_index: usize,
-
-    // Check if we need to update the cache chunk that is in relation with this archetype
-    pub(crate) cache_pending_update: bool,
-
-    // Combined component masks
+    // Main
     pub(crate) mask: Mask,
+    
+    // Components
+    pub(crate) vectors: ComponentColumns,
+    pub(crate) states: Rc<ComponentStateSet>,
+    
+    // Entities
+    pub(crate) entities: Vec<Entity>,
+    pub(crate) pending_for_removal: Vec<usize>,
+    
+    // Others
+    pub(crate) cache_index: usize,
 }
 
 impl Archetype {
@@ -67,22 +60,16 @@ impl Archetype {
             states: Default::default(),
             entities: Default::default(),
             cache_index: 0,
-            cache_pending_update: true,
             pending_for_removal: Default::default(),
         }
     }
 
     // Add an entity by itself and updates it's linkings
     pub(crate) fn push_entity(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
-        let old = self.entities.capacity();
         self.entities.push(entity);
         self.states.push();
         linkings.bundle = self.entities.len() - 1;
         linkings.mask = self.mask;
-
-        // Check if we've reallocated the vectors
-        // Since the lengths of the component vectors and entity vector are synced, when one reallocates, the other will surely reallocate
-        self.cache_pending_update |= self.entities.capacity() > old;
     }
 
     // Insert a component direclty into the archetype storage
@@ -93,7 +80,7 @@ impl Archetype {
         // Cast to the actual vector, then push
         let (boxed, ptr) = self.vectors.get_mut(&mask).unwrap();
         let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
-        self.states.set(true, vec.len(), mask);
+        self.states.set(vec.len(), mask);
 
         // Push and update the pointer
         vec.push(component);
@@ -111,7 +98,7 @@ impl Archetype {
             // Insert the component (and update the pointer if it changed)
             vec.push(component);
             *ptr = vec.as_mut_typeless_ptr();
-            self.states.set(true, linkings.bundle, mask);
+            self.states.set(linkings.bundle, mask);
         }
     }
 

@@ -1,10 +1,12 @@
 use std::{marker::PhantomData, rc::Rc};
 
-use crate::{QueryCache, QueryError, QueryLayout, ComponentStateSet, Mask};
+use crate::{AccessMask, ComponentStateSet, Mask, QueryCache, QueryError, QueryLayout};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
-    mask: Mask,
+    // TODO: FIx this
+    // Iterator shit
+    access: AccessMask,
     tuples: Vec<Layout::PtrTuple>,
     lengths: &'a [usize],
     states: &'a [Rc<ComponentStateSet>],
@@ -14,14 +16,14 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     chunk: usize,
 
     // Currently loaded values
-    loaded: Option<(Layout::PtrTuple, usize)>,
+    loaded: Option<(Layout::PtrTuple, usize, &'a ComponentStateSet)>,
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new iterator using the cache
     pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
         Ok(Self {
-            mask: Layout::layout_mask().map_err(QueryError::ComponentError)?,
+            access: Layout::layout_access_mask().map_err(QueryError::ComponentError)?,
             tuples: Layout::get_filtered_chunks(cache)?,
             lengths: cache.lengths.as_slice(),
             states: cache.states.as_slice(),
@@ -40,7 +42,13 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         if self.tuples.is_empty() {
             return None;
         }
-        self.loaded.get_or_insert_with(|| (self.tuples[self.chunk], self.lengths[self.chunk]));
+        self.loaded.get_or_insert_with(|| {
+            // Get the tuple ptr chunk, length chunk, and state chunk
+            let ptrs = self.tuples[self.chunk];
+            let lengths = self.lengths[self.chunk];
+            let states = self.states[self.chunk].as_ref();
+            (ptrs, lengths, states)
+        });
 
         // We've reached the end of the current chunk, reset
         if self.bundle == self.loaded.unwrap().1 {
@@ -54,8 +62,12 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
             }
         }
 
+        // Update the component mutation states
+        let (ptrs, length, states) = self.loaded.unwrap();
+        states.set(self.bundle, self.access.writing);
+
         // Read the pointers
         self.bundle += 1;
-        Some(Layout::read_tuple(self.loaded.unwrap().0, self.bundle))
+        Some(Layout::read_tuple(ptrs, self.bundle))
     }
 }

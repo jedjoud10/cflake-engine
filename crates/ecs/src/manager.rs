@@ -3,8 +3,8 @@ use std::{collections::hash_map::Entry, slice};
 use slotmap::SlotMap;
 
 use crate::{
-    entity::Entity, registry, Archetype, Component, EntityEntry, EntityLinkings, EntityStateSet, LinkModifier, Linker, Mask, MaskMap, QueryCache, QueryError, QueryIter,
-    QueryLayout, StorageVec, EntityState, ArchetypalState,
+    entity::Entity, registry, ArchetypalState, Archetype, Component, EntityEntry, EntityLinkings, EntityState, EntityStateSet, LinkModifier, Linker, Mask, MaskMap, QueryCache,
+    QueryError, QueryIter, QueryLayout, StorageVec,
 };
 
 // Type aliases for simpler names
@@ -39,8 +39,8 @@ impl EcsManager {
         }
 
         // Check if the masks are valid
-        if !self.archetypes.contains_key(&m1) || self.archetypes.contains_key(&m2) {
-            return None
+        if !self.archetypes.contains_key(&m1) || !self.archetypes.contains_key(&m2) {
+            return None;
         }
 
         // A bit of unsafe code but this should technically still be safe
@@ -48,6 +48,11 @@ impl EcsManager {
         let ptr2: *mut Archetype = self.archetypes.get_mut(&m2).unwrap();
         let borrowed = unsafe { (&mut *ptr1, &mut *ptr2) };
         Some(borrowed)
+    }
+
+    // Return Some(Entity) if the entity is valid. Otherwise, return None
+    pub fn is_valid(&self, entity: Entity) -> Option<Entity> {
+        self.states.get(entity).unwrap().is_valid().then(|| entity)
     }
 
     // Prepare the Ecs Manager for one execution
@@ -65,7 +70,7 @@ impl EcsManager {
     pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
-        self.states.get(entity).unwrap().is_valid().then(|| ())?;
+        self.is_valid(entity)?;
 
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity).unwrap();
@@ -82,12 +87,12 @@ impl EcsManager {
         self.states.get(entity).unwrap().is_valid().then(|| ())?;
         EntityEntry::new(self, entity)
     }
-    
+
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
     pub fn insert(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
         // Check if we expanded the slot map
         let entity = self.entities.insert(EntityLinkings::default());
-        
+
         // Create a linker, so we can insert components and link them to the entity
         let mut linker = Linker::new_simple(self, entity);
         function(entity, &mut linker);
@@ -120,14 +125,14 @@ impl EcsManager {
 
         // If we only added one entity, return early
         if count == 1 {
-            let elem = &archetype.entities[start_index-1];
+            let elem = &archetype.entities[start_index - 1];
             return slice::from_ref(elem);
         }
 
         // Add the entities, and make sure that they all have the same layout
         for x in 1..count {
             // Create a strict linker, since we know the target archetype now
-            let entity = self.entities.insert(EntityLinkings::default());   
+            let entity = self.entities.insert(EntityLinkings::default());
             let mut linker = Linker::new_strict(entity, archetype, &mut self.entities[entity]);
             function(x, entity, &mut linker);
             linker.apply();
@@ -139,9 +144,9 @@ impl EcsManager {
     // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
         // Get the archetype and the linkings, and check if the latter is valid
+        self.is_valid(entity)?;
         let linkings = self.entities.get_mut(entity)?;
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        self.states.get(entity).unwrap().is_valid().then(|| ())?;
 
         // Apply the "pending for removal" state
         archetype.add_pending_for_removal(linkings.bundle);

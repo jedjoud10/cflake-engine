@@ -47,7 +47,7 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize * 2;
+        const COUNT: usize = 1000;
         let i = std::time::Instant::now();
         for x in 0..COUNT {
             let _entity = manager.insert(|_, linker| {
@@ -64,6 +64,25 @@ mod tests {
         });
         dbg!(i.elapsed());
         dbg!(manager.entities.len());
+
+        let entity = manager.insert(|_, linker| {
+            //linker.insert(Name("Le Jribi", [1; 64])).unwrap();
+            linker.insert(Tag("Jed est cool (trust)")).unwrap();
+            linker.insert(SimpleValue((0) as i32)).unwrap();
+        });
+
+        dbg!(manager.query::<(Write<SimpleValue, true>, Read<Tag>)>().unwrap().count());
+
+        manager.modify(entity, |e, modif| {
+            modif.remove::<Tag>().unwrap();
+            modif.remove::<SimpleValue>().unwrap();
+            modif.insert(Name("Le Jribi", [1; 64])).unwrap();
+        }).unwrap();
+
+        dbg!(manager.query::<(Write<SimpleValue, true>, Read<Tag>)>().unwrap().count());
+        dbg!(manager.query::<Read<Name>>().unwrap().count());
+        
+
         /*
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
@@ -87,7 +106,9 @@ mod tests {
             manager.prepare();
             let i = std::time::Instant::now();
             //let filters = changed::<SimpleValue>() | state(EntityState::Added);
-            manager.query::<(Write<SimpleValue>, Read<Tag>)>().unwrap();
+            for (value, tag) in manager.query::<(Write<SimpleValue, true>, Read<Tag>)>().unwrap() {
+                value.0 += 3;
+            }
             eprintln!("{:?}", i.elapsed());
         }
     }

@@ -3,7 +3,7 @@ use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
-    Archetype, Mask, ArchetypeSet, UniqueStoragesSet,
+    Archetype, ArchetypeSet, Mask, UniqueStoragesSet,
 };
 use std::any::Any;
 
@@ -21,7 +21,7 @@ pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask
 // Make sure there is a valid archetype
 pub(super) fn register_archetype<'a>(archetypes: &'a mut ArchetypeSet, mask: Mask, uniques: &UniqueStoragesSet) -> &'a mut Archetype {
     archetypes.entry(mask).or_insert_with(|| Archetype::new(mask, &uniques))
-} 
+}
 
 // Either a simple linker or strict linker
 enum InternalLinker<'a> {
@@ -43,7 +43,7 @@ pub struct Linker<'a> {
     mask: Mask,
 
     // Entity
-    entity: Entity,    
+    entity: Entity,
 }
 
 impl<'a> Linker<'a> {
@@ -61,7 +61,7 @@ impl<'a> Linker<'a> {
     // Create a new strict linker
     pub(crate) fn new_strict(entity: Entity, archetype: &'a mut Archetype, linkings: &'a mut EntityLinkings) -> Self {
         Self {
-            internal: InternalLinker::Strict { archetype, linkings, },
+            internal: InternalLinker::Strict { archetype, linkings },
             mask: Default::default(),
             entity,
         }
@@ -73,7 +73,7 @@ impl<'a> Linker<'a> {
         let new = self.mask | mask;
 
         // Check for link duplication
-        
+
         if self.mask == new {
             return Err(LinkError::LinkDuplication(registry::name::<T>()));
         } else {

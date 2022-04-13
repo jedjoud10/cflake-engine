@@ -1,14 +1,17 @@
+use crate::{registry, AccessMask, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError};
 use itertools::izip;
 
-use crate::{BorrowedItem, QueryCache, QueryError, ComponentStateSet, Mask, registry, ComponentError};
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
-pub trait QueryLayout<'a> {    
+
+// This burns my eyeballs
+
+pub trait QueryLayout<'a> {
     // Tuple types
     type PtrTuple: 'static + Copy;
     type SafeTuple: 'a;
 
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError>;
-    fn layout_mask() -> Result<Mask, ComponentError>;
+    fn layout_access_mask() -> Result<AccessMask, ComponentError>;
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
@@ -19,19 +22,16 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError> {
         let ptrs = cache.view::<A>()?;
 
-        let vec = ptrs
-            .iter()
-            .filter_map(|&ptr| Some(ptr? as *mut A::Component))
-            .collect::<Vec<_>>();
+        let vec = ptrs.iter().filter_map(|&ptr| Some(ptr?.as_ptr() as *mut A::Component)).collect::<Vec<_>>();
         Ok(vec)
     }
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
-        A::read(tuple, bundle)
+        A::offset(tuple, bundle)
     }
 
-    fn layout_mask() -> Result<Mask, ComponentError> {
-        A::mask()
+    fn layout_access_mask() -> Result<AccessMask, ComponentError> {
+        A::access_mask()
     }
 }
 
@@ -45,8 +45,8 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
 
         let vec = izip!(ptrs_a, ptrs_b)
             .filter_map(|(&a, &b)| {
-                let a = a? as *mut A::Component;
-                let b = b? as *mut B::Component;
+                let a = a?.as_ptr() as *mut A::Component;
+                let b = b?.as_ptr() as *mut B::Component;
                 Some((a, b))
             })
             .collect::<Vec<_>>();
@@ -54,11 +54,11 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
     }
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
-        (A::read(tuple.0, bundle), B::read(tuple.1, bundle))
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle))
     }
 
-    fn layout_mask() -> Result<Mask, ComponentError> {
-        Ok(A::mask()? | B::mask()?)
+    fn layout_access_mask() -> Result<AccessMask, ComponentError> {
+        Ok(A::access_mask()? | B::access_mask()?)
     }
 }
 
@@ -73,9 +73,9 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
 
         let vec = izip!(ptrs_a, ptrs_b, ptrs_c)
             .filter_map(|(&a, &b, &c)| {
-                let a = a? as *mut A::Component;
-                let b = b? as *mut B::Component;
-                let c = c? as *mut C::Component;
+                let a = a?.as_ptr() as *mut A::Component;
+                let b = b?.as_ptr() as *mut B::Component;
+                let c = c?.as_ptr() as *mut C::Component;
                 Some((a, b, c))
             })
             .collect::<Vec<_>>();
@@ -83,10 +83,10 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
     }
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
-        (A::read(tuple.0, bundle), B::read(tuple.1, bundle), C::read(tuple.2, bundle))
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 
-    fn layout_mask() -> Result<Mask, ComponentError> {
-        Ok(A::mask()? | B::mask()? | C::mask()?)
+    fn layout_access_mask() -> Result<AccessMask, ComponentError> {
+        Ok(A::access_mask()? | B::access_mask()? | C::access_mask()?)
     }
 }

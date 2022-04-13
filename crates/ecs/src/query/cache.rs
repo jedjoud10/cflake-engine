@@ -1,13 +1,13 @@
 use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError};
-use std::{collections::HashSet, ffi::c_void, rc::Rc, marker::PhantomData};
-
+use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
 
 // This cache contains multiple pointers to the component storages for faster iteration
 pub struct QueryCache {
     // Waste of memory but it works decently
-    rows: [Vec<Option<*mut c_void>>; 64],
+    rows: [Vec<Option<NonNull<c_void>>>; 64],
 
     // Extra rows for lengths and states
+    // TODO: Fix this shitahidsfg
     pub(super) states: Vec<Rc<ComponentStateSet>>,
     pub(super) lengths: Vec<usize>,
     archetypes: MaskSet,
@@ -15,7 +15,7 @@ pub struct QueryCache {
 
 impl Default for QueryCache {
     fn default() -> Self {
-        const DEFAULT: Vec<Option<*mut c_void>> = Vec::new();
+        const DEFAULT: Vec<Option<NonNull<c_void>>> = Vec::new();
         Self {
             rows: [DEFAULT; 64],
             states: Default::default(),
@@ -29,10 +29,7 @@ impl QueryCache {
     // Update the cache using some archetypes
     pub(crate) fn update(&mut self, archetypes: &mut ArchetypeSet) {
         // Only certain archetypes are useful
-        for (_, archetype) in archetypes.iter_mut().filter(|(_, a)| a.cache_pending_update) {
-            // Reset state
-            archetype.cache_pending_update = false;
-
+        for (_, archetype) in archetypes.iter_mut() {
             // Insert the chunk if it is not present
             if !self.archetypes.contains(&archetype.mask) {
                 self.rows.iter_mut().for_each(|row| row.push(None));
@@ -48,6 +45,7 @@ impl QueryCache {
             let idx = archetype.cache_index;
             self.lengths[archetype.cache_index] = archetype.entities.len();
 
+            // Update the component rows
             for (offset, row) in self.rows.iter_mut().enumerate().take(registry::count()) {
                 let mask = Mask::from_offset(offset);
 
@@ -60,7 +58,7 @@ impl QueryCache {
     }
 
     // Get a view into the cache for a specific component
-    pub(super) fn view<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<*mut c_void>], QueryError> {
+    pub(super) fn view<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<NonNull<c_void>>], QueryError> {
         let offset = registry::mask::<T::Component>().map_err(QueryError::ComponentError)?.offset();
         let ptrs = &self.rows[offset];
         Ok(ptrs.as_slice())

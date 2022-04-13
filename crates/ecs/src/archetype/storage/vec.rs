@@ -1,5 +1,5 @@
 use crate::component::Component;
-use std::{any::Any, ffi::c_void, ptr::NonNull, ops::Range};
+use std::{any::Any, ffi::c_void, ops::Range, ptr::NonNull};
 
 // A component storage that is implemented for Vec<UnsafeCell<T>>
 pub(crate) trait StorageVec {
@@ -14,8 +14,8 @@ pub(crate) trait StorageVec {
     fn reserve(&mut self, additional: usize);
 
     // Pointer shit
-    fn as_mut_typeless_ptr(&mut self) -> *mut c_void;
-    fn get_null_mut_typeless_ptr(&self) -> *mut c_void;
+    fn as_mut_typeless_ptr(&mut self) -> NonNull<c_void>;
+    fn get_null_mut_typeless_ptr(&self) -> NonNull<c_void>;
 
     // Create a new boxed vector (empty)
     fn new_empty_from_self(&self) -> Box<dyn StorageVec>;
@@ -51,11 +51,11 @@ impl<T: Component> StorageVec for Vec<T> {
     }
 
     // Pointer shit
-    fn as_mut_typeless_ptr(&mut self) -> *mut c_void {
-        self.as_mut_ptr() as *mut c_void
+    fn as_mut_typeless_ptr(&mut self) -> NonNull<c_void> {
+        NonNull::new(self.as_mut_ptr() as *mut c_void).unwrap()
     }
-    fn get_null_mut_typeless_ptr(&self) -> *mut c_void {
-        NonNull::<T>::dangling().as_ptr() as *mut c_void
+    fn get_null_mut_typeless_ptr(&self) -> NonNull<c_void> {
+        NonNull::<T>::dangling().cast::<c_void>()
     }
 
     // Create a new boxed component storage of an empty vec

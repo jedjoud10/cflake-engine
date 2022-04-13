@@ -1,6 +1,42 @@
+use crate::{registry, Component, ComponentError, ComponentStateSet, Mask};
 use std::ffi::c_void;
 
-use crate::{Component, ComponentStateSet, ComponentError, Mask, registry};
+// Access masks. Depict how we will access a speficic component
+pub struct AccessMask {
+    // Write<T> accesses
+    pub writing: Mask,
+
+    // Read<T> accesses
+    pub reading: Mask,
+}
+
+impl AccessMask {
+    // Create a new access mask for reading only
+    pub fn reading<T: Component>() -> Result<Self, ComponentError> {
+        Ok(Self {
+            writing: Default::default(),
+            reading: registry::mask::<T>()?,
+        })
+    }
+    // Create a new access mask for reading and writing
+    pub fn writing<T: Component>() -> Result<Self, ComponentError> {
+        Ok(Self {
+            writing: registry::mask::<T>()?,
+            reading: registry::mask::<T>()?,
+        })
+    }
+}
+
+impl std::ops::BitOr for AccessMask {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self {
+            writing: self.writing | rhs.writing,
+            reading: self.reading | rhs.reading,
+        }
+    }
+}
 
 // Gets a "&" reference to the component
 pub struct Read<T: 'static + Component>(&'static T);
@@ -13,10 +49,8 @@ pub trait BorrowedItem<'a> {
     type Component: 'static + Component;
     type Borrowed: 'a;
 
-    fn mask() -> Result<Mask, ComponentError> {
-        registry::mask::<Self::Component>()
-    }
-    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed;
+    fn access_mask() -> Result<AccessMask, ComponentError>;
+    fn offset(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed;
 }
 
 impl<'a, T: Component> BorrowedItem<'a> for Read<T>
@@ -26,7 +60,11 @@ where
     type Component = T;
     type Borrowed = &'a T;
 
-    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
+    fn access_mask() -> Result<AccessMask, ComponentError> {
+        AccessMask::reading::<Self::Component>()
+    }
+
+    fn offset(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
         unsafe { &*ptr.add(bundle) }
     }
 }
@@ -38,7 +76,15 @@ where
     type Component = T;
     type Borrowed = &'a mut T;
 
-    fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
+    fn access_mask() -> Result<AccessMask, ComponentError> {
+        if SILENT {
+            AccessMask::reading::<Self::Component>()
+        } else {
+            AccessMask::writing::<Self::Component>()
+        }
+    }
+
+    fn offset(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed {
         unsafe { &mut *ptr.add(bundle) }
     }
 }

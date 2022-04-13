@@ -1,7 +1,7 @@
 use std::any::Any;
 
-use crate::{registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
 use super::{component_mask, register_archetype, register_unique};
+use crate::{registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -110,53 +110,5 @@ impl<'a> LinkModifier<'a> {
         }
 
         (old, new)
-        /*
-
-        if let (mask, Some(bundle)) = (&mut linkings.mask, linkings.bundle) {
-
-        } else {
-            // First time linkings, make sure the target archetype is valid
-            let archetype = self.manager.archetypes.insert_default(self.modified, &self.manager.uniques);
-
-            // Validate the linkings, then insert the entity into the archetype
-            linkings.bundle.get_or_insert(0);
-            linkings.mask = self.modified;
-            archetype.insert_with(self.new_components, linkings, self.entity);
-        }
-        */
-        /*
-
-        // Insert the components into the archetype
-        let linkings = self
-            .manager
-            .entities
-            .get_mut(self.entity)
-            .unwrap()
-            .get_or_insert_with(|| EntityLinkings {
-                bundle: 0,
-                mask: Mask::default(),
-            });
-        archetype.insert_with(self.new_components, linkings, self.entity);
-        */
-        /*
-
-
-        // No link duplication. However, there is a chance we removed this component in an earlier call, so we must check for that as well
-        // If we did remove it earlier, just overwrite it
-        if self.removed & mask != Mask::default() {
-            // Remove the component bits from the "removed" mask
-            self.removed = self.removed & !mask;
-
-            // We did remove it, so simply overwrite it (only if we are part of a valid archetype)
-            if let Some(mut entry) = self.manager.entry(self.entity) {
-                // Overwrite
-                let elem = entry.get_mut::<T>().unwrap();
-                *elem = component;
-
-                // Exit early
-                return Ok(());
-            } else { /* We are not part of an archetype, so add the component normally */ }
-        }
-        */
     }
 }

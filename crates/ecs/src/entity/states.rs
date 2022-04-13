@@ -77,9 +77,9 @@ impl EntityStateSet {
             let bits = state.0 as u64;
             a | (bits << offset)
         });
-        
+
         // Default chunk iterator
-        let iter = (0..(new_len-old_len)).into_iter().map(|_| def);
+        let iter = (0..(new_len - old_len)).into_iter().map(|_| def);
         self.chunks.extend(iter);
         self.length += additional;
     }
@@ -88,7 +88,7 @@ impl EntityStateSet {
         // Get the index from the key
         let index = (entity.data().as_ffi() & 0xffff_ffff) as usize;
 
-        // Extend automatically 
+        // Extend automatically
         if index >= self.length {
             self.length += 1;
 
@@ -96,7 +96,7 @@ impl EntityStateSet {
             if (self.length - 1) / STATES_PER_CHUNK > self.length / STATES_PER_CHUNK {
                 self.chunks.push(0);
             }
-        } 
+        }
     }
     // Set an entity state by bitshifting
     // This will return the old state value at that index

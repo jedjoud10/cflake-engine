@@ -24,7 +24,7 @@ impl<'a> EntityEntry<'a> {
     pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntityEntryError> {
         let mask = registry::mask::<T>().map_err(EntityEntryError::ComponentError)?;
         let (_, ptr) = &self.archetype.vectors[&mask];
-        let ptr = *ptr as *mut T;
+        let ptr = ptr.as_ptr() as *mut T;
         Ok(ptr.add(self.bundle))
     }
     // Get an immutable reference to a linked component
