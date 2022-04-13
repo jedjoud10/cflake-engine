@@ -1,25 +1,26 @@
-use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError};
+use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
 use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
+
+// Per component type data
+pub(crate) type PtrRow = Vec<Option<NonNull<c_void>>>;
 
 // This cache contains multiple pointers to the component storages for faster iteration
 pub struct QueryCache {
-    // Waste of memory but it works decently
-    rows: [Vec<Option<NonNull<c_void>>>; 64],
+    // 64 unique rows that each contain a vector to store the component pointers
+    pub(crate) rows: [PtrRow; 64],
 
-    // Extra rows for lengths and states
-    // TODO: Fix this shitahidsfg
-    pub(super) states: Vec<Rc<ComponentStateSet>>,
-    pub(super) lengths: Vec<usize>,
+    // Final two rows contain lengths and states
+    pub(crate) lengths: Vec<usize>,
+    pub(crate) states: Vec<ComponentStateSet>,
     archetypes: MaskSet,
 }
 
 impl Default for QueryCache {
     fn default() -> Self {
-        const DEFAULT: Vec<Option<NonNull<c_void>>> = Vec::new();
+        const DEFAULT: PtrRow = Vec::new();
         Self {
-            rows: [DEFAULT; 64],
-            states: Default::default(),
-            lengths: Default::default(),
+            rows: [DEFAULT; 64], 
+
             archetypes: Default::default(),
         }
     }
@@ -61,6 +62,14 @@ impl QueryCache {
     pub(super) fn view<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<NonNull<c_void>>], QueryError> {
         let offset = registry::mask::<T::Component>().map_err(QueryError::ComponentError)?.offset();
         let ptrs = &self.rows[offset];
+        dbg!(self.lengths.as_slice());
         Ok(ptrs.as_slice())
     }
+}
+
+// Query chunk to be used inside the layouts
+pub(crate) struct QueryChunk<'a, Layout: QueryLayout<'a>> {
+    pub(crate) length: usize,
+    pub(crate) states: Rc<ComponentStateSet>,
+    pub(crate) ptrs: Layout::PtrTuple
 }
