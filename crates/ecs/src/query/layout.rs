@@ -1,4 +1,6 @@
-use crate::{registry, AccessMask, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, CacheChunk};
+use std::rc::Rc;
+
+use crate::{registry, AccessMask, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, QueryChunk};
 use itertools::izip;
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
@@ -11,9 +13,20 @@ pub trait QueryLayout<'a> where Self: Sized {
     type SafeTuple: 'a;
 
     // Get the chunks specifically for this layout
-    fn chunks(cache: &QueryCache) -> Result<Vec<CacheChunk<'a, Self>>, QueryError>;
+    fn chunks(cache: &QueryCache) -> Result<Vec<QueryChunk<'a, Self>>, QueryError>;
     fn layout_access_mask() -> Result<AccessMask, ComponentError>;
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
+}
+
+// Layout chunk that contains the pointers by themselves
+pub struct QueryLayoutChunk<'a, Layout: QueryLayout<'a>> {
+    base: Layout::PtrTuple,
+    len: usize,
+    states: Rc<ComponentStateSet>,
+}
+
+impl<'a, Layout: QueryLayout<'a>> QueryLayoutChunk<'a, Layout> {
+    // Create a new layout chunk from the query cache
 }
 
 impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
