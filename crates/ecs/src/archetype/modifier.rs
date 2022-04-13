@@ -1,6 +1,7 @@
 use std::any::Any;
 
-use crate::{component_mask, register_unique, registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
+use crate::{registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
+use super::{component_mask, register_archetype, register_unique};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {
@@ -98,7 +99,7 @@ impl<'a> LinkModifier<'a> {
         // Check if we even modified the entity
         if new != old {
             // Make sure the target archetype is valid
-            self.manager.archetypes.entry(new).or_insert_with(|| Archetype::new(new, &self.manager.uniques));
+            register_archetype(&mut self.manager.archetypes, new, &self.manager.uniques);
 
             // Get the current archetype along the target archetype, then move the entity
             dbg!(old);

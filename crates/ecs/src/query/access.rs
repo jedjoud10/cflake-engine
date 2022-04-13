@@ -1,4 +1,6 @@
-use crate::Component;
+use std::ffi::c_void;
+
+use crate::{Component, ComponentStateSet};
 
 // Gets a "&" reference to the component (or entity)
 pub struct Read<T: 'static>(&'static T);
@@ -27,7 +29,7 @@ where
     }
 }
 
-impl<'a, T: Component> BorrowedItem<'a> for Write<T>
+impl<'a, T: Component, const SILENT: bool> BorrowedItem<'a> for Write<T, SILENT>
 where
     Self: 'a,
 {

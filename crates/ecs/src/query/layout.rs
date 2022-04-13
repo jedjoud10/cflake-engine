@@ -10,7 +10,7 @@ pub trait QueryLayout<'a> {
     type SafeTuple: 'a;
 
     // Get the ptr tuple chunks from the cache
-    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError>;
+    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError>;
 
     // Read the references from the pointer tuple using a specified offset
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
@@ -20,17 +20,12 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     type PtrTuple = *mut A::Component;
     type SafeTuple = A::Borrowed;
 
-    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs = cache.get_row::<A>()?;
-        let lengths = cache.get_lengths();
+    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError> {
+        let ptrs = cache.view::<A>()?;
 
         let vec = ptrs
             .iter()
-            .zip(lengths.iter())
-            .filter_map(|(&ptr, &len)| {
-                let a = ptr? as *mut A::Component;
-                Some((a, len))
-            })
+            .filter_map(|&ptr| Some(ptr? as *mut A::Component))
             .collect::<Vec<_>>();
         Ok(vec)
     }
@@ -44,17 +39,15 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
     type PtrTuple = (*mut A::Component, *mut B::Component);
     type SafeTuple = (A::Borrowed, B::Borrowed);
 
-    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs_a = cache.get_row::<A>()?;
-        let ptrs_b = cache.get_row::<B>()?;
-        let lengths = cache.get_lengths();
+    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError> {
+        let ptrs_a = cache.view::<A>()?;
+        let ptrs_b = cache.view::<B>()?;
 
         let vec = izip!(ptrs_a, ptrs_b)
-            .zip(lengths.iter())
-            .filter_map(|((&a, &b), &len)| {
+            .filter_map(|(&a, &b)| {
                 let a = a? as *mut A::Component;
                 let b = b? as *mut B::Component;
-                Some(((a, b), len))
+                Some((a, b))
             })
             .collect::<Vec<_>>();
         Ok(vec)
@@ -69,19 +62,17 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
     type PtrTuple = (*mut A::Component, *mut B::Component, *mut C::Component);
     type SafeTuple = (A::Borrowed, B::Borrowed, C::Borrowed);
 
-    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<(Self::PtrTuple, usize)>, QueryError> {
-        let ptrs_a = cache.get_row::<A>()?;
-        let ptrs_b = cache.get_row::<B>()?;
-        let ptrs_c = cache.get_row::<C>()?;
-        let lengths = cache.get_lengths();
+    fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError> {
+        let ptrs_a = cache.view::<A>()?;
+        let ptrs_b = cache.view::<B>()?;
+        let ptrs_c = cache.view::<C>()?;
 
         let vec = izip!(ptrs_a, ptrs_b, ptrs_c)
-            .zip(lengths.iter())
-            .filter_map(|((&a, &b, &c), &len)| {
+            .filter_map(|(&a, &b, &c)| {
                 let a = a? as *mut A::Component;
                 let b = b? as *mut B::Component;
                 let c = c? as *mut C::Component;
-                Some(((a, b, c), len))
+                Some((a, b, c))
             })
             .collect::<Vec<_>>();
         Ok(vec)

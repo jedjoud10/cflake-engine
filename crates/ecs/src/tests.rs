@@ -47,7 +47,7 @@ mod tests {
         // Get the query
 
         // Make a new entity
-        const COUNT: usize = u16::MAX as usize;
+        const COUNT: usize = u16::MAX as usize * 2;
         let i = std::time::Instant::now();
         for x in 0..COUNT {
             let _entity = manager.insert(|_, linker| {

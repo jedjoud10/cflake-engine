@@ -9,9 +9,10 @@ pub struct ComponentStateSet {
 }
 
 impl ComponentStateSet {
-    // Reset all the states
-    pub fn reset(&self) {
-        self.rows.borrow_mut().iter_mut().for_each(|x| *x = 0);
+    // Reset all the rows to a specific state
+    pub fn reset_to(&self, state: bool) {
+        let def = if state { u64::MAX } else { 0 };
+        self.rows.borrow_mut().iter_mut().for_each(|x| *x = def);
     }
     // Reserve enough capacity to hold "additional" more elements
     pub fn reserve(&self, additional: usize) {

@@ -1,9 +1,13 @@
 use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError};
-use std::{collections::HashSet, ffi::c_void, rc::Rc};
+use std::{collections::HashSet, ffi::c_void, rc::Rc, marker::PhantomData};
 
+
+// This cache contains multiple pointers to the component storages for faster iteration
 pub struct QueryCache {
     // Waste of memory but it works decently
     rows: [Vec<Option<*mut c_void>>; 64],
+
+    // Extra rows for lengths and states
     states: Vec<Rc<ComponentStateSet>>,
     lengths: Vec<usize>,
     archetypes: MaskSet,
@@ -34,6 +38,7 @@ impl QueryCache {
                 self.rows.iter_mut().for_each(|row| row.push(None));
                 self.lengths.push(0);
                 self.archetypes.insert(archetype.mask);
+                self.states.push(archetype.states.clone());
 
                 // Chunk len, horizontal
                 archetype.cache_index = self.lengths.len() - 1;
@@ -54,18 +59,10 @@ impl QueryCache {
         }
     }
 
-    // Get the row for a specific component type using a borrowed item
-    pub(crate) fn get_row<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<*mut c_void>], QueryError> {
+    // Get a view into the cache for a specific component
+    pub(super) fn view<'b, 'a, T: BorrowedItem<'a>>(&'b self) -> Result<&'b [Option<*mut c_void>], QueryError> {
         let offset = registry::mask::<T::Component>().map_err(QueryError::ComponentError)?.offset();
-        let row = &self.rows[offset];
-
-        // Write le mutation state here
-
-        Ok(row)
-    }
-
-    // Get the lengths for each chunk
-    pub(crate) fn get_lengths(&self) -> &[usize] {
-        &self.lengths
+        let ptrs = &self.rows[offset];
+        Ok(ptrs.as_slice())
     }
 }

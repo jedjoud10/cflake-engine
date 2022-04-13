@@ -130,7 +130,7 @@ impl EcsManager {
             let entity = self.entities.insert(EntityLinkings::default());   
             let mut linker = Linker::new_strict(entity, archetype, &mut self.entities[entity]);
             function(x, entity, &mut linker);
-            //linker.apply();
+            linker.apply();
         }
         &archetype.entities[start_index..]
     }

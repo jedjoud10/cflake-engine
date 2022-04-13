@@ -3,20 +3,25 @@ use crate::{
     component::{registry, Component},
     entity::{Entity, EntityLinkings},
     manager::EcsManager,
-    Archetype, Mask,
+    Archetype, Mask, ArchetypeSet, UniqueStoragesSet,
 };
 use std::any::Any;
 
 // Get the mask of a specific component
-pub fn component_mask<T: Component>() -> Result<Mask, LinkError> {
+pub(super) fn component_mask<T: Component>() -> Result<Mask, LinkError> {
     registry::mask::<T>().map_err(LinkError::ComponentError)
 }
 
 // Make sure there is an emtpy unique component vector at our disposal
-pub fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
+pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
     // Create a new unique component storage if it is missing
     manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
 }
+
+// Make sure there is a valid archetype
+pub(super) fn register_archetype<'a>(archetypes: &'a mut ArchetypeSet, mask: Mask, uniques: &UniqueStoragesSet) -> &'a mut Archetype {
+    archetypes.entry(mask).or_insert_with(|| Archetype::new(mask, &uniques))
+} 
 
 // Either a simple linker or strict linker
 enum InternalLinker<'a> {
@@ -68,6 +73,7 @@ impl<'a> Linker<'a> {
         let new = self.mask | mask;
 
         // Check for link duplication
+        
         if self.mask == new {
             return Err(LinkError::LinkDuplication(registry::name::<T>()));
         } else {
@@ -96,7 +102,6 @@ impl<'a> Linker<'a> {
                 linkings.mask = new;
             }
         }
-
         Ok(())
     }
     // Apply the linker
@@ -104,14 +109,16 @@ impl<'a> Linker<'a> {
         match self.internal {
             InternalLinker::Simple { manager, new_components } => {
                 // Make sure the archetype exists
-                let archetype = manager.archetypes.entry(self.mask).or_insert_with(|| Archetype::new(self.mask, &manager.uniques));
+                let archetype = register_archetype(&mut manager.archetypes, self.mask, &mut manager.uniques);
 
                 // Insert the components into the archetype
                 let linkings = manager.entities.get_mut(self.entity).unwrap();
                 archetype.insert_boxed(new_components, linkings, self.entity);
                 *linkings
             }
-            InternalLinker::Strict { archetype: _, linkings } => {
+            InternalLinker::Strict { archetype, linkings } => {
+                // Add the entity into the archetype
+                archetype.push_entity(linkings, self.entity);
                 *linkings
             }
         }

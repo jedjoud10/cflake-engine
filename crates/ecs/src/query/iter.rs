@@ -4,8 +4,8 @@ use crate::{QueryCache, QueryError, QueryLayout};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
-    tuples: Vec<(Layout::PtrTuple, usize)>,
-    _phantom: PhantomData<&'a ()>,
+    tuples: Vec<Layout::PtrTuple>,
+    lengths: &'a [usize],
 
     // Current main index, bundle index, and chunk index
     bundle: usize,
@@ -20,7 +20,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
         Ok(Self {
             tuples: Layout::get_filtered_chunks(cache)?,
-            _phantom: Default::default(),
+            lengths: cache.lengths.as_slice(),
             bundle: 0,
             chunk: 0,
             loaded: None,
@@ -36,7 +36,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         if self.tuples.is_empty() {
             return None;
         }
-        self.loaded.get_or_insert_with(|| self.tuples[self.chunk]);
+        self.loaded.get_or_insert_with(|| (self.tuples[self.chunk], self.lengths[self.chunk]));
 
         // We've reached the end of the current chunk, reset
         if self.bundle == self.loaded.unwrap().1 {

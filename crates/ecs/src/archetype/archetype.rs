@@ -111,7 +111,7 @@ impl Archetype {
             // Insert the component (and update the pointer if it changed)
             vec.push(component);
             *ptr = vec.as_mut_typeless_ptr();
-            //self.states.set_component_state(linkings.bundle, mask, true);
+            self.states.set(true, linkings.bundle, mask);
         }
     }
 
@@ -195,10 +195,8 @@ impl Archetype {
             return;
         }
 
-        // Remove "pending for deletion" components
+        // Reset the deltas/states that were set during the execution frame
         self.remove_all_pending();
-
-        // Reset the component states
-        self.states.reset();
+        self.states.reset_to(false);
     }
 }
