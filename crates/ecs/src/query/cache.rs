@@ -1,29 +1,32 @@
 use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
 use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
 
-// Per component type data
-pub(crate) type PtrRow = Vec<Option<NonNull<c_void>>>;
+type StoragePtr = Option<NonNull<c_void>>;
 
-// This cache contains multiple pointers to the component storages for faster iteration
-pub struct QueryCache {
-    // 64 unique rows that each contain a vector to store the component pointers
-    pub(crate) rows: [PtrRow; 64],
-
-    // Final two rows contain lengths and states
-    pub(crate) lengths: Vec<usize>,
-    pub(crate) states: Vec<ComponentStateSet>,
-    archetypes: MaskSet,
+// A query cache chunk (column) that contains the raw pointers, length, and states
+pub struct QueryCacheChunk {
+    ptrs: [StoragePtr; 64],
+    len: usize,
+    states: Rc<ComponentStateSet>,
 }
 
-impl Default for QueryCache {
-    fn default() -> Self {
-        const DEFAULT: PtrRow = Vec::new();
+impl QueryCacheChunk {
+    // From an archetype
+    pub fn new(archetype: &mut Archetype) -> Self {
         Self {
-            rows: [DEFAULT; 64], 
-
-            archetypes: Default::default(),
+            // It's fine if they are empty, since we will initialize them while updating
+            ptrs: Default::default(),
+            len: 0,
+            states: archetype.states.clone(),
         }
     }
+}
+
+// This cache contains multiple pointers to the component storages for faster iteration
+#[derive(Default)]
+pub struct QueryCache {
+    // AoS for simplicty here
+    chunks: Vec<QueryCacheChunk>,
 }
 
 impl QueryCache {
@@ -32,16 +35,15 @@ impl QueryCache {
         // Only certain archetypes are useful
         for (_, archetype) in archetypes.iter_mut() {
             // Insert the chunk if it is not present
-            if !self.archetypes.contains(&archetype.mask) {
-                self.rows.iter_mut().for_each(|row| row.push(None));
-                self.lengths.push(0);
-                self.archetypes.insert(archetype.mask);
-                self.states.push(archetype.states.clone());
+            let idx = archetype.cache_index.get_or_insert_with(|| {
+                self.chunks.push(QueryCacheChunk::new(archetype));
+                self.chunks.len() - 1
+            });
 
-                // Chunk len, horizontal
-                archetype.cache_index = self.lengths.len() - 1;
-            }
-
+            // Always update the archetype chunk
+            let chunk = &mut self.chunks[*idx];
+            todo!()
+            /*
             // Always update the chunk length and rows
             let idx = archetype.cache_index;
             self.lengths[archetype.cache_index] = archetype.entities.len();
@@ -55,6 +57,7 @@ impl QueryCache {
                     row[idx].replace(*ptr);
                 }
             }
+            */
         }
     }
 

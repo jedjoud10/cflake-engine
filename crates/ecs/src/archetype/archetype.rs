@@ -23,7 +23,7 @@ pub struct Archetype {
     pub(crate) pending_for_removal: Vec<usize>,
     
     // Others
-    pub(crate) cache_index: usize,
+    pub(crate) cache_index: Option<usize>,
 }
 
 impl Archetype {
@@ -59,7 +59,7 @@ impl Archetype {
             mask,
             states: Default::default(),
             entities: Default::default(),
-            cache_index: 0,
+            cache_index: None,
             pending_for_removal: Default::default(),
         }
     }
