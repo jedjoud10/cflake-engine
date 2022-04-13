@@ -1,12 +1,11 @@
 use std::{marker::PhantomData, rc::Rc};
 
-use crate::{AccessMask, ComponentStateSet, Mask, QueryCache, QueryError, QueryLayout};
+use crate::{ComponentStateSet, Mask, QueryCache, QueryError, QueryLayout, PtrReaderChunk};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Iterator shit
-    access: AccessMask,
-    chunks: Vec<(Layout::PtrTuple>,
+    chunks: Vec<PtrReaderChunk<>>,
     _phantom: PhantomData<&'a Layout>,
 
     // Current main index, bundle index, and chunk index
@@ -60,6 +59,6 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
         // Read the pointers
         self.bundle += 1;
-        Some(Layout::read_tuple(chunk.ptrs, self.bundle))
+        Some(Layout::read(chunk.ptrs, self.bundle))
     }
 }

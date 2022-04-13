@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{registry, AccessMask, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, QueryChunk};
+use crate::{registry, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, QueryChunk};
 use itertools::izip;
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
@@ -11,22 +11,26 @@ pub trait QueryLayout<'a> where Self: Sized {
     // Tuple types
     type PtrTuple: 'static + Copy;
     type SafeTuple: 'a;
+    t
 
-    // Get the chunks specifically for this layout
-    fn chunks(cache: &QueryCache) -> Result<Vec<QueryChunk<'a, Self>>, QueryError>;
-    fn layout_access_mask() -> Result<AccessMask, ComponentError>;
-    fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
+    // Get the chunks that validate this this layout
+    fn chunks(cache: &QueryCache) -> Result<Vec<PtrReaderChunk<'a, Self>>, QueryError>;
+    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
-// Layout chunk that contains the pointers by themselves
-pub struct QueryLayoutChunk<'a, Layout: QueryLayout<'a>> {
+// Special chunk that allows us to read the SafeTuple from the underlying layout 
+pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
     base: Layout::PtrTuple,
     len: usize,
     states: Rc<ComponentStateSet>,
 }
 
-impl<'a, Layout: QueryLayout<'a>> QueryLayoutChunk<'a, Layout> {
-    // Create a new layout chunk from the query cache
+impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
+    // Convert the query chuns into a query layout chunk
+    // Read the safe tuple
+    pub fn read(&self, bundle: usize) -> Layout::SafeTuple {
+        Layout::read(self.base, bundle)
+    }
 }
 
 impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
@@ -42,12 +46,8 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     }
     */
 
-    fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
         A::offset(tuple, bundle)
-    }
-
-    fn layout_access_mask() -> Result<AccessMask, ComponentError> {
-        A::access_mask()
     }
 
     fn chunks(cache: &QueryCache) -> Result<Vec<CacheChunk<'a, Self>>, QueryError> {

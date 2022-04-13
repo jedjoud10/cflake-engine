@@ -5,6 +5,7 @@ type StoragePtr = Option<NonNull<c_void>>;
 
 // A query cache chunk (column) that contains the raw pointers, length, and states
 pub struct QueryChunk {
+    mask: Mask,
     ptrs: [StoragePtr; 64],
     len: usize,
     states: Rc<ComponentStateSet>,
@@ -18,6 +19,8 @@ impl QueryChunk {
             // It's fine if they are empty, since we will initialize them while updating
             ptrs: [DEFAULT; 64],
             len: 0,
+            
+            mask: archetype.mask,
             states: archetype.states.clone(),
         }
     }
