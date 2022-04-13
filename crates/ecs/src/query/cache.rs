@@ -8,8 +8,8 @@ pub struct QueryCache {
     rows: [Vec<Option<*mut c_void>>; 64],
 
     // Extra rows for lengths and states
-    states: Vec<Rc<ComponentStateSet>>,
-    lengths: Vec<usize>,
+    pub(super) states: Vec<Rc<ComponentStateSet>>,
+    pub(super) lengths: Vec<usize>,
     archetypes: MaskSet,
 }
 

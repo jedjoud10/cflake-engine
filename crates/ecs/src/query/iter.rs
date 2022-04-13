@@ -1,11 +1,13 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, rc::Rc};
 
-use crate::{QueryCache, QueryError, QueryLayout};
+use crate::{QueryCache, QueryError, QueryLayout, ComponentStateSet, Mask};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
+    mask: Mask,
     tuples: Vec<Layout::PtrTuple>,
     lengths: &'a [usize],
+    states: &'a [Rc<ComponentStateSet>],
 
     // Current main index, bundle index, and chunk index
     bundle: usize,
@@ -19,8 +21,10 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new iterator using the cache
     pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
         Ok(Self {
+            mask: Layout::layout_mask().map_err(QueryError::ComponentError)?,
             tuples: Layout::get_filtered_chunks(cache)?,
             lengths: cache.lengths.as_slice(),
+            states: cache.states.as_slice(),
             bundle: 0,
             chunk: 0,
             loaded: None,

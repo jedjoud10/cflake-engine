@@ -22,17 +22,15 @@ impl ComponentStateSet {
     pub fn push(&self) {
         self.rows.borrow_mut().push(0);
     }
-    // Set a component state by bitshifting
-    // This will return the old state value at that index
-    pub fn set(&self, state: bool, bundle: usize, mask: Mask) -> Option<()> {
+    // Set a component state to true by bitshifting
+    pub fn set(&self, bundle: usize, mask: Mask) -> Option<()> {
         // Get the row
         let mut borrowed = self.rows.borrow_mut();
-        let offset = mask.offset();
-        let old_row = borrowed.get_mut(bundle)?;
+        let row = borrowed.get_mut(bundle)?;
 
         // Overwrite the bit
-        *old_row &= !(1 << offset);
-        *old_row |= (state as u64) << offset;
+        // This works for both layout masks and component masks
+        *row |= mask.0;
         Some(())
     }
     // Read a component state by bitshifting

@@ -1,19 +1,21 @@
 use std::ffi::c_void;
 
-use crate::{Component, ComponentStateSet};
+use crate::{Component, ComponentStateSet, ComponentError, Mask, registry};
 
-// Gets a "&" reference to the component (or entity)
-pub struct Read<T: 'static>(&'static T);
+// Gets a "&" reference to the component
+pub struct Read<T: 'static + Component>(&'static T);
 
-// Gets a "&mut" reference to the data
-pub struct Write<T: 'static, const SILENT: bool = false>(&'static mut T);
+// Gets a "&mut" reference to the component
+pub struct Write<T: 'static + Component, const SILENT: bool = false>(&'static mut T);
 
 // Trait that will be implmenented for Read<T> and Write<T>
 pub trait BorrowedItem<'a> {
     type Component: 'static + Component;
     type Borrowed: 'a;
 
-    // Convert a raw pointer into a borrow (either immutable or mutable) using a specified offset
+    fn mask() -> Result<Mask, ComponentError> {
+        registry::mask::<Self::Component>()
+    }
     fn read(ptr: *mut Self::Component, bundle: usize) -> Self::Borrowed;
 }
 

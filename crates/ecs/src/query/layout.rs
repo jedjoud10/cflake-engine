@@ -1,18 +1,14 @@
 use itertools::izip;
 
-use crate::{BorrowedItem, QueryCache, QueryError};
+use crate::{BorrowedItem, QueryCache, QueryError, ComponentStateSet, Mask, registry, ComponentError};
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
-pub trait QueryLayout<'a> {
-    // The tuple that will contain the pointers types of the specific query items
+pub trait QueryLayout<'a> {    
+    // Tuple types
     type PtrTuple: 'static + Copy;
-
-    // The safe tuple that will be given to the user
     type SafeTuple: 'a;
 
-    // Get the ptr tuple chunks from the cache
     fn get_filtered_chunks(cache: &QueryCache) -> Result<Vec<Self::PtrTuple>, QueryError>;
-
-    // Read the references from the pointer tuple using a specified offset
+    fn layout_mask() -> Result<Mask, ComponentError>;
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
@@ -32,6 +28,10 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
         A::read(tuple, bundle)
+    }
+
+    fn layout_mask() -> Result<Mask, ComponentError> {
+        A::mask()
     }
 }
 
@@ -55,6 +55,10 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>> QueryLayout<'a> for (A, B) {
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
         (A::read(tuple.0, bundle), B::read(tuple.1, bundle))
+    }
+
+    fn layout_mask() -> Result<Mask, ComponentError> {
+        Ok(A::mask()? | B::mask()?)
     }
 }
 
@@ -80,5 +84,9 @@ impl<'a, A: BorrowedItem<'a>, B: BorrowedItem<'a>, C: BorrowedItem<'a>> QueryLay
 
     fn read_tuple(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
         (A::read(tuple.0, bundle), B::read(tuple.1, bundle), C::read(tuple.2, bundle))
+    }
+
+    fn layout_mask() -> Result<Mask, ComponentError> {
+        Ok(A::mask()? | B::mask()? | C::mask()?)
     }
 }
