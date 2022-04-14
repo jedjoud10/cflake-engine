@@ -1,6 +1,6 @@
-use std::rc::Rc;
+use std::{rc::Rc, ptr::NonNull, ffi::c_void};
 
-use crate::{registry, BorrowedItem, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, QueryChunk};
+use crate::{registry, BorrowedComponent, ComponentError, ComponentStateSet, Mask, QueryCache, QueryError, QueryChunk};
 use itertools::izip;
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
@@ -8,14 +8,20 @@ use itertools::izip;
 // This burns my eyeballs
 
 pub trait QueryLayout<'a> where Self: Sized {
-    // Tuple types
+    // Types
     type PtrTuple: 'static + Copy;
     type SafeTuple: 'a;
-    t
 
-    // Get the chunks that validate this this layout
-    fn chunks(cache: &QueryCache) -> Result<Vec<PtrReaderChunk<'a, Self>>, QueryError>;
-    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
+
+    // Get the pointer tuple from raw pointers
+    // This is non-fallible since we fethc the layout mask before we call this function
+    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple; 
+
+    // Get the combined masks
+    fn mask() -> Result<Mask, QueryError>;
+    
+    // Convert the base ptr tuple to the safe borrows using a bundle offset 
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
 // Special chunk that allows us to read the SafeTuple from the underlying layout 
@@ -26,15 +32,40 @@ pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
 }
 
 impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
+    // Create a vector of multiple reader chunks from cache
+    pub fn query(cache: &QueryCache) -> Result<Vec<Self>, QueryError> {
+        // Cache the layout mask for later use
+        let mask = Layout::mask()?;
+
+        // Get all the cache chunks
+        let chunks = cache.view();
+
+        // Create the readers
+        let readers = chunks
+            .iter()
+            .filter_map(|chunk| {
+                // Check if the chunk's mask validates the layout's mask
+                (chunk.mask & mask == mask).then(|| {
+                    Self {
+                        base: Layout::ptrs_to_tuple(&chunk.ptrs),
+                        len: chunk.len,
+                        states: chunk.states.clone(),
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
+        Ok(readers)
+    }
     // Convert the query chuns into a query layout chunk
     // Read the safe tuple
-    pub fn read(&self, bundle: usize) -> Layout::SafeTuple {
-        Layout::read(self.base, bundle)
+    pub fn offset(&self, bundle: usize) -> Layout::SafeTuple {
+        Layout::offset(self.base, bundle)
     }
 }
 
-impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
-    type PtrTuple = *mut A::Component;
+impl<'a, A: BorrowedComponent<'a>> QueryLayout<'a> for A {
+    type PtrTuple = NonNull<A::Component>;
     type SafeTuple = A::Borrowed;
 
     /*
@@ -46,28 +77,17 @@ impl<'a, A: BorrowedItem<'a>> QueryLayout<'a> for A {
     }
     */
 
-    fn read(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+
+    fn mask() -> Result<Mask, QueryError> {
+        A::mask()
+    }
+
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
         A::offset(tuple, bundle)
     }
 
-    fn chunks(cache: &QueryCache) -> Result<Vec<CacheChunk<'a, Self>>, QueryError> {
-        let ptrs = cache.view::<A>()?;
-        /*
-        let len = &cache.lengths;
-        let states = &cache.states;
-
-        let vec = zipped.filter_map(|(ptr, len, states)| {
-            let ptr = ptr.as_ref()?;
-            let chunk = CacheChunk::<'a, Self> {
-                length: *len,
-                states: *states,
-                ptrs: ptr.as_ptr() as _,
-            };
-            Some(ptr)
-        });
-        
-        */
-        todo!()
+    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple {
+        ptrs[A::mask().unwrap().offset()].unwrap().cast::<_>()
     }
 }
 /*

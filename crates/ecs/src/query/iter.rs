@@ -5,7 +5,7 @@ use crate::{ComponentStateSet, Mask, QueryCache, QueryError, QueryLayout, PtrRea
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Iterator shit
-    chunks: Vec<PtrReaderChunk<>>,
+    chunks: Vec<PtrReaderChunk<'a, Layout>>,
     _phantom: PhantomData<&'a Layout>,
 
     // Current main index, bundle index, and chunk index
@@ -13,18 +13,18 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     chunk: usize,
 
     // Currently loaded values
-    loaded: Option<CacheChunk<'a, Layout>>,
+    loaded: Option<PtrReaderChunk<'a, Layout>>,
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new iterator using the cache
     pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
         Ok(Self {
-            access: Layout::layout_access_mask().map_err(QueryError::ComponentError)?,
             chunks: todo!(),
             bundle: 0,
             chunk: 0,
             loaded: None,
+            _phantom: Default::default(),
         })
     }
 }
@@ -40,7 +40,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         self.loaded.get_or_insert_with(|| {
             todo!()
         });
-
+        /*
         // We've reached the end of the current chunk, reset
         if self.bundle == self.loaded.as_ref().unwrap().length {
             self.bundle = 0;
@@ -60,5 +60,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         // Read the pointers
         self.bundle += 1;
         Some(Layout::read(chunk.ptrs, self.bundle))
+        */
+        todo!()
     }
 }

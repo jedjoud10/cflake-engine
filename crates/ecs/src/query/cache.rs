@@ -1,27 +1,34 @@
-use crate::{registry, Archetype, ArchetypeSet, BorrowedItem, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
+use crate::{registry, Archetype, ArchetypeSet, BorrowedComponent, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
 use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
 
 type StoragePtr = Option<NonNull<c_void>>;
 
 // A query cache chunk (column) that contains the raw pointers, length, and states
-pub struct QueryChunk {
-    mask: Mask,
-    ptrs: [StoragePtr; 64],
-    len: usize,
-    states: Rc<ComponentStateSet>,
+pub(crate) struct QueryChunk {
+    // The archetype mask
+    pub mask: Mask,
+
+    // Pointers to the first element of each component type
+    pub ptrs: [StoragePtr; 64],
+
+    // Number of entities stored in the chunk
+    pub len: usize,
+
+    // Ref-Celled Component states 
+    pub states: Rc<ComponentStateSet>,
 }
 
 impl QueryChunk {
-    // From an archetype
-    pub fn new(archetype: &mut Archetype) -> Self {
+    // From some archetype data
+    pub fn new(mask: Mask, states: Rc<ComponentStateSet>) -> Self {
         const DEFAULT: StoragePtr = StoragePtr::None;
         Self {
             // It's fine if they are empty, since we will initialize them while updating
             ptrs: [DEFAULT; 64],
             len: 0,
             
-            mask: archetype.mask,
-            states: archetype.states.clone(),
+            mask,
+            states,
         }
     }
 }
@@ -39,8 +46,10 @@ impl QueryCache {
         // Only certain archetypes are useful
         for (_, archetype) in archetypes.iter_mut() {
             // Insert the chunk if it is not present
+            let mask = archetype.mask;
+            let states = archetype.states.clone();
             let idx = archetype.cache_index.get_or_insert_with(|| {
-                self.chunks.push(QueryChunk::new(archetype));
+                self.chunks.push(QueryChunk::new(mask, states));
                 self.chunks.len() - 1
             });
 
