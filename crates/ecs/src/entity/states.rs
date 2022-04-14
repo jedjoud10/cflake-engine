@@ -17,6 +17,7 @@ pub enum ArchetypalState {
     PendingInvalidation = 2,
 
     // The entity was moved from one archetype to another
+    // TODO: write moving overwrite logic for archetypes
     Moved = 3,
 }
 
@@ -98,9 +99,8 @@ impl EntityStateSet {
             }
         }
     }
-    // Set an entity state by bitshifting
-    // This will return the old state value at that index
-    pub fn set(&mut self, state: EntityState, entity: Entity) -> Option<()> {
+    // Update an entity state using a callback
+    pub fn update(&mut self, entity: Entity, callback: impl FnOnce(EntityState) -> EntityState) -> Option<()> {
         // Get the index from the key
         let index = (entity.data().as_ffi() & 0xffff_ffff) as usize;
 
@@ -109,11 +109,17 @@ impl EntityStateSet {
         let local_offset = index % STATES_PER_CHUNK;
         let bit_offset = local_offset * 4;
 
-        // Write to the chunk
-        let state = unsafe { transmute::<EntityState, u8>(state) } as u64;
+        // Write to the chunk by calling the function
+        let old_bits = ((*chunk >> bit_offset) & 0b1111) as u8;
+        let old_state =  unsafe { transmute::<u8, EntityState>(old_bits) };
+        let new_state = unsafe { transmute::<EntityState, u8>(callback(old_state)) } as u64;
         *chunk &= !(0b1111 << bit_offset);
-        *chunk |= state << bit_offset;
+        *chunk |= new_state << bit_offset;
         Some(())
+    }
+    // Set an entity state directly
+    pub fn set(&mut self, entity: Entity, state: EntityState) -> Option<()> {
+        self.update(entity, |_| state)
     }
     // Read an entity state by bitshifting
     pub fn get(&self, entity: Entity) -> Option<EntityState> {

@@ -84,7 +84,11 @@ impl EcsManager {
 
     // Get an entity entry
     pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
-        self.states.get(entity).unwrap().is_valid().then(|| ())?;
+        self.is_valid(entity)?;
+
+        // The entity was accessed, so we must update it's state
+        self.states.update(entity, |old| EntityState::new(old.archetypal(), true, true));
+
         Entry::new(self, entity)
     }
 
@@ -102,7 +106,7 @@ impl EcsManager {
 
         // Set the new entity's state
         self.states.extend_if_needed(entity);
-        self.states.set(EntityState::DEFAULT_STATE, entity);
+        self.states.set(entity, EntityState::DEFAULT_STATE);
 
         entity
     }
