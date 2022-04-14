@@ -1,5 +1,5 @@
-use crate::{EntityStateSet, Mask};
-use slotmap::{new_key_type, SlotMap};
+use crate::Mask;
+use slotmap::new_key_type;
 new_key_type! {
     pub struct Entity;
 }

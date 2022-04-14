@@ -1,7 +1,5 @@
-use std::{marker::PhantomData, ptr::NonNull};
-
 use super::Entity;
-use crate::{registry, Archetype, Component, EcsManager, EntryError, ComponentError, Mask};
+use crate::{registry, Archetype, Component, EcsManager, EntryError, Mask};
 
 // An entity entry that we can use to access multiple components on a single entity
 pub struct Entry<'a> {
@@ -27,7 +25,7 @@ impl<'a> Entry<'a> {
 
         // Handle unlinked components
         if self.archetype.mask & mask != mask {
-            return Err(EntryError::MissingComponent(registry::name::<T>()))
+            return Err(EntryError::MissingComponent(registry::name::<T>()));
         }
 
         Ok(mask)

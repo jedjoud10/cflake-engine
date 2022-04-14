@@ -111,7 +111,7 @@ impl EntityStateSet {
 
         // Write to the chunk by calling the function
         let old_bits = ((*chunk >> bit_offset) & 0b1111) as u8;
-        let old_state =  unsafe { transmute::<u8, EntityState>(old_bits) };
+        let old_state = unsafe { transmute::<u8, EntityState>(old_bits) };
         let new_state = unsafe { transmute::<EntityState, u8>(callback(old_state)) } as u64;
         *chunk &= !(0b1111 << bit_offset);
         *chunk |= new_state << bit_offset;
@@ -127,7 +127,7 @@ impl EntityStateSet {
         let index = (entity.data().as_ffi() & 0xffff_ffff) as usize;
 
         // Read the chunk, calculate local element offset, bit offset
-        let chunk = self.chunks.get(index / STATES_PER_CHUNK).expect(&format!("{index}"));
+        let chunk = self.chunks.get(index / STATES_PER_CHUNK).unwrap_or_else(|| panic!("{index}"));
         let local_offset = index % STATES_PER_CHUNK;
         let bit_offset = local_offset * 4;
 

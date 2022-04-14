@@ -1,5 +1,5 @@
-use crate::{registry, Component, ComponentError, ComponentStateSet, Mask, QueryError};
-use std::{ffi::c_void, ptr::NonNull};
+use crate::{registry, Component, Mask, QueryError};
+use std::ptr::NonNull;
 // Gets a "&" reference to the component
 pub struct Read<T: 'static + Component>(&'static T);
 

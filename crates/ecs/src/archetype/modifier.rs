@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use super::{component_mask, register_archetype, register_unique};
-use crate::{registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
+use crate::{registry, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask};
 
 // An link modifier that can add additional components to an entity or remove components
 pub struct LinkModifier<'a> {

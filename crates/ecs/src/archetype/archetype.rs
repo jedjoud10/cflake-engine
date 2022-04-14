@@ -3,7 +3,7 @@ use crate::{
     registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, collections::HashMap, ffi::c_void, ops::Range, ptr::NonNull, rc::Rc};
+use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc};
 use tinyvec::ArrayVec;
 
 type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;

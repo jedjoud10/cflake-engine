@@ -1,10 +1,10 @@
-use std::{slice};
+use std::slice;
 
 use slotmap::SlotMap;
 
 use crate::{
-    entity::Entity, registry, ArchetypalState, Archetype, Component, Entry, EntityLinkings, EntityState, EntityStateSet, LinkModifier, Linker, Mask, MaskMap, QueryCache,
-    QueryError, QueryIter, QueryLayout, StorageVec,
+    entity::Entity, registry, Archetype, Component, EntityLinkings, EntityState, EntityStateSet, Entry, LinkModifier, Linker, Mask, MaskMap, QueryCache, QueryError, QueryIter,
+    QueryLayout, StorageVec,
 };
 
 // Type aliases for simpler names

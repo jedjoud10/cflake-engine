@@ -1,5 +1,5 @@
-use crate::{registry, Archetype, ArchetypeSet, PtrReader, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
-use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
+use crate::{registry, ArchetypeSet, ComponentStateSet, Mask, PtrReader};
+use std::{ffi::c_void, ptr::NonNull, rc::Rc};
 
 type StoragePtr = Option<NonNull<c_void>>;
 

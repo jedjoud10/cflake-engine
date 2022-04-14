@@ -1,12 +1,10 @@
-use std::{marker::PhantomData, rc::Rc};
-
-use crate::{ComponentStateSet, Mask, PtrReaderChunk, QueryCache, QueryError, QueryLayout};
+use crate::{Mask, PtrReaderChunk, QueryCache, QueryError, QueryLayout};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Readers from the query cache
     readers: Vec<PtrReaderChunk<'a, Layout>>,
-    
+
     // Writing mask that will be overwritten in the componnent states
     writing_mask: Mask,
 
@@ -24,7 +22,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
         let (readers, writing_mask) = PtrReaderChunk::<'a, Layout>::query(cache)?;
         let first = readers.get(0).cloned();
         Ok(Self {
-            readers: readers,
+            readers,
             writing_mask,
             bundle: 0,
             chunk: 0,
@@ -38,12 +36,10 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Handle empty cases
-        if self.loaded.is_none() {
-            return None;
-        }
+        self.loaded.as_ref()?;
 
         // Try to load an element, and if we fail, move to the next chunk
-        if let None = self.loaded.as_ref().unwrap().get(self.bundle) {
+        if self.loaded.as_ref().unwrap().get(self.bundle).is_none() {
             // Reached the end of the chunk, move to the next one
             self.chunk += 1;
             let chunk = self.readers.get(self.chunk)?.clone();

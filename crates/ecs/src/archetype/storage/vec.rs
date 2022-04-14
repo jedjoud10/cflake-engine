@@ -1,5 +1,5 @@
 use crate::component::Component;
-use std::{any::Any, ffi::c_void, ops::Range, ptr::NonNull};
+use std::{any::Any, ffi::c_void, ptr::NonNull};
 
 // A component storage that is implemented for Vec<UnsafeCell<T>>
 pub(crate) trait StorageVec {

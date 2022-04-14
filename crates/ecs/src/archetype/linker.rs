@@ -20,7 +20,7 @@ pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask
 
 // Make sure there is a valid archetype
 pub(super) fn register_archetype<'a>(archetypes: &'a mut ArchetypeSet, mask: Mask, uniques: &UniqueStoragesSet) -> &'a mut Archetype {
-    archetypes.entry(mask).or_insert_with(|| Archetype::new(mask, &uniques))
+    archetypes.entry(mask).or_insert_with(|| Archetype::new(mask, uniques))
 }
 
 // Either a simple linker or strict linker

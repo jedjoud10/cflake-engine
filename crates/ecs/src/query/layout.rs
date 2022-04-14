@@ -1,7 +1,6 @@
 use std::{ffi::c_void, ptr::NonNull, rc::Rc};
 
-use crate::{registry, PtrReader, ComponentError, ComponentStateSet, Mask, QueryCache, QueryChunk, QueryError};
-use itertools::izip;
+use crate::{ComponentStateSet, Mask, PtrReader, QueryCache, QueryError};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 
@@ -35,8 +34,8 @@ pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
 impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
     fn clone(&self) -> Self {
         Self {
-            base: self.base.clone(),
-            len: self.len.clone(),
+            base: self.base,
+            len: self.len,
             states: self.states.clone(),
         }
     }
@@ -44,7 +43,7 @@ impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
 
 impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
     // Create a vector of multiple reader chunks from cache
-    pub fn query(cache: &QueryCache,) -> Result<(Vec<Self>, Mask), QueryError> {
+    pub fn query(cache: &QueryCache) -> Result<(Vec<Self>, Mask), QueryError> {
         // Cache the layout mask for later use
         let (mask, writing_mask) = Layout::get_masks()?;
 
