@@ -59,6 +59,7 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
                 })
             })
             .collect::<Vec<_>>();
+            
 
         Ok(readers)
     }
@@ -67,7 +68,7 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
         // Handle invalid index
         if bundle == self.len {
             return None;
-        }       
+        }
         
         // Le offset
         Some(Layout::offset(self.base, bundle))
