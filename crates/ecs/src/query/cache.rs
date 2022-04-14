@@ -1,4 +1,4 @@
-use crate::{registry, Archetype, ArchetypeSet, BorrowedComponent, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
+use crate::{registry, Archetype, ArchetypeSet, PtrReader, Component, ComponentStateSet, Mask, MaskSet, QueryError, QueryLayout};
 use std::{collections::HashSet, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc};
 
 type StoragePtr = Option<NonNull<c_void>>;
@@ -14,7 +14,7 @@ pub(crate) struct QueryChunk {
     // Number of entities stored in the chunk
     pub len: usize,
 
-    // Ref-Celled Component states 
+    // Ref-Celled Component states
     pub states: Rc<ComponentStateSet>,
 }
 
@@ -26,7 +26,7 @@ impl QueryChunk {
             // It's fine if they are empty, since we will initialize them while updating
             ptrs: [DEFAULT; 64],
             len: 0,
-            
+
             mask,
             states,
         }

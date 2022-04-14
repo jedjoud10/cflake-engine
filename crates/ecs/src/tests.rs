@@ -72,7 +72,6 @@ mod tests {
         });
 
         for x in 0..10 {
-
             let i = std::time::Instant::now();
             manager.query::<(Write<SimpleValue, true>)>().unwrap();
             dbg!(i.elapsed());
@@ -82,16 +81,16 @@ mod tests {
         manager.query::<(Write<SimpleValue, true>)>().unwrap();
         dbg!(i.elapsed());
 
-
-        manager.modify(entity, |e, modif| {
-            modif.remove::<Tag>().unwrap();
-            modif.remove::<SimpleValue>().unwrap();
-            modif.insert(Name("Le Jribi", [1; 64])).unwrap();
-        }).unwrap();
+        manager
+            .modify(entity, |e, modif| {
+                modif.remove::<Tag>().unwrap();
+                modif.remove::<SimpleValue>().unwrap();
+                modif.insert(Name("Le Jribi", [1; 64])).unwrap();
+            })
+            .unwrap();
 
         dbg!(manager.query::<(Write<SimpleValue, true>)>().unwrap().count());
         dbg!(manager.query::<Read<Name>>().unwrap().count());
-        
 
         /*
         for x in 0..COUNT {

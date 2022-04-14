@@ -13,15 +13,15 @@ type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
 pub struct Archetype {
     // Main
     pub(crate) mask: Mask,
-    
+
     // Components
     pub(crate) vectors: ComponentColumns,
     pub(crate) states: Rc<ComponentStateSet>,
-    
+
     // Entities
     pub(crate) entities: Vec<Entity>,
     pub(crate) pending_for_removal: Vec<usize>,
-    
+
     // Others
     pub(crate) cache_index: Option<usize>,
 }

@@ -1,9 +1,9 @@
-use std::{collections::hash_map::Entry, slice};
+use std::{slice};
 
 use slotmap::SlotMap;
 
 use crate::{
-    entity::Entity, registry, ArchetypalState, Archetype, Component, EntityEntry, EntityLinkings, EntityState, EntityStateSet, LinkModifier, Linker, Mask, MaskMap, QueryCache,
+    entity::Entity, registry, ArchetypalState, Archetype, Component, Entry, EntityLinkings, EntityState, EntityStateSet, LinkModifier, Linker, Mask, MaskMap, QueryCache,
     QueryError, QueryIter, QueryLayout, StorageVec,
 };
 
@@ -83,9 +83,9 @@ impl EcsManager {
     }
 
     // Get an entity entry
-    pub fn entry(&mut self, entity: Entity) -> Option<EntityEntry> {
+    pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
         self.states.get(entity).unwrap().is_valid().then(|| ())?;
-        EntityEntry::new(self, entity)
+        Entry::new(self, entity)
     }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it

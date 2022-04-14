@@ -5,13 +5,13 @@ use crate::Mask;
 // Component states (their mutation state)
 #[derive(Default)]
 pub struct ComponentStateSet {
-    rows: RefCell<Vec<u64>>,
+    rows: RefCell<Vec<Mask>>,
 }
 
 impl ComponentStateSet {
     // Reset all the rows to a specific state
     pub fn reset_to(&self, state: bool) {
-        let def = if state { u64::MAX } else { 0 };
+        let def = if state { Mask::all() } else { Mask::zero() };
         self.rows.borrow_mut().iter_mut().for_each(|x| *x = def);
     }
     // Reserve enough capacity to hold "additional" more elements
@@ -20,9 +20,9 @@ impl ComponentStateSet {
     }
     // Adds a new component row
     pub fn push(&self) {
-        self.rows.borrow_mut().push(0);
+        self.rows.borrow_mut().push(Mask::zero());
     }
-    // Set a component state to true by bitshifting
+    // Set all the component states for a single bundle at the same time
     pub fn set(&self, bundle: usize, mask: Mask) -> Option<()> {
         // Get the row
         let mut borrowed = self.rows.borrow_mut();
@@ -30,14 +30,12 @@ impl ComponentStateSet {
 
         // Overwrite the bit
         // This works for both layout masks and component masks
-        *row |= mask.0;
+        *row = *row | mask;
         Some(())
     }
-    // Read a component state by bitshifting
-    pub fn get(&self, bundle: usize, mask: Mask) -> Option<bool> {
+    // Get all the component states for a specific bundle
+    pub fn get(&self, bundle: usize) -> Option<Mask> {
         let borrowed = self.rows.borrow();
-        let offset = mask.offset();
-        let row = borrowed.get(bundle)?;
-        Some(((*row >> offset) & 1) == 1)
+        borrowed.get(bundle).cloned()
     }
 }
