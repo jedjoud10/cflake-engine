@@ -4,51 +4,27 @@ use slotmap::Key;
 
 use crate::Entity;
 
-// Each entity state contains the ArchetypalState and 2 extra bits, denoting the entity's validity and if it was accessed
-#[repr(u8)]
-pub enum ArchetypalState {
-    // Nothing's happened to the entity
-    Nothing = 0,
-
-    // The entity was added into an archetype
-    Validated = 1,
-
-    // The entity will be removed from the archetype
-    PendingInvalidation = 2,
-
-    // The entity was moved from one archetype to another
-    // TODO: write moving overwrite logic for archetypes
-    Moved = 3,
-}
-
-// Archetypal State + 2 extra bits
-// [    2 bits    ] + validity + accessed
+// Each entity contains 2 simple bits depicting it's state in the archetype
+// [moved, valid]
 pub struct EntityState(u8);
 
 impl EntityState {
-    // Default entity state for new entities
-    pub const DEFAULT_STATE: Self = Self::new(ArchetypalState::Nothing, true, true);
-
-    // Creates a new entity state using the archetypal state and it's two extra bits
-    pub const fn new(state: ArchetypalState, valid: bool, accessed: bool) -> Self {
-        // Bit logic magic
-        let state = unsafe { transmute::<ArchetypalState, u8>(state) } << 1;
-        let result = state | ((valid as u8) << 1) | (accessed as u8);
-        Self(result)
+    // Creates a new entity state using it's bits
+    pub const fn new(moved: bool, valid: bool) -> Self {
+        let a = (moved as u8) << 1;
+        let b = (valid as u8);
+        Self(a | b)
     }
 
-    // Check if an entity is valid
-    pub fn is_valid(&self) -> bool {
-        (self.0 >> 1) & 1 == 1
+    // Get the states by bitshifting
+    pub const fn moved(&self) -> bool {
+        (self.0 >> 1) == 1
     }
-    // Check if an entity was accessed using the entries
-    pub fn is_accessed(&self) -> bool {
-        self.0 % 2 == 1
+    pub const fn valid(&self) -> bool {
+        self.0 & 1 == 1
     }
-    // Get the underlying archetypal state region
-    pub fn archetypal(&self) -> ArchetypalState {
-        unsafe { transmute::<u8, ArchetypalState>(self.0) }
-    }
+    
+
 }
 
 // The state for each entity that is contained within the manager
@@ -61,9 +37,9 @@ pub struct EntityStateSet {
     length: usize,
 }
 
-const STATES_PER_CHUNK: usize = 16;
+const BITS_PER_STATE: usize = 2;
+const STATES_PER_CHUNK: usize = u64::BITS as usize / BITS_PER_STATE;
 const BITS_PER_CHUNK: usize = 64;
-const BITS_PER_STATE: usize = 4;
 
 impl EntityStateSet {
     // Extend the entity states by a specific amount of new elements and fill the states with a given state

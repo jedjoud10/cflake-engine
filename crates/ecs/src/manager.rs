@@ -31,28 +31,30 @@ impl EcsManager {
         registry::register::<T>();
     }
 
-    // Get two archetypes at the same time
-    pub fn get_disjoint_archetypes(&mut self, m1: Mask, m2: Mask) -> Option<(&mut Archetype, &mut Archetype)> {
+    // Move an entity from an archetype to another archetype
+    pub(crate) fn move_entity(&mut self, old: Mask, new: Mask, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>) {
         // Make sure archetypes masks are disjoint
-        if m1 == m2 {
+        if old == new {
             return None;
         }
 
         // Check if the masks are valid
-        if !self.archetypes.contains_key(&m1) || !self.archetypes.contains_key(&m2) {
+        if !self.archetypes.contains_key(&old) || !self.archetypes.contains_key(&new) {
             return None;
         }
 
         // A bit of unsafe code but this should technically still be safe
-        let ptr1: *mut Archetype = self.archetypes.get_mut(&m1).unwrap();
-        let ptr2: *mut Archetype = self.archetypes.get_mut(&m2).unwrap();
-        let borrowed = unsafe { (&mut *ptr1, &mut *ptr2) };
-        Some(borrowed)
+        let ptr1: *mut Archetype = self.archetypes.get_mut(&old).unwrap();
+        let ptr2: *mut Archetype = self.archetypes.get_mut(&new).unwrap();
+        let (new, old) = unsafe { (&mut *ptr1, &mut *ptr2) };
+    
+        // Move
+        old.move_entity_to()
     }
 
     // Return Some(Entity) if the entity is valid. Otherwise, return None
-    pub fn is_valid(&self, entity: Entity) -> Option<Entity> {
-        self.states.get(entity).unwrap().is_valid().then(|| entity)
+    pub fn validate(&self, entity: Entity) -> Option<Entity> {
+        self.states.get(entity).unwrap().valid().then(|| entity)
     }
 
     // Prepare the Ecs Manager for one execution
@@ -69,8 +71,7 @@ impl EcsManager {
     // Modify an entity's component layout
     pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
         // Keep a copy of the linkings before we do anything
-        let mut copied = *self.entities.get(entity)?;
-        self.is_valid(entity)?;
+        let mut copied = *self.entities.get(self.validate(entity)?)?;
 
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity).unwrap();
@@ -84,12 +85,7 @@ impl EcsManager {
 
     // Get an entity entry
     pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
-        self.is_valid(entity)?;
-
-        // The entity was accessed, so we must update it's state
-        self.states.update(entity, |old| EntityState::new(old.archetypal(), true, true));
-
-        Entry::new(self, entity)
+        Entry::new(self, self.validate(entity)?)
     }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
@@ -106,7 +102,7 @@ impl EcsManager {
 
         // Set the new entity's state
         self.states.extend_if_needed(entity);
-        self.states.set(entity, EntityState::DEFAULT_STATE);
+        self.states.set(entity, EntityState::new(true, true));
 
         entity
     }
@@ -119,7 +115,7 @@ impl EcsManager {
 
         // Add the first entity normally, so we can get the output archetype
         self.entities.reserve(count);
-        self.states.extend_by(count, EntityState::DEFAULT_STATE);
+        self.states.extend_by(count, EntityState::new(true, true));
         let entity = self.insert(|entity, linker| function(0, entity, linker));
 
         // Archetype moment
@@ -148,7 +144,7 @@ impl EcsManager {
     // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
         // Get the archetype and the linkings, and check if the latter is valid
-        self.is_valid(entity)?;
+        self.validate(entity)?;
         let linkings = self.entities.get_mut(entity)?;
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
 
