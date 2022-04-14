@@ -14,8 +14,7 @@ pub trait QueryLayout<'a> where Self: Sized {
 
 
     // Get the pointer tuple from raw pointers
-    // This is non-fallible since we fethc the layout mask before we call this function
-    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple; 
+    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Option<Self::PtrTuple>; 
 
     // Get the combined masks
     fn mask() -> Result<Mask, QueryError>;
@@ -29,6 +28,12 @@ pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
     base: Layout::PtrTuple,
     len: usize,
     states: Rc<ComponentStateSet>,
+}
+
+impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
+    fn clone(&self) -> Self {
+        Self { base: self.base.clone(), len: self.len.clone(), states: self.states.clone() }
+    }
 }
 
 impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
@@ -47,7 +52,7 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
                 // Check if the chunk's mask validates the layout's mask
                 (chunk.mask & mask == mask).then(|| {
                     Self {
-                        base: Layout::ptrs_to_tuple(&chunk.ptrs),
+                        base: Layout::ptrs_to_tuple(&chunk.ptrs).unwrap(),
                         len: chunk.len,
                         states: chunk.states.clone(),
                     }
@@ -57,10 +62,15 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
 
         Ok(readers)
     }
-    // Convert the query chuns into a query layout chunk
-    // Read the safe tuple
-    pub fn offset(&self, bundle: usize) -> Layout::SafeTuple {
-        Layout::offset(self.base, bundle)
+    // Get the safe borrowing tuple from the chunk
+    pub fn get(&self, bundle: usize) -> Option<Layout::SafeTuple> {
+        // Handle invalid index
+        if bundle == self.len {
+            return None;
+        }       
+        
+        // Le offset
+        Some(Layout::offset(self.base, bundle))
     }
 }
 
@@ -86,8 +96,11 @@ impl<'a, A: BorrowedComponent<'a>> QueryLayout<'a> for A {
         A::offset(tuple, bundle)
     }
 
-    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple {
-        ptrs[A::mask().unwrap().offset()].unwrap().cast::<_>()
+    fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Option<Self::PtrTuple> {
+        // Get mask indices
+        let a = A::mask().ok()?.offset();
+        let ptr = ptrs[a]?.cast::<A::Component>();
+        Some(ptr)
     }
 }
 /*

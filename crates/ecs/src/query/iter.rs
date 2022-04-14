@@ -5,8 +5,7 @@ use crate::{ComponentStateSet, Mask, QueryCache, QueryError, QueryLayout, PtrRea
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Iterator shit
-    chunks: Vec<PtrReaderChunk<'a, Layout>>,
-    _phantom: PhantomData<&'a Layout>,
+    readers: Vec<PtrReaderChunk<'a, Layout>>,
 
     // Current main index, bundle index, and chunk index
     bundle: usize,
@@ -19,12 +18,13 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new iterator using the cache
     pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
+        let readers = PtrReaderChunk::<'a, Layout>::query(cache)?;
+        let first = readers.get(0).cloned();
         Ok(Self {
-            chunks: todo!(),
+            readers: readers,
             bundle: 0,
             chunk: 0,
-            loaded: None,
-            _phantom: Default::default(),
+            loaded: first,
         })
     }
 }
@@ -33,34 +33,23 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
     type Item = Layout::SafeTuple;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Try to load a new chunk
-        if self.chunks.is_empty() {
+        // Handle empty cases
+        if self.loaded.is_none() {
             return None;
         }
-        self.loaded.get_or_insert_with(|| {
-            todo!()
-        });
-        /*
-        // We've reached the end of the current chunk, reset
-        if self.bundle == self.loaded.as_ref().unwrap().length {
-            self.bundle = 0;
-            self.chunk += 1;
-            self.loaded = None;
 
-            // Check if we've reached the end of the query
-            if self.chunk == self.chunks.len() {
-                return None;
-            }
+        // Try to load an element, and if we fail, move to the next chunk
+        if let None = self.loaded.as_ref().unwrap().get(self.bundle) {
+            // Reached the end of the chunk, move to the next one
+            self.chunk += 1;
+            let chunk = self.readers.get(self.chunk)?.clone();
+            self.loaded.replace(chunk);
+            self.bundle = 0;
         }
 
-        // Update the component mutation states
-        let chunk = self.loaded.as_ref().unwrap();
-        chunk.states.set(self.bundle, self.access.writing);
-
-        // Read the pointers
+        // Actually load the element now (this must never fail)
+        let element = self.loaded.as_ref().unwrap().get(self.bundle).unwrap();
         self.bundle += 1;
-        Some(Layout::read(chunk.ptrs, self.bundle))
-        */
-        todo!()
+        Some(element)
     }
 }
