@@ -8,7 +8,7 @@ pub struct LinkModifier<'a> {
     // Manager
     manager: &'a mut EcsManager,
 
-    // The stored components
+    // New extra components
     new_components: Vec<(Mask, Box<dyn Any>)>,
 
     // Linkings
@@ -100,6 +100,8 @@ impl<'a> LinkModifier<'a> {
         if new != old {
             // Make sure the target archetype is valid
             register_archetype(&mut self.manager.archetypes, new, &self.manager.uniques);
+
+            self.manager.move
 
             // Get the current archetype along the target archetype, then move the entity
             dbg!(old);

@@ -29,10 +29,6 @@ enum InternalLinker<'a> {
         manager: &'a mut EcsManager,
         new_components: Vec<(Mask, Box<dyn Any>)>,
     },
-    Strict {
-        archetype: &'a mut Archetype,
-        linkings: &'a mut EntityLinkings,
-    },
 }
 
 // Component linker that will simply link components to an entity
@@ -54,14 +50,6 @@ impl<'a> Linker<'a> {
                 manager,
                 new_components: Default::default(),
             },
-            mask: Default::default(),
-            entity,
-        }
-    }
-    // Create a new strict linker
-    pub(crate) fn new_strict(entity: Entity, archetype: &'a mut Archetype, linkings: &'a mut EntityLinkings) -> Self {
-        Self {
-            internal: InternalLinker::Strict { archetype, linkings },
             mask: Default::default(),
             entity,
         }
@@ -89,18 +77,6 @@ impl<'a> Linker<'a> {
                 // Temporarily store the components
                 new_components.push((mask, Box::new(component)));
             }
-            InternalLinker::Strict { archetype, linkings } => {
-                // Return an error if we try to add a component that doesn't belong to our archetype
-                if mask & archetype.mask == Mask::default() {
-                    return Err(LinkError::StrictLinkInvalid(registry::name::<T>()));
-                }
-
-                // Insert the component directly into the arhcetype
-                archetype.insert_component(component).map_err(LinkError::ComponentError)?;
-
-                // And do a bit of trolling
-                linkings.mask = new;
-            }
         }
         Ok(())
     }
@@ -114,11 +90,6 @@ impl<'a> Linker<'a> {
                 // Insert the components into the archetype
                 let linkings = manager.entities.get_mut(self.entity).unwrap();
                 archetype.insert_boxed(new_components, linkings, self.entity);
-                *linkings
-            }
-            InternalLinker::Strict { archetype, linkings } => {
-                // Add the entity into the archetype
-                archetype.push_entity(linkings, self.entity);
                 *linkings
             }
         }

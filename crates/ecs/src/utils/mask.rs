@@ -13,6 +13,7 @@ pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
+    // 0, 1
     pub const fn one() -> Mask {
         Mask(1)
     }
@@ -20,16 +21,25 @@ impl Mask {
         Mask(0)
     }
 
+    // All bits set
     pub const fn all() -> Mask {
         Mask(u64::MAX)
     }
 
+    // Calculate mask from left shift bit offset
     pub const fn from_offset(offset: usize) -> Mask {
         Mask(1 << offset)
     }
-
     pub const fn offset(&self) -> usize {
         self.0.trailing_zeros() as usize
+    }
+
+    // Count
+    pub const fn count_ones(&self) -> u32 {
+        self.0.count_ones()
+    }
+    pub const fn count_zeros(&self) -> u32 {
+        self.0.count_zeros()
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
+    registry, Component, ComponentError, ComponentStateSet, Mask, MaskMap, StorageVec, UniqueStoragesSet, ArchetypeSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc};
@@ -19,8 +19,7 @@ pub struct Archetype {
     pub(crate) states: Rc<ComponentStateSet>,
 
     // Entities
-    pub(crate) entities: Vec<Entity>,
-    pub(crate) pending_for_removal: Vec<usize>,
+    pub(crate) length: usize,
 
     // Others
     pub(crate) cache_index: Option<usize>,
@@ -49,26 +48,23 @@ impl Archetype {
         let vectors: ComponentColumns = masks
             .iter()
             .map(|mask| {
-                let boxed = uniques[mask].new_empty_from_self();
-                let ptr = boxed.get_null_mut_typeless_ptr();
-                (*mask, (boxed, ptr))
+                (*mask, uniques[mask].clone_unique_storage())
             })
             .collect();
         Self {
             vectors,
             mask,
             states: Default::default(),
-            entities: Default::default(),
+            length: 0,
             cache_index: None,
-            pending_for_removal: Default::default(),
         }
     }
 
-    // Add an entity by itself and updates it's linkings
-    pub(crate) fn push_entity(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
-        self.entities.push(entity);
+    // Add an entity into the archetype and update it's linkings
+    pub(crate) fn push(&mut self, linkings: &mut EntityLinkings, entity: Entity) {
+        self.length += 1;
         self.states.push();
-        linkings.bundle = self.entities.len() - 1;
+        linkings.bundle = self.length - 1;
         linkings.mask = self.mask;
     }
 
@@ -114,27 +110,7 @@ impl Archetype {
         }
     }
 
-    // Directly removes a bundle from the archetype (PS: This mutably locks "components")
-    // This will return the boxed components that were removed, but only the ones that validate the given mask
-    fn remove_boxed_filtered(&mut self, bundle: usize, filter_mask: Mask) -> Vec<(Mask, Box<dyn Any>)> {
-        // The boxed components that will be returned
-        let mut components: Vec<(Mask, Box<dyn Any>)> = Default::default();
-
-        // Remove the components from the storages
-        for (&mask, (vec, _)) in self.vectors.iter_mut() {
-            // Filter the components that validate the mask
-            if mask & filter_mask == mask {
-                let boxed = vec.swap_remove_boxed(bundle);
-                components.push((mask, boxed));
-            }
-        }
-
-        // And then the locally stored entity ID
-        self.entities.swap_remove(bundle);
-        components
-    }
-
-    // Directly removes a bundle from the archetype (PS: This mutably locks "components")
+    // Directly removes a bundle from the archetype
     pub(crate) fn remove(&mut self, bundle: usize) {
         // Remove the components from the storages
         for (_, (vec, _)) in self.vectors.iter_mut() {
@@ -145,19 +121,6 @@ impl Archetype {
         self.entities.swap_remove(bundle);
     }
 
-    // Moves an entity from this archetype to another archetype
-    // We will also be able to add some extra components if needed
-    pub(crate) fn move_entity_to(&mut self, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>, other: &mut Self) {
-        // First, remove the entity from Self directly
-        let mut components = self.remove_boxed_filtered(linkings.bundle, other.mask);
-
-        // Combine the removed components with the extra components
-        components.extend(extra);
-
-        // And insert into Other
-        other.insert_boxed(components, linkings, entity);
-    }
-
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
     pub(crate) fn prepare(&mut self, count: u64) {
         // Don't do anything for the first frame of execution
@@ -166,7 +129,38 @@ impl Archetype {
         }
 
         // Reset the deltas/states that were set during the execution frame
-        self.remove_all_pending();
         self.states.reset_to(false);
     }
+}
+
+
+// Move an entity from an archetype to another archetype, whilst adding extra components to the entity
+// If the old and new masks are not disjoint, this will UB
+pub(crate) unsafe fn move_entity(archetypes: &mut ArchetypeSet, old: Mask, new: Mask, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>) {
+    // A bit of unsafe code but this should technically still be safe
+    let ptr1: *mut Archetype = archetypes.get_mut(&old).unwrap();
+    let ptr2: *mut Archetype = archetypes.get_mut(&new).unwrap();
+    let (old, new) = (&mut *ptr1, &mut *ptr2);
+
+    // The boxed components that will be added into the new archetype
+    let mut components: Vec<(Mask, Box<dyn Any>)> = Vec::with_capacity(new.mask.count_ones() as usize);
+
+    // Remove the components from the storages
+    for (&mask, (vec, _)) in old.vectors.iter_mut() {
+        // Filter the components that validate the mask
+        if mask & new.mask == mask {
+            let boxed = vec.
+            (linkings.bundle);
+            components.push((mask, boxed));
+        }
+    }
+
+    // And then the locally stored entity ID
+    self.entities.swap_remove(bundle);
+
+    // Combine the removed components with the extra components
+    components.extend(extra);
+    
+    // And insert into Other
+    other.insert_boxed(components, linkings, entity);
 }

@@ -1,4 +1,4 @@
-use std::slice;
+use std::{slice, any::Any};
 
 use slotmap::SlotMap;
 
@@ -29,27 +29,6 @@ impl EcsManager {
     // Register a component to be used
     pub fn register<T: Component>(&mut self) {
         registry::register::<T>();
-    }
-
-    // Move an entity from an archetype to another archetype
-    pub(crate) fn move_entity(&mut self, old: Mask, new: Mask, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>) {
-        // Make sure archetypes masks are disjoint
-        if old == new {
-            return None;
-        }
-
-        // Check if the masks are valid
-        if !self.archetypes.contains_key(&old) || !self.archetypes.contains_key(&new) {
-            return None;
-        }
-
-        // A bit of unsafe code but this should technically still be safe
-        let ptr1: *mut Archetype = self.archetypes.get_mut(&old).unwrap();
-        let ptr2: *mut Archetype = self.archetypes.get_mut(&new).unwrap();
-        let (new, old) = unsafe { (&mut *ptr1, &mut *ptr2) };
-    
-        // Move
-        old.move_entity_to()
     }
 
     // Return Some(Entity) if the entity is valid. Otherwise, return None
@@ -105,39 +84,6 @@ impl EcsManager {
         self.states.set(entity, EntityState::new(true, true));
 
         entity
-    }
-    // Insert multiple entities in batch. The entities must have the same component layout
-    // This will panic if one of the entities contains a different component layout than the others
-    // Will also panic if count is equal to 0
-    pub fn insert_batch(&mut self, count: usize, mut function: impl FnMut(usize, Entity, &mut Linker)) -> &[Entity] {
-        // Bruh count
-        assert_ne!(count, 0, "Cannot insert a batch of 0 entities");
-
-        // Add the first entity normally, so we can get the output archetype
-        self.entities.reserve(count);
-        self.states.extend_by(count, EntityState::new(true, true));
-        let entity = self.insert(|entity, linker| function(0, entity, linker));
-
-        // Archetype moment
-        let archetype = self.archetypes.get_mut(&self.entities[entity].mask).unwrap();
-        let start_index = archetype.entities.len();
-        archetype.reserve(count);
-
-        // If we only added one entity, return early
-        if count == 1 {
-            let elem = &archetype.entities[start_index - 1];
-            return slice::from_ref(elem);
-        }
-
-        // Add the entities, and make sure that they all have the same layout
-        for x in 1..count {
-            // Create a strict linker, since we know the target archetype now
-            let entity = self.entities.insert(EntityLinkings::default());
-            let mut linker = Linker::new_strict(entity, archetype, &mut self.entities[entity]);
-            function(x, entity, &mut linker);
-            linker.apply();
-        }
-        &archetype.entities[start_index..]
     }
 
     // Remove an entity from the world, instantly
