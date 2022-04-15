@@ -21,7 +21,7 @@ pub trait PtrReader<'a> {
         let mask = registry::mask::<Self::Component>().map_err(QueryError::ComponentError)?;
 
         // Get the writing mask
-        let writing = Self::WRITING_MASK_ENABLED.then(|| mask).unwrap_or_default();
+        let writing = Self::WRITING_MASK_ENABLED.then(|| mask).unwrap_or_else(Mask::zero);
 
         Ok((mask, writing))
     }

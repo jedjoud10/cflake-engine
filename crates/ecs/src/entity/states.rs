@@ -23,8 +23,6 @@ impl EntityState {
     pub const fn valid(&self) -> bool {
         self.0 & 1 == 1
     }
-    
-
 }
 
 // The state for each entity that is contained within the manager

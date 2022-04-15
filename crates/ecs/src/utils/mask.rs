@@ -8,7 +8,7 @@ use std::{
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
 // A simple mask
-#[derive(Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
@@ -32,6 +32,11 @@ impl Mask {
     }
     pub const fn offset(&self) -> usize {
         self.0.trailing_zeros() as usize
+    }
+
+    // Check if a mask is empty
+    pub fn empty(&self) -> bool {
+        *self == Self::zero()
     }
 
     // Count

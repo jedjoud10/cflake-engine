@@ -57,13 +57,6 @@ mod tests {
             });
         }
         dbg!(i.elapsed());
-        let i = std::time::Instant::now();
-        let entities = manager.insert_batch(COUNT, |x, _, linker| {
-            linker.insert(Tag("Jed est cool (trust)")).unwrap();
-            linker.insert(SimpleValue((x) as i32)).unwrap();
-        });
-        dbg!(i.elapsed());
-        dbg!(manager.entities.len());
 
         let entity = manager.insert(|_, linker| {
             //linker.insert(Name("Le Jribi", [1; 64])).unwrap();

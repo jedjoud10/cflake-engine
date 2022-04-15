@@ -48,14 +48,14 @@ impl QueryCache {
             // Insert the chunk if it is not present
             let mask = archetype.mask;
             let states = archetype.states.clone();
-            let idx = archetype.cache_index.get_or_insert_with(|| {
+            let idx = archetype.index.get_or_insert_with(|| {
                 self.chunks.push(QueryChunk::new(mask, states));
                 self.chunks.len() - 1
             });
 
             // Always update the archetype chunk
             let chunk = &mut self.chunks[*idx];
-            chunk.len = archetype.entities.len();
+            chunk.len = archetype.length;
             // Update the component storage pointers
             for (offset, old) in chunk.ptrs.iter_mut().enumerate().take(registry::count()) {
                 let mask = Mask::from_offset(offset);

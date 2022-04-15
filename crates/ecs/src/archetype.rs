@@ -1,12 +1,10 @@
 mod archetype;
 mod error;
-mod linker;
 mod modifier;
 mod states;
 mod storage;
 pub use archetype::*;
 pub use error::*;
-pub use linker::*;
 pub use modifier::*;
 pub use states::*;
 pub use storage::*;

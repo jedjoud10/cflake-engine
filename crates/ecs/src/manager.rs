@@ -1,20 +1,18 @@
-use std::{slice, any::Any};
+use std::{any::Any, slice};
 
 use slotmap::SlotMap;
 
 use crate::{
-    entity::Entity, registry, Archetype, Component, EntityLinkings, EntityState, EntityStateSet, Entry, LinkModifier, Linker, Mask, MaskMap, QueryCache, QueryError, QueryIter,
+    entity::Entity, registry, Archetype, Component, EntityLinkings, EntityState, EntityStateSet, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryError, QueryIter,
     QueryLayout, StorageVec,
 };
 
-// Type aliases for simpler names
+// Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
-#[derive(Default)]
 pub struct EcsManager {
-    // Hmmm
     pub(crate) entities: EntitySet,
     pub(crate) archetypes: ArchetypeSet,
     pub(crate) uniques: UniqueStoragesSet,
@@ -23,6 +21,23 @@ pub struct EcsManager {
     states: EntityStateSet,
     count: u64,
     cache: QueryCache,
+}
+
+impl Default for EcsManager {
+    fn default() -> Self {
+        // Create the default empty archetype
+        let uniques: UniqueStoragesSet = Default::default();
+        let empty = Archetype::new(Mask::zero(), &uniques);
+
+        Self {
+            entities: Default::default(),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
+            uniques,
+            states: Default::default(),
+            count: Default::default(),
+            cache: Default::default(),
+        }
+    }
 }
 
 impl EcsManager {
@@ -68,16 +83,18 @@ impl EcsManager {
     }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
-    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
-        // Check if we expanded the slot map
+    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
+        // Add le entity
         let entity = self.entities.insert(EntityLinkings::default());
 
-        // Create a linker, so we can insert components and link them to the entity
-        let mut linker = Linker::new_simple(self, entity);
+        // Create a link modifier, so we can insert/remove components
+        let mut linker = LinkModifier::new(self, entity).unwrap();
         function(entity, &mut linker);
 
-        // Apply the changes (adds it to the archetype)
-        linker.apply();
+        // Since we are inserting this entity, the linkings are always default
+        let mut linkings = EntityLinkings::default();
+        linker.apply(&mut linkings);
+        *self.entities.get_mut(entity).unwrap() = linkings;
 
         // Set the new entity's state
         self.states.extend_if_needed(entity);
@@ -88,12 +105,12 @@ impl EcsManager {
 
     // Remove an entity from the world, instantly
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Get the archetype and the linkings, and check if the latter is valid        ;
+        // Get the archetype and the linkings, and check if the latter is valid
         let linkings = self.entities.get_mut(self.validate(entity)?)?;
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
 
-        // Remove
-        archetype.remove(linkings.bundle);
+        // Remove the entity from the archetype
+        archetype.remove(linkings.bundle, &mut self.entities);
         Some(())
     }
 
