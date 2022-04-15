@@ -140,18 +140,14 @@ impl EcsManager {
         &archetype.entities[start_index..]
     }
 
-    // Remove an entity from the world
-    // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
+    // Remove an entity from the world, instantly
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Get the archetype and the linkings, and check if the latter is valid
-        self.validate(entity)?;
-        let linkings = self.entities.get_mut(entity)?;
+        // Get the archetype and the linkings, and check if the latter is valid        ;
+        let linkings = self.entities.get_mut(self.validate(entity)?)?;
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
 
-        // Apply the "pending for removal" state
-        archetype.add_pending_for_removal(linkings.bundle);
-        linkings.mask = Default::default();
-
+        // Remove
+        archetype.remove(linkings.bundle);
         Some(())
     }
 

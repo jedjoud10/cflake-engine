@@ -114,12 +114,6 @@ impl Archetype {
         }
     }
 
-    // Start the deletion process for components. The component will actually get deleted next frame
-    pub(crate) fn add_pending_for_removal(&mut self, bundle: usize) {
-        // Pending for removal push
-        self.pending_for_removal.push(bundle);
-    }
-
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
     // This will return the boxed components that were removed, but only the ones that validate the given mask
     fn remove_boxed_filtered(&mut self, bundle: usize, filter_mask: Mask) -> Vec<(Mask, Box<dyn Any>)> {
@@ -141,7 +135,7 @@ impl Archetype {
     }
 
     // Directly removes a bundle from the archetype (PS: This mutably locks "components")
-    fn remove(&mut self, bundle: usize) {
+    pub(crate) fn remove(&mut self, bundle: usize) {
         // Remove the components from the storages
         for (_, (vec, _)) in self.vectors.iter_mut() {
             vec.swap_remove(bundle);
@@ -149,17 +143,6 @@ impl Archetype {
 
         // And then the locally stored entity ID
         self.entities.swap_remove(bundle);
-    }
-
-    // Remove all the components that are pending for removal
-    fn remove_all_pending(&mut self) {
-        // Steal
-        let stolen = std::mem::take(&mut self.pending_for_removal);
-
-        // And remove
-        for bundle in stolen {
-            self.remove(bundle);
-        }
     }
 
     // Moves an entity from this archetype to another archetype
