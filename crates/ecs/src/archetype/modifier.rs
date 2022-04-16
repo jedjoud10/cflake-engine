@@ -89,9 +89,8 @@ impl<'a> LinkModifier<'a> {
 
         // Check if we even have the component in the first place
         if !linked_to_entity && !locally_stored {
-            return Err(LinkError::ComponentMissing(registry::name::<T>()))
+            return Err(LinkError::ComponentMissing(registry::name::<T>()));
         }
-        
 
         // Check if we have the component locally stored
         if !linked_to_entity && locally_stored {
@@ -113,7 +112,15 @@ impl<'a> LinkModifier<'a> {
             register_archetype(&mut self.manager.archetypes, self.new, &self.manager.uniques);
 
             // Move the entity to the new archetype
-            Archetype::move_entity(&mut self.manager.archetypes, &mut self.manager.entities, self.old, self.new, self.entity, linkings, self.locals)
+            Archetype::move_entity(
+                &mut self.manager.archetypes,
+                &mut self.manager.entities,
+                self.old,
+                self.new,
+                self.entity,
+                linkings,
+                self.locals,
+            )
             //println!("Moved entity from {} to {}", self.old, self.new);
         }
     }

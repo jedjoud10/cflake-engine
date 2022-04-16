@@ -1,5 +1,5 @@
-use std::cell::RefCell;
 use crate::Mask;
+use std::cell::RefCell;
 
 // Component state chunk that contains the component states for a bundle
 #[derive(Clone, Copy)]
@@ -35,10 +35,12 @@ pub(crate) struct ComponentStateSet {
 impl ComponentStateSet {
     // Reset the component states to their default values
     pub fn reset(&self) {
-        self.rows.borrow_mut().iter_mut().for_each(|row| row.update(|a, b| {
-            *a = Mask::zero();
-            *b = Mask::zero();
-        }));
+        self.rows.borrow_mut().iter_mut().for_each(|row| {
+            row.update(|a, b| {
+                *a = Mask::zero();
+                *b = Mask::zero();
+            })
+        });
     }
 
     // Add a new component states row
@@ -72,7 +74,7 @@ impl ComponentStateSet {
     pub fn reserve(&self, additional: usize) {
         self.rows.borrow_mut().reserve(additional);
     }
-    
+
     // Get all the component states for a specific row
     pub fn get(&self, bundle: usize) -> Option<ComponentStateRow> {
         self.rows.borrow().get(bundle).cloned()

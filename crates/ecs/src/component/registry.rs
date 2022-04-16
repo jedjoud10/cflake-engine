@@ -1,4 +1,4 @@
-use super::{Component};
+use super::Component;
 use crate::Mask;
 use ahash::AHashMap;
 use lazy_static::lazy_static;

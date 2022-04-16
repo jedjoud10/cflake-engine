@@ -1,5 +1,5 @@
 use crate::{registry, Component, Mask};
-use std::{ptr::NonNull, ops::BitOr};
+use std::{ops::BitOr, ptr::NonNull};
 
 // Layout access that contain the normal mask and writing mask
 #[derive(Clone, Copy)]

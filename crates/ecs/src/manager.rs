@@ -1,11 +1,6 @@
-use std::{any::Any, slice};
-
 use slotmap::SlotMap;
 
-use crate::{
-    entity::Entity, registry, Archetype, Component, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter,
-    QueryLayout, StorageVec,
-};
+use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter, QueryLayout, StorageVec};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;

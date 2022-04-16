@@ -1,10 +1,9 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, Component, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet, ComponentStateRow,
+    registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc};
-use tinyvec::ArrayVec;
 
 type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
 
@@ -33,7 +32,9 @@ impl Archetype {
             .into_iter()
             .filter_map(|i| {
                 // Make sure the bit is valid
-                if (mask >> i) & Mask::one() != Mask::one() { return None; }
+                if (mask >> i) & Mask::one() != Mask::one() {
+                    return None;
+                }
 
                 // Create the archetype storage
                 let mask = Mask::one() << i;
@@ -64,7 +65,7 @@ impl Archetype {
         }
     }
 
-    // Update a single underlying storage 
+    // Update a single underlying storage
     fn fetch_update(&mut self, mask: Mask, function: impl FnOnce(&mut Box<dyn StorageVec>)) -> Option<()> {
         let (vec, ptr) = self.vectors.get_mut(&mask)?;
         function(vec);
@@ -102,7 +103,7 @@ impl Archetype {
         let linkings = entities.get_mut(entity).unwrap();
         let bundle = linkings.bundle;
         let archetype = archetypes.get_mut(&linkings.mask).unwrap();
-        
+
         // The boxed components that will be added into the new archetype
         let mut components: Vec<(Mask, Box<dyn Any>)> = Vec::with_capacity(filter.count_ones() as usize);
 
@@ -128,23 +129,30 @@ impl Archetype {
             let swapped_linkings = entities.get_mut(entity).unwrap();
             swapped_linkings.bundle = bundle;
         }
-            
+
         components
     }
 
     // Move an entity from an archetype to another archetype, whilst adding extra components to the entity
-    pub(crate) fn move_entity(archetypes: &mut ArchetypeSet, entities: &mut EntitySet, old: Mask, new: Mask, entity: Entity, linkings: &mut EntityLinkings, extra: Vec<(Mask, Box<dyn Any>)>) {
+    pub(crate) fn move_entity(
+        archetypes: &mut ArchetypeSet,
+        entities: &mut EntitySet,
+        old: Mask,
+        new: Mask,
+        entity: Entity,
+        linkings: &mut EntityLinkings,
+        extra: Vec<(Mask, Box<dyn Any>)>,
+    ) {
         // Remove the entity (this might fail in the case of the default empty archetype)
         let mut removed = (old != Mask::zero()).then(|| Archetype::remove(archetypes, entities, entity, old)).unwrap_or_default();
-    
+
         // Combine the removed components with the extra components
         removed.extend(extra);
-    
+
         // And insert into the new archetype
         let new = archetypes.get_mut(&new).unwrap();
         new.push(entity, linkings, removed);
     }
-
 
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
     pub(crate) fn prepare(&mut self, count: u64) {

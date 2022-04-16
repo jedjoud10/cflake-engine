@@ -1,4 +1,4 @@
-use crate::{Mask, PtrReaderChunk, QueryCache, QueryLayout, LayoutAccess};
+use crate::{LayoutAccess, PtrReaderChunk, QueryCache, QueryLayout};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
@@ -21,7 +21,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     pub fn new(cache: &'a QueryCache) -> Self {
         // Cache the layout mask for later use
         let access = Layout::combined();
-        let (&mask, &writing) = (access.reading(), access.writing());
+        let (&mask, &_writing) = (access.reading(), access.writing());
 
         // Get all the cache chunks
         let chunks = cache.view();

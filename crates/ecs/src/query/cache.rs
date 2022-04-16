@@ -1,4 +1,4 @@
-use crate::{registry, ArchetypeSet, ComponentStateSet, Mask, PtrReader};
+use crate::{registry, ArchetypeSet, ComponentStateSet, Mask};
 use std::{ffi::c_void, ptr::NonNull, rc::Rc};
 
 type StoragePtr = Option<NonNull<c_void>>;
