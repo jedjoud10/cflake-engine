@@ -56,6 +56,6 @@ impl<'a> Entry<'a> {
     pub fn was_mutated<T: Component>(&self) -> Result<bool, EntryError> {
         let mask = self.mask::<T>()?;
         let mutated = self.archetype.states.get(self.bundle).unwrap();
-        Ok(mutated.added(mask.offset()))
+        Ok(mutated.mutated(mask.offset()))
     }
 }
