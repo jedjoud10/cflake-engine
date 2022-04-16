@@ -4,7 +4,3 @@ use crate::{ComponentStateRow, Component};
 pub struct QueryFilter {
     condition: ComponentStateRow
 }
-
-pub fn added<T: Component>() -> bool {
-    
-}

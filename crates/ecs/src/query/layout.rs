@@ -1,6 +1,6 @@
 use std::{ffi::c_void, ptr::NonNull, rc::Rc};
 
-use crate::{ComponentStateSet, Mask, PtrReader, QueryCache, QueryError};
+use crate::{ComponentStateSet, Mask, PtrReader, QueryCache, LayoutAccess, QueryChunk, registry};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 
@@ -17,19 +17,18 @@ where
     // Get the pointer tuple from raw pointers
     fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple;
 
-    // Get the normal combined component mask AND writing mask
-    fn get_masks() -> Result<(Mask, Mask), QueryError>;
+    // Get the final layout access masks
+    fn combined() -> LayoutAccess;
 
     // Convert the base ptr tuple to the safe borrows using a bundle offset
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
 }
 
 // Special chunk that allows us to read the SafeTuple from the underlying layout
-pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
+pub(crate) struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
     base: Layout::PtrTuple,
     len: usize,
     states: Rc<ComponentStateSet>,
-    filter: fn(QueryFilterInput) -> bool,
 }
 
 impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
@@ -43,33 +42,18 @@ impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
 }
 
 impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
-    // Create a vector of multiple reader chunks from cache
-    pub fn query(cache: &QueryCache) -> Result<(Vec<Self>, Mask), QueryError> {
-        // Cache the layout mask for later use
-        let (mask, writing_mask) = Layout::get_masks()?;
-
-        // Get all the cache chunks
-        let chunks = cache.view();
-
-        // Create the readers
-        let readers = chunks
-            .iter()
-            .filter_map(|chunk| {
-                // Check if the chunk's mask validates the layout's mask
-                (chunk.mask & mask == mask).then(|| Self {
-                    base: Layout::ptrs_to_tuple(&chunk.ptrs),
-                    len: chunk.len,
-                    states: chunk.states.clone(),
-                })
-            })
-            .collect::<Vec<_>>();
-
-        Ok((readers, writing_mask))
+    // Create a single reader chunk from a chunk
+    pub fn new(chunk: &QueryChunk) -> Self {
+        Self {
+            base: Layout::ptrs_to_tuple(&chunk.ptrs),
+            len: chunk.len,
+            states: chunk.states.clone(),
+        }
     }
 
-    // Set the component mutation states using a mutation mask
-    pub fn set_states(&self, bundle: usize, mask: Mask) -> Option<()> {
-        self.states.update(bundle, |row| row.update(|_, m| *m = *m | mask))
+    // Update the components states using the layout access mask 
+    pub fn update_states(&self, bundle: usize, access: LayoutAccess) -> Option<()> {
+        self.states.update(bundle, |row| row.update(|_, m| *m = *m | *access.writing()))
     }
 
     // Get the safe borrowing tuple from the chunk
@@ -86,7 +70,7 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
 
 // Helper function to get the base pointer of a specific borrowed component
 fn get_then_cast<'a, T: PtrReader<'a>>(ptrs: &[Option<NonNull<c_void>>; 64]) -> NonNull<T::Component> {
-    let ptr = T::mask().unwrap().0.offset();
+    let ptr = registry::mask::<T::Component>().offset();
     ptrs[ptr].unwrap().cast()
 }
 
@@ -102,8 +86,8 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
         A::offset(tuple, bundle)
     }
 
-    fn get_masks() -> Result<(Mask, Mask), QueryError> {
-        A::mask()
+    fn combined() -> LayoutAccess {
+        A::access()
     }
 }
 
@@ -119,10 +103,8 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
         (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle))
     }
 
-    fn get_masks() -> Result<(Mask, Mask), QueryError> {
-        let (a, aw) = A::mask()?;
-        let (b, bw) = B::mask()?;
-        Ok((a | b, aw | bw))
+    fn combined() -> LayoutAccess {
+        A::access() | B::access()
     }
 }
 
@@ -138,10 +120,7 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
         (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 
-    fn get_masks() -> Result<(Mask, Mask), QueryError> {
-        let (a, aw) = A::mask()?;
-        let (b, bw) = B::mask()?;
-        let (c, cw) = C::mask()?;
-        Ok((a | b | c, aw | bw | cw))
+    fn combined() -> LayoutAccess {
+        A::access() | B::access() | C::access()
     }
 }

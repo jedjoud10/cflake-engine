@@ -1,5 +1,28 @@
-use crate::{registry, Component, Mask, QueryError};
-use std::ptr::NonNull;
+use crate::{registry, Component, Mask};
+use std::{ptr::NonNull, ops::BitOr};
+
+// Layout access that contain the normal mask and writing mask
+pub(crate) struct LayoutAccess(Mask, Mask);
+
+impl LayoutAccess {
+    // Get the normal mask
+    pub fn reading(&self) -> &Mask {
+        &self.0
+    }
+    // Get the writing mask
+    pub fn writing(&self) -> &Mask {
+        &self.1
+    }
+}
+
+impl BitOr for LayoutAccess {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0, self.1 | rhs.1)
+    }
+}
+
 // Gets a "&" reference to the component
 pub struct Read<T: 'static + Component>(&'static T);
 
@@ -15,15 +38,15 @@ pub trait PtrReader<'a> {
     // Offset an unsafe pointer by a bundle offset and read it
     fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self::Borrowed;
 
-    // Get the normal component mask AND writing mask
-    fn mask() -> Result<(Mask, Mask), QueryError> {
+    // Get the normal component mask AND writing mask, combined into a single layout mask
+    fn access() -> LayoutAccess {
         // Get the normal mask
-        let mask = registry::mask::<Self::Component>().map_err(QueryError::ComponentError)?;
+        let mask = registry::mask::<Self::Component>();
 
         // Get the writing mask
         let writing = Self::WRITING_MASK_ENABLED.then(|| mask).unwrap_or_else(Mask::zero);
 
-        Ok((mask, writing))
+        LayoutAccess(mask, writing)
     }
 }
 
@@ -46,7 +69,7 @@ where
 {
     type Component = T;
     type Borrowed = &'a mut T;
-    const WRITING_MASK_ENABLED: bool = true;
+    const WRITING_MASK_ENABLED: bool = !SILENT;
 
     fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self::Borrowed {
         unsafe { &mut *ptr.as_ptr().add(bundle) }

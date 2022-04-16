@@ -1,12 +1,12 @@
-use crate::{Mask, PtrReaderChunk, QueryCache, QueryError, QueryLayout};
+use crate::{Mask, PtrReaderChunk, QueryCache, QueryLayout, LayoutAccess};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Readers from the query cache
     readers: Vec<PtrReaderChunk<'a, Layout>>,
 
-    // Writing mask that will be overwritten in the componnent states
-    writing_mask: Mask,
+    // How we shall access the components
+    access: LayoutAccess,
 
     // Indices
     bundle: usize,
@@ -17,17 +17,32 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
-    // Creates a new iterator using the cache
-    pub fn new(cache: &'a QueryCache) -> Result<Self, QueryError> {
-        let (readers, writing_mask) = PtrReaderChunk::<'a, Layout>::query(cache)?;
+    // Creates a new query iterator using the cache
+    pub fn new(cache: &'a QueryCache) -> Self {
+        // Cache the layout mask for later use
+        let access = Layout::combined();
+        let (&mask, &writing) = (access.reading(), access.writing());
+
+        // Get all the cache chunks
+        let chunks = cache.view();
+
+        // Create the readers
+        let readers = chunks
+            .iter()
+            .filter_map(|chunk| {
+                // Check if the chunk's mask validates the layout's mask
+                (chunk.mask & mask == mask).then(|| PtrReaderChunk::new(chunk))
+            })
+            .collect::<Vec<_>>();
+
         let first = readers.get(0).cloned();
-        Ok(Self {
+        Self {
             readers,
-            writing_mask,
+            access,
             bundle: 0,
             chunk: 0,
             loaded: first,
-        })
+        }
     }
 }
 
@@ -49,7 +64,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
         // Actually load the element by offsetting the base pointers
         let loaded = self.loaded.as_ref().unwrap();
-        loaded.set_states(self.bundle, self.writing_mask);
+        loaded.update_states(self.bundle, self.access);
         let element = loaded.get(self.bundle).unwrap();
         self.bundle += 1;
         Some(element)

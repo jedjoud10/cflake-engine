@@ -10,15 +10,11 @@ mod tests {
         // Simple component
         #[derive(Component, Debug)]
         struct Name(&'static str, [i32; 64]);
-        manager.register::<Name>();
 
         #[derive(Component, Debug)]
         struct Tag(&'static str);
-        manager.register::<Tag>();
-
         #[derive(Component, Debug)]
         struct SimpleValue(i32);
-        manager.register::<SimpleValue>();
 
         /*
         let entity = manager.insert(|_, linker| {
@@ -66,12 +62,12 @@ mod tests {
 
         for x in 0..10 {
             let i = std::time::Instant::now();
-            manager.query::<(Write<SimpleValue, true>)>().unwrap();
+            manager.query::<(Write<SimpleValue, true>)>();
             dbg!(i.elapsed());
         }
 
         let i = std::time::Instant::now();
-        manager.query::<(Write<SimpleValue, true>)>().unwrap();
+        manager.query::<(Write<SimpleValue, true>)>();
         dbg!(i.elapsed());
 
         manager
@@ -82,8 +78,8 @@ mod tests {
             })
             .unwrap();
 
-        dbg!(manager.query::<(Write<SimpleValue, true>)>().unwrap().count());
-        dbg!(manager.query::<Read<Name>>().unwrap().count());
+        dbg!(manager.query::<(Write<SimpleValue, true>)>().count());
+        dbg!(manager.query::<Read<Name>>().count());
 
         /*
         for x in 0..COUNT {

@@ -3,7 +3,7 @@ use std::{any::Any, slice};
 use slotmap::SlotMap;
 
 use crate::{
-    entity::Entity, registry, Archetype, Component, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryError, QueryIter,
+    entity::Entity, registry, Archetype, Component, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter,
     QueryLayout, StorageVec,
 };
 
@@ -39,11 +39,6 @@ impl Default for EcsManager {
 }
 
 impl EcsManager {
-    // Register a component to be used
-    pub fn register<T: Component>(&mut self) {
-        registry::register::<T>();
-    }
-
     // Prepare the Ecs Manager for one execution
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
@@ -104,7 +99,7 @@ impl EcsManager {
     }
 
     // Get a component query that we will use to read/write to certain components
-    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> Result<QueryIter<'a, Layout>, QueryError> {
+    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
         self.cache.update(&mut self.archetypes);
         QueryIter::new(&self.cache)
     }

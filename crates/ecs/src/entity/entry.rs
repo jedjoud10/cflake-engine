@@ -21,7 +21,7 @@ impl<'a> Entry<'a> {
     // Try to get a component mask
     fn mask<T: Component>(&self) -> Result<Mask, EntryError> {
         // Get le mask
-        let mask = registry::mask::<T>().map_err(EntryError::ComponentError)?;
+        let mask = registry::mask::<T>();
 
         // Handle unlinked components
         if self.archetype.mask & mask != mask {
