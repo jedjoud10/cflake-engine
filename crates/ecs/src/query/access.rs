@@ -2,7 +2,8 @@ use crate::{registry, Component, Mask};
 use std::{ptr::NonNull, ops::BitOr};
 
 // Layout access that contain the normal mask and writing mask
-pub(crate) struct LayoutAccess(Mask, Mask);
+#[derive(Clone, Copy)]
+pub struct LayoutAccess(Mask, Mask);
 
 impl LayoutAccess {
     // Get the normal mask

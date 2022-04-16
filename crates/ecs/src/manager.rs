@@ -87,14 +87,13 @@ impl EcsManager {
         entity
     }
 
-    // Remove an entity from the world, instantly
+    // Remove an entity from the world
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Get the archetype and the linkings, and check if the latter is valid
-        let linkings = self.entities.get_mut(entity)?;
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+        // Remove the entity from it's current archetype first
+        Archetype::remove(&mut self.archetypes, &mut self.entities, entity, Mask::zero());
 
-        // Remove the entity from the archetype
-        archetype.remove(linkings.bundle, &mut self.entities);
+        // Then remove it from the manager
+        self.entities.remove(entity).unwrap();
         Some(())
     }
 

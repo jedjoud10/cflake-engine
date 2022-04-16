@@ -55,7 +55,7 @@ impl QueryCache {
 
             // Always update the archetype chunk
             let chunk = &mut self.chunks[*idx];
-            chunk.len = archetype.length;
+            chunk.len = archetype.len();
             // Update the component storage pointers
             for (offset, old) in chunk.ptrs.iter_mut().enumerate().take(registry::count()) {
                 let mask = Mask::from_offset(offset);

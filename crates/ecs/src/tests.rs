@@ -41,6 +41,12 @@ mod tests {
         //let mut entry = manager.entry(entity).unwrap();
         //let _name = entry.get_mut::<Name>().unwrap();
         // Get the query
+        for x in 0..500 {
+
+            let i = std::time::Instant::now();
+            registry::mask::<SimpleValue>();
+            dbg!(i.elapsed());
+        }
 
         // Make a new entity
         const COUNT: usize = u16::MAX as usize;

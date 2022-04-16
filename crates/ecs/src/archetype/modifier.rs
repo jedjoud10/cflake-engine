@@ -1,10 +1,5 @@
-use crate::{move_entity, registry, Archetype, ArchetypeSet, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask, UniqueStoragesSet};
+use crate::{registry, Archetype, ArchetypeSet, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask, UniqueStoragesSet};
 use std::any::Any;
-
-// Get the mask of a specific component
-pub(super) fn component_mask<T: Component>() -> Result<Mask, LinkError> {
-    registry::mask::<T>().map_err(LinkError::ComponentError)
-}
 
 // Make sure there is an emtpy unique component vector at our disposal
 pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
@@ -50,7 +45,7 @@ impl<'a> LinkModifier<'a> {
     }
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
-        let mask = component_mask::<T>()?;
+        let mask = registry::mask::<T>();
 
         // Check for link duplication
         if self.new & mask == mask {
@@ -88,11 +83,17 @@ impl<'a> LinkModifier<'a> {
     }
     // Remove a component from the entity
     pub fn remove<T: Component>(&mut self) -> Result<(), LinkError> {
-        let mask = component_mask::<T>()?;
-
-        // Check if we have the component locally stored
+        let mask = registry::mask::<T>();
         let linked_to_entity = self.old & mask == mask;
         let locally_stored = self.new & mask != Mask::zero();
+
+        // Check if we even have the component in the first place
+        if !linked_to_entity && !locally_stored {
+            return Err(LinkError::ComponentMissing(registry::name::<T>()))
+        }
+        
+
+        // Check if we have the component locally stored
         if !linked_to_entity && locally_stored {
             // Search for the local component, and remove it
             self.locals.retain(|(m, _)| *m != mask);
@@ -112,7 +113,7 @@ impl<'a> LinkModifier<'a> {
             register_archetype(&mut self.manager.archetypes, self.new, &self.manager.uniques);
 
             // Move the entity to the new archetype
-            unsafe { move_entity(&mut self.manager.archetypes, self.old, self.new, linkings, self.locals) }
+            Archetype::move_entity(&mut self.manager.archetypes, &mut self.manager.entities, self.old, self.new, self.entity, linkings, self.locals)
             //println!("Moved entity from {} to {}", self.old, self.new);
         }
     }
