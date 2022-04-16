@@ -1,5 +1,10 @@
-// Query filter input that will be passed to the filtering function
-pub struct QueryFilterInput {
-    mutated: u64,
-    new: bool,
+use crate::{ComponentStateRow, Component};
+
+// Query filter that will block certain bundles from being iterated
+pub struct QueryFilter {
+    condition: ComponentStateRow
+}
+
+pub fn added<T: Component>() -> bool {
+    
 }
