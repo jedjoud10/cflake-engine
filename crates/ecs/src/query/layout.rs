@@ -29,6 +29,7 @@ pub struct PtrReaderChunk<'a, Layout: QueryLayout<'a>> {
     base: Layout::PtrTuple,
     len: usize,
     states: Rc<ComponentStateSet>,
+    filter: fn(QueryFilterInput) -> bool,
 }
 
 impl<'a, Layout: QueryLayout<'a>> Clone for PtrReaderChunk<'a, Layout> {
@@ -65,9 +66,10 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
 
         Ok((readers, writing_mask))
     }
-    // Set the component mutation state for a specific mask
-    pub fn set_states_for_mask(&self, bundle: usize, mask: Mask) -> Option<()> {
-        self.states.set(bundle, mask)
+
+    // Set the component mutation states using a mutation mask
+    pub fn set_states(&self, bundle: usize, mask: Mask) -> Option<()> {
+        self.states.update(bundle, |row| row.update(|_, m| *m = *m | mask))
     }
 
     // Get the safe borrowing tuple from the chunk

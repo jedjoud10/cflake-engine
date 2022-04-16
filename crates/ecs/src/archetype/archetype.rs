@@ -1,6 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, Component, ComponentError, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
+    registry, ArchetypeSet, Component, ComponentError, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet, ComponentStateRow,
 };
 use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc};
@@ -54,23 +54,28 @@ impl Archetype {
     pub(crate) fn push(&mut self, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
         self.length += 1;
-        self.states.push();
+        self.states.push(ComponentStateRow::new(linkings.mask));
         linkings.bundle = self.length - 1;
         linkings.mask = self.mask;
 
         // Add the components using their specific storages
         for (mask, component) in components {
-            let (vec, ptr) = self.vectors.get_mut(&mask).unwrap();
-
-            // Insert the component (and update the pointer if it changed)
-            vec.push(component);
-            *ptr = vec.as_mut_typeless_ptr();
-            self.states.set(linkings.bundle, mask);
+            self.fetch_update(mask, |vec| vec.push(component));
         }
     }
 
+    // Update a single underlying storage 
+    fn fetch_update(&mut self, mask: Mask, function: impl FnOnce(&mut Box<dyn StorageVec>)) -> Option<()> {
+        let (vec, ptr) = self.vectors.get_mut(&mask)?;
+        function(vec);
+
+        // Might've reallocated, we don't know really
+        *ptr = vec.as_mut_typeless_ptr();
+        Some(())
+    }
+
     // Update all the underlying storages with a closure ran over them
-    fn update_storages(&mut self, mut function: impl FnMut(&mut Box<dyn StorageVec>)) {
+    fn update_all(&mut self, mut function: impl FnMut(&mut Box<dyn StorageVec>)) {
         for (_, (vec, ptr)) in self.vectors.iter_mut() {
             function(vec);
 
@@ -82,7 +87,7 @@ impl Archetype {
     // Reserve enough space to fit "n" number of new entities into this archetype
     pub(crate) fn reserve(&mut self, additional: usize) {
         self.states.reserve(additional);
-        self.update_storages(|vec| vec.reserve(additional));
+        self.update_all(|vec| vec.reserve(additional));
         
     }
 
@@ -105,7 +110,7 @@ impl Archetype {
         }
 
         // Reset the deltas/states that were set during the execution frame
-        self.states.reset_to(false);
+        self.states.reset();
     }
 }
 

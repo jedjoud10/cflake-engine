@@ -1,41 +1,80 @@
 use std::cell::RefCell;
-
 use crate::Mask;
+
+// Component state chunk that contains the component states for a bundle
+#[derive(Clone, Copy)]
+pub(crate) struct ComponentStateRow(Mask, Mask);
+
+impl ComponentStateRow {
+    // Create a chunk for newly added bundles using it's linked mask
+    pub const fn new(mask: Mask) -> Self {
+        Self(mask, mask)
+    }
+
+    // Check if a component was added during the current frame
+    pub fn added(&self, offset: usize) -> bool {
+        (self.1 >> offset) == Mask::one()
+    }
+    // Check if a component was mutated since the start of the current frame
+    pub fn mutated(&self, offset: usize) -> bool {
+        (self.0 >> offset) == Mask::one()
+    }
+
+    // Modify the two states
+    pub fn update(&mut self, f: impl FnOnce(&mut Mask, &mut Mask)) {
+        f(&mut self.0, &mut self.1);
+    }
+}
 
 // Component states (their mutation state)
 #[derive(Default)]
-pub struct ComponentStateSet {
-    rows: RefCell<Vec<Mask>>,
+pub(crate) struct ComponentStateSet {
+    rows: RefCell<Vec<ComponentStateRow>>,
 }
 
 impl ComponentStateSet {
-    // Reset all the rows to a specific state
-    pub fn reset_to(&self, state: bool) {
-        let def = if state { Mask::all() } else { Mask::zero() };
-        self.rows.borrow_mut().iter_mut().for_each(|x| *x = def);
+    // Reset the component states to their default values
+    pub fn reset(&self) {
+        self.rows.borrow_mut().iter_mut().for_each(|row| row.update(|a, b| {
+            *a = Mask::zero();
+            *b = Mask::zero();
+        }));
     }
-    // Reserve enough capacity to hold "additional" more elements
-    pub fn reserve(&self, additional: usize) {
-        self.rows.borrow_mut().reserve(additional);
+
+    // Add a new component states row
+    pub fn push(&self, state: ComponentStateRow) {
+        self.rows.borrow_mut().push(state);
     }
-    // Adds a new component row
-    pub fn push(&self) {
-        self.rows.borrow_mut().push(Mask::zero());
+
+    // Overwrite the state for a single row, returning the last row value
+    pub fn overwrite(&self, bundle: usize, row: ComponentStateRow) -> Option<ComponentStateRow> {
+        // Fetch the element
+        let mut borrowed = self.rows.borrow_mut();
+        let fetched = borrowed.get_mut(bundle)?;
+
+        // Replace the element
+        let old = std::mem::replace(fetched, row);
+        Some(old)
     }
-    // Set all the component states for a single bundle at the same time
-    pub fn set(&self, bundle: usize, mask: Mask) -> Option<()> {
-        // Get the row
+
+    // Update the value of a row
+    pub fn update(&self, bundle: usize, function: impl FnOnce(&mut ComponentStateRow)) -> Option<()> {
+        // Fetch the element
         let mut borrowed = self.rows.borrow_mut();
         let row = borrowed.get_mut(bundle)?;
 
-        // Overwrite the bit
-        // This works for both layout masks and component masks
-        *row = *row | mask;
+        // Update
+        function(row);
         Some(())
     }
-    // Get all the component states for a specific bundle
-    pub fn get(&self, bundle: usize) -> Option<Mask> {
-        let borrowed = self.rows.borrow();
-        borrowed.get(bundle).cloned()
+
+    // Reserve enough capacity to hold "additional" more rows
+    pub fn reserve(&self, additional: usize) {
+        self.rows.borrow_mut().reserve(additional);
+    }
+    
+    // Get all the component states for a specific row
+    pub fn get(&self, bundle: usize) -> Option<ComponentStateRow> {
+        self.rows.borrow().get(bundle).cloned()
     }
 }

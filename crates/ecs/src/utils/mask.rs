@@ -46,6 +46,17 @@ impl Mask {
     pub const fn count_zeros(&self) -> u32 {
         self.0.count_zeros()
     }
+
+    // Set a single bit to either true or false
+    pub fn set(&mut self, offset: usize, enabled: bool) {
+        *self = if enabled {
+            // Or
+            *self | (Mask::one() << offset)
+        } else {
+            // Negate and And
+            *self & !(Mask::one() << offset)
+        }
+    }
 }
 
 // NoHash hasher that works with Mask

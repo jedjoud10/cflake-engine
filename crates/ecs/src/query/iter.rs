@@ -49,7 +49,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
         // Actually load the element by offsetting the base pointers
         let loaded = self.loaded.as_ref().unwrap();
-        loaded.set_states_for_mask(self.bundle, self.writing_mask);
+        loaded.set_states(self.bundle, self.writing_mask);
         let element = loaded.get(self.bundle).unwrap();
         self.bundle += 1;
         Some(element)
