@@ -1,5 +1,7 @@
 // Query filter input that will be passed to the filtering function
-pub struct QueryFilterInput {}
+pub struct QueryFilterInput {
+    mutated: u64,
+}
 
 // Query filter that will block certain bundles from being iterated through
 pub struct QueryFilter {
@@ -7,4 +9,9 @@ pub struct QueryFilter {
     filter: fn(QueryFilterInput),
 }
 
-impl QueryFilter {}
+impl QueryFilter {
+    // Check if a specific bundle can pass the filter
+    pub fn is_valid(&self, bundle: Bundle) -> bool {
+
+    }
+}

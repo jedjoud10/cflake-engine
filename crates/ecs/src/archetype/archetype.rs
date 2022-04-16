@@ -31,10 +31,13 @@ impl Archetype {
         // We must decompose the combined mask into the individual masks and create the storages from that
         let vectors = (0..(registry::count() as usize))
             .into_iter()
-            .map(|i| {
+            .filter_map(|i| {
+                // Make sure the bit is valid
+                if (mask >> i) & Mask::one() != Mask::one() { return None; }
+
                 // Create the archetype storage
                 let mask = Mask::one() << i;
-                (mask, uniques[&mask].clone_unique_storage())
+                Some((mask, uniques[&mask].clone_unique_storage()))
             })
             .collect::<ComponentColumns>();
 
@@ -49,6 +52,7 @@ impl Archetype {
 
     // Add an entity into the archetype and update it's linkings
     pub(crate) fn push(&mut self, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
+        // Add the entity and update it's linkings
         self.length += 1;
         self.states.push();
         linkings.bundle = self.length - 1;
@@ -65,15 +69,21 @@ impl Archetype {
         }
     }
 
+    // Update all the underlying storages with a closure ran over them
+    fn update_storages(&mut self, mut function: impl FnMut(&mut Box<dyn StorageVec>)) {
+        for (_, (vec, ptr)) in self.vectors.iter_mut() {
+            function(vec);
+
+            // Might've reallocated, we don't know really
+            *ptr = vec.as_mut_typeless_ptr();
+        }
+    }
+
     // Reserve enough space to fit "n" number of new entities into this archetype
     pub(crate) fn reserve(&mut self, additional: usize) {
         self.states.reserve(additional);
-
-        // Reallocate if needed
-        for (_, (vec, ptr)) in self.vectors.iter_mut() {
-            vec.reserve(additional);
-            *ptr = vec.as_mut_typeless_ptr();
-        }
+        self.update_storages(|vec| vec.reserve(additional));
+        
     }
 
     // Remove an entity from the archetype. This will update the linkings of another entity in the set
@@ -84,6 +94,7 @@ impl Archetype {
         }
 
         // Handle the new swap index shit fuckery AAAAA
+        panic!()
     }
 
     // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
@@ -121,8 +132,8 @@ pub(crate) unsafe fn move_entity(archetypes: &mut ArchetypeSet, old: Mask, new: 
         }
     }
 
-    // Remove the entity
-    new.length -= 1;
+    // Remove the entity (this might fail in the case of the default empty archetype)
+    new.length = new.length.saturating_sub(1);
 
     // Combine the removed components with the extra components
     components.extend(extra);

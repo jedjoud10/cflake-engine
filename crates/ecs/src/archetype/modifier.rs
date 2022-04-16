@@ -67,7 +67,7 @@ impl<'a> LinkModifier<'a> {
         // The component might've been removed, and if it was we must not cancel that out
         if self.old & mask == mask {
             // Cancel removal, and overwrite the internally stored component
-            let (_, boxed) = self.locals.iter_mut().find(|(m, boxed)| *m == mask).unwrap();
+            let (_, boxed) = self.locals.iter_mut().find(|(m, _)| *m == mask).unwrap();
             *boxed.downcast_mut::<T>().unwrap() = component;
         } else {
             // Check if the current archetype contains component of this type
@@ -113,7 +113,7 @@ impl<'a> LinkModifier<'a> {
 
             // Move the entity to the new archetype
             unsafe { move_entity(&mut self.manager.archetypes, self.old, self.new, linkings, self.locals) }
-            println!("Moved entity from {} to {}", self.old, self.new);
+            //println!("Moved entity from {} to {}", self.old, self.new);
         }
     }
 }
