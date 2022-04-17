@@ -12,7 +12,6 @@ where
 {
     // Types
     type PtrTuple: 'static + Copy;
-    type SafeTuple: 'a;
 
     // Get the pointer tuple from raw pointers
     fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple;
@@ -21,7 +20,7 @@ where
     fn combined() -> LayoutAccess;
 
     // Convert the base ptr tuple to the safe borrows using a bundle offset
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple;
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self;
 }
 
 // Special chunk that allows us to read the SafeTuple from the underlying layout
@@ -59,7 +58,7 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
     }
 
     // Get the safe borrowing tuple from the chunk
-    pub fn get(&self, bundle: usize) -> Option<Layout::SafeTuple> {
+    pub fn get(&self, bundle: usize) -> Option<Layout> {
         // Handle invalid index
         if bundle == self.len {
             return None;
@@ -78,13 +77,12 @@ fn get_then_cast<'a, T: PtrReader<'a>>(ptrs: &[Option<NonNull<c_void>>; 64]) -> 
 
 impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     type PtrTuple = NonNull<A::Component>;
-    type SafeTuple = A::Borrowed;
 
     fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple {
         get_then_cast::<A>(ptrs)
     }
 
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
         A::offset(tuple, bundle)
     }
 
@@ -95,13 +93,12 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
     type PtrTuple = (NonNull<A::Component>, NonNull<B::Component>);
-    type SafeTuple = (A::Borrowed, B::Borrowed);
 
     fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple {
         (get_then_cast::<A>(ptrs), get_then_cast::<B>(ptrs))
     }
 
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
         (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle))
     }
 
@@ -112,13 +109,12 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> for (A, B, C) {
     type PtrTuple = (NonNull<A::Component>, NonNull<B::Component>, NonNull<C::Component>);
-    type SafeTuple = (A::Borrowed, B::Borrowed, C::Borrowed);
 
     fn ptrs_to_tuple(ptrs: &[Option<NonNull<c_void>>; 64]) -> Self::PtrTuple {
         (get_then_cast::<A>(ptrs), get_then_cast::<B>(ptrs), get_then_cast::<C>(ptrs))
     }
 
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self::SafeTuple {
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
         (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 

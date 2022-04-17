@@ -1,5 +1,4 @@
 use crate::{LayoutAccess, PtrReaderChunk, QueryCache, QueryLayout, FilterFunc, Input};
-
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // Readers from the query cache
@@ -17,8 +16,6 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
 
     // Currently loaded chunk reader
     loaded: Option<PtrReaderChunk<'a, Layout>>,
-
-
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
@@ -53,7 +50,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
 }
 
 impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
-    type Item = Layout::SafeTuple;
+    type Item = Layout;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Handle empty cases
@@ -74,12 +71,8 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         let element = loaded.get(self.bundle).unwrap();
         self.bundle += 1;
 
-        // Check the filter
-        if let Some(filter) = self.filter {
-            if !(filter)(Input(&states)) {
-                return None;
-            }
-        }
+        // TODO: Filter logic
+        todo!();
 
         Some(element)
     }

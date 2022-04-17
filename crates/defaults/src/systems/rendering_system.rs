@@ -1,6 +1,5 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
-    ecs::{FlagLane, Query},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
@@ -51,20 +50,23 @@ fn run(world: &mut World) {
     }
 
     // Update the matrices of renderers that have a transform linked to them
-    let query = Query::new::<(&Transform, &mut Renderer, &FlagLane)>(&world.ecs).unwrap();
-    for (transform, renderer, flags) in query {
+    let query = world.ecs.query::<(&Transform, &mut Renderer)>();
+    for (transform, renderer) in query {
         // Update the matrix if we need to
+        renderer.matrix = transform.transform_matrix();
+        renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
+        /*
+        
         if flags.was_mutated::<Transform>().unwrap() || flags.was_mutated::<Renderer>().unwrap() {
-            renderer.matrix = transform.transform_matrix();
-            renderer.flags.insert(RendererFlags::REDRAW);
         } else {
             renderer.flags.remove(RendererFlags::REDRAW);
         }
+        */
     }
 
     // Get all the visible objects in the world, first of all
-    let query = Query::new::<&Renderer>(&world.ecs).unwrap();
-    let mut models: Vec<RenderedModel> = Vec::with_capacity(query.len());
+    let query = world.ecs.query::<&Renderer>();
+    let mut models: Vec<RenderedModel> = Vec::with_capacity(0);
     models.extend(query.filter_map(|renderer| {
         // No need to render an invisible entity
         if renderer.flags.contains(RendererFlags::VISIBLE) {
@@ -79,15 +81,15 @@ fn run(world: &mut World) {
     }));
 
     // Next, get all the shadowed models (used for shadow-mapping)
-    let query = Query::new::<&Renderer>(&world.ecs).unwrap();
-    let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(query.len());
+    let query = world.ecs.query::<&Renderer>();
+    let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(0);
     let mut redraw_shadows = false;
     shadowed.extend(query.filter_map(|renderer| {
         // No need to draw shadows for invisible renderers
         let f = renderer.flags;
         if f.contains(RendererFlags::SHADOW_CASTER) && f.contains(RendererFlags::VISIBLE) {
             // We must only redraw shadows if at least one of the shadow caster objects needs to be redrawn
-            redraw_shadows |= f.contains(RendererFlags::REDRAW);
+            redraw_shadows |= f.contains(RendererFlags::MATRIX_UPDATE);
             Some(ShadowedModel {
                 mesh: &renderer.mesh,
                 matrix: &renderer.matrix,
@@ -98,7 +100,7 @@ fn run(world: &mut World) {
     }));
 
     // Get all the lights that are in the scene
-    let query = Query::new::<(&Transform, &Light)>(&world.ecs).unwrap();
+    let query = world.ecs.query::<(&Transform, &Light)>();
     let lights = query
         .map(|(transform, light)| {
             // Convert into rendering structs

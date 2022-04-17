@@ -41,6 +41,7 @@ mod tests {
         //let mut entry = manager.entry(entity).unwrap();
         //let _name = entry.get_mut::<Name>().unwrap();
         // Get the query
+        /*
         for x in 0..500 {
             let i = std::time::Instant::now();
             registry::mask::<SimpleValue>();
@@ -72,7 +73,7 @@ mod tests {
         }
 
         let i = std::time::Instant::now();
-        manager.query::<(Write<SimpleValue, true>)>();
+        manager.query::<(&SimpleValue true>)>();
         dbg!(i.elapsed());
 
         manager
@@ -85,7 +86,7 @@ mod tests {
 
         dbg!(manager.query::<(Write<SimpleValue, true>)>().count());
         dbg!(manager.query::<Read<Name>>().count());
-
+        */
         /*
         for x in 0..COUNT {
             let _entity = manager.insert(|_, modifs| {
@@ -109,7 +110,7 @@ mod tests {
             manager.prepare();
             let i = std::time::Instant::now();
             //let filters = changed::<SimpleValue>() | state(EntityState::Added);
-            let count = manager.query_with::<(Write<SimpleValue>, Read<Tag>)>(|i| mutated::<Tag>(i)).count();
+            let count = manager.query_with::<(&SimpleValue, &Tag)>(|i| mutated::<Tag>(i)).count();
             dbg!(count);
             /*
             for (value, tag) in manager.query::<(Write<SimpleValue, true>, Read<Tag>)>().unwrap() {

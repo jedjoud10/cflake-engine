@@ -24,20 +24,13 @@ impl BitOr for LayoutAccess {
     }
 }
 
-// Gets a "&" reference to the component
-pub struct Read<T: 'static + Component>(&'static T);
-
-// Gets a "&mut" reference to the component
-pub struct Write<T: 'static + Component, const SILENT: bool = false>(&'static mut T);
-
-// Trait that will be implmenented for Read<T> and Write<T>
+// Trait that will be implmenented for &T and &'a T
 pub trait PtrReader<'a> {
-    type Component: 'static + Component;
-    type Borrowed: 'a;
+    type Component: Component;
     const WRITING_MASK_ENABLED: bool;
 
     // Offset an unsafe pointer by a bundle offset and read it
-    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self::Borrowed;
+    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self;
 
     // Get the normal component mask AND writing mask, combined into a single layout mask
     fn access() -> LayoutAccess {
@@ -51,28 +44,26 @@ pub trait PtrReader<'a> {
     }
 }
 
-impl<'a, T: Component> PtrReader<'a> for Read<T>
+impl<'a, T: Component> PtrReader<'a> for &'a T
 where
     Self: 'a,
 {
     type Component = T;
-    type Borrowed = &'a T;
     const WRITING_MASK_ENABLED: bool = false;
 
-    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self::Borrowed {
+    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self {
         unsafe { &*ptr.as_ptr().add(bundle) }
     }
 }
 
-impl<'a, T: Component, const SILENT: bool> PtrReader<'a> for Write<T, SILENT>
+impl<'a, T: Component> PtrReader<'a> for &'a mut T
 where
     Self: 'a,
 {
     type Component = T;
-    type Borrowed = &'a mut T;
-    const WRITING_MASK_ENABLED: bool = !SILENT;
+    const WRITING_MASK_ENABLED: bool = true;
 
-    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self::Borrowed {
+    fn offset(ptr: NonNull<Self::Component>, bundle: usize) -> Self {
         unsafe { &mut *ptr.as_ptr().add(bundle) }
     }
 }
