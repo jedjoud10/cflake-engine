@@ -24,7 +24,7 @@ impl BitOr for LayoutAccess {
     }
 }
 
-// Trait that will be implmenented for &T and &'a T
+// Trait that will be implmenented for &T and &'a T where T is a component
 pub trait PtrReader<'a> {
     type Component: Component;
     const WRITING_MASK_ENABLED: bool;

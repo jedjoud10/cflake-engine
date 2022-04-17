@@ -6,7 +6,6 @@ use getset::{CopyGetters, Getters, MutGetters};
 use std::{any::Any, cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc};
 
 pub(crate) type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
-pub(crate) type ArchetypeEntities = RefCell<Vec<Entity>>;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters, MutGetters)]
@@ -16,13 +15,10 @@ pub struct Archetype {
 
     // Components
     pub(crate) vectors: ComponentColumns,
-    pub(crate) states: Rc<ComponentStateSet>,
+    pub(crate) states: ComponentStateSet,
 
     // Entities
-    pub(crate) entities: Rc<ArchetypeEntities>,
-
-    // Others
-    pub(crate) index: Option<usize>,
+    pub(crate) entities: Vec<Entity>,
 }
 
 impl Archetype {
@@ -39,7 +35,11 @@ impl Archetype {
 
                 // Create the archetype storage
                 let mask = Mask::one() << i;
-                Some((mask, uniques[&mask].clone_unique_storage()))
+
+                // Le pointer fecther
+                let mut boxed = uniques[&mask].clone_unique_storage();
+                let ptr = boxed.as_mut_typeless_ptr();
+                Some((mask, (boxed, ptr)))
             })
             .collect::<ComponentColumns>();
 
@@ -48,7 +48,6 @@ impl Archetype {
             mask,
             entities: Default::default(),
             states: Default::default(),
-            index: None,
         }
     }
 
@@ -56,7 +55,7 @@ impl Archetype {
     pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
         self.states.push(ComponentStateRow::new(linkings.mask));
-        self.entities.borrow_mut().push(entity);
+        self.entities.push(entity);
         linkings.bundle = self.len() - 1;
         linkings.mask = self.mask;
 
@@ -94,7 +93,7 @@ impl Archetype {
 
     // Get the number of entities that reference this archetype
     pub fn len(&self) -> usize {
-        self.entities.borrow().len()
+        self.entities.len()
     }
 
     // Remove an entity from the archetype it is currently linked to
@@ -121,8 +120,8 @@ impl Archetype {
         }
 
         // Remove the entity and get the entity that was swapped with it
-        archetype.entities.borrow_mut().swap_remove(bundle);
-        let entity = archetype.entities.borrow().get(bundle).cloned();
+        archetype.entities.swap_remove(bundle);
+        let entity = archetype.entities.get(bundle).cloned();
 
         // Swap is not nessecary when removeing the last element anyways
         if let Some(entity) = entity {
