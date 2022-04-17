@@ -7,7 +7,6 @@ use crate::{Mask, Component, LayoutAccess, registry, Entity, ComponentStateRow};
 #[derive(Clone, Copy)]
 pub struct Input<'a>(pub(crate) &'a ComponentStateRow);
 
-
 // Le filter
 pub type FilterFunc = fn(Input) -> bool;
 

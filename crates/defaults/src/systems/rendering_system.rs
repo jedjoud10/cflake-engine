@@ -65,7 +65,7 @@ fn run(world: &mut World) {
     }
 
     // Get all the visible objects in the world, first of all
-    let query = world.ecs.query::<&Renderer>();
+    let query = world.ecs.try_view::<&Renderer>().unwrap();
     let mut models: Vec<RenderedModel> = Vec::with_capacity(0);
     models.extend(query.filter_map(|renderer| {
         // No need to render an invisible entity
@@ -81,7 +81,7 @@ fn run(world: &mut World) {
     }));
 
     // Next, get all the shadowed models (used for shadow-mapping)
-    let query = world.ecs.query::<&Renderer>();
+    let query = world.ecs.try_view::<&Renderer>().unwrap();
     let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(0);
     let mut redraw_shadows = false;
     shadowed.extend(query.filter_map(|renderer| {
@@ -100,7 +100,7 @@ fn run(world: &mut World) {
     }));
 
     // Get all the lights that are in the scene
-    let query = world.ecs.query::<(&Transform, &Light)>();
+    let query = world.ecs.try_view::<(&Transform, &Light)>().unwrap();
     let lights = query
         .map(|(transform, light)| {
             // Convert into rendering structs

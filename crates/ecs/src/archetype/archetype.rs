@@ -3,9 +3,10 @@ use crate::{
     registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc};
+use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc, cell::RefCell};
 
-type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
+pub(crate) type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
+pub(crate) type ArchetypeEntities = RefCell<Vec<Entity>>;
 
 // Combination of multiple component types
 #[derive(Getters, CopyGetters, MutGetters)]
@@ -18,7 +19,7 @@ pub struct Archetype {
     pub(crate) states: Rc<ComponentStateSet>,
 
     // Entities
-    entities: Vec<Entity>,
+    pub(crate) entities: Rc<ArchetypeEntities>,
 
     // Others
     pub(crate) index: Option<usize>,
@@ -55,7 +56,7 @@ impl Archetype {
     pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
         self.states.push(ComponentStateRow::new(linkings.mask));
-        self.entities.push(entity);
+        self.entities.borrow_mut().push(entity);
         linkings.bundle = self.len() - 1;
         linkings.mask = self.mask;
 
@@ -93,7 +94,7 @@ impl Archetype {
 
     // Get the number of entities that reference this archetype
     pub fn len(&self) -> usize {
-        self.entities.len()
+        self.entities.borrow().len()
     }
 
     // Remove an entity from the archetype it is currently linked to
@@ -120,8 +121,8 @@ impl Archetype {
         }
 
         // Remove the entity and get the entity that was swapped with it
-        archetype.entities.swap_remove(bundle);
-        let entity = archetype.entities.get(bundle).cloned();
+        archetype.entities.borrow_mut().swap_remove(bundle);
+        let entity = archetype.entities.borrow().get(bundle).cloned();
 
         // Swap is not nessecary when removeing the last element anyways
         if let Some(entity) = entity {

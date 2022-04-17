@@ -2,7 +2,7 @@ use std::iter::Filter;
 
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter, QueryLayout, StorageVec, FilterFunc};
+use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec, FilterFunc};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -16,7 +16,6 @@ pub struct EcsManager {
 
     // Others
     count: u64,
-    cache: QueryCache,
 }
 
 impl Default for EcsManager {
@@ -30,7 +29,6 @@ impl Default for EcsManager {
             archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
             uniques,
             count: Default::default(),
-            cache: Default::default(),
         }
     }
 }
@@ -96,13 +94,14 @@ impl EcsManager {
 
     // Create a new component query that will iterate through the components
     pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
-        self.cache.update(&mut self.archetypes);
-        QueryIter::new(&self.cache, None)
+        QueryIter::new(self)
     }
 
-    // Create a new component query that will iterate through components of bundles that validate the given filter
-    pub fn query_with<'a, Layout: QueryLayout<'a>>(&'a mut self, filter: FilterFunc) -> QueryIter<'a, Layout>{
-        self.cache.update(&mut self.archetypes);
-        QueryIter::new(&self.cache, Some(filter))
+    // A view query that will only read from the components
+    // This will return None when it is unable to get a view query
+    // TODO: Make use of Rust's type system to check for immutable borrows instead
+    pub fn try_view<'a, Layout: QueryLayout<'a>>(&'a self) -> Option<QueryIter<'a, Layout>> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| QueryIter::new(self))
     }
 }
