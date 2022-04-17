@@ -1,6 +1,6 @@
-use std::{ffi::c_void, ptr::NonNull, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc};
 
-use crate::{registry, ComponentStateSet, LayoutAccess, PtrReader, ComponentStateRow, Entity, Mask, ArchetypeEntities, Archetype};
+use crate::{registry, Archetype, ArchetypeEntities, ComponentStateRow, ComponentStateSet, Entity, LayoutAccess, Mask, PtrReader};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 

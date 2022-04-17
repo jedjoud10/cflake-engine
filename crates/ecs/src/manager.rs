@@ -2,7 +2,7 @@ use std::iter::Filter;
 
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec, FilterFunc};
+use crate::{entity::Entity, Archetype, EntityLinkings, Entry, FilterFunc, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;

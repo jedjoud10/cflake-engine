@@ -56,7 +56,7 @@ fn run(world: &mut World) {
         renderer.matrix = transform.transform_matrix();
         renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
         /*
-        
+
         if flags.was_mutated::<Transform>().unwrap() || flags.was_mutated::<Renderer>().unwrap() {
         } else {
             renderer.flags.remove(RendererFlags::REDRAW);

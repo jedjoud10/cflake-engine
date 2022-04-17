@@ -1,4 +1,4 @@
-use crate::{registry, Component, Mask};
+use crate::{registry, Component, ComponentStateRow, ComponentStateSet, Mask};
 use std::{ops::BitOr, ptr::NonNull};
 
 // Layout access that contain the normal mask and writing mask
@@ -7,12 +7,12 @@ pub struct LayoutAccess(Mask, Mask);
 
 impl LayoutAccess {
     // Get the normal mask
-    pub fn reading(&self) -> &Mask {
-        &self.0
+    pub fn reading(&self) -> Mask {
+        self.0
     }
     // Get the writing mask
-    pub fn writing(&self) -> &Mask {
-        &self.1
+    pub fn writing(&self) -> Mask {
+        self.1
     }
 }
 

@@ -1,7 +1,11 @@
-use std::{collections::HashMap, sync::atomic::{AtomicUsize, Ordering}, cell::Cell};
+use crate::{registry, Component, ComponentStateRow, Entity, LayoutAccess, Mask};
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
-use crate::{Mask, Component, LayoutAccess, registry, Entity, ComponentStateRow};
+use std::{
+    cell::Cell,
+    collections::HashMap,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 // This will be given to the filters
 #[derive(Clone, Copy)]

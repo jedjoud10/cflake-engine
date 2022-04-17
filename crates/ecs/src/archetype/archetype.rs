@@ -3,7 +3,7 @@ use crate::{
     registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, ffi::c_void, ptr::NonNull, rc::Rc, cell::RefCell};
+use std::{any::Any, cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc};
 
 pub(crate) type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
 pub(crate) type ArchetypeEntities = RefCell<Vec<Entity>>;

@@ -40,8 +40,10 @@ mod tests {
 
         for _ in 0..5 {
             manager.prepare();
+            let i = std::time::Instant::now();
             let count = manager.query::<(&Tag)>().count();
             dbg!(count);
+            dbg!(i.elapsed());
         }
     }
 }

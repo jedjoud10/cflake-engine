@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{LayoutAccess, QueryLayout, FilterFunc, Input, EcsManager, Archetype};
+use crate::{Archetype, ComponentStateRow, EcsManager, FilterFunc, Input, LayoutAccess, QueryLayout};
 
 // Currently loaded chunk
 struct Chunk<'a, Layout: QueryLayout<'a>> {
@@ -13,14 +13,17 @@ struct Chunk<'a, Layout: QueryLayout<'a>> {
 
 impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
     fn clone(&self) -> Self {
-        Self { archetype: self.archetype.clone(), ptrs: self.ptrs.clone() }
+        Self {
+            archetype: self.archetype.clone(),
+            ptrs: self.ptrs.clone(),
+        }
     }
 }
 
 impl<'a, Layout: QueryLayout<'a>> Copy for Chunk<'a, Layout> {}
 
 impl<'a, Layout: QueryLayout<'a>> Chunk<'a, Layout> {
-    // Load a component bundle from a chunk
+    // Load a component bundle from a chunk and also set it's respective mutation states
     fn load(&self, bundle: usize) -> Layout {
         Layout::offset(self.ptrs, bundle)
     }
@@ -54,10 +57,11 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     pub(crate) fn new(manager: &'a EcsManager) -> Self {
         // Cache the layout mask for later use
         let access = Layout::combined();
-        let (&mask, _) = (access.reading(), access.writing());
+        let (mask, _) = (access.reading(), access.writing());
 
         // Load the archetypes that validate our layout masks, and get their pointers as well
-        let chunks = manager.archetypes
+        let chunks = manager
+            .archetypes
             .iter()
             .filter_map(|(_, archetype)| {
                 (archetype.mask & mask == mask).then(|| {
@@ -72,7 +76,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
 
         // Load the first chunk that is valid (order is irrelevant)
         let first = chunks.first().cloned();
-        
+
         Self {
             chunks,
             access,
@@ -103,8 +107,16 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         // Load a component bundle
         let chunk = self.loaded.as_ref().unwrap();
         let bundle = chunk.load(self.bundle);
-        //let states = loaded.update_states(self.bundle, self.access).unwrap();
+        // Update the bundle states
+        chunk
+            .archetype
+            .states
+            .update(self.bundle, |row| row.update(|mutated, _| *mutated = *mutated | self.access.writing()))
+            .unwrap();
         self.bundle += 1;
+
+        // TODO: Handle filters
+        //todo!();
 
         Some(bundle)
     }
