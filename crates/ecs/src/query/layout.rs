@@ -1,6 +1,6 @@
 use std::{ffi::c_void, ptr::NonNull, rc::Rc};
 
-use crate::{registry, ComponentStateSet, LayoutAccess, PtrReader, QueryChunk};
+use crate::{registry, ComponentStateSet, LayoutAccess, PtrReader, QueryChunk, ComponentStateRow};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 
@@ -51,9 +51,11 @@ impl<'a, Layout: QueryLayout<'a>> PtrReaderChunk<'a, Layout> {
         }
     }
 
-    // Update the components states using the layout access mask
-    pub fn update_states(&self, bundle: usize, access: LayoutAccess) -> Option<()> {
-        self.states.update(bundle, |row| row.update(|_, m| *m = *m | *access.writing()))
+    // Update the components states using the layout access mask. This will return the old states
+    pub fn update_states(&self, bundle: usize, access: LayoutAccess) -> Option<ComponentStateRow> {
+        self.states.update(bundle, |row| {
+            row.update(|_, m| *m = *m | *access.writing())
+        })
     }
 
     // Get the safe borrowing tuple from the chunk

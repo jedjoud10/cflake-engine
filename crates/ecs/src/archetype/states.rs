@@ -59,15 +59,16 @@ impl ComponentStateSet {
         Some(old)
     }
 
-    // Update the value of a row
-    pub fn update(&self, bundle: usize, function: impl FnOnce(&mut ComponentStateRow)) -> Option<()> {
+    // Update the value of a row. This will return the old row state
+    pub fn update(&self, bundle: usize, function: impl FnOnce(&mut ComponentStateRow)) -> Option<ComponentStateRow> {
         // Fetch the element
         let mut borrowed = self.rows.borrow_mut();
         let row = borrowed.get_mut(bundle)?;
 
         // Update
+        let copy = *row;
         function(row);
-        Some(())
+        Some(copy)
     }
 
     // Reserve enough capacity to hold "additional" more rows

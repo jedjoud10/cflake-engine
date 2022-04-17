@@ -1,4 +1,4 @@
-use crate::{LayoutAccess, PtrReaderChunk, QueryCache, QueryLayout};
+use crate::{LayoutAccess, PtrReaderChunk, QueryCache, QueryLayout, FilterFunc, Input};
 
 // Custom query iterator
 pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
@@ -8,17 +8,22 @@ pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
     // How we shall access the components
     access: LayoutAccess,
 
+    // Optional filter
+    filter: Option<FilterFunc>,
+
     // Indices
     bundle: usize,
     chunk: usize,
 
     // Currently loaded chunk reader
     loaded: Option<PtrReaderChunk<'a, Layout>>,
+
+
 }
 
 impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     // Creates a new query iterator using the cache
-    pub fn new(cache: &'a QueryCache) -> Self {
+    pub(crate) fn new(cache: &'a QueryCache, filter: Option<FilterFunc>) -> Self {
         // Cache the layout mask for later use
         let access = Layout::combined();
         let (&mask, &_writing) = (access.reading(), access.writing());
@@ -39,6 +44,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
         Self {
             readers,
             access,
+            filter,
             bundle: 0,
             chunk: 0,
             loaded: first,
@@ -64,9 +70,17 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 
         // Actually load the element by offsetting the base pointers
         let loaded = self.loaded.as_ref().unwrap();
-        loaded.update_states(self.bundle, self.access);
+        let states = loaded.update_states(self.bundle, self.access).unwrap();
         let element = loaded.get(self.bundle).unwrap();
         self.bundle += 1;
+
+        // Check the filter
+        if let Some(filter) = self.filter {
+            if !(filter)(Input(&states)) {
+                return None;
+            }
+        }
+
         Some(element)
     }
 }

@@ -1,6 +1,8 @@
+use std::iter::Filter;
+
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter, QueryLayout, StorageVec};
+use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryCache, QueryIter, QueryLayout, StorageVec, FilterFunc};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -92,9 +94,15 @@ impl EcsManager {
         Some(())
     }
 
-    // Get a component query that we will use to read/write to certain components
+    // Create a new component query that will iterate through the components
     pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
         self.cache.update(&mut self.archetypes);
-        QueryIter::new(&self.cache)
+        QueryIter::new(&self.cache, None)
+    }
+
+    // Create a new component query that will iterate through components of bundles that validate the given filter
+    pub fn query_with<'a, Layout: QueryLayout<'a>>(&'a mut self, filter: FilterFunc) -> QueryIter<'a, Layout>{
+        self.cache.update(&mut self.archetypes);
+        QueryIter::new(&self.cache, Some(filter))
     }
 }

@@ -109,6 +109,8 @@ mod tests {
             manager.prepare();
             let i = std::time::Instant::now();
             //let filters = changed::<SimpleValue>() | state(EntityState::Added);
+            let count = manager.query_with::<(Write<SimpleValue>, Read<Tag>)>(|i| mutated::<Tag>(i)).count();
+            dbg!(count);
             /*
             for (value, tag) in manager.query::<(Write<SimpleValue, true>, Read<Tag>)>().unwrap() {
                 value.0 += 3;
