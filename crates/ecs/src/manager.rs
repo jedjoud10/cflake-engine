@@ -1,6 +1,6 @@
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec, query, filtered, Input};
+use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Input, LinkModifier, Mask, MaskMap, QueryFilter, QueryIter, QueryLayout, StorageVec};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -96,7 +96,7 @@ impl EcsManager {
     }
 
     // Create a query with a specific filter
-    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self, filter: fn(Input) -> bool) -> impl Iterator<Item = Layout> + 'a {
+    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self, filter: QueryFilter) -> impl Iterator<Item = Layout> + 'a {
         filtered(&self.archetypes, filter)
     }
 
@@ -109,7 +109,7 @@ impl EcsManager {
     }
 
     // View query with a specific filter
-    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(&'a self, filter: fn(Input) -> bool) -> Option<impl Iterator<Item = Layout> + 'a> {
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(&'a self, filter: QueryFilter) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty();
         valid.then(|| filtered(&self.archetypes, filter))
     }

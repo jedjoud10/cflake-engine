@@ -6,7 +6,7 @@ use crate::{registry, Component, ComponentStateRow};
 pub struct Input<'a>(pub(crate) &'a ComponentStateRow);
 
 // Le filter
-pub type FilterFunc = fn(Input) -> bool;
+pub type QueryFilter = fn(Input) -> bool;
 
 // Only components that were added will pass this filter
 pub fn added<T: Component>(i: Input) -> bool {
