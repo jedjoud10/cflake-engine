@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Archetype, ComponentStateRow, EcsManager, FilterFunc, Input, LayoutAccess, QueryLayout};
+use crate::{Archetype, EcsManager, LayoutAccess, QueryLayout};
 
 // Currently loaded chunk
 struct Chunk<'a, Layout: QueryLayout<'a>> {
@@ -15,7 +15,7 @@ impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
     fn clone(&self) -> Self {
         Self {
             archetype: self.archetype.clone(),
-            ptrs: self.ptrs.clone(),
+            ptrs: self.ptrs,
         }
     }
 }
@@ -99,7 +99,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         if !self.loaded.as_ref().unwrap().check_bundle(self.bundle) {
             // Reached the end of the archetype chunk, move to the next one
             self.chunk += 1;
-            let chunk = self.chunks.get(self.chunk)?.clone();
+            let chunk = *self.chunks.get(self.chunk)?;
             self.loaded.replace(chunk);
             self.bundle = 0;
         }

@@ -14,7 +14,7 @@ pub(crate) trait StorageVec {
     fn reserve(&mut self, additional: usize);
 
     // Pointer shit
-    fn as_mut_typeless_ptr(&mut self) -> NonNull<c_void>;
+    fn get_storage_ptr(&self) -> NonNull<c_void>;
 
     // Create a new boxed vector (empty)
     fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
@@ -50,8 +50,8 @@ impl<T: Component> StorageVec for Vec<T> {
     }
 
     // Pointer shit
-    fn as_mut_typeless_ptr(&mut self) -> NonNull<c_void> {
-        NonNull::new(self.as_mut_ptr() as *mut c_void).unwrap()
+    fn get_storage_ptr(&self) -> NonNull<c_void> {
+        NonNull::new(self.as_ptr() as *mut c_void).unwrap()
     }
     // Create a new boxed component storage of an empty vec
     fn clone_unique_storage(&self) -> Box<dyn StorageVec> {

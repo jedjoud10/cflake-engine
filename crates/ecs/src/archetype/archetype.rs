@@ -3,10 +3,7 @@ use crate::{
     registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use getset::{CopyGetters, Getters, MutGetters};
-use std::{any::Any, cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc};
-
-pub(crate) type ComponentColumns = MaskMap<(Box<dyn StorageVec>, NonNull<c_void>)>;
-
+use std::{any::Any, ffi::c_void, ptr::NonNull};
 // Combination of multiple component types
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
@@ -14,7 +11,7 @@ pub struct Archetype {
     pub(crate) mask: Mask,
 
     // Components
-    pub(crate) vectors: ComponentColumns,
+    pub(crate) vectors: MaskMap<Box<dyn StorageVec>>,
     pub(crate) states: ComponentStateSet,
 
     // Entities
@@ -35,13 +32,10 @@ impl Archetype {
 
                 // Create the archetype storage
                 let mask = Mask::one() << i;
-
-                // Le pointer fecther
-                let mut boxed = uniques[&mask].clone_unique_storage();
-                let ptr = boxed.as_mut_typeless_ptr();
-                Some((mask, (boxed, ptr)))
+                
+                Some((mask, uniques[&mask].clone_unique_storage()))
             })
-            .collect::<ComponentColumns>();
+            .collect::<_>();
 
         Self {
             vectors,
@@ -67,28 +61,17 @@ impl Archetype {
 
     // Update a single underlying storage
     fn fetch_update(&mut self, mask: Mask, function: impl FnOnce(&mut Box<dyn StorageVec>)) -> Option<()> {
-        let (vec, ptr) = self.vectors.get_mut(&mask)?;
+        let vec = self.vectors.get_mut(&mask)?;
         function(vec);
-
-        // Might've reallocated, we don't know really
-        *ptr = vec.as_mut_typeless_ptr();
         Some(())
-    }
-
-    // Update all the underlying storages with a closure ran over them
-    fn update_all(&mut self, mut function: impl FnMut(&mut Box<dyn StorageVec>)) {
-        for (_, (vec, ptr)) in self.vectors.iter_mut() {
-            function(vec);
-
-            // Might've reallocated, we don't know really
-            *ptr = vec.as_mut_typeless_ptr();
-        }
     }
 
     // Reserve enough space to fit "n" number of new entities into this archetype
     pub(crate) fn reserve(&mut self, additional: usize) {
         self.states.reserve(additional);
-        self.update_all(|vec| vec.reserve(additional));
+        for (_, vec) in self.vectors.iter_mut() {
+            vec.reserve(additional)
+        }
     }
 
     // Get the number of entities that reference this archetype
@@ -108,7 +91,7 @@ impl Archetype {
         let mut components: Vec<(Mask, Box<dyn Any>)> = Vec::with_capacity(filter.count_ones() as usize);
 
         // Remove the components from the storages
-        for (&mask, (vec, _)) in archetype.vectors.iter_mut() {
+        for (&mask, vec) in archetype.vectors.iter_mut() {
             // Filter the components that validate the mask
             if mask & filter == mask {
                 // Remove the component, and box it

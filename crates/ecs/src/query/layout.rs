@@ -1,6 +1,6 @@
-use std::{cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc};
+use std::ptr::NonNull;
 
-use crate::{registry, Archetype, ComponentStateRow, ComponentStateSet, Entity, LayoutAccess, Mask, PtrReader};
+use crate::{registry, Archetype, LayoutAccess, PtrReader};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 
@@ -23,17 +23,11 @@ where
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self;
 }
 
-// Helper function to get the base pointer of a specific archetype
-fn get_then_cast<'a, T: PtrReader<'a>>(archetype: &Archetype) -> NonNull<T::Component> {
-    let ptr = registry::mask::<T::Component>();
-    archetype.vectors[&ptr].1.cast()
-}
-
 impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
-    type PtrTuple = NonNull<A::Component>;
+    type PtrTuple = NonNull<A::Item>;
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        get_then_cast::<A>(archetype)
+        A::fetch(archetype)
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
@@ -46,10 +40,10 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
-    type PtrTuple = (NonNull<A::Component>, NonNull<B::Component>);
+    type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        (get_then_cast::<A>(archetype), get_then_cast::<B>(archetype))
+        (A::fetch(archetype), B::fetch(archetype))
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
@@ -62,10 +56,10 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> for (A, B, C) {
-    type PtrTuple = (NonNull<A::Component>, NonNull<B::Component>, NonNull<C::Component>);
+    type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>, NonNull<C::Item>);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        (get_then_cast::<A>(archetype), get_then_cast::<B>(archetype), get_then_cast::<C>(archetype))
+        (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype))
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {

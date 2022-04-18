@@ -33,7 +33,7 @@ impl<'a> Entry<'a> {
     // Get a pointer to a linked component
     pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntryError> {
         let mask = self.mask::<T>()?;
-        let (_, ptr) = &self.archetype.vectors[&mask];
+        let ptr = self.archetype.vectors[&mask].get_storage_ptr();
         Ok(ptr.cast::<T>().as_ptr().add(self.bundle))
     }
     // Get an immutable reference to a linked component

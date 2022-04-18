@@ -17,21 +17,21 @@ mod tests {
 
         // Le entities
         for i in 0..u16::MAX {
-            manager.insert(|entity, modif| {
+            manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
                 modif.insert(SimpleValue(i as i32)).unwrap();
             });
         }
 
-        for i in 0..u16::MAX {
-            manager.insert(|entity, modif| {
+        for _i in 0..u16::MAX {
+            manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
                 //modif.insert(SimpleValue(i as i32)).unwrap();
             });
         }
 
         for i in 0..u16::MAX {
-            manager.insert(|entity, modif| {
+            manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
                 modif.insert(SimpleValue(i as i32)).unwrap();
                 modif.insert(Name("Sususus amogus?", [0; 64])).unwrap();
@@ -41,8 +41,11 @@ mod tests {
         for _ in 0..5 {
             manager.prepare();
             let i = std::time::Instant::now();
-            let count = manager.query::<(&Tag)>().count();
-            dbg!(count);
+            type Layout<'a> = (&'a Tag, &'a Entity);
+            let query = manager.query::<Layout>();
+            for x in query {
+                
+            }
             dbg!(i.elapsed());
         }
     }
