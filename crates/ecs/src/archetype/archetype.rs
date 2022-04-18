@@ -32,7 +32,7 @@ impl Archetype {
 
                 // Create the archetype storage
                 let mask = Mask::one() << i;
-                
+
                 Some((mask, uniques[&mask].clone_unique_storage()))
             })
             .collect::<_>();

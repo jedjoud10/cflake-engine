@@ -1,4 +1,4 @@
-use crate::{registry, Component, Mask, Entity, Archetype};
+use crate::{registry, Archetype, Component, Entity, Mask};
 use std::{ops::BitOr, ptr::NonNull};
 
 // Layout access that contain the normal mask and writing mask
@@ -29,7 +29,7 @@ impl BitOr for LayoutAccess {
     }
 }
 
-// Trait that will be implmenented for &T and &'a T where T is either a component or Entity
+// Trait that will be implmenented for &T and &mut T where T is a component or entity
 pub trait PtrReader<'a> {
     type Item: 'static;
 
@@ -84,11 +84,14 @@ where
     }
 }
 
-impl<'a> PtrReader<'a> for &'a Entity where Self: 'a {
+impl<'a> PtrReader<'a> for &'a Entity
+where
+    Self: 'a,
+{
     type Item = Entity;
 
     fn offset(ptr: NonNull<Self::Item>, bundle: usize) -> Self {
-        unsafe { & *ptr.as_ptr().add(bundle) }
+        unsafe { &*ptr.as_ptr().add(bundle) }
     }
 
     fn access() -> LayoutAccess {

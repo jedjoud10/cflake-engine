@@ -43,9 +43,7 @@ mod tests {
             let i = std::time::Instant::now();
             type Layout<'a> = (&'a Tag, &'a Entity);
             let query = manager.query::<Layout>();
-            for x in query {
-                
-            }
+            query.map(|x| (x.0)).count();
             dbg!(i.elapsed());
         }
     }
