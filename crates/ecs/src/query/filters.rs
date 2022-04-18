@@ -1,5 +1,6 @@
 use crate::{registry, Component, ComponentStateRow};
 
+// TODO: Create a filter cache for performance issues
 // This will be given to the filters
 #[derive(Clone, Copy)]
 pub struct Input<'a>(pub(crate) &'a ComponentStateRow);

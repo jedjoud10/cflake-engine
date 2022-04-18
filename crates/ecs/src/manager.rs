@@ -1,6 +1,6 @@
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec};
+use crate::{entity::Entity, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec, query, filtered, Input};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -90,16 +90,27 @@ impl EcsManager {
         Some(())
     }
 
-    // Create a new component query that will iterate through the components
-    pub fn query<'a, Layout: QueryLayout<'a>>(&'a mut self) -> QueryIter<'a, Layout> {
-        QueryIter::new(self)
+    // Normal query without filter
+    pub fn query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> impl Iterator<Item = Layout> + 'a {
+        query(&self.archetypes)
     }
 
-    // A view query that will only read from the components
+    // Create a query with a specific filter
+    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self, filter: fn(Input) -> bool) -> impl Iterator<Item = Layout> + 'a {
+        filtered(&self.archetypes, filter)
+    }
+
+    // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
     // TODO: Make use of Rust's type system to check for immutable borrows instead
-    pub fn try_view<'a, Layout: QueryLayout<'a>>(&'a self) -> Option<QueryIter<'a, Layout>> {
+    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(&'a self) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty();
-        valid.then(|| QueryIter::new(self))
+        valid.then(|| query(&self.archetypes))
+    }
+
+    // View query with a specific filter
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(&'a self, filter: fn(Input) -> bool) -> Option<impl Iterator<Item = Layout> + 'a> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| filtered(&self.archetypes, filter))
     }
 }
