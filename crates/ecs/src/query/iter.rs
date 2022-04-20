@@ -1,6 +1,6 @@
 use std::{iter::FilterMap, marker::PhantomData};
 
-use crate::{Archetype, ArchetypeSet, ComponentStateRow, EcsManager, Input, LayoutAccess, QueryFilter, QueryLayout};
+use crate::{Archetype, ArchetypeSet, ComponentStateRow, EcsManager, LayoutAccess, QueryLayout, Evaluate, Input};
 
 // Currently loaded chunk
 struct Chunk<'a, Layout: QueryLayout<'a>> {
@@ -138,8 +138,15 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
 pub fn query<'a, Layout: QueryLayout<'a> + 'a>(archetypes: &'a ArchetypeSet) -> impl Iterator<Item = Layout> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
-
 // Create a query with a filter
-pub fn filtered<'a, Layout: QueryLayout<'a> + 'a>(archetypes: &'a ArchetypeSet, filter: QueryFilter) -> impl Iterator<Item = Layout> + 'a {
-    QueryIter::new(archetypes).filter_map(move |item| if filter(Input(&item.state)) { Some(item.tuple) } else { None })
+pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(archetypes: &'a ArchetypeSet, _: Filter) -> impl Iterator<Item = Layout> + 'a {
+    let cache = Filter::setup();
+
+    QueryIter::new(archetypes).filter_map(move |item| {
+        if Filter::eval(&cache, &Input { states: item.state }) {
+            Some(item.tuple)
+        } else {
+            None
+        }
+    })
 }

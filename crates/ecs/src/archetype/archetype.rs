@@ -48,7 +48,7 @@ impl Archetype {
     // Add an entity into the archetype and update it's linkings
     pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
-        self.states.push(ComponentStateRow::new(linkings.mask));
+        self.states.push(ComponentStateRow::new(self.mask));
         self.entities.push(entity);
         linkings.bundle = self.len() - 1;
         linkings.mask = self.mask;
@@ -143,8 +143,6 @@ impl Archetype {
         if count == 0 {
             return;
         }
-
-        // Reset the deltas/states that were set during the execution frame
-        self.states.reset();
+        //self.states.reset();
     }
 }

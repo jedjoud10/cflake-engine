@@ -2,7 +2,7 @@ use crate::Mask;
 use std::cell::RefCell;
 
 // Component state chunk that contains the component states for a bundle
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct ComponentStateRow(Mask, Mask);
 
 impl ComponentStateRow {
