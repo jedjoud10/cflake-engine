@@ -1,5 +1,5 @@
-use crate::{registry, Component, ComponentStateRow, Mask, QueryItem, QueryLayout};
-use std::{any::Any, marker::PhantomData};
+use crate::{registry, Component, ComponentStateRow, Mask, QueryLayout};
+use std::marker::PhantomData;
 
 // Input data given to the filter
 pub struct Input {
@@ -59,11 +59,9 @@ impl<T: Component> Evaluate for Modified<T> {
 impl Evaluate for Always {
     type Cached = ();
 
-    fn setup() -> Self::Cached {
-        ()
-    }
+    fn setup() -> Self::Cached {}
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(_cached: &Self::Cached, _input: &Input) -> bool {
         true
     }
 }
@@ -71,11 +69,9 @@ impl Evaluate for Always {
 impl Evaluate for Never {
     type Cached = ();
 
-    fn setup() -> Self::Cached {
-        ()
-    }
+    fn setup() -> Self::Cached {}
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(_cached: &Self::Cached, _input: &Input) -> bool {
         false
     }
 }

@@ -46,7 +46,7 @@ mod tests {
             manager.prepare();
             let i = std::time::Instant::now();
             type Layout<'a> = (&'a Tag, &'a Entity);
-            let filter = or(added::<Tag>(), modified::<Tag>());
+            let _filter = or(added::<Tag>(), modified::<Tag>());
             let mut query = manager.query::<Layout>();
             if let Some((tag, entity)) = query.next() {
                 println!("{:?}", *entity);

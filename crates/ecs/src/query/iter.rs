@@ -1,6 +1,4 @@
-use std::{iter::FilterMap, marker::PhantomData};
-
-use crate::{Archetype, ArchetypeSet, ComponentStateRow, EcsManager, Evaluate, Input, LayoutAccess, QueryLayout};
+use crate::{Archetype, ArchetypeSet, ComponentStateRow, Evaluate, Input, LayoutAccess, QueryLayout};
 
 // Currently loaded chunk
 struct Chunk<'a, Layout: QueryLayout<'a>> {

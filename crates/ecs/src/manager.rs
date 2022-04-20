@@ -1,6 +1,6 @@
 use slotmap::SlotMap;
 
-use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec};
+use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier, Mask, MaskMap, QueryLayout, StorageVec};
 
 // Type aliases
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
