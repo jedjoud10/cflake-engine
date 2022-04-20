@@ -30,12 +30,16 @@ mod tests {
             });
         }
 
-        for i in 0..u16::MAX {
-            manager.insert(|_entity, modif| {
+        for i in 0..1 {
+            let entity = manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
                 modif.insert(SimpleValue(i as i32)).unwrap();
                 modif.insert(Name("Sususus amogus?", [0; 64])).unwrap();
             });
+
+            let mut entry = manager.entry(entity).unwrap();
+            let tag= entry.get_mut::<Tag>().unwrap();
+            tag.0 = "AMOGUS STACK OVERFLOW";
         }
 
         for _ in 0..5 {

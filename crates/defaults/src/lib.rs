@@ -1,3 +1,4 @@
+#![feature(bench_black_box)]
 use components::*;
 use systems::*;
 use world::{
@@ -64,10 +65,10 @@ pub fn preload_default_assets() {
 pub fn load_default_systems(world: &mut World) {
     // Engine defaults
     EventExecutionOrder::set(i32::MIN);
-    networking_system::system(world);
+    //networking_system::system(world);
     camera_system::system(world);
-    window_system::system(world);
-    audio_system::system(world);
+    //window_system::system(world);
+    //audio_system::system(world);
 
     // User defined systems should start at execution order 0
     EventExecutionOrder::set(0);
@@ -88,12 +89,12 @@ pub fn load_default_systems(world: &mut World) {
 
     // We gotta add the default globals
     */
-    debugging_system::system(world);
+    //debugging_system::system(world);
 
     EventExecutionOrder::set(i32::MAX - 10);
     rendering_system::system(world);
-    gui_system::system(world);
-    screenshot_system::system(world);
+    //gui_system::system(world);
+    //screenshot_system::system(world);
 
     world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
     world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
