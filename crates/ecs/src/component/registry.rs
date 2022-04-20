@@ -1,4 +1,4 @@
-use super::{Component, ComponentError};
+use super::Component;
 use crate::Mask;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
@@ -9,33 +9,36 @@ lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
 }
-// Return the registered mask of the component
-#[inline(always)]
-pub fn mask<T: Component>() -> Result<Mask, ComponentError> {
-    let locked = REGISTERED.read();
+
+// Return the registered mask of the component (or register it if needed)
+pub fn mask<T: Component>() -> Mask {
+    // Check if we need to register
     let id = TypeId::of::<T>();
-    locked.get(&id).ok_or(ComponentError::NotRegistered(name::<T>())).cloned()
+    if REGISTERED.read().contains_key(&id) {
+        // Read normally
+        let locked = REGISTERED.read();
+        *locked.get(&id).unwrap()
+    } else {
+        // Register the component
+        register::<T>()
+    }
 }
-// Registers the component if it wasn't already registered
-#[inline(always)]
+// Registers the component manually
 pub fn register<T: Component>() -> Mask {
     let mut locked = REGISTERED.write();
-    let id = TypeId::of::<T>();
-    // If the component was already registered, no need to do anything
-    if let Some(&bits) = locked.get(&id) {
-        return bits;
-    }
-
-    // Left bitshft
     let mut bit = NEXT.lock();
-    // Keep a copy of bit
+
+    // Le bitshifting
     let copy = *bit;
-    locked.insert(id, copy);
+    locked.insert(TypeId::of::<T>(), copy);
     *bit = *bit << 1;
     copy
 }
 // Get the name of a component
-#[inline(always)]
 pub fn name<T: Component>() -> &'static str {
     type_name::<T>()
+}
+// Get the number of registered components
+pub fn count() -> usize {
+    REGISTERED.read().len()
 }

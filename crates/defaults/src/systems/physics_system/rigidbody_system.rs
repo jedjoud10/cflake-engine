@@ -1,13 +1,13 @@
+use super::vec3_to_point;
 use crate::components::{Collider, ColliderGeometry, RigidBody, Transform};
 use crate::systems::physics_system::{quat_to_rotation, vec3_to_translation};
 use rapier3d::na::{Isometry, Point3};
 use rapier3d::prelude::{ColliderBuilder, MassProperties, RigidBodyBuilder, SharedShape};
-use world::ecs::{Query, EntityState};
+use world::ecs::{EntityState, Query};
 use world::math::shapes::ShapeType;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Pipeline;
 use world::World;
-use super::vec3_to_point;
 
 /*
 // Convert a rendering mesh to it's SharedShape counterpart
@@ -47,7 +47,9 @@ fn run(world: &mut World) {
     // Le physics simulation
     let sim = &mut world.physics;
     for (rigidbody, collider, transform, state) in query {
-        if state != EntityState::Added { return; }
+        if state != EntityState::Added {
+            return;
+        }
 
         // Transform to Rapier3D collider and rigibody
         let r_rigibody = RigidBodyBuilder::new(rigidbody._type)

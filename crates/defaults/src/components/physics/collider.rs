@@ -37,22 +37,24 @@ pub struct ColliderBuilder(Collider);
 impl ColliderBuilder {
     // Cuboid shape, default material
     pub fn cuboid(size: vek::Vec3<f32>) -> Self {
-        Self(Collider::new(ColliderGeometry::Shape(ShapeType::Cuboid(Cuboid { center: vek::Vec3::zero(), size })), Default::default()))
+        Self(Collider::new(
+            ColliderGeometry::Shape(ShapeType::Cuboid(Cuboid { center: vek::Vec3::zero(), size })),
+            Default::default(),
+        ))
     }
     // Sphere shape, default material
     pub fn sphere(radius: f32) -> Self {
-        Self(Collider::new(ColliderGeometry::Shape(ShapeType::Sphere(Sphere {
-            center: vek::Vec3::zero(),
-            radius,
-        })), Default::default()))
+        Self(Collider::new(
+            ColliderGeometry::Shape(ShapeType::Sphere(Sphere {
+                center: vek::Vec3::zero(),
+                radius,
+            })),
+            Default::default(),
+        ))
     }
     // Mesh "shape", default material
     pub fn mesh(mesh: Handle<Mesh>, mass: f32, com: vek::Vec3<f32>) -> Self {
-        Self(Collider::new(ColliderGeometry::Mesh {
-            mesh,
-            mass,
-            com,
-        }, Default::default()))
+        Self(Collider::new(ColliderGeometry::Mesh { mesh, mass, com }, Default::default()))
     }
 
     // Update the collider's default material to something fancier
@@ -62,7 +64,9 @@ impl ColliderBuilder {
     }
 
     // Build the collider
-    pub fn build(self) -> Collider { self.0 }
+    pub fn build(self) -> Collider {
+        self.0
+    }
 }
 
 impl Default for Collider {
