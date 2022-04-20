@@ -1,9 +1,9 @@
-use std::{marker::PhantomData, any::Any};
-use crate::{ComponentStateRow, Component, Mask, registry, QueryItem, QueryLayout};
+use crate::{registry, Component, ComponentStateRow, Mask, QueryItem, QueryLayout};
+use std::{any::Any, marker::PhantomData};
 
 // Input data given to the filter
 pub struct Input {
-    pub(super) states: ComponentStateRow
+    pub(super) states: ComponentStateRow,
 }
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
@@ -30,7 +30,6 @@ pub struct Never(());
 pub struct And<A: Evaluate, B: Evaluate>(A, B);
 pub struct Or<A: Evaluate, B: Evaluate>(A, B);
 pub struct Not<A: Evaluate>(A);
-
 
 // Trait implementations for sources
 impl<T: Component> Evaluate for Added<T> {
@@ -127,8 +126,12 @@ pub fn added<T: Component>() -> Added<T> {
 }
 
 // Constant sources
-pub const fn always() -> Always { Always(()) }
-pub const fn never() -> Never { Never(()) }
+pub const fn always() -> Always {
+    Always(())
+}
+pub const fn never() -> Never {
+    Never(())
+}
 
 // Modifiers
 pub const fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {

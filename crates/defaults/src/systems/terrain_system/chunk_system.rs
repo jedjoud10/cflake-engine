@@ -4,11 +4,7 @@ use crate::{
     components::{Camera, Chunk, Transform},
     globals::{GlobalWorldData, Terrain},
 };
-use world::{
-    input::Keys,
-    terrain::ChunkCoords,
-    World,
-};
+use world::{input::Keys, terrain::ChunkCoords, World};
 
 // The chunk systems' update loop
 fn run(world: &mut World) {
@@ -58,11 +54,13 @@ fn run(world: &mut World) {
                         // Link the nessecary components
 
                         // Transform
-                        linker.insert(Transform {
-                            position: coords.position.as_(),
-                            scale: vek::Vec3::one() * ((coords.size / size) as f32),
-                            ..Default::default()
-                        }).unwrap();
+                        linker
+                            .insert(Transform {
+                                position: coords.position.as_(),
+                                scale: vek::Vec3::one() * ((coords.size / size) as f32),
+                                ..Default::default()
+                            })
+                            .unwrap();
 
                         // Chunk
                         linker.insert(Chunk {
@@ -70,9 +68,8 @@ fn run(world: &mut World) {
                             voxel_data_id: None,
                             persistent: None,
                         });
-
                     });
-                    
+
                     // Also calculate the chunk's priority, so we know when to generate it
                     let priority = Chunk::calculate_priority(coords, camera_position, camera_forward);
                     manager.priority_list.push((chunk, priority));

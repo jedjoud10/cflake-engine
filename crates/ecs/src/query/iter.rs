@@ -1,6 +1,6 @@
 use std::{iter::FilterMap, marker::PhantomData};
 
-use crate::{Archetype, ArchetypeSet, ComponentStateRow, EcsManager, LayoutAccess, QueryLayout, Evaluate, Input};
+use crate::{Archetype, ArchetypeSet, ComponentStateRow, EcsManager, Evaluate, Input, LayoutAccess, QueryLayout};
 
 // Currently loaded chunk
 struct Chunk<'a, Layout: QueryLayout<'a>> {
@@ -142,11 +142,5 @@ pub fn query<'a, Layout: QueryLayout<'a> + 'a>(archetypes: &'a ArchetypeSet) -> 
 pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(archetypes: &'a ArchetypeSet, _: Filter) -> impl Iterator<Item = Layout> + 'a {
     let cache = Filter::setup();
 
-    QueryIter::new(archetypes).filter_map(move |item| {
-        if Filter::eval(&cache, &Input { states: item.state }) {
-            Some(item.tuple)
-        } else {
-            None
-        }
-    })
+    QueryIter::new(archetypes).filter_map(move |item| if Filter::eval(&cache, &Input { states: item.state }) { Some(item.tuple) } else { None })
 }

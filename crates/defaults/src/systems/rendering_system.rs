@@ -1,10 +1,11 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
+    ecs::{added, modified, or},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     },
-    World, ecs::{modified, added, or},
+    World,
 };
 
 // The 3D scene renderer
@@ -20,7 +21,7 @@ fn run(world: &mut World) {
             let transform = entry.get::<Transform>().unwrap();
             (transform.position, transform.rotation, transform.forward(), transform.up())
         };
-        
+
         // Update the camera's view matrix if needed
         let update = entry.was_mutated::<Transform>().unwrap();
         let camera = entry.get_mut::<Camera>().unwrap();

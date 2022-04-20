@@ -10,7 +10,6 @@ use crate::EventExecutionOrder;
 // A single event
 pub type Event<World> = fn(&mut World);
 
-
 // Multiple events that will be stored in the world
 pub struct SystemSet<World> {
     events: RefCell<Vec<(i32, Event<World>)>>,
@@ -43,9 +42,7 @@ impl<World> SystemSet<World> {
 
 impl<World> Default for SystemSet<World> {
     fn default() -> Self {
-        Self {
-            events: Default::default(),
-        }
+        Self { events: Default::default() }
     }
 }
 

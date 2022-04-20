@@ -1,4 +1,4 @@
-use world::ecs::{EcsManager, added, or};
+use world::ecs::{added, or, EcsManager};
 use world::math::shapes::ShapeType;
 use world::rendering::advanced::storages::Buffer;
 use world::terrain::editing::Edit;
@@ -26,7 +26,6 @@ fn run(world: &mut World) {
         terrain.manager.update_priorities();
     }
 }
-
 
 // Create the system
 pub fn system(world: &mut World) {

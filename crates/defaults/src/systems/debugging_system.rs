@@ -22,7 +22,7 @@ fn run(world: &mut World) {
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
-        
+
         /*
         // Terrain
         let terrain = world.globals.get_mut::<Terrain>();

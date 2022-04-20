@@ -38,7 +38,7 @@ mod tests {
             });
 
             let mut entry = manager.entry(entity).unwrap();
-            let tag= entry.get_mut::<Tag>().unwrap();
+            let tag = entry.get_mut::<Tag>().unwrap();
             tag.0 = "AMOGUS STACK OVERFLOW";
         }
 
