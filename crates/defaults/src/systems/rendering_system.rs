@@ -1,6 +1,6 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
-    ecs::{added, modified, or},
+    ecs::{added, modified, or, always, never},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
@@ -50,7 +50,7 @@ fn run(world: &mut World) {
 
     // Update the matrices of renderers, only if the transforms os said renderers were externally modified
     let filter = or(modified::<Transform>(), added::<Transform>());
-    let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(filter);
+    let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(added::<Transform>());
     for (transform, renderer) in query {
         // Update the matrix if we need to
         renderer.matrix = transform.transform_matrix();

@@ -26,7 +26,7 @@ mod tests {
         for _i in 0..u16::MAX {
             manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
-                //modif.insert(SimpleValue(i as i32)).unwrap();
+                modif.insert(SimpleValue(_i as i32)).unwrap();
             });
         }
 
@@ -37,22 +37,18 @@ mod tests {
                 modif.insert(Name("Sususus amogus?", [0; 64])).unwrap();
             });
 
-            let mut entry = manager.entry(entity).unwrap();
-            let tag = entry.get_mut::<Tag>().unwrap();
-            tag.0 = "AMOGUS STACK OVERFLOW";
+            //let mut entry = manager.entry(entity).unwrap();
+            //let tag = entry.get_mut::<Tag>().unwrap();
+            //tag.0 = "AMOGUS STACK OVERFLOW";
         }
 
         for _ in 0..5 {
             manager.prepare();
             let i = std::time::Instant::now();
-            type Layout<'a> = (&'a Tag, &'a Entity);
-            let _filter = or(added::<Tag>(), modified::<Tag>());
-            let mut query = manager.query::<Layout>();
-            if let Some((tag, entity)) = query.next() {
-                println!("{:?}", *entity);
-                println!("{:?}", tag);
-            }
-            dbg!(i.elapsed());
+            type Layout<'a> = (&'a Tag, &'a SimpleValue);
+            let filter = added::<Tag>();
+            let mut query = manager.query_with::<Layout, _>(filter);
+            dbg!(query.count());
             //dbg!(query);
         }
     }

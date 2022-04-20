@@ -30,9 +30,9 @@ fn init(world: &mut World) {
 
     // Create multiple cubes
     let cube = world.pipeline.defaults().cube.clone();
-    for x in 0..10 {
-        for y in 0..10 {
-            for z in 0..10 {
+    for x in 0..2 {
+        for y in 0..2 {
+            for z in 0..1 {
                 world.ecs.insert(|_, linker| {
                     linker.insert(Renderer::from(cube.clone())).unwrap();
                     linker.insert(Transform::from((x as f32 * 2.0, y as f32 * 2.0, z as f32 * 2.0))).unwrap();
