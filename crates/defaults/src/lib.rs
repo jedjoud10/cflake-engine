@@ -72,12 +72,11 @@ pub fn load_default_systems(world: &mut World) {
     // User defined systems should start at execution order 0
     EventExecutionOrder::set(0);
     // Terrain
-    /*
     terrain_system::chunk_system::system(world);
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
     terrain_system::editing_system::system(world);
-    */
+    
     //physics_system::rigidbody_system::system(world);
     //physics_system::simulation_system::system(world);
 

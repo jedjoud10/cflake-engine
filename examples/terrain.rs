@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, DynamicEdit, Light, Transform},
+        components::{self, Camera, Light, Transform},
         globals::{self, TerrainSettings},
     },
     math::octrees::HeuristicSettings,
@@ -37,6 +37,8 @@ fn init(world: &mut World) {
     cflake_engine::assets::asset!("./assets/user/textures/snow_01_diff_8k.jpg");
     cflake_engine::assets::asset!("./assets/user/textures/snow_01_nor_gl_8k.jpg");
     // Load le assets
+
+    cflake_engine::defaults::systems::flycam_system::system(world);
 
     // ----Start the world----
     // Create a simple camera entity

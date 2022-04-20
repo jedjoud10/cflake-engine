@@ -48,6 +48,11 @@ impl ComponentStateSet {
         self.rows.borrow_mut().push(state);
     }
 
+    // Remove a row and replace the empty spot with the last element in the set
+    pub fn swap_remove(&self, bundle: usize) {
+        self.rows.borrow_mut().swap_remove(bundle);
+    }
+
     // Overwrite the state for a single row, returning the last row value
     pub fn overwrite(&self, bundle: usize, row: ComponentStateRow) -> Option<ComponentStateRow> {
         // Fetch the element

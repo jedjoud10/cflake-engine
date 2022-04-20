@@ -50,7 +50,7 @@ fn run(world: &mut World) {
                     let coords = ChunkCoords::new(&node);
 
                     // Le new ECS is very cool
-                    let chunk = world.ecs.insert(|entity, linker| {
+                    let chunk = world.ecs.insert(|_, linker| {
                         // Link the nessecary components
 
                         // Transform
@@ -67,7 +67,7 @@ fn run(world: &mut World) {
                             coords,
                             voxel_data_id: None,
                             persistent: None,
-                        });
+                        }).unwrap();
                     });
 
                     // Also calculate the chunk's priority, so we know when to generate it

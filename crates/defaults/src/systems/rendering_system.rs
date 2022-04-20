@@ -49,7 +49,7 @@ fn run(world: &mut World) {
     }
 
     // Update the matrices of renderers, only if the transforms os said renderers were externally modified
-    let filter = or(modified::<Transform>(), added::<Transform>());
+    let filter = or(modified::<Renderer>(), added::<Renderer>());
     let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(filter);
     for (transform, renderer) in query {
         // Update the matrix if we need to

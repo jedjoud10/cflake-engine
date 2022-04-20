@@ -104,6 +104,7 @@ impl Archetype {
 
         // Remove the entity and get the entity that was swapped with it
         archetype.entities.swap_remove(bundle);
+        archetype.states.swap_remove(bundle);
         let entity = archetype.entities.get(bundle).cloned();
 
         // Swap is not nessecary when removeing the last element anyways
@@ -132,6 +133,7 @@ impl Archetype {
         // Combine the removed components with the extra components
         removed.extend(extra);
 
+        println!("Move entity from {old} to {new}");
         // And insert into the new archetype
         let new = archetypes.get_mut(&new).unwrap();
         new.push(entity, linkings, removed);

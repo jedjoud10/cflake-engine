@@ -43,7 +43,6 @@ impl<T: Component> Evaluate for Added<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &Input) -> bool {
-        let offset = cached.offset();
         input.row.added(cached.offset())
     }
 }

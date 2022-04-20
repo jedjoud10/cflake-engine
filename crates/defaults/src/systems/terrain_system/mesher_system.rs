@@ -73,7 +73,6 @@ fn run(world: &mut World) {
                 let mut entry = world.ecs.entry(entity).unwrap();
                 if entry.get::<Renderer>().is_err() {
                     // Generate the new component and link it
-                    drop(entry);
 
                     // Modify the entity
                     world.ecs.modify(entity, |entity, modifier| {
@@ -98,7 +97,7 @@ fn run(world: &mut World) {
                             group.link(rigidbody).unwrap();
                         }
                         */
-                    });
+                    }).unwrap();
 
                     // Update the chunk's voxel data,
                     let mut entry = world.ecs.entry(entity).unwrap();
