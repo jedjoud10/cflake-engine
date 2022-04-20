@@ -47,11 +47,6 @@ impl<'a> LinkModifier<'a> {
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
         let mask = registry::mask::<T>();
 
-        // Check for link duplication
-        if self.new & mask == mask {
-            return Err(LinkError::LinkDuplication(registry::name::<T>()));
-        }
-
         // Always make sure there is a unique vector for this component
         register_unique::<T>(self.manager, mask);
 

@@ -94,15 +94,13 @@ fn run(world: &mut World) {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
             if let Some((entity, _)) = terrain.manager.priority_list.pop() {
                 // Start generating some voxel data on the GPU
-                let entry = world.ecs.entry(entity).unwrap();
-                let chunk = entry.get_mut::<Chunk>().unwrap();
-                generate(terrain, &world.pipeline, chunk, entity);
+                let mut entry = world.ecs.entry(entity).unwrap();
+                generate(terrain, &world.pipeline, entry.get_mut::<Chunk>().unwrap(), entity);
             }
         } else if let ChunkGenerationState::FetchShaderStorages(entity, coords) = terrain.manager.current_chunk_state {
             // We should fetch the shader storages now
-            let entry = world.ecs.entry(entity).unwrap();
-                let chunk = entry.get_mut::<Chunk>().unwrap();
-            fetch_buffers(terrain, chunk, entity, coords);
+            let mut entry = world.ecs.entry(entity).unwrap();
+            fetch_buffers(terrain, entry.get_mut::<Chunk>().unwrap(), entity, coords);
         }
     }
 }

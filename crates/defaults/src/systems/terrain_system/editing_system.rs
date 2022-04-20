@@ -4,7 +4,7 @@ use world::rendering::advanced::storages::Buffer;
 use world::terrain::editing::Edit;
 use world::World;
 
-use crate::components::{DynamicEdit, Transform};
+use crate::components::{Transform};
 use crate::globals;
 // A system that will handle terrain edits
 fn run(world: &mut World) {

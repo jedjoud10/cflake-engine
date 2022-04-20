@@ -15,12 +15,12 @@ use world::{
 // The mesher systems' update loop
 fn run(world: &mut World) {
     let terrain = world.globals.get_mut::<crate::globals::Terrain>();
-    if let Ok(mut terrain) = terrain {
+    if let Some(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
-        if let ChunkGenerationState::EndVoxelDataGeneration(key, true, Some(id)) = terrain.manager.current_chunk_state {
+        if let ChunkGenerationState::EndVoxelDataGeneration(entity, true, Some(id)) = terrain.manager.current_chunk_state {
             // Get the chunk component from the specific chunk
-            let linked = query.get_mut(&key).unwrap();
-            let coords = linked.get_mut::<Chunk>().unwrap().coords;
+            let mut entry = world.ecs.entry(entity).unwrap();
+            let coords = entry.get_mut::<Chunk>().unwrap().coords;
             // Either way, we're going to be updating/generating the mesh so might as well make the mesher now
             let mesher = Mesher::new(
                 coords,
@@ -34,19 +34,17 @@ fn run(world: &mut World) {
             terrain.manager.chunks_generating.remove(&coords);
             // Switch states
             terrain.manager.current_chunk_state = ChunkGenerationState::RequiresVoxelData;
-        } else if let ChunkGenerationState::EndVoxelDataGeneration(key, false, _) = terrain.manager.current_chunk_state {
-            // Get the chunk component from the specific chunk
-            let linked = query.get_mut(&key).unwrap();
-            let _chunk = linked.get_mut::<Chunk>().unwrap();
+        } else if let ChunkGenerationState::EndVoxelDataGeneration(entity, false, _) = terrain.manager.current_chunk_state {
             // Remove the chunk's renderer if it had one
-            if world.ecs.entities.get(key).unwrap().is_linked::<Renderer>() {
-                let mut group = ComponentUnlinkGroup::default();
-                group.unlink::<Renderer>().unwrap();
-                if terrain.manager.physics {
-                    group.unlink::<RigidBody>().unwrap();
-                    group.unlink::<Collider>().unwrap();
-                }
-                world.ecs.unlink(key, group).unwrap();
+            if world.ecs.entry(entity).unwrap().get::<Renderer>().is_ok() {
+                // Modify for removal ofc
+                world.ecs.modify(entity, |entity, modifier| {
+                    modifier.remove::<Renderer>().unwrap();
+                    if terrain.manager.physics {
+                        //modifier.remove::<RigidBody>().unwrap();
+                        //modifier.remove::<Collider>().unwrap();
+                    }
+                });
             }
 
             // The chunk ID is the same, but we do not have a surface
@@ -55,7 +53,6 @@ fn run(world: &mut World) {
         }
 
         // Get the meshes that were generated in other threads
-        drop(query);
         for generated in terrain.scheduler.get_results() {
             // Unlock
             let id = generated.id;
@@ -71,24 +68,42 @@ fn run(world: &mut World) {
             };
 
             // Get the chunk entity key
-            let key = terrain.manager.chunks.get(&coords);
-            if let Some(&key) = key {
+            if let Some(&entity) = terrain.manager.chunks.get(&coords) {
                 // Get the entity
-                let entity = world.ecs.entities.get(key).unwrap();
-                if !entity.is_linked::<Renderer>() {
+                let mut entry = world.ecs.entry(entity).unwrap();
+                if entry.get::<Renderer>().is_err() {
                     // Generate the new component and link it
-                    let group = create_chunk_renderer_linking_group(mesh, terrain.manager.material.clone(), terrain.manager.physics);
-                    world.ecs.link(key, group).unwrap();
-                    // And update the chunk
-                    let query = &mut data.get_mut(0).unwrap().all;
-                    let chunk = query.get_mut(&key).unwrap().get_mut::<Chunk>().unwrap();
-                    chunk.voxel_data_id = Some(id);
+                    drop(entry);
+                    
+                    // Modify the entity
+                    world.ecs.modify(entity, |entity, modifier| {
+                        // Create a renderer with the new mesh
+                        modifier.insert(Renderer {
+                            mesh: mesh.clone(),
+                            material: terrain.manager.material.clone(),
+                            ..Default::default()
+                        }).unwrap();
+
+                        // Add the physics if needed
+                        /*
+                        if terrain.manager.physics {
+                            // Add the collider
+                            let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
+                            group.link(collider).unwrap();
+                        
+                            // Add the static rigidbody
+                            let rigidbody = RigidBody::new(RigidBodyType::Static);
+                            group.link(rigidbody).unwrap();
+                        }
+                        */
+                    });
+                    
+                    // Update the chunk's voxel data, 
+                    let mut entry =  world.ecs.entry(entity).unwrap();
+                    entry.get_mut::<Chunk>().unwrap().voxel_data_id = Some(id);
                 } else {
-                    // The renderer is already linked, we just need to update the mesh
-                    // Valid renderer
-                    let query2 = &mut data.get_mut(1).unwrap().all;
-                    let linked = query2.get_mut(&key).unwrap();
-                    let renderer = linked.get_mut::<Renderer>().unwrap();
+                    // Simply update the renderer
+                    let renderer = entry.get_mut::<Renderer>().unwrap();
                     renderer.mesh = mesh;
                 }
 
@@ -99,40 +114,7 @@ fn run(world: &mut World) {
     }
 }
 
-// Create a new linking group that contains a renderer with a specific mesh
-fn create_chunk_renderer_linking_group(mesh: Handle<Mesh>, material: Handle<Material>, physics: bool) -> ComponentLinkingGroup {
-    // First time we link the renderer
-    let mut group = ComponentLinkingGroup::default();
-
-    // Add the renderer
-    let renderer = Renderer {
-        mesh: mesh.clone(),
-        material,
-        ..Default::default()
-    };
-    group.link(renderer).unwrap();
-
-    if physics {
-        // Add the collider
-        let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
-        group.link(collider).unwrap();
-
-        // Add the static rigidbody
-        let rigidbody = RigidBody::new(RigidBodyType::Static);
-        group.link(rigidbody).unwrap();
-    }
-
-    group
-}
 // Create a mesher system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .query(ComponentQueryParams::default().link::<Transform>().link::<Chunk>())
-        .query(ComponentQueryParams::default().link::<Transform>().link::<Renderer>().link::<Chunk>())
-        .event(run)
-        .build()
-        .unwrap()
+    world.events.insert(run);
 }

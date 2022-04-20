@@ -1,14 +1,12 @@
-/*
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, DynamicEdit, Transform},
+        components::{self, Camera, DynamicEdit, Transform, Light},
         globals::{self, TerrainSettings},
     },
-    ecs::entity::ComponentLinkingGroup,
     math::octrees::HeuristicSettings,
     rendering::basics::{
-        lights::{LightParameters, LightType::Directional},
+        lights::{LightParameters, LightType::{Directional, self}},
         material::Material,
         shader::{Shader, ShaderInitSettings},
         texture::{BundledTextureBuilder, Texture2D, TextureFilter, TextureFlags, TextureParams},
@@ -20,7 +18,7 @@ use cflake_engine::{
 
 // A game with some test terrain
 fn main() {
-    cflake_engine::start("cflake-examples", "terrain", init, cflake_engine::defaults::load_debugging_systems)
+    cflake_engine::start("cflake-examples/terrain", init)
 }
 // Init the terrain world
 fn init(world: &mut World) {
@@ -39,29 +37,17 @@ fn init(world: &mut World) {
 
     // ----Start the world----
     // Create a simple camera entity
-    let mut group = ComponentLinkingGroup::default();
-    group.link(Camera::new(90.0, 10.0, 32000.0)).unwrap();
-    group.link(Transform::default()).unwrap();
-    world.ecs.add(group).unwrap();
+    world.ecs.insert(|_, linker| {
+        linker.insert(Camera::new(90.0, 2.0, 9000.0)).unwrap();
+        linker.insert(Transform::default()).unwrap();
+    });
 
     // Create the directional light source
-    let light = components::Light {
-        light: Directional {
-            params: LightParameters {
-                strength: 1.0,
-                color: vek::Rgb::one(),
-            },
-        },
-    };
-    let light_transform = Transform {
-        rotation: vek::Quaternion::<f32>::rotation_x(-30f32.to_radians()),
-        ..Default::default()
-    };
-    // And add it to the world as an entity
-    let mut group = ComponentLinkingGroup::default();
-    group.link(light_transform).unwrap();
-    group.link(light).unwrap();
-    world.ecs.add(group).unwrap();
+    world.ecs.insert(|_, linker| {
+        let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
+        linker.insert(light).unwrap();
+        linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
+    });
 
     // Load a terrain material
     // Load the shader first
@@ -115,14 +101,14 @@ fn init(world: &mut World) {
     let material = world.pipeline.insert(material);
     let heuristic = HeuristicSettings {
         function: |node, target| {
-            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent().get() as f32 * 2.0);
+            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);
             dist < 1.2
         },
     };
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: NonZeroU8::new(12).unwrap(),
+        depth: 12,
         heuristic_settings: heuristic,
         material,
         physics: false,
@@ -140,12 +126,4 @@ fn init(world: &mut World) {
         },
     ));
     world.globals.insert(terrain).unwrap();
-
-    // And add it to the world as an entity
-    let mut group = ComponentLinkingGroup::default();
-    group.link(Transform::default()).unwrap();
-    group.link(DynamicEdit::new(Edit::sphere(vek::Vec3::default(), 200.0, EditParams::default()))).unwrap();
-    world.ecs.add(group).unwrap();
 }
-*/
-fn main() {}
