@@ -22,10 +22,7 @@ fn run(world: &mut World) {
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
-        let timings = world.events.get_timings();
-        for profiled in &*timings.0 {
-            ui.label(format!("{}", profiled));
-        }
+        
         /*
         // Terrain
         let terrain = world.globals.get_mut::<Terrain>();

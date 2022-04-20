@@ -4,7 +4,7 @@ use world::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     },
-    World,
+    World, ecs::{modified, added, or},
 };
 
 // The 3D scene renderer
@@ -46,24 +46,18 @@ fn run(world: &mut World) {
         world.renderer.default_mut().clear();
         return;
     }
-    // Update the matrices of renderers that have a transform linked to them
-    let query = world.ecs.query::<(&Transform, &mut Renderer)>();
+
+    // Update the matrices of renderers, only if the transforms os said renderers were externally modified
+    let filter = or(modified::<Transform>(), added::<Transform>());
+    let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(filter);
     for (transform, renderer) in query {
         // Update the matrix if we need to
         renderer.matrix = transform.transform_matrix();
         renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
-        /*
-
-        if flags.was_mutated::<Transform>().unwrap() || flags.was_mutated::<Renderer>().unwrap() {
-        } else {
-            renderer.flags.remove(RendererFlags::REDRAW);
-        }
-        */
     }
     // Get all the visible objects in the world, first of all
     let query = world.ecs.try_view::<&Renderer>().unwrap();
-    let mut models: Vec<RenderedModel> = Vec::with_capacity(0);
-    models.extend(query.filter_map(|renderer| {
+    let models: Vec<RenderedModel> = Vec::from_iter(query.filter_map(|renderer| {
         // No need to render an invisible entity
         if renderer.flags.contains(RendererFlags::VISIBLE) {
             Some(RenderedModel {
@@ -78,9 +72,8 @@ fn run(world: &mut World) {
 
     // Next, get all the shadowed models (used for shadow-mapping)
     let query = world.ecs.try_view::<&Renderer>().unwrap();
-    let mut shadowed: Vec<ShadowedModel> = Vec::with_capacity(0);
     let mut redraw_shadows = false;
-    shadowed.extend(query.filter_map(|renderer| {
+    let shadowed: Vec<ShadowedModel> = Vec::from_iter(query.filter_map(|renderer| {
         // No need to draw shadows for invisible renderers
         let f = renderer.flags;
         if f.contains(RendererFlags::SHADOW_CASTER) && f.contains(RendererFlags::VISIBLE) {
