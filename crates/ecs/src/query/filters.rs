@@ -1,9 +1,9 @@
-use crate::{registry, Component, ComponentStateRow, Mask, QueryLayout};
+use crate::{registry::{self, name}, Component, ComponentStateRow, Mask, QueryLayout};
 use std::marker::PhantomData;
 
 // Input data given to the filter
 pub struct Input {
-    pub(super) states: ComponentStateRow,
+    pub(super) row: ComponentStateRow,
 }
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
@@ -40,7 +40,8 @@ impl<T: Component> Evaluate for Added<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &Input) -> bool {
-        input.states.added(cached.offset())
+        let offset = cached.offset();
+        input.row.added(cached.offset())
     }
 }
 
@@ -52,7 +53,7 @@ impl<T: Component> Evaluate for Modified<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &Input) -> bool {
-        input.states.mutated(cached.offset())
+        input.row.mutated(cached.offset())
     }
 }
 

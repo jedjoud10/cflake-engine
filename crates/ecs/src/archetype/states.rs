@@ -13,11 +13,11 @@ impl ComponentStateRow {
 
     // Check if a component was added during the current frame
     pub fn added(&self, offset: usize) -> bool {
-        (self.1 >> offset) == Mask::one()
+        self.1.get(offset)
     }
     // Check if a component was mutated since the start of the current frame
     pub fn mutated(&self, offset: usize) -> bool {
-        (self.0 >> offset) == Mask::one()
+        self.0.get(offset)
     }
 
     // Modify the two states

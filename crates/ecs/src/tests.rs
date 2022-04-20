@@ -16,6 +16,7 @@ mod tests {
         struct SimpleValue(i32);
 
         // Le entities
+        /*
         for i in 0..u16::MAX {
             manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
@@ -29,6 +30,7 @@ mod tests {
                 modif.insert(SimpleValue(_i as i32)).unwrap();
             });
         }
+        */
 
         for i in 0..1 {
             let entity = manager.insert(|_entity, modif| {

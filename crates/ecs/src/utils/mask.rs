@@ -57,6 +57,11 @@ impl Mask {
             *self & !(Mask::one() << offset)
         }
     }
+
+    // Get a specific bit using an offset
+    pub const fn get(&self, offset: usize) -> bool {
+        (self.0 >> offset) & 1 == 1
+    }
 }
 
 // NoHash hasher that works with Mask

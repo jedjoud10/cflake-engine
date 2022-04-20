@@ -1,4 +1,5 @@
 #![feature(int_roundings)]
+#![feature(bool_to_option)]
 mod archetype;
 mod component;
 mod entity;
