@@ -1,6 +1,10 @@
 use components::*;
 use systems::*;
-use world::{assets::persistent, ecs::{EventExecutionOrder, registry}, World};
+use world::{
+    assets::persistent,
+    ecs::{registry, EventExecutionOrder},
+    World,
+};
 // Default components
 pub mod components;
 // Default globals
@@ -58,14 +62,6 @@ pub fn preload_default_assets() {
 }
 // Load default systems
 pub fn load_default_systems(world: &mut World) {
-    // Register the main components
-    registry::register::<Transform>();
-    registry::register::<Camera>();
-    registry::register::<Renderer>();
-    registry::register::<Light>();
-    registry::register::<RigidBody>();
-    registry::register::<Collider>();
-
     // Engine defaults
     EventExecutionOrder::set(i32::MIN);
     networking_system::system(world);
@@ -82,8 +78,8 @@ pub fn load_default_systems(world: &mut World) {
     terrain_system::mesher_system::system(world);
     terrain_system::editing_system::system(world);
     */
-    physics_system::rigidbody_system::system(world);
-    physics_system::simulation_system::system(world);
+    //physics_system::rigidbody_system::system(world);
+    //physics_system::simulation_system::system(world);
 
     /*
 

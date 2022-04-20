@@ -1,47 +1,41 @@
-use crate::{
-    archetype::{ArchetypeSet, UniqueComponentStoragesHashMap},
-    entity::{Entity, EntitySet},
-    EntityEntry, EntityLinkings, LinkModifier, Linker, ProfiledEventTiming,
-};
+use slotmap::SlotMap;
 
-// Manages ECS logic
-#[derive(Default)]
+use crate::{entity::Entity, query, Archetype, EntityLinkings, Entry, LinkModifier, Mask, MaskMap, QueryIter, QueryLayout, StorageVec, Evaluate, filtered};
+
+// Type aliases
+pub type EntitySet = SlotMap<Entity, EntityLinkings>;
+pub type ArchetypeSet = MaskMap<Archetype>;
+pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
+
 pub struct EcsManager {
-    // Entities
     pub(crate) entities: EntitySet,
-
-    // Archetypes
     pub(crate) archetypes: ArchetypeSet,
+    pub(crate) uniques: UniqueStoragesSet,
 
-    // Iteration count
+    // Others
     count: u64,
+}
 
-    // Unique component storages
-    pub(crate) uniques: UniqueComponentStoragesHashMap,
+impl Default for EcsManager {
+    fn default() -> Self {
+        // Create the default empty archetype
+        let uniques: UniqueStoragesSet = Default::default();
+        let empty = Archetype::new(Mask::zero(), &uniques);
+
+        Self {
+            entities: Default::default(),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
+            uniques,
+            count: Default::default(),
+        }
+    }
 }
 
 impl EcsManager {
-    // Create a new ecs manager
-    pub fn new() -> Self {
-        Self {
-            count:0 ,
-            entities: Default::default(),
-            archetypes: Default::default(),
-            uniques: Default::default(),
-        }
-    }
-
-    // Check if an entity is valid
-    pub fn is_valid(&self, entity: Entity) -> Option<bool> {
-        let linkings = self.entities.get(entity)?;
-        let archetype = self.archetypes.get(&linkings.mask).unwrap();
-        Some(archetype.is_valid(linkings.bundle))
-    }
-
     // Prepare the Ecs Manager for one execution
     pub fn prepare(&mut self) {
         // Reset the archetype component mutation bits
-        for archetype in self.archetypes.iter_mut() {
+        for (_, archetype) in self.archetypes.iter_mut() {
             archetype.prepare(self.count)
         }
 
@@ -53,9 +47,6 @@ impl EcsManager {
     pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
-        if !self.is_valid(entity).unwrap() {
-            return None;
-        }
 
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity).unwrap();
@@ -64,42 +55,59 @@ impl EcsManager {
         // Apply the changes
         linker.apply(&mut copied);
         *self.entities.get_mut(entity).unwrap() = copied;
-
         Some(())
     }
 
     // Get an entity entry
-    pub fn entry(&mut self, entity: Entity) -> Option<EntityEntry> {
-        EntityEntry::new(self, entity)
+    pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
+        Entry::new(self, entity)
     }
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
-    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut Linker)) -> Entity {
+    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
+        // Add le entity
         let entity = self.entities.insert(EntityLinkings::default());
 
-        // Create a linker, so we can insert components and link them to the entity
-        let mut linker = Linker::new(self, entity);
+        // Create a link modifier, so we can insert/remove components
+        let mut linker = LinkModifier::new(self, entity).unwrap();
         function(entity, &mut linker);
 
-        // Apply the changes (adds it to the archetype)
-        linker.apply();
+        // Since we are inserting this entity, the linkings are always default
+        let mut linkings = EntityLinkings::default();
+        linker.apply(&mut linkings);
+        *self.entities.get_mut(entity).unwrap() = linkings;
 
         entity
     }
 
     // Remove an entity from the world
-    // This will set it's entity state to PendingForRemoval, since we actually remove the entity next iteration
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Get the archetype and the linkings, and check if the latter is valid
-        let linkings = self.entities.get_mut(entity)?;
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        if !archetype.is_valid(linkings.bundle) {
-            return None;
-        }
+        // Remove the entity from it's current archetype first
+        Archetype::remove(&mut self.archetypes, &mut self.entities, entity, Mask::zero());
 
-        // Apply the "pending for removal" state
-        archetype.add_pending_for_removal(linkings.bundle);
-        linkings.mask = Default::default();
+        // Then remove it from the manager
+        self.entities.remove(entity).unwrap();
         Some(())
+    }
+
+    // Normal query without filter
+    pub fn query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> impl Iterator<Item = Layout> + 'a {
+        query(&self.archetypes)
+    }
+    // Create a query with a specific filter
+    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> impl Iterator<Item = Layout> + 'a {
+        filtered(&self.archetypes, filter)
+    }
+    // A view query that can only READ data, and never write to it
+    // This will return None when it is unable to get a view query
+    // TODO: Make use of Rust's type system to check for immutable borrows instead
+    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(&'a self) -> Option<impl Iterator<Item = Layout> + 'a> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| query(&self.archetypes))
+    }
+    // View query with a specific filter
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| filtered(&self.archetypes, filter))
     }
 }

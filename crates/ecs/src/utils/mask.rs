@@ -1,29 +1,68 @@
 use std::{
+    collections::{HashMap, HashSet},
     fmt::{Debug, Display},
+    hash::BuildHasherDefault,
     ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr},
 };
 
-use nohash_hasher::IsEnabled;
+use nohash_hasher::{IsEnabled, NoHashHasher};
 
 // A simple mask
-#[derive(Default, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
-    // One and zero masks
-    pub fn one() -> Mask {
+    // 0, 1
+    pub const fn one() -> Mask {
         Mask(1)
     }
-    pub fn zero() -> Mask {
+    pub const fn zero() -> Mask {
         Mask(0)
     }
 
-    // All
-    pub fn all() -> Mask {
+    // All bits set
+    pub const fn all() -> Mask {
         Mask(u64::MAX)
     }
+
+    // Calculate mask from left shift bit offset
+    pub const fn from_offset(offset: usize) -> Mask {
+        Mask(1 << offset)
+    }
+    pub const fn offset(&self) -> usize {
+        self.0.trailing_zeros() as usize
+    }
+
+    // Check if a mask is empty
+    pub fn empty(&self) -> bool {
+        *self == Self::zero()
+    }
+
+    // Count
+    pub const fn count_ones(&self) -> u32 {
+        self.0.count_ones()
+    }
+    pub const fn count_zeros(&self) -> u32 {
+        self.0.count_zeros()
+    }
+
+    // Set a single bit to either true or false
+    pub fn set(&mut self, offset: usize, enabled: bool) {
+        *self = if enabled {
+            // Or
+            *self | (Mask::one() << offset)
+        } else {
+            // Negate and And
+            *self & !(Mask::one() << offset)
+        }
+    }
 }
+
+// NoHash hasher that works with Mask
+type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
+pub type MaskMap<E> = HashMap<Mask, E, MaskHasher>;
+pub type MaskSet = HashSet<Mask, MaskHasher>;
 
 impl BitAnd for Mask {
     type Output = Self;

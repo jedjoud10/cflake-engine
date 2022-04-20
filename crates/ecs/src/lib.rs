@@ -1,18 +1,15 @@
 #![feature(int_roundings)]
-#![feature(bool_to_option)]
-// Modules
 mod archetype;
 mod component;
 mod entity;
 mod manager;
-mod masks;
-// Use
+mod query;
+mod utils;
 pub use archetype::*;
 pub use component::*;
 pub use entity::*;
 pub use manager::*;
-pub use masks::*;
+pub use query::*;
 pub use utils::*;
 
 mod tests;
-pub mod utils;

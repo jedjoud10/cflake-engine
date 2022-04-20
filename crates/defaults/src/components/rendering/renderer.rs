@@ -8,7 +8,7 @@ bitflags! {
     pub struct RendererFlags: u8 {
         const VISIBLE = 1;
         const SHADOW_CASTER = 1 << 1;
-        const REDRAW = 1 << 2;
+        const MATRIX_UPDATE = 1 << 2;
     }
 }
 
@@ -28,10 +28,7 @@ pub struct Renderer {
 
 impl From<Handle<Mesh>> for Renderer {
     fn from(mesh: Handle<Mesh>) -> Self {
-        Self {
-            mesh,
-            ..Default::default()
-        }
+        Self { mesh, ..Default::default() }
     }
 }
 

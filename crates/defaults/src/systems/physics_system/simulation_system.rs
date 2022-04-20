@@ -1,5 +1,9 @@
 use rapier3d::na::Isometry;
-use world::{World, physics::PHYSICS_TIME_STEP, ecs::{Query, FlagLane}};
+use world::{
+    ecs::{FlagLane, Query},
+    physics::PHYSICS_TIME_STEP,
+    World,
+};
 
 use crate::components::{Collider, RigidBody, Transform};
 
@@ -57,7 +61,6 @@ fn run(world: &mut World) {
     // Step the simulation once
     world.physics.step();
 
-    
     // After each step, we must update the components with their new values
     let query = Query::new::<(&mut RigidBody, &mut Collider, &mut Transform)>(&world.ecs).unwrap();
     for (rigidbody, collider, transform) in query {

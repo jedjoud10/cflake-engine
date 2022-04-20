@@ -1,4 +1,9 @@
-use std::{cell::{RefCell, Ref}, rc::Rc, time::{Duration, Instant}, cmp::Ordering, fmt::{Display, Debug}};
+use std::{
+    cell::{Ref, RefCell},
+    fmt::{Debug, Display},
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use crate::EventExecutionOrder;
 
@@ -23,7 +28,6 @@ impl Debug for ProfiledEventTiming {
         Display::fmt(&self, f)
     }
 }
-
 
 // Inner system set that will be duped using a Rc<RefCell<>>
 struct InnerSystemSet<World> {
@@ -57,7 +61,13 @@ impl<World> SystemSet<World> {
         // Borrowing the refcells and setting vector size
         let events = self.inner.events.borrow();
         let mut profiled = self.inner.profiled.borrow_mut();
-        profiled.0.resize(events.len(), ProfiledEventTiming { ordering: 0, elapsed: Duration::ZERO });
+        profiled.0.resize(
+            events.len(),
+            ProfiledEventTiming {
+                ordering: 0,
+                elapsed: Duration::ZERO,
+            },
+        );
         drop(profiled);
 
         // Profile the time it took to execute each event
@@ -70,10 +80,7 @@ impl<World> SystemSet<World> {
             f(world);
 
             // Saving how much time it took to execute
-            profiled.push(ProfiledEventTiming {
-                ordering,
-                elapsed: now.elapsed(),
-            });
+            profiled.push(ProfiledEventTiming { ordering, elapsed: now.elapsed() });
         }
 
         // Check if we need to update the timings
@@ -89,7 +96,7 @@ impl<World> SystemSet<World> {
 
 impl<World> Default for SystemSet<World> {
     fn default() -> Self {
-        Self { 
+        Self {
             inner: Rc::new(InnerSystemSet {
                 events: Default::default(),
                 profiled: RefCell::new((Default::default(), Instant::now())),
