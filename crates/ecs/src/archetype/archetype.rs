@@ -143,6 +143,6 @@ impl Archetype {
         if count == 0 {
             return;
         }
-        //self.states.reset();
+        self.states.reset();
     }
 }

@@ -119,7 +119,7 @@ impl<A: Evaluate> Evaluate for Not<A> {
 }
 
 // Functions to create the sources and modifiers
-pub fn changed<T: Component>() -> Modified<T> {
+pub fn modified<T: Component>() -> Modified<T> {
     Modified(PhantomData::default())
 }
 pub fn added<T: Component>() -> Added<T> {
