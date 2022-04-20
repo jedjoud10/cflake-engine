@@ -11,7 +11,7 @@ pub struct TerrainSettings {
     pub voxel_src_path: String,
 
     // Octree gen
-    pub depth: NonZeroU8,
+    pub depth: u8,
     pub heuristic_settings: HeuristicSettings,
 
     // Mesh generator
@@ -25,7 +25,7 @@ impl Default for TerrainSettings {
     fn default() -> Self {
         Self {
             voxel_src_path: world::terrain::DEFAULT_TERRAIN_VOXEL_SRC.to_string(),
-            depth: NonZeroU8::new(4).unwrap(),
+            depth: 4,
             heuristic_settings: Default::default(),
             material: Default::default(),
             physics: true,

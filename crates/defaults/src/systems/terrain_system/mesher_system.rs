@@ -1,5 +1,5 @@
 use crate::{
-    components::{Chunk, Collider, ColliderGeometry, Renderer, RigidBody, Transform},
+    components::{Chunk, Renderer, Transform},
     globals::ChunkGenerationState,
 };
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
