@@ -19,11 +19,11 @@ pub struct Octree {
 
     // The depth of the tree
     #[getset(get_copy = "pub")]
-    depth: NonZeroU8,
+    depth: u8,
 
     // The size factor for each node, should be a power of two
     #[getset(get_copy = "pub")]
-    size: NonZeroU64,
+    size: u64,
 
     // Some specific heuristic settings
     #[getset(get = "pub")]
@@ -32,13 +32,13 @@ pub struct Octree {
 
 impl Default for Octree {
     fn default() -> Self {
-        Self::new(NonZeroU8::new(4).unwrap(), NonZeroU64::new(32).unwrap(), HeuristicSettings::default())
+        Self::new(4, 32, HeuristicSettings::default())
     }
 }
 
 impl Octree {
     // Create a new octree with a specific depth
-    pub fn new(depth: NonZeroU8, size: NonZeroU64, hsettings: HeuristicSettings) -> Self {
+    pub fn new(depth: u8, size: u64, hsettings: HeuristicSettings) -> Self {
         // Create the root node
         let mut nodes = SlotMap::<NodeKey, Node>::default();
         let root = nodes.insert_with_key(|key| Node::root(key, depth, size));
@@ -61,7 +61,7 @@ impl Octree {
         // Simple check to see if we even moved lol
         if let Some(pos) = self.target.as_ref() {
             // Check distances
-            vek::Vec3::<f32>::distance(*pos, target) > (self.size.get() / 2) as f32
+            vek::Vec3::<f32>::distance(*pos, target) > (self.size / 2) as f32
         } else {
             true
         }
