@@ -13,7 +13,7 @@ fn init(world: &mut World) {
     // ----Start the world----
     assets::init!("/examples/assets/");
 
-    //defaults::systems::flycam_system::system(world);
+    defaults::systems::flycam_system::system(world);
 
     // Create a simple camera entity
     world.ecs.insert(|_, linker| {

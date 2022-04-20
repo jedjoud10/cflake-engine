@@ -119,7 +119,7 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         let old = chunk
             .archetype
             .states
-            .update(self.bundle, |row| row.update(|mutated, _| *mutated = *mutated | self.access.writing()))
+            .update(self.bundle, |mutated, _| *mutated = *mutated | self.access.writing())
             .unwrap();
         self.bundle += 1;
 

@@ -1,5 +1,3 @@
-use std::{hint::black_box};
-
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
     rendering::{
@@ -18,23 +16,20 @@ fn run(world: &mut World) {
     // If we do not, stop rendering
     if let Some(mut entry) = entry {
         // Get the components and build a RenderingCamera out of them
-        /*
         let (position, rotation, forward, up) = {
             let transform = entry.get::<Transform>().unwrap();
             (transform.position, transform.rotation, transform.forward(), transform.up())
         };
-        */
-
+        
         // Update the camera's view matrix if needed
-        //let update = entry.was_mutated::<Transform>().unwrap();
+        let update = entry.was_mutated::<Transform>().unwrap();
         let camera = entry.get_mut::<Camera>().unwrap();
-        /*
         camera.update_projection_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
         if update {
             camera.update_view_matrix(position, forward, up);
         }
         // Rendering camera settings
-        let camnera = RenderingCamera {
+        let camera = RenderingCamera {
             position: position,
             rotation: rotation,
             viewm: camera.viewm,
@@ -44,15 +39,13 @@ fn run(world: &mut World) {
             // Math moment
             projm_viewm: camera.projm * camera.viewm,
         };
-        *world.pipeline.camera_mut() = camnera;
-        */
+        *world.pipeline.camera_mut() = camera;
     } else {
         // There isn't a camera, no need to render anything
         // Force a clear of the default framebuffer, since we won't be overwritting it
         world.renderer.default_mut().clear();
         return;
     }
-    /*
     // Update the matrices of renderers that have a transform linked to them
     let query = world.ecs.query::<(&Transform, &mut Renderer)>();
     for (transform, renderer) in query {
@@ -129,8 +122,7 @@ fn run(world: &mut World) {
     // Render
     let renderer = &mut world.renderer;
     let pipeline = &world.pipeline;
-    //renderer.render(pipeline, settings);
-    */
+    renderer.render(pipeline, settings);
 }
 
 // Create the rendering system
