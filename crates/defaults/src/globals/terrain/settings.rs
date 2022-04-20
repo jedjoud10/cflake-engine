@@ -16,9 +16,6 @@ pub struct TerrainSettings {
 
     // Mesh generator
     pub material: Handle<Material>,
-
-    // Should the terrain use rapier physics collider
-    pub physics: bool,
 }
 
 impl Default for TerrainSettings {
@@ -28,7 +25,6 @@ impl Default for TerrainSettings {
             depth: 4,
             heuristic_settings: Default::default(),
             material: Default::default(),
-            physics: true,
         }
     }
 }

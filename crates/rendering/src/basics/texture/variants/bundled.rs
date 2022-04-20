@@ -2,7 +2,7 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams},
+    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureFilter},
     object::PipelineElement,
     pipeline::{Handle, Pipeline},
 };
@@ -103,7 +103,7 @@ pub struct BundledTextureBuilder;
 
 impl BundledTextureBuilder {
     // Build the bundled texture
-    pub fn build(textures: &[Texture2D], params: Option<TextureParams>) -> Option<BundledTexture2D> {
+    pub fn build(textures: &[Texture2D]) -> Option<BundledTexture2D> {
         // We get the main dimensions from the first texture
         let first = textures.get(0)?;
         let (width, height) = (first.dimensions().w, first.dimensions().h);
@@ -120,16 +120,16 @@ impl BundledTextureBuilder {
             bytes.extend(texbytes);
         }
 
-        // Use the first texture's params, in case we don't have an override
-        let params = params.as_ref().unwrap_or(first.params());
+        // Use the first texture's params
+        let params = first.params();
         Some(BundledTexture2D {
             raw: None,
             bytes: TextureBytes::Valid(bytes),
             params: TextureParams {
                 layout: params.layout,
-                filter: params.filter,
+                filter: TextureFilter::Nearest,
                 wrap: params.wrap,
-                flags: params.flags,
+                flags: TextureFlags::MIPMAPS,
                 custom: params.custom.clone(),
             },
             dimensions: vek::Extent3::new(width, height, textures.len() as u16),

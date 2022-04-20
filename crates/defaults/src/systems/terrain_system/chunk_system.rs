@@ -29,7 +29,6 @@ fn run(world: &mut World) {
     // Generate the chunks if needed and only if we are not currently generating
     let terrain = terrain_.unwrap();
     let manager = &mut terrain.manager;
-    manager.must_update_octree = manager.octree.inner.must_update(camera_position);
     if manager.chunks_generating.is_empty() && manager.chunks_to_remove.is_empty() && terrain.scheduler.active_mesh_tasks_count() == 0 {
         let octree = &mut manager.octree;
         let size = octree.inner.size();
@@ -63,11 +62,13 @@ fn run(world: &mut World) {
                             .unwrap();
 
                         // Chunk
-                        linker.insert(Chunk {
-                            coords,
-                            voxel_data_id: None,
-                            persistent: None,
-                        }).unwrap();
+                        linker
+                            .insert(Chunk {
+                                coords,
+                                voxel_data_id: None,
+                                persistent: None,
+                            })
+                            .unwrap();
                     });
 
                     // Also calculate the chunk's priority, so we know when to generate it

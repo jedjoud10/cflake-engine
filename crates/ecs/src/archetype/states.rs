@@ -53,17 +53,6 @@ impl ComponentStateSet {
         self.rows.borrow_mut().swap_remove(bundle);
     }
 
-    // Overwrite the state for a single row, returning the last row value
-    pub fn overwrite(&self, bundle: usize, row: ComponentStateRow) -> Option<ComponentStateRow> {
-        // Fetch the element
-        let mut borrowed = self.rows.borrow_mut();
-        let fetched = borrowed.get_mut(bundle)?;
-
-        // Replace the element
-        let old = std::mem::replace(fetched, row);
-        Some(old)
-    }
-
     // Update the value of a row. This will return the old row state
     pub fn update(&self, bundle: usize, function: impl FnOnce(&mut Mask, &mut Mask)) -> Option<ComponentStateRow> {
         // Fetch the element

@@ -28,19 +28,22 @@ impl Default for ChunkGenerationState {
 #[derive(Getters, Default)]
 #[getset(get = "pub")]
 pub struct ChunksManager {
-    // Chunk generation
+    // Octree
     pub(crate) octree: DiffOctree,
     pub(crate) chunks: AHashMap<ChunkCoords, Entity>,
-    pub(crate) chunks_generating: AHashSet<ChunkCoords>,
-    pub(crate) priority_list: Vec<(Entity, f32)>,
-    pub(crate) chunks_to_remove: Vec<Entity>,
-    pub(crate) material: Handle<Material>,
-    pub(crate) physics: bool,
-    pub(crate) must_update_octree: bool,
 
-    // The Entity ID of the chunk that we are generating
-    // This includes voxel data generation AND mesh generation
+    // To Generate
+    pub(crate) chunks_generating: AHashSet<ChunkCoords>,
+
+    // To Remove
+    pub(crate) chunks_to_remove: Vec<Entity>,
+
+    // Current
     pub(crate) current_chunk_state: ChunkGenerationState,
+    
+    // Other
+    pub(crate) material: Handle<Material>,
+    pub(crate) priority_list: Vec<(Entity, f32)>,
 }
 
 impl ChunksManager {

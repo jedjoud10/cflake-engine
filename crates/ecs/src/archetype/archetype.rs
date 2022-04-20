@@ -69,6 +69,7 @@ impl Archetype {
     // Reserve enough space to fit "n" number of new entities into this archetype
     pub(crate) fn reserve(&mut self, additional: usize) {
         self.states.reserve(additional);
+        self.entities.reserve(additional);
         for (_, vec) in self.vectors.iter_mut() {
             vec.reserve(additional)
         }
@@ -133,7 +134,6 @@ impl Archetype {
         // Combine the removed components with the extra components
         removed.extend(extra);
 
-        println!("Move entity from {old} to {new}");
         // And insert into the new archetype
         let new = archetypes.get_mut(&new).unwrap();
         new.push(entity, linkings, removed);

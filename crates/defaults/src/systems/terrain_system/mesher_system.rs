@@ -40,10 +40,6 @@ fn run(world: &mut World) {
                 // Modify for removal ofc
                 world.ecs.modify(entity, |entity, modifier| {
                     modifier.remove::<Renderer>().unwrap();
-                    if terrain.manager.physics {
-                        //modifier.remove::<RigidBody>().unwrap();
-                        //modifier.remove::<Collider>().unwrap();
-                    }
                 });
             }
 
@@ -75,29 +71,32 @@ fn run(world: &mut World) {
                     // Generate the new component and link it
 
                     // Modify the entity
-                    world.ecs.modify(entity, |entity, modifier| {
-                        // Create a renderer with the new mesh
-                        modifier
-                            .insert(Renderer {
-                                mesh: mesh.clone(),
-                                material: terrain.manager.material.clone(),
-                                ..Default::default()
-                            })
-                            .unwrap();
+                    world
+                        .ecs
+                        .modify(entity, |entity, modifier| {
+                            // Create a renderer with the new mesh
+                            modifier
+                                .insert(Renderer {
+                                    mesh: mesh.clone(),
+                                    material: terrain.manager.material.clone(),
+                                    ..Default::default()
+                                })
+                                .unwrap();
 
-                        // Add the physics if needed
-                        /*
-                        if terrain.manager.physics {
-                            // Add the collider
-                            let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
-                            group.link(collider).unwrap();
+                            // Add the physics if needed
+                            /*
+                            if terrain.manager.physics {
+                                // Add the collider
+                                let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
+                                group.link(collider).unwrap();
 
-                            // Add the static rigidbody
-                            let rigidbody = RigidBody::new(RigidBodyType::Static);
-                            group.link(rigidbody).unwrap();
-                        }
-                        */
-                    }).unwrap();
+                                // Add the static rigidbody
+                                let rigidbody = RigidBody::new(RigidBodyType::Static);
+                                group.link(rigidbody).unwrap();
+                            }
+                            */
+                        })
+                        .unwrap();
 
                     // Update the chunk's voxel data,
                     let mut entry = world.ecs.entry(entity).unwrap();

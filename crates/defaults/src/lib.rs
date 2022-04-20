@@ -76,7 +76,7 @@ pub fn load_default_systems(world: &mut World) {
     terrain_system::voxel_system::system(world);
     terrain_system::mesher_system::system(world);
     terrain_system::editing_system::system(world);
-    
+
     //physics_system::rigidbody_system::system(world);
     //physics_system::simulation_system::system(world);
 

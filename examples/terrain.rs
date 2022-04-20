@@ -73,23 +73,8 @@ fn init(world: &mut World) {
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     */
-    let diffuse = BundledTextureBuilder::build(
-        &[texture_diff_1, texture_diff_2],
-        Some(TextureParams {
-            filter: TextureFilter::Nearest,
-            ..Default::default()
-        }),
-    )
-    .unwrap();
-    let normals = BundledTextureBuilder::build(
-        &[texture_norm_1, texture_norm_2],
-        Some(TextureParams {
-            flags: TextureFlags::MIPMAPS,
-            filter: TextureFilter::Nearest,
-            ..Default::default()
-        }),
-    )
-    .unwrap();
+    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2]).unwrap();
+    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2]).unwrap();
     let diffuse = world.pipeline.insert(diffuse);
     let normals = world.pipeline.insert(normals);
     let material = Material {
@@ -104,19 +89,11 @@ fn init(world: &mut World) {
         }),
     };
     let material = world.pipeline.insert(material);
-    let heuristic = HeuristicSettings {
-        function: |node, target| {
-            let dist = vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0);
-            dist < 1.2
-        },
-    };
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
         depth: 12,
-        heuristic_settings: heuristic,
         material,
-        physics: false,
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
