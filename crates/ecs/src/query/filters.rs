@@ -1,4 +1,7 @@
-use crate::{registry::{self, name}, Component, ComponentStateRow, Mask, QueryLayout};
+use crate::{
+    registry::{self, name},
+    Component, ComponentStateRow, Mask, QueryLayout,
+};
 use std::marker::PhantomData;
 
 // Input data given to the filter

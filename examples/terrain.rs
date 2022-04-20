@@ -1,12 +1,15 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, DynamicEdit, Transform, Light},
+        components::{self, Camera, DynamicEdit, Light, Transform},
         globals::{self, TerrainSettings},
     },
     math::octrees::HeuristicSettings,
     rendering::basics::{
-        lights::{LightParameters, LightType::{Directional, self}},
+        lights::{
+            LightParameters,
+            LightType::{self, Directional},
+        },
         material::Material,
         shader::{Shader, ShaderInitSettings},
         texture::{BundledTextureBuilder, Texture2D, TextureFilter, TextureFlags, TextureParams},

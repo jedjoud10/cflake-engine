@@ -74,15 +74,17 @@ fn run(world: &mut World) {
                 if entry.get::<Renderer>().is_err() {
                     // Generate the new component and link it
                     drop(entry);
-                    
+
                     // Modify the entity
                     world.ecs.modify(entity, |entity, modifier| {
                         // Create a renderer with the new mesh
-                        modifier.insert(Renderer {
-                            mesh: mesh.clone(),
-                            material: terrain.manager.material.clone(),
-                            ..Default::default()
-                        }).unwrap();
+                        modifier
+                            .insert(Renderer {
+                                mesh: mesh.clone(),
+                                material: terrain.manager.material.clone(),
+                                ..Default::default()
+                            })
+                            .unwrap();
 
                         // Add the physics if needed
                         /*
@@ -90,16 +92,16 @@ fn run(world: &mut World) {
                             // Add the collider
                             let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
                             group.link(collider).unwrap();
-                        
+
                             // Add the static rigidbody
                             let rigidbody = RigidBody::new(RigidBodyType::Static);
                             group.link(rigidbody).unwrap();
                         }
                         */
                     });
-                    
-                    // Update the chunk's voxel data, 
-                    let mut entry =  world.ecs.entry(entity).unwrap();
+
+                    // Update the chunk's voxel data,
+                    let mut entry = world.ecs.entry(entity).unwrap();
                     entry.get_mut::<Chunk>().unwrap().voxel_data_id = Some(id);
                 } else {
                     // Simply update the renderer

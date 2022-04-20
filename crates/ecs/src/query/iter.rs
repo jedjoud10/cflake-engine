@@ -140,7 +140,5 @@ pub fn query<'a, Layout: QueryLayout<'a> + 'a>(archetypes: &'a ArchetypeSet) -> 
 pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(archetypes: &'a ArchetypeSet, _: Filter) -> impl Iterator<Item = Layout> + 'a {
     let cache = Filter::setup();
 
-    QueryIter::new(archetypes).filter_map(move |item| 
-        Filter::eval(&cache, &Input { row: item.state }).then_some(item.tuple)
-    )
+    QueryIter::new(archetypes).filter_map(move |item| Filter::eval(&cache, &Input { row: item.state }).then_some(item.tuple))
 }

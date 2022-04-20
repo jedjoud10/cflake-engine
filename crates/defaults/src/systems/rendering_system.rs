@@ -1,6 +1,6 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
-    ecs::{added, modified, or, always, never},
+    ecs::{added, always, modified, never, or},
     rendering::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},

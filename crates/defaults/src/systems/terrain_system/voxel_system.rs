@@ -3,13 +3,14 @@ use crate::{
     globals::ChunkGenerationState,
 };
 use world::{
+    ecs::Entity,
     rendering::{
         advanced::{compute::ComputeShaderExecutionSettings, storages::Buffer},
         basics::uniforms::Uniforms,
         pipeline::Pipeline,
     },
     terrain::{ChunkCoords, CHUNK_SIZE},
-    World, ecs::Entity,
+    World,
 };
 
 // Simply run the compute shaders for now
@@ -88,7 +89,7 @@ fn run(world: &mut World) {
         if terrain.editer.is_pending() {
             return;
         }
-        
+
         // Either generate voxel data or fetch voxel data
         if terrain.manager.current_chunk_state == ChunkGenerationState::RequiresVoxelData {
             // We are not currently generating the voxel data, so we should start generating some for the first chunk that has the highest priority
