@@ -12,7 +12,7 @@ fn init(world: &mut World) {
 
 // Simple GUI
 fn run(world: &mut World) {
-    gui::egui::Window::new("Debug Window")
+    gui::egui::Window::new("Test Window")
         .vscroll(false)
         .hscroll(false)
         .resizable(false)

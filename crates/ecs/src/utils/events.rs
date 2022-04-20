@@ -19,7 +19,7 @@ pub struct ProfiledEventTiming {
 
 impl Display for ProfiledEventTiming {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Event '{}' took {}ms to execute", self.ordering, self.elapsed.as_millis())
+        write!(f, "Event '{}' took {}micros to execute", self.ordering, self.elapsed.as_micros())
     }
 }
 

@@ -44,7 +44,10 @@ mod tests {
             type Layout<'a> = (&'a Tag, &'a Entity);
             let filter = or(added::<Tag>(), modified::<Tag>());
             let mut query = manager.query::<Layout>();
-            query.next();
+            if let Some((tag, entity)) = query.next() {
+                println!("{:?}", *entity);
+                println!("{:?}", tag);
+            }
             dbg!(i.elapsed());
             //dbg!(query);
         }
