@@ -63,4 +63,8 @@ impl Time {
         let sum: f32 = self.averages.iter().cloned().sum();
         self.average_delta = sum / self.averages.len() as f32;
     }
+    // Get the current frame count
+    pub fn count(&self) -> Option<u128> {
+        self.current.as_ref().map(|current| current.count)
+    }
 }

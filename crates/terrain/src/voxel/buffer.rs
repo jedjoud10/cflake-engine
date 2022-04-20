@@ -12,7 +12,7 @@ use std::{
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct VoxelDataBufferId {
     idx: usize,
-    counter: u64,
+    counter: u128,
 }
 
 // Can be sent to other threads
@@ -39,7 +39,7 @@ pub type SharedVoxelData = Arc<MutexVoxelData>;
 // A buffer that contains multiple StoredVoxelDatas
 pub struct VoxelDataBuffer {
     buffer: RefCell<Vec<SharedVoxelData>>,
-    counter: u64,
+    counter: u128,
 }
 
 impl Default for VoxelDataBuffer {

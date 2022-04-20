@@ -3,12 +3,11 @@ use std::io::BufWriter;
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use time::OffsetDateTime;
-use world::ecs::component::ComponentQuerySet;
 use world::input::Keys;
 use world::World;
 
-// The screeenshot system's update loop
-fn run(world: &mut World, _data: ComponentQuerySet) {
+// Screenshot the current rendered frame whenever we press the F1 button, and save it to the user files
+fn run(world: &mut World) {
     if world.input.pressed("take_screenshot") {
         // Take a screenshot
         let dimensions = world.pipeline.window().dimensions();
@@ -39,6 +38,6 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
 
 // Create a system that'll allow us to screenshot the current frame
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
+    world.events.insert(run);
     world.input.bind(Keys::F1, "take_screenshot");
 }

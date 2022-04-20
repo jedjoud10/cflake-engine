@@ -20,7 +20,7 @@ pub struct Node {
 
     // Half extents of the node
     #[getset(get_copy = "pub")]
-    half_extent: NonZeroU64,
+    half_extent: u64,
 
     // Depth of the node. 0 means that is is the root node
     #[getset(get_copy = "pub")]
@@ -58,14 +58,14 @@ impl Eq for Node {}
 
 impl Node {
     // Create a root node using the max size and depth
-    pub fn root(key: NodeKey, depth: NonZeroU8, size: NonZeroU64) -> Self {
+    pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
         // Get the maximum size of the root node
-        let full_extent = (2_u64.pow(depth.get() as u32) * size.get()) as i64;
+        let full_extent = (2_u64.pow(depth as u32) * size) as i64;
         let position = vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
 
         Self {
             position,
-            half_extent: NonZeroU64::new(full_extent as u64 / 2).unwrap(),
+            half_extent: full_extent as u64 / 2,
             depth: 0,
             parent: NodeKey::null(),
             key,
@@ -76,21 +76,21 @@ impl Node {
     pub fn aabb(&self) -> crate::bounds::aabb::AABB {
         crate::bounds::aabb::AABB {
             min: self.position.as_(),
-            max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent.get() as f32 * 2.0),
+            max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0),
         }
     }
     // Get the center of this octree node
     pub fn center(&self) -> vek::Vec3<i64> {
-        self.position + self.half_extent.get() as i64
+        self.position + self.half_extent as i64
     }
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &vek::Vec3<f32>, max_depth: NonZeroU8, settings: &HeuristicSettings) -> bool {
+    pub fn can_subdivide(&self, target: &vek::Vec3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
         let test = (settings.function)(self, target);
-        test && self.depth < (max_depth.get() - 1)
+        test && self.depth < (max_depth - 1)
     }
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide<'a>(&mut self) -> [Node; 8] {
-        let half_extent = self.half_extent.get();
+        let half_extent = self.half_extent;
         const NULL: MaybeUninit<Node> = MaybeUninit::<Node>::uninit();
         let mut children = [NULL; 8];
         // Children counter
@@ -105,7 +105,7 @@ impl Node {
                     let child = Node {
                         position: self.position + offset,
                         // The children node is two times smaller in each axis
-                        half_extent: NonZeroU64::new(u64::try_from(self.half_extent).unwrap() / 2).unwrap(),
+                        half_extent: u64::try_from(self.half_extent).unwrap() / 2,
                         depth: self.depth + 1,
 
                         // Index stuff

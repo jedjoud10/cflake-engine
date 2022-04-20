@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use world::ecs::component::Component;
+use world::ecs::Component;
 use world::rendering::basics::material::Material;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Handle;
@@ -7,7 +7,8 @@ use world::rendering::pipeline::Handle;
 bitflags! {
     pub struct RendererFlags: u8 {
         const VISIBLE = 1;
-        const SHADOWED = 1 << 1;
+        const SHADOW_CASTER = 1 << 1;
+        const MATRIX_UPDATE = 1 << 2;
     }
 }
 
@@ -23,6 +24,12 @@ pub struct Renderer {
 
     // Some rendering settings
     pub flags: RendererFlags,
+}
+
+impl From<Handle<Mesh>> for Renderer {
+    fn from(mesh: Handle<Mesh>) -> Self {
+        Self { mesh, ..Default::default() }
+    }
 }
 
 impl Default for Renderer {

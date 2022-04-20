@@ -1,42 +1,37 @@
 use cflake_engine::{
     assets,
     audio::AudioSource,
-    defaults::components::{self, Camera, Transform},
-    ecs::entity::ComponentLinkingGroup,
-    rendering::basics::lights::{LightParameters, LightType::Directional},
+    defaults,
+    defaults::components::{Camera, Light, Transform},
+    rendering::basics::lights::LightType,
     vek, World,
 };
-// A game with a test camera
+// An example with a test camera and some sounds
 fn main() {
-    cflake_engine::start("cflake-examples", "audio", init, cflake_engine::defaults::load_debugging_systems)
+    cflake_engine::start("cflake-examples/camera", init)
 }
-// Init the simple camera
+// Init the simple camera and load el sounds
 fn init(world: &mut World) {
     // ----Start the world----
-    cflake_engine::assets::init!("/examples/assets/");
-    cflake_engine::assets::asset!("./assets/user/sounds/nicolas.mp3");
-    cflake_engine::assets::asset!("./assets/user/sounds/mewhenthe.mp3");
-    cflake_engine::assets::asset!("./assets/user/sounds/bruh.mp3");
+    assets::init!("/examples/assets/");
+    assets::asset!("./assets/user/sounds/nicolas.mp3");
+    assets::asset!("./assets/user/sounds/mewhenthe.mp3");
+    assets::asset!("./assets/user/sounds/bruh.mp3");
+
+    defaults::systems::flycam_system::system(world);
+
     // Create a simple camera entity
-    let mut group = ComponentLinkingGroup::default();
-    group.link(Camera::new(90.0, 2.0, 9000.0)).unwrap();
-    group.link(Transform::default()).unwrap();
-    world.ecs.add(group).unwrap();
+    world.ecs.insert(|_, linker| {
+        linker.insert(Camera::new(90.0, 2.0, 9000.0)).unwrap();
+        linker.insert(Transform::default()).unwrap();
+    });
+
     // Create the directional light source
-    let light = components::Light {
-        light: Directional {
-            params: LightParameters::default(),
-        },
-    };
-    let light_transform = Transform {
-        rotation: vek::Quaternion::<f32>::rotation_x(-90f32.to_radians()),
-        ..Default::default()
-    };
-    // And add it to the world as an entity
-    let mut group = ComponentLinkingGroup::default();
-    group.link(light_transform).unwrap();
-    group.link(light).unwrap();
-    world.ecs.add(group).unwrap();
+    world.ecs.insert(|_, linker| {
+        let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
+        linker.insert(light).unwrap();
+        linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
+    });
 
     // Play le funny sound
     let audio = assets::assetc::load::<AudioSource>("user/sounds/mewhenthe.mp3").unwrap();

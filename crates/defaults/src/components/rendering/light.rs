@@ -1,9 +1,5 @@
-use world::ecs::component::Component;
-
+use world::ecs::Component;
 use world::rendering::basics::lights::LightType;
-
-// A light component
+// A light source component
 #[derive(Component)]
-pub struct Light {
-    pub light: LightType,
-}
+pub struct Light(pub LightType);

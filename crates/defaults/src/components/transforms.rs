@@ -1,4 +1,4 @@
-use world::ecs::component::Component;
+use world::ecs::Component;
 // The transform component
 #[derive(Component, Clone)]
 pub struct Transform {
@@ -38,6 +38,15 @@ impl From<vek::Vec3<f32>> for Transform {
     }
 }
 
+impl From<(f32, f32, f32)> for Transform {
+    fn from(vec: (f32, f32, f32)) -> Self {
+        Self {
+            position: vec.into(),
+            ..Default::default()
+        }
+    }
+}
+
 impl Transform {
     // Calculate the transform matrix and return it
     pub fn transform_matrix(&self) -> vek::Mat4<f32> {
@@ -62,5 +71,78 @@ impl Transform {
     }
     pub fn right(&self) -> vek::Vec3<f32> {
         self.rotation_matrix().mul_point(vek::Vec3::unit_x())
+    }
+    // Rotation constructors
+    pub fn rotation_x(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_x(angle_radians),
+            ..Default::default()
+        }
+    }
+    pub fn rotation_y(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_y(angle_radians),
+            ..Default::default()
+        }
+    }
+    pub fn rotation_z(angle_radians: f32) -> Self {
+        Self {
+            rotation: vek::Quaternion::rotation_z(angle_radians),
+            ..Default::default()
+        }
+    }
+    // Scale constructors
+    pub fn scale_x(width: f32) -> Self {
+        Self {
+            scale: vek::Vec3::new(width, 1.0, 1.0),
+            ..Default::default()
+        }
+    }
+    pub fn scale_y(height: f32) -> Self {
+        Self {
+            scale: vek::Vec3::new(1.0, height, 1.0),
+            ..Default::default()
+        }
+    }
+    pub fn scale_z(depth: f32) -> Self {
+        Self {
+            scale: vek::Vec3::new(1.0, 1.0, depth),
+            ..Default::default()
+        }
+    }
+    // Position constructors
+    pub fn at_x(x: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(x, 0.0, 0.0),
+            ..Default::default()
+        }
+    }
+    pub fn at_y(y: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(0.0, y, 0.0),
+            ..Default::default()
+        }
+    }
+    pub fn at_z(z: f32) -> Self {
+        Self {
+            position: vek::Vec3::new(0.0, 0.0, z),
+            ..Default::default()
+        }
+    }
+    pub fn new_xyz(x: f32, y: f32, z: f32) -> Self {
+        Self::from((x, y, z))
+    }
+    // Kinda like constructor modifiers
+    pub fn scaled_by(mut self, mul: vek::Vec3<f32>) -> Self {
+        self.scale *= mul;
+        self
+    }
+    pub fn offsetted_by(mut self, offset: vek::Vec3<f32>) -> Self {
+        self.position += offset;
+        self
+    }
+    pub fn rotated_by(mut self, rot: vek::Quaternion<f32>) -> Self {
+        self.rotation = self.rotation * rot;
+        self
     }
 }

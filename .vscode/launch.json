@@ -1,45 +1,5 @@
 {
-	// Use IntelliSense to learn about possible attributes.
-	// Hover to view descriptions of existing attributes.
-	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-	"version": "0.2.0",
 	"configurations": [
-		{
-			"type": "lldb",
-			"request": "launch",
-			"name": "Debug executable 'clfake_engine'",
-			"cargo": {
-				"args": [
-					"build",
-					"--bin=dev_game",
-					"--package=dev_game"
-				],
-				"filter": {
-					"name": "dev_game",
-					"kind": "bin"
-				}
-			},
-			"args": [],
-			"cwd": "${workspaceFolder}"
-		},
-		{
-			"type": "lldb",
-			"request": "launch",
-			"name": "Debug unit tests in executable 'dev_game'",
-			"cargo": {
-				"args": [
-					"test",
-					"--no-run",
-					"--bin=dev_game",
-					"--package=dev_game"
-				],
-				"filter": {
-					"name": "dev_game",
-					"kind": "bin"
-				}
-			},
-			"args": [],
-			"cwd": "${workspaceFolder}"
-		}
+	
 	]
 }

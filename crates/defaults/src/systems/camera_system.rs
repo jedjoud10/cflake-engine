@@ -1,30 +1,23 @@
-use world::ecs::component::{ComponentQueryParams, ComponentQuerySet};
-
-use world::World;
-
 use crate::components::{Camera, Transform};
 use crate::globals::GlobalWorldData;
-
+use world::ecs::Entity;
+use world::World;
 // The camera system update loop
-fn run(world: &mut World, mut data: ComponentQuerySet) {
-    let query = data.get_mut(0).unwrap();
-
+fn run(world: &mut World) {
     // Set the main camera entity key in the world global
     let global = world.globals.get_mut::<GlobalWorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the main one
-    if let Some((&key, _)) = query.delta.added.iter().next() {
-        global.main_camera = key;
+    if global.camera == Entity::default() {
+        // Query all the cameras in the world and get the first one
+        let mut query = world.ecs.query::<(&Camera, &Transform, &Entity)>();
+        //query.next();
+        // And try to get the first valid one
+        if let Some((_, _, entity)) = query.next() {
+            global.camera = *entity;
+        }
     }
 }
-
 // Create the camera system
 pub fn system(world: &mut World) {
-    world
-        .ecs
-        .systems
-        .builder(&mut world.events.ecs)
-        .event(run)
-        .query(ComponentQueryParams::default().link::<Camera>().link::<Transform>())
-        .build()
-        .unwrap();
+    world.events.insert(run);
 }

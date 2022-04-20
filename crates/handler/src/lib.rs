@@ -1,4 +1,3 @@
-use ecs::system::SystemExecutionOrder;
 use mimalloc::MiMalloc;
 use rendering::pipeline::*;
 use settings::*;
@@ -13,11 +12,13 @@ use glutin::{
     event_loop::{ControlFlow, EventLoop},
 };
 use spin_sleep::LoopHelper;
+use world::ecs::EventExecutionOrder;
 
 // Start le engine
-pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init_systems: fn(&mut World)) {
+pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
-    let io = io::IOManager::new(author_name, app_name);
+    let title: String = title.into();
+    let io = io::IOManager::new(&title);
     let config: Settings = io.load("config/engine.json").unwrap_or_else(|_| {
         // If we failed reading the config file, try creating it and saving it
         io.create_file("config/engine.json");
@@ -36,7 +37,7 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
     let ws = config.window.clone();
     let (pipeline, renderer) = rendering::pipeline::new(
         &event_loop,
-        format!("'{}', by '{}'", app_name, author_name),
+        title,
         ws.fps_cap == FrameRateCap::Vsync,
         ws.fullscreen,
         PipelineSettings {
@@ -50,11 +51,9 @@ pub fn start(author_name: &str, app_name: &str, init_world: fn(&mut World), init
 
     // Load the default systems first
     defaults::load_default_systems(&mut world);
-    SystemExecutionOrder::set(0);
-    init_systems(&mut world);
-    println!("Calling World Initialization callback");
+    EventExecutionOrder::set(0);
     init_world(&mut world);
-    world.ecs.systems.sort();
+    world.events.sort();
 
     // Post-init
     world.pipeline.post_init();

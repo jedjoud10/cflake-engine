@@ -1,75 +1,45 @@
-use crate::utils::ComponentError;
-use ahash::AHashMap;
-use bitfield::Bitfield;
-use lazy_static::lazy_static;
-use parking_lot::RwLock;
-use std::{
-    any::{Any, TypeId},
-    sync::atomic::{AtomicBool, AtomicU32, Ordering},
-};
-
 use super::Component;
-// Use to keep track of the component IDs
+use crate::Mask;
+use ahash::AHashMap;
+use lazy_static::lazy_static;
+use parking_lot::{Mutex, RwLock};
+use std::any::{type_name, TypeId};
+// Registered components
 lazy_static! {
-    static ref NEXT_REGISTERED_COMPONENT_ID: AtomicU32 = AtomicU32::new(1);
-    static ref CAN_REGISTER: AtomicBool = AtomicBool::new(true);
-    static ref REGISTERED_COMPONENTS: RwLock<AHashMap<TypeId, Bitfield<u32>>> = RwLock::new(AHashMap::new());
+    static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
+    static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
 }
 
-// Disable component registration
-pub(super) fn disable() {
-    CAN_REGISTER.store(false, Ordering::Relaxed)
-}
-
-// Register a specific component
-pub fn register<T: Component + Sized>() -> Bitfield<u32> {
-    // Check first
-    assert!(CAN_REGISTER.load(Ordering::Relaxed), "Cannot register components during frame!");
-
-    // Register the component
-    let mut lock = REGISTERED_COMPONENTS.write();
-    // Make a copy of the id before the bit shift
-    let id = NEXT_REGISTERED_COMPONENT_ID.load(Ordering::Relaxed);
-
-    let cbitfield = Bitfield::<u32>::from_num(id);
-    lock.insert(TypeId::of::<T>(), cbitfield);
-    // Bit shift to the left
-    NEXT_REGISTERED_COMPONENT_ID.store(id << 1, Ordering::Relaxed);
-    // Return the component ID before the bit shift
-    eprintln!("Registered component '{}' with bitfield '{}'", std::any::type_name::<T>(), cbitfield);
-    cbitfield
-}
-// Get the bitfield ID of a specific component
-pub fn get<T: Component>() -> Bitfield<u32> {
-    let is_registered = REGISTERED_COMPONENTS.read().contains_key(&TypeId::of::<T>());
-    if is_registered {
-        // Simple read
-        let lock = REGISTERED_COMPONENTS.read();
-        lock[&TypeId::of::<T>()]
+// Return the registered mask of the component (or register it if needed)
+pub fn mask<T: Component>() -> Mask {
+    // Check if we need to register
+    let id = TypeId::of::<T>();
+    if REGISTERED.read().contains_key(&id) {
+        // Read normally
+        let locked = REGISTERED.read();
+        *locked.get(&id).unwrap()
     } else {
-        // Register the component ourselves
+        // Register the component
         register::<T>()
     }
 }
-// Cast a boxed component to a reference of that component
-pub(crate) fn cast<T>(component: &dyn Component) -> Result<&T, ComponentError>
-where
-    T: Component,
-{
-    let component_any: &dyn Any = component.as_any();
-    let reference = component_any
-        .downcast_ref::<T>()
-        .ok_or_else(|| ComponentError::new("Could not cast component".to_string()))?;
-    Ok(reference)
+// Registers the component manually
+pub fn register<T: Component>() -> Mask {
+    let mut locked = REGISTERED.write();
+    let mut bit = NEXT.lock();
+
+    // Le bitshifting
+    let copy = *bit;
+    locked.insert(TypeId::of::<T>(), copy);
+    *bit = *bit << 1;
+    println!("Register component {} with mask {:?}", name::<T>(), copy);
+    copy
 }
-// Cast a boxed component to a mutable reference of that component
-pub(crate) fn cast_mut<T>(component: &mut dyn Component) -> Result<&mut T, ComponentError>
-where
-    T: Component,
-{
-    let component_any: &mut dyn Any = component.as_any_mut();
-    let reference_mut = component_any
-        .downcast_mut::<T>()
-        .ok_or_else(|| ComponentError::new("Could not cast component".to_string()))?;
-    Ok(reference_mut)
+// Get the name of a component
+pub fn name<T: Component>() -> &'static str {
+    type_name::<T>()
+}
+// Get the number of registered components
+pub fn count() -> usize {
+    REGISTERED.read().len()
 }

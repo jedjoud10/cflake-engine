@@ -30,3 +30,19 @@ pub enum LightType {
     // TODO: Add support for point lights in shader
     Point { params: LightParameters, radius: f32 },
 }
+
+impl LightType {
+    // Create a new directional light
+    pub fn new_directional(strength: f32, color: vek::Rgb<f32>) -> Self {
+        Self::Directional {
+            params: LightParameters { strength, color },
+        }
+    }
+    // Create a new point light
+    pub fn new_point(strength: f32, radius: f32, color: vek::Rgb<f32>) -> Self {
+        Self::Point {
+            params: LightParameters { strength, color },
+            radius,
+        }
+    }
+}

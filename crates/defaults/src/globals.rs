@@ -1,8 +1,8 @@
 mod networking;
-mod physics;
-mod terrain;
 mod world;
-pub use self::terrain::*;
 pub use self::world::*;
 pub use networking::*;
+mod physics;
+mod terrain;
+pub use self::terrain::*;
 pub use physics::*;

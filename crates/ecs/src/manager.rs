@@ -1,64 +1,113 @@
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
+use slotmap::SlotMap;
 
-use crate::{
-    component::ComponentSet,
-    entity::{ComponentLinkingGroup, ComponentUnlinkGroup, Entity, EntityKey, EntitySet},
-    event::Event,
-    system::{System, SystemSet, SystemSettings},
-    utils::{ComponentLinkingError, ComponentUnlinkError, EntityError},
-};
+use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier, Mask, MaskMap, QueryLayout, StorageVec};
 
-// The Entity Component System manager that will handle everything ECS related
-#[derive(Default)]
+// Type aliases
+pub type EntitySet = SlotMap<Entity, EntityLinkings>;
+pub type ArchetypeSet = MaskMap<Archetype>;
+pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
+
 pub struct EcsManager {
-    pub entities: EntitySet,
-    pub components: ComponentSet,
-    pub systems: SystemSet,
+    pub(crate) entities: EntitySet,
+    pub(crate) archetypes: ArchetypeSet,
+    pub(crate) uniques: UniqueStoragesSet,
+
+    // Others
+    count: u64,
 }
 
-// Global code for the Entities, Components, and Systems
-impl EcsManager {
-    // Create the proper execution settings for systems, and return them
-    pub fn ready(&mut self, frame: u128) -> (Rc<RefCell<Vec<System>>>, SystemSettings) {
-        self.components.ready(frame).unwrap();
+impl Default for EcsManager {
+    fn default() -> Self {
+        // Create the default empty archetype
+        let uniques: UniqueStoragesSet = Default::default();
+        let empty = Archetype::new(Mask::zero(), &uniques);
 
-        // Cannot build any more systems
-        self.systems.allowed_to_build = false;
-        (
-            self.systems.inner.clone(),
-            SystemSettings {
-                to_remove: self.components.to_remove.clone(),
-            },
-        )
-    }
-    // Execute a bunch of systems
-    pub fn execute_systems<World>(systems: Ref<Vec<System>>, world: &mut World, events: &[Event<World>], settings: SystemSettings) {
-        for system in systems.iter() {
-            system.run_system(world, events, settings.clone());
+        Self {
+            entities: Default::default(),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
+            uniques,
+            count: Default::default(),
         }
     }
+}
 
-    // Wrapper functions
-    // Entity adding/removing
-    pub fn add(&mut self, group: ComponentLinkingGroup) -> Result<EntityKey, EntityError> {
-        let key = self.entities.add(Entity::default())?;
-        // Then link
-        self.components
-            .link(key, &mut self.entities, &mut self.systems, group)
-            .map_err(|error| EntityError::new(error.details, key))?;
-        Ok(key)
+impl EcsManager {
+    // Prepare the Ecs Manager for one execution
+    pub fn prepare(&mut self) {
+        // Reset the archetype component mutation bits
+        for (_, archetype) in self.archetypes.iter_mut() {
+            archetype.prepare(self.count)
+        }
+
+        // Iteration counter that keeps track how many times we've run the ECS system
+        self.count += 1;
     }
-    pub fn remove(&mut self, key: EntityKey) -> Result<(), EntityError> {
-        self.entities.remove(key, &mut self.components, &mut self.systems)
+
+    // Modify an entity's component layout
+    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
+        // Keep a copy of the linkings before we do anything
+        let mut copied = *self.entities.get(entity)?;
+
+        // Create a link modifier, so we can insert/remove components
+        let mut linker = LinkModifier::new(self, entity).unwrap();
+        function(entity, &mut linker);
+
+        // Apply the changes
+        linker.apply(&mut copied);
+        *self.entities.get_mut(entity).unwrap() = copied;
+        Some(())
     }
-    // Linking / unlinking
-    pub fn link(&mut self, key: EntityKey, group: ComponentLinkingGroup) -> Result<(), ComponentLinkingError> {
-        self.components.link(key, &mut self.entities, &mut self.systems, group)
+
+    // Get an entity entry
+    pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
+        Entry::new(self, entity)
     }
-    pub fn unlink(&mut self, key: EntityKey, group: ComponentUnlinkGroup) -> Result<(), ComponentUnlinkError> {
-        self.components.unlink(key, &mut self.entities, &mut self.systems, group)
+
+    // Insert an emtpy entity into the manager, and run a callback that will add components to it
+    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
+        // Add le entity
+        let entity = self.entities.insert(EntityLinkings::default());
+
+        // Create a link modifier, so we can insert/remove components
+        let mut linker = LinkModifier::new(self, entity).unwrap();
+        function(entity, &mut linker);
+
+        // Since we are inserting this entity, the linkings are always default
+        let mut linkings = EntityLinkings::default();
+        linker.apply(&mut linkings);
+        *self.entities.get_mut(entity).unwrap() = linkings;
+
+        entity
+    }
+
+    // Remove an entity from the world
+    pub fn remove(&mut self, entity: Entity) -> Option<()> {
+        // Remove the entity from it's current archetype first
+        Archetype::remove(&mut self.archetypes, &mut self.entities, entity, Mask::zero());
+
+        // Then remove it from the manager
+        self.entities.remove(entity).unwrap();
+        Some(())
+    }
+
+    // Normal query without filter
+    pub fn query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> impl Iterator<Item = Layout> + 'a {
+        query(&self.archetypes)
+    }
+    // Create a query with a specific filter
+    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> impl Iterator<Item = Layout> + 'a {
+        filtered(&self.archetypes, filter)
+    }
+    // A view query that can only READ data, and never write to it
+    // This will return None when it is unable to get a view query
+    // TODO: Make use of Rust's type system to check for immutable borrows instead
+    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(&'a self) -> Option<impl Iterator<Item = Layout> + 'a> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| query(&self.archetypes))
+    }
+    // View query with a specific filter
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
+        let valid = Layout::combined().writing().empty();
+        valid.then(|| filtered(&self.archetypes, filter))
     }
 }

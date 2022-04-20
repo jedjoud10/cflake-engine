@@ -6,6 +6,13 @@ use enum_as_inner::EnumAsInner;
 pub enum NetworkSession {
     Host(Host),
     Client(Client),
+    None,
+}
+
+impl Default for NetworkSession {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 impl NetworkSession {
@@ -14,6 +21,7 @@ impl NetworkSession {
         match self {
             NetworkSession::Host(host) => host.poll()?,
             NetworkSession::Client(client) => client.poll()?,
+            NetworkSession::None => { /* No network session */ }
         }
         Ok(())
     }

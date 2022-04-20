@@ -1,9 +1,16 @@
-// Export
-pub mod component;
-pub mod entity;
-pub mod event;
+#![feature(int_roundings)]
+#![feature(bool_to_option)]
+mod archetype;
+mod component;
+mod entity;
 mod manager;
-pub mod system;
-pub use manager::EcsManager;
+mod query;
+mod utils;
+pub use archetype::*;
+pub use component::*;
+pub use entity::*;
+pub use manager::*;
+pub use query::*;
+pub use utils::*;
+
 mod tests;
-pub mod utils;

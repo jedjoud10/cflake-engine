@@ -1,10 +1,9 @@
-use world::{ecs::component::ComponentQuerySet, gui::egui, terrain, World, WorldState};
+use world::{gui::egui, terrain, World, WorldState};
 
 use crate::globals::{Physics, Terrain};
 
-// The debugging system's update loop
-fn run(world: &mut World, _data: ComponentQuerySet) {
-    // Check if we need to debug
+// Smol gui
+fn run(world: &mut World) {
     let gui = &world.gui.egui;
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
@@ -23,18 +22,16 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
-        ui.label(format!("Component: '{}'", world.ecs.components.len()));
-        ui.label(format!("Entities: '{}'", world.ecs.entities.inner().len()));
-        ui.label(format!("Systems: '{}'", world.ecs.systems.inner().borrow().len()));
+
         // Terrain
         let terrain = world.globals.get_mut::<Terrain>();
-        if let Ok(terrain) = terrain {
+        if let Some(terrain) = terrain {
             let octree = &terrain.manager.octree;
             ui.separator();
             ui.heading("Terrain");
             ui.label(format!("Chunk Size: [{a}x{a}x{a}]", a = terrain::CHUNK_SIZE));
             ui.label(format!("Terrain Octree Depth: '{}'", octree.inner.depth()));
-            ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = octree.inner.get_root_node().half_extent().get() * 2));
+            ui.label(format!("Terrain Octree Size: '[{a}x{a}x{a}]'", a = octree.inner.get_root_node().half_extent() * 2));
             ui.label(format!("Chunks: '{}'", terrain.manager.chunks.len()));
             ui.label(format!("Pending Generation: '{}'", terrain.manager.chunks_generating.len()));
             ui.label(format!("Voxel Data Buffer Length: '{}'", terrain.generator.buffer.len()));
@@ -43,14 +40,13 @@ fn run(world: &mut World, _data: ComponentQuerySet) {
         }
         // Physics
         let physics = world.globals.get_mut::<Physics>();
-        if let Ok(physics) = physics {
+        if let Some(physics) = physics {
             ui.separator();
             ui.heading("Physics");
-            ui.label(format!("Active Count: '{}'", physics.active_num));
         }
     });
 }
 // Create the debugging system
 pub fn system(world: &mut World) {
-    world.ecs.systems.builder(&mut world.events.ecs).event(run).build().unwrap();
+    world.events.insert(run);
 }

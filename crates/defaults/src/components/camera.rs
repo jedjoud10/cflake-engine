@@ -1,4 +1,4 @@
-use world::ecs::component::Component;
+use world::ecs::Component;
 use world::rendering::utils::DEFAULT_WINDOW_SIZE;
 // A simple camera component
 #[derive(Component)]
