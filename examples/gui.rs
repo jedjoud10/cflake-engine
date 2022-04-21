@@ -13,15 +13,7 @@ fn init(world: &mut World) {
 // Simple GUI
 fn run(world: &mut World) {
     gui::egui::Window::new("Test Window")
-        .vscroll(false)
-        .hscroll(false)
-        .resizable(false)
         .show(&mut world.gui.egui, |ui| {
-            // Timings
-            ui.separator();
-            ui.heading("Timings");
-            ui.label(format!("Time: {:.1}", world.time.elapsed()));
-            ui.label(format!("Delta: {:.3}", world.time.average_delta()));
-            ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta()));
+            ui.label("Hello, I am your average anime enjoyer. How are you on this fine day?");
         });
 }

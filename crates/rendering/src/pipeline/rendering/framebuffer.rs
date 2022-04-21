@@ -47,7 +47,7 @@ impl Framebuffer {
     // Bind textures to the frame buffer
     pub fn bind_textures(&mut self, pipeline: &Pipeline, textures_and_attachements: &[(Handle<Texture2D>, u32)]) {
         // Bind
-        self.bind(false, |me| {
+        self.bind(|me| {
             // Keep track of the color attachements, since we will need to set them using glDrawBuffers
             let mut color_attachements = Vec::new();
 
@@ -82,13 +82,13 @@ impl Framebuffer {
     // Clear the framebuffer
     pub fn clear(&mut self) {
         unsafe {
-            self.bind(false, |me| {
+            self.bind(|me| {
                 gl::Clear(me.bits.bits);
             })
         }
     }
     // Bind the framebuffer and run the given closure while it is bound
-    pub fn bind(&mut self, reset: bool, mut closure: impl FnMut(&mut Self)) {
+    pub fn bind(&mut self, mut closure: impl FnMut(&mut Self)) {
         // Check the currently bound frame buffer
         let currently_bound = unsafe { CURRENTLY_BOUND_FRAMEBUFFER };
         unsafe {
@@ -97,10 +97,8 @@ impl Framebuffer {
         }
         closure(self);
         // Bind the framebuffer that *lost* it's binding, if needed
-        if reset {
-            unsafe {
-                gl::BindFramebuffer(gl::FRAMEBUFFER, currently_bound);
-            }
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, currently_bound);
         }
     }
 }
