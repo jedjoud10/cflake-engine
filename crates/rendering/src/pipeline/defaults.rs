@@ -23,13 +23,11 @@ pub struct DefaultElements {
     pub cube: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
 
-    // Materials
-    pub pbr_mat: Handle<Material>,
-    pub pbr_mat_white: Handle<Material>,
-    pub pbr_mat_black: Handle<Material>,
-
-    // Default rendering shader
+    // Shader
     pub shader: Handle<Shader>,
+
+    // Material
+    pub missing_pbr_mat: Handle<Material>,
 }
 
 impl DefaultElements {
@@ -92,40 +90,7 @@ impl DefaultElements {
         let _missing_shader = pipeline.insert(missing_shader);
 
         // Default pbr material (uses missing texture)
-        let pbr_mat = PbrMaterialBuilder {
-            textures: PbrTextures {
-                diffuse: missing_texture.clone(),
-                normal: normal_map.clone(),
-                emissive: black.clone(),
-            },
-            params: PbrParams::default(),
-        }
-        .build_with_shader(pipeline, shader.clone());
-        let pbr_mat = pipeline.insert(pbr_mat);
-
-        // Default pbr material (uses white texture)
-        let pbr_mat_white = PbrMaterialBuilder {
-            textures: PbrTextures {
-                diffuse: white.clone(),
-                normal: normal_map.clone(),
-                emissive: black.clone(),
-            },
-            params: PbrParams::default(),
-        }
-        .build_with_shader(pipeline, shader.clone());
-        let pbr_mat_white = pipeline.insert(pbr_mat_white);
-
-        // Default pbr material (uses black texture)
-        let pbr_mat_black = PbrMaterialBuilder {
-            textures: PbrTextures {
-                diffuse: black.clone(),
-                normal: normal_map.clone(),
-                emissive: black.clone(),
-            },
-            params: PbrParams::default(),
-        }
-        .build_with_shader(pipeline, shader.clone());
-        let pbr_mat_black = pipeline.insert(pbr_mat_black);
+        let missing_pbr_mat = PbrMaterialBuilder::default().diffuse(missing_texture.clone()).build_with_shader(pipeline, shader.clone());
 
         Self {
             white,
@@ -135,9 +100,7 @@ impl DefaultElements {
             mesh,
             cube,
             sphere,
-            pbr_mat,
-            pbr_mat_white,
-            pbr_mat_black,
+            missing_pbr_mat,
             shader,
             //missing_shader,
         }

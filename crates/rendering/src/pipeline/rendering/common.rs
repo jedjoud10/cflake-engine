@@ -22,8 +22,8 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 
 // Render a model
 pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &RenderedModel<'a>, last_mat_handle: &mut Handle<Material>, pipeline: &Pipeline) {
-    // Load the default material if we don't have a valid one
-    let mat_handle = renderer.material.fallback_to(&pipeline.defaults().pbr_mat);
+    // Load the default missing material if we don't have a valid one
+    let mat_handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
     let mat = pipeline.get(mat_handle).unwrap();
     // However, if we have an invalid shader, we must panic
     let shader = pipeline.get(&mat.shader).unwrap();

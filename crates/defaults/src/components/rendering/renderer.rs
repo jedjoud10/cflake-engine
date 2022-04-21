@@ -20,10 +20,10 @@ pub struct Renderer {
     pub material: Handle<Material>,
 
     // Keep the model matrix cached
-    pub matrix: vek::Mat4<f32>,
+    pub(crate) matrix: vek::Mat4<f32>,
 
     // Some rendering settings
-    pub flags: RendererFlags,
+    pub(crate) flags: RendererFlags,
 }
 
 impl From<Handle<Mesh>> for Renderer {
@@ -39,6 +39,16 @@ impl Default for Renderer {
             material: Default::default(),
             matrix: Default::default(),
             flags: RendererFlags::all(),
+        }
+    }
+}
+
+impl Renderer {
+    pub fn new(mesh: Handle<Mesh>, material: Handle<Material>) -> Self {
+        Self {
+            mesh,
+            material,
+            ..Default::default()
         }
     }
 }

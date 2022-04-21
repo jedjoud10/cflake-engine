@@ -67,6 +67,7 @@ impl<T: Object> Handle<T> {
     // Create a new invalid handle
     pub fn null() -> Self {
         Self {
+            // TODO: Optimize this
             key: Arc::new(PipelineElemKey::null()),
             to_remove: None,
             _phantom: PhantomData::default(),

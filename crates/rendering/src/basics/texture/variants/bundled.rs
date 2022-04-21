@@ -117,9 +117,9 @@ impl BundledTextureBuilder {
             bytes: TextureBytes::Valid(bytes),
             params: TextureParams {
                 layout: params.layout,
-                filter: TextureFilter::Nearest,
+                filter: params.filter,
                 wrap: params.wrap,
-                flags: TextureFlags::MIPMAPS,
+                flags: params.flags,
                 custom: params.custom.clone(),
             },
             dimensions: vek::Extent3::new(width, height, textures.len() as u16),

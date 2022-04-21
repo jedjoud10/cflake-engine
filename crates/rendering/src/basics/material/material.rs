@@ -18,14 +18,13 @@ pub trait MaterialBuilder
 where
     Self: Sized,
 {
-    // Build
-    fn build(self, pipeline: &Pipeline) -> Material {
-        // Use the default shader
+    // Builds the material with the default shader
+    fn build(self, pipeline: &mut Pipeline) -> Handle<Material> {
         let shader = pipeline.defaults().shader.clone();
         self.build_with_shader(pipeline, shader)
     }
     // Build the material using a speficic shader
-    fn build_with_shader(self, pipeline: &Pipeline, shader: Handle<Shader>) -> Material;
+    fn build_with_shader(self, pipeline: &mut Pipeline, shader: Handle<Shader>) -> Handle<Material>;
 }
 
 impl Object for Material {}

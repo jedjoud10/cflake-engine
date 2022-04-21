@@ -33,6 +33,7 @@ pub struct TextureBuilder {
 }
 
 impl TextureBuilder {
+    // TODO: Tf? Fix this
     // Create a new builder from a texture
     pub fn new(texture: Texture2D) -> Self {
         Self { inner: texture }
