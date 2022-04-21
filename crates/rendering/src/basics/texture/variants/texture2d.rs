@@ -57,7 +57,7 @@ impl TextureBuilder {
 }
 
 impl Object for Texture2D {
-    fn init(&mut self, pipeline: &mut crate::pipeline::Pipeline) {
+    fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         // TODO: Fix code duplication between bundledtexture2d and texture2d
         // Create the raw texture wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D, &self.params) };

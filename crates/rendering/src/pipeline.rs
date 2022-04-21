@@ -1,12 +1,12 @@
-mod storage;
 mod defaults;
 mod handle;
 mod pipeline;
 mod rendering;
 mod settings;
+mod storage;
 pub use self::rendering::*;
-pub use storage::*;
 pub use defaults::*;
 pub use handle::*;
 pub use pipeline::*;
 pub use settings::*;
+pub use storage::*;

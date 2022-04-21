@@ -28,8 +28,7 @@ where
     fn build_with_shader(self, pipeline: &Pipeline, shader: Handle<Shader>) -> Material;
 }
 
-impl Object for Material {
-}
+impl Object for Material {}
 
 impl Default for Material {
     fn default() -> Self {

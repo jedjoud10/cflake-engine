@@ -8,18 +8,11 @@ use glutin::{
 };
 
 use crate::{
-    advanced::compute::ComputeShader,
-    basics::{
-        material::Material,
-        mesh::Mesh,
-        shader::Shader,
-        texture::{BundledTexture2D, Texture2D},
-    },
     object::Object,
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, Handle, PipelineSettings, RenderingCamera, SceneRenderer, PipelineStorage};
+use super::{DefaultElements, Handle, PipelineSettings, PipelineStorage, RenderingCamera, SceneRenderer};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, CopyGetters, MutGetters)]

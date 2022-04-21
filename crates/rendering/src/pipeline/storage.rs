@@ -1,9 +1,13 @@
-use std::{marker::PhantomData, sync::Arc, any::{Any, TypeId}, collections::hash_map::Entry};
 use super::{Handle, PipelineElemKey};
 use crate::object::Object;
 use ahash::AHashMap;
 use parking_lot::Mutex;
 use slotmap::SlotMap;
+use std::{
+    any::{Any, TypeId},
+    marker::PhantomData,
+    sync::Arc,
+};
 
 // Le type alias
 type ElemMap<U> = SlotMap<PipelineElemKey, U>;
@@ -41,7 +45,6 @@ impl<U: Object> Collection for CollectionTuple<U> {
     }
 }
 
-
 // Contains multiple collections
 #[derive(Default)]
 pub(super) struct PipelineStorage {
@@ -49,14 +52,13 @@ pub(super) struct PipelineStorage {
 }
 
 impl PipelineStorage {
-    // Cleanse all of the collections 
+    // Cleanse all of the collections
     pub fn cleanse(&mut self) {
         self.hashmap.iter_mut().for_each(|(_, boxed)| boxed.cleanse());
     }
 
     // Add a new object, and create it's unique collection
     pub fn insert<U: Object>(&mut self, object: U) -> Handle<U> {
-
         // Cast the boxed collection to it's mutable reference
         let boxed = self.hashmap.entry(TypeId::of::<U>()).or_insert_with(|| Box::new(CollectionTuple::<U>::default()));
         let any = boxed.as_any_mut();
@@ -64,7 +66,11 @@ impl PipelineStorage {
         let key = Arc::new(slotmap.insert(object));
 
         // Create the handle from the key
-        Handle { key, to_remove: Some(to_remove.clone()), _phantom: PhantomData::default() }
+        Handle {
+            key,
+            to_remove: Some(to_remove.clone()),
+            _phantom: PhantomData::default(),
+        }
     }
 
     // Immutable getter

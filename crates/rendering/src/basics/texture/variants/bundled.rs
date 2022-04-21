@@ -2,9 +2,9 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureFilter},
+    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureParams},
     object::Object,
-    pipeline::{Handle, Pipeline},
+    pipeline::Pipeline,
 };
 use getset::{CopyGetters, Getters};
 
@@ -46,7 +46,7 @@ impl Texture for BundledTexture2D {
 }
 
 impl Object for BundledTexture2D {
-    fn init(&mut self, pipeline: &mut Pipeline) {
+    fn init(&mut self, _pipeline: &mut Pipeline) {
         // Create the raw texture array wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D_ARRAY, &self.params) };
         let ifd = texture.ifd;

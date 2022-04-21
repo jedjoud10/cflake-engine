@@ -68,7 +68,7 @@ impl Asset for Mesh {
 }
 
 impl Object for Mesh {
-    fn init(&mut self, pipeline: &mut crate::pipeline::Pipeline) {
+    fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {
             // Create the VAO
@@ -161,7 +161,7 @@ impl Object for Mesh {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
     }
-    
+
     fn disposed(self) {
         unsafe {
             // Delete the vertex array

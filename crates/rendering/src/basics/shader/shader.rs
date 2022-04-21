@@ -42,7 +42,7 @@ impl Shader {
 }
 
 impl Object for Shader {
-    fn init(&mut self, pipeline: &mut crate::pipeline::Pipeline) {
+    fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         self.program = compile_shader(self.settings.sources_mut());
     }
 

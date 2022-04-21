@@ -40,7 +40,7 @@ pub struct ChunksManager {
 
     // Current
     pub(crate) current_chunk_state: ChunkGenerationState,
-    
+
     // Other
     pub(crate) material: Handle<Material>,
     pub(crate) priority_list: Vec<(Entity, f32)>,
