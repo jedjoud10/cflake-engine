@@ -33,7 +33,7 @@ impl<U: Object> Collection for CollectionTuple<U> {
         let mut to_remove_locked = self.1.lock();
         let to_remove = std::mem::take(&mut *to_remove_locked);
         for key in to_remove {
-            // Silently ignores elements that have already been removed
+            // Silently ignore elements that have already been removed
             if let Some(removed) = self.0.remove(key) {
                 removed.disposed()
             }
