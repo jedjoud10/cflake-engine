@@ -2,9 +2,9 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureParams},
-    object::Object,
-    pipeline::Pipeline,
+    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureFilter},
+    object::{Object, ObjectSealed},
+    pipeline::{Pipeline},
 };
 use getset::{CopyGetters, Getters};
 
@@ -45,7 +45,7 @@ impl Texture for BundledTexture2D {
     }
 }
 
-impl Object for BundledTexture2D {
+impl ObjectSealed for BundledTexture2D {
     fn init(&mut self, _pipeline: &mut Pipeline) {
         // Create the raw texture array wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D_ARRAY, &self.params) };
@@ -91,6 +91,8 @@ impl Object for BundledTexture2D {
 #[derive(Default)]
 pub struct BundledTextureBuilder;
 
+// TODO: Fix
+
 impl BundledTextureBuilder {
     // Build the bundled texture
     pub fn build(textures: &[Texture2D]) -> Option<BundledTexture2D> {
@@ -117,9 +119,9 @@ impl BundledTextureBuilder {
             bytes: TextureBytes::Valid(bytes),
             params: TextureParams {
                 layout: params.layout,
-                filter: params.filter,
+                filter: TextureFilter::Linear,
                 wrap: params.wrap,
-                flags: params.flags,
+                flags: TextureFlags::MIPMAPS,
                 custom: params.custom.clone(),
             },
             dimensions: vek::Extent3::new(width, height, textures.len() as u16),

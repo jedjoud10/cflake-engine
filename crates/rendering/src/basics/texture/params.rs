@@ -68,26 +68,9 @@ pub enum TextureWrapMode {
 // Texture parameters
 #[derive(Clone)]
 pub struct TextureParams {
-    // Texture layout
     pub layout: TextureLayout,
-    // Texture mag and min filters, either Nearest or Linear
     pub filter: TextureFilter,
-    // What kind of wrapping will we use for this texture
     pub wrap: TextureWrapMode,
-    // Custom
     pub custom: Vec<(GLuint, GLuint)>,
-    // Bits
     pub flags: TextureFlags,
-}
-
-impl Default for TextureParams {
-    fn default() -> Self {
-        Self {
-            layout: Default::default(),
-            filter: TextureFilter::Linear,
-            wrap: TextureWrapMode::Repeat,
-            custom: Default::default(),
-            flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
-        }
-    }
 }

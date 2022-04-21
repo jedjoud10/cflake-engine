@@ -1,6 +1,6 @@
 use super::{compile_shader, ShaderInitSettings};
 
-use crate::object::Object;
+use crate::object::{Object, ObjectSealed};
 
 use ahash::AHashSet;
 use getset::Getters;
@@ -41,7 +41,7 @@ impl Shader {
     }
 }
 
-impl Object for Shader {
+impl ObjectSealed for Shader {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         self.program = compile_shader(self.settings.sources_mut());
     }

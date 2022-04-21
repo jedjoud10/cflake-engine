@@ -5,7 +5,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture2D, TextureBuilder, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
+        texture::{ResizableTexture, Texture2D, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, TextureFilter},
         uniforms::Uniforms,
     },
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
@@ -98,16 +98,8 @@ impl SceneRenderer {
                 // Create a texture layout
                 let layout = TextureLayout::new(data_type, internal_format);
 
-                pipeline.insert(
-                    TextureBuilder::default()
-                        .dimensions(dimensions)
-                        .params(TextureParams {
-                            layout,
-                            flags: TextureFlags::RESIZABLE,
-                            ..Default::default()
-                        })
-                        .build(),
-                )
+                let params = TextureParams { layout, filter: TextureFilter::Nearest, wrap: TextureWrapMode::Repeat, custom: Default::default(), flags: TextureFlags::RESIZABLE };
+                pipeline.insert(Texture2D::new(dimensions, params))
             })
             .collect::<Vec<Handle<Texture2D>>>();
 
@@ -130,7 +122,7 @@ impl SceneRenderer {
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
         // Load the default sky gradient texture
-        let sky_gradient = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap())
+        let sky_gradient = assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap();
             .params(TextureParams {
                 wrap: TextureWrapMode::ClampToEdge(None),
                 ..Default::default()

@@ -24,8 +24,8 @@ fn read_bytes(path: &str, _asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoad
     Err(AssetLoadError::new(&format!("The asset '{}' is not cached!", path)))
 }
 
-// Read the bytes from an asset file and cache them if needed
-pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
+// Read the bytes from an assert file and cache them if needed
+pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError> {
     // Create metadata
     let meta = AssetMetadata::new(path).unwrap();
     // Load bytes
@@ -44,9 +44,5 @@ pub fn load_with<T: Asset>(path: &str, obj: T) -> Result<T, AssetLoadError> {
         cacher.try_load(&meta).unwrap()
     };
     // Deserialize
-    obj.deserialize(&meta, bytes).ok_or_else(|| AssetLoadError::new(path))
-}
-// Load an asset (By creating a default version of it)
-pub fn load<T: Asset + Default>(path: &str) -> Result<T, AssetLoadError> {
-    load_with(path, T::default())
+    T::deserialize(&meta, bytes).ok_or_else(|| AssetLoadError::new(path))
 }

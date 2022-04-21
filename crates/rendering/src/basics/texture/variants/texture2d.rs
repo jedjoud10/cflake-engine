@@ -5,13 +5,13 @@ use getset::{CopyGetters, Getters};
 
 use crate::{
     basics::texture::{
-        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams,
+        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureLayout, TextureFormat, TextureFilter, TextureWrapMode,
     },
-    object::Object,
+    object::{Object, ObjectSealed}, utils::DataType,
 };
 
 // A simple two dimensional OpenGL texture
-#[derive(Default, Getters, CopyGetters)]
+#[derive(Getters, CopyGetters)]
 pub struct Texture2D {
     // Storage
     raw: Option<RawTexture>,
@@ -26,38 +26,29 @@ pub struct Texture2D {
     dimensions: vek::Extent2<u16>,
 }
 
-// Builder
-#[derive(Default)]
-pub struct TextureBuilder {
-    inner: Texture2D,
-}
+impl Texture2D {
+    // Create a black texture with the specified dimensions and parameters
+    pub fn new(dimensions: vek::Extent2<u16>, params: TextureParams) -> Self {
+        Self {
+            raw: None,
+            bytes: TextureBytes::Valid(Vec::new()),
+            params,
+            dimensions,
+        }
+    } 
 
-impl TextureBuilder {
-    // TODO: Tf? Fix this
-    // Create a new builder from a texture
-    pub fn new(texture: Texture2D) -> Self {
-        Self { inner: texture }
-    }
-    // This burns my eyes
-    pub fn params(mut self, params: TextureParams) -> Self {
-        self.inner.params = params;
-        self
-    }
-    pub fn bytes(mut self, bytes: Vec<u8>) -> Self {
-        self.inner.bytes = TextureBytes::Valid(bytes);
-        self
-    }
-    pub fn dimensions(mut self, dimensions: vek::Extent2<u16>) -> Self {
-        self.inner.dimensions = dimensions;
-        self
-    }
-    // Build
-    pub fn build(self) -> Texture2D {
-        self.inner
+    // Create a texture with some specific bytes
+    pub fn new_with(dimensions: vek::Extent2<u16>, bytes: Vec<u8>, params: TextureParams) -> Self {
+        Self {
+            raw: None,
+            bytes: TextureBytes::Valid(bytes),
+            params,
+            dimensions,
+        }
     }
 }
 
-impl Object for Texture2D {
+impl ObjectSealed for Texture2D {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         // TODO: Fix code duplication between bundledtexture2d and texture2d
         // Create the raw texture wrapper
@@ -153,12 +144,11 @@ impl ResizableTexture for Texture2D {
 
 // Load a Texture2D
 impl Asset for Texture2D {
-    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
         // Load this texture from the bytes
-        let i = std::time::Instant::now();
         let image = image::load_from_memory(bytes).unwrap();
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
         // Flip
@@ -166,7 +156,16 @@ impl Asset for Texture2D {
         let (width, height) = (image.width() as u16, image.height() as u16);
         let bytes = image.into_bytes();
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
-        println!("Took {}ms to load texture", i.elapsed().as_millis());
-        Some(TextureBuilder::default().dimensions(vek::Extent2::new(width, height)).bytes(bytes).build())
+        Some(Texture2D {
+            raw: None,
+            bytes: TextureBytes::Valid(bytes),
+            dimensions: vek::Extent2::new(width, height),
+            params: TextureParams {
+                layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+                filter: TextureFilter::Linear,
+                wrap: TextureWrapMode::Repeat,
+                custom: Vec::new(),
+                flags: TextureFlags::MIPMAPS | TextureFlags::SRGB },
+        })
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     basics::{shader::Shader, uniforms::UniformsSet},
-    object::Object,
+    object::{Object, ObjectSealed},
     pipeline::*,
 };
 
@@ -27,7 +27,7 @@ where
     fn build_with_shader(self, pipeline: &mut Pipeline, shader: Handle<Shader>) -> Handle<Material>;
 }
 
-impl Object for Material {}
+impl ObjectSealed for Material {}
 
 impl Default for Material {
     fn default() -> Self {

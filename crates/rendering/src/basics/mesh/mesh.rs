@@ -2,7 +2,7 @@ use std::ptr::null;
 
 use crate::{
     advanced::storages::TypedStorage,
-    object::Object,
+    object::{Object, ObjectSealed},
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
@@ -44,7 +44,7 @@ pub struct Mesh {
 }
 
 impl Asset for Mesh {
-    fn deserialize(self, _meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
@@ -67,7 +67,7 @@ impl Asset for Mesh {
     }
 }
 
-impl Object for Mesh {
+impl ObjectSealed for Mesh {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         // Create the OpenGL mesh (even if it is empty)
         unsafe {

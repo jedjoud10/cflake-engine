@@ -3,7 +3,7 @@ use crate::{
         shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, ShaderProgram},
         uniforms::Uniforms,
     },
-    object::{Object, OpenGLObjectNotInitialized},
+    object::{Object, OpenGLObjectNotInitialized, ObjectSealed},
     pipeline::Pipeline,
 };
 use ahash::AHashSet;
@@ -22,7 +22,7 @@ pub struct ComputeShader {
     settings: ShaderInitSettings,
 }
 
-impl Object for ComputeShader {
+impl ObjectSealed for ComputeShader {
     fn init(&mut self, _pipeline: &mut Pipeline) {
         self.program = compile_shader(self.settings.sources());
     }

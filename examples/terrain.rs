@@ -49,9 +49,9 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(0.9, vek::Rgb::one()));
         linker.insert(light).unwrap();
-        linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
+        linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
     });
 
     // Load a terrain material
@@ -84,8 +84,8 @@ fn init(world: &mut World) {
             uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
             uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
-            uniforms.set_f32("bumpiness", 3.0);
-            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.02));
+            uniforms.set_f32("bumpiness", 1.3);
+            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
         }),
     };
     let material = world.pipeline.insert(material);
@@ -97,6 +97,7 @@ fn init(world: &mut World) {
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
+    /*
     // Big sphere
     terrain.edit(Edit::sphere(
         vek::Vec3::unit_y() * -50.0,
@@ -107,5 +108,6 @@ fn init(world: &mut World) {
             ..Default::default()
         },
     ));
+    */
     world.globals.insert(terrain).unwrap();
 }

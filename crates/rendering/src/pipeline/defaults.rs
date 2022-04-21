@@ -1,11 +1,11 @@
 use assets::assetc;
 
-use crate::basics::{
+use crate::{basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
     mesh::Mesh,
     shader::{Shader, ShaderInitSettings},
-    texture::{Texture2D, TextureBuilder, TextureFlags, TextureParams},
-};
+    texture::{Texture2D, TextureFlags, TextureParams, TextureLayout, TextureFilter, TextureWrapMode},
+}, utils::DataType};
 
 use super::{Handle, Pipeline};
 
@@ -35,32 +35,23 @@ impl DefaultElements {
     pub(crate) fn new(pipeline: &mut Pipeline) -> Self {
         // Default textures that are created at runtime
         let params = TextureParams {
-            flags: TextureFlags::empty(),
-            ..Default::default()
+            layout: TextureLayout::LOADED,
+            filter: TextureFilter::Linear,
+            wrap: TextureWrapMode::Repeat,
+            custom: Default::default(),
+            flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         };
-        let white = TextureBuilder::default()
-            .params(params.clone())
-            .bytes(vec![255, 255, 255, 255])
-            .dimensions(vek::Extent2::one())
-            .build();
+        let white = Texture2D::new_with(vek::Extent2::one(), vec![255, 255, 255, 255], params.clone());
         let white = pipeline.insert(white);
 
-        let black = TextureBuilder::default()
-            .params(params.clone())
-            .bytes(vec![0, 0, 0, 255])
-            .dimensions(vek::Extent2::one())
-            .build();
+        let black = Texture2D::new_with(vek::Extent2::one(), vec![0, 0, 0, 255], params.clone());
         let black = pipeline.insert(black);
 
-        let normal_map = TextureBuilder::default()
-            .params(params)
-            .bytes(vec![127, 127, 255, 255])
-            .dimensions(vek::Extent2::one())
-            .build();
+        let normal_map = Texture2D::new_with(vek::Extent2::one(), vec![127, 127, 255, 255], params.clone());
         let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = TextureBuilder::new(assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap()).build();
+        let missing = assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap();
         let missing_texture = pipeline.insert(missing);
 
         // Default mesh

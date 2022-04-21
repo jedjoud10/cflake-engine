@@ -41,7 +41,7 @@ pub enum ShaderSourceType {
 }
 
 impl Asset for ShaderSource {
-    fn deserialize(self, meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    fn deserialize(meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
     where
         Self: Sized,
     {
