@@ -1,11 +1,11 @@
-mod collection;
+mod storage;
 mod defaults;
 mod handle;
 mod pipeline;
 mod rendering;
 mod settings;
 pub use self::rendering::*;
-pub use collection::*;
+pub use storage::*;
 pub use defaults::*;
 pub use handle::*;
 pub use pipeline::*;

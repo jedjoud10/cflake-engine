@@ -213,7 +213,7 @@ impl SceneRenderer {
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader
     unsafe fn draw_deferred_quad(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // We have a ton of uniforms to set
-        Uniforms::new(pipeline.shaders.get(&self.lighting).unwrap().program(), pipeline, |mut uniforms| {
+        Uniforms::new(pipeline.get(&self.lighting).unwrap().program(), pipeline, |mut uniforms| {
             // Try to get the sunlight direction
             let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
             let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(vek::Vec3::unit_z()), params.strength));
@@ -256,7 +256,7 @@ impl SceneRenderer {
         });
 
         // Draw the quad
-        let quad_mesh = pipeline.meshes.get(&self.quad).unwrap();
+        let quad_mesh = pipeline.get(&self.quad).unwrap();
         // Draw to the default framebuffer
         self.default.bind(false, |_| {
             gl::Disable(gl::DEPTH_TEST);

@@ -111,12 +111,12 @@ impl ShadowMapping {
         gl::Disable(gl::CULL_FACE);
 
         // Load the shader and it's uniforms
-        let shader = pipeline.shaders.get(&self.shader).unwrap();
+        let shader = pipeline.get(&self.shader).unwrap();
         Uniforms::new(shader.program(), pipeline, |mut uniforms| {
             // Render all the models
             for model in models {
                 let (mesh, matrix) = (model.mesh, model.matrix);
-                let mesh = pipeline.meshes.get(mesh).unwrap();
+                let mesh = pipeline.get(mesh).unwrap();
 
                 // Calculate the light space matrix
                 let lsm = self.lightspace * *matrix;

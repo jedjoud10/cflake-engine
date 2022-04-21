@@ -7,7 +7,7 @@ use crate::{
     basics::texture::{
         apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams,
     },
-    object::PipelineElement,
+    object::Object,
 };
 
 // A simple two dimensional OpenGL texture
@@ -56,8 +56,9 @@ impl TextureBuilder {
     }
 }
 
-impl PipelineElement for Texture2D {
-    fn add(mut self, pipeline: &mut crate::pipeline::Pipeline) -> crate::pipeline::Handle<Self> {
+impl Object for Texture2D {
+    fn init(&mut self, pipeline: &mut crate::pipeline::Pipeline) {
+        // TODO: Fix code duplication between bundledtexture2d and texture2d
         // Create the raw texture wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D, &self.params) };
         let ifd = texture.ifd;
@@ -96,19 +97,7 @@ impl PipelineElement for Texture2D {
         if !self.params.flags.contains(TextureFlags::PERSISTENT) {
             self.bytes.clear();
         }
-        // Add the texture to the pipeline
-        pipeline.textures.insert(self)
     }
-
-    fn find<'a>(pipeline: &'a crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a Self> {
-        pipeline.textures.get(handle)
-    }
-
-    fn find_mut<'a>(pipeline: &'a mut crate::pipeline::Pipeline, handle: &crate::pipeline::Handle<Self>) -> Option<&'a mut Self> {
-        pipeline.textures.get_mut(handle)
-    }
-
-    fn disposed(self) {}
 }
 
 impl Texture for Texture2D {

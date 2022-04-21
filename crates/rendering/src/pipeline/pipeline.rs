@@ -15,15 +15,19 @@ use crate::{
         shader::Shader,
         texture::{BundledTexture2D, Texture2D},
     },
-    object::PipelineElement,
+    object::Object,
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, Handle, PipelineCollection, PipelineSettings, RenderingCamera, SceneRenderer};
+use super::{DefaultElements, Handle, PipelineSettings, RenderingCamera, SceneRenderer, PipelineStorage};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, CopyGetters, MutGetters)]
 pub struct Pipeline {
+    // Contains all the objects
+    storage: PipelineStorage,
+
+    /*
     // OpenGL wrapper objects
     pub(crate) meshes: PipelineCollection<Mesh>,
     pub(crate) shaders: PipelineCollection<Shader>,
@@ -35,7 +39,7 @@ pub struct Pipeline {
 
     // Others
     pub(crate) materials: PipelineCollection<Material>,
-
+    */
     // Window
     #[getset(get = "pub", get_mut = "pub")]
     window: Window,
@@ -96,12 +100,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
     // Initialize OpenGL
     init_opengl(&context);
     let mut pipeline = Pipeline {
-        meshes: Default::default(),
-        shaders: Default::default(),
-        compute_shaders: Default::default(),
-        textures: Default::default(),
-        bundled_textures: Default::default(),
-        materials: Default::default(),
+        storage: PipelineStorage::default(),
         delta: Default::default(),
         elapsed: Default::default(),
         camera: Default::default(),
@@ -147,13 +146,9 @@ impl Pipeline {
     }
     // Called at the end of the frame to ready the pipeline for the next frame
     pub fn end_frame(&mut self) {
-        self.meshes.dispose_dangling();
-        self.shaders.dispose_dangling();
-        self.compute_shaders.dispose_dangling();
-        self.textures.dispose_dangling();
-        self.materials.dispose_dangling();
+        self.storage.cleanse();
 
-        // Swap the back and front buffers, so we can show the screen something
+        // Swap the back and front buffers, so we can actually see something
         self.window.context().swap_buffers().unwrap();
     }
     // Handle window events
@@ -170,16 +165,21 @@ impl Pipeline {
     }
 }
 
+// Methods to add and remove components from the pipeline storage
 impl Pipeline {
-    // Insert
-    pub fn insert<Element: PipelineElement>(&mut self, obj: Element) -> Handle<Element> {
-        obj.add(self)
+    // Add a new object
+    pub fn insert<U: Object>(&mut self, mut object: U) -> Handle<U> {
+        // Susus mogus?
+        object.init(self);
+
+        self.storage.insert(object)
     }
-    // Get, get mut
-    pub fn get<Element: PipelineElement>(&self, handle: &Handle<Element>) -> Option<&Element> {
-        Element::find(self, handle)
+    // Get an object immutably
+    pub fn get<U: Object>(&self, handle: &Handle<U>) -> Option<&U> {
+        self.storage.get(handle)
     }
-    pub fn get_mut<Element: PipelineElement>(&mut self, handle: &Handle<Element>) -> Option<&mut Element> {
-        Element::find_mut(self, handle)
+    // Get an object mutably
+    pub fn get_mut<U: Object>(&mut self, handle: &Handle<U>) -> Option<&mut U> {
+        self.storage.get_mut(handle)
     }
 }

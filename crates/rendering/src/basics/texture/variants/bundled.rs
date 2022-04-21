@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use super::Texture2D;
 use crate::{
     basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureFilter},
-    object::PipelineElement,
+    object::Object,
     pipeline::{Handle, Pipeline},
 };
 use getset::{CopyGetters, Getters};
@@ -45,8 +45,8 @@ impl Texture for BundledTexture2D {
     }
 }
 
-impl PipelineElement for BundledTexture2D {
-    fn add(mut self, pipeline: &mut Pipeline) -> Handle<Self> {
+impl Object for BundledTexture2D {
+    fn init(&mut self, pipeline: &mut Pipeline) {
         // Create the raw texture array wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D_ARRAY, &self.params) };
         let ifd = texture.ifd;
@@ -82,16 +82,6 @@ impl PipelineElement for BundledTexture2D {
         if !self.params.flags.contains(TextureFlags::PERSISTENT) {
             self.bytes.clear();
         }
-        // Add the bundled texture to the pipeline
-        pipeline.bundled_textures.insert(self)
-    }
-
-    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {
-        pipeline.bundled_textures.get(handle)
-    }
-
-    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> Option<&'a mut Self> {
-        pipeline.bundled_textures.get_mut(handle)
     }
 
     fn disposed(self) {}

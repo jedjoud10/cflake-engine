@@ -52,7 +52,7 @@ impl Framebuffer {
             let mut color_attachements = Vec::new();
 
             for (handle, attachement) in textures_and_attachements.iter() {
-                let texture = pipeline.textures.get(handle).unwrap();
+                let texture = pipeline.get(handle).unwrap();
                 unsafe {
                     gl::NamedFramebufferTexture(me.id, *attachement, texture.name().unwrap(), 0);
                 }

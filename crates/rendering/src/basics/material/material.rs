@@ -1,6 +1,6 @@
 use crate::{
     basics::{shader::Shader, uniforms::UniformsSet},
-    object::PipelineElement,
+    object::Object,
     pipeline::*,
 };
 
@@ -28,20 +28,7 @@ where
     fn build_with_shader(self, pipeline: &Pipeline, shader: Handle<Shader>) -> Material;
 }
 
-impl PipelineElement for Material {
-    fn add(self, pipeline: &mut Pipeline) -> Handle<Self> {
-        pipeline.materials.insert(self)
-    }
-
-    fn find<'a>(pipeline: &'a Pipeline, handle: &Handle<Self>) -> Option<&'a Self> {
-        pipeline.materials.get(handle)
-    }
-
-    fn find_mut<'a>(pipeline: &'a mut Pipeline, handle: &Handle<Self>) -> Option<&'a mut Self> {
-        pipeline.materials.get_mut(handle)
-    }
-
-    fn disposed(self) {}
+impl Object for Material {
 }
 
 impl Default for Material {

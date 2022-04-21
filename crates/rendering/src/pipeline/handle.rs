@@ -1,4 +1,4 @@
-use crate::object::PipelineElement;
+use crate::object::Object;
 
 use parking_lot::Mutex;
 use slotmap::Key;
@@ -10,14 +10,14 @@ slotmap::new_key_type! {
 }
 
 // A strong handle to a pipeline object. If there are 0 strong handles, the pipeline object will be deallocated (totally not stolen from Bevy)
-pub struct Handle<T: PipelineElement> {
+pub struct Handle<T: Object> {
     pub(crate) key: Arc<PipelineElemKey>,
     pub(crate) to_remove: Option<Arc<Mutex<Vec<PipelineElemKey>>>>,
     pub(crate) _phantom: PhantomData<T>,
 }
 
 // Bruh derive moment
-impl<T: PipelineElement> PartialEq for Handle<T> {
+impl<T: Object> PartialEq for Handle<T> {
     fn ne(&self, other: &Self) -> bool {
         self.key != other.key
     }
@@ -26,30 +26,30 @@ impl<T: PipelineElement> PartialEq for Handle<T> {
         self.key == other.key
     }
 }
-impl<T: PipelineElement> Eq for Handle<T> {}
-impl<T: PipelineElement> Hash for Handle<T> {
+impl<T: Object> Eq for Handle<T> {}
+impl<T: Object> Hash for Handle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.key.hash(state);
     }
 }
 
 // Sad
-unsafe impl<T: PipelineElement> Send for Handle<T> {}
-unsafe impl<T: PipelineElement> Sync for Handle<T> {}
+unsafe impl<T: Object> Send for Handle<T> {}
+unsafe impl<T: Object> Sync for Handle<T> {}
 
-impl<T: PipelineElement> std::fmt::Debug for Handle<T> {
+impl<T: Object> std::fmt::Debug for Handle<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Handle").field("key", &self.key).finish()
     }
 }
 
-impl<T: PipelineElement> Default for Handle<T> {
+impl<T: Object> Default for Handle<T> {
     fn default() -> Self {
         Self::null()
     }
 }
 
-impl<T: PipelineElement> Clone for Handle<T> {
+impl<T: Object> Clone for Handle<T> {
     fn clone(&self) -> Self {
         Self {
             key: self.key.clone(),
@@ -59,7 +59,7 @@ impl<T: PipelineElement> Clone for Handle<T> {
     }
 }
 
-impl<T: PipelineElement> Handle<T> {
+impl<T: Object> Handle<T> {
     // Check if a handle is valid
     pub fn is_null(&self) -> bool {
         self.key.is_null()
@@ -82,7 +82,7 @@ impl<T: PipelineElement> Handle<T> {
     }
 }
 
-impl<T: PipelineElement> Drop for Handle<T> {
+impl<T: Object> Drop for Handle<T> {
     // Remove the element if this is the last strong handle it has
     fn drop(&mut self) {
         if let Some(to_remove) = &self.to_remove {
