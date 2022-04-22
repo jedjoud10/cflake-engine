@@ -3,7 +3,7 @@ use cflake_engine::{
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
         lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder}, texture::{Texture2D, TextureParams},
+        material::{MaterialBuilder, PbrMaterialBuilder},
     },
     vek, World,
 };

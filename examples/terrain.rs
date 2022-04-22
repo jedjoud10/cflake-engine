@@ -1,18 +1,16 @@
 use cflake_engine::{
     assets::assetc,
     defaults::{
-        components::{self, Camera, Light, Transform},
+        components::{Camera, Light, Transform},
         globals::{self, TerrainSettings},
     },
-    math::octrees::HeuristicSettings,
     rendering::basics::{
         lights::{
-            LightParameters,
-            LightType::{self, Directional},
+            LightType::{self},
         },
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture2D, TextureFilter, TextureFlags, TextureParams, bundle},
+        texture::{Texture2D, TextureParams, bundle},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
@@ -63,8 +61,8 @@ fn init(world: &mut World) {
     // Then the textures
     let diffuse = TextureParams::DIFFUSE_MAP_LOAD;
     let normal = TextureParams::NORMAL_MAP_LOAD;
-    let texture_diff_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse.clone()).unwrap();
-    let texture_norm_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal.clone()).unwrap();
+    let texture_diff_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse).unwrap();
+    let texture_norm_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();
     let texture_diff_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
     let texture_norm_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
     /*
