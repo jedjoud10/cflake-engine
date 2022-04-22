@@ -25,9 +25,8 @@ void main() {
 	m_color = mesh_color;
 
 	// Calculate the world tangent
-	vec3 tangent = (mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
-	m_tangent = tangent;
+	m_tangent = (mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
 	float _sign = mesh_tangent.w;
-	vec3 bitangent = cross(m_tangent, m_normal) * _sign;
-	m_bitangent = bitangent;
+	vec3 bitangent = cross(normalize(m_normal), normalize(mesh_tangent.xyz)) * _sign;
+	m_bitangent = normalize((mesh_matrix * vec4(bitangent, 0.0)).xyz);
 }

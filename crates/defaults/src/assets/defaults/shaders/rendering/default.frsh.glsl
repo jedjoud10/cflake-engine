@@ -34,15 +34,21 @@ void main() {
 	// Calculate tangent space normals and use that for bump mapping
 	vec3 normal = texture(normal_m, m_uv * uv_scale).xyz * 2.0 - 1.0;
 
+	vec3 n = m_normal;
+	vec3 t = m_tangent;
+	vec3 b = m_bitangent;
+
 	mat3 tbn = mat3(
-		normalize(m_tangent),
-		normalize(m_bitangent),
-		normalize(m_normal));
-		
+		normalize(t),
+		normalize(b),
+		normalize(n));
+	/*
+	frag_normal = normalize(tbn * normalize(normal));
+	vec3 vNout = normalize(normal.x * m_tangent + normal.y * m_bitangent + normal.z * m_normal);
+	*/
 	frag_normal = normalize(tbn * normalize(normal));
 	/*
 	// Construct TBN matrix, then transform
-	vec3 vNout = normalize(normal.x * m_tangent + normal.y * m_bitangent + normal.z * m_normal);
 	*/
 	
 	//frag_normal = -cross(normalize(m_bitangent), normalize(m_tangent));

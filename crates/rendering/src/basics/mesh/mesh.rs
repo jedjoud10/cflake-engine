@@ -302,7 +302,6 @@ impl Mesh {
             fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
                 let i = self.indices[face * 3 + vert] as usize;
                 let mut arr = self.uvs[i].map(|x| x as f32 / 255.0).into_array();
-                arr.swap(0, 1);
                 arr
             }
 
