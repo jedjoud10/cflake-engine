@@ -21,6 +21,7 @@ pub struct DefaultElements {
     // Meshes
     pub mesh: Handle<Mesh>,
     pub cube: Handle<Mesh>,
+    pub plane: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
 
     // Shader
@@ -59,6 +60,7 @@ impl DefaultElements {
         // Load the default cube and sphere
         let cube = pipeline.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
         let sphere = pipeline.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
+        let plane = pipeline.insert(assetc::load("defaults/meshes/plane.obj").unwrap());
 
         // Default rendering (PBR) shader
         let shader = Shader::new(
@@ -93,6 +95,7 @@ impl DefaultElements {
             mesh,
             cube,
             sphere,
+            plane,
             missing_pbr_mat,
             shader,
             //missing_shader,

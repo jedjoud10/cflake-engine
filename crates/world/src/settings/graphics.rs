@@ -10,6 +10,7 @@ pub enum ShadowResolution {
     Medium,
     High,
     Ultra,
+    Extreme,
 }
 
 impl Default for ShadowResolution {
@@ -27,7 +28,8 @@ impl ShadowResolution {
             ShadowResolution::Low => (1024, 4.0),
             ShadowResolution::Medium => (2048, 3.0),
             ShadowResolution::High => (4096, 1.4),
-            ShadowResolution::Ultra => (8192, 1.0),
+            ShadowResolution::Ultra => (8192, 0.5),
+            ShadowResolution::Extreme => (16384, 0.02),
         }
     }
 }

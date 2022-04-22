@@ -82,8 +82,6 @@ impl MaterialBuilder for PbrMaterialBuilder {
         let white = pipeline.defaults().white.clone();
         let black = pipeline.defaults().black.clone();
         let normal_map = pipeline.defaults().normal_map.clone();
-        dbg!(white.is_null());
-        dbg!(self.diffuse.is_null());
 
         let mat = Material {
             shader,

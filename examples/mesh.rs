@@ -33,11 +33,19 @@ fn init(world: &mut World) {
 
     // Simple material
     let material = PbrMaterialBuilder::default().tint(vek::Rgb::blue()).build(&mut world.pipeline);
+    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
 
     // Create a cube
     let cube = world.pipeline.defaults().cube.clone();
     world.ecs.insert(|_, linker| {
         linker.insert(Renderer::new(cube, material)).unwrap();
-        linker.insert(Transform::default()).unwrap();
+        linker.insert(Transform::at_y(1.0)).unwrap();
+    });
+
+    // Create a floor
+    let plane = world.pipeline.defaults().plane.clone();
+    world.ecs.insert(|_, linker| {
+        linker.insert(Renderer::new(plane, floor)).unwrap();
+        linker.insert(Transform::default().scaled_by(vek::Vec3::new(10.0, 1.0, 10.0))).unwrap();
     });
 }

@@ -68,11 +68,20 @@ impl SceneRenderer {
         let quad = pipeline.insert(quad);
         /* #endregion */
         /* #region Lighting Shader */
+
+        // Get the lighting shader's directives
+        let s_settings = &pipeline.settings().shadow;
+        let s_bias = s_settings.map(|s| s.bias).unwrap_or_default();
+        let s_normal_offset = s_settings.map(|s| s.normal_offset).unwrap_or_default();
+        let s_samples = s_settings.map(|s| s.samples).unwrap_or_default();
+
         // Load the lighting pass shader
         let settings = ShaderInitSettings::default()
             .source("defaults/shaders/rendering/uv_passthrough.vrsh.glsl")
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
-            .directive("shadow_bias", Directive::Const(pipeline.settings().shadow_bias.to_string())); // TODO: FIX THIS
+            .constant("shadow_bias", s_bias)
+            .constant("normal_offset", s_normal_offset)
+            .constant("samples", s_normal_offset);
         let shader = pipeline.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
@@ -125,7 +134,7 @@ impl SceneRenderer {
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         /* #endregion */
         /* #region Others */
-        let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
+        let shadow_mapping = pipeline.settings().shadow.map(|settings| ShadowMapping::new(pipeline, settings));
         // Load the default sky gradient texture
         let sky_gradient = assetc::load_with::<Texture2D>(
             "defaults/textures/sky_gradient.png",
@@ -229,7 +238,7 @@ impl SceneRenderer {
 
             // Sunlight shadow mapping
             let default = vek::Mat4::<f32>::identity();
-            let matrix = self.shadow_mapping.as_ref().map(|mapping| &mapping.lightspace).unwrap_or(&default);
+            let matrix = self.shadow_mapping.as_ref().map(|mapping| mapping.lightspace()).unwrap_or(&default);
             uniforms.set_mat44f32("lightspace_matrix", matrix);
 
             // Set the camera matrices
@@ -252,7 +261,7 @@ impl SceneRenderer {
             let shadow_mapping_texture = self
                 .shadow_mapping
                 .as_ref()
-                .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.depth_texture);
+                .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.texture());
             uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
             uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
         });

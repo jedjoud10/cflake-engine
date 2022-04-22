@@ -379,6 +379,10 @@ pub struct ShaderInitSettings {
 }
 
 impl ShaderInitSettings {
+    // Add a const shader directive that just contains a value, represented as a string
+    pub fn constant(mut self, name: &str, val: impl ToString) -> Self {
+        self.directive(name, Directive::Const(val.to_string()))
+    }
     // Add a shader directive
     pub fn directive(mut self, name: &str, directive: Directive) -> Self {
         self.directives.insert(name.to_string(), directive);

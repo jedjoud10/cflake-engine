@@ -1,3 +1,4 @@
+use getset::Getters;
 // Struct containing everything related to shadow mapping
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 use gl::types::GLuint;
@@ -8,62 +9,64 @@ use crate::{
         texture::{Texture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
-    pipeline::{Handle, Pipeline},
+    pipeline::{Handle, Pipeline, ShadowSettings, FramebufferClearBits},
     utils::DataType,
 };
+use super::{ShadowedModel, Framebuffer};
 
-use super::ShadowedModel;
-#[derive(Default)]
+
+// Shadow mapping for the main light source; the sun
+#[derive(Getters)]
 pub struct ShadowMapping {
-    // Shadow-casting
-    // TODO: Switch to custom framebuffer
-    framebuffer: GLuint,
-    pub(crate) depth_texture: Handle<Texture2D>,
+    // Shadow map's main frame buffer
+    framebuffer: Framebuffer,
+
+    // Accumulated depth texture
+    #[getset(get = "pub")]
+    texture: Handle<Texture2D>,
+
+    // Shader that we will use to render each object
     shader: Handle<Shader>,
 
     // Matrices
     ortho: vek::Mat4<f32>,
-    pub(crate) lightspace: vek::Mat4<f32>,
+    #[getset(get = "pub")]
+    lightspace: vek::Mat4<f32>,
 
     // Settings
-    shadow_resolution: u32,
+    settings: ShadowSettings
 }
 impl ShadowMapping {
     // Initialize a new shadow mapper
-    pub(crate) fn new(pipeline: &mut Pipeline, shadow_resolution: u32) -> Self {
+    pub(crate) fn new(pipeline: &mut Pipeline, settings: ShadowSettings) -> Self {
         // Create the framebuffer
-        let fbo = unsafe {
-            let mut fbo = 0;
-            gl::GenFramebuffers(1, &mut fbo);
-            fbo
-        };
-        // Create the depth texture
-        let texture = Texture2D::new(
-            vek::Extent2::broadcast(shadow_resolution.max(1)),
-            None,
-            TextureParams {
-                layout: TextureLayout {
-                    data: DataType::U8,
-                    internal_format: TextureFormat::DepthComponent16,
-                },
-                flags: TextureFlags::empty(),
-                filter: TextureFilter::Nearest,
-                wrap: TextureWrapMode::ClampToBorder(Some(vek::Rgba::<f32>::one())),
+        let framebuffer = Framebuffer::new(pipeline, FramebufferClearBits::DEPTH);
+
+        // Custom parameters for the shadow map texture
+        let params = TextureParams {
+            layout: TextureLayout {
+                data: DataType::U8,
+                internal_format: TextureFormat::DepthComponent16,
             },
-        );
-        let texture = pipeline.insert(texture);
-        // Now attach the depth texture
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-            gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, pipeline.get(&texture).unwrap().name().unwrap(), 0);
-            gl::DrawBuffer(gl::NONE);
-            gl::ReadBuffer(gl::NONE);
-            // Unbind
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        }
+            flags: TextureFlags::empty(),
+            filter: TextureFilter::Nearest,
+            wrap: TextureWrapMode::ClampToBorder(Some(vek::Rgba::<f32>::one())),
+        };
+
+        // Create the texture itself
+        let texture = pipeline.insert(Texture2D::new(
+            vek::Extent2::broadcast(settings.resolution.get().max(1)),
+            None,
+            params,
+        ));
+
+        // Now attach the depth texture (also set the draw and read buffers manually)
+        framebuffer.bind_textures(pipeline, &[(texture, gl::DEPTH_ATTACHMENT)]);
+        framebuffer.disable_draw_read_buffers();
 
         // Create the orthographic matrix
-        const DIMS: f32 = 800.0;
+        // TODO: Cascaded shadow mapping
+        const DIMS: f32 = 200.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
         let frustum = vek::FrustumPlanes {
@@ -77,20 +80,18 @@ impl ShadowMapping {
         let ortho_matrix = vek::Mat4::<f32>::orthographic_rh_no(frustum);
 
         // Load our custom shadow shader
-        let shader = Shader::new(
+        let shader = pipeline.insert(Shader::new(
             ShaderInitSettings::default()
                 .source("defaults/shaders/rendering/project.vrsh.glsl")
                 .source("defaults/shaders/rendering/empty.frsh.glsl"),
-        )
-        .unwrap();
-        let shader = pipeline.insert(shader);
+        ).unwrap());
 
         Self {
-            framebuffer: fbo,
-            depth_texture: texture,
+            framebuffer,
+            texture,
             ortho: ortho_matrix,
             shader,
-            shadow_resolution,
+            settings,
             lightspace: vek::Mat4::identity(),
         }
     }
@@ -104,8 +105,14 @@ impl ShadowMapping {
     }
     // Render the scene from the POV of the light source, so we can cast shadows
     pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) {
-        // Setup the shadow framebuffer
-        gl::Viewport(0, 0, self.shadow_resolution as i32, self.shadow_resolution as i32);
+        // Draw into the shadow framebuffer
+        gl::Viewport(0, 0, self.settings.resolution.get() as i32, self.settings.resolution.get() as i32);
+
+
+        self.framebuffer.bind(|_| {
+        
+        });
+
         gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
         gl::Clear(gl::DEPTH_BUFFER_BIT);
         gl::Disable(gl::CULL_FACE);
@@ -129,7 +136,7 @@ impl ShadowMapping {
             }
         });
 
-        // Reset
+        // Reset the viewport to it's old values
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
         gl::Enable(gl::CULL_FACE);

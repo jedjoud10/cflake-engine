@@ -19,5 +19,7 @@ void main() {
 	m_position = mesh_matrix_pos.xyz;
 	m_normal = normalize((mesh_matrix * vec4(mesh_normal, 0.0)).xyz);
 	m_color = mesh_color;
+
+	// UVs are flat since they contain the texture index, so we cannot interpolate them
 	m_uv = mesh_uv;
 }

@@ -63,14 +63,6 @@ fn init(world: &mut World) {
     let texture_norm_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();
     let texture_diff_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
     let texture_norm_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
-    /*
-    let texture_diff_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
-    let texture_norm_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
-    let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
-    let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
-    let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
-    let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
-    */
     let diffuse = bundle(&[texture_diff_1, texture_diff_2]).unwrap();
     let normals = bundle(&[texture_norm_1, texture_norm_2]).unwrap();
     let diffuse = world.pipeline.insert(diffuse);
@@ -96,6 +88,6 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
     // Big sphere
-    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
+    //terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
     world.globals.insert(terrain).unwrap();
 }

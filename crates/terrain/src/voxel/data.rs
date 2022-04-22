@@ -43,7 +43,7 @@ impl VoxelData {
             .zip(colors)
             .zip(normals)
             .zip(voxel_materials)
-            .map(|((((voxel, density), color), normal), voxel_material)| {
+            .for_each(|((((voxel, density), color), normal), voxel_material)| {
                 // Read the voxel attributes while we're at it
                 *density = voxel.density.to_f32();
                 *color = unpack_color(voxel.rgb_color);

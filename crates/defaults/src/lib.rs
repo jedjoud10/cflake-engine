@@ -31,6 +31,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
     // Meshes
+    persistent!("./assets/defaults/meshes/plane.obj");
     persistent!("./assets/defaults/meshes/cube.obj");
     persistent!("./assets/defaults/meshes/sphere.obj");
     // GUI

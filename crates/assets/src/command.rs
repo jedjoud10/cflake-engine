@@ -41,7 +41,8 @@ fn read(path: &str) -> Result<(&'static [u8], AssetMetadata), AssetLoadError> {
         // Cache the bytes
         let asset_dir_path = cacher
             .get_user_assets_path()
-            .ok_or(AssetLoadError::new("The asset cacher was not initialized!"))?
+            // TODO: Error fix
+            .ok_or(AssetLoadError::new("The asset cacher was not initialized or the asset was not pre-loaded"))?
             .to_path_buf();
         cacher.cache(meta.clone(), read_bytes(path, asset_dir_path)?);
         cacher.try_load(&meta).unwrap()
