@@ -78,8 +78,8 @@ impl SceneRenderer {
         let texture_formats = [
             TextureFormat::RGB8R,
             TextureFormat::RGB32F,
-            TextureFormat::RGB8RS,
-            TextureFormat::RGBA8R,
+            TextureFormat::RGB8R,
+            TextureFormat::RGB8R,
             TextureFormat::RGB32F,
             TextureFormat::DepthComponent32,
         ];
@@ -234,7 +234,7 @@ impl SceneRenderer {
 
             // Also gotta set the deferred textures
             // &str array because I am lazy
-            let names = ["diffuse_texture", "emissive_texture", "normals_texture", "tangents_texture", "position_texture", "depth_texture"];
+            let names = ["diffuse_texture", "emissive_texture", "tangents_texture", "bitangents_texture", "position_texture", "depth_texture"];
             // Set each texture
             for (name, handle) in names.into_iter().zip(self.textures.iter()) {
                 uniforms.set_texture2d(name, handle);
