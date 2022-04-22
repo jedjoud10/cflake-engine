@@ -47,7 +47,7 @@ impl ShadowMapping {
                     internal_format: TextureFormat::DepthComponent16,
                 },
                 flags: TextureFlags::empty(),
-                filter: TextureFilter::Linear,
+                filter: TextureFilter::Nearest,
                 wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
             },
         );

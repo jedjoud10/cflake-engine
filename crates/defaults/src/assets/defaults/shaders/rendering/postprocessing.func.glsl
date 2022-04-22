@@ -17,7 +17,7 @@ vec3 post_rendering(vec2 uvs, vec3 icolor) {
 
     // Gamma correction
     float gamma = 2.2;
-    vec3 color = mix(aces(icolor), icolor, 0.2);
+    vec3 color = mix(aces(icolor), icolor, 0.0);
     float vignette = (1-vignette_strength);
     vec3 gamma_corrected_color = pow(color, vec3(1.0/gamma));
 

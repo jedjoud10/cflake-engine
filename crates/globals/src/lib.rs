@@ -1,3 +1,5 @@
+// TODO: Rename this shit
+
 // Le global
 pub use globals_derive::Global;
 pub trait Global: anymap::any::Any {}

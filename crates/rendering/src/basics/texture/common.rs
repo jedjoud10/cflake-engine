@@ -49,7 +49,7 @@ pub unsafe fn generate_mipmaps(target: u32, params: &TextureParams) {
 
     // Create the anisotropic filtering if needed
     if params.flags.contains(TextureFlags::ANISOTROPIC) {
-        //gl::TexParameterf(target, gl::TEXTURE_MAX_ANISOTROPY_EXT, value);
+        gl::TexParameterf(target, gl::TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
     }
 }
 
