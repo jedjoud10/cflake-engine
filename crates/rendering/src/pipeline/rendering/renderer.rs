@@ -9,7 +9,7 @@ use crate::{
         uniforms::Uniforms,
     },
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
-    utils::DataType,
+    utils::{DataType, DEFAULT_WINDOW_SIZE},
 };
 use assets::assetc;
 use getset::{Getters, MutGetters};
@@ -70,10 +70,10 @@ impl SceneRenderer {
         /* #region Lighting Shader */
 
         // Get the lighting shader's directives
-        let s_settings = &pipeline.settings().shadow;
-        let s_bias = s_settings.map(|s| s.bias).unwrap_or_default();
-        let s_normal_offset = s_settings.map(|s| s.normal_offset).unwrap_or_default();
-        let s_samples = s_settings.map(|s| s.samples).unwrap_or_default();
+        let s_settings = pipeline.settings().shadow();
+        let s_bias = s_settings.map(|s| s.bias()).unwrap_or_default();
+        let s_normal_offset = s_settings.map(|s| s.normal_offset()).unwrap_or_default();
+        let s_samples = s_settings.map(|s| s.samples()).unwrap_or_default();
 
         // Load the lighting pass shader
         let settings = ShaderInitSettings::default()
@@ -88,7 +88,7 @@ impl SceneRenderer {
         let dimensions = pipeline.window().dimensions();
 
         // Since we use deferred rendering, we must create a new framebuffer for this renderer
-        let mut framebuffer = Framebuffer::new(pipeline, FramebufferClearBits::COLOR | FramebufferClearBits::DEPTH);
+        let mut framebuffer = Framebuffer::new(pipeline);
 
         // Create the textures now
         let texture_formats = [
@@ -128,13 +128,13 @@ impl SceneRenderer {
 
         // Bind textures
         let textures_and_attachements = textures.iter().cloned().zip(attachements).collect::<Vec<_>>();
-        framebuffer.bind_textures(pipeline, &textures_and_attachements);
+        framebuffer.bind(|mut f| f.bind_textures(pipeline, &textures_and_attachements));
 
         // Unbind
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
         /* #endregion */
         /* #region Others */
-        let shadow_mapping = pipeline.settings().shadow.map(|settings| ShadowMapping::new(pipeline, settings));
+        let shadow_mapping = pipeline.settings().shadow().map(|settings| ShadowMapping::new(pipeline, settings));
         // Load the default sky gradient texture
         let sky_gradient = assetc::load_with::<Texture2D>(
             "defaults/textures/sky_gradient.png",
@@ -149,11 +149,7 @@ impl SceneRenderer {
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
         Self {
-            default: Framebuffer {
-                id: 0,
-                bits: FramebufferClearBits::COLOR,
-                _phantom: Default::default(),
-            },
+            default: Framebuffer::from_raw_parts(pipeline, 0, DEFAULT_WINDOW_SIZE),
             framebuffer,
             textures: textures.try_into().expect("Deferred textures count mismatch!"),
             lighting: shader,
@@ -181,9 +177,11 @@ impl SceneRenderer {
     }
 
     // Prepare the FBO and clear the buffers
-    pub(crate) unsafe fn start_frame(&mut self, pipeline: &mut Pipeline) {
-        gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
-        self.framebuffer.clear();
+    pub(crate) fn start_frame(&mut self, pipeline: &mut Pipeline) {
+        self.framebuffer.bind(|mut f| {
+            f.viewport(pipeline.window().dimensions());
+            f.clear(FramebufferClearBits::COLOR | FramebufferClearBits::DEPTH);
+        });
     }
 
     // Render the whole scene

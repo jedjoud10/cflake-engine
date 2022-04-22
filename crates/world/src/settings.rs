@@ -1,20 +1,15 @@
 mod graphics;
 pub use graphics::*;
 mod window;
+use rendering::pipeline::ShadowSettings;
 pub use window::*;
-mod terrain;
-pub use self::terrain::*;
-use io::{serde, Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 // Some game settings
 #[derive(Default, Serialize, Deserialize, Clone)]
-#[serde(crate = "self::serde")]
 pub struct Settings {
     // Window settings
     pub window: WindowSettings,
 
     // Shadow settings
     pub shadows: ShadowSettings,
-
-    // Terrain settings
-    pub terrain: TerrainUserSettings,
 }

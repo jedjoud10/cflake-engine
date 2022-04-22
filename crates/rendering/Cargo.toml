@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde = { version = "1.0.136", features = ["derive"] }
 opengl = { path = "../opengl" }
 mikktspace = "0.3.0"
 getset = "0.1.2"

@@ -40,7 +40,7 @@ impl ShadowMapping {
     // Initialize a new shadow mapper
     pub(crate) fn new(pipeline: &mut Pipeline, settings: ShadowSettings) -> Self {
         // Create the framebuffer
-        let framebuffer = Framebuffer::new(pipeline, FramebufferClearBits::DEPTH);
+        let mut framebuffer = Framebuffer::new(pipeline);
 
         // Custom parameters for the shadow map texture
         let params = TextureParams {
@@ -55,14 +55,16 @@ impl ShadowMapping {
 
         // Create the texture itself
         let texture = pipeline.insert(Texture2D::new(
-            vek::Extent2::broadcast(settings.resolution.get().max(1)),
+            vek::Extent2::broadcast(settings.resolution().max(1)),
             None,
             params,
         ));
 
         // Now attach the depth texture (also set the draw and read buffers manually)
-        framebuffer.bind_textures(pipeline, &[(texture, gl::DEPTH_ATTACHMENT)]);
-        framebuffer.disable_draw_read_buffers();
+        framebuffer.bind(|mut f| {
+            f.bind_textures(pipeline, &[(texture.clone(), gl::DEPTH_ATTACHMENT)]);
+            f.disable_draw_read_buffers();
+        });
 
         // Create the orthographic matrix
         // TODO: Cascaded shadow mapping
@@ -104,41 +106,34 @@ impl ShadowMapping {
         self.lightspace = self.ortho * vek::Mat4::look_at_rh(vek::Vec3::zero(), forward, up);
     }
     // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) unsafe fn render_all_shadows(&self, models: &[ShadowedModel], pipeline: &Pipeline) {
+    pub(crate) unsafe fn render_all_shadows(&mut self, models: &[ShadowedModel], pipeline: &Pipeline) {
         // Draw into the shadow framebuffer
-        gl::Viewport(0, 0, self.settings.resolution.get() as i32, self.settings.resolution.get() as i32);
+        self.framebuffer.bind(|mut f| {
+            let extent = vek::Extent2::broadcast(self.settings.resolution());
+            f.viewport(extent);
+            f.clear(FramebufferClearBits::DEPTH);
+            gl::Disable(gl::CULL_FACE);
 
+            // Load the shader and it's uniforms
+            let shader = pipeline.get(&self.shader).unwrap();
+            Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+                // Render all the models
+                for model in models {
+                    let (mesh, matrix) = (model.mesh, model.matrix);
+                    let mesh = pipeline.get(mesh).unwrap();
 
-        self.framebuffer.bind(|_| {
-        
+                    // Calculate the light space matrix
+                    let lsm = self.lightspace * *matrix;
+
+                    // Pass the light space matrix to the shader
+                    uniforms.set_mat44f32("matrix", &lsm);
+
+                    // Render now
+                    super::common::render(mesh);
+                }
+            });
         });
 
-        gl::BindFramebuffer(gl::FRAMEBUFFER, self.framebuffer);
-        gl::Clear(gl::DEPTH_BUFFER_BIT);
-        gl::Disable(gl::CULL_FACE);
-
-        // Load the shader and it's uniforms
-        let shader = pipeline.get(&self.shader).unwrap();
-        Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-            // Render all the models
-            for model in models {
-                let (mesh, matrix) = (model.mesh, model.matrix);
-                let mesh = pipeline.get(mesh).unwrap();
-
-                // Calculate the light space matrix
-                let lsm = self.lightspace * *matrix;
-
-                // Pass the light space matrix to the shader
-                uniforms.set_mat44f32("matrix", &lsm);
-
-                // Render now
-                super::common::render(mesh);
-            }
-        });
-
-        // Reset the viewport to it's old values
-        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-        gl::Viewport(0, 0, pipeline.window().dimensions().w as i32, pipeline.window().dimensions().h as i32);
         gl::Enable(gl::CULL_FACE);
     }
 }

@@ -1,8 +1,6 @@
-use io::{serde, Deserialize, Serialize};
-
+use serde::{Serialize, Deserialize};
 // FPS cap
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(crate = "self::serde")]
 #[serde(rename_all = "snake_case")]
 pub enum FrameRateCap {
     Unlimited,
@@ -18,7 +16,6 @@ impl Default for FrameRateCap {
 
 // Window settings
 #[derive(Default, Serialize, Deserialize, Clone)]
-#[serde(crate = "self::serde")]
 pub struct WindowSettings {
     // Main
     pub fullscreen: bool,

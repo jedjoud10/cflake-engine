@@ -44,57 +44,6 @@ unsafe fn bind(id: GLuint, viewport: vek::Extent2<u32>) {
     CURRENT_VIEWPORT_SIZE = viewport;
 }
 
-impl Framebuffer {
-    // Create a new framebuffer
-    pub fn new(_pipeline: &Pipeline) -> Self {
-        // Generate a new framebuffer
-        let mut id = 0;
-        unsafe {
-            gl::GenFramebuffers(1, &mut id);
-        }
-
-        Self {
-            id,
-            viewport: vek::Extent2::one(),
-            _phantom: Default::default(),
-        }
-    }
-    // Bind the framebuffer and run the given closure while it is bound
-    // This binds the shader nonetheless
-    unsafe fn bind_unchecked(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
-        // Check the currently bound frame buffer
-        let old_fb_bound = CURRENTLY_BOUND_FRAMEBUFFER;
-        let old_size = CURRENT_VIEWPORT_SIZE;
-
-        // Bind the framebuffer as the current frame buffer
-        bind(self.id, self.viewport);
-
-        // Create a bound frame buffer that we can mutate
-        let bound = BoundFramebuffer {
-            fb: self,
-        };
-
-        // Mutate the frame buffer
-        closure(bound);
-        
-        // And reset to the old framebuffer (also reset the viewport size)
-        bind(old_fb_bound, old_size);
-    }
-
-    // Bind the shader only if needed
-    fn bind(&mut self, mut closure: impl FnOnce(BoundFramebuffer)) {
-        unsafe {
-            self.bind_unchecked(closure);
-        }
-    }
-}
-
-impl Drop for Framebuffer {
-    // Dispose of the frame buffer
-    fn drop(&mut self) {
-        unsafe { gl::DeleteFramebuffers(1, &self.id) }
-    }
-}
 
 // Currently bound framebuffer that we can modify
 pub struct BoundFramebuffer<'a> {
@@ -151,5 +100,65 @@ impl<'a> BoundFramebuffer<'a> {
             self.fb.viewport = size;
             CURRENT_VIEWPORT_SIZE = size;
         }
+    }
+}
+
+impl Framebuffer {
+    // Create a new framebuffer
+    pub fn new(_pipeline: &Pipeline) -> Self {
+        // Generate a new framebuffer
+        let mut id = 0;
+        unsafe {
+            gl::GenFramebuffers(1, &mut id);
+        }
+
+        Self {
+            id,
+            viewport: vek::Extent2::one(),
+            _phantom: Default::default(),
+        }
+    }
+    // Create a new framebuffer from the raw OpenGL id
+    pub unsafe fn from_raw_parts(_pipeline: &Pipeline, id: GLuint, viewport: vek::Extent2<u32>) -> Self {
+        Self {
+            id,
+            viewport,
+            _phantom: Default::default(),
+        }
+    }
+    // Bind the framebuffer and run the given closure while it is bound
+    // This binds the shader nonetheless
+    unsafe fn bind_unchecked(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
+        // Check the currently bound frame buffer
+        let old_fb_bound = CURRENTLY_BOUND_FRAMEBUFFER;
+        let old_size = CURRENT_VIEWPORT_SIZE;
+
+        // Bind the framebuffer as the current frame buffer
+        bind(self.id, self.viewport);
+
+        // Create a bound frame buffer that we can mutate
+        let bound = BoundFramebuffer {
+            fb: self,
+        };
+
+        // Mutate the frame buffer
+        closure(bound);
+        
+        // And reset to the old framebuffer (also reset the viewport size)
+        bind(old_fb_bound, old_size);
+    }
+
+    // Bind the shader only if needed
+    pub fn bind(&mut self, mut closure: impl FnOnce(BoundFramebuffer)) {
+        unsafe {
+            self.bind_unchecked(closure);
+        }
+    }
+}
+
+impl Drop for Framebuffer {
+    // Dispose of the frame buffer
+    fn drop(&mut self) {
+        unsafe { gl::DeleteFramebuffers(1, &self.id) }
     }
 }

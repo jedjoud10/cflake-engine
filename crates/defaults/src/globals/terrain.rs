@@ -4,7 +4,6 @@ use world::{
     globals::Global,
     math::octrees::DiffOctree,
     rendering::pipeline::Pipeline,
-    settings::{TerrainMesherThreadingType, TerrainUserSettings},
     terrain::{
         editing::{Edit, EditingManager},
         scheduler::{MeshScheduler, MeshSchedulerSettings},
@@ -32,7 +31,7 @@ pub struct Terrain {
 
 impl Terrain {
     // Create a new terrain global
-    pub fn new(user_settings: &TerrainUserSettings, settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
+    pub fn new(settings: TerrainSettings, pipeline: &mut Pipeline) -> Self {
         Self {
             manager: ChunksManager {
                 octree: DiffOctree::new(settings.depth, CHUNK_SIZE as u64, settings.heuristic_settings),
@@ -40,10 +39,8 @@ impl Terrain {
                 ..Default::default()
             },
             scheduler: MeshScheduler::new(MeshSchedulerSettings {
-                thread_num: match user_settings.mesher {
-                    TerrainMesherThreadingType::Threaded(num) => Some(num),
-                    TerrainMesherThreadingType::Single => None,
-                },
+                // By default, the terrain will use 2 task-threads for mesh generation 
+                thread_num: Some(2),
             }),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
             editer: EditingManager::default(),

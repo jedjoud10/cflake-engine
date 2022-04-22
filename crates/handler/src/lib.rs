@@ -33,7 +33,7 @@ pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
     defaults::preload_default_assets();
 
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
-    let shadows = config.shadows.resolution.convert();
+    let shadow = config.shadows;
     let ws = config.window.clone();
 
     // TODO: Shit ugly: fix
@@ -42,10 +42,7 @@ pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
         title,
         ws.fps_cap == FrameRateCap::Vsync,
         ws.fullscreen,
-        PipelineSettings {
-            shadow_resolution: if shadows.0 == 0 { None } else { Some(shadows.0) },
-            shadow_bias: shadows.1,
-        },
+        PipelineSettings::new((shadow.resolution() != 0).then(|| shadow)),
     );
 
     // Create the world

@@ -3,7 +3,7 @@ use world::{
     ecs::{added, always, modified, never, or},
     rendering::{
         basics::lights::LightTransform,
-        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
+        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel, FramebufferClearBits},
     },
     World,
 };
@@ -44,7 +44,7 @@ fn run(world: &mut World) {
     } else {
         // There isn't a camera, no need to render anything
         // Force a clear of the default framebuffer, since we won't be overwritting it
-        world.renderer.default_mut().clear();
+        world.renderer.default_mut().bind(|mut bound| bound.clear(FramebufferClearBits::COLOR | FramebufferClearBits::DEPTH));
         return;
     }
 
