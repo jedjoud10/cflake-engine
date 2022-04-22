@@ -12,7 +12,7 @@ use cflake_engine::{
         },
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{BundledTextureBuilder, Texture2D, TextureFilter, TextureFlags, TextureParams},
+        texture::{Texture2D, TextureFilter, TextureFlags, TextureParams, bundle},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
@@ -61,10 +61,12 @@ fn init(world: &mut World) {
         .source("user/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
-    let texture_diff_1 = assetc::load::<Texture2D>("user/textures/Snow006_2K_Color.jpg").unwrap();
-    let texture_norm_1 = assetc::load::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg").unwrap();
-    let texture_diff_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg").unwrap();
-    let texture_norm_2 = assetc::load::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg").unwrap();
+    let diffuse = TextureParams::DIFFUSE_MAP_LOAD;
+    let normal = TextureParams::NORMAL_MAP_LOAD;
+    let texture_diff_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse.clone()).unwrap();
+    let texture_norm_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal.clone()).unwrap();
+    let texture_diff_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
+    let texture_norm_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
     /*
     let texture_diff_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg").unwrap();
     let texture_norm_1 = assetc::load::<Texture2D>("user/textures/forrest_ground_01_nor_gl_2k.jpg").unwrap();
@@ -73,8 +75,8 @@ fn init(world: &mut World) {
     let texture_diff_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_diff_2k.jpg").unwrap();
     let texture_norm_3 = assetc::load::<Texture2D>("user/textures/rocks_ground_08_nor_gl_2k.jpg").unwrap();
     */
-    let diffuse = BundledTextureBuilder::build(&[texture_diff_1, texture_diff_2]).unwrap();
-    let normals = BundledTextureBuilder::build(&[texture_norm_1, texture_norm_2]).unwrap();
+    let diffuse = bundle(&[texture_diff_1, texture_diff_2]).unwrap();
+    let normals = bundle(&[texture_norm_1, texture_norm_2]).unwrap();
     let diffuse = world.pipeline.insert(diffuse);
     let normals = world.pipeline.insert(normals);
     let material = Material {
@@ -84,7 +86,7 @@ fn init(world: &mut World) {
             uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
             uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
-            uniforms.set_f32("bumpiness", 1.3);
+            uniforms.set_f32("bumpiness", 2.3);
             uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
         }),
     };

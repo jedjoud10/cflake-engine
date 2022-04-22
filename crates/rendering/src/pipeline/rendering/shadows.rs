@@ -5,7 +5,7 @@ use gl::types::GLuint;
 use crate::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture, Texture2D, TextureBuilder, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
+        texture::{Texture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Handle, Pipeline},
@@ -26,11 +26,11 @@ pub struct ShadowMapping {
     pub(crate) lightspace: vek::Mat4<f32>,
 
     // Settings
-    shadow_resolution: u16,
+    shadow_resolution: u32,
 }
 impl ShadowMapping {
     // Initialize a new shadow mapper
-    pub(crate) fn new(pipeline: &mut Pipeline, shadow_resolution: u16) -> Self {
+    pub(crate) fn new(pipeline: &mut Pipeline, shadow_resolution: u32) -> Self {
         // Create the framebuffer
         let fbo = unsafe {
             let mut fbo = 0;
@@ -38,9 +38,10 @@ impl ShadowMapping {
             fbo
         };
         // Create the depth texture
-        let texture = TextureBuilder::default()
-            .dimensions(vek::Extent2::broadcast(shadow_resolution.max(1)))
-            .params(TextureParams {
+        let texture = Texture2D::new(
+            vek::Extent2::broadcast(shadow_resolution.max(1)),
+            None,
+            TextureParams {
                 custom: vec![(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)],
                 layout: TextureLayout {
                     data: DataType::U8,
@@ -49,8 +50,8 @@ impl ShadowMapping {
                 flags: TextureFlags::empty(),
                 filter: TextureFilter::Linear,
                 wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
-            })
-            .build();
+            },
+        );
         let texture = pipeline.insert(texture);
         // Now attach the depth texture
         unsafe {

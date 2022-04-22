@@ -5,7 +5,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture2D, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, TextureFilter},
+        texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
         uniforms::Uniforms,
     },
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
@@ -98,8 +98,14 @@ impl SceneRenderer {
                 // Create a texture layout
                 let layout = TextureLayout::new(data_type, internal_format);
 
-                let params = TextureParams { layout, filter: TextureFilter::Nearest, wrap: TextureWrapMode::Repeat, custom: Default::default(), flags: TextureFlags::RESIZABLE };
-                pipeline.insert(Texture2D::new(dimensions, params))
+                let params = TextureParams {
+                    layout,
+                    filter: TextureFilter::Nearest,
+                    wrap: TextureWrapMode::Repeat,
+                    custom: Default::default(),
+                    flags: TextureFlags::RESIZABLE,
+                };
+                pipeline.insert(Texture2D::new(dimensions, None, params))
             })
             .collect::<Vec<Handle<Texture2D>>>();
 
@@ -122,12 +128,14 @@ impl SceneRenderer {
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow_resolution.map(|resolution| ShadowMapping::new(pipeline, resolution));
         // Load the default sky gradient texture
-        let sky_gradient = assetc::load::<Texture2D>("defaults/textures/sky_gradient.png").unwrap();
-            .params(TextureParams {
+        let sky_gradient = assetc::load_with::<Texture2D>(
+            "defaults/textures/sky_gradient.png",
+            TextureParams {
                 wrap: TextureWrapMode::ClampToEdge(None),
-                ..Default::default()
-            })
-            .build();
+                ..TextureParams::DIFFUSE_MAP_LOAD
+            },
+        )
+        .unwrap();
         let sky_gradient = pipeline.insert(sky_gradient);
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
@@ -197,7 +205,6 @@ impl SceneRenderer {
                 }
             }
         });
-        
 
         // Render the deferred quad
         unsafe {
@@ -263,7 +270,7 @@ impl SceneRenderer {
 
     // Screenshot the current frame
     // This must be done after we render everything
-    pub fn screenshot(&mut self, dimensions: vek::Extent2<u16>) -> Vec<u8> {
+    pub fn screenshot(&mut self, dimensions: vek::Extent2<u32>) -> Vec<u8> {
         // Create a vector that'll hod all of our RGB bytes
         let bytes_num = dimensions.as_::<usize>().product() * 3;
         let mut bytes = vec![0; bytes_num];

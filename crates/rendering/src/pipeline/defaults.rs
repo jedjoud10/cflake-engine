@@ -1,11 +1,14 @@
 use assets::assetc;
 
-use crate::{basics::{
-    material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
-    mesh::Mesh,
-    shader::{Shader, ShaderInitSettings},
-    texture::{Texture2D, TextureFlags, TextureParams, TextureLayout, TextureFilter, TextureWrapMode},
-}, utils::DataType};
+use crate::{
+    basics::{
+        material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
+        mesh::Mesh,
+        shader::{Shader, ShaderInitSettings},
+        texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
+    },
+    utils::DataType,
+};
 
 use super::{Handle, Pipeline};
 
@@ -41,17 +44,17 @@ impl DefaultElements {
             custom: Default::default(),
             flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         };
-        let white = Texture2D::new_with(vek::Extent2::one(), vec![255, 255, 255, 255], params.clone());
+        let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params.clone());
         let white = pipeline.insert(white);
 
-        let black = Texture2D::new_with(vek::Extent2::one(), vec![0, 0, 0, 255], params.clone());
+        let black = Texture2D::new(vek::Extent2::one(), Some(vec![0, 0, 0, 255]), params.clone());
         let black = pipeline.insert(black);
 
-        let normal_map = Texture2D::new_with(vek::Extent2::one(), vec![127, 127, 255, 255], params.clone());
+        let normal_map = Texture2D::new(vek::Extent2::one(), Some(vec![127, 127, 255, 255]), params.clone());
         let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = assetc::load::<Texture2D>("defaults/textures/missing.png").unwrap();
+        let missing = assetc::load_with::<Texture2D>("defaults/textures/missing.png", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let missing_texture = pipeline.insert(missing);
 
         // Default mesh
@@ -81,7 +84,11 @@ impl DefaultElements {
         let _missing_shader = pipeline.insert(missing_shader);
 
         // Default pbr material (uses missing texture)
-        let missing_pbr_mat = PbrMaterialBuilder::default().diffuse(missing_texture.clone()).normal(normal_map.clone()).emissive(black.clone()).build_with_shader(pipeline, shader.clone());
+        let missing_pbr_mat = PbrMaterialBuilder::default()
+            .diffuse(missing_texture.clone())
+            .normal(normal_map.clone())
+            .emissive(black.clone())
+            .build_with_shader(pipeline, shader.clone());
 
         Self {
             white,

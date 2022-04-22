@@ -44,7 +44,8 @@ pub struct Mesh {
 }
 
 impl Asset for Mesh {
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    type Input = ();
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
     where
         Self: Sized,
     {

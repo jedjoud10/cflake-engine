@@ -5,9 +5,11 @@ use getset::{CopyGetters, Getters};
 
 use crate::{
     basics::texture::{
-        apply_customs, generate_filters, generate_mipmaps, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureLayout, TextureFormat, TextureFilter, TextureWrapMode,
+        apply_customs, generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes,
+        TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode,
     },
-    object::{Object, ObjectSealed}, utils::DataType,
+    object::{Object, ObjectSealed},
+    utils::DataType,
 };
 
 // A simple two dimensional OpenGL texture
@@ -23,25 +25,21 @@ pub struct Texture2D {
     params: TextureParams,
 
     // Texture dimensions
-    dimensions: vek::Extent2<u16>,
+    dimensions: vek::Extent2<u32>,
 }
 
 impl Texture2D {
-    // Create a black texture with the specified dimensions and parameters
-    pub fn new(dimensions: vek::Extent2<u16>, params: TextureParams) -> Self {
-        Self {
-            raw: None,
-            bytes: TextureBytes::Valid(Vec::new()),
-            params,
-            dimensions,
+    // Create a texture with the specified dimensions, parameters, and bytes
+    pub fn new(dimensions: vek::Extent2<u32>, bytes: Option<Vec<u8>>, params: TextureParams) -> Self {
+        // Checking byte counts
+        if let Some(bytes) = &bytes {
+            let bytes_per_texel = get_texel_byte_size(params.layout.internal_format);
+            assert_eq!(dimensions.product() as usize, bytes.len() / bytes_per_texel, "Number of bytes invalid");
         }
-    } 
 
-    // Create a texture with some specific bytes
-    pub fn new_with(dimensions: vek::Extent2<u16>, bytes: Vec<u8>, params: TextureParams) -> Self {
         Self {
             raw: None,
-            bytes: TextureBytes::Valid(bytes),
+            bytes: TextureBytes::Valid(bytes.unwrap_or_default()),
             params,
             dimensions,
         }
@@ -93,7 +91,7 @@ impl ObjectSealed for Texture2D {
 }
 
 impl Texture for Texture2D {
-    type Dimensions = vek::Extent2<u16>;
+    type Dimensions = vek::Extent2<u32>;
     fn storage(&self) -> Option<&RawTexture> {
         self.raw.as_ref()
     }
@@ -112,7 +110,7 @@ impl Texture for Texture2D {
 }
 
 impl ResizableTexture for Texture2D {
-    fn resize_then_write(&mut self, dimensions: vek::Extent2<u16>, bytes: Vec<u8>) -> Option<()> {
+    fn resize_then_write(&mut self, dimensions: vek::Extent2<u32>, bytes: Vec<u8>) -> Option<()> {
         // Check if we can even resize the texture
         if !self.params.flags.contains(TextureFlags::RESIZABLE) {
             return None;
@@ -144,7 +142,8 @@ impl ResizableTexture for Texture2D {
 
 // Load a Texture2D
 impl Asset for Texture2D {
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    type Input = TextureParams;
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
     where
         Self: Sized,
     {
@@ -152,20 +151,15 @@ impl Asset for Texture2D {
         let image = image::load_from_memory(bytes).unwrap();
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
         // Flip
+        let (w, h) = (image.width(), image.height());
         let image = image.flipv();
-        let (width, height) = (image.width() as u16, image.height() as u16);
         let bytes = image.into_bytes();
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
         Some(Texture2D {
             raw: None,
             bytes: TextureBytes::Valid(bytes),
-            dimensions: vek::Extent2::new(width, height),
-            params: TextureParams {
-                layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
-                filter: TextureFilter::Linear,
-                wrap: TextureWrapMode::Repeat,
-                custom: Vec::new(),
-                flags: TextureFlags::MIPMAPS | TextureFlags::SRGB },
+            dimensions: vek::Extent2::new(w, h),
+            params: input,
         })
     }
 }

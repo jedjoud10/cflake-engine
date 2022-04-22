@@ -1,7 +1,10 @@
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
-    rendering::basics::{lights::LightType, material::{PbrMaterialBuilder, MaterialBuilder}},
+    rendering::basics::{
+        lights::LightType,
+        material::{MaterialBuilder, PbrMaterialBuilder}, texture::{Texture2D, TextureParams},
+    },
     vek, World,
 };
 // An example with a test mesh

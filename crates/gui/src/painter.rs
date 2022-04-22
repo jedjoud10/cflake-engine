@@ -6,13 +6,14 @@ use crate::common::{convert_image, get_dimensions, get_id};
 use egui::TexturesDelta;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams};
+use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams, TextureLayout, TextureFormat, TextureFilter};
 use rendering::basics::uniforms::Uniforms;
 use rendering::gl;
+use rendering::utils::DataType;
 use rendering::{
     basics::{
         shader::{Shader, ShaderInitSettings},
-        texture::{TextureBuilder, TextureWrapMode},
+        texture::TextureWrapMode,
     },
     pipeline::{Handle, Pipeline},
 };
@@ -93,15 +94,17 @@ impl Painter {
                 }
             } else {
                 // If we don't have the texture ID stored, we must create it
-                let texture = TextureBuilder::default()
-                    .params(TextureParams {
+                let texture = Texture2D::new(
+                    get_dimensions(&delta.image),
+                    Some(convert_image(delta.image)),
+                    TextureParams {
                         wrap: TextureWrapMode::ClampToEdge(None),
                         flags: TextureFlags::RESIZABLE,
-                        ..Default::default()
-                    })
-                    .dimensions(get_dimensions(&delta.image))
-                    .bytes(convert_image(delta.image))
-                    .build();
+                        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+                        filter: TextureFilter::Linear,
+                        custom: Vec::new(),
+                    },
+                );
                 // Create the texture handle
                 let texture = pipeline.insert(texture);
                 self.textures.insert(get_id(tid), texture);

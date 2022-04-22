@@ -1,5 +1,10 @@
+use parking_lot::{MappedMutexGuard, MutexGuard};
+
 use crate::{asset::Asset, cacher::*, error::AssetLoadError, metadata::AssetMetadata};
 use std::{fs::File, path::PathBuf};
+
+// TODO: Rewrite this and add async asset loader
+
 // If we are in Debug, we read the bytes directly from the file system
 #[cfg(debug_assertions)]
 fn read_bytes(path: &str, asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoadError> {
@@ -25,7 +30,7 @@ fn read_bytes(path: &str, _asset_dir_path: PathBuf) -> Result<Vec<u8>, AssetLoad
 }
 
 // Read the bytes from an assert file and cache them if needed
-pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError> {
+fn read(path: &str) -> Result<(&'static [u8], AssetMetadata), AssetLoadError> {
     // Create metadata
     let meta = AssetMetadata::new(path).unwrap();
     // Load bytes
@@ -43,6 +48,22 @@ pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError> {
         cacher.cache(meta.clone(), read_bytes(path, asset_dir_path)?);
         cacher.try_load(&meta).unwrap()
     };
-    // Deserialize
-    T::deserialize(&meta, bytes).ok_or_else(|| AssetLoadError::new(path))
+
+    // Fuck this shit, basically
+    let bytes = unsafe { std::slice::from_raw_parts(bytes.as_ptr(), bytes.len()) };
+    Ok((bytes, meta))
+}
+
+// Load an asset by creating it's input from default
+pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError>
+where
+    T::Input: Default,
+{
+    load_with(path, T::Input::default())
+}
+
+// Load an asset with an explicity load input
+pub fn load_with<T: Asset>(path: &str, i: T::Input) -> Result<T, AssetLoadError> {
+    let (bytes, meta) = read(path)?;
+    T::deserialize(&meta, bytes, i).ok_or_else(|| AssetLoadError::new(path))
 }

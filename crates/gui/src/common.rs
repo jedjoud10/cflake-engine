@@ -9,7 +9,7 @@ pub fn get_id(tid: TextureId) -> u64 {
 }
 
 // Get the dimensions of an image
-pub fn get_dimensions(image: &ImageData) -> vek::Extent2<u16> {
+pub fn get_dimensions(image: &ImageData) -> vek::Extent2<u32> {
     vek::Extent2::new(image.width(), image.height()).as_()
 }
 

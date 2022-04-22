@@ -35,6 +35,8 @@ pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
     // Since the pipeline also handles OpenGL context, we should make the window context using the pipeline
     let shadows = config.shadows.resolution.convert();
     let ws = config.window.clone();
+
+    // TODO: Shit ugly: fix
     let (pipeline, renderer) = rendering::pipeline::new(
         &event_loop,
         title,

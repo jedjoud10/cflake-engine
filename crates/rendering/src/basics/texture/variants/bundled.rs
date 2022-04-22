@@ -2,9 +2,9 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams, TextureFilter},
+    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureParams},
     object::{Object, ObjectSealed},
-    pipeline::{Pipeline},
+    pipeline::Pipeline,
 };
 use getset::{CopyGetters, Getters};
 
@@ -22,11 +22,11 @@ pub struct BundledTexture2D {
     params: TextureParams,
 
     // Texture dimensions
-    dimensions: vek::Extent3<u16>,
+    dimensions: vek::Extent3<u32>,
 }
 
 impl Texture for BundledTexture2D {
-    type Dimensions = vek::Extent3<u16>;
+    type Dimensions = vek::Extent3<u32>;
 
     fn storage(&self) -> Option<&RawTexture> {
         self.raw.as_ref()
@@ -37,7 +37,7 @@ impl Texture for BundledTexture2D {
     fn count_texels(&self) -> usize {
         self.dimensions.as_::<usize>().product()
     }
-    fn dimensions(&self) -> vek::Extent3<u16> {
+    fn dimensions(&self) -> vek::Extent3<u32> {
         self.dimensions
     }
     fn bytes(&self) -> &TextureBytes {
@@ -87,44 +87,36 @@ impl ObjectSealed for BundledTexture2D {
     fn disposed(self) {}
 }
 
-// A texture bundler that creates a 2D texture array from a set of textures
-#[derive(Default)]
-pub struct BundledTextureBuilder;
+// Bundle multiple textures into a single bundled texture
+pub fn bundle(textures: &[Texture2D]) -> Option<BundledTexture2D> {
+    // We get the main dimensions from the first texture
+    let first = textures.get(0)?;
+    let (width, height) = (first.dimensions().w, first.dimensions().h);
 
-// TODO: Fix
-
-impl BundledTextureBuilder {
-    // Build the bundled texture
-    pub fn build(textures: &[Texture2D]) -> Option<BundledTexture2D> {
-        // We get the main dimensions from the first texture
-        let first = textures.get(0)?;
-        let (width, height) = (first.dimensions().w, first.dimensions().h);
-
-        // Load the bytes
-        let mut bytes: Vec<u8> = Vec::with_capacity(textures[0].count_bytes());
-        for texture in textures.iter() {
-            // Check if we have the same settings
-            let d = texture.dimensions();
-            if d.w != width || d.h != height {
-                return None;
-            }
-            let texbytes = texture.bytes().as_valid().unwrap().iter();
-            bytes.extend(texbytes);
+    // Load the bytes
+    let mut bytes: Vec<u8> = Vec::with_capacity(textures[0].count_bytes());
+    for texture in textures.iter() {
+        // Check if we have the same settings
+        let d = texture.dimensions();
+        if d.w != width || d.h != height {
+            return None;
         }
-
-        // Use the first texture's params
-        let params = first.params();
-        Some(BundledTexture2D {
-            raw: None,
-            bytes: TextureBytes::Valid(bytes),
-            params: TextureParams {
-                layout: params.layout,
-                filter: TextureFilter::Linear,
-                wrap: params.wrap,
-                flags: TextureFlags::MIPMAPS,
-                custom: params.custom.clone(),
-            },
-            dimensions: vek::Extent3::new(width, height, textures.len() as u16),
-        })
+        let texbytes = texture.bytes().as_valid().unwrap().iter();
+        bytes.extend(texbytes);
     }
+
+    // Use the first texture's params
+    let params = first.params();
+    Some(BundledTexture2D {
+        raw: None,
+        bytes: TextureBytes::Valid(bytes),
+        params: TextureParams {
+            layout: params.layout,
+            filter: params.filter,
+            wrap: params.wrap,
+            flags: params.flags,
+            custom: params.custom.clone(),
+        },
+        dimensions: vek::Extent3::new(width, height, textures.len() as u32),
+    })
 }

@@ -12,8 +12,7 @@ fn init(world: &mut World) {
 
 // Simple GUI
 fn run(world: &mut World) {
-    gui::egui::Window::new("Test Window")
-        .show(&mut world.gui.egui, |ui| {
-            ui.label("Hello, I am your average anime enjoyer. How are you on this fine day?");
-        });
+    gui::egui::Window::new("Test Window").show(&mut world.gui.egui, |ui| {
+        ui.label("Hello, I am your average anime enjoyer. How are you on this fine day?");
+    });
 }

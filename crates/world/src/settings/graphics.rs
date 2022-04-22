@@ -20,7 +20,7 @@ impl Default for ShadowResolution {
 
 impl ShadowResolution {
     // Convert to actual shadow resolution and shadow bias
-    pub fn convert(&self) -> (u16, f32) {
+    pub fn convert(&self) -> (u32, f32) {
         match self {
             ShadowResolution::Disabled => (0, 0.0),
             ShadowResolution::Potato => (512, 9.0),

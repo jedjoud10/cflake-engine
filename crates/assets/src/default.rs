@@ -1,6 +1,7 @@
 // Default asset implementations
 impl crate::Asset for String {
-    fn deserialize(_meta: &crate::metadata::AssetMetadata, bytes: &[u8]) -> Option<Self>
+    type Input = ();
+    fn deserialize(_meta: &crate::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
     where
         Self: Sized,
     {

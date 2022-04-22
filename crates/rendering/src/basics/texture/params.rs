@@ -1,6 +1,8 @@
 use std::ptr::null;
 
-use super::TextureLayout;
+use crate::utils::DataType;
+
+use super::{TextureFormat, TextureLayout};
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
 use gl::types::GLuint;
@@ -73,4 +75,23 @@ pub struct TextureParams {
     pub wrap: TextureWrapMode,
     pub custom: Vec<(GLuint, GLuint)>,
     pub flags: TextureFlags,
+}
+
+impl TextureParams {
+    // Parameters when loading an SRGB diffuse map
+    pub const DIFFUSE_MAP_LOAD: Self = Self {
+        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+        filter: TextureFilter::Linear,
+        wrap: TextureWrapMode::Repeat,
+        custom: Vec::new(),
+        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::SRGB.bits),
+    };
+    // Parameters when loading a normal map
+    pub const NORMAL_MAP_LOAD: Self = Self {
+        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+        filter: TextureFilter::Linear,
+        wrap: TextureWrapMode::Repeat,
+        custom: Vec::new(),
+        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits),
+    };
 }

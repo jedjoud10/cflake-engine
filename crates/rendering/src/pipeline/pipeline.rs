@@ -148,7 +148,7 @@ impl Pipeline {
     pub fn handle_window_event(&mut self, renderer: &mut SceneRenderer, event: &WindowEvent, control_flow: &mut ControlFlow) {
         match event {
             WindowEvent::Resized(size) => {
-                self.window.dimensions = vek::Extent2::new(size.width.max(1) as u16, size.height.max(1) as u16);
+                self.window.dimensions = vek::Extent2::new(size.width.max(1), size.height.max(1));
                 renderer.resize(self)
             }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,

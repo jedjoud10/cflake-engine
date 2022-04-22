@@ -2,7 +2,8 @@ use crate::{
     basics::{
         material::{Material, MaterialBuilder},
         shader::Shader,
-        uniforms::UniformsSet, texture::Texture2D,
+        texture::Texture2D,
+        uniforms::UniformsSet,
     },
     pipeline::Handle,
 };
