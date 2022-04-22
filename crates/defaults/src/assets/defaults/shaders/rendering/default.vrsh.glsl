@@ -24,9 +24,10 @@ void main() {
 	m_uv = mesh_uv;
 	m_color = mesh_color;
 
-	// Compute the TBN matrix, and the world space tangents and bitangents
-	vec3 bitangent = mesh_tangent.w * cross(mesh_tangent.xyz, mesh_normal);
-	m_tangent = (mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
-	m_tangent = vec3(mesh_tangent.w);
-	m_bitangent = (mesh_matrix * vec4(bitangent, 0.0)).xyz;
+	// Calculate the world tangent
+	vec3 tangent = (mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
+	m_tangent = tangent;
+	float _sign = mesh_tangent.w;
+	vec3 bitangent = cross(m_tangent, m_normal) * _sign;
+	m_bitangent = bitangent;
 }

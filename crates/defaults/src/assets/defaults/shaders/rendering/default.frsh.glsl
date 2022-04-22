@@ -17,6 +17,7 @@ in vec3 m_tangent;
 in vec3 m_bitangent;
 in vec2 m_uv;
 in vec3 m_color;
+in vec3 test;
 
 void main() {
 	// Load diffuse/emissive, and check if we must alpha clip
@@ -32,14 +33,20 @@ void main() {
 
 	// Calculate tangent space normals and use that for bump mapping
 	vec3 normal = texture(normal_m, m_uv * uv_scale).xyz * 2.0 - 1.0;
-	normal.xy *= bumpiness;
 
-	// Construct TBN matrix, then transform
 	mat3 tbn = mat3(
 		normalize(m_tangent),
 		normalize(m_bitangent),
 		normalize(m_normal));
-	frag_normal = m_tangent;
+		
+	frag_normal = normalize(tbn * normalize(normal));
+	/*
+	// Construct TBN matrix, then transform
+	vec3 vNout = normalize(normal.x * m_tangent + normal.y * m_bitangent + normal.z * m_normal);
+	*/
+	
+	//frag_normal = -cross(normalize(m_bitangent), normalize(m_tangent));
+	//frag_normal = normalize(m_normal);
 	
 	// Other
 	frag_pos = m_position;
