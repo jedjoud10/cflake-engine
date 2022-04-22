@@ -153,7 +153,7 @@ impl ObjectSealed for Mesh {
             };
 
             // Vertex colors attribute
-            let colors = if self.flags.contains(MeshFlags::COLORS_SUPPORTED) {
+            let colors = if self.flags.contains(MeshFlags::VERTEX_COLORS_SUPPORTED) {
                 // Vertex colors buffer
                 let colors = TypedStorage::<vek::Rgb<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(colors.raw().buffer());

@@ -20,13 +20,15 @@ in vec3 m_color;
 
 void main() {
 	// Load diffuse/emissive, and check if we must alpha clip
-	float alpha1 = texture(diffuse_m, (m_uv) * uv_scale).a; 
-	float alpha2 = texture(emissive_m, (m_uv) * uv_scale).a;
+	vec4 diffuse = texture(diffuse_m, (m_uv) * uv_scale);
+	vec4 emissive = texture(emissive_m, (m_uv) * uv_scale);
+	float alpha1 = diffuse.a; 
+	float alpha2 = emissive.a;
 	if (alpha1 != 1 || alpha2 != 1) { discard; }
 
 	// Color passthrough
-	frag_diffuse = texture_vals.xyz * m_color * tint;
-	frag_emissive = emissive_vals.xyz * emissivity;
+	frag_diffuse = diffuse.xyz * m_color * tint;
+	frag_emissive = emissive.xyz * emissivity;
 
 	// Calculate tangent space normals and use that for bump mapping
 	vec3 normal = texture(normal_m, m_uv * uv_scale).xyz * 2.0 - 1.0;
