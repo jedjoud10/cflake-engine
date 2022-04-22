@@ -5,7 +5,7 @@ use getset::{CopyGetters, Getters};
 
 use crate::{
     basics::texture::{
-        apply_customs, generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes,
+        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes,
         TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode,
     },
     object::{Object, ObjectSealed},
@@ -78,9 +78,6 @@ impl ObjectSealed for Texture2D {
 
             // Generate filters
             generate_filters(gl::TEXTURE_2D, &self.params);
-
-            // Apply customs
-            apply_customs(gl::TEXTURE_2D, &self.params);
         }
 
         // Clear the texture if it's loaded bytes aren't persistent

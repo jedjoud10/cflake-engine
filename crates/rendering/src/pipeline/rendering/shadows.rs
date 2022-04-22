@@ -42,7 +42,6 @@ impl ShadowMapping {
             vek::Extent2::broadcast(shadow_resolution.max(1)),
             None,
             TextureParams {
-                custom: vec![(gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE), (gl::TEXTURE_COMPARE_FUNC, gl::GREATER)],
                 layout: TextureLayout {
                     data: DataType::U8,
                     internal_format: TextureFormat::DepthComponent16,

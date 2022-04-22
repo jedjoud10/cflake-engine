@@ -102,7 +102,6 @@ impl Painter {
                         flags: TextureFlags::RESIZABLE,
                         layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
                         filter: TextureFilter::Linear,
-                        custom: Vec::new(),
                     },
                 );
                 // Create the texture handle

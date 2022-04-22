@@ -14,6 +14,7 @@ bitflags! {
         const SRGB = 1 << 1;
         const RESIZABLE = 1 << 2;
         const PERSISTENT = 1 << 3;
+        const ANISOTROPIC = 1 << 4;
     }
 }
 
@@ -68,12 +69,11 @@ pub enum TextureWrapMode {
 }
 
 // Texture parameters
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct TextureParams {
     pub layout: TextureLayout,
     pub filter: TextureFilter,
     pub wrap: TextureWrapMode,
-    pub custom: Vec<(GLuint, GLuint)>,
     pub flags: TextureFlags,
 }
 
@@ -83,15 +83,13 @@ impl TextureParams {
         layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::Repeat,
-        custom: Vec::new(),
-        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::SRGB.bits),
+        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::SRGB.bits | TextureFlags::ANISOTROPIC.bits),
     };
     // Parameters when loading a normal map
     pub const NORMAL_MAP_LOAD: Self = Self {
         layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::Repeat,
-        custom: Vec::new(),
-        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits),
+        flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::ANISOTROPIC.bits),
     };
 }

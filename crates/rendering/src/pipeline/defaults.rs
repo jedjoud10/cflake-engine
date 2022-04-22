@@ -2,7 +2,7 @@ use assets::assetc;
 
 use crate::{
     basics::{
-        material::{Material, MaterialBuilder, PbrMaterialBuilder, PbrParams, PbrTextures},
+        material::{Material, MaterialBuilder, PbrMaterialBuilder},
         mesh::Mesh,
         shader::{Shader, ShaderInitSettings},
         texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
@@ -41,7 +41,6 @@ impl DefaultElements {
             layout: TextureLayout::LOADED,
             filter: TextureFilter::Linear,
             wrap: TextureWrapMode::Repeat,
-            custom: Default::default(),
             flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         };
         let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params.clone());

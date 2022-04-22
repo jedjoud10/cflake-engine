@@ -12,7 +12,7 @@ uniform sampler2D normals_texture; // 2
 uniform sampler2D position_texture; // 3
 uniform sampler2D depth_texture; // 4
 uniform sampler2D sky_gradient; // 5
-uniform sampler2DShadow shadow_map; // 6
+uniform sampler2D shadow_map; // 6
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;

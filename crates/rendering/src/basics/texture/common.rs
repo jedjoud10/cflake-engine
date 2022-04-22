@@ -46,6 +46,11 @@ pub unsafe fn generate_mipmaps(target: u32, params: &TextureParams) {
 
     gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, min as i32);
     gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, mag as i32);
+
+    // Create the anisotropic filtering if needed
+    if params.flags.contains(TextureFlags::ANISOTROPIC) {
+        //gl::TexParameterf(target, gl::TEXTURE_MAX_ANISOTROPY_EXT, value);
+    }
 }
 
 // Generate filters for a specific texture target
@@ -85,11 +90,4 @@ pub fn verify_byte_size(byte_size: usize, bytes: &[u8]) -> Option<*const c_void>
         return None;
     }
     Some(if bytes.is_empty() { null() } else { bytes.as_ptr() as *const c_void })
-}
-
-// Apply custom settings
-pub unsafe fn apply_customs(target: u32, params: &TextureParams) {
-    for &(pname, param) in params.custom.iter() {
-        gl::TexParameteri(target, pname, param as i32);
-    }
 }

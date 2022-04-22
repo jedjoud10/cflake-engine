@@ -105,18 +105,10 @@ pub fn bundle(textures: &[Texture2D]) -> Option<BundledTexture2D> {
         bytes.extend(texbytes);
     }
 
-    // Use the first texture's params
-    let params = first.params();
     Some(BundledTexture2D {
         raw: None,
         bytes: TextureBytes::Valid(bytes),
-        params: TextureParams {
-            layout: params.layout,
-            filter: params.filter,
-            wrap: params.wrap,
-            flags: params.flags,
-            custom: params.custom.clone(),
-        },
+        params: *first.params(),
         dimensions: vek::Extent3::new(width, height, textures.len() as u32),
     })
 }

@@ -102,7 +102,6 @@ impl SceneRenderer {
                     layout,
                     filter: TextureFilter::Nearest,
                     wrap: TextureWrapMode::Repeat,
-                    custom: Default::default(),
                     flags: TextureFlags::RESIZABLE,
                 };
                 pipeline.insert(Texture2D::new(dimensions, None, params))
