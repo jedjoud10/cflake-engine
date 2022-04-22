@@ -1,7 +1,40 @@
+// For shadow mapping
 const float SHADOW_BIAS = #constant shadow_bias
 const float NORMAL_OFFSET = 0.5;
 
-// Calculate if a specific fragment is in shadow or not
+// For normal map shadow mapping
+const int STEP_COUNT = 32;
+const float STEP_SIZE = 1.0 / float(STEP_COUNT);
+
+// Convert a world-space position into a view-space UV
+vec2 pos_to_uv(vec3 position, mat4 pv_matrix) {
+    vec4 ndc = pv_matrix * vec4(position, 1.0); 
+    vec3 projected = ndc.xyz / ndc.w;
+    return projected.xy * 0.5 + 0.5;
+}
+
+// Normal map shadow mapping
+// http://enbdev.com/doc_normalmappingshadows.htm
+float calculate_shadows_normal_map(vec3 position, vec3 light_dir, sampler2D world_normals, mat4 pv_matrix) {
+    /*
+    // Move through UV space and sum up the dot products of the normals
+    float sum = 0.0;
+    vec2 uvs = pos_to_uv(position, pv_matrix);
+    for (int i = 0; i < STEP_COUNT; i++) {
+        // Dot product sum moment
+        vec3 normal = texture(world_normals, uvs).rgb;
+        float slope = dot(normal, light_dir);
+        sum += slope;
+
+        // Update the uv by moving the position and recomputing UVs
+        position -= light_dir * STEP_SIZE;
+        uvs = pos_to_uv(position, pv_matrix);
+    }
+    */
+    return 0.0;
+}
+
+// Calculate if a specific fragment is in shadow or not (shadowmapping)
 float calculate_shadows(vec3 position, vec3 normal, vec3 light_dir, mat4 lightspace_matrix, sampler2D shadow_map_texture) {
     // Offset more when the normal is perpendicular to the light dir
     float normal_offset_factor = 1 - abs(dot(normal, light_dir));
