@@ -6,5 +6,5 @@ const STATES_PER_ROW: usize = u32::BITS as usize / BITS_PER_STATE;
 
 // Set that contains the multiple voxel states
 pub struct VoxelStateSet {
-    vec: Vec<u32>
+    vec: Vec<u32>,
 }

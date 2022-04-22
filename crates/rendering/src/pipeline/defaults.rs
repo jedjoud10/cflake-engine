@@ -2,7 +2,7 @@ use assets::assetc;
 
 use crate::basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder},
-    mesh::{Mesh, Vertices, Indices},
+    mesh::{Indices, Mesh, Vertices},
     shader::{Shader, ShaderInitSettings},
     texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
 };

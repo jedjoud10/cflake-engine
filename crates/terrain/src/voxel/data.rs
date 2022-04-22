@@ -1,4 +1,4 @@
-use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE, VoxelStateSet, VoxelState};
+use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, VoxelState, VoxelStateSet, CHUNK_SIZE};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 // Some stored voxel data, in SoA form
@@ -53,8 +53,7 @@ impl VoxelData {
 
         // TODO: Fix
 
-        PersistentVoxelData {
-        }
+        PersistentVoxelData {}
     }
 
     // Getters

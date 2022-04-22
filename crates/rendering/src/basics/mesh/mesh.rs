@@ -6,7 +6,7 @@ use crate::{
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
-use super::{GeometryBuilder, Indices, MeshBuffers, Vertices, MeshFlags};
+use super::{GeometryBuilder, Indices, MeshBuffers, MeshFlags, Vertices};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
@@ -166,7 +166,7 @@ impl ObjectSealed for Mesh {
                 gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
                 None
             };
-            
+
             // Create le buffer from the attributes
             self.buffers = Some(MeshBuffers {
                 inner: buffers,
@@ -258,7 +258,7 @@ impl Mesh {
     }
     // Procedurally generate the tangents for this mesh (given the normals and UVs)
     pub fn generate_tangents(&mut self) {
-        // Check if we can even generate, and return early if we cannot
+        // Check if we can even generate the tangents, and return early if we cannot
         if !self.flags.contains(MeshFlags::NORMALS_SUPPORTED) || !self.flags.contains(MeshFlags::UVS_SUPPORTED) {
             return;
         }
@@ -270,54 +270,49 @@ impl Mesh {
             indices: &'a [u32],
             normals: &'a [vek::Vec3<i8>],
             uvs: &'a [vek::Vec2<u8>],
-            
+
             // Tangents that we will write to (array is already pre-allocated, so we can just write directly)
             tangents: &'a mut [vek::Vec4<i8>],
         }
 
-        // Useful for tangent generation
+        // I love external libraries
         impl<'a> mikktspace::Geometry for TangentGenerator<'a> {
             fn num_faces(&self) -> usize {
                 self.indices.len() / 3
             }
-        
+
             // All the models must be triangulated, so we are gud
-            fn num_vertices_of_face(&self, face: usize) -> usize {
+            fn num_vertices_of_face(&self, _face: usize) -> usize {
                 3
             }
-        
+
             // Read position using index magic
             fn position(&self, face: usize, vert: usize) -> [f32; 3] {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.positions[i].into_array()
             }
-        
+
             // Read normal using index magic
             fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.normals[i].map(|x| x as f32 / 127.0).into_array()
             }
-        
+
             // Read texture coordinate using index magic
             fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
                 let i = self.indices[face * 3 + vert] as usize;
-                let mut arr = self.uvs[i].map(|x| x as f32 / 255.0).into_array();
-                arr
+                self.uvs[i].map(|x| x as f32 / 255.0).into_array()
             }
 
             // Write a tangent internally
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
                 let i = self.indices[face * 3 + vert] as usize;
-                let borrow = &mut self.tangents[i];
-                *borrow = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
+                self.tangents[i] = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
             }
         }
 
-        // I love external libraries
-
-        // Pre-allocate the tangents
+        // Pre-allocate the tangents and create the generator
         let mut tangents = vec![vek::Vec4::<i8>::zero(); self.vertices.len()];
-
         let mut gen = TangentGenerator {
             positions: &self.vertices.positions,
             normals: &self.vertices.normals,
