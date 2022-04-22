@@ -57,7 +57,7 @@ pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError>
 where
     T::OptArgs: Default,
 {
-    load_with(path, T::Input::default())
+    load_with(path, T::OptArgs::default())
 }
 
 // Load an asset with an explicity load input

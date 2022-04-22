@@ -54,5 +54,5 @@ void main() {
 		//final_color = vec3(in_shadow_normals);
 	}
 
-	color = vec4(post_rendering(uvs, final_color), 1.0);
+	color = vec4(normal, 1.0);
 }

@@ -35,8 +35,11 @@ void main() {
 	normal.xy *= bumpiness;
 
 	// Construct TBN matrix, then transform
-	mat3 tbn = mat3(m_tangent, m_bitangent, m_normal);
-	frag_normal = normalize(normal);
+	mat3 tbn = mat3(
+		normalize(m_tangent),
+		normalize(m_bitangent),
+		normalize(m_normal));
+	frag_normal = m_tangent;
 	
 	// Other
 	frag_pos = m_position;

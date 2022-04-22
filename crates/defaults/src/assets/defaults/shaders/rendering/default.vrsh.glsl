@@ -27,5 +27,6 @@ void main() {
 	// Compute the TBN matrix, and the world space tangents and bitangents
 	vec3 bitangent = mesh_tangent.w * cross(mesh_tangent.xyz, mesh_normal);
 	m_tangent = (mesh_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
+	m_tangent = vec3(mesh_tangent.w);
 	m_bitangent = (mesh_matrix * vec4(bitangent, 0.0)).xyz;
 }

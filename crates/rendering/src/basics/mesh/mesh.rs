@@ -74,7 +74,7 @@ impl Asset for Mesh {
 
         // Compute the tangents automatically for loaded meshes
         let mut mesh = builder.build();
-        //mesh.generate_tangents();
+        mesh.generate_tangents();
 
         Some(mesh)
     }
@@ -267,9 +267,9 @@ impl Mesh {
         struct TangentGenerator<'a> {
             // Values read from the mesh
             positions: &'a [vek::Vec3<f32>],
+            indices: &'a [u32],
             normals: &'a [vek::Vec3<i8>],
             uvs: &'a [vek::Vec2<u8>],
-            num_faces: usize,
             
             // Tangents that we will write to (array is already pre-allocated, so we can just write directly)
             tangents: &'a mut [vek::Vec4<i8>],
@@ -278,7 +278,7 @@ impl Mesh {
         // Useful for tangent generation
         impl<'a> mikktspace::Geometry for TangentGenerator<'a> {
             fn num_faces(&self) -> usize {
-                self.num_faces
+                self.indices.len() / 3
             }
         
             // All the models must be triangulated, so we are gud
@@ -288,27 +288,28 @@ impl Mesh {
         
             // Read position using index magic
             fn position(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = vert + face * 3;
+                let i = self.indices[face * 3 + vert] as usize;
                 self.positions[i].into_array()
             }
         
             // Read normal using index magic
             fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = vert + face * 3;
+                let i = self.indices[face * 3 + vert] as usize;
                 self.normals[i].map(|x| x as f32 / 127.0).into_array()
             }
         
             // Read texture coordinate using index magic
             fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
-                let i = vert + face * 3;
-                self.uvs[i].map(|x| x as f32 / 255.0).into_array()
+                let i = self.indices[face * 3 + vert] as usize;
+                let mut arr = self.uvs[i].map(|x| x as f32 / 255.0).into_array();
+                arr
             }
 
             // Write a tangent internally
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-                let i = vert + face * 3;
+                let i = self.indices[face * 3 + vert] as usize;
                 let borrow = &mut self.tangents[i];
-                *borrow = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x / 127.0) as i8);
+                *borrow = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
             }
         }
 
@@ -320,11 +321,12 @@ impl Mesh {
         let mut gen = TangentGenerator {
             positions: &self.vertices.positions,
             normals: &self.vertices.normals,
+            indices: &self.indices,
             uvs: &self.vertices.uvs,
-            num_faces: self.vertices.len() / 3,
             tangents: &mut tangents,
         };
 
+        // Le panic
         assert!(mikktspace::generate_tangents(&mut gen), "Something went wrong when generating tangents!");
 
         // Update our tangents
