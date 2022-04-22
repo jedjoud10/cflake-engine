@@ -5,13 +5,13 @@ use cflake_engine::{
     rendering::basics::{
         lights::LightType,
         material::{MaterialBuilder, PbrMaterialBuilder},
-        texture::{Texture2D, TextureParams},
+        texture::{Texture2D, TextureParams}, mesh::Mesh,
     },
     vek, World,
 };
 // An example with a test mesh
 fn main() {
-    cflake_engine::start("cflake-examples/mesh", init)
+    cflake_engine::start("cflake-examples/textured-mesh", init)
 }
 // Init the simple camera and simple mesh
 fn init(world: &mut World) {
@@ -34,16 +34,17 @@ fn init(world: &mut World) {
     });
 
     // Simple material with textures
+    let mesh = assetc::load::<Mesh>("user/meshes/untitled.obj").unwrap();
+    let mesh = world.pipeline.insert(mesh);
     let diff = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
     let norm = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
     let diff = world.pipeline.insert(diff);
     let norm = world.pipeline.insert(norm);
-    let material = PbrMaterialBuilder::default().diffuse(diff).normal(norm).bumpiness(0.8).build(&mut world.pipeline);
+    let material = PbrMaterialBuilder::default().diffuse(diff).normal(norm).bumpiness(0.8).scale(vek::Vec2::one() * 12.0).build(&mut world.pipeline);
 
-    // Create a cube
-    let cube = world.pipeline.defaults().cube.clone();
+    // Create an entity
     world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(cube, material)).unwrap();
+        linker.insert(Renderer::new(mesh, material)).unwrap();
         linker.insert(Transform::default()).unwrap();
     });
 }

@@ -50,7 +50,7 @@ void main() {
 		// Normal mapping shadows
 		float in_shadow_normals = calculate_shadows_normal_map(position, sunlight_dir, normals_texture, pv_matrix);
 
-		//final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
+		final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);
 		//final_color = vec3(in_shadow_normals);
 	}
 
