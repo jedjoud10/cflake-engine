@@ -1,5 +1,3 @@
-use std::num::{NonZeroU64, NonZeroU8};
-
 use getset::{CopyGetters, Getters};
 use slotmap::{Key, SlotMap};
 

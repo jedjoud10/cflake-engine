@@ -2,8 +2,8 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFilter, TextureFlags, TextureParams},
-    object::{Object, ObjectSealed},
+    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams},
+    object::ObjectSealed,
     pipeline::Pipeline,
 };
 use getset::{CopyGetters, Getters};

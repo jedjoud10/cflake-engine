@@ -42,7 +42,7 @@ pub enum ShaderSourceType {
 
 impl Asset for ShaderSource {
     type Input = ();
-    fn deserialize(meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
+    fn deserialize(meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::Input) -> Option<Self>
     where
         Self: Sized,
     {

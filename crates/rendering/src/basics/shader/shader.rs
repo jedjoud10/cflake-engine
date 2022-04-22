@@ -1,6 +1,6 @@
 use super::{compile_shader, ShaderInitSettings};
 
-use crate::object::{Object, ObjectSealed};
+use crate::object::ObjectSealed;
 
 use ahash::AHashSet;
 use getset::Getters;

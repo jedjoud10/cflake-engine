@@ -1,4 +1,4 @@
-use super::{Cuboid, Sphere, VerticalCapsule};
+use super::{Cuboid, Sphere};
 use enum_as_inner::EnumAsInner;
 
 // Some basic shapes

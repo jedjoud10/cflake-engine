@@ -5,7 +5,6 @@ use crate::utils::DataType;
 use super::{TextureFormat, TextureLayout};
 use bitflags::bitflags;
 use enum_as_inner::EnumAsInner;
-use gl::types::GLuint;
 
 // Texture parameter bits
 bitflags! {

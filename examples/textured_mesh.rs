@@ -1,9 +1,11 @@
 use cflake_engine::{
-    assets::{self, assetc}, defaults,
+    assets::{self, assetc},
+    defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
         lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder}, texture::{Texture2D, TextureParams},
+        material::{MaterialBuilder, PbrMaterialBuilder},
+        texture::{Texture2D, TextureParams},
     },
     vek, World,
 };
@@ -36,11 +38,7 @@ fn init(world: &mut World) {
     let norm = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
     let diff = world.pipeline.insert(diff);
     let norm = world.pipeline.insert(norm);
-    let material = PbrMaterialBuilder::default()
-        .diffuse(diff)
-        .normal(norm)
-        .bumpiness(0.8)
-        .build(&mut world.pipeline);
+    let material = PbrMaterialBuilder::default().diffuse(diff).normal(norm).bumpiness(0.8).build(&mut world.pipeline);
 
     // Create a cube
     let cube = world.pipeline.defaults().cube.clone();

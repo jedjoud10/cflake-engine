@@ -1,6 +1,6 @@
 use crate::{
     basics::{shader::Shader, uniforms::UniformsSet},
-    object::{Object, ObjectSealed},
+    object::ObjectSealed,
     pipeline::*,
 };
 

@@ -1,13 +1,10 @@
 use assets::assetc;
 
-use crate::{
-    basics::{
-        material::{Material, MaterialBuilder, PbrMaterialBuilder},
-        mesh::Mesh,
-        shader::{Shader, ShaderInitSettings},
-        texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
-    },
-    utils::DataType,
+use crate::basics::{
+    material::{Material, MaterialBuilder, PbrMaterialBuilder},
+    mesh::Mesh,
+    shader::{Shader, ShaderInitSettings},
+    texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
 };
 
 use super::{Handle, Pipeline};
@@ -43,13 +40,13 @@ impl DefaultElements {
             wrap: TextureWrapMode::Repeat,
             flags: TextureFlags::MIPMAPS | TextureFlags::SRGB,
         };
-        let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params.clone());
+        let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params);
         let white = pipeline.insert(white);
 
-        let black = Texture2D::new(vek::Extent2::one(), Some(vec![0, 0, 0, 255]), params.clone());
+        let black = Texture2D::new(vek::Extent2::one(), Some(vec![0, 0, 0, 255]), params);
         let black = pipeline.insert(black);
 
-        let normal_map = Texture2D::new(vek::Extent2::one(), Some(vec![127, 127, 255, 255]), params.clone());
+        let normal_map = Texture2D::new(vek::Extent2::one(), Some(vec![127, 127, 255, 255]), params);
         let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine

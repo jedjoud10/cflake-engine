@@ -18,7 +18,7 @@ impl Default for GlobalsSet {
 impl GlobalsSet {
     // Insert a global into the set
     pub fn insert<U: Global>(&mut self, global: U) -> Option<()> {
-        self.anymap.insert(global).map(|x| ()).xor(Some(()))
+        self.anymap.insert(global).map(|_x| ()).xor(Some(()))
     }
     // Get a global from the set (immutably)
     pub fn get<U: Global>(&self) -> Option<&U> {

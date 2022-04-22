@@ -8,7 +8,6 @@ use crate::{
     pipeline::Handle,
 };
 
-
 // A physically based material builder that use the PBR shader
 pub struct PbrMaterialBuilder {
     // Textures

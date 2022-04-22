@@ -5,11 +5,10 @@ use getset::{CopyGetters, Getters};
 
 use crate::{
     basics::texture::{
-        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes,
-        TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode,
+        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags,
+        TextureParams,
     },
-    object::{Object, ObjectSealed},
-    utils::DataType,
+    object::ObjectSealed,
 };
 
 // A simple two dimensional OpenGL texture

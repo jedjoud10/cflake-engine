@@ -5,12 +5,10 @@ use cflake_engine::{
         globals::{self, TerrainSettings},
     },
     rendering::basics::{
-        lights::{
-            LightType::{self},
-        },
+        lights::LightType::{self},
         material::Material,
         shader::{Shader, ShaderInitSettings},
-        texture::{Texture2D, TextureParams, bundle},
+        texture::{bundle, Texture2D, TextureParams},
         uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
@@ -98,10 +96,6 @@ fn init(world: &mut World) {
     };
     let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
     // Big sphere
-    terrain.edit(Edit::sphere(
-        vek::Vec3::unit_y() * -50.0,
-        50.0,
-        EditParams::new(None, vek::Rgb::one(), true),
-    ));
+    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
     world.globals.insert(terrain).unwrap();
 }

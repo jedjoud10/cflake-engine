@@ -2,7 +2,7 @@ use std::ptr::null;
 
 use crate::{
     advanced::storages::TypedStorage,
-    object::{Object, ObjectSealed},
+    object::ObjectSealed,
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
@@ -45,7 +45,7 @@ pub struct Mesh {
 
 impl Asset for Mesh {
     type Input = ();
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::Input) -> Option<Self>
     where
         Self: Sized,
     {

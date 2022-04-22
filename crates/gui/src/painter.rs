@@ -6,7 +6,7 @@ use crate::common::{convert_image, get_dimensions, get_id};
 use egui::TexturesDelta;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFlags, TextureParams, TextureLayout, TextureFormat, TextureFilter};
+use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams};
 use rendering::basics::uniforms::Uniforms;
 use rendering::gl;
 use rendering::utils::DataType;

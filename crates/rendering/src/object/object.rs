@@ -1,5 +1,3 @@
-use crate::pipeline::Pipeline;
-
 pub(crate) mod private {
     use crate::pipeline::Pipeline;
 

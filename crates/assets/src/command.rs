@@ -1,5 +1,3 @@
-use parking_lot::{MappedMutexGuard, MutexGuard};
-
 use crate::{asset::Asset, cacher::*, error::AssetLoadError, metadata::AssetMetadata};
 use std::{fs::File, path::PathBuf};
 

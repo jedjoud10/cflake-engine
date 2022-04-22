@@ -33,7 +33,7 @@ mod tests {
         */
 
         for i in 0..1 {
-            let entity = manager.insert(|_entity, modif| {
+            let _entity = manager.insert(|_entity, modif| {
                 modif.insert(Tag("Hello world tag!")).unwrap();
                 modif.insert(SimpleValue(i as i32)).unwrap();
                 modif.insert(Name("Sususus amogus?", [0; 64])).unwrap();
@@ -46,10 +46,10 @@ mod tests {
 
         for _ in 0..5 {
             manager.prepare();
-            let i = std::time::Instant::now();
+            let _i = std::time::Instant::now();
             type Layout<'a> = (&'a Tag, &'a SimpleValue);
             let filter = added::<Tag>();
-            let mut query = manager.query_with::<Layout, _>(filter);
+            let query = manager.query_with::<Layout, _>(filter);
             dbg!(query.count());
             //dbg!(query);
         }

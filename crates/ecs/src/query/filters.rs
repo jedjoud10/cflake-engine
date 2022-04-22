@@ -1,5 +1,5 @@
 use crate::{
-    registry::{self, name},
+    registry::{self},
     Component, ComponentStateRow, Mask, QueryLayout,
 };
 use std::marker::PhantomData;

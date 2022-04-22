@@ -3,7 +3,7 @@ use crate::{
         shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, ShaderProgram},
         uniforms::Uniforms,
     },
-    object::{Object, ObjectSealed, OpenGLObjectNotInitialized},
+    object::{ObjectSealed, OpenGLObjectNotInitialized},
     pipeline::Pipeline,
 };
 use ahash::AHashSet;

@@ -1,11 +1,7 @@
 use super::HeuristicSettings;
 use getset::{CopyGetters, Getters, MutGetters};
 use slotmap::Key;
-use std::{
-    hash::Hash,
-    mem::MaybeUninit,
-    num::{NonZeroU64, NonZeroU8},
-};
+use std::{hash::Hash, mem::MaybeUninit};
 
 slotmap::new_key_type! {
     pub struct NodeKey;

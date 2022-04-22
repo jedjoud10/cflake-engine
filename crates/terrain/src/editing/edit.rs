@@ -1,5 +1,5 @@
-use math::shapes::{Cuboid, ShapeType, Sphere};
 use crate::pack_color;
+use math::shapes::{Cuboid, ShapeType, Sphere};
 
 // Edit parameters that depict how the edit will influence the terrain
 #[derive(Clone)]

@@ -99,7 +99,7 @@ impl Host {
     pub fn send<P: Payload + 'static>(&self, payload: P, _type: PacketType, uuid: Uuid) -> Option<()> {
         // Get the client's socket address
         let addr = self.clients.get_by_right(&uuid)?;
-        send(addr.clone(), payload, &self.sender, _type).unwrap();
+        send(*addr, payload, &self.sender, _type).unwrap();
         Some(())
     }
 }
