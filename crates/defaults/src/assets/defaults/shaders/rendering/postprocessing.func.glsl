@@ -21,5 +21,5 @@ vec3 post_rendering(vec2 uvs, vec3 icolor) {
     float vignette = (1-vignette_strength);
     vec3 gamma_corrected_color = pow(color, vec3(1.0/gamma));
 
-    return icolor;
+    return gamma_corrected_color * vignette;
 }

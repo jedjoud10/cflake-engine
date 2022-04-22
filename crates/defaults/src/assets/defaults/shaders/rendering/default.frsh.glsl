@@ -3,7 +3,8 @@
 layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_emissive;
 layout(location = 2) out vec3 frag_normal;
-layout(location = 3) out vec3 frag_pos;
+layout(location = 3) out vec4 frag_tangent;
+layout(location = 4) out vec3 frag_pos;
 uniform sampler2D diffuse_m;
 uniform sampler2D emissive_m;
 uniform sampler2D normal_m;
@@ -20,13 +21,14 @@ in mat3 tbn;
 void main() {
 	vec4 texture_vals = texture(diffuse_m, (m_uv) * uv_scale); 
 	vec4 emissive_vals = texture(emissive_m, (m_uv) * uv_scale); 
+
 	// Alpha clipping
 	if (texture_vals.a != 1 || emissive_vals.a != 1) { discard; }
 
+	// Pass through, we convert the normals' spaces when rendering at the end
 	frag_emissive = emissive_vals.xyz * emissivity;
 	frag_diffuse = texture_vals.xyz * m_color * tint;
-	vec3 tangent_space_normals = texture(normal_m, (m_uv) * uv_scale).xyz * 2.0 - 1.0;
-	tangent_space_normals.xy *= bumpiness;
-	frag_normal = normalize(tbn * tangent_space_normals);
+	frag_normal = normalize(m_normal);
+	frag_tangent = m_tangent;
 	frag_pos = m_position;
 }
