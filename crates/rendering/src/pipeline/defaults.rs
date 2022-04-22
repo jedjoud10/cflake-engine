@@ -2,7 +2,7 @@ use assets::assetc;
 
 use crate::basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder},
-    mesh::Mesh,
+    mesh::{Mesh, Vertices, Indices},
     shader::{Shader, ShaderInitSettings},
     texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
 };
@@ -53,9 +53,8 @@ impl DefaultElements {
         let missing = assetc::load_with::<Texture2D>("defaults/textures/missing.png", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let missing_texture = pipeline.insert(missing);
 
-        // Default mesh
-        let mesh = Mesh::default();
-        let mesh = pipeline.insert(mesh);
+        // Default empty mesh
+        let mesh = pipeline.insert(Mesh::new(Vertices::default(), Indices::default()));
 
         // Load the default cube and sphere
         let cube = pipeline.insert(assetc::load("defaults/meshes/cube.obj").unwrap());

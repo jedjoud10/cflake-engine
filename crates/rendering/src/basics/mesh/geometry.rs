@@ -3,7 +3,10 @@ use super::{IndexBuilder, Mesh, VertexBuilder};
 // Mesh geometry builder
 #[derive(Default)]
 pub struct GeometryBuilder {
+    // Vertex builder, really useful for incrementally adding the vertices
     pub vertices: VertexBuilder,
+
+    // Same thing for the index builder
     pub indices: IndexBuilder,
 }
 

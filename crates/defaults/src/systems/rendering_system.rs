@@ -52,7 +52,7 @@ fn run(world: &mut World) {
     let query = world.ecs.query::<(&mut Transform, &Light)>();
     for (transform, _) in query {
         transform.rotation.rotate_x(0.09 * world.time.delta());
-        transform.rotation.rotate_y(0.07 * world.time.delta());
+        //transform.rotation.rotate_y(0.07 * world.time.delta());
     }
 
     // Update the matrices of renderers, only if the transforms os said renderers were externally modified

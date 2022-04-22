@@ -6,7 +6,7 @@ use crate::{
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
-use super::{GeometryBuilder, Indices, MeshBuffers, Vertices};
+use super::{GeometryBuilder, Indices, MeshBuffers, Vertices, MeshFlags};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
@@ -14,14 +14,14 @@ use gl::types::GLuint;
 use obj::TexturedVertex;
 
 // A simple mesh that holds vertex, normal, and color data
-#[derive(Default, Getters, CopyGetters, Setters)]
+#[derive(Getters, CopyGetters, Setters)]
 pub struct Mesh {
     // Main IDs
     #[getset(get_copy = "pub(crate)")]
     vao: GLuint,
 
     // Buffers
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub", get_mut = "pub(crate)")]
     buffers: Option<MeshBuffers>,
 
     /*
@@ -41,6 +41,10 @@ pub struct Mesh {
     // And indices
     #[getset(get = "pub", set = "pub(super)")]
     indices: Indices,
+
+    // Mesh flags telling us what vertex attributes are suported and shit
+    #[getset(get = "pub")]
+    flags: MeshFlags,
 }
 
 impl Asset for Mesh {
@@ -49,10 +53,11 @@ impl Asset for Mesh {
     where
         Self: Sized,
     {
+        // Parse the OBJ mesh into an engine mesh
         let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
-        // Generate the tangents
-        // Create the actual Mesh now
         let mut builder = GeometryBuilder::default();
+
+        // Load each vertex SoA style
         let vertices = &mut builder.vertices;
         for vertex in parsed_obj.vertices {
             vertices.position(vek::Vec3::new(vertex.position[0], vertex.position[1], vertex.position[2]));
@@ -63,7 +68,14 @@ impl Asset for Mesh {
             ));
             vertices.uv(vek::Vec2::new((vertex.texture[0] * 255.0) as u8, (vertex.texture[1] * 255.0) as u8));
         }
+
+        // Also load the triangles
         builder.indices.indices = parsed_obj.indices;
+
+        // Compute the tangents
+        panic!();
+
+
         Some(builder.build())
     }
 }
@@ -100,7 +112,7 @@ impl ObjectSealed for Mesh {
             gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
 
             // Vertex normals attribute
-            let normals = if !self.vertices.normals.is_empty() {
+            let normals = if self.flags.contains(MeshFlags::NORMALS_SUPPORTED) {
                 // Vertex normals buffer
                 let normals = TypedStorage::<vek::Vec3<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.normals.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(normals.raw().buffer());
@@ -108,11 +120,13 @@ impl ObjectSealed for Mesh {
                 gl::VertexAttribPointer(1, 3, gl::BYTE, gl::TRUE, 0, null());
                 Some(normals)
             } else {
+                // Default normal is mid
                 gl::VertexAttrib4Nbv(1, [127, 127, 127, 0_i8].as_ptr());
                 None
             };
 
-            let tangents = if !self.vertices.tangents.is_empty() {
+            // Vertex tangents attribute
+            let tangents = if self.flags.contains(MeshFlags::TANGENTS_SUPPORTED) {
                 // Vertex tangents buffer
                 let tangents = TypedStorage::<vek::Vec4<i8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.tangents.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(tangents.raw().buffer());
@@ -120,11 +134,13 @@ impl ObjectSealed for Mesh {
                 gl::VertexAttribPointer(2, 4, gl::BYTE, gl::TRUE, 0, null());
                 Some(tangents)
             } else {
+                // Default tangent is uhhhh, fard
                 gl::VertexAttrib4Nbv(2, [0, 0, 0, 127_i8].as_ptr());
                 None
             };
 
-            let uvs = if !self.vertices.uvs.is_empty() {
+            // Vertex texture coordinates attribute
+            let uvs = if self.flags.contains(MeshFlags::UVS_SUPPORTED) {
                 // Vertex texture coordinates buffer
                 let uvs = TypedStorage::<vek::Vec2<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.uvs.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(uvs.raw().buffer());
@@ -132,11 +148,13 @@ impl ObjectSealed for Mesh {
                 gl::VertexAttribPointer(3, 2, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 Some(uvs)
             } else {
+                // Default UV is one
                 gl::VertexAttrib4Nub(3, 255, 255, 0, 0);
                 None
             };
 
-            let colors = if !self.vertices.colors.is_empty() {
+            // Vertex colors attribute
+            let colors = if self.flags.contains(MeshFlags::COLORS_SUPPORTED) {
                 // Vertex colors buffer
                 let colors = TypedStorage::<vek::Rgb<u8>>::new(self.vertices().len(), self.vertices().len(), self.vertices.colors.as_ptr(), gl::ARRAY_BUFFER, usage);
                 buffers.push(colors.raw().buffer());
@@ -144,10 +162,12 @@ impl ObjectSealed for Mesh {
                 gl::VertexAttribPointer(4, 3, gl::UNSIGNED_BYTE, gl::TRUE, 0, null());
                 Some(colors)
             } else {
+                // Default color is white
                 gl::VertexAttrib4Nub(4, 255, 255, 255, 0);
                 None
             };
-            // Unbind
+            
+            // Create le buffer from the attributes
             self.buffers = Some(MeshBuffers {
                 inner: buffers,
                 indices,
@@ -157,6 +177,8 @@ impl ObjectSealed for Mesh {
                 colors,
                 uvs,
             });
+
+            // Rinse and repeat
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -165,7 +187,7 @@ impl ObjectSealed for Mesh {
 
     fn disposed(self) {
         unsafe {
-            // Delete the vertex array
+            // Lul mem leak
             gl::DeleteVertexArrays(1, &self.vao);
         }
     }
@@ -175,13 +197,20 @@ impl Mesh {
     // Create a new mesh using raw vertices and indices
     pub fn new(vertices: Vertices, indices: Indices) -> Self {
         Self {
+            flags: MeshFlags::get(&vertices),
             vertices,
             indices,
-            ..Default::default()
+            vao: 0,
+            buffers: None,
         }
     }
     // Créer un nouveau mesh en combinant deux meshs qui existent déja.
-    pub fn combine(mut self, other: Mesh) -> Mesh {
+    pub fn combine(mut self, other: Mesh) -> Option<Mesh> {
+        // Nous pouvons seulement faire sela pour les mesh qui ont les mêmes flags
+        if self.flags != other.flags {
+            return None;
+        }
+
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
         self.indices.extend(other.indices.into_iter().map(|mut x| {
             x += max_triangle_index;
@@ -192,10 +221,10 @@ impl Mesh {
         self.vertices.uvs.extend(other.vertices.uvs.into_iter());
         self.vertices.colors.extend(other.vertices.colors.into_iter());
         self.vertices.tangents.extend(other.vertices.tangents.into_iter());
-        self
+        Some(self)
     }
     // Procedurally generate the normals for this mesh
-    pub fn generate_normals(mut self) {
+    pub fn generate_normals(&mut self) {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
         let mut vertex_normals: Vec<vek::Vec3<f32>> = vec![vek::Vec3::zero(); self.vertices.positions.len()];
@@ -225,5 +254,20 @@ impl Mesh {
 
         // Update our normals
         self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().as_()).collect::<Vec<_>>();
+        self.flags.insert(MeshFlags::NORMALS_SUPPORTED);
+    }
+    // Procedurally generate the tangents for this mesh (given the normals and UVs)
+    pub fn generate_tangents(&mut self) {
+        // Check if we can even generate, and return early if we cannot
+        if !self.flags.contains(MeshFlags::NORMALS_SUPPORTED) || !self.flags.contains(MeshFlags::UVS_SUPPORTED) {
+            return;
+        }
+
+        // Calculate le tangents (fard)
+
+
+        // Update our tangents
+        self.vertices.tangents = Vec::new();
+        self.flags.insert(MeshFlags::TANGENTS_SUPPORTED)
     }
 }

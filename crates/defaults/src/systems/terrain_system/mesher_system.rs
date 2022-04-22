@@ -59,7 +59,7 @@ fn run(world: &mut World) {
             let mesh = {
                 let base = generated.base.build();
                 let skirts = generated.skirts.build();
-                let combined = Mesh::combine(base, skirts);
+                let combined = Mesh::combine(base, skirts).unwrap();
                 world.pipeline.insert(combined)
             };
 

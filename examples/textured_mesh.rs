@@ -45,6 +45,6 @@ fn init(world: &mut World) {
     // Create an entity
     world.ecs.insert(|_, linker| {
         linker.insert(Renderer::new(mesh, material)).unwrap();
-        linker.insert(Transform::default()).unwrap();
+        linker.insert(Transform::rotation_x(1.0)).unwrap();
     });
 }
