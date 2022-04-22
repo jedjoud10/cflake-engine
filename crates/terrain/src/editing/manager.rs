@@ -52,19 +52,12 @@ impl EditingManager {
                 let (center, size, shapetype) = match &edit.shape {
                     ShapeType::Cuboid(cuboid) => (cuboid.center, cuboid.size, 0u8),
                     ShapeType::Sphere(sphere) => (sphere.center, vek::Vec3::new(sphere.radius, 0.0, 0.0), 1u8),
-                    ShapeType::VerticalCapsule(_) => todo!(),
                 };
-                // Get the edittype
-                let params = edit.params.clone();
-                let rgbcolor = (pack_color(params.color) as u32) << 16; // 2
-                let shape_type_edit_type = (((shapetype << 4) | (!params._union as u8)) as u32) << 8; // 1
-                let material = params.material.unwrap_or(255) as u32; // 1
-                let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
 
                 PackedEdit {
                     center: vek::Vec3::new(f16::from_f32(center.x), f16::from_f32(center.y), f16::from_f32(center.z)),
                     size: vek::Vec3::new(f16::from_f32(size.x), f16::from_f32(size.y), f16::from_f32(size.z)),
-                    rgbcolor_shape_type_edit_type_material,
+                    rgbcolor_shape_type_edit_type_material: edit.params.convert(shapetype),
                 }
             })
             .collect::<Vec<_>>()

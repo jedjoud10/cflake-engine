@@ -61,7 +61,7 @@ pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
         gl::TexParameteri(target, gl::TEXTURE_WRAP_T, wrap_mode as i32);
     }
     // Set the texture's border color
-    unsafe fn set_border_color(target: u32, color: Option<vek::Vec4<f32>>) {
+    unsafe fn set_border_color(target: u32, color: Option<vek::Rgba<f32>>) {
         if let Some(color) = color {
             let ptr = color.as_ptr();
             gl::TexParameterfv(target, gl::TEXTURE_BORDER_COLOR, ptr);
@@ -70,9 +70,8 @@ pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
 
     // Set the wrap mode for the texture (Mipmapped or not)
     match params.wrap {
-        TextureWrapMode::ClampToEdge(color) => {
+        TextureWrapMode::ClampToEdge() => {
             set_wrap_mode(target, gl::CLAMP_TO_EDGE);
-            set_border_color(target, color);
         }
         TextureWrapMode::ClampToBorder(color) => {
             set_wrap_mode(target, gl::CLAMP_TO_BORDER);

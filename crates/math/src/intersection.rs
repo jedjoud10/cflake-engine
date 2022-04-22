@@ -34,7 +34,6 @@ pub fn basic_shape_octree_node(shape: &ShapeType, node: &Node) -> bool {
     match shape {
         ShapeType::Cuboid(cuboid) => aabb_aabb(&cuboid.aabb(), &aabb),
         ShapeType::Sphere(sphere) => aabb_sphere(&aabb, sphere),
-        ShapeType::VerticalCapsule(capsule) => aabb_aabb(&capsule.aabb(), &aabb),
     }
 }
 //

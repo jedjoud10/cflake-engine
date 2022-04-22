@@ -117,6 +117,14 @@ fn run(world: &mut World) {
     let renderer = &mut world.renderer;
     let pipeline = &world.pipeline;
     renderer.render(pipeline, settings);
+    /*
+    // A bit of trolling yea?
+    let query = world.ecs.query::<(&mut Transform, &Light)>();
+    for (transform, _) in query {
+        transform.rotation.rotate_x(0.1 * world.time.delta());
+        transform.rotation.rotate_y(0.1 * world.time.delta());
+    }
+    */
 }
 
 // Create the rendering system

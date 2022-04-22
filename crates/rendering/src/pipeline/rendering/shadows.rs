@@ -48,7 +48,7 @@ impl ShadowMapping {
                 },
                 flags: TextureFlags::empty(),
                 filter: TextureFilter::Nearest,
-                wrap: TextureWrapMode::ClampToBorder(Some(vek::Vec4::<f32>::one())),
+                wrap: TextureWrapMode::ClampToBorder(Some(vek::Rgba::<f32>::one())),
             },
         );
         let texture = pipeline.insert(texture);

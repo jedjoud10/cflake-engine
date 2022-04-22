@@ -6,7 +6,6 @@ use enum_as_inner::EnumAsInner;
 pub enum ShapeType {
     Cuboid(Cuboid),
     Sphere(Sphere),
-    VerticalCapsule(VerticalCapsule),
 }
 
 impl ShapeType {
@@ -15,7 +14,6 @@ impl ShapeType {
         match self {
             ShapeType::Cuboid(cuboid) => &cuboid.center,
             ShapeType::Sphere(sphere) => &sphere.center,
-            ShapeType::VerticalCapsule(capsule) => &capsule.center,
         }
     }
 }

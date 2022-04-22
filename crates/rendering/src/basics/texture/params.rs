@@ -62,8 +62,8 @@ pub enum TextureFilter {
 // Texture wrapping filters
 #[derive(Debug, Clone, Copy)]
 pub enum TextureWrapMode {
-    ClampToEdge(Option<vek::Vec4<f32>>),
-    ClampToBorder(Option<vek::Vec4<f32>>),
+    ClampToEdge(),
+    ClampToBorder(Option<vek::Rgba<f32>>),
     Repeat,
     MirroredRepeat,
 }

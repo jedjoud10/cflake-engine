@@ -1,11 +1,31 @@
 use math::shapes::{Cuboid, ShapeType, Sphere};
+use crate::pack_color;
 
-// Edit parameters
+// Edit parameters that depict how the edit will influence the terrain
 #[derive(Clone)]
 pub struct EditParams {
-    pub material: Option<u8>,
-    pub color: vek::Rgb<u8>,
-    pub _union: bool,
+    material: Option<u8>,
+    color: vek::Rgb<u8>,
+    _union: bool,
+}
+
+impl EditParams {
+    pub fn new(material: Option<u8>, color: vek::Rgb<f32>, union: bool) -> Self {
+        Self {
+            material,
+            color: (color * 255.0).as_(),
+            _union: union,
+        }
+    }
+
+    // Convert the parameters into a single u32 that can be sent to the GPU
+    pub fn convert(&self, shapetype: u8) -> u32 {
+        let rgbcolor = (pack_color(self.color) as u32) << 16; // 2
+        let shape_type_edit_type = (((shapetype << 4) | (!self._union as u8)) as u32) << 8; // 1
+        let material = self.material.unwrap_or(255) as u32; // 1
+        let rgbcolor_shape_type_edit_type_material = rgbcolor | shape_type_edit_type | material;
+        rgbcolor_shape_type_edit_type_material
+    }
 }
 
 impl Default for EditParams {
@@ -13,7 +33,7 @@ impl Default for EditParams {
         Self {
             material: Default::default(),
             color: vek::Rgb::one() * 255,
-            _union: Default::default(),
+            _union: true,
         }
     }
 }

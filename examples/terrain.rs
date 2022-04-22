@@ -99,17 +99,11 @@ fn init(world: &mut World) {
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(&world.settings.terrain, terrain_settings, &mut world.pipeline);
-    /*
     // Big sphere
     terrain.edit(Edit::sphere(
         vek::Vec3::unit_y() * -50.0,
         50.0,
-        EditParams {
-            _union: true,
-            material: None,
-            ..Default::default()
-        },
+        EditParams::new(None, vek::Rgb::one(), true),
     ));
-    */
     world.globals.insert(terrain).unwrap();
 }
