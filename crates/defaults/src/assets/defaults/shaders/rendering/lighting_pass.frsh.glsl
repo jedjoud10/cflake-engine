@@ -24,7 +24,7 @@ in vec2 uvs;
 void main() {
 	ivec2 pixel = ivec2(uvs * _resolution);
 	// Sample the textures
-	vec3 normal = texture(normals_texture, uvs).xyz;
+	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
 	vec3 emissive = texture(emissive_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;
@@ -54,5 +54,5 @@ void main() {
 		//final_color = vec3(in_shadow_normals);
 	}
 
-	color = vec4(normal, 0);
+	color = vec4(post_rendering(uvs, final_color), 1.0);
 }
