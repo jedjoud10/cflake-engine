@@ -1,5 +1,4 @@
-use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
-use bitfield::SparseBitfield;
+use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE, VoxelStateSet, VoxelState};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 // Some stored voxel data, in SoA form
@@ -37,27 +36,24 @@ impl VoxelData {
         let normals = &mut self.normals;
         let voxel_materials = &mut self.voxel_materials;
 
-        // We do a bit of overwriting
-        let solid_state = voxels
+        // Get the combined voxel states
+        let states = voxels
             .par_iter()
             .zip(densities)
             .zip(colors)
             .zip(normals)
             .zip(voxel_materials)
             .map(|((((voxel, density), color), normal), voxel_material)| {
-                // Read the voxel attributes
+                // Read the voxel attributes while we're at it
                 *density = voxel.density.to_f32();
                 *color = unpack_color(voxel.rgb_color);
                 *normal = voxel.normal;
                 *voxel_material = voxel.voxel_material;
-                // Set the state bit while we're at it
-                *density < 0.0
-            })
-            .collect::<Vec<bool>>();
+            });
+
+        // TODO: Fix
 
         PersistentVoxelData {
-            solid: SparseBitfield::from_bools(&solid_state),
-            voxel_materials: self.voxel_materials.clone(),
         }
     }
 

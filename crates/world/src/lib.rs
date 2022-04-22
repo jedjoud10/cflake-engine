@@ -2,7 +2,6 @@
 mod world;
 pub use self::world::*;
 pub mod settings;
-pub use ::bitfield;
 pub use assets;
 pub use audio;
 pub use ecs;

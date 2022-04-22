@@ -73,7 +73,6 @@ impl Asset for Mesh {
         builder.indices.indices = parsed_obj.indices;
 
         // Compute the tangents
-        panic!();
 
 
         Some(builder.build())
@@ -263,11 +262,72 @@ impl Mesh {
             return;
         }
 
-        // Calculate le tangents (fard)
+        // Local struct just cause I don't want to implement mikktspace::Geometry for Mesh
+        struct TangentGenerator<'a> {
+            // Values read from the mesh
+            positions: &'a [vek::Vec3<f32>],
+            normals: &'a [vek::Vec3<i8>],
+            uvs: &'a [vek::Vec2<u8>],
+            num_faces: usize,
+            
+            // Tangents that we will write to (array is already pre-allocated, so we can just write directly)
+            tangents: &'a mut [vek::Vec4<i8>],
+        }
 
+        // Useful for tangent generation
+        impl<'a> mikktspace::Geometry for TangentGenerator<'a> {
+            fn num_faces(&self) -> usize {
+                self.num_faces
+            }
+        
+            // All the models must be triangulated, so we are gud
+            fn num_vertices_of_face(&self, face: usize) -> usize {
+                3
+            }
+        
+            // Read position using index magic
+            fn position(&self, face: usize, vert: usize) -> [f32; 3] {
+                let i = vert + face * 3;
+                self.positions[i].into_array()
+            }
+        
+            // Read normal using index magic
+            fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
+                let i = vert + face * 3;
+                self.normals[i].map(|x| x as f32 / 127.0).into_array()
+            }
+        
+            // Read texture coordinate using index magic
+            fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
+                let i = vert + face * 3;
+                self.uvs[i].map(|x| x as f32 / 255.0).into_array()
+            }
+
+            // Write a tangent internally
+            fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
+                let i = vert + face * 3;
+                let borrow = &mut self.tangents[i];
+                *borrow = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x / 127.0) as i8);
+            }
+        }
+
+        // I love external libraries
+
+        // Pre-allocate the tangents
+        let mut tangents = vec![vek::Vec4::<i8>::zero(); self.vertices.len()];
+
+        let mut gen = TangentGenerator {
+            positions: &self.vertices.positions,
+            normals: &self.vertices.normals,
+            uvs: &self.vertices.uvs,
+            num_faces: self.vertices.len() / 3,
+            tangents: &mut tangents,
+        };
+
+        assert!(mikktspace::generate_tangents(&mut gen), "Something went wrong when generating tangents!");
 
         // Update our tangents
-        self.vertices.tangents = Vec::new();
+        self.vertices.tangents = tangents;
         self.flags.insert(MeshFlags::TANGENTS_SUPPORTED)
     }
 }

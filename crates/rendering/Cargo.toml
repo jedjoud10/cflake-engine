@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitfield = { git = "https://github.com/jedjoud10/bitfield" }
 opengl = { path = "../opengl" }
+mikktspace = "0.3.0"
 getset = "0.1.2"
 vek = "0.15.6"
 slotmap = "1.0.6"
