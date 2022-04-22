@@ -133,9 +133,7 @@ impl Pipeline {
     pub fn start_frame(&mut self, renderer: &mut SceneRenderer, delta: f32, elapsed: f32) {
         self.delta = delta;
         self.elapsed = elapsed;
-        unsafe {
-            renderer.start_frame(self);
-        }
+        renderer.start_frame(self);
     }
     // Called at the end of the frame to ready the pipeline for the next frame
     pub fn end_frame(&mut self) {

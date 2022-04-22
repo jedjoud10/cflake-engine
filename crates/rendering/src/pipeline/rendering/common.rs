@@ -21,7 +21,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 }
 
 // Render a model
-pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &RenderedModel<'a>, last_mat_handle: &mut Handle<Material>, pipeline: &Pipeline) {
+pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &RenderedModel<'a>, pipeline: &Pipeline) {
     // Load the default missing material if we don't have a valid one
     let mat_handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
     let mat = pipeline.get(mat_handle).unwrap();
@@ -35,20 +35,14 @@ pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &Rendere
         uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
 
         // Check if we really need to set the material uniforms
-        if *last_mat_handle != mat_handle.clone() {
-            uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
-            mat.uniforms.execute(uniforms);
-            *last_mat_handle = renderer.material.clone();
-        }
+        uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
+        mat.uniforms.execute(uniforms);
     });
 
     // Finally render the mesh
     unsafe {
         render(mesh);
     }
-
-    // Set last material used
-    *last_mat_handle = renderer.material.clone();
 }
 
 // A normal object that we will render

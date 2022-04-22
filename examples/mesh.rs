@@ -28,7 +28,7 @@ fn init(world: &mut World) {
     world.ecs.insert(|_, linker| {
         let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
         linker.insert(light).unwrap();
-        linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
+        linker.insert(Transform::rotation_x(-10f32.to_radians())).unwrap();
     });
 
     // Simple material

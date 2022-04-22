@@ -1,7 +1,7 @@
 use crate::painter::Painter;
 use egui_winit::winit::event::WindowEvent;
 use rendering::gl;
-use rendering::pipeline::Pipeline;
+use rendering::pipeline::{Pipeline, SceneRenderer};
 
 // A simple manager
 pub struct GUIManager {
@@ -35,7 +35,7 @@ impl GUIManager {
         self.egui.begin_frame(raw_input);
     }
     // End frame
-    pub fn draw_frame(&mut self, pipeline: &mut Pipeline) {
+    pub fn draw_frame(&mut self, pipeline: &mut Pipeline, renderer: &mut SceneRenderer) {
         let window = pipeline.window().context().window();
         let output = self.egui.end_frame();
         // Decompose
@@ -44,6 +44,6 @@ impl GUIManager {
         let deltas = output.textures_delta;
         let meshes = self.egui.tessellate(clipped_shapes);
         // Draw the GUI
-        self.painter.draw_gui(pipeline, meshes, deltas);
+        self.painter.draw_gui(pipeline, renderer, meshes, deltas);
     }
 }

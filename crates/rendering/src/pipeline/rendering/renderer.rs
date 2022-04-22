@@ -81,7 +81,7 @@ impl SceneRenderer {
             .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
             .constant("shadow_bias", s_bias)
             .constant("normal_offset", s_normal_offset)
-            .constant("samples", s_normal_offset);
+            .constant("samples", s_samples);
         let shader = pipeline.insert(Shader::new(settings).unwrap());
         /* #endregion */
         /* #region Deferred renderer init */
@@ -188,30 +188,29 @@ impl SceneRenderer {
     pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
         // Bind the deferred renderer's framebuffer
         self.framebuffer.bind(|_| {
-            let mut last_material = Handle::default();
             for renderer in settings.normal {
-                common::render_model(&settings, renderer, &mut last_material, pipeline)
+                common::render_model(&settings, renderer, pipeline)
             }
+        });
 
-            // Then render the shadows
-            if let Some(mapping) = &mut self.shadow_mapping {
-                unsafe {
-                    // Update the lightspace matrix
-                    // The first directional light that we find will be used as the sunlight
-                    let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
+        // Then render the shadows
+        if let Some(mapping) = &mut self.shadow_mapping {
+            unsafe {
+                // Update the lightspace matrix
+                // The first directional light that we find will be used as the sunlight
+                let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
 
-                    if let Some((_parameters, transform)) = first {
-                        // No need to update if nothing has changed
-                        if settings.redraw_shadows {
-                            // Only render directional shadow map if we have a sun
-                            mapping.update_matrix(*transform.rotation);
-                            // Then render shadows
-                            mapping.render_all_shadows(settings.shadowed, pipeline);
-                        }
+                if let Some((_parameters, transform)) = first {
+                    // No need to update if nothing has changed
+                    if settings.redraw_shadows {
+                        // Only render directional shadow map if we have a sun
+                        mapping.update_matrix(*transform.rotation);
+                        // Then render shadows
+                        mapping.render_all_shadows(settings.shadowed, pipeline);
                     }
                 }
             }
-        });
+        }
 
         // Render the deferred quad
         unsafe {
@@ -267,9 +266,10 @@ impl SceneRenderer {
         // Draw the quad
         let quad_mesh = pipeline.get(&self.quad).unwrap();
         // Draw to the default framebuffer, and keep it bound
-        self.default.bind(|_| {
+        self.default.bind(|mut bound| {
             gl::Disable(gl::DEPTH_TEST);
             common::render(quad_mesh);
+            bound.viewport(pipeline.window().dimensions());
             gl::Enable(gl::DEPTH_TEST);
             gl::BindVertexArray(0);
         });

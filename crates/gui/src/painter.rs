@@ -9,6 +9,7 @@ use nohash_hasher::NoHashHasher;
 use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams};
 use rendering::basics::uniforms::Uniforms;
 use rendering::gl;
+use rendering::pipeline::SceneRenderer;
 use rendering::utils::DataType;
 use rendering::{
     basics::{
@@ -116,7 +117,7 @@ impl Painter {
         }
     }
     // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, clipped_meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
+    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, renderer: &mut SceneRenderer, clipped_meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
         // No need to draw if we don't have any meshes or if our shader is invalid
         if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
             return;
@@ -128,37 +129,38 @@ impl Painter {
         // Since all the elements use the same shader, we can simply set it once
         let shader = pipeline.get(&self.shader).unwrap();
 
-        // OpenGL settings
-        unsafe {
-            // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::BindVertexArray(self.buffers.vao);
-            gl::Enable(gl::FRAMEBUFFER_SRGB);
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
-            gl::Disable(gl::CULL_FACE);
-            gl::Disable(gl::DEPTH_TEST);
-            gl::Enable(gl::SCISSOR_TEST);
-        }
+        // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
+        renderer.default_mut().bind(|mut bound| {
+            // OpenGL settings
+            unsafe {
+                gl::BindVertexArray(self.buffers.vao);
+                gl::Enable(gl::FRAMEBUFFER_SRGB);
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
+                gl::Disable(gl::CULL_FACE);
+                gl::Disable(gl::DEPTH_TEST);
+                gl::Enable(gl::SCISSOR_TEST);
+            }
 
-        // We can bind once, and mutate multiple times
-        Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-            // Draw each mesh
-            let mut last_texture = Handle::<Texture2D>::default();
-            for ClippedMesh(rect, mesh) in clipped_meshes {
-                self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
-                self.draw_mesh(rect, mesh, pipeline);
+            // We can bind once, and mutate multiple times
+            Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+                // Draw each mesh
+                let mut last_texture = Handle::<Texture2D>::default();
+                for ClippedMesh(rect, mesh) in clipped_meshes {
+                    self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
+                    self.draw_mesh(rect, mesh, pipeline);
+                }
+            });
+
+            // Reset
+            unsafe {
+                gl::Disable(gl::FRAMEBUFFER_SRGB);
+                gl::BindVertexArray(0);
+                gl::Disable(gl::BLEND);
+                gl::Enable(gl::CULL_FACE);
+                gl::Enable(gl::DEPTH_TEST);
+                gl::Disable(gl::SCISSOR_TEST);
             }
         });
-
-        // Reset
-        unsafe {
-            gl::Disable(gl::FRAMEBUFFER_SRGB);
-            gl::BindVertexArray(0);
-            gl::Disable(gl::BLEND);
-            gl::Enable(gl::CULL_FACE);
-            gl::Enable(gl::DEPTH_TEST);
-            gl::Disable(gl::SCISSOR_TEST);
-        }
     }
 }

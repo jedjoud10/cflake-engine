@@ -149,7 +149,7 @@ impl Framebuffer {
     }
 
     // Bind the shader only if needed
-    pub fn bind(&mut self, mut closure: impl FnOnce(BoundFramebuffer)) {
+    pub fn bind(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
         unsafe {
             self.bind_unchecked(closure);
         }

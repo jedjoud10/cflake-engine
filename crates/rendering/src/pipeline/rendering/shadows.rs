@@ -132,8 +132,8 @@ impl ShadowMapping {
                     super::common::render(mesh);
                 }
             });
+            gl::Enable(gl::CULL_FACE);
         });
 
-        gl::Enable(gl::CULL_FACE);
     }
 }
