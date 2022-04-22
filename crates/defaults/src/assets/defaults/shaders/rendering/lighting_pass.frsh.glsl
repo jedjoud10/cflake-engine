@@ -42,7 +42,7 @@ void main() {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
 		final_color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
-		final_color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 4096), 0) * sun_strength_factor * 10.0;
+		final_color += max(pow(dot(pixel_dir, normalize(sunlight_dir)), 4096), 0) * sun_strength_factor * 40.0;
 	} else {
 		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
 		final_color = compute_lighting(sunlight_dir, sun_strength_factor * sunlight_strength, diffuse, normal, emissive, position, pixel_dir, in_shadow, sky_gradient, time_of_day);

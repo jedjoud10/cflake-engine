@@ -15,7 +15,7 @@ vec3 compute_lighting(
 	float fresnel = max(dot(reflected, pixel_dir), 0);
 
 	// Calculate the diffuse lighting
-	float light_val = max(dot(normal, normalize(sunlight_dir)), 0) * sunlight_strength * 1.3; 
+	float light_val = max(dot(normal, normalize(sunlight_dir)), 0) * sunlight_strength; 
 
 	// Used for ambient lighting
 	float ambient_lighting_strength = 0.02 * (normal.y * 0.5 + 0.5);

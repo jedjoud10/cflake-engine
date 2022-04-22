@@ -48,6 +48,13 @@ fn run(world: &mut World) {
         return;
     }
 
+            // A bit of trolling yea?
+            let query = world.ecs.query::<(&mut Transform, &Light)>();
+            for (transform, _) in query {
+                transform.rotation.rotate_x(0.01 * world.time.delta());
+                transform.rotation.rotate_y(0.01 * world.time.delta());
+            }
+
     // Update the matrices of renderers, only if the transforms os said renderers were externally modified
     let filter = or(modified::<Renderer>(), added::<Renderer>());
     let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(filter);
@@ -105,6 +112,11 @@ fn run(world: &mut World) {
         })
         .collect::<Vec<_>>();
 
+
+
+    // Detect if we need to redraw shadows because of the light source updating
+    redraw_shadows |= world.ecs.try_view_with::<(&Transform, &Light), _>(modified::<Transform>()).unwrap().count() > 0;
+
     // Rendering settings
     let settings = RenderingSettings {
         normal: models.as_slice(),
@@ -117,14 +129,6 @@ fn run(world: &mut World) {
     let renderer = &mut world.renderer;
     let pipeline = &world.pipeline;
     renderer.render(pipeline, settings);
-    /*
-    // A bit of trolling yea?
-    let query = world.ecs.query::<(&mut Transform, &Light)>();
-    for (transform, _) in query {
-        transform.rotation.rotate_x(0.1 * world.time.delta());
-        transform.rotation.rotate_y(0.1 * world.time.delta());
-    }
-    */
 }
 
 // Create the rendering system
