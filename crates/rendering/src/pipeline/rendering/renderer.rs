@@ -28,7 +28,14 @@ pub struct SceneRenderer {
     framebuffer: Framebuffer,
 
     // Our deferred textures
-    textures: [Handle<Texture2D>; 6],
+    /*
+    diffuse_texture: Handle<Texture>,
+    emissive_texture: Handle<Texture>,
+    normals_texture: Handle<Texture>,
+    position_texture: Handle<Texture>,
+    depth_texture: Handle<Texture>,
+    */
+    textures: [Handle<Texture2D>; 5],
 
     // Screen rendering
     lighting: Handle<Shader>,
@@ -78,12 +85,11 @@ impl SceneRenderer {
         let texture_formats = [
             TextureFormat::RGB8R,
             TextureFormat::RGB32F,
-            TextureFormat::RGB8R,
-            TextureFormat::RGB8R,
+            TextureFormat::RGB8RS,
             TextureFormat::RGB32F,
             TextureFormat::DepthComponent32,
         ];
-        let texture_types = [DataType::U8, DataType::U8, DataType::U8, DataType::U8, DataType::U8, DataType::F32];
+        let texture_types = [DataType::U8, DataType::U8, DataType::U8, DataType::U8, DataType::F32];
         // Create all the textures at once
         let textures = texture_formats
             .into_iter()
@@ -108,7 +114,6 @@ impl SceneRenderer {
             gl::COLOR_ATTACHMENT1,
             gl::COLOR_ATTACHMENT2,
             gl::COLOR_ATTACHMENT3,
-            gl::COLOR_ATTACHMENT4,
             gl::DEPTH_ATTACHMENT,
         ];
 
@@ -234,7 +239,7 @@ impl SceneRenderer {
 
             // Also gotta set the deferred textures
             // &str array because I am lazy
-            let names = ["diffuse_texture", "emissive_texture", "tangents_texture", "bitangents_texture", "position_texture", "depth_texture"];
+            let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "depth_texture"];
             // Set each texture
             for (name, handle) in names.into_iter().zip(self.textures.iter()) {
                 uniforms.set_texture2d(name, handle);
