@@ -29,8 +29,8 @@ vec3 compute_lighting(
 	
 	// Calculate some specular
 	/*
-	float specular_val = pow(clamp(dot(pixel_dir, reflect(sunlight_dir, normal)), 0, 1), 512);
+	float specular_val = pow(clamp(dot(pixel_dir, reflect(sunlight_dir, normal)), 0, 1), 16);
 	color += specular_val * 1.0 * (1 - in_shadow);
 	*/
-    return color;
+	return color;
 }

@@ -1,5 +1,5 @@
 use cflake_engine::{
-    assets::{self, assetc},
+    assets,
     defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
@@ -35,22 +35,24 @@ fn init(world: &mut World) {
     });
 
     // Simple material with textures
-    let mesh = assetc::load::<Mesh>("user/meshes/untitled.obj").unwrap();
+    let mesh = assets::load::<Mesh>("user/meshes/untitled.obj").unwrap();
     let mesh = world.pipeline.insert(mesh);
-    let diff = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
-    let norm = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
+    let diff = assets::load_with::<Texture2D>("user/textures/wooden_crate_01_diff_1k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
+    let norm = assets::load_with::<Texture2D>("user/textures/wooden_crate_01_nor_gl_1k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
     let diff = world.pipeline.insert(diff);
     let norm = world.pipeline.insert(norm);
     let material = PbrMaterialBuilder::default()
         .diffuse(diff)
         .normal(norm)
-        .bumpiness(1.0)
-        .scale(vek::Vec2::one() * 8.0)
+        .bumpiness(2.0)
+        .scale(vek::Vec2::one() * 1.0)
         .build(&mut world.pipeline);
 
-    // Create an entity
-    world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(mesh.clone(), material)).unwrap();
-        linker.insert(Transform::rotation_x(2.0)).unwrap();
-    });
+    for x in 0..20 {
+        // Create an entity
+        world.ecs.insert(|_, linker| {
+            linker.insert(Renderer::new(mesh.clone(), material.clone())).unwrap();
+            linker.insert(Transform::at_x(x as f32 * 2.0)).unwrap();
+        });
+    }
 }

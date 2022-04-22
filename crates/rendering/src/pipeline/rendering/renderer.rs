@@ -11,7 +11,6 @@ use crate::{
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
     utils::{DataType, DEFAULT_WINDOW_SIZE},
 };
-use assets::assetc;
 use getset::{Getters, MutGetters};
 
 // Scene renderer that will render our world using deferred rendering
@@ -136,7 +135,7 @@ impl SceneRenderer {
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow().map(|settings| ShadowMapping::new(pipeline, settings));
         // Load the default sky gradient texture
-        let sky_gradient = assetc::load_with::<Texture2D>(
+        let sky_gradient = assets::load_with::<Texture2D>(
             "defaults/textures/sky_gradient.png",
             TextureParams {
                 wrap: TextureWrapMode::ClampToEdge(),

@@ -40,7 +40,7 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
             let text = if !included_paths.contains(&local_path.to_string()) {
                 // Load the function shader text
                 included_paths.insert(local_path.to_string());
-                assets::assetc::load(local_path)
+                assets::load(local_path)
                     .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
             } else {
                 String::new()
@@ -390,7 +390,7 @@ impl ShaderInitSettings {
     }
     // Add a source
     pub fn source(mut self, path: &str) -> Self {
-        self.sources.insert(path.to_string(), assets::assetc::load(path).unwrap());
+        self.sources.insert(path.to_string(), assets::load(path).unwrap());
         self
     }
 }

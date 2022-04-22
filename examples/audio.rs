@@ -34,9 +34,9 @@ fn init(world: &mut World) {
     });
 
     // Play le funny sound
-    let audio = assets::assetc::load::<AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
-    let audio2 = assets::assetc::load::<AudioSource>("user/sounds/nicolas.mp3").unwrap();
-    let audio3 = assets::assetc::load::<AudioSource>("user/sounds/bruh.mp3").unwrap();
+    let audio = assets::load::<AudioSource>("user/sounds/mewhenthe.mp3").unwrap();
+    let audio2 = assets::load::<AudioSource>("user/sounds/nicolas.mp3").unwrap();
+    let audio3 = assets::load::<AudioSource>("user/sounds/bruh.mp3").unwrap();
 
     world.audio.play_positional(&audio, vek::Vec3::unit_x() * -2.0, |s| s).unwrap();
     world.audio.play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s| s).unwrap();

@@ -1,5 +1,5 @@
 use cflake_engine::{
-    assets::assetc,
+    assets,
     defaults::{
         components::{Camera, Light, Transform},
         globals::{self, TerrainSettings},
@@ -59,10 +59,10 @@ fn init(world: &mut World) {
     // Then the textures
     let diffuse = TextureParams::DIFFUSE_MAP_LOAD;
     let normal = TextureParams::NORMAL_MAP_LOAD;
-    let texture_diff_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse).unwrap();
-    let texture_norm_1 = assetc::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();
-    let texture_diff_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
-    let texture_norm_2 = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
+    let texture_diff_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse).unwrap();
+    let texture_norm_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();
+    let texture_diff_2 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
+    let texture_norm_2 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
     let diffuse = bundle(&[texture_diff_1, texture_diff_2]).unwrap();
     let normals = bundle(&[texture_norm_1, texture_norm_2]).unwrap();
     let diffuse = world.pipeline.insert(diffuse);

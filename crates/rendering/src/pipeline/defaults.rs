@@ -1,5 +1,3 @@
-use assets::assetc;
-
 use crate::basics::{
     material::{Material, MaterialBuilder, PbrMaterialBuilder},
     mesh::{Indices, Mesh, Vertices},
@@ -51,16 +49,16 @@ impl DefaultElements {
         let normal_map = pipeline.insert(normal_map);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
-        let missing = assetc::load_with::<Texture2D>("defaults/textures/missing.png", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
+        let missing = assets::load_with::<Texture2D>("defaults/textures/missing.png", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let missing_texture = pipeline.insert(missing);
 
         // Default empty mesh
         let mesh = pipeline.insert(Mesh::new(Vertices::default(), Indices::default()));
 
         // Load the default cube and sphere
-        let cube = pipeline.insert(assetc::load("defaults/meshes/cube.obj").unwrap());
-        let sphere = pipeline.insert(assetc::load("defaults/meshes/sphere.obj").unwrap());
-        let plane = pipeline.insert(assetc::load("defaults/meshes/plane.obj").unwrap());
+        let cube = pipeline.insert(assets::load("defaults/meshes/cube.obj").unwrap());
+        let sphere = pipeline.insert(assets::load("defaults/meshes/sphere.obj").unwrap());
+        let plane = pipeline.insert(assets::load("defaults/meshes/plane.obj").unwrap());
 
         // Default rendering (PBR) shader
         let shader = Shader::new(

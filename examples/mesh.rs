@@ -3,7 +3,7 @@ use cflake_engine::{
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
         lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder},
+        material::{MaterialBuilder, PbrMaterialBuilder}, texture::{TextureParams, Texture2D, TextureFilter},
     },
     vek, World,
 };
@@ -32,14 +32,24 @@ fn init(world: &mut World) {
     });
 
     // Simple material
-    let material = PbrMaterialBuilder::default().tint(vek::Rgb::blue()).build(&mut world.pipeline);
+    let material = PbrMaterialBuilder::default().build(&mut world.pipeline);
     let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
+
+    let norm = assets::load_with::<Texture2D>("user/textures/debug.png", TextureParams {
+        filter: TextureFilter::Nearest,
+        ..TextureParams::NORMAL_MAP_LOAD
+    }).unwrap();
+    let norm = world.pipeline.insert(norm);
+    let material = PbrMaterialBuilder::default()
+        .diffuse(world.pipeline.defaults().white.clone())
+        .normal(norm)
+        .build(&mut world.pipeline);
 
     // Create a cube
     let cube = world.pipeline.defaults().cube.clone();
     world.ecs.insert(|_, linker| {
         linker.insert(Renderer::new(cube, material)).unwrap();
-        linker.insert(Transform::at_y(1.0)).unwrap();
+        linker.insert(Transform::at_y(0.5)).unwrap();
     });
 
     // Create a floor

@@ -7,7 +7,7 @@ pub mod tests {
         // Test
         asset!("./assets/sus/test.txt");
         init!("/src/assets");
-        let text = crate::assetc::load::<String>("sus/test.txt").unwrap();
+        let text = crate::load::<String>("sus/test.txt").unwrap();
         assert_eq!(text, "Le test ouioui".to_string())
     }
 }
