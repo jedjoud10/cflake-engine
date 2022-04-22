@@ -1173,15 +1173,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a94edab108827d67608095e269cf862e60d920f144a5026d3dbcfd8b877fb404"
-dependencies = [
- "gl_generator",
-]
-
-[[package]]
 name = "gl_generator"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2167,6 +2158,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
 
 [[package]]
+name = "opengl"
+version = "0.1.0"
+dependencies = [
+ "gl_generator",
+]
+
+[[package]]
 name = "ordered-multimap"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2601,12 +2599,12 @@ dependencies = [
  "bitflags",
  "enum-as-inner",
  "getset",
- "gl",
  "glutin",
  "image",
  "lazy_static",
  "math",
  "obj-rs",
+ "opengl",
  "parking_lot 0.12.0",
  "rayon",
  "slotmap",

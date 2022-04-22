@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 bitfield = { git = "https://github.com/jedjoud10/bitfield" }
+opengl = { path = "../opengl" }
 getset = "0.1.2"
 vek = "0.15.6"
 slotmap = "1.0.6"
@@ -20,7 +21,6 @@ bitflags = "1.3.2"
 enum-as-inner = "0.4.0"
 glutin = "0.28.0"
 ahash = "0.7.6"
-gl = "0.14.0"
 parking_lot = "0.12.0"
 obj-rs = "0.7.0"
 image = "0.24.1"

@@ -1,5 +1,6 @@
-// Re-export
-pub use gl;
+// Custom GL bindings
+pub extern crate opengl as gl;
+//pub use opengl as gl;
 // Export
 pub mod advanced;
 pub mod basics;
