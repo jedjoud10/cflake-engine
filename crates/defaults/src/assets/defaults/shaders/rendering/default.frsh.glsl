@@ -36,7 +36,7 @@ void main() {
 
 	// Construct TBN matrix, then transform
 	mat3 tbn = mat3(m_tangent, m_bitangent, m_normal);
-	frag_normal = normalize(tbn * normal);
+	frag_normal = normalize(normal);
 	
 	// Other
 	frag_pos = m_position;

@@ -55,13 +55,13 @@ fn read(path: &str) -> Result<(&'static [u8], AssetMetadata), AssetLoadError> {
 // Load an asset by creating it's input from default
 pub fn load<T: Asset>(path: &str) -> Result<T, AssetLoadError>
 where
-    T::Input: Default,
+    T::OptArgs: Default,
 {
     load_with(path, T::Input::default())
 }
 
 // Load an asset with an explicity load input
-pub fn load_with<T: Asset>(path: &str, i: T::Input) -> Result<T, AssetLoadError> {
+pub fn load_with<T: Asset>(path: &str, i: T::OptArgs) -> Result<T, AssetLoadError> {
     let (bytes, meta) = read(path)?;
     T::deserialize(&meta, bytes, i).ok_or_else(|| AssetLoadError::new(path))
 }

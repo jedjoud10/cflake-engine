@@ -48,8 +48,8 @@ pub struct Mesh {
 }
 
 impl Asset for Mesh {
-    type Input = ();
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::Input) -> Option<Self>
+    type OptArgs = ();
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
     where
         Self: Sized,
     {
@@ -72,10 +72,11 @@ impl Asset for Mesh {
         // Also load the triangles
         builder.indices.indices = parsed_obj.indices;
 
-        // Compute the tangents
+        // Compute the tangents automatically for loaded meshes
+        let mut mesh = builder.build();
+        //mesh.generate_tangents();
 
-
-        Some(builder.build())
+        Some(mesh)
     }
 }
 

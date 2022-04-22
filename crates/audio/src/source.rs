@@ -11,8 +11,8 @@ pub struct AudioSource {
 
 // Each audio source is loadable
 impl assets::Asset for AudioSource {
-    type Input = ();
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::Input) -> Option<Self>
+    type OptArgs = ();
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
     where
         Self: Sized,
     {

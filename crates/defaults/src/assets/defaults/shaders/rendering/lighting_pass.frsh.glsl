@@ -24,7 +24,7 @@ in vec2 uvs;
 void main() {
 	ivec2 pixel = ivec2(uvs * _resolution);
 	// Sample the textures
-	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
+	vec3 normal = texture(normals_texture, uvs).xyz;
 	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
 	vec3 emissive = texture(emissive_texture, uvs).xyz;
 	vec3 position = texture(position_texture, uvs).xyz;

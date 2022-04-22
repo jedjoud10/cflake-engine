@@ -40,11 +40,11 @@ fn init(world: &mut World) {
     let norm = assetc::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
     let diff = world.pipeline.insert(diff);
     let norm = world.pipeline.insert(norm);
-    let material = PbrMaterialBuilder::default().diffuse(diff).normal(norm).bumpiness(0.8).scale(vek::Vec2::one() * 12.0).build(&mut world.pipeline);
+    let material = PbrMaterialBuilder::default().diffuse(diff).normal(norm).bumpiness(4.0).scale(vek::Vec2::one() * 1.0).build(&mut world.pipeline);
 
     // Create an entity
     world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(mesh, material)).unwrap();
-        linker.insert(Transform::rotation_x(1.0)).unwrap();
+        linker.insert(Renderer::new(world.pipeline.defaults().cube.clone(), material)).unwrap();
+        linker.insert(Transform::rotation_x(0.0)).unwrap();
     });
 }

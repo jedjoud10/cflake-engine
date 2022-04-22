@@ -138,8 +138,8 @@ impl ResizableTexture for Texture2D {
 
 // Load a Texture2D
 impl Asset for Texture2D {
-    type Input = TextureParams;
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::Input) -> Option<Self>
+    type OptArgs = TextureParams;
+    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], input: Self::OptArgs) -> Option<Self>
     where
         Self: Sized,
     {
