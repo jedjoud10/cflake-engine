@@ -12,6 +12,7 @@ mikktspace = "0.3.0"
 getset = "0.1.2"
 vek = "0.15.6"
 slotmap = "1.0.6"
+half = "1.8.2"
 assets = { path = "../assets" }
 rayon = "1.5.1"
 math = { path = "../math" }

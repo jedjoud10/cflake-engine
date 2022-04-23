@@ -13,6 +13,7 @@ pub enum TextureFormat {
     // Red
     R8R,
     R16R,
+    R16RS,
     R8RS,
     R8I,
     R16I,
@@ -23,6 +24,7 @@ pub enum TextureFormat {
     // Red Green
     RG8R,
     RG8RS,
+    RG16RS,
     RG16R,
     RG8I,
     RG16I,
@@ -34,6 +36,7 @@ pub enum TextureFormat {
     RGB8R,
     RGB8RS,
     RGB16R,
+    RGB16RS,
     RGB8I,
     RGB16I,
     RGB32I,
@@ -43,6 +46,7 @@ pub enum TextureFormat {
     // Red Green Blue Alpha
     RGBA8R,
     RGBA8RS,
+    RGBA16RS,
     RGBA16R,
     RGBA8I,
     RGBA16I,
@@ -63,6 +67,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         // Red
         TextureFormat::R8R => gl::R8,
         TextureFormat::R8RS => gl::R8_SNORM,
+        TextureFormat::R16RS => gl::R16_SNORM,
         TextureFormat::R16R => gl::R16,
         TextureFormat::R8I => gl::R8I,
         TextureFormat::R16I => gl::R16I,
@@ -72,6 +77,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         // Red Green
         TextureFormat::RG8R => gl::RG8,
         TextureFormat::RG8RS => gl::RG8_SNORM,
+        TextureFormat::RG16RS => gl::RG16_SNORM,
         TextureFormat::RG16R => gl::RG16,
         TextureFormat::RG8I => gl::RG8I,
         TextureFormat::RG16I => gl::RG16I,
@@ -81,6 +87,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         // Red Green Blue
         TextureFormat::RGB8R => gl::RGB8,
         TextureFormat::RGB8RS => gl::RGB8_SNORM,
+        TextureFormat::RGB16RS => gl::RGB16_SNORM,
         TextureFormat::RGB16R => gl::RGB16,
         TextureFormat::RGB8I => gl::RGB8I,
         TextureFormat::RGB16I => gl::RGB16I,
@@ -90,6 +97,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         // Red Green Blue Alpha
         TextureFormat::RGBA8R => gl::RGBA8,
         TextureFormat::RGBA8RS => gl::RGBA8_SNORM,
+        TextureFormat::RGBA16RS => gl::RGBA16_SNORM,
         TextureFormat::RGBA16R => gl::RGBA16,
         TextureFormat::RGBA8I => gl::RGBA8I,
         TextureFormat::RGBA16I => gl::RGBA16I,
@@ -105,6 +113,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         TextureFormat::R8R
         | TextureFormat::R16R
         | TextureFormat::R8RS
+        | TextureFormat::R16RS
         | TextureFormat::R8I
         | TextureFormat::R16I
         | TextureFormat::R32I
@@ -113,6 +122,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         TextureFormat::RG8R
         | TextureFormat::RG16R
         | TextureFormat::RG8RS
+        | TextureFormat::RG16RS
         | TextureFormat::RG8I
         | TextureFormat::RG16I
         | TextureFormat::RG32I
@@ -121,6 +131,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         TextureFormat::RGB8R
         | TextureFormat::RGB16R
         | TextureFormat::RGB8RS
+        | TextureFormat::RGB16RS
         | TextureFormat::RGB8I
         | TextureFormat::RGB16I
         | TextureFormat::RGB32I
@@ -129,6 +140,7 @@ pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
         TextureFormat::RGBA8R
         | TextureFormat::RGBA16R
         | TextureFormat::RGBA8RS
+        | TextureFormat::RGBA16RS
         | TextureFormat::RGBA8I
         | TextureFormat::RGBA16I
         | TextureFormat::RGBA32I
@@ -156,10 +168,10 @@ pub fn get_texel_byte_size(format: TextureFormat) -> usize {
         TextureFormat::RGB8R | TextureFormat::RGB8RS | TextureFormat::RGB8I => size_of::<u8>() * 3,
         TextureFormat::RGBA8R | TextureFormat::RGBA8RS | TextureFormat::RGBA8I => size_of::<u8>() * 4,
 
-        TextureFormat::R16R | TextureFormat::R16I | TextureFormat::R16F | TextureFormat::DepthComponent16 => size_of::<u16>(),
-        TextureFormat::RG16R | TextureFormat::RG16I | TextureFormat::RG16F => size_of::<u16>() * 2,
-        TextureFormat::RGB16R | TextureFormat::RGB16I | TextureFormat::RGB16F => size_of::<u16>() * 3,
-        TextureFormat::RGBA16R | TextureFormat::RGBA16I | TextureFormat::RGBA16F => size_of::<u16>() * 4,
+        TextureFormat::R16R | TextureFormat::R16I | TextureFormat::R16F | TextureFormat::DepthComponent16 | TextureFormat::R16RS => size_of::<u16>(),
+        TextureFormat::RG16R | TextureFormat::RG16I | TextureFormat::RG16F | TextureFormat::RG16RS => size_of::<u16>() * 2,
+        TextureFormat::RGB16R | TextureFormat::RGB16I | TextureFormat::RGB16F | TextureFormat::RGB16RS => size_of::<u16>() * 3,
+        TextureFormat::RGBA16R | TextureFormat::RGBA16I | TextureFormat::RGBA16F | TextureFormat::RGBA16RS => size_of::<u16>() * 4,
 
         TextureFormat::R32I | TextureFormat::R32F | TextureFormat::DepthComponent32 => size_of::<u32>(),
         TextureFormat::RG32I | TextureFormat::RG32F => size_of::<u32>() * 2,

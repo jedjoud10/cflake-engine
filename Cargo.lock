@@ -2591,6 +2591,7 @@ dependencies = [
  "enum-as-inner",
  "getset",
  "glutin",
+ "half",
  "image",
  "lazy_static",
  "math",

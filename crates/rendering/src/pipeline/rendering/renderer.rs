@@ -93,7 +93,7 @@ impl SceneRenderer {
         let texture_formats = [
             TextureFormat::RGB8R,
             TextureFormat::RGB32F,
-            TextureFormat::RGB8RS,
+            TextureFormat::RGB16RS,
             TextureFormat::RGB32F,
             TextureFormat::DepthComponent32,
         ];

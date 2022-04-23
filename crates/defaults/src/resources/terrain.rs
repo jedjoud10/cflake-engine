@@ -22,10 +22,16 @@ pub use voxel_generation::*;
 #[derive(Resource)]
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
-    // Managers
+    // Handles chunk generation/deletion
     pub manager: ChunksManager,
+
+    // Handles voxel generation on the GPU
     pub generator: VoxelGenerator,
+
+    // Multithreaded mesh generation task system 
     pub scheduler: MeshScheduler,
+
+    // Simply for editing
     pub editer: EditingManager,
 }
 
