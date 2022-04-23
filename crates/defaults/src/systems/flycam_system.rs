@@ -2,7 +2,7 @@ use world::input::Keys;
 use world::World;
 
 use crate::components::{Camera, Transform};
-use crate::globals::GlobalWorldData;
+use crate::resources::WorldData;
 
 // Move the main camera around
 fn run(world: &mut World) {
@@ -54,7 +54,7 @@ fn run(world: &mut World) {
     }
 
     // Update the camera values now
-    let global = world.globals.get::<GlobalWorldData>().unwrap();
+    let global = world.resources.get::<WorldData>().unwrap();
 
     // Fetch the main camera
     let entry = world.ecs.entry(global.camera);

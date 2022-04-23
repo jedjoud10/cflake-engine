@@ -5,7 +5,7 @@ pub mod settings;
 pub use assets;
 pub use audio;
 pub use ecs;
-pub use globals;
+pub use resources;
 pub use gui;
 pub use input;
 pub use io;

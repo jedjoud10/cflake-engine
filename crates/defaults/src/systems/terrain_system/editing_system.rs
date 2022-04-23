@@ -5,11 +5,11 @@ use world::terrain::editing::Edit;
 use world::World;
 
 use crate::components::Transform;
-use crate::globals;
+use crate::resources;
 // A system that will handle terrain edits
 fn run(world: &mut World) {
     // Get the terrain global
-    if let Some(terrain) = world.globals.get_mut::<globals::Terrain>() {
+    if let Some(terrain) = world.resources.get_mut::<resources::Terrain>() {
         // Editing manager
         let terrain = &mut *terrain;
 

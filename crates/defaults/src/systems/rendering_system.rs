@@ -10,7 +10,7 @@ use world::{
 
 // The 3D scene renderer
 fn run(world: &mut World) {
-    let global = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+    let global = world.resources.get::<crate::resources::WorldData>().unwrap();
     // Get the camera if possible, and stop rendering if we are unable to
     let entry = world.ecs.entry(global.camera);
     // If we have the camera, update it in the pipeline

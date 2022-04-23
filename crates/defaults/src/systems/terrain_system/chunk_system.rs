@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use crate::{
     components::{Camera, Chunk, Transform},
-    globals::{GlobalWorldData, Terrain},
+    resources::{WorldData, Terrain},
 };
 use world::{input::Keys, terrain::ChunkCoords, World};
 
@@ -11,7 +11,7 @@ fn run(world: &mut World) {
     // Get the global terrain component
     // Get the camera position
     let (camera_position, camera_forward) = {
-        let camera = world.globals.get::<GlobalWorldData>().unwrap().camera;
+        let camera = world.resources.get::<WorldData>().unwrap().camera;
         let entry = world.ecs.entry(camera);
         if let Some(entry) = entry {
             let transform = entry.get::<Transform>().unwrap();
@@ -20,7 +20,7 @@ fn run(world: &mut World) {
             return;
         }
     };
-    let terrain_ = world.globals.get_mut::<Terrain>();
+    let terrain_ = world.resources.get_mut::<Terrain>();
     if world.input.toggled("update_terrain") || terrain_.is_none() {
         // No need to update the terrain
         return;

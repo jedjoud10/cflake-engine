@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 
 use world::{
-    globals::Global,
+    resources::Resource,
     math::octrees::DiffOctree,
     rendering::pipeline::Pipeline,
     terrain::{
@@ -19,7 +19,7 @@ pub use chunks_manager::*;
 pub use settings::*;
 pub use voxel_generation::*;
 
-#[derive(Global)]
+#[derive(Resource)]
 // The global terrain component that can be added at the start of the game
 pub struct Terrain {
     // Managers

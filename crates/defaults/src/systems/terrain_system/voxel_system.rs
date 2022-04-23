@@ -1,6 +1,6 @@
 use crate::{
     components::{Chunk, Transform},
-    globals::ChunkGenerationState,
+    resources::ChunkGenerationState,
 };
 use world::{
     ecs::Entity,
@@ -14,7 +14,7 @@ use world::{
 };
 
 // Simply run the compute shaders for now
-fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &mut Chunk, entity: Entity) {
+fn generate(terrain: &mut crate::resources::Terrain, pipeline: &Pipeline, chunk: &mut Chunk, entity: Entity) {
     let generator = &mut terrain.generator;
     // Create the compute shader execution settings and execute the compute shader
     const AXIS: u16 = ((CHUNK_SIZE + 2) as u16) / 8 + 1;
@@ -54,7 +54,7 @@ fn generate(terrain: &mut crate::globals::Terrain, pipeline: &Pipeline, chunk: &
 }
 
 // Then, a frame later, fetch the buffer data
-fn fetch_buffers(terrain: &mut crate::globals::Terrain, chunk: &mut Chunk, entity: Entity, coords: ChunkCoords) {
+fn fetch_buffers(terrain: &mut crate::resources::Terrain, chunk: &mut Chunk, entity: Entity, coords: ChunkCoords) {
     // Get the valid counters
     let generator = &mut terrain.generator;
     let counters = generator.atomics.get();
@@ -83,7 +83,7 @@ fn fetch_buffers(terrain: &mut crate::globals::Terrain, chunk: &mut Chunk, entit
 // The voxel systems' update loop
 fn run(world: &mut World) {
     // Get the pipeline without angering the borrow checker
-    let terrain = world.globals.get_mut::<crate::globals::Terrain>();
+    let terrain = world.resources.get_mut::<crate::resources::Terrain>();
     if let Some(terrain) = terrain {
         // The edit system didn't pack the edits yet, we must skip
         if terrain.editer.is_pending() {

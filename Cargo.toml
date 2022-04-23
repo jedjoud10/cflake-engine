@@ -17,7 +17,7 @@ members = [
     "crates/ecs",    
     "crates/handler",
     "crates/gui",
-    "crates/globals",
+    "crates/resources",
     "crates/input",
     "crates/io",
     "crates/math",

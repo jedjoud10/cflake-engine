@@ -17,7 +17,7 @@ input = { path = "../input" }
 physics = { path = "../physics" }
 network = { path = "../network" }
 others = { path = "../others" }
-globals = { path = "../globals" }
+resources = { path = "../resources" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }

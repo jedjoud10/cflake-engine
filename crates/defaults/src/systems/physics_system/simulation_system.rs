@@ -12,7 +12,7 @@ use super::{quat_to_rotation, rotation_to_quat, vec3_to_translation, vec3_to_vec
 // Run the physics simulation
 fn run(world: &mut World) {
     // Execute only if we need to
-    let physics = world.globals.get_mut::<crate::globals::Physics>().unwrap();
+    let physics = world.resources.get_mut::<crate::resources::Physics>().unwrap();
     let current_time = world.time.elapsed();
 
     // Only step the physics system each 13ms

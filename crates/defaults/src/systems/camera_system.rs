@@ -1,11 +1,11 @@
 use crate::components::{Camera, Transform};
-use crate::globals::GlobalWorldData;
+use crate::resources::WorldData;
 use world::ecs::Entity;
 use world::World;
 // The camera system update loop
 fn run(world: &mut World) {
     // Set the main camera entity key in the world global
-    let global = world.globals.get_mut::<GlobalWorldData>().unwrap();
+    let global = world.resources.get_mut::<WorldData>().unwrap();
     // If there isn't a main camera assigned already, we can be the main one
     if global.camera == Entity::default() {
         // Query all the cameras in the world and get the first one

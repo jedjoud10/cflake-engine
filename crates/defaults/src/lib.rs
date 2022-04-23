@@ -7,8 +7,8 @@ use world::{
 };
 // Default components
 pub mod components;
-// Default globals
-pub mod globals;
+// Default resources
+pub mod resources;
 // Default systems
 pub mod systems;
 
@@ -86,7 +86,7 @@ pub fn load_default_systems(world: &mut World) {
 
 
 
-    // We gotta add the default globals
+    // We gotta add the default resources
     */
     debugging_system::system(world);
 
@@ -95,7 +95,7 @@ pub fn load_default_systems(world: &mut World) {
     gui_system::system(world);
     screenshot_system::system(world);
 
-    world.globals.insert(crate::globals::GlobalWorldData::default()).unwrap();
-    world.globals.insert(crate::globals::NetworkManager::default()).unwrap();
-    world.globals.insert(crate::globals::Physics::default()).unwrap();
+    world.resources.insert(crate::resources::WorldData::default()).unwrap();
+    world.resources.insert(crate::resources::NetworkManager::default()).unwrap();
+    world.resources.insert(crate::resources::Physics::default()).unwrap();
 }

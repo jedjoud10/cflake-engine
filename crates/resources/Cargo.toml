@@ -1,5 +1,5 @@
 [package]
-name = "globals"
+name = "resources"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 anymap = "0.12.1"
-globals-derive = { path = "./globals-derive"  }
+resources-derive = { path = "./resources-derive"  }

@@ -1,6 +1,6 @@
 use crate::{
     components::{Chunk, Renderer, Transform},
-    globals::ChunkGenerationState,
+    resources::ChunkGenerationState,
 };
 use rapier3d::prelude::{ColliderMaterial, RigidBodyType};
 use world::{
@@ -14,7 +14,7 @@ use world::{
 
 // The mesher systems' update loop
 fn run(world: &mut World) {
-    let terrain = world.globals.get_mut::<crate::globals::Terrain>();
+    let terrain = world.resources.get_mut::<crate::resources::Terrain>();
     if let Some(mut terrain) = terrain {
         // We can only create the mesh of a single chunk per frame
         if let ChunkGenerationState::EndVoxelDataGeneration(entity, true, Some(id)) = terrain.manager.current_chunk_state {

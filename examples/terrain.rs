@@ -2,7 +2,7 @@ use cflake_engine::{
     assets,
     defaults::{
         components::{Camera, Light, Transform},
-        globals::{self, TerrainSettings},
+        resources::{self, TerrainSettings},
     },
     rendering::basics::{
         lights::LightType::{self},
@@ -76,8 +76,8 @@ fn init(world: &mut World) {
         material,
         ..Default::default()
     };
-    let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
+    let mut terrain = resources::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
     terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
-    world.globals.insert(terrain).unwrap();
+    world.resources.insert(terrain).unwrap();
 }

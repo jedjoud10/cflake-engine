@@ -1,9 +1,9 @@
-use crate::globals::NetworkManager;
+use crate::resources::NetworkManager;
 use world::{network::register, World};
 
 // Update the network manager (if we have one)
 fn run(world: &mut World) {
-    let global = world.globals.get_mut::<NetworkManager>().unwrap();
+    let global = world.resources.get_mut::<NetworkManager>().unwrap();
     global.session.update().unwrap();
 }
 

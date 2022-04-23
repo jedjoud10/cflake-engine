@@ -2,7 +2,7 @@ use crate::settings::Settings;
 use audio::player::AudioPlayer;
 use ecs::{EcsManager, SystemSet};
 use getset::*;
-use globals::GlobalsSet;
+use resources::ResourcesSet;
 use gui::GUIManager;
 use input::InputManager;
 use io::IOManager;
@@ -35,7 +35,7 @@ pub struct World {
     pub state: WorldState,
     pub ecs: EcsManager,
     pub events: SystemSet<Self>,
-    pub globals: GlobalsSet,
+    pub resources: ResourcesSet,
     pub physics: PhysicsSimulation,
 
     // Other
@@ -58,7 +58,7 @@ impl World {
             state: WorldState::Init,
             ecs: EcsManager::default(),
             events: Default::default(),
-            globals: Default::default(),
+            resources: Default::default(),
             physics: PhysicsSimulation::new(),
             time: Default::default(),
             settings: Default::default(),

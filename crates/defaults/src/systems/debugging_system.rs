@@ -1,6 +1,6 @@
 use world::{gui::egui, terrain, World, WorldState};
 
-use crate::globals::{Physics, Terrain};
+use crate::resources::{Physics, Terrain};
 
 // Smol gui
 fn run(world: &mut World) {
@@ -8,7 +8,7 @@ fn run(world: &mut World) {
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
-        let _data = world.globals.get::<crate::globals::GlobalWorldData>().unwrap();
+        let _data = world.resources.get::<crate::resources::WorldData>().unwrap();
         ui.heading("World");
         if ui.button("Quit game").clicked() {
             world.state = WorldState::Exit;
@@ -24,7 +24,7 @@ fn run(world: &mut World) {
         ui.heading("Entity Component Systems");
 
         // Terrain
-        let terrain = world.globals.get_mut::<Terrain>();
+        let terrain = world.resources.get_mut::<Terrain>();
         if let Some(terrain) = terrain {
             let octree = &terrain.manager.octree;
             ui.separator();
@@ -39,7 +39,7 @@ fn run(world: &mut World) {
             ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
         }
         // Physics
-        let physics = world.globals.get_mut::<Physics>();
+        let physics = world.resources.get_mut::<Physics>();
         if let Some(physics) = physics {
             ui.separator();
             ui.heading("Physics");
