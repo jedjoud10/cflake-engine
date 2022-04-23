@@ -19,9 +19,10 @@ pub struct RenderingSettings<'scene, 'object> {
 // Camera rendering settings
 #[derive(Default)]
 pub struct RenderingCamera {
-    // Position and rotation
+    // Position and rotation and forward vector
     pub position: vek::Vec3<f32>,
     pub rotation: vek::Quaternion<f32>,
+    pub forward: vek::Vec3<f32>,
 
     // View and projection matrices
     pub viewm: vek::Mat4<f32>,

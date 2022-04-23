@@ -77,7 +77,7 @@ impl SceneRenderer {
         // Load the lighting pass shader
         let settings = ShaderInitSettings::default()
             .source("defaults/shaders/rendering/uv_passthrough.vrsh.glsl")
-            .source("defaults/shaders/rendering/lighting_pass.frsh.glsl")
+            .source("defaults/shaders/rendering/lighting.frsh.glsl")
             .constant("shadow_bias", s_bias)
             .constant("normal_offset", s_normal_offset)
             .constant("samples", s_samples);
@@ -223,10 +223,10 @@ impl SceneRenderer {
         Uniforms::new(pipeline.get(&self.lighting).unwrap().program(), pipeline, |mut uniforms| {
             // Try to get the sunlight direction
             let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-            let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(vek::Vec3::unit_z()), params.strength));
+            let sunlight = first.map(|(params, transform)| (vek::Mat4::from(*transform.rotation).mul_direction(-vek::Vec3::unit_z()), params.strength));
 
             // Default sunlight values
-            let sunlight = sunlight.unwrap_or((vek::Vec3::unit_y(), 1.0));
+            let sunlight = sunlight.unwrap_or((-vek::Vec3::unit_y(), 1.0));
 
             // Sunlight values
             uniforms.set_vec3f32("sunlight_dir", sunlight.0);
@@ -237,10 +237,12 @@ impl SceneRenderer {
             let matrix = self.shadow_mapping.as_ref().map(|mapping| mapping.lightspace()).unwrap_or(&default);
             uniforms.set_mat44f32("lightspace_matrix", matrix);
 
-            // Set the camera matrices
+            // Set the camera matrices and camera values
             let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().projm.inverted();
             uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
             uniforms.set_mat44f32("pv_matrix", &pipeline.camera().projm_viewm);
+            uniforms.set_vec3f32("camera_pos", pipeline.camera().position);
+            uniforms.set_vec3f32("camera_dir", pipeline.camera().forward);
 
             // Also gotta set the deferred textures
             // &str array because I am lazy

@@ -87,10 +87,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
         }
         // Device event
         Event::DeviceEvent { device_id: _, event } => {
-            // Only handle device events if the window is in focus
-            if world.pipeline.window().focused() {
-                handle_device_event(event, world, control_flow)
-            }
+            handle_device_event(event, world, control_flow)
         }
         // Loop events
         Event::MainEventsCleared => {

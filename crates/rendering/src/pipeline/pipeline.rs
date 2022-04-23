@@ -100,7 +100,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         window: {
             // Create a new window
             let mut window = Window {
-                focused: true,
+                changed: true,
                 dimensions: DEFAULT_WINDOW_SIZE,
                 context,
                 fullscreen,
@@ -147,10 +147,10 @@ impl Pipeline {
         match event {
             WindowEvent::Resized(size) => {
                 self.window.dimensions = vek::Extent2::new(size.width.max(1), size.height.max(1));
+                self.window.changed = true;
                 renderer.resize(self)
             }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-            WindowEvent::Focused(focused) => self.window.focused = *focused,
             _ => {}
         }
     }

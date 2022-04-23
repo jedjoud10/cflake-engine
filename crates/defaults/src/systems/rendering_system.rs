@@ -25,14 +25,16 @@ fn run(world: &mut World) {
         // Update the camera's view matrix if needed
         let update = entry.was_mutated::<Transform>().unwrap();
         let camera = entry.get_mut::<Camera>().unwrap();
-        camera.update_projection_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
-        if update {
+        if update | world.pipeline.window().changed() {
+            camera.update_projection_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
             camera.update_view_matrix(position, forward, up);
         }
+
         // Rendering camera settings
         let camera = RenderingCamera {
-            position: position,
-            rotation: rotation,
+            position,
+            rotation,
+            forward,
             viewm: camera.viewm,
             projm: camera.projm,
             clip_planes: camera.clip_planes,

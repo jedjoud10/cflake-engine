@@ -14,7 +14,7 @@ pub struct Window {
     #[getset(get_copy = "pub")]
     pub(crate) fullscreen: bool,
     #[getset(get_copy = "pub")]
-    pub(crate) focused: bool,
+    pub(crate) changed: bool,
 }
 
 impl Window {

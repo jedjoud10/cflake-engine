@@ -19,7 +19,7 @@ pub fn preload_default_assets() {
     // Rendering
     persistent!("./assets/defaults/shaders/rendering/empty.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/project.vrsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/lighting_pass.frsh.glsl");
+    persistent!("./assets/defaults/shaders/rendering/lighting.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/flat.frsh.glsl");
@@ -27,7 +27,6 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/missing.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/shadows.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/uv_passthrough.vrsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/lighting.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/post.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
