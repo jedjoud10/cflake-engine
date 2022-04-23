@@ -1,5 +1,5 @@
 use super::{Edit, PackedEdit};
-use crate::{pack_color, ChunkCoords};
+use crate::{ ChunkCoords};
 use half::f16;
 use math::{octrees::Octree, shapes::ShapeType};
 use slotmap::SlotMap;

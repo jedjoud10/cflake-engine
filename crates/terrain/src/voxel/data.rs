@@ -1,4 +1,4 @@
-use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, VoxelState, VoxelStateSet, CHUNK_SIZE};
+use crate::{unpack_color, PackedVoxelData, PersistentVoxelData, CHUNK_SIZE};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 // Some stored voxel data, in SoA form
@@ -37,7 +37,7 @@ impl VoxelData {
         let voxel_materials = &mut self.voxel_materials;
 
         // Get the combined voxel states
-        let states = voxels
+        voxels
             .par_iter()
             .zip(densities)
             .zip(colors)

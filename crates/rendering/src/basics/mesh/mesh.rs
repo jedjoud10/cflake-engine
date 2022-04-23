@@ -205,12 +205,7 @@ impl Mesh {
         }
     }
     // Créer un nouveau mesh en combinant deux meshs qui existent déja.
-    pub fn combine(mut self, other: Mesh) -> Option<Mesh> {
-        // Nous pouvons seulement faire sela pour les mesh qui ont les mêmes flags
-        if self.flags != other.flags {
-            return None;
-        }
-
+    pub fn combine(mut self, other: Mesh) -> Mesh {
         let max_triangle_index: u32 = self.vertices.positions.len() as u32;
         self.indices.extend(other.indices.into_iter().map(|mut x| {
             x += max_triangle_index;
@@ -221,7 +216,7 @@ impl Mesh {
         self.vertices.uvs.extend(other.vertices.uvs.into_iter());
         self.vertices.colors.extend(other.vertices.colors.into_iter());
         self.vertices.tangents.extend(other.vertices.tangents.into_iter());
-        Some(self)
+        self
     }
     // Procedurally generate the normals for this mesh
     pub fn generate_normals(&mut self) {

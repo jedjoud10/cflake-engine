@@ -49,11 +49,13 @@ fn run(world: &mut World) {
     }
 
     // A bit of trolling yea?
+    /*
     let query = world.ecs.query::<(&mut Transform, &Light)>();
     for (transform, _) in query {
         transform.rotation.rotate_x(0.06 * world.time.delta() * 0.4);
         //transform.rotation.rotate_y(0.03 * world.time.delta() * 0.8);
     }
+    */
 
     // Update the matrices of renderers, only if the transforms os said renderers were externally modified
     let filter = or(modified::<Renderer>(), added::<Renderer>());

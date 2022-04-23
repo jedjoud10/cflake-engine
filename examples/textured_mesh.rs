@@ -41,7 +41,6 @@ fn init(world: &mut World) {
             filter: TextureFilter::Nearest,
             ..TextureParams::NORMAL_MAP_LOAD
         }).unwrap();
-        
         let norm = world.pipeline.insert(norm);
         let material = PbrMaterialBuilder::default()
             .diffuse(world.pipeline.defaults().white.clone())

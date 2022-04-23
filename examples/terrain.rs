@@ -22,16 +22,6 @@ fn main() {
 // Init the terrain world
 fn init(world: &mut World) {
     cflake_engine::assets::init!("/examples/assets/");
-    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/voxel.func.glsl");
-    cflake_engine::assets::asset!("./assets/user/shaders/voxel_terrain/terrain.frsh.glsl");
-    cflake_engine::assets::asset!("./assets/user/textures/Snow006_2K_Color.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/Snow006_2K_NormalGL.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_diff_2k.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_06_nor_gl_2k.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_diff_2k.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/rocks_ground_08_nor_gl_2k.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/snow_01_diff_8k.jpg");
-    cflake_engine::assets::asset!("./assets/user/textures/snow_01_nor_gl_8k.jpg");
     // Load le assets
 
     cflake_engine::defaults::systems::flycam_system::system(world);
@@ -74,7 +64,7 @@ fn init(world: &mut World) {
             uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
             uniforms.set_bundled_texture2d("normal_m", &normals);
             // Then the parameters
-            uniforms.set_f32("bumpiness", 2.3);
+            uniforms.set_f32("bumpiness", 1.0);
             uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
         }),
     };
@@ -82,12 +72,12 @@ fn init(world: &mut World) {
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: 12,
+        depth: 6,
         material,
         ..Default::default()
     };
     let mut terrain = globals::Terrain::new(terrain_settings, &mut world.pipeline);
     // Big sphere
-    //terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
+    terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
     world.globals.insert(terrain).unwrap();
 }
