@@ -6,7 +6,7 @@ use world::{
     rendering::pipeline::Pipeline,
     terrain::{
         editing::{Edit, EditingManager},
-        scheduler::{MeshScheduler, MeshSchedulerSettings},
+        scheduler::{MeshScheduler},
         ChunkCoords, CHUNK_SIZE,
     },
 };
@@ -44,10 +44,7 @@ impl Terrain {
                 material: settings.material,
                 ..Default::default()
             },
-            scheduler: MeshScheduler::new(MeshSchedulerSettings {
-                // By default, the terrain will use 2 task-threads for mesh generation 
-                thread_num: Some(2),
-            }),
+            scheduler: MeshScheduler::default(),
             generator: VoxelGenerator::new(&settings.voxel_src_path, pipeline),
             editer: EditingManager::default(),
         }

@@ -18,7 +18,6 @@ uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
 uniform mat4 inverse_pr_matrix;
 uniform mat4 pv_matrix;
-uniform uint debug;
 in vec2 uvs;
 
 
@@ -38,22 +37,6 @@ void main() {
 	// Get fragment depth
 	vec3 final_color = vec3(0, 0, 0);
 	float odepth = texture(depth_texture, uvs).x;
-
-	// Handle debug modes
-	switch (debug) {
-		case 1:
-			color = vec4(normal, 0);
-			return;
-		case 2:
-			color = vec4(diffuse, 0);
-			return;
-		case 3:
-			color = vec4(emissive, 0);
-			return;
-		case 4:
-			color = vec4(position, 0);
-			return;
-	}
 
 	// Depth test with the sky
 	if (odepth == 1.0) {

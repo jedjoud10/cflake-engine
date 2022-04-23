@@ -52,7 +52,7 @@ fn run(world: &mut World) {
         for generated in terrain.scheduler.get_results() {
             // Unlock
             let id = generated.id;
-            let shared = terrain.generator.buffer.get(id);
+            let shared = terrain.generator.buffer.get(id).unwrap();
             let coords = generated.coords;
 
             // Build the mesh from the two builders
@@ -73,7 +73,7 @@ fn run(world: &mut World) {
                     // Modify the entity
                     world
                         .ecs
-                        .modify(entity, |entity, modifier| {
+                        .modify(entity, |_, modifier| {
                             // Create a renderer with the new mesh
                             modifier
                                 .insert(Renderer {
@@ -82,19 +82,6 @@ fn run(world: &mut World) {
                                     ..Default::default()
                                 })
                                 .unwrap();
-
-                            // Add the physics if needed
-                            /*
-                            if terrain.manager.physics {
-                                // Add the collider
-                                let collider = Collider::new(ColliderGeometry::mesh(mesh, 100.0), ColliderMaterial::new(100.0, 0.0));
-                                group.link(collider).unwrap();
-
-                                // Add the static rigidbody
-                                let rigidbody = RigidBody::new(RigidBodyType::Static);
-                                group.link(rigidbody).unwrap();
-                            }
-                            */
                         })
                         .unwrap();
 

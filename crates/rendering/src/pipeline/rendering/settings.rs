@@ -14,9 +14,6 @@ pub struct RenderingSettings<'scene, 'object> {
 
     // All the light sources
     pub lights: &'scene [(&'object LightType, LightTransform<'object>)],
-
-    // The current debug mode
-    pub debug: u32,
 }
 
 // Camera rendering settings

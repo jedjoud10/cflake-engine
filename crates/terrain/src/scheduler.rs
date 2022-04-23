@@ -27,119 +27,74 @@ pub struct GenerationResult {
     pub id: VoxelDataBufferId,
 }
 
-// How the mesh scheduler should generate the chunks
-pub struct MeshSchedulerSettings {
-    // The number of threads that the mesh scheduler will use
-    // If the value is None, the scheduler won't multithread mesh generation
-    pub thread_num: Option<usize>,
-}
-
-// Chunk gen thread pool
-struct MeshSchedulerThreadPool {
+// Mesh generation scheduler
+pub struct MeshScheduler {
+    // Actual thread pool that contains the task threads
     pool: ThreadPool,
-    // Comms
+
+    // Given to the other threads to allow them to send the results back
     sender: Sender<GenerationResult>,
+
+    // Always on the main thread, waiting for results
     receiver: Receiver<GenerationResult>,
+
+    // Le number
     mesh_tasks_running: RefCell<usize>,
 }
 
-// Mesh generation scheduler
-pub struct MeshScheduler {
-    // Pool
-    pool: Option<MeshSchedulerThreadPool>,
+// Number of threads that will be allocated for mesh generation
+const NUM_MESH_GEN_THREADS: usize = 2;
 
-    // Results
-    cached: RefCell<Vec<GenerationResult>>,
+impl Default for MeshScheduler {
+    fn default() -> Self {
+        // Communication between threads
+        let (sender, receiver) = std::sync::mpsc::channel::<GenerationResult>();
+        Self {
+            pool: ThreadPool::new(NUM_MESH_GEN_THREADS),
+            sender,
+            receiver,
+            mesh_tasks_running: RefCell::new(0),
+        }
+    }
 }
 
 impl MeshScheduler {
-    // Create a new mesh scheduler
-    pub fn new(settings: MeshSchedulerSettings) -> Self {
-        let pool = settings.thread_num.map(|num| {
-            assert!(num != 0, "Cannot have 0 mesher threads");
-            // We must spawn the thread generation pool
-            let (sender, receiver) = std::sync::mpsc::channel::<GenerationResult>();
-            MeshSchedulerThreadPool {
-                pool: ThreadPool::new(num),
-                sender,
-                receiver,
-                mesh_tasks_running: RefCell::new(0),
-            }
-        });
-        Self {
-            pool,
-            cached: RefCell::new(Vec::new()),
-        }
-    }
     // Start generating a mesh for the specific voxel data on another thread
     pub fn execute(&self, mesher: Mesher, buffer: &VoxelDataBuffer, id: VoxelDataBufferId) {
-        if let Some(pool) = &self.pool {
-            // Multithreaded
-            // Lock it
-            let data = buffer.get(id).clone();
-            data.set_used(true);
-            let sender = pool.sender.clone();
-            *pool.mesh_tasks_running.borrow_mut() += 1;
+        // Lock the data, since we will share it with another thread
+        let data = buffer.get(id).unwrap().clone();
+        data.set_used(true);
 
-            // Execute on a free thread
-            pool.pool.execute(move || {
-                // Generate the mesh
-                let arc = data.as_ref();
-                let unlocked = arc.load();
-                let coords = mesher.coords;
-                let (main, skirts, surface) = mesher.build(&unlocked);
+        // Clone the sender as well
+        let sender = self.sender.clone();
+        *self.mesh_tasks_running.borrow_mut() += 1;
 
-                // Return
-                sender
-                    .send(GenerationResult {
-                        coords,
-                        base: main,
-                        skirts,
-                        surface,
-                        id,
-                    })
-                    .unwrap();
-            });
-        } else {
-            // Singlethreaded
-            let data = buffer.get(id).clone();
-            data.set_used(true);
-
+        // Execute the mesher on a free thread
+        self.pool.execute(move || {
             // Generate the mesh
-            let arc = data.as_ref();
-            let unlocked = arc.load();
             let coords = mesher.coords;
-            let (main, skirts, surface) = mesher.build(&unlocked);
+            let (main, skirts, surface) = mesher.build(&data.load());
 
-            // Cached the result
-            let mut cached = self.cached.borrow_mut();
-            cached.push(GenerationResult {
-                coords,
-                base: main,
-                skirts,
-                surface,
-                id,
-            });
-        }
+            // Send the result back to the main thread
+            sender
+                .send(GenerationResult {
+                    coords,
+                    base: main,
+                    skirts,
+                    surface,
+                    id,
+                })
+                .unwrap();
+        });
     }
     // Get the mesh results that were generated on other threads
     pub fn get_results(&self) -> Vec<GenerationResult> {
-        self.pool
-            .as_ref()
-            .map(|pool| {
-                // No need to cache the results since we can give them directly
-                let results = pool.receiver.try_iter().collect::<Vec<_>>();
-                *pool.mesh_tasks_running.borrow_mut() -= results.len();
-                results
-            })
-            .unwrap_or_else(|| {
-                // Poll first
-                let mut results = self.cached.borrow_mut();
-                std::mem::take(&mut results)
-            })
+        let res = self.receiver.try_iter().collect::<Vec<_>>();
+        *self.mesh_tasks_running.borrow_mut() -= res.len();
+        res
     }
     // Get the amount of threads that are currently active
     pub fn active_mesh_tasks_count(&self) -> usize {
-        self.pool.as_ref().map(|pool| *pool.mesh_tasks_running.borrow()).unwrap_or_default()
+        *self.mesh_tasks_running.borrow()
     }
 }

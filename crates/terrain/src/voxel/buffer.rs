@@ -12,10 +12,10 @@ use std::{
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct VoxelDataBufferId {
     idx: usize,
-    counter: u128,
 }
 
-// Can be sent to other threads
+// Voxel data that is generated for a single chunk
+// This data can be sent to other threads for multi-threaded mesh generation
 #[derive(Default)]
 pub struct MutexVoxelData {
     data: Mutex<VoxelData>,
@@ -27,26 +27,25 @@ impl MutexVoxelData {
     pub fn set_used(&self, locked: bool) {
         self.used.store(locked, Ordering::Relaxed);
     }
-    // Load
+    // Load the underlying voxel data
     pub fn load(&self) -> MutexGuard<VoxelData> {
         self.data.lock()
     }
 }
 
-// Can be shared between thread
+// Data that can be *shared* between threads
 pub type SharedVoxelData = Arc<MutexVoxelData>;
 
 // A buffer that contains multiple StoredVoxelDatas
+// This will be contained within the main terrain generator
 pub struct VoxelDataBuffer {
     buffer: RefCell<Vec<SharedVoxelData>>,
-    counter: u128,
 }
 
 impl Default for VoxelDataBuffer {
     fn default() -> Self {
         Self {
             buffer: RefCell::new(vec![SharedVoxelData::default()]),
-            counter: 0,
         }
     }
 }
@@ -75,13 +74,17 @@ impl VoxelDataBuffer {
         let shared_voxel_data = borrowed.get(idx).unwrap();
         let mut data = shared_voxel_data.data.lock();
         let persistent = data.store(stored);
-        // Increment the counter
-        self.counter += 1;
-        (VoxelDataBufferId { idx, counter: self.counter }, persistent)
+        (VoxelDataBufferId { idx }, persistent)
     }
-    // Get
-    pub fn get(&self, id: VoxelDataBufferId) -> Ref<SharedVoxelData> {
-        Ref::map(self.buffer.borrow(), |x| x.get(id.idx).unwrap())
+    // Get a shared voxel data using it's ID
+    pub fn get(&self, id: VoxelDataBufferId) -> Option<Ref<SharedVoxelData>> {
+        // Make sure the index is valid
+        if id.idx >= self.buffer.borrow().len() {
+            return None;
+        }
+
+        // Ref::Map is a blessing
+        Some(Ref::map(self.buffer.borrow(), |x| x.get(id.idx).unwrap()))
     }
     // Len
     pub fn len(&self) -> usize {
