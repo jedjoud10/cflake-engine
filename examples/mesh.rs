@@ -32,7 +32,8 @@ fn init(world: &mut World) {
     });
 
     // Simple material
-    let material = PbrMaterialBuilder::default().build(&mut world.pipeline);
+    let flat = world.pipeline.defaults().flat.clone();
+    let material = PbrMaterialBuilder::default().build_with_shader(&mut world.pipeline, flat);
     let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
 
     // Create a cube

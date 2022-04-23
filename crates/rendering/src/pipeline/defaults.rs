@@ -22,10 +22,11 @@ pub struct DefaultElements {
     pub plane: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
 
-    // Shader
+    // Shaders
     pub shader: Handle<Shader>,
+    pub flat: Handle<Shader>,
 
-    // Material
+    // Materials
     pub missing_pbr_mat: Handle<Material>,
 }
 
@@ -39,12 +40,15 @@ impl DefaultElements {
             wrap: TextureWrapMode::Repeat,
             flags: TextureFlags::MIPMAPS,
         };
+        // Create a 1x1 white texture
         let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params);
         let white = pipeline.insert(white);
 
+        // Create a 1x1 black texture
         let black = Texture2D::new(vek::Extent2::one(), Some(vec![0, 0, 0, 255]), params);
         let black = pipeline.insert(black);
 
+        // Create a 1x1 default normal map
         let normal_map = Texture2D::new(vek::Extent2::one(), Some(vec![128, 128, 255, 255]), params);
         let normal_map = pipeline.insert(normal_map);
 
@@ -61,13 +65,11 @@ impl DefaultElements {
         let plane = pipeline.insert(assets::load("defaults/meshes/plane.obj").unwrap());
 
         // Default rendering (PBR) shader
-        let shader = Shader::new(
+        let shader =  pipeline.insert(Shader::new(
             ShaderInitSettings::default()
                 .source("defaults/shaders/rendering/default.vrsh.glsl")
                 .source("defaults/shaders/rendering/default.frsh.glsl"),
-        )
-        .unwrap();
-        let shader = pipeline.insert(shader);
+        ).unwrap());
 
         // Default missing rendering (PBR) shader
         let missing_shader = Shader::new(
@@ -77,6 +79,13 @@ impl DefaultElements {
         )
         .unwrap();
         let _missing_shader = pipeline.insert(missing_shader);
+
+        // Flat shaded shader (low-poly)
+        let flat = pipeline.insert(Shader::new(
+            ShaderInitSettings::default()
+                .source("defaults/shaders/rendering/default.vrsh.glsl")
+                .source("defaults/shaders/rendering/flat.frsh.glsl"),
+        ).unwrap());
 
         // Default pbr material (uses missing texture)
         let missing_pbr_mat = PbrMaterialBuilder::default()
@@ -95,8 +104,8 @@ impl DefaultElements {
             sphere,
             plane,
             missing_pbr_mat,
+            flat,
             shader,
-            //missing_shader,
         }
     }
 }

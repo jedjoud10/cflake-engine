@@ -35,14 +35,15 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(1.9, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(0.9, vek::Rgb::one()));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
     });
 
     // A simple material with a specific color
     let color = vek::Rgb::cyan(); 
-    let material = PbrMaterialBuilder::default().tint(color).build(&mut world.pipeline);
+    let flat = world.pipeline.defaults().flat.clone();
+    let material = PbrMaterialBuilder::default().tint(color).build_with_shader(&mut world.pipeline, flat);
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
