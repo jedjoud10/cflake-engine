@@ -38,7 +38,7 @@ fn init(world: &mut World) {
         let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
     
         // Load a diffuse map
-        let diff = assets::load_with::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
+        let diff = assets::load_with::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let diff = world.pipeline.insert(diff);
 
         // Load a normal map

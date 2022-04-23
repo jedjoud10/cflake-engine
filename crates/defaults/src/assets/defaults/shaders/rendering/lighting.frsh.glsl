@@ -1,9 +1,5 @@
 #version 460 core
 #load general
-#include "defaults/shaders/rendering/sky.func.glsl"
-#include "defaults/shaders/rendering/sun.func.glsl"
-#include "defaults/shaders/rendering/shadows.func.glsl"
-#include "defaults/shaders/rendering/post.func.glsl"
 
 out vec4 color;
 uniform sampler2D diffuse_texture; // 0
@@ -20,7 +16,13 @@ uniform mat4 inverse_pr_matrix;
 uniform mat4 pv_matrix;
 uniform vec3 camera_pos;
 uniform vec3 camera_dir;
+uniform float time_of_day;
 in vec2 uvs;
+
+#include "defaults/shaders/rendering/sky.func.glsl"
+#include "defaults/shaders/rendering/sun.func.glsl"
+#include "defaults/shaders/rendering/shadows.func.glsl"
+#include "defaults/shaders/rendering/post.func.glsl"
 
 // Sun data that will be passed to the rendering equation
 struct SunData {
@@ -45,35 +47,33 @@ struct CameraData {
 	mat4 pv_matrix;
 };
 
-// Scene data like skyboxes and suchs
-struct SceneData {
-	float time_of_day;
-};
-
 #define PI 3.1415926538
 
 // Normal distribution function
 // GGX/Trowbridge-reitz model
-float ndf(float alpha, vec3 n, vec3 h) {
-	float num = pow(alpha, 2.0);
-	float prod = max(dot(n, h), 0.0);
-	float denom = PI * pow((pow(prod, 2) * (pow(alpha, 2) - 1) + 1), 2);
-	denom = max(denom, 0.0001);
+float ndf(float roughness, vec3 n, vec3 h) {
+	float a = pow(roughness, 2);
+	float a2 = a*a;
+
+	float n_dot_h = max(dot(n, h), 0.0);
+	float n_dot_h_2 = pow(n_dot_h, 2);
+	
+	float num = a2;
+	float denom = n_dot_h_2 * (a2 - 1) + 1;
+	denom = PI * denom * denom;
 	return num / denom;
 }
-
-
 
 // Schlick/GGX model
 float g1(float k, vec3 n, vec3 x) {
 	float num = max(dot(n, x), 0);
-	float denom = max(num * (1 - k) + k, 0.001);
+	float denom = num * (1 - k) + k;
 	return num / denom;
 }
 // Smith model
 float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
-	float a = (roughness * roughness);
-	float k = a / 2;
+	float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
 	return g1(k, n, v) * g1(k, n, l);
 }
 
@@ -86,14 +86,13 @@ vec3 fresnel(vec3 f0, vec3 v, vec3 h, vec3 n) {
 
 // Cook-torrence model for specular
 vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
-	float alpha = pow(roughness, 2);
-	vec3 num = ndf(alpha, n, h) * gsf(alpha, n, v, l) * fresnel(f0, v, h, n);
+	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h, n);
 	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0);
-	denom = max(denom, 0.0001);
-	return num / denom;
+	return num / max(denom, 0.001);
 }
 
-vec3 brdf(SunData sun, PixelData pixel, CameraData camera, SceneData scene) {
+// Bidirectional reflectance distribution function, aka PBRRRR
+vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 	// Main vectors
 	vec3 n = normalize(pixel.normal);
 	vec3 v = normalize(camera.position - pixel.position);
@@ -101,24 +100,32 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera, SceneData scene) {
 	vec3 h = normalize(v + l);
 
 	// Constants
-	float roughness = 0.4;
+	float roughness = 0.1;
 	float metallic = 0.0;
 	vec3 f0 = mix(vec3(0.04), pixel.diffuse, metallic);
 	
 	// Ks and Kd
 	vec3 ks = fresnel(f0, v, h, n);
-	vec3 kd = (1 - ks) * (1 - metallic) * 0.0;
+	vec3 kd = (1 - ks) * (1 - metallic);
 
 	// Le diffuse and specular
 	vec3 brdf = kd * (pixel.diffuse / PI) + specular(f0, roughness, v, l, n, h);
-	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
+	vec3 outgoing = pixel.emissive + brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
 
-	return specular(f0, roughness, v, l, n, h);
+	return outgoing;
 }
 
-// PBR TIMEEE
-vec3 shade(SunData sun, PixelData pixel, CameraData camera, SceneData scene) {   
-	return brdf(sun, pixel, camera, scene);
+// Calculate the shaded color for a single pixel 
+vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
+	// The shaded pixel color
+	vec3 color = brdf(sun, pixel, camera);
+
+	// Sky color
+	vec3 sky = sky(pixel.normal) * 0.01;
+
+	// Ambient color
+	color += 0.03 * pixel.diffuse + sky;
+	return color;
 }
 
 
@@ -130,8 +137,6 @@ void main() {
 	vec3 position = texture(position_texture, uvs).xyz;
 
 	// Calculate the dot product using the sun's direction vector and the up vector
-	float sun_dot_product = dot(-sunlight_dir, vec3(0, 1, 0));
-	float time_of_day = sun_dot_product * 0.5 + 0.5;
 	float global_sunlight_strength = calculate_sun_strength(time_of_day) * sunlight_strength;	
 
 	// Le pixel direction
@@ -145,7 +150,7 @@ void main() {
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
-		final_color = calculate_sky_color(sky_gradient, pixel_dir, sky_uv_sampler, time_of_day);
+		final_color = sky(pixel_dir);
 		final_color += max(pow(dot(pixel_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
@@ -155,8 +160,7 @@ void main() {
 		SunData sun = SunData(sunlight_dir, global_sunlight_strength, vec3(1));
 		PixelData pixel = PixelData(diffuse, normal, emissive, position);
 		CameraData camera = CameraData(camera_pos, camera_dir, pv_matrix);
-		SceneData scene = SceneData(time_of_day);
-		final_color = shade(sun, pixel, camera, scene);
+		final_color = shade(sun, pixel, camera);
 	}
 
 	color = vec4(post_rendering(uvs, final_color), 1.0);

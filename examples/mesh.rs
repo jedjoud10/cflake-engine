@@ -33,13 +33,13 @@ fn init(world: &mut World) {
 
     // Simple material
     let flat = world.pipeline.defaults().flat.clone();
-    let material = PbrMaterialBuilder::default().build_with_shader(&mut world.pipeline, flat);
-    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
+    let material = PbrMaterialBuilder::default().tint(vek::Rgb::red()).build(&mut world.pipeline);
+    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::red()).build(&mut world.pipeline);
 
-    // Create a cube
-    let cube = world.pipeline.defaults().cube.clone();
+    // Create a sphere
+    let sphere = world.pipeline.defaults().sphere.clone();
     world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(cube, material)).unwrap();
+        linker.insert(Renderer::new(sphere, material)).unwrap();
         linker.insert(Transform::at_y(0.5)).unwrap();
     });
 

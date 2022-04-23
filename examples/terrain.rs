@@ -35,7 +35,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(5.9, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(4.5, vek::Rgb::one()));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
     });
@@ -47,7 +47,7 @@ fn init(world: &mut World) {
         .source("user/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
-    let diffuse = TextureParams::DIFFUSE_MAP_LOAD;
+    let diffuse = TextureParams::NORMAL_MAP_LOAD;
     let normal = TextureParams::NORMAL_MAP_LOAD;
     let texture_diff_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse).unwrap();
     let texture_norm_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();

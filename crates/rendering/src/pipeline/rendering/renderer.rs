@@ -232,6 +232,10 @@ impl SceneRenderer {
             uniforms.set_vec3f32("sunlight_dir", sunlight.0);
             uniforms.set_f32("sunlight_strength", sunlight.1);
 
+            // Le day night system
+            let time_of_day: f32 = sunlight.0.dot(-vek::Vec3::unit_y()) * 0.5 + 0.5;
+            uniforms.set_f32("time_of_day", time_of_day);
+
             // Sunlight shadow mapping
             let default = vek::Mat4::<f32>::identity();
             let matrix = self.shadow_mapping.as_ref().map(|mapping| mapping.lightspace()).unwrap_or(&default);
