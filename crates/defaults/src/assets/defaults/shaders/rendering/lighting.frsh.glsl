@@ -36,10 +36,6 @@ struct PixelData {
 	vec3 normal;
 	vec3 emissive;
 	vec3 position;
-	
-	// Calculated on the spot
-	vec3 direction;
-	vec2 uvs;
 };
 
 // Camera data like position, matrices
@@ -58,53 +54,66 @@ struct SceneData {
 
 // Normal distribution function
 // GGX/Trowbridge-reitz model
-vec3 ndf(float roughness, vec3 normal, vec3 halfway) {
-	float alpha = pow(roughness, 2);
-	float prod = max(dot(normal, halfway), 0.0001);
-	float denum = PI * pow((pow(prod, 2) * (pow(alpha, 2) - 1) + 1), 2);
-	return alpha / max(prod, 0.0001);
+float ndf(float alpha, vec3 n, vec3 h) {
+	float num = pow(alpha, 2.0);
+	float prod = max(dot(n, h), 0.0);
+	float denom = PI * pow((pow(prod, 2) * (pow(alpha, 2) - 1) + 1), 2);
+	denom = max(denom, 0.0001);
+	return num / denom;
 }
 
 
 
-// Geometry shadowing function
+// Schlick/GGX model
+float g1(float k, vec3 n, vec3 x) {
+	float num = max(dot(n, x), 0);
+	float denom = max(num * (1 - k) + k, 0.001);
+	return num / denom;
+}
 // Smith model
-vec3 gsf(float roughness, vec3 normal, vec3 view, vec3 light) {
-	vec3 g1(float roughness, vec3 normal, vec3 x) {
-		float alpha = pow(roughness, 2);
-		float k = alpha / 2;
-		float prod = max(dot(normal, x), 0.0001);
-		float denum = prod * (1 - l) + k;
-		return prod / max(denum, 0.0001);
-	}
-	return g1(roughness, normal, light) * g1(roughness, normal, view);
+float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
+	float a = (roughness * roughness);
+	float k = a / 2;
+	return g1(k, n, v) * g1(k, n, l);
 }
 
 // Fresnel function
-float fresnel(vec3 view, float reflectivity, vec3 halfway) {
-	float prod = max(dot(view, halfway), 0.0001);
-	return reflectivity + (1 - reflectivity) * pow((1 - prod), 5);
-}
-
-
-// Lambertian model for diffuse
-vec3 diffuse(vec3 color) {
-	return color / PI; 
+vec3 fresnel(vec3 f0, vec3 v, vec3 h, vec3 n) {
+	float prod = max(dot(v, h), 0);
+	float clamped = clamp(1 - prod, 0, 1);
+	return f0 + (1 - f0) * pow(clamped, 5);
 }
 
 // Cook-torrence model for specular
-vec3 specular(vec3 v, vec3 l, vec3 n) {
-
+vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
+	float alpha = pow(roughness, 2);
+	vec3 num = ndf(alpha, n, h) * gsf(alpha, n, v, l) * fresnel(f0, v, h, n);
+	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0);
+	denom = max(denom, 0.0001);
+	return num / denom;
 }
 
 vec3 brdf(SunData sun, PixelData pixel, CameraData camera, SceneData scene) {
-	vec3 halfway = (pixel.direction - sun.direction) / 2;
-	float ks = fresnel(pixel.direction, 0.2, halfway);
-	float kd = 1 - ks;
+	// Main vectors
+	vec3 n = normalize(pixel.normal);
+	vec3 v = normalize(camera.position - pixel.position);
+	vec3 l = -normalize(sun.direction);
+	vec3 h = normalize(v + l);
 
+	// Constants
+	float roughness = 0.4;
+	float metallic = 0.0;
+	vec3 f0 = mix(vec3(0.04), pixel.diffuse, metallic);
+	
+	// Ks and Kd
+	vec3 ks = fresnel(f0, v, h, n);
+	vec3 kd = (1 - ks) * (1 - metallic) * 0.0;
 
+	// Le diffuse and specular
+	vec3 brdf = kd * (pixel.diffuse / PI) + specular(f0, roughness, v, l, n, h);
+	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
 
-	return vec3(ks);
+	return specular(f0, roughness, v, l, n, h);
 }
 
 // PBR TIMEEE
@@ -144,7 +153,7 @@ void main() {
 
 		// Construct the structs just cause they look pretty
 		SunData sun = SunData(sunlight_dir, global_sunlight_strength, vec3(1));
-		PixelData pixel = PixelData(diffuse, normal, emissive, position, pixel_dir, uvs);
+		PixelData pixel = PixelData(diffuse, normal, emissive, position);
 		CameraData camera = CameraData(camera_pos, camera_dir, pv_matrix);
 		SceneData scene = SceneData(time_of_day);
 		final_color = shade(sun, pixel, camera, scene);
