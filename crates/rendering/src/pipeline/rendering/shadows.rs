@@ -68,7 +68,7 @@ impl ShadowMapping {
 
         // Create the orthographic matrix
         // TODO: Cascaded shadow mapping
-        const DIMS: f32 = 200.0;
+        const DIMS: f32 = 1000.0;
         const NEAR: f32 = -2000.0;
         const FAR: f32 = 2000.0;
         let frustum = vek::FrustumPlanes {

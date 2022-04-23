@@ -6,7 +6,7 @@ use cflake_engine::{
         lights::LightType,
         material::{MaterialBuilder, PbrMaterialBuilder},
         mesh::Mesh,
-        texture::{Texture2D, TextureParams},
+        texture::{Texture2D, TextureParams, TextureFilter},
     },
     vek, World,
 };
@@ -34,25 +34,31 @@ fn init(world: &mut World) {
         linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
     });
 
-    // Simple material with textures
-    let mesh = assets::load::<Mesh>("user/meshes/untitled.obj").unwrap();
-    let mesh = world.pipeline.insert(mesh);
-    let diff = assets::load_with::<Texture2D>("user/textures/wooden_crate_01_diff_1k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
-    let norm = assets::load_with::<Texture2D>("user/textures/wooden_crate_01_nor_gl_1k.jpg", TextureParams::NORMAL_MAP_LOAD).unwrap();
-    let diff = world.pipeline.insert(diff);
-    let norm = world.pipeline.insert(norm);
-    let material = PbrMaterialBuilder::default()
-        .diffuse(diff)
-        .normal(norm)
-        .bumpiness(2.0)
-        .scale(vek::Vec2::one() * 1.0)
-        .build(&mut world.pipeline);
-
-    for x in 0..20 {
-        // Create an entity
+        // Simple material
+        let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
+    
+        let norm = assets::load_with::<Texture2D>("user/textures/debug.png", TextureParams {
+            filter: TextureFilter::Nearest,
+            ..TextureParams::NORMAL_MAP_LOAD
+        }).unwrap();
+        
+        let norm = world.pipeline.insert(norm);
+        let material = PbrMaterialBuilder::default()
+            .diffuse(world.pipeline.defaults().white.clone())
+            .normal(norm)
+            .build(&mut world.pipeline);
+    
+        // Create a cube
+        let cube = world.pipeline.defaults().cube.clone();
         world.ecs.insert(|_, linker| {
-            linker.insert(Renderer::new(mesh.clone(), material.clone())).unwrap();
-            linker.insert(Transform::at_x(x as f32 * 2.0)).unwrap();
+            linker.insert(Renderer::new(cube, material)).unwrap();
+            linker.insert(Transform::at_y(0.5)).unwrap();
         });
-    }
+    
+        // Create a floor
+        let plane = world.pipeline.defaults().plane.clone();
+        world.ecs.insert(|_, linker| {
+            linker.insert(Renderer::new(plane, floor)).unwrap();
+            linker.insert(Transform::default().scaled_by(vek::Vec3::new(10.0, 1.0, 10.0))).unwrap();
+        });
 }

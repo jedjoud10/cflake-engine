@@ -121,6 +121,7 @@ fn run(world: &mut World) {
         shadowed: shadowed.as_slice(),
         lights: &lights,
         redraw_shadows,
+        debug: 0,
     };
 
     // Render

@@ -129,7 +129,7 @@ impl Transform {
             ..Default::default()
         }
     }
-    pub fn new_xyz(x: f32, y: f32, z: f32) -> Self {
+    pub fn at_xyz(x: f32, y: f32, z: f32) -> Self {
         Self::from((x, y, z))
     }
     // Kinda like constructor modifiers

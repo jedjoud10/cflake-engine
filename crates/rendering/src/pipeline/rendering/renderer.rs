@@ -260,6 +260,9 @@ impl SceneRenderer {
                 .map_or(&pipeline.defaults().white, |shadow_mapping| &shadow_mapping.texture());
             uniforms.set_texture2d("shadow_map", shadow_mapping_texture);
             uniforms.set_bool("shadows_enabled", self.shadow_mapping.is_some());
+
+            // Debug the renderer if needed
+            uniforms.set_u32("debug", settings.debug);
         });
 
         // Draw the quad

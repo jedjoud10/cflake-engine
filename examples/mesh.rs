@@ -35,16 +35,6 @@ fn init(world: &mut World) {
     let material = PbrMaterialBuilder::default().build(&mut world.pipeline);
     let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
 
-    let norm = assets::load_with::<Texture2D>("user/textures/debug.png", TextureParams {
-        filter: TextureFilter::Nearest,
-        ..TextureParams::NORMAL_MAP_LOAD
-    }).unwrap();
-    let norm = world.pipeline.insert(norm);
-    let material = PbrMaterialBuilder::default()
-        .diffuse(world.pipeline.defaults().white.clone())
-        .normal(norm)
-        .build(&mut world.pipeline);
-
     // Create a cube
     let cube = world.pipeline.defaults().cube.clone();
     world.ecs.insert(|_, linker| {
