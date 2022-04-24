@@ -34,7 +34,7 @@ pub struct SceneRenderer {
     quad: Handle<Mesh>,
 
     // Others
-    sky_gradient: Handle<Texture2D>,
+    skybox: Handle<Texture2D>,
     shadow_mapping: Option<ShadowMapping>,
 }
 
@@ -129,6 +129,8 @@ impl SceneRenderer {
         /* #endregion */
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow().map(|settings| ShadowMapping::new(pipeline, settings));
+        
+        /*
         // Load the default sky gradient texture
         let sky_gradient = assets::load_with::<Texture2D>(
             "defaults/textures/sky_gradient.png",
@@ -139,7 +141,12 @@ impl SceneRenderer {
             },
         )
         .unwrap();
-        let sky_gradient = pipeline.insert(sky_gradient);
+        let skybox = pipeline.insert(sky_gradient);
+        */
+
+        // Load the default skybox
+        let skybox = pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
+
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
         Self {
@@ -148,7 +155,7 @@ impl SceneRenderer {
             textures: textures.try_into().expect("Deferred textures count mismatch!"),
             lighting: shader,
             quad,
-            sky_gradient,
+            skybox,
             shadow_mapping,
         }
     }
@@ -263,7 +270,7 @@ impl SceneRenderer {
             }
 
             // Sky gradient texture
-            uniforms.set_texture2d("sky_gradient", &self.sky_gradient);
+            uniforms.set_texture2d("skybox", &self.skybox);
 
             // If we have shadow mapping disabled we must use the default white texture
             let shadow_mapping_texture = self

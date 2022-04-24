@@ -5,7 +5,7 @@ use gl::types::GLuint;
 
 use crate::{
     basics::texture::{Texture, Texture2D},
-    pipeline::{Handle, Pipeline},
+    pipeline::{Handle, Pipeline}, object::ObjectSealed,
 };
 use bitflags::bitflags;
 
@@ -66,7 +66,7 @@ impl<'a> BoundFramebuffer<'a> {
         }
     }
     // Bind textures to the framebuffer
-    pub fn bind_textures(&mut self, pipeline: &Pipeline, textures_and_attachements: &[(Handle<Texture2D>, u32)]) {
+    pub fn bind_textures<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, textures_and_attachements: &[(Handle<Tex>, u32)]) {
         // Keep track of the color attachements, since we will need to set them using glDrawBuffers
         let mut color_attachements = Vec::new();
 
@@ -93,6 +93,10 @@ impl<'a> BoundFramebuffer<'a> {
         if status != gl::FRAMEBUFFER_COMPLETE {
             panic!("Framebuffer state is incomplete. Error while binding textures: '{:#x}'", status);
         }
+    }
+    // Set a single texture as the target texture when drawing
+    pub fn target<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, texture: &Handle<Tex>) {
+
     }
     // Set the viewport size of the framebuffer
     pub fn viewport(&mut self, size: vek::Extent2<u32>) {

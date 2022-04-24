@@ -62,7 +62,7 @@ pub enum TextureFormat {
 }
 
 // Get the IFD from a simple TextureFormat and DataType
-pub fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
+pub const fn get_ifd(layout: TextureLayout) -> (GLuint, GLuint, GLuint) {
     let internal_format = match layout.internal_format {
         // Red
         TextureFormat::R8R => gl::R8,

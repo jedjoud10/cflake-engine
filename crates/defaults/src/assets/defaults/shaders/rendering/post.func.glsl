@@ -9,7 +9,7 @@ vec3 aces(vec3 x) {
 }
 
 // Post-rendering effects
-vec3 post_rendering(vec2 uvs, vec3 icolor) {
+vec3 post(vec2 uvs, vec3 icolor) {
     // A vignette effect
     float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
     float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);

@@ -8,7 +8,7 @@ uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform sampler2D mask_texture;
 uniform sampler2D depth_texture;
-uniform sampler2D sky_gradient;
+uniform sampler2D skybox;
 uniform sampler2D shadow_map;
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
@@ -20,8 +20,6 @@ uniform vec3 camera_dir;
 uniform float time_of_day;
 in vec2 uvs;
 
-#include "defaults/shaders/rendering/sky.func.glsl"
-#include "defaults/shaders/rendering/sun.func.glsl"
 #include "defaults/shaders/rendering/shadows.func.glsl"
 #include "defaults/shaders/rendering/post.func.glsl"
 
@@ -122,19 +120,32 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 	return outgoing;
 }
 
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 SampleSphericalMap(vec3 v)
+{
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    return uv;
+}
+
 // Calculate the shaded color for a single pixel 
 vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
 	// The shaded pixel color
 	vec3 color = brdf(sun, pixel, camera) * (1 - pixel.in_shadow);
-
-	// Sky color
-	vec3 sky = sky(pixel.normal) * 0.01;
+	vec3 v = normalize(camera.position - pixel.position);
 
 	// Ambient color
-	color += 0.03 * pixel.diffuse * pixel.ao + sky;
+	color += 0.03 * pixel.diffuse * pixel.ao;
 	return color;
 }
 
+
+
+// Calculate the sun's strength using the sun's dot product
+float calculate_sun_strength(float sun_up_factor) {
+    return clamp(sun_up_factor * 6 - 2.4, 0, 1);
+}
 
 void main() {
 	// Sample the G-Buffer textures
@@ -147,8 +158,8 @@ void main() {
 	// Calculate the dot product using the sun's direction vector and the up vector
 	float global_sunlight_strength = calculate_sun_strength(time_of_day) * sunlight_strength;	
 
-	// Le pixel direction (going from the camera to the surface)
-	vec3 pixel_dir = normalize((inverse_pr_matrix * vec4(uvs * 2 - 1, 0, 1)).xyz);
+	// Le pixel direction (going from the camera towards the surface)
+	vec3 eye_dir = normalize((inverse_pr_matrix * vec4(uvs * 2 - 1, 0, 1)).xyz);
 
 	// Get fragment depth
 	vec3 final_color = vec3(0, 0, 0);
@@ -157,9 +168,9 @@ void main() {
 	// Depth test with the sky
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
-		float sky_uv_sampler = dot(pixel_dir, vec3(0, 1, 0));
-		final_color = sky(pixel_dir);
-		final_color += max(pow(dot(pixel_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
+		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
+		final_color = texture(skybox, SampleSphericalMap(eye_dir)).xyz;
+		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
 		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
@@ -171,5 +182,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(post_rendering(uvs, final_color), 0);
+	color = vec4(post(uvs, final_color), 0);
 }

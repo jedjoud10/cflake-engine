@@ -1,4 +1,4 @@
-use std::{ffi::c_void, mem::{ManuallyDrop, size_of}, io::Cursor};
+use std::{ffi::c_void, mem::{ManuallyDrop, size_of}, io::{Cursor, BufReader}};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
@@ -139,12 +139,13 @@ impl ResizableTexture for Texture2D {
 
 // Load the raw bytes from an image, stored inside bytes
 fn decode(image: &[u8]) -> (vek::Extent2<u32>, Vec<u8>) {
-    let buf = Cursor::new(image);
-    let image = image::io::Reader::new(buf.clone()).with_guessed_format().unwrap();
+    // This is just to fetch the format
+    let format = image::guess_format(image).unwrap();
 
     // If the image is HDR, use another library because the image crate sucks ass
-    if image.format().unwrap() == ImageFormat::Hdr {
+    if format == ImageFormat::Hdr {
         // Using the HdrLdr crate to load in the HDR
+        let buf = BufReader::new(image);
         let hdr = hdrldr::load(buf).unwrap();
         
         // Read the dimensions and count the number of texels
@@ -167,11 +168,11 @@ fn decode(image: &[u8]) -> (vek::Extent2<u32>, Vec<u8>) {
         // Return el data
         (dimensions, bytes)
     } else {
-        // Default normal texture
-        let result = image.decode().unwrap();
-        let result = result.flipv();
-        let dimensions = vek::Extent2::new(result.width(), result.height());
-        let bytes = result.into_bytes();
+        // Load the texture using the image crate
+        let image = image::load_from_memory(image).unwrap();
+        let image = image::DynamicImage::ImageRgba8(image.into_rgba8()).flipv();
+        let dimensions = vek::Extent2::new(image.width(), image.height());
+        let bytes = image.into_bytes();
         (dimensions, bytes)
     }
 } 

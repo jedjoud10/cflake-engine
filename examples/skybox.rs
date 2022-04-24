@@ -29,7 +29,7 @@ fn init(world: &mut World) {
     });
 
     // Load the HDR and convert it into a skybox
-    let hdr = world.pipeline.insert(assets::load_with::<Texture2D>("user/hdri/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
+    let hdr = world.pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
     let material = PbrMaterialBuilder::default()
         .diffuse(hdr)
         .build(&mut world.pipeline);

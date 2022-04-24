@@ -28,8 +28,6 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/shadows.func.glsl");
     persistent!("./assets/defaults/shaders/rendering/uv_passthrough.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/post.func.glsl");
-    persistent!("./assets/defaults/shaders/rendering/sky.func.glsl");
-    persistent!("./assets/defaults/shaders/rendering/sun.func.glsl");
     // Meshes
     persistent!("./assets/defaults/meshes/plane.obj");
     persistent!("./assets/defaults/meshes/cube.obj");
@@ -58,6 +56,9 @@ pub fn preload_default_assets() {
     // Textures
     persistent!("./assets/defaults/textures/missing.png");
     persistent!("./assets/defaults/textures/sky_gradient.png");
+    // HDRi
+    persistent!("./assets/defaults/hdr/frozen_lake_4k.hdr");
+
 
     println!("Finished pre-loading default assets!");
 }
