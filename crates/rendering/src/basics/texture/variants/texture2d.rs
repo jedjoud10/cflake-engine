@@ -1,8 +1,8 @@
-use std::{ffi::c_void, mem::ManuallyDrop};
+use std::{ffi::c_void, mem::{ManuallyDrop, size_of}, io::Cursor};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
-use image::{imageops::FilterType, DynamicImage};
+use image::{imageops::FilterType, DynamicImage, ImageFormat};
 
 use crate::{
     basics::texture::{
@@ -137,6 +137,45 @@ impl ResizableTexture for Texture2D {
     }
 }
 
+// Load the raw bytes from an image, stored inside bytes
+fn decode(image: &[u8]) -> (vek::Extent2<u32>, Vec<u8>) {
+    let buf = Cursor::new(image);
+    let image = image::io::Reader::new(buf.clone()).with_guessed_format().unwrap();
+
+    // If the image is HDR, use another library because the image crate sucks ass
+    if image.format().unwrap() == ImageFormat::Hdr {
+        // Using the HdrLdr crate to load in the HDR
+        let hdr = hdrldr::load(buf).unwrap();
+        
+        // Read the dimensions and count the number of texels
+        let dimensions = vek::Extent2::new(hdr.width as u32, hdr.height as u32);
+        dbg!(dimensions);
+        let texels = dimensions.product() as usize;
+        let num_bytes = size_of::<f32>() * texels * 3;
+        
+        // Flip the rows of the image (vertical flip)
+        // TODO: Optimize?
+        let rows = hdr.data.chunks(dimensions.w as usize);
+        let flipped = rows.rev().flat_map(|row| row.iter().cloned()).collect::<Vec<hdrldr::RGB>>();
+
+        // Sorry I have to use unsafe
+        let mut manual = ManuallyDrop::new(flipped);
+        let bytes = unsafe {
+            Vec::from_raw_parts(manual.as_mut_ptr() as *mut u8, num_bytes, num_bytes)
+        };
+
+        // Return el data
+        (dimensions, bytes)
+    } else {
+        // Default normal texture
+        let result = image.decode().unwrap();
+        let result = result.flipv();
+        let dimensions = vek::Extent2::new(result.width(), result.height());
+        let bytes = result.into_bytes();
+        (dimensions, bytes)
+    }
+} 
+
 // Load a Texture2D
 impl Asset for Texture2D {
     type OptArgs = TextureParams;
@@ -144,33 +183,18 @@ impl Asset for Texture2D {
     where
         Self: Sized,
     {
-        // Load this texture from the bytes (switch on the texture layout mode)
-        let image = image::load_from_memory(bytes).unwrap();
+        // Load the image from the raw bytes, and fetch it's dimensions and data
+        let (dimensions, data) = decode(bytes);
 
-        let image = if input.layout == TextureLayout::HDR {
-            println!("A");
-            image::DynamicImage::ImageRgba32F(image.into_rgba32f())
-        } else {
-            println!("A");
-            image::DynamicImage::ImageRgba8(image.into_rgba8())
-        };
-        
-        println!("B");
-        // Flip the image and fetch it's bytes
-        let (w, h) = (image.width(), image.height());
-        //let image = image.flipv();
-        println!("{}", image.as_flat_samples_f32().is_some());
-        let bytes = image.into_bytes();
-        println!("C");
-        
+
         // "Oh no..." check
-        assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
+        assert!(!data.is_empty(), "Cannot load in an empty texture!");
 
         // Loaded engine texture, simply return it
         Some(Texture2D {
             raw: None,
-            bytes: TextureBytes::Valid(bytes),
-            dimensions: vek::Extent2::new(w, h),
+            bytes: TextureBytes::Valid(data),
+            dimensions,
             params: input,
         })
     }

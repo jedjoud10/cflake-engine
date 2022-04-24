@@ -97,6 +97,6 @@ impl TextureParams {
         layout: TextureLayout::HDR,
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::ClampToEdge,
-        flags: TextureFlags::empty(),
+        flags: TextureFlags::from_bits_truncate(TextureFlags::RESIZABLE.bits),
     };
 }
