@@ -37,7 +37,7 @@ fn run(world: &mut World) {
             forward,
             view: camera.view,
             perspective: camera.perspective,
-            clip_planes: camera.clips,
+            clips: camera.clips,
 
             // Math moment
             perspective_view: camera.perspective * camera.view,

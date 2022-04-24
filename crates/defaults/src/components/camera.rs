@@ -10,7 +10,7 @@ pub struct Camera {
     pub perspective: vek::Mat4<f32>,
     
     // Other
-    pub horizontal_fov: f32,
+    pub fov: f32,
     pub clips: vek::Vec2<f32>,
 }
 
@@ -21,7 +21,7 @@ impl Camera {
         let mut camera = Self {
             view: vek::Mat4::identity(),
             perspective: vek::Mat4::identity(),
-            horizontal_fov: fov,
+            fov,
             clips: vek::Vec2::new(clipn, clipf),
         };
         camera.update_perspective_matrix(DEFAULT_WINDOW_SIZE.w as f32, DEFAULT_WINDOW_SIZE.h as f32);
@@ -32,7 +32,7 @@ impl Camera {
         // Calculate aspect ratio
         let ratio = width / height;
         // Turn the horizontal fov into a vertical one
-        let vertical_fov: f32 = 2.0 * ((self.horizontal_fov.to_radians() / 2.0).tan() * (1.0 / (ratio))).atan();
+        let vertical_fov: f32 = 2.0 * ((self.fov.to_radians() / 2.0).tan() * (1.0 / (ratio))).atan();
         self.perspective = vek::Mat4::<f32>::perspective_fov_rh_no(vertical_fov, width, height, self.clips.x, self.clips.y);
     }
     // Update the view matrix using a rotation and a position

@@ -66,7 +66,7 @@ fn run(world: &mut World) {
 
         // Get the camera and update it
         let camera = entry.get_mut::<Camera>().unwrap();
-        camera.horizontal_fov += fov_delta;
+        camera.fov += fov_delta;
     }
 }
 

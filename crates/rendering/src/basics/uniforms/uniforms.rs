@@ -23,7 +23,7 @@ impl<'a> Uniforms<'a> {
         bound.set_f32("_time", pipeline.elapsed());
         bound.set_f32("_delta", pipeline.delta());
         bound.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
-        bound.set_vec2f32("_nf_planes", pipeline.camera().clip_planes);
+        bound.set_vec2f32("_nf_planes", pipeline.camera().clips);
         closure(bound);
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not

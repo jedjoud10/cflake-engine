@@ -65,7 +65,7 @@ impl<'a> BoundFramebuffer<'a> {
             gl::ReadBuffer(gl::NONE);
         }
     }
-    // Bind textures to the framebuffer
+    // Bind multiple textures to the framebuffer for drawing/rendering
     pub fn bind_textures<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, textures_and_attachments: &[(Handle<Tex>, GLuint)]) -> Option<()> {
         // Keep track of the color attachments, since we will need to set them using glDrawBuffers
         let mut color_attachments = Vec::new();
@@ -73,7 +73,7 @@ impl<'a> BoundFramebuffer<'a> {
         for (handle, attachment) in textures_and_attachments.iter() {
             let texture = pipeline.get(handle)?;
             unsafe {
-                gl::NamedFramebufferTexture(self.fb.id, *attachment, texture.name()?, 0);
+                gl::FramebufferTexture2D(gl::FRAMEBUFFER, *attachment, texture.target()?, texture.name()?, 0);
             }
 
             // Check if this attachment is a color attachment
@@ -85,7 +85,7 @@ impl<'a> BoundFramebuffer<'a> {
 
         unsafe {
             // Set color attachments
-            gl::NamedFramebufferDrawBuffers(self.fb.id, color_attachments.len() as i32, color_attachments.as_ptr() as *const u32);
+            gl::DrawBuffers(color_attachments.len() as i32, color_attachments.as_ptr() as *const u32);
         }
 
         // Always check state
@@ -99,11 +99,11 @@ impl<'a> BoundFramebuffer<'a> {
     // Set a target texture directly, using it's OpenGL name and a target
     pub unsafe fn set_target_unchecked(&mut self, target: GLuint, id: GLuint, attachment: GLuint) {
         // Set the attachment normally
-        gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, target, 0);
+        gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, id, 0);
         
         // Special functionality for cases where the attachment is a color attachment
         if let 36064..=36079 = attachment {
-            gl::NamedFramebufferDrawBuffers(self.fb.id, 1, &attachment);
+            gl::DrawBuffers(1, &attachment);
         }
     }
     // Set a single texture as the target texture when drawing
