@@ -20,7 +20,7 @@ struct Chunk {
 
 // Get the voxel at a specific position (First Pass)
 Voxel get_voxel(const Chunk chunk, vec3 pos) {
-    float noise = snoise(pos * 0.001) * 200.0;
+    float noise = snoise(pos * 0.001) * 200;
     return Voxel(pos.y + noise, 255, vec3(1.0));
 }
 

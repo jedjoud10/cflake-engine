@@ -25,6 +25,9 @@ pub struct PbrMaterialBuilder {
     emissivity: f32,
     tint: vek::Rgb<f32>,
     scale: vek::Vec2<f32>,
+    ao: f32,
+    roughness: f32,
+    metallic: f32,
 }
 
 impl Default for PbrMaterialBuilder {
@@ -38,6 +41,9 @@ impl Default for PbrMaterialBuilder {
             emissivity: 0.0,
             tint: vek::Rgb::one(),
             scale: vek::Vec2::one(),
+            ao: 1.0,
+            roughness: 1.0,
+            metallic: 1.0,
         }
     }
 }
@@ -79,6 +85,24 @@ impl PbrMaterialBuilder {
         self
     }
 
+    // Roughness factor
+    pub fn roughness(mut self, roughness: f32) -> Self {
+        self.roughness = roughness;
+        self
+    }
+
+    // Metallic factor
+    pub fn metallic(mut self, metallic: f32) -> Self {
+        self.metallic = metallic;
+        self
+    }
+
+    // Global AO strength
+    pub fn ao_factor(mut self, strength: f32) -> Self {
+        self.ao = strength;
+        self
+    }
+
     // Main color tint of the material
     pub fn tint(mut self, tint: vek::Rgb<f32>) -> Self {
         self.tint = tint;
@@ -117,6 +141,9 @@ impl MaterialBuilder for PbrMaterialBuilder {
                 uniforms.set_vec3f32("tint", self.tint.into());
                 uniforms.set_f32("bumpiness", self.bumpiness);
                 uniforms.set_f32("emissivity", self.emissivity);
+                uniforms.set_f32("roughness", self.roughness);
+                uniforms.set_f32("metallic", self.metallic);
+                uniforms.set_f32("ao_strength", self.ao);
                 uniforms.set_vec2f32("uv_scale", self.scale);
             }),
         };

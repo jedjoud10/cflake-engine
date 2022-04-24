@@ -14,11 +14,11 @@ vec3 post_rendering(vec2 uvs, vec3 icolor) {
     float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
     float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);
     float vignette_strength = (vignette_strength_x + vignette_strength_y) * 2.0; 
+    float vignette = (1-vignette_strength);
 
     // Gamma correction
-    float gamma = 2.4;
-    vec3 color = mix(aces(icolor), icolor, 0.2);
-    float vignette = (1-vignette_strength);
-    vec3 gamma_corrected_color = pow(color, vec3(1.0/gamma));
-    return gamma_corrected_color * vignette;
+    float gamma = 2.6;
+    vec3 color = aces(icolor);
+    color = pow(color, vec3(1.0/gamma));
+    return color * vignette;
 }

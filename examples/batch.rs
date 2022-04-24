@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
-    rendering::basics::lights::LightType,
+    rendering::basics::{lights::LightType, material::{PbrMaterialBuilder, MaterialBuilder}, texture::{TextureParams, TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, Texture2D}},
     vek, World,
 };
 // An example with multiple meshes in the same scene
@@ -25,19 +25,35 @@ fn init(world: &mut World) {
     world.ecs.insert(|_, linker| {
         let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
         linker.insert(light).unwrap();
-        linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
+        linker.insert(Transform::rotation_z(-90f32.to_radians())).unwrap();
     });
+
+    // Mask that is 100% smooth, 100% metallic
+    let mask = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 0]), TextureParams {
+        layout: TextureLayout::LOADED,
+        filter: TextureFilter::Nearest,
+        wrap: TextureWrapMode::Repeat,
+        flags: TextureFlags::MIPMAPS,
+    });
+    let mask = world.pipeline.insert(mask);
 
     // Create multiple cubes
     let cube = world.pipeline.defaults().cube.clone();
     for x in 0..10 {
         for y in 0..10 {
-            for z in 0..10 {
-                world.ecs.insert(|_, linker| {
-                    linker.insert(Renderer::from(cube.clone())).unwrap();
-                    linker.insert(Transform::from((x as f32 * 2.0, y as f32 * 2.0, z as f32 * 2.0))).unwrap();
-                });
-            }
+
+            // Create a material with unique roughness / metallic
+            let material = PbrMaterialBuilder::default()
+                .mask(mask.clone())
+                .tint(vek::Rgb::blue())
+                .metallic(x as f32 / 10.0)
+                .roughness(y as f32 / 10.0)
+                .build(&mut world.pipeline);
+
+            world.ecs.insert(|_, linker| {
+                linker.insert(Renderer::new(cube.clone(), material)).unwrap();
+                linker.insert(Transform::from((x as f32 * 2.0, y as f32 * 2.0, 0.0))).unwrap();
+            });
         }
     }
 }

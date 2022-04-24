@@ -107,7 +107,7 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 	vec3 h = normalize(v + l);
 
 	// Constants
-	float roughness = pixel.roughness;
+	float roughness = max(pixel.roughness, 0.05);
 	float metallic = pixel.metallic;
 	vec3 f0 = mix(vec3(0.04), pixel.diffuse, metallic);
 	
@@ -128,7 +128,7 @@ vec3 shade(SunData sun, PixelData pixel, CameraData camera) {
 	vec3 color = brdf(sun, pixel, camera) * (1 - pixel.in_shadow);
 
 	// Sky color
-	vec3 sky = sky(pixel.normal) * 0.0;
+	vec3 sky = sky(pixel.normal) * 0.01;
 
 	// Ambient color
 	color += 0.03 * pixel.diffuse * pixel.ao + sky;
@@ -171,5 +171,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(mask.b);
+	color = vec4(post_rendering(uvs, final_color), 1.0);
 }

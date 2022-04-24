@@ -41,6 +41,7 @@ impl DefaultElements {
             wrap: TextureWrapMode::Repeat,
             flags: TextureFlags::MIPMAPS,
         };
+        
         // Create a 1x1 white texture
         let white = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 255]), params);
         let white = pipeline.insert(white);
@@ -54,7 +55,7 @@ impl DefaultElements {
         let normal_map = pipeline.insert(normal_map);
 
         // Create a 1x1 default mask texture map
-        let mask = Texture2D::new(vek::Extent2::one(), Some(vec![0, 255, 0, 0]), params);
+        let mask = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 0, 0]), params);
         let mask = pipeline.insert(mask);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine
@@ -97,6 +98,7 @@ impl DefaultElements {
             .diffuse(missing_texture.clone())
             .normal(normal_map.clone())
             .emissive(black.clone())
+            .mask(mask.clone())
             .build_with_shader(pipeline, shader.clone());
 
         Self {

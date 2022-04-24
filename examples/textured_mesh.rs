@@ -4,7 +4,7 @@ use cflake_engine::{
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
         lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder},
+        material::{MaterialBuilder, PbrMaterialBuilder, MaskBuilder},
         mesh::Mesh,
         texture::{Texture2D, TextureParams, TextureFilter},
     },
@@ -29,7 +29,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(6.0, vek::Rgb::one()));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-20f32.to_radians())).unwrap();
     });
@@ -41,7 +41,7 @@ fn init(world: &mut World) {
         let diff = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_4k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let diff = world.pipeline.insert(diff);
 
-        // Load the mask map
+        // Load a mask map
         let mask = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_arm_4k.jpg", TextureParams::NON_COLOR_MAP_LOAD).unwrap();
         let mask = world.pipeline.insert(mask);
 
@@ -59,7 +59,7 @@ fn init(world: &mut World) {
         // Create a mesh
         world.ecs.insert(|_, linker| {
             linker.insert(Renderer::new(world.pipeline.defaults().cube.clone(), material)).unwrap();
-            linker.insert(Transform::at_y(0.5)).unwrap();
+            linker.insert(Transform::rotation_y(2.0).scaled_by(vek::Vec3::one() * 5.0)).unwrap();
         });
     
         // Create a floor

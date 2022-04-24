@@ -29,13 +29,13 @@ fn init(world: &mut World) {
     // ----Start the world----
     // Create a simple camera entity
     world.ecs.insert(|_, linker| {
-        linker.insert(Camera::new(90.0, 2.0, 9000.0)).unwrap();
+        linker.insert(Camera::new(90.0, 20.0, 900000.0)).unwrap();
         linker.insert(Transform::default()).unwrap();
     });
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(8.5, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(6.0, vek::Rgb::one()));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-25f32.to_radians())).unwrap();
     });
@@ -71,7 +71,7 @@ fn init(world: &mut World) {
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: 6,
+        depth: 15,
         material,
         ..Default::default()
     };

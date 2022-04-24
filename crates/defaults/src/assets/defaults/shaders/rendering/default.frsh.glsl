@@ -13,6 +13,9 @@ uniform vec2 uv_scale;
 uniform vec3 tint;
 uniform float emissivity;
 uniform float bumpiness;
+uniform float roughness;
+uniform float metallic;
+uniform float ao_strength;
 in vec3 m_position;
 in vec3 m_normal;
 in vec3 m_tangent;
@@ -36,6 +39,7 @@ void main() {
 
 	// Calculate tangent space normals and use that for bump mapping
 	vec3 normal = texture(normal_m, uv).xyz * 2.0 - 1.0;
+	normal.xy *= bumpiness;
 
 	// Transform the tangent space normal into world space using a TBN matrix
 	mat3 tbn = mat3(
@@ -46,6 +50,9 @@ void main() {
 	
 	// This is a certified PBR moment
 	vec3 mask = texture(mask_m, uv).rgb;
+	mask.r = pow(mask.r, ao_strength);
+	mask.g *= roughness;
+	mask.b *= metallic;
 	frag_mask = mask;
 
 	// Other
