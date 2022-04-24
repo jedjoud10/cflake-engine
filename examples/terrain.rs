@@ -71,7 +71,7 @@ fn init(world: &mut World) {
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),
-        depth: 6,
+        depth: 8,
         material,
         ..Default::default()
     };

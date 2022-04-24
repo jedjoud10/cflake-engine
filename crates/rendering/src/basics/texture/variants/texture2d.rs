@@ -2,6 +2,7 @@ use std::{ffi::c_void, mem::ManuallyDrop};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
+use image::imageops::FilterType;
 
 use crate::{
     basics::texture::{
@@ -146,11 +147,16 @@ impl Asset for Texture2D {
         // Load this texture from the bytes
         let image = image::load_from_memory(bytes).unwrap();
         let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
-        // Flip
+        
+        // Flip the image and fetch it's bytes
         let (w, h) = (image.width(), image.height());
         let image = image.flipv();
         let bytes = image.into_bytes();
+        
+        // "Oh no..." check
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");
+
+        // Loaded engine texture, simply return it
         Some(Texture2D {
             raw: None,
             bytes: TextureBytes::Valid(bytes),

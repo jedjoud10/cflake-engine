@@ -84,7 +84,7 @@ impl TextureParams {
         wrap: TextureWrapMode::Repeat,
         flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::SRGB.bits | TextureFlags::ANISOTROPIC.bits),
     };
-    // Parameters when loading a normal map
+    // Parameters when loading a map that doesn't contain color data
     pub const NON_COLOR_MAP_LOAD: Self = Self {
         layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
         filter: TextureFilter::Linear,

@@ -75,10 +75,6 @@ pub fn cull_frustum<'b>(camera: &RenderingCamera, mut vec: Vec<RenderedModel<'b>
     let frustum = frustum(camera);
 
     // Check if each object is inside the frustum or not
-    let old = vec.len();
-    let i = std::time::Instant::now();
     vec.retain(|model| is_inside_frustum_aabb(&frustum, model.aabb));
-    let new = vec.len();
-    println!("Culled '{}' models in '{:?}'", old-new, i.elapsed());
     vec
 }
