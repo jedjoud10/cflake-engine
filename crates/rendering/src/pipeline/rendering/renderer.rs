@@ -133,7 +133,7 @@ impl SceneRenderer {
         let sky_gradient = assets::load_with::<Texture2D>(
             "defaults/textures/sky_gradient.png",
             TextureParams {
-                wrap: TextureWrapMode::ClampToEdge(),
+                wrap: TextureWrapMode::ClampToEdge,
                 flags: TextureFlags::SRGB,
                 ..TextureParams::DIFFUSE_MAP_LOAD
             },

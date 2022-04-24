@@ -99,7 +99,7 @@ impl Painter {
                     get_dimensions(&delta.image),
                     Some(convert_image(delta.image)),
                     TextureParams {
-                        wrap: TextureWrapMode::ClampToEdge(),
+                        wrap: TextureWrapMode::ClampToEdge,
                         flags: TextureFlags::RESIZABLE,
                         layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
                         filter: TextureFilter::Linear,

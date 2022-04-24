@@ -70,7 +70,7 @@ pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
 
     // Set the wrap mode for the texture (Mipmapped or not)
     match params.wrap {
-        TextureWrapMode::ClampToEdge() => {
+        TextureWrapMode::ClampToEdge => {
             set_wrap_mode(target, gl::CLAMP_TO_EDGE);
         }
         TextureWrapMode::ClampToBorder(color) => {

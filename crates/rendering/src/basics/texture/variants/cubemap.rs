@@ -1,6 +1,8 @@
 use std::{ops::{Index, IndexMut}, ffi::c_void};
 
-use crate::{basics::texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels}, utils::DataType, object::ObjectSealed};
+use assets::Asset;
+
+use crate::{basics::texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle}};
 
 use super::Texture2D;
 
@@ -19,78 +21,18 @@ pub struct CubeMap {
     dimensions: vek::Extent2<u32>,
 }
 
-// Cubemap textures used for initialization
-pub struct CubeMapTextures {
-    // Six textures indeed
-    /*
-    GL_TEXTURE_CUBE_MAP_POSITIVE_X	Right
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_X	Left
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Y	Top
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y	Bottom
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Z	Back
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z	Front
-    */
-    inner: [Texture2D; 6],
-}
-
-impl Index<usize> for CubeMapTextures {
-    type Output = Texture2D;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.inner[index]
-    }
-}
-
-impl IndexMut<usize> for CubeMapTextures {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.inner[index]
-    }
-}
-
-impl CubeMapTextures {
-    // Create some cubemap textures using texture directions
-    pub fn new(right: Texture2D, left: Texture2D, top: Texture2D, bottom: Texture2D, back: Texture2D, front: Texture2D) -> Self {
-        Self {
-            inner: [right, left, top, bottom, back, front]
-        }
-    }
-}
-
-
 impl CubeMap {
-    // Create a cubemap using 6 different textures and some initialization parameters
-    // PS: This will return None if one of the textures has a different size than the others
-    pub fn new(textures: CubeMapTextures, params: TextureParams) -> Option<Self> {
-        // Doesn't matter which is the "main" texture
-        let dimensions = textures[0].dimensions();
-        
-        // Combined bytes that will be allocated to the cubemap
-        let mut bytes = Vec::<u8>::with_capacity(dimensions.product() as usize * 4 * 6);
-
-        // Valid layout for textures
-        // For now, cubemaps only support RGBA8 textures
-        const LAYOUT: TextureLayout = TextureLayout::LOADED;
-        if params.layout != LAYOUT { return None; }
-        
-        for texture in textures.inner {
-            // Make sure the dimensions match up, and return if it does not
-            // Also make sure that the layout is valid
-            if texture.dimensions() != dimensions || texture.params().layout != LAYOUT {
-                return None;
-            }
-
-            // Add the texture bytes to the main bytes
-            let texture_bytes = texture.bytes().as_valid().unwrap();
-            bytes.extend_from_slice(&texture_bytes);
+    // Create a cubemap using a single equirectangular map, like an HDR
+    // This will project the map onto a sphere, and then render a unit cube 6 times for each face of the cubemap
+    pub fn from_equirectangular(pipeline: &mut Pipeline, texture: Texture2D, params: TextureParams) -> Option<Handle<Self>> {
+        // Make sure the texture's layout can be used for an HDR cubemap
+        if texture.params().layout != TextureParams::NON_COLOR_MAP_LOAD.layout {
+            return None;
         }
 
-        // Construct the cubemap using the valid bytes
-        Some(Self {
-            raw: None,
-            bytes: TextureBytes::Valid(bytes),
-            params,
-            dimensions,
-        })
+        // Allocate 6 textures for the 
+
+        None
     }
 }
 

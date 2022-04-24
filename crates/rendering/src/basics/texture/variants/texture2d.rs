@@ -2,12 +2,12 @@ use std::{ffi::c_void, mem::ManuallyDrop};
 
 use assets::Asset;
 use getset::{CopyGetters, Getters};
-use image::imageops::FilterType;
+use image::{imageops::FilterType, DynamicImage};
 
 use crate::{
     basics::texture::{
         generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags,
-        TextureParams,
+        TextureParams, TextureLayout,
     },
     object::ObjectSealed,
 };
@@ -144,14 +144,24 @@ impl Asset for Texture2D {
     where
         Self: Sized,
     {
-        // Load this texture from the bytes
+        // Load this texture from the bytes (switch on the texture layout mode)
         let image = image::load_from_memory(bytes).unwrap();
-        let image = image::DynamicImage::ImageRgba8(image.into_rgba8());
+
+        let image = if input.layout == TextureLayout::HDR {
+            println!("A");
+            image::DynamicImage::ImageRgba32F(image.into_rgba32f())
+        } else {
+            println!("A");
+            image::DynamicImage::ImageRgba8(image.into_rgba8())
+        };
         
+        println!("B");
         // Flip the image and fetch it's bytes
         let (w, h) = (image.width(), image.height());
-        let image = image.flipv();
+        //let image = image.flipv();
+        println!("{}", image.as_flat_samples_f32().is_some());
         let bytes = image.into_bytes();
+        println!("C");
         
         // "Oh no..." check
         assert!(!bytes.is_empty(), "Cannot load in an empty texture!");

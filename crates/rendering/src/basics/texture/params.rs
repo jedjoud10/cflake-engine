@@ -62,7 +62,7 @@ pub enum TextureFilter {
 // Texture wrapping filters
 #[derive(Debug, Clone, Copy)]
 pub enum TextureWrapMode {
-    ClampToEdge(),
+    ClampToEdge,
     ClampToBorder(Option<vek::Rgba<f32>>),
     Repeat,
     MirroredRepeat,
@@ -80,16 +80,23 @@ pub struct TextureParams {
 impl TextureParams {
     // Parameters when loading an SRGB diffuse map
     pub const DIFFUSE_MAP_LOAD: Self = Self {
-        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+        layout: TextureLayout::LOADED,
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::Repeat,
         flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::SRGB.bits | TextureFlags::ANISOTROPIC.bits),
     };
     // Parameters when loading a map that doesn't contain color data
     pub const NON_COLOR_MAP_LOAD: Self = Self {
-        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
+        layout: TextureLayout::LOADED,
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::Repeat,
         flags: TextureFlags::from_bits_truncate(TextureFlags::MIPMAPS.bits | TextureFlags::ANISOTROPIC.bits),
+    };
+    // Parameters when loading an HDR texture
+    pub const HDR_MAP_LOAD: Self = Self {
+        layout: TextureLayout::HDR,
+        filter: TextureFilter::Linear,
+        wrap: TextureWrapMode::ClampToEdge,
+        flags: TextureFlags::empty(),
     };
 }
