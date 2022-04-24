@@ -35,9 +35,9 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(4.5, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(8.5, vek::Rgb::one()));
         linker.insert(light).unwrap();
-        linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
+        linker.insert(Transform::rotation_x(-25f32.to_radians())).unwrap();
     });
 
     // Load a terrain material
@@ -47,22 +47,21 @@ fn init(world: &mut World) {
         .source("user/shaders/voxel_terrain/terrain.frsh.glsl");
     let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
-    let diffuse = TextureParams::NORMAL_MAP_LOAD;
-    let normal = TextureParams::NORMAL_MAP_LOAD;
-    let texture_diff_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_Color.jpg", diffuse).unwrap();
-    let texture_norm_1 = assets::load_with::<Texture2D>("user/textures/Snow006_2K_NormalGL.jpg", normal).unwrap();
-    let texture_diff_2 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_2k.jpg", diffuse).unwrap();
-    let texture_norm_2 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_2k.jpg", normal).unwrap();
-    let diffuse = bundle(&[texture_diff_1, texture_diff_2]).unwrap();
-    let normals = bundle(&[texture_norm_1, texture_norm_2]).unwrap();
-    let diffuse = world.pipeline.insert(diffuse);
-    let normals = world.pipeline.insert(normals);
+    let diffuse = TextureParams::DIFFUSE_MAP_LOAD;
+    let other = TextureParams::NON_COLOR_MAP_LOAD;
+    let diffuse1 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_4k.jpg", diffuse).unwrap();
+    let normal1 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_4k.jpg", other).unwrap();
+    let mask1 = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_arm_4k.jpg", other).unwrap();
+    let diffuse1 = world.pipeline.insert(diffuse1);
+    let normal1 = world.pipeline.insert(normal1);
+    let mask1 = world.pipeline.insert(mask1);
     let material = Material {
         shader,
         uniforms: UniformsSet::new(move |mut uniforms| {
             // Set the textures first
-            uniforms.set_bundled_texture2d("diffuse_m", &diffuse);
-            uniforms.set_bundled_texture2d("normal_m", &normals);
+            uniforms.set_texture2d("diffuse_m", &diffuse1);
+            uniforms.set_texture2d("normal_m", &normal1);
+            uniforms.set_texture2d("mask_m", &mask1);
             // Then the parameters
             uniforms.set_f32("bumpiness", 1.0);
             uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));

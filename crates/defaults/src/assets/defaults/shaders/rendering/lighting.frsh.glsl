@@ -2,13 +2,14 @@
 #load general
 
 out vec4 color;
-uniform sampler2D diffuse_texture; // 0
-uniform sampler2D emissive_texture; // 1
-uniform sampler2D normals_texture; // 2
-uniform sampler2D position_texture; // 3
-uniform sampler2D depth_texture; // 4
-uniform sampler2D sky_gradient; // 5
-uniform sampler2D shadow_map; // 6
+uniform sampler2D diffuse_texture;
+uniform sampler2D emissive_texture;
+uniform sampler2D normals_texture;
+uniform sampler2D position_texture;
+uniform sampler2D mask_texture;
+uniform sampler2D depth_texture;
+uniform sampler2D sky_gradient;
+uniform sampler2D shadow_map;
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
@@ -38,6 +39,12 @@ struct PixelData {
 	vec3 normal;
 	vec3 emissive;
 	vec3 position;
+	float ao;
+	float roughness;
+	float metallic;
+
+	// Calculated
+	float in_shadow;
 };
 
 // Camera data like position, matrices
@@ -100,8 +107,8 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 	vec3 h = normalize(v + l);
 
 	// Constants
-	float roughness = 0.1;
-	float metallic = 0.0;
+	float roughness = pixel.roughness;
+	float metallic = pixel.metallic;
 	vec3 f0 = mix(vec3(0.04), pixel.diffuse, metallic);
 	
 	// Ks and Kd
@@ -118,23 +125,24 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 // Calculate the shaded color for a single pixel 
 vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
 	// The shaded pixel color
-	vec3 color = brdf(sun, pixel, camera);
+	vec3 color = brdf(sun, pixel, camera) * (1 - pixel.in_shadow);
 
 	// Sky color
-	vec3 sky = sky(pixel.normal) * 0.01;
+	vec3 sky = sky(pixel.normal) * 0.0;
 
 	// Ambient color
-	color += 0.03 * pixel.diffuse + sky;
+	color += 0.03 * pixel.diffuse * pixel.ao + sky;
 	return color;
 }
 
 
 void main() {
 	// Sample the G-Buffer textures
-	vec3 normal = normalize(texture(normals_texture, uvs).xyz);
-	vec3 diffuse = texture(diffuse_texture, uvs).xyz;
-	vec3 emissive = texture(emissive_texture, uvs).xyz;
-	vec3 position = texture(position_texture, uvs).xyz;
+	vec3 normal = normalize(texture(normals_texture, uvs).rgb);
+	vec3 diffuse = texture(diffuse_texture, uvs).rgb;
+	vec3 emissive = texture(emissive_texture, uvs).rgb;
+	vec3 position = texture(position_texture, uvs).rgb;
+	vec3 mask = texture(mask_texture, uvs).rgb;
 
 	// Calculate the dot product using the sun's direction vector and the up vector
 	float global_sunlight_strength = calculate_sun_strength(time_of_day) * sunlight_strength;	
@@ -154,14 +162,14 @@ void main() {
 		final_color += max(pow(dot(pixel_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
-		//float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
+		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
 
 		// Construct the structs just cause they look pretty
 		SunData sun = SunData(sunlight_dir, global_sunlight_strength, vec3(1));
-		PixelData pixel = PixelData(diffuse, normal, emissive, position);
+		PixelData pixel = PixelData(diffuse, normal, emissive, position, mask.r, mask.g, mask.b, in_shadow);
 		CameraData camera = CameraData(camera_pos, camera_dir, pv_matrix);
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(post_rendering(uvs, final_color), 1.0);
+	color = vec4(mask.b);
 }

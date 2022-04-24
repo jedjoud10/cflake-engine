@@ -38,23 +38,27 @@ fn init(world: &mut World) {
         let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
     
         // Load a diffuse map
-        let diff = assets::load_with::<Texture2D>("user/textures/forrest_ground_01_diff_2k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
+        let diff = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_4k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
         let diff = world.pipeline.insert(diff);
 
+        // Load the mask map
+        let mask = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_arm_4k.jpg", TextureParams::NON_COLOR_MAP_LOAD).unwrap();
+        let mask = world.pipeline.insert(mask);
+
         // Load a normal map
-        let norm = assets::load_with::<Texture2D>("user/textures/debug.png",TextureParams::NORMAL_MAP_LOAD).unwrap();
+        let norm = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_4k.jpg",TextureParams::NON_COLOR_MAP_LOAD).unwrap();
         let norm = world.pipeline.insert(norm);
 
 
         let material = PbrMaterialBuilder::default()
             .diffuse(diff)
-            //.normal(norm)
+            .normal(norm)
+            .mask(mask)
             .build(&mut world.pipeline);
     
-        // Create a cube
-        let cube = world.pipeline.insert(assets::load::<Mesh>("user/meshes/korone.obj").unwrap());
+        // Create a mesh
         world.ecs.insert(|_, linker| {
-            linker.insert(Renderer::new(world.pipeline.defaults().sphere.clone(), material)).unwrap();
+            linker.insert(Renderer::new(world.pipeline.defaults().cube.clone(), material)).unwrap();
             linker.insert(Transform::at_y(0.5)).unwrap();
         });
     

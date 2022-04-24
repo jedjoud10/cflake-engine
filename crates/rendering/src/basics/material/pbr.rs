@@ -14,6 +14,11 @@ pub struct PbrMaterialBuilder {
     diffuse: Handle<Texture2D>,
     normal: Handle<Texture2D>,
     emissive: Handle<Texture2D>,
+    
+    // R: AO
+    // G: Roughness
+    // B: Metallic
+    mask: Handle<Texture2D>,
 
     // Parameters
     bumpiness: f32,
@@ -28,6 +33,7 @@ impl Default for PbrMaterialBuilder {
             diffuse: Default::default(),
             normal: Default::default(),
             emissive: Default::default(),
+            mask: Default::default(),
             bumpiness: 1.0,
             emissivity: 0.0,
             tint: vek::Rgb::one(),
@@ -37,38 +43,49 @@ impl Default for PbrMaterialBuilder {
 }
 
 impl PbrMaterialBuilder {
-    // My eyeballs hurt... again
+    // Set the diffuse texture
     pub fn diffuse(mut self, map: Handle<Texture2D>) -> Self {
         self.diffuse = map;
         self
     }
 
+    // Set the normal map texture
     pub fn normal(mut self, map: Handle<Texture2D>) -> Self {
         self.normal = map;
         self
     }
 
+    // Set the emissive texture
     pub fn emissive(mut self, map: Handle<Texture2D>) -> Self {
         self.emissive = map;
         self
     }
 
-    // Modifier functions
+    // Set the mask texture; A texture that contains AO/Roughness/Metallic in each channel
+    pub fn mask(mut self, mask: Handle<Texture2D>) -> Self {
+        self.mask = mask;
+        self
+    }
+
+    // Update the normal map's strength
     pub fn bumpiness(mut self, bumpiness: f32) -> Self {
         self.bumpiness = bumpiness;
         self
     }
 
+    // Global emissive strength
     pub fn emissivity(mut self, emissivity: f32) -> Self {
         self.emissivity = emissivity;
         self
     }
 
+    // Main color tint of the material
     pub fn tint(mut self, tint: vek::Rgb<f32>) -> Self {
         self.tint = tint;
         self
     }
 
+    // UV scale of the material
     pub fn scale(mut self, uv_scale: vek::Vec2<f32>) -> Self {
         self.scale = uv_scale;
         self
@@ -81,6 +98,7 @@ impl MaterialBuilder for PbrMaterialBuilder {
         // Clone the default texture handles
         let white = pipeline.defaults().white.clone();
         let black = pipeline.defaults().black.clone();
+        let mask = pipeline.defaults().mask.clone();
         let normal_map = pipeline.defaults().normal_map.clone();
 
         let mat = Material {
@@ -90,9 +108,11 @@ impl MaterialBuilder for PbrMaterialBuilder {
                 let diffuse = self.diffuse.fallback_to(&white);
                 let normal = self.normal.fallback_to(&normal_map);
                 let emissive = self.emissive.fallback_to(&black);
+                let mask = self.mask.fallback_to(&mask);
                 uniforms.set_texture2d("diffuse_m", diffuse);
                 uniforms.set_texture2d("normal_m", normal);
                 uniforms.set_texture2d("emissive_m", emissive);
+                uniforms.set_texture2d("mask_m", mask);
                 // Then the parameters
                 uniforms.set_vec3f32("tint", self.tint.into());
                 uniforms.set_f32("bumpiness", self.bumpiness);

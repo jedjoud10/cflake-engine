@@ -4,9 +4,11 @@ layout(location = 0) out vec3 frag_diffuse;
 layout(location = 1) out vec3 frag_emissive;
 layout(location = 2) out vec3 frag_normal;
 layout(location = 3) out vec3 frag_pos;
+layout(location = 4) out vec3 frag_mask;
 uniform sampler2D diffuse_m;
 uniform sampler2D emissive_m;
 uniform sampler2D normal_m;
+uniform sampler2D mask_m;
 uniform vec2 uv_scale;
 uniform vec3 tint;
 uniform float emissivity;
@@ -21,8 +23,9 @@ in vec3 test;
 
 void main() {
 	// Load diffuse/emissive, and check if we must alpha clip
-	vec4 diffuse = texture(diffuse_m, (m_uv) * uv_scale);
-	vec4 emissive = texture(emissive_m, (m_uv) * uv_scale);
+	vec2 uv = m_uv * uv_scale;
+	vec4 diffuse = texture(diffuse_m, uv);
+	vec4 emissive = texture(emissive_m, uv);
 	float alpha1 = diffuse.a; 
 	float alpha2 = emissive.a;
 	if (alpha1 != 1 || alpha2 != 1) { discard; }
@@ -32,16 +35,19 @@ void main() {
 	frag_emissive = emissive.xyz * emissivity;
 
 	// Calculate tangent space normals and use that for bump mapping
-	vec3 normal = texture(normal_m, m_uv * uv_scale).xyz * 2.0 - 1.0;
+	vec3 normal = texture(normal_m, uv).xyz * 2.0 - 1.0;
 
 	// Transform the tangent space normal into world space using a TBN matrix
 	mat3 tbn = mat3(
 		normalize(m_tangent),
 		normalize(m_bitangent),
 		normalize(m_normal));
-	// Indeed
 	frag_normal = normalize(tbn * normalize(normal));	
 	
+	// This is a certified PBR moment
+	vec3 mask = texture(mask_m, uv).rgb;
+	frag_mask = mask;
+
 	// Other
 	frag_pos = m_position;
 }
