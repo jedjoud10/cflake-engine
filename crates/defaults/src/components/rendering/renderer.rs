@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use world::ecs::Component;
+use world::math::bounds::aabb::AABB;
 use world::rendering::basics::material::Material;
 use world::rendering::basics::mesh::Mesh;
 use world::rendering::pipeline::Handle;
@@ -18,6 +19,7 @@ pub struct Renderer {
     // Required for rendering
     pub mesh: Handle<Mesh>,
     pub material: Handle<Material>,
+    pub(crate) bounds: AABB,
 
     // Keep the model matrix cached
     pub(crate) matrix: vek::Mat4<f32>,
@@ -39,6 +41,7 @@ impl Default for Renderer {
             material: Default::default(),
             matrix: Default::default(),
             flags: RendererFlags::all(),
+            bounds: AABB::default(),
         }
     }
 }

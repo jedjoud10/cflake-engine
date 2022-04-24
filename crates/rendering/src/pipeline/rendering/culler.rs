@@ -70,10 +70,15 @@ fn is_inside_frustum_aabb(frustum: &Frustum, aabb: &AABB) -> bool {
 }
 // AABB frustum culling
 // This will remove the objects that must be culled from "vec"
-pub fn cull<'b>(camera: &RenderingCamera, vec: Vec<RenderedModel<'b>>) -> Vec<RenderedModel<'b>> {
+pub fn cull_frustum<'b>(camera: &RenderingCamera, mut vec: Vec<RenderedModel<'b>>) -> Vec<RenderedModel<'b>> {
     // Calculate the view frustum
     let frustum = frustum(camera);
-    let res = is_inside_frustum_aabb(&frustum, &AABB::new(vek::Vec3::zero(), vek::Vec3::one() * 2.5));
-    println!("{}", res);
+
+    // Check if each object is inside the frustum or not
+    let old = vec.len();
+    let i = std::time::Instant::now();
+    vec.retain(|model| is_inside_frustum_aabb(&frustum, model.aabb));
+    let new = vec.len();
+    println!("Culled '{}' models in '{:?}'", old-new, i.elapsed());
     vec
 }

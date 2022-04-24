@@ -1,8 +1,12 @@
 use std::ops::Index;
 
-// An AABB bound
+// An axis aligned bounding box
+#[derive(Default)]
 pub struct AABB {
+    // Minimum vertex in world space
     pub min: vek::Vec3<f32>,
+
+    // Maximum vertex in world space
     pub max: vek::Vec3<f32>,
 }
 
@@ -12,16 +16,6 @@ impl AABB {
         Self {
             min: pos - hw,
             max: pos + hw,
-        }
-    }
-}
-
-// Default AABB, just a unit cuboid with a center at 0,0,0
-impl Default for AABB {
-    fn default() -> Self {
-        Self {
-            min: (vek::Vec3::one() / 2.0) - 1.0,
-            max: (vek::Vec3::one() / 2.0),
         }
     }
 }

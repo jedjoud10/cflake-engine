@@ -11,6 +11,7 @@ use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
 use gl::types::GLuint;
+use math::bounds::aabb::AABB;
 use obj::TexturedVertex;
 
 // A simple mesh that holds vertex, normal, and color data
@@ -45,6 +46,10 @@ pub struct Mesh {
     // Mesh flags telling us what vertex attributes are suported and shit
     #[getset(get = "pub")]
     flags: MeshFlags,
+
+    // Mesh limits, can be used for culling
+    #[getset(get = "pub")]
+    bounds: AABB,
 }
 
 impl Asset for Mesh {
@@ -182,6 +187,9 @@ impl ObjectSealed for Mesh {
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+
+            // Don't forget to calculate the AABB while we're at it
+            self.generate_bounds();
         }
     }
 
@@ -202,6 +210,7 @@ impl Mesh {
             indices,
             vao: 0,
             buffers: None,
+            bounds: AABB::default(),
         }
     }
     // Créer un nouveau mesh en combinant deux meshs qui existent déja.
@@ -217,6 +226,24 @@ impl Mesh {
         self.vertices.colors.extend(other.vertices.colors.into_iter());
         self.vertices.tangents.extend(other.vertices.tangents.into_iter());
         self
+    }
+    // Recalculate the mesh bounds
+    pub fn generate_bounds(&mut self) {
+        // Keep track of the min/max positions
+        let mut max = vek::Vec3::broadcast(f32::MIN);
+        let mut min = vek::Vec3::broadcast(f32::MAX);
+
+        for vert in &self.vertices.positions {
+            // Iterate for each element in the current point and update the min/max values
+            vert.iter().enumerate().for_each(|(i, e)| {
+                max[i] = e.max(max[i]);
+                min[i] = e.min(min[i]);
+            })
+        }
+
+        // Update bounds
+        self.bounds.min = min;
+        self.bounds.max = max;
     }
     // Procedurally generate the normals for this mesh
     pub fn generate_normals(&mut self) {

@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{common, RenderingSettings, ShadowMapping, cull};
+use super::{common, RenderingSettings, ShadowMapping, cull_frustum};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -184,7 +184,7 @@ impl SceneRenderer {
         self.framebuffer.bind(|_| {
             // AABB frustum culling cause I'm cool
             let taken = std::mem::take(&mut settings.normal);
-            let objects = cull(pipeline.camera(), taken);
+            let objects = cull_frustum(pipeline.camera(), taken);
 
             // Render each object that isn't culled
             for renderer in objects {

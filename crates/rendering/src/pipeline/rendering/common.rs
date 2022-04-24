@@ -1,5 +1,7 @@
 use std::ptr::null;
 
+use math::bounds::aabb::AABB;
+
 use crate::{
     basics::{material::Material, mesh::Mesh, uniforms::Uniforms},
     pipeline::{Handle, Pipeline},
@@ -50,6 +52,9 @@ pub struct RenderedModel<'b> {
     // Required
     pub mesh: &'b Handle<Mesh>,
     pub matrix: &'b vek::Mat4<f32>,
+
+    // Certified frustum culling moment
+    pub aabb: &'b AABB,
 
     // Used for rendering
     pub material: &'b Handle<Material>,

@@ -5,7 +5,7 @@ use world::{
         basics::lights::LightTransform,
         pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel, FramebufferClearBits},
     },
-    World,
+    World, math::bounds::aabb::AABB,
 };
 
 // The 3D scene renderer
@@ -60,13 +60,26 @@ fn run(world: &mut World) {
     }
     */
 
-    // Update the matrices of renderers, only if the transforms os said renderers were externally modified
+    // Update the matrices of renderers (and bounds), only if the transforms os said renderers were externally modified
     let filter = or(modified::<Renderer>(), added::<Renderer>());
     let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(filter);
     for (transform, renderer) in query {
         // Update the matrix if we need to
         renderer.matrix = transform.transform_matrix();
         renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
+    
+        // Update the AABB bounds by using the mesh bounds
+        let mesh = world.pipeline.get(&renderer.mesh);
+        renderer.bounds = mesh.map(|mesh| {
+            let min = mesh.bounds().min;
+            let max = mesh.bounds().max;
+            
+            // A lil projection to correct for translation/rotation/scale
+            AABB {
+                min: renderer.matrix.mul_point(min),
+                max: renderer.matrix.mul_point(max),
+            }
+        }).unwrap_or_default();
     }
     // Get all the visible objects in the world, first of all
     let query = world.ecs.try_view::<&Renderer>().unwrap();
@@ -77,6 +90,7 @@ fn run(world: &mut World) {
                 mesh: &renderer.mesh,
                 matrix: &renderer.matrix,
                 material: &renderer.material,
+                aabb: &renderer.bounds,
             })
         } else {
             None

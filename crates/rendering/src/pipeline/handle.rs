@@ -81,6 +81,10 @@ impl<T: Object> Handle<T> {
             default
         }
     }
+    // Actual map functionality
+    pub fn map<R, F: FnOnce(&Self) -> R>(&self, f: F) -> Option<R> {
+        (!self.is_null()).then(|| f(self))
+    } 
 }
 
 impl<T: Object> Drop for Handle<T> {
