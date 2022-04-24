@@ -37,7 +37,7 @@ pub(crate) fn render_model<'a>(renderer: RenderedModel<'a>, pipeline: &Pipeline)
         uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
 
         // Check if we really need to set the material uniforms
-        uniforms.set_mat44f32("project_view_matrix", &pipeline.camera().projm_viewm);
+        uniforms.set_mat44f32("perspective_view_matrix", &pipeline.camera().perspective_view);
         mat.uniforms.execute(uniforms);
     });
 

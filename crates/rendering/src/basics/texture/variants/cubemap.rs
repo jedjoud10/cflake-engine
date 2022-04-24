@@ -2,7 +2,7 @@ use std::{ops::{Index, IndexMut}, ffi::c_void, mem::MaybeUninit};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use gl::types::GLuint;
-use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd}, shader::{Shader, ShaderInitSettings}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits}};
+use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits}};
 use super::Texture2D;
 
 // A cubemap face texture that simply contains an index of it's face
@@ -59,6 +59,30 @@ impl ObjectSealed for FaceTexture2D {
     }
 }
 
+impl Texture for FaceTexture2D {
+    type Dimensions = u32;
+
+    fn storage(&self) -> Option<&RawTexture> {
+        self.raw.as_ref()
+    }
+
+    fn params(&self) -> &TextureParams {
+        &Self::PARAMS
+    }
+
+    fn bytes(&self) -> &TextureBytes {
+        &self.bytes
+    }
+
+    fn count_texels(&self) -> usize {
+        (self.size as usize).pow(2)
+    }
+
+    fn dimensions(&self) -> Self::Dimensions {
+        self.size
+    }
+}
+
 
 
 
@@ -99,9 +123,9 @@ fn generate_textures(pipeline: &mut Pipeline, size: u32) -> [Handle<FaceTexture2
 impl CubeMap {
     // Create a cubemap using a single equirectangular map, like an HDR
     // This will project the map onto a sphere, and then render a unit cube 6 times for each face of the cubemap
-    pub fn from_equirectangular(pipeline: &mut Pipeline, texture: Texture2D, params: TextureParams, size: u32) -> Option<Handle<Self>> {
+    pub fn from_equirectangular(pipeline: &mut Pipeline, hdr: Handle<Texture2D>, params: TextureParams, size: u32) -> Option<Handle<Self>> {
         // Make sure the texture's layout can be used for an HDR cubemap
-        if texture.params().layout != TextureParams::NON_COLOR_MAP_LOAD.layout {
+        if pipeline.get(&hdr).unwrap().params().layout != TextureParams::NON_COLOR_MAP_LOAD.layout {
             return None;
         }
 
@@ -135,22 +159,34 @@ impl CubeMap {
         let textures = generate_textures(pipeline, size);
 
         // Load the shader that we will use for projection
-        let shader = Shader::new(ShaderInitSettings::default()
+        let shader = pipeline.insert(Shader::new(ShaderInitSettings::default()
             .source("defaults/shaders/rendering/project.vrsh.glsl")
-            .source("defaults/shaders/others/cubemap.frsh.glsl")).unwrap();
-        let shader = pipeline.insert(shader);
+            .source("defaults/shaders/others/cubemap.frsh.glsl")).unwrap());
+        let shader = pipeline.get(&shader).unwrap();
         
         // Create a framebuffer that will be used for rendering
         let mut framebuffer = Framebuffer::new(pipeline);
-        
-        // Render the cube 6 times with the appropriate shader and render target
         framebuffer.bind(|mut bound| {
-            for (view, texture) in view_matrices.into_iter().zip(textures.into_iter()) {
-                // Each time we render, we change the target texture
-                //bound.target();
-                bound.clear(FramebufferClearBits::all());
-            }                
-        });
+            // Uniforms for settings the perspective and view uniforms, alongisde the HDR texture
+            Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+                // Set the main uniforms
+                uniforms.set_texture2d("hdr_map", &hdr);
+                //uniforms.set_mat44f32("perspective_m", matrix)
+
+
+                // Render the cube 6 times with the appropriate shader and render target
+                for (view, texture) in view_matrices.into_iter().zip(textures.into_iter()) {
+                    // Each time we render, we change the target texture
+                    bound.target(pipeline, texture, gl::COLOR_ATTACHMENT0);
+                    bound.clear(FramebufferClearBits::all());
+
+                    // Update the view matrix and render the cube
+
+
+                }                
+            });
+        });       
+        
 
 
         None

@@ -66,26 +66,26 @@ impl<'a> BoundFramebuffer<'a> {
         }
     }
     // Bind textures to the framebuffer
-    pub fn bind_textures<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, textures_and_attachements: &[(Handle<Tex>, u32)]) {
-        // Keep track of the color attachements, since we will need to set them using glDrawBuffers
-        let mut color_attachements = Vec::new();
+    pub fn bind_textures<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, textures_and_attachments: &[(Handle<Tex>, GLuint)]) -> Option<()> {
+        // Keep track of the color attachments, since we will need to set them using glDrawBuffers
+        let mut color_attachments = Vec::new();
 
-        for (handle, attachement) in textures_and_attachements.iter() {
-            let texture = pipeline.get(handle).unwrap();
+        for (handle, attachment) in textures_and_attachments.iter() {
+            let texture = pipeline.get(handle)?;
             unsafe {
-                gl::NamedFramebufferTexture(self.fb.id, *attachement, texture.name().unwrap(), 0);
+                gl::NamedFramebufferTexture(self.fb.id, *attachment, texture.name()?, 0);
             }
 
-            // Check if this attachement is a color attachement
-            if let 36064..=36079 = attachement {
-                // Valid color attachement
-                color_attachements.push(*attachement);
+            // Check if this attachment is a color attachment
+            if let 36064..=36079 = attachment {
+                // Valid color attachment
+                color_attachments.push(*attachment);
             }
         }
 
         unsafe {
-            // Set color attachements
-            gl::NamedFramebufferDrawBuffers(self.fb.id, color_attachements.len() as i32, color_attachements.as_ptr() as *const u32);
+            // Set color attachments
+            gl::NamedFramebufferDrawBuffers(self.fb.id, color_attachments.len() as i32, color_attachments.as_ptr() as *const u32);
         }
 
         // Always check state
@@ -93,10 +93,25 @@ impl<'a> BoundFramebuffer<'a> {
         if status != gl::FRAMEBUFFER_COMPLETE {
             panic!("Framebuffer state is incomplete. Error while binding textures: '{:#x}'", status);
         }
+
+        Some(())
     }
     // Set a single texture as the target texture when drawing
-    pub fn target<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, texture: &Handle<Tex>) {
+    pub fn target<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, texture: Handle<Tex>, attachment: GLuint) -> Option<()> {
+        unsafe {
+            // Set the attachment normally
+            let texture = pipeline.get(&texture)?;
+            gl::NamedFramebufferTexture(self.fb.id, attachment, texture.name()?, 0);
+            
+            // Special functionality for cases where the attachment is a color attachment
+            if let 36064..=36079 = attachment {
+                gl::NamedFramebufferDrawBuffers(self.fb.id, 1, &attachment);
+            }
+        }
 
+        
+
+        Some(())
     }
     // Set the viewport size of the framebuffer
     pub fn viewport(&mut self, size: vek::Extent2<u32>) {

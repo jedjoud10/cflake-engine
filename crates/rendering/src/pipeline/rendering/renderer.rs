@@ -122,7 +122,7 @@ impl SceneRenderer {
 
         // Bind textures
         let textures_and_attachements = textures.iter().cloned().zip(attachements).collect::<Vec<_>>();
-        framebuffer.bind(|mut f| f.bind_textures(pipeline, &textures_and_attachements));
+        framebuffer.bind(|mut f| f.bind_textures(pipeline, &textures_and_attachements).unwrap());
 
         // Unbind
         gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
@@ -255,9 +255,9 @@ impl SceneRenderer {
             uniforms.set_mat44f32("lightspace_matrix", matrix);
 
             // Set the camera matrices and camera values
-            let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().projm.inverted();
+            let inverse_pr_m = (vek::Mat4::<f32>::from(pipeline.camera().rotation)) * pipeline.camera().perspective.inverted();
             uniforms.set_mat44f32("inverse_pr_matrix", &inverse_pr_m);
-            uniforms.set_mat44f32("pv_matrix", &pipeline.camera().projm_viewm);
+            uniforms.set_mat44f32("pv_matrix", &pipeline.camera().perspective_view);
             uniforms.set_vec3f32("camera_pos", pipeline.camera().position);
             uniforms.set_vec3f32("camera_dir", pipeline.camera().forward);
 
