@@ -41,7 +41,6 @@ fn run(world: &mut World) {
 
             // Math moment
             projm_viewm: camera.projm * camera.viewm,
-            viewm_projm: camera.viewm * camera.projm,
         };
         *world.pipeline.camera_mut() = camera;
     } else {
@@ -103,7 +102,7 @@ fn run(world: &mut World) {
     let shadowed: Vec<ShadowedModel> = Vec::from_iter(query.filter_map(|renderer| {
         // No need to draw shadows for invisible renderers
         let f = renderer.flags;
-        if f.contains(RendererFlags::SHADOW_CASTER) && f.contains(RendererFlags::VISIBLE) {
+        if f.contains(RendererFlags::VISIBLE) {
             // We must only redraw shadows if at least one of the shadow caster objects needs to be redrawn
             redraw_shadows |= f.contains(RendererFlags::MATRIX_UPDATE);
             Some(ShadowedModel {

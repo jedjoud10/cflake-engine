@@ -32,9 +32,8 @@ fn init(world: &mut World) {
     });
 
     // Simple material
-    let flat = world.pipeline.defaults().flat.clone();
     let material = PbrMaterialBuilder::default().tint(vek::Rgb::red()).build(&mut world.pipeline);
-    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::red()).build(&mut world.pipeline);
+    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::green()).build(&mut world.pipeline);
 
     // Create a sphere
     let sphere = world.pipeline.defaults().sphere.clone();

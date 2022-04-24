@@ -28,7 +28,6 @@ pub struct RenderingCamera {
     pub viewm: vek::Mat4<f32>,
     pub projm: vek::Mat4<f32>,
     pub projm_viewm: vek::Mat4<f32>,
-    pub viewm_projm: vek::Mat4<f32>,
 
     // Near-Far clip planes
     pub clip_planes: vek::Vec2<f32>,

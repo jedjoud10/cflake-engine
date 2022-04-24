@@ -147,7 +147,7 @@ void main() {
 	// Calculate the dot product using the sun's direction vector and the up vector
 	float global_sunlight_strength = calculate_sun_strength(time_of_day) * sunlight_strength;	
 
-	// Le pixel direction
+	// Le pixel direction (going from the camera to the surface)
 	vec3 pixel_dir = normalize((inverse_pr_matrix * vec4(uvs * 2 - 1, 0, 1)).xyz);
 
 	// Get fragment depth
@@ -171,5 +171,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(post_rendering(uvs, final_color), 1.0);
+	color = vec4(post_rendering(uvs, final_color), 0);
 }
