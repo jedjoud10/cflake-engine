@@ -1,3 +1,4 @@
+use getset::Getters;
 use slotmap::SlotMap;
 
 use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier, Mask, MaskMap, QueryLayout, StorageVec};
@@ -7,8 +8,11 @@ pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
+#[derive(Getters)]
 pub struct EcsManager {
+    #[getset(get = "pub")]
     pub(crate) entities: EntitySet,
+    #[getset(get = "pub")]
     pub(crate) archetypes: ArchetypeSet,
     pub(crate) uniques: UniqueStoragesSet,
 

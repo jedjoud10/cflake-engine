@@ -37,6 +37,18 @@ fn init(world: &mut World) {
     });
     let mask = world.pipeline.insert(mask);
 
+    // Load a diffuse map
+    let diff = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_4k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
+    let diff = world.pipeline.insert(diff);
+
+    // Load a mask map
+    let mask = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_arm_4k.jpg", TextureParams::NON_COLOR_MAP_LOAD).unwrap();
+    let mask = world.pipeline.insert(mask);
+
+    // Load a normal map
+    let norm = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_4k.jpg",TextureParams::NON_COLOR_MAP_LOAD).unwrap();
+    let norm = world.pipeline.insert(norm);
+
     // Create multiple cubes
     let cube = world.pipeline.defaults().cube.clone();
     for x in 0..10 {
@@ -45,7 +57,8 @@ fn init(world: &mut World) {
             // Create a material with unique roughness / metallic
             let material = PbrMaterialBuilder::default()
                 .mask(mask.clone())
-                .tint(vek::Rgb::blue())
+                .diffuse(diff.clone())
+                .normal(norm.clone())
                 .metallic(x as f32 / 10.0)
                 .roughness(y as f32 / 10.0)
                 .build(&mut world.pipeline);

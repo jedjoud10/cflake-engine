@@ -12,7 +12,7 @@ use crate::{
     pipeline::{Handle, Pipeline, ShadowSettings, FramebufferClearBits},
     utils::DataType,
 };
-use super::{ShadowedModel, Framebuffer};
+use super::{ShadowedModel, Framebuffer, SceneRenderStats};
 
 
 // Shadow mapping for the main light source; the sun
@@ -106,7 +106,7 @@ impl ShadowMapping {
         self.lightspace = self.ortho * vek::Mat4::look_at_rh(vek::Vec3::zero(), forward, up);
     }
     // Render the scene from the POV of the light source, so we can cast shadows
-    pub(crate) unsafe fn render_all_shadows(&mut self, models: &[ShadowedModel], pipeline: &Pipeline) {
+    pub(crate) unsafe fn render_all_shadows(&mut self, models: &[ShadowedModel], pipeline: &Pipeline, stats: &mut SceneRenderStats) {
         // Draw into the shadow framebuffer
         self.framebuffer.bind(|mut f| {
             let extent = vek::Extent2::broadcast(self.settings.resolution());
@@ -117,6 +117,9 @@ impl ShadowMapping {
             // Load the shader and it's uniforms
             let shader = pipeline.get(&self.shader).unwrap();
             Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+                // Update stats
+                stats.shadowed = models.len();
+
                 // Render all the models
                 for model in models {
                     let (mesh, matrix) = (model.mesh, model.matrix);

@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 use math::bounds::aabb::AABB;
 
-use super::{RenderedModel, RenderingCamera};
+use super::{RenderedModel, RenderingCamera, SceneRenderStats};
 
 // A single frustum plane
 #[derive(Debug)]
@@ -70,11 +70,18 @@ fn is_inside_frustum_aabb(frustum: &Frustum, aabb: &AABB) -> bool {
 }
 // AABB frustum culling
 // This will remove the objects that must be culled from "vec"
-pub fn cull_frustum<'b>(camera: &RenderingCamera, mut vec: Vec<RenderedModel<'b>>) -> Vec<RenderedModel<'b>> {
+pub fn cull_frustum<'b>(camera: &RenderingCamera, mut vec: Vec<RenderedModel<'b>>, stats: &mut SceneRenderStats) -> Vec<RenderedModel<'b>> {
     // Calculate the view frustum
     let frustum = frustum(camera);
 
     // Check if each object is inside the frustum or not
+    let old = vec.len();
     vec.retain(|model| is_inside_frustum_aabb(&frustum, model.aabb));
+    let new = vec.len();
+
+    // Update scene render stats
+    stats.culled = old-new;
+    stats.drawn = new;
+
     vec
 }

@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use getset::{CopyGetters, Getters, MutGetters};
 use glutin::{
     dpi::LogicalSize,
@@ -12,7 +14,7 @@ use crate::{
     utils::{Window, DEFAULT_WINDOW_SIZE},
 };
 
-use super::{DefaultElements, Handle, PipelineSettings, PipelineStorage, RenderingCamera, SceneRenderer};
+use super::{DefaultElements, Handle, PipelineSettings, PipelineStorage, RenderingCamera, SceneRenderer, SceneRenderStats};
 
 // Pipeline that mainly contains sets of specific objects like shaders and materials
 #[derive(Getters, CopyGetters, MutGetters)]
@@ -20,27 +22,16 @@ pub struct Pipeline {
     // Contains all the objects
     storage: PipelineStorage,
 
-    /*
-    // OpenGL wrapper objects
-    pub(crate) meshes: PipelineCollection<Mesh>,
-    pub(crate) shaders: PipelineCollection<Shader>,
-    pub(crate) compute_shaders: PipelineCollection<ComputeShader>,
-
-    // Multiple texture types
-    pub(crate) textures: PipelineCollection<Texture2D>,
-    pub(crate) bundled_textures: PipelineCollection<BundledTexture2D>,
-
-    // Others
-    pub(crate) materials: PipelineCollection<Material>,
-    */
     // Window
     #[getset(get = "pub", get_mut = "pub")]
     window: Window,
+
     // Timings
     #[getset(get_copy = "pub")]
     delta: f32,
     #[getset(get_copy = "pub")]
     elapsed: f32,
+
     // Settings
     #[getset(get = "pub")]
     settings: PipelineSettings,
@@ -48,6 +39,10 @@ pub struct Pipeline {
     defaults: DefaultElements,
     #[getset(get = "pub", get_mut = "pub")]
     camera: RenderingCamera,
+
+    // Stats
+    #[getset(get = "pub")]
+    stats: RefCell<SceneRenderStats>
 }
 
 // Initialize glutin and the window
@@ -111,6 +106,7 @@ pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, s
         },
         settings,
         defaults: DefaultElements::default(),
+        stats: Default::default(),
     };
 
     // Magic

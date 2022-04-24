@@ -5,6 +5,8 @@ mod renderer;
 mod settings;
 mod shadows;
 mod culler;
+mod stats;
+pub use stats::*;
 pub use culler::*;
 pub use common::*;
 pub use error::*;

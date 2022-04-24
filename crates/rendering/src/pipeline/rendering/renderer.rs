@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{common, RenderingSettings, ShadowMapping, cull_frustum};
+use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -180,11 +180,14 @@ impl SceneRenderer {
 
     // Render the whole scene
     pub fn render(&mut self, pipeline: &Pipeline, mut settings: RenderingSettings) {
+        // Scene statistics for the debugger
+        let mut stats = SceneRenderStats { drawn: 0, culled: 0, shadowed: 0 };
+
         // Bind the deferred renderer's framebuffer
         self.framebuffer.bind(|_| {
             // AABB frustum culling cause I'm cool
             let taken = std::mem::take(&mut settings.normal);
-            let objects = cull_frustum(pipeline.camera(), taken);
+            let objects = cull_frustum(pipeline.camera(), taken, &mut stats);
 
             // Render each object that isn't culled
             for renderer in objects {
@@ -205,7 +208,7 @@ impl SceneRenderer {
                         // Only render directional shadow map if we have a sun
                         mapping.update_matrix(*transform.rotation);
                         // Then render shadows
-                        mapping.render_all_shadows(&settings.shadowed, pipeline);
+                        mapping.render_all_shadows(&settings.shadowed, pipeline, &mut stats);
                     }
                 }
             }
@@ -215,6 +218,9 @@ impl SceneRenderer {
         unsafe {
             self.draw_deferred_quad(pipeline, settings);
         }
+
+        // Store the stats in the pipeline
+        *pipeline.stats().borrow_mut() = stats;
     }
 
     // Draw the deferred quad and do all lighting calculations inside it's fragment shader

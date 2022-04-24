@@ -8,7 +8,6 @@ fn run(world: &mut World) {
     egui::Window::new("Debug Window").vscroll(false).hscroll(false).resizable(false).show(gui, |ui| {
         // Debug some world values
         // Main
-        let _data = world.resources.get::<crate::resources::WorldData>().unwrap();
         ui.heading("World");
         if ui.button("Quit game").clicked() {
             world.state = WorldState::Exit;
@@ -19,9 +18,20 @@ fn run(world: &mut World) {
         ui.label(format!("Time: {:.1}", world.time.elapsed()));
         ui.label(format!("Delta: {:.3}", world.time.average_delta()));
         ui.label(format!("FPS: {:.1}", 1.0 / world.time.average_delta()));
+
         // ECS
         ui.separator();
         ui.heading("Entity Component Systems");
+        ui.label(format!("Entity count: {}", world.ecs.entities().len()));
+        ui.label(format!("Archetype count: {}", world.ecs.archetypes().len()));
+
+        // Rendering
+        ui.separator();
+        ui.heading("Rendering");
+        let stats = world.pipeline.stats().borrow();
+        ui.label(format!("Models drawn: {}", stats.drawn));
+        ui.label(format!("Models culled: {}", stats.culled));        
+        ui.label(format!("Shadow-Models drawn: {}", stats.shadowed));
 
         // Terrain
         let terrain = world.resources.get_mut::<Terrain>();
@@ -37,12 +47,6 @@ fn run(world: &mut World) {
             ui.label(format!("Voxel Data Buffer Length: '{}'", terrain.generator.buffer.len()));
             ui.label(format!("Active Mesh Tasks Count: '{}'", terrain.scheduler.active_mesh_tasks_count()));
             ui.label(format!("Pending Deletion: '{}'", terrain.manager.chunks_to_remove.len()));
-        }
-        // Physics
-        let physics = world.resources.get_mut::<Physics>();
-        if let Some(physics) = physics {
-            ui.separator();
-            ui.heading("Physics");
         }
     });
 }
