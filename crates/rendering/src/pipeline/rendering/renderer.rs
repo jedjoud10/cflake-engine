@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{common, RenderingSettings, ShadowMapping};
+use super::{common, RenderingSettings, ShadowMapping, cull};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -179,11 +179,16 @@ impl SceneRenderer {
     }
 
     // Render the whole scene
-    pub fn render(&mut self, pipeline: &Pipeline, settings: RenderingSettings) {
+    pub fn render(&mut self, pipeline: &Pipeline, mut settings: RenderingSettings) {
         // Bind the deferred renderer's framebuffer
         self.framebuffer.bind(|_| {
-            for renderer in settings.normal {
-                common::render_model(&settings, renderer, pipeline)
+            // AABB frustum culling cause I'm cool
+            let taken = std::mem::take(&mut settings.normal);
+            let objects = cull(pipeline.camera(), taken);
+
+            // Render each object that isn't culled
+            for renderer in objects {
+                common::render_model(renderer, pipeline)
             }
         });
 
@@ -200,7 +205,7 @@ impl SceneRenderer {
                         // Only render directional shadow map if we have a sun
                         mapping.update_matrix(*transform.rotation);
                         // Then render shadows
-                        mapping.render_all_shadows(settings.shadowed, pipeline);
+                        mapping.render_all_shadows(&settings.shadowed, pipeline);
                     }
                 }
             }

@@ -59,7 +59,7 @@ fn init(world: &mut World) {
         // Create a mesh
         world.ecs.insert(|_, linker| {
             linker.insert(Renderer::new(world.pipeline.defaults().cube.clone(), material)).unwrap();
-            linker.insert(Transform::rotation_y(2.0).scaled_by(vek::Vec3::one() * 5.0)).unwrap();
+            linker.insert(Transform::rotation_y(0.0).scaled_by(vek::Vec3::one() * 5.0)).unwrap();
         });
     
         // Create a floor

@@ -3,17 +3,17 @@ use crate::basics::lights::{LightTransform, LightType};
 use super::{RenderedModel, ShadowedModel};
 
 // Settings that tell us how we should render the scene
-pub struct RenderingSettings<'scene, 'object> {
+pub struct RenderingSettings<'object> {
     // Normal objects
-    pub normal: &'scene [RenderedModel<'object>],
+    pub normal: Vec<RenderedModel<'object>>,
     // Shadowed objects
-    pub shadowed: &'scene [ShadowedModel<'object>],
+    pub shadowed: Vec<ShadowedModel<'object>>,
 
     // Should we recalculate the shadow map?
     pub redraw_shadows: bool,
 
     // All the light sources
-    pub lights: &'scene [(&'object LightType, LightTransform<'object>)],
+    pub lights: Vec<(&'object LightType, LightTransform<'object>)>,
 }
 
 // Camera rendering settings
@@ -28,6 +28,7 @@ pub struct RenderingCamera {
     pub viewm: vek::Mat4<f32>,
     pub projm: vek::Mat4<f32>,
     pub projm_viewm: vek::Mat4<f32>,
+    pub viewm_projm: vek::Mat4<f32>,
 
     // Near-Far clip planes
     pub clip_planes: vek::Vec2<f32>,

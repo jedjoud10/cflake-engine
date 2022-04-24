@@ -41,6 +41,7 @@ fn run(world: &mut World) {
 
             // Math moment
             projm_viewm: camera.projm * camera.viewm,
+            viewm_projm: camera.viewm * camera.projm,
         };
         *world.pipeline.camera_mut() = camera;
     } else {
@@ -121,9 +122,9 @@ fn run(world: &mut World) {
 
     // Rendering settings
     let settings = RenderingSettings {
-        normal: models.as_slice(),
-        shadowed: shadowed.as_slice(),
-        lights: &lights,
+        normal: models,
+        shadowed: shadowed,
+        lights: lights,
         redraw_shadows,
     };
 

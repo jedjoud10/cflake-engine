@@ -21,7 +21,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 }
 
 // Render a model
-pub(crate) fn render_model<'a>(_settings: &RenderingSettings, renderer: &RenderedModel<'a>, pipeline: &Pipeline) {
+pub(crate) fn render_model<'a>(renderer: RenderedModel<'a>, pipeline: &Pipeline) {
     // Load the default missing material if we don't have a valid one
     let mat_handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
     let mat = pipeline.get(mat_handle).unwrap();
