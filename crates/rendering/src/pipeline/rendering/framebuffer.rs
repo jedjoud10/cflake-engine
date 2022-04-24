@@ -96,21 +96,23 @@ impl<'a> BoundFramebuffer<'a> {
 
         Some(())
     }
-    // Set a single texture as the target texture when drawing
-    pub fn target<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, texture: Handle<Tex>, attachment: GLuint) -> Option<()> {
-        unsafe {
-            // Set the attachment normally
-            let texture = pipeline.get(&texture)?;
-            gl::NamedFramebufferTexture(self.fb.id, attachment, texture.name()?, 0);
-            
-            // Special functionality for cases where the attachment is a color attachment
-            if let 36064..=36079 = attachment {
-                gl::NamedFramebufferDrawBuffers(self.fb.id, 1, &attachment);
-            }
-        }
-
+    // Set a target texture directly, using it's OpenGL name and a target
+    pub unsafe fn set_target_unchecked(&mut self, target: GLuint, id: GLuint, attachment: GLuint) {
+        // Set the attachment normally
+        gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, target, 0);
         
-
+        // Special functionality for cases where the attachment is a color attachment
+        if let 36064..=36079 = attachment {
+            gl::NamedFramebufferDrawBuffers(self.fb.id, 1, &attachment);
+        }
+    }
+    // Set a single texture as the target texture when drawing
+    pub fn set_target<Tex: ObjectSealed + Texture>(&mut self, pipeline: &Pipeline, texture: Handle<Tex>, attachment: GLuint) -> Option<()> {
+        // A bit of trolling?
+        let texture = pipeline.get(&texture)?;
+        unsafe {
+            self.set_target_unchecked(texture.target()?, texture.name()?, attachment)
+        }
         Some(())
     }
     // Set the viewport size of the framebuffer

@@ -77,10 +77,8 @@ impl Asset for Mesh {
         // Also load the triangles
         builder.indices.indices = parsed_obj.indices;
 
-        // Compute the tangents automatically for loaded meshes
-        let mut mesh = builder.build();
-        mesh.generate_tangents();
-
+        // Compute the tangents automatically for imported meshes
+        let mesh = builder.build().generate_tangents();
         Some(mesh)
     }
 }
@@ -189,7 +187,7 @@ impl ObjectSealed for Mesh {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 
             // Don't forget to calculate the AABB while we're at it
-            self.generate_bounds();
+            self.update_bounds();
         }
     }
 
@@ -227,8 +225,15 @@ impl Mesh {
         self.vertices.tangents.extend(other.vertices.tangents.into_iter());
         self
     }
+    // Flip the model inside out
+    pub fn flip_triangles(mut self) -> Self {
+        for base in self.indices.chunks_mut(3) {
+            base.swap(0, 2);
+        }
+        self
+    }
     // Recalculate the mesh bounds
-    pub fn generate_bounds(&mut self) {
+    pub fn update_bounds(&mut self) {
         // Keep track of the min/max positions
         let mut max = vek::Vec3::broadcast(f32::MIN);
         let mut min = vek::Vec3::broadcast(f32::MAX);
@@ -246,7 +251,7 @@ impl Mesh {
         self.bounds.max = max;
     }
     // Procedurally generate the normals for this mesh
-    pub fn generate_normals(&mut self) {
+    pub fn generate_normals(mut self) -> Self {
         // First, loop through every triangle and calculate it's face normal
         // Then loop through every vertex and average out the face normals of the adjacent triangles
         let mut vertex_normals: Vec<vek::Vec3<f32>> = vec![vek::Vec3::zero(); self.vertices.positions.len()];
@@ -277,12 +282,13 @@ impl Mesh {
         // Update our normals
         self.vertices.normals = vertex_normals.into_iter().map(|x| (x * 127.0).normalized().as_()).collect::<Vec<_>>();
         self.flags.insert(MeshFlags::NORMALS_SUPPORTED);
+        self
     }
     // Procedurally generate the tangents for this mesh (given the normals and UVs)
-    pub fn generate_tangents(&mut self) {
+    pub fn generate_tangents(mut self) -> Self {
         // Check if we can even generate the tangents, and return early if we cannot
         if !self.flags.contains(MeshFlags::NORMALS_SUPPORTED) || !self.flags.contains(MeshFlags::UVS_SUPPORTED) {
-            return;
+            return self;
         }
 
         // Local struct just cause I don't want to implement mikktspace::Geometry for Mesh
@@ -348,6 +354,7 @@ impl Mesh {
 
         // Update our tangents
         self.vertices.tangents = tangents;
-        self.flags.insert(MeshFlags::TANGENTS_SUPPORTED)
+        self.flags.insert(MeshFlags::TANGENTS_SUPPORTED);
+        self
     }
 }

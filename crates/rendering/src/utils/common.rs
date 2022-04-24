@@ -1,7 +1,7 @@
 use gl::types::GLuint;
 
 // Simple main OpenGL types
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DataType {
     // 8 bit
     U8,
