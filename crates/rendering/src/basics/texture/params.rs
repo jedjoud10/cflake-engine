@@ -28,7 +28,8 @@ impl TextureBytes {
     // Clear the bytes and deallocate them
     pub fn clear(&mut self) {
         if let Self::Valid(bytes) = self {
-            *bytes = Vec::new();
+            bytes.clear();
+            bytes.shrink_to_fit();
         }
     }
     // Pointer

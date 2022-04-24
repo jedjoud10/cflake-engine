@@ -48,7 +48,7 @@ impl Texture2D {
 
 impl ObjectSealed for Texture2D {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
-        // TODO: Fix code duplication between bundledtexture2d and texture2d
+        // TODO: Fix code duplication between bundledtexture2d and texture2d and cubemap
         // Create the raw texture wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_2D, &self.params) };
         let ifd = texture.ifd;
@@ -65,7 +65,7 @@ impl ObjectSealed for Texture2D {
                     gl::TexImage2D(gl::TEXTURE_2D, 0, ifd.0 as i32, width, height, 0, ifd.1, ifd.2, ptr);
                 } else {
                     // Static
-                    let levels = guess_mipmap_levels(width.max(height)).max(1);
+                    let levels = guess_mipmap_levels(self.dimensions.reduce_max()).max(1) as i32;
                     gl::TexStorage2D(gl::TEXTURE_2D, levels, ifd.0, width, height);
                     if !ptr.is_null() {
                         gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, width, height, ifd.1, ifd.2, ptr);

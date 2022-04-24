@@ -63,7 +63,7 @@ impl ObjectSealed for BundledTexture2D {
                     gl::TexImage3D(gl::TEXTURE_2D_ARRAY, 0, ifd.0 as i32, width, height, layers, 0, ifd.1, ifd.2, ptr);
                 } else {
                     // Static
-                    let levels = guess_mipmap_levels(width.max(height).max(layers)).max(1);
+                    let levels = guess_mipmap_levels(self.dimensions.reduce_max()).max(1) as i32;
                     gl::TexStorage3D(gl::TEXTURE_2D_ARRAY, levels, ifd.0, width, height, layers);
                     if !ptr.is_null() {
                         gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, layers, ifd.1, ifd.2, ptr);

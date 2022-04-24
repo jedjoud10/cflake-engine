@@ -6,9 +6,9 @@ use super::{TextureFilter, TextureFlags, TextureParams};
 
 // Guess how many mipmap levels a texture can have
 // Input value is the maximum dimenions of the texture
-pub fn guess_mipmap_levels(i: i32) -> i32 {
+pub fn guess_mipmap_levels(i: u32) -> u32 {
     let mut x: f32 = i as f32;
-    let mut num: i32 = 0;
+    let mut num: u32 = 0;
     while x > 1.0 {
         // Repeatedly divide by 2
         x /= 2.0;

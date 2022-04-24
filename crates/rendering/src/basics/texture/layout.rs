@@ -2,7 +2,7 @@ use super::TextureFormat;
 use crate::utils::DataType;
 
 // Texture layout that depicts how the texture will be read/written
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct TextureLayout {
     pub(crate) data: DataType,
     pub(crate) internal_format: TextureFormat,

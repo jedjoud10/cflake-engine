@@ -2,7 +2,7 @@ use super::{get_ifd, TextureFlags, TextureFormat, TextureParams};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 
-// Underlying texture storage
+// Underlying texture storage that simply creates the textures and deletes in when dropped
 #[derive(Getters, CopyGetters)]
 pub struct RawTexture {
     // The OpenGL ID for this texture

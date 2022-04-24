@@ -20,6 +20,7 @@ bitflags! {
 // Client state tracking for the currently bound framebuffer (and for it's resolution as well)
 static mut CURRENTLY_BOUND_FRAMEBUFFER: u32 = 0;
 static mut CURRENT_VIEWPORT_SIZE: vek::Extent2<u32> = vek::Extent2::new(0, 0);
+static mut BOUND: bool = false;
 
 
 // A framebuffer that can be drawn or cleared
@@ -129,12 +130,9 @@ impl Framebuffer {
     // Bind the framebuffer and run the given closure while it is bound
     // This binds the shader nonetheless
     unsafe fn bind_unchecked(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
-        // Check the currently bound frame buffer
-        let old_fb_bound = CURRENTLY_BOUND_FRAMEBUFFER;
-        let old_size = CURRENT_VIEWPORT_SIZE;
-
         // Bind the framebuffer as the current frame buffer
         bind(self.id, self.viewport);
+        BOUND = true;
 
         // Create a bound frame buffer that we can mutate
         let bound = BoundFramebuffer {
@@ -143,14 +141,13 @@ impl Framebuffer {
 
         // Mutate the frame buffer
         closure(bound);
-        
-        // And reset to the old framebuffer (also reset the viewport size)
-        bind(old_fb_bound, old_size);
+        BOUND = false;
     }
 
     // Bind the shader only if needed
     pub fn bind(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
         unsafe {
+            assert!(!BOUND, "Cannot recursively bind frambeuffers!");
             self.bind_unchecked(closure);
         }
     }
