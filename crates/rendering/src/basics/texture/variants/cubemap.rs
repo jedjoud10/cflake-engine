@@ -88,7 +88,7 @@ impl ObjectSealed for CubeMap {
                     assert_eq!(pipeline.get(&hdr).unwrap().params().layout, TextureParams::HDR_MAP_LOAD.layout, "HDR Texture layout invalid");
                 
                     // Create the perspective matrix, and the 6 view matrices
-                    let perspective = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.2, 2.0);
+                    let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.2, 2.0);
                     use vek::Mat4;
                     use vek::Vec3;
                 
@@ -145,7 +145,7 @@ impl ObjectSealed for CubeMap {
                                 bound.set_target_unchecked(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, id, gl::COLOR_ATTACHMENT0);
                                 
                                 // Update the matrix and render the cube
-                                let matrix = perspective * view;
+                                let matrix = proj * view;
                                 uniforms.set_mat44f32("matrix", &matrix);
                             
                                 // Render the cube

@@ -24,10 +24,10 @@ pub struct RenderingCamera {
     pub rotation: vek::Quaternion<f32>,
     pub forward: vek::Vec3<f32>,
 
-    // View and perspective matrices
+    // View and projection matrices
     pub view: vek::Mat4<f32>,
-    pub perspective: vek::Mat4<f32>,
-    pub perspective_view: vek::Mat4<f32>,
+    pub proj: vek::Mat4<f32>,
+    pub proj_view: vek::Mat4<f32>,
 
     // Near-Far clip planes
     pub clips: vek::Vec2<f32>,

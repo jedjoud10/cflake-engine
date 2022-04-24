@@ -26,7 +26,7 @@ fn run(world: &mut World) {
         let update = entry.was_mutated::<Transform>().unwrap();
         let camera = entry.get_mut::<Camera>().unwrap();
         if update | world.pipeline.window().changed() {
-            camera.update_perspective_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
+            camera.update_projection_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
             camera.update_view_matrix(position, forward, up);
         }
 
@@ -36,11 +36,11 @@ fn run(world: &mut World) {
             rotation,
             forward,
             view: camera.view,
-            perspective: camera.perspective,
+            proj: camera.projection,
             clips: camera.clips,
 
             // Math moment
-            perspective_view: camera.perspective * camera.view,
+            proj_view: camera.projection * camera.view,
         };
         *world.pipeline.camera_mut() = camera;
     } else {

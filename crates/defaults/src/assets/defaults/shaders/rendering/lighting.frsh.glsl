@@ -182,5 +182,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(diffuse, 0);
+	color = vec4(post(uvs, final_color), 0);
 }
