@@ -18,8 +18,7 @@ vec3 post(vec2 uvs, vec3 color) {
 
     // exposure tone mapping
     const float gamma = 2.2;
-    float exposure = 0.2;
-    vec3 mapped = vec3(1.0) - exp(-color * exposure);
+    vec3 mapped = mix(aces(color), color, 0.2);
     // gamma correction 
     mapped = pow(mapped, vec3(1.0 / gamma));
     

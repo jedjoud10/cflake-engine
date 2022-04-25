@@ -1,4 +1,4 @@
-use world::ecs::Component;
+use world::{ecs::Component, math::bounds::aabb::AABB};
 // The transform component
 #[derive(Component, Clone)]
 pub struct Transform {

@@ -8,6 +8,27 @@ use world::{
     World, math::bounds::aabb::AABB,
 };
 
+// Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
+// TODO: Use the code from https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
+// For optimization reasons
+fn project_aabb(aabb: &AABB, m: vek::Mat4<f32>) -> AABB {
+    // Keep track of the min/max positions
+    let mut max = vek::Vec3::broadcast(f32::MIN);
+    let mut min = vek::Vec3::broadcast(f32::MAX);
+
+    for point in aabb.points() {
+        // Iterate for each element in the current point and update the min/max values
+        let proj = m.mul_point(point);
+        proj.iter().enumerate().for_each(|(i, e)| {
+            max[i] = e.max(max[i]);
+            min[i] = e.min(min[i]);
+        })
+    }
+
+    AABB { min, max }
+} 
+
+
 // The 3D scene renderer
 fn run(world: &mut World) {
     let global = world.resources.get::<crate::resources::WorldData>().unwrap();
@@ -70,17 +91,9 @@ fn run(world: &mut World) {
     
         // Update the AABB bounds by using the mesh bounds
         let mesh = world.pipeline.get(&renderer.mesh);
-        renderer.bounds = mesh.map(|mesh| {
-            let min = mesh.bounds().min;
-            let max = mesh.bounds().max;
-            
-            // A lil projection to correct for translation/rotation/scale
-            AABB {
-                min: renderer.matrix.mul_point(min),
-                max: renderer.matrix.mul_point(max),
-            }
-        }).unwrap_or_default();
+        renderer.bounds = mesh.map(|mesh| project_aabb(mesh.bounds(), renderer.matrix)).unwrap_or_default();
     }
+
     // Get all the visible objects in the world, first of all
     let query = world.ecs.try_view::<&Renderer>().unwrap();
     let models: Vec<RenderedModel> = Vec::from_iter(query.filter_map(|renderer| {

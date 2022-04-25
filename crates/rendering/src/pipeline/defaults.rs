@@ -55,7 +55,7 @@ impl DefaultElements {
         let normal_map = pipeline.insert(normal_map);
 
         // Create a 1x1 default mask texture map
-        let mask = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 0, 0]), params);
+        let mask = Texture2D::new(vek::Extent2::one(), Some(vec![255, 32, 0, 0]), params);
         let mask = pipeline.insert(mask);
 
         // Load the missing texture. Might seem a bit counter-intuitive but it's fine since we embed it directly into the engine

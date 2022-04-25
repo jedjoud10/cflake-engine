@@ -18,6 +18,17 @@ impl AABB {
             max: pos + hw,
         }
     }
+    // Create all the points that belong to this AABB in arbitrary order cause I can't give a shit
+    pub fn points(&self) -> [vek::Vec3<f32>; 8] {
+        [self.min, 
+        vek::Vec3::new(self.min.x, self.min.y, self.max.z),
+        vek::Vec3::new(self.min.x, self.max.y, self.max.z),
+        vek::Vec3::new(self.min.x, self.max.y, self.min.z),
+        vek::Vec3::new(self.max.x, self.min.y, self.min.z),
+        vek::Vec3::new(self.max.x, self.max.y, self.min.z),
+        vek::Vec3::new(self.max.x, self.min.y, self.max.z),
+        self.max]
+    }
 }
 
 // Fetch the min/max vertices using an index

@@ -23,7 +23,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(46.0, vek::Rgb::one()));
+        let light = Light(LightType::new_directional(6.0, vek::Rgb::one()));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-30f32.to_radians())).unwrap();
     });
@@ -62,11 +62,10 @@ fn init(world: &mut World) {
         for y in 0..11 {
 
             // Create a material with unique roughness / metallic
-            let material = PbrMaterialBuilder::default()
-                
+            let material = PbrMaterialBuilder::default()                
                 .mask(mask.clone())
-                //.diffuse(diff.clone())
-                //.normal(norm.clone())
+                .diffuse(diff.clone())
+                .normal(norm.clone())
                 .metallic(x as f32 / 10.0)
                 .roughness(y as f32 / 10.0)
                 .build(&mut world.pipeline);
@@ -80,8 +79,8 @@ fn init(world: &mut World) {
 
     // Rotate each valid renderer entity
     world.events.insert(|world| {
-        for (transform, _) in world.ecs.query::<(&mut Transform, &Renderer)>() {
-            transform.rotation = transform.rotation * vek::Quaternion::rotation_x(0.02 * world.time.delta()) * vek::Quaternion::rotation_z(-0.02 * world.time.delta());
+        for (i, (transform, _)) in world.ecs.query::<(&mut Transform, &Renderer)>().enumerate() {
+            transform.rotation = transform.rotation * vek::Quaternion::rotation_x(0.06 * world.time.delta() * (i as f32).sin()) * vek::Quaternion::rotation_z(-0.06 * world.time.delta() * (i as f32).cos());
         } 
     })
 }

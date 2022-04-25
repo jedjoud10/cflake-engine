@@ -28,8 +28,7 @@ struct Frustum {
 
 // Calculate the view frustum from the camera
 fn frustum(camera: &RenderingCamera) -> Frustum {
-    let columns = camera.proj_view.clone().transposed().into_col_arrays();
-    let columns = columns.into_iter().map(vek::Vec4::from).collect::<ArrayVec<vek::Vec4<f32>, 4>>();
+    let columns = camera.proj_view.clone().transposed().cols;
 
     // Magic from https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
     // And also from https://gamedev.stackexchange.com/questions/156743/finding-the-normals-of-the-planes-of-a-view-frustum
