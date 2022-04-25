@@ -78,7 +78,7 @@ impl ObjectSealed for CubeMap {
         // Create the raw texture wrapper
         let texture = unsafe { RawTexture::new(gl::TEXTURE_CUBE_MAP, &Self::PARAMS) };
         let ifd = Self::IFD;
-        let size = self.size;
+        let size = self.size as i32;
         self.raw = Some(texture);
         unsafe {
             // Create the cubemap using the given source (currently only suports HDR captures)
@@ -88,7 +88,7 @@ impl ObjectSealed for CubeMap {
                     assert_eq!(pipeline.get(&hdr).unwrap().params().layout, TextureParams::HDR_MAP_LOAD.layout, "HDR Texture layout invalid");
                 
                     // Create the perspective matrix, and the 6 view matrices
-                    let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.2, 2.0);
+                    let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
                     use vek::Mat4;
                     use vek::Vec3;
                 
@@ -105,13 +105,20 @@ impl ObjectSealed for CubeMap {
                     ];
 
                     // Cubemaps always have mipmaps
-                    let levels = guess_mipmap_levels(size).max(1) as i32;
+                    let levels = guess_mipmap_levels(size as u32).max(1) as i32;
 
                     // Allocate 6 textures for the projection
+                    gl::BindTexture(gl::TEXTURE_CUBE_MAP, self.raw.as_ref().unwrap().name);
                     for i in 0..6 {
                         // Initialize a single face in the cubemap
-                        gl::TexStorage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, levels, ifd.0, size as i32, size as i32);
+                        let mut ptr = null();
+                        let vec = vec![100.0f32; size as usize * size as usize * 3];
+                        ptr = vec.as_ptr();
+                        gl::TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, 0, ifd.0 as i32, size, size, 0, ifd.1, ifd.2, ptr as *const c_void);
+                        //gl::TexStorage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, levels, ifd.0, size as i32, size as i32);
                     }
+
+                    /*
                     
                     // Load the shader that we will use for projection
                     // TODO: FIX OBJECT DUPLICATIONNN
@@ -121,7 +128,7 @@ impl ObjectSealed for CubeMap {
 
                     // Unit cube that is inside out
                     let cube = assets::load::<Mesh>("defaults/meshes/cube.obj").unwrap();
-                    let cube = pipeline.insert(cube.flip_triangles());
+                    let cube = pipeline.insert(cube);
 
                     // Fetch the added objects
                     let shader = pipeline.get(&shader).unwrap();
@@ -131,7 +138,7 @@ impl ObjectSealed for CubeMap {
                     let mut framebuffer = Framebuffer::new(pipeline);
                     framebuffer.bind(|mut bound| {
                         // Very funny
-                        bound.viewport(vek::Extent2::broadcast(size));
+                        bound.viewport(vek::Extent2::broadcast(size as u32));
                     
                         Uniforms::new(shader.program(), pipeline, |mut uniforms| {
                             // Set the only uniform that doesn't change; the hdr map
@@ -140,9 +147,9 @@ impl ObjectSealed for CubeMap {
                             // Render the cube 6 times with the appropriate shader and render target
                             for (i, view) in view_matrices.into_iter().enumerate() {
                                 // Each time we render, we change the target texture
-                                bound.clear(FramebufferClearBits::all());
                                 let id = self.raw.as_ref().unwrap().name;
                                 bound.set_target_unchecked(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, id, gl::COLOR_ATTACHMENT0);
+                                bound.clear(FramebufferClearBits::all());
                                 
                                 // Update the matrix and render the cube
                                 let matrix = proj * view;
@@ -153,13 +160,14 @@ impl ObjectSealed for CubeMap {
                             }
                         });
                     });     
+                    */
                 },
             }
 
             // Mipmaps and filters
-            generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32); 
+            //generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
+            //generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
+            //gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32); 
         }
     }
 }

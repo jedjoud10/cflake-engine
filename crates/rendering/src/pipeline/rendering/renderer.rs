@@ -5,7 +5,7 @@ use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
-        texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode},
+        texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, CubeMap},
         uniforms::Uniforms,
     },
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
@@ -34,7 +34,7 @@ pub struct SceneRenderer {
     quad: Handle<Mesh>,
 
     // Others
-    skybox: Handle<Texture2D>,
+    skybox: Handle<CubeMap>,
     shadow_mapping: Option<ShadowMapping>,
 }
 
@@ -130,22 +130,9 @@ impl SceneRenderer {
         /* #region Others */
         let shadow_mapping = pipeline.settings().shadow().map(|settings| ShadowMapping::new(pipeline, settings));
         
-        /*
-        // Load the default sky gradient texture
-        let sky_gradient = assets::load_with::<Texture2D>(
-            "defaults/textures/sky_gradient.png",
-            TextureParams {
-                wrap: TextureWrapMode::ClampToEdge,
-                flags: TextureFlags::SRGB,
-                ..TextureParams::DIFFUSE_MAP_LOAD
-            },
-        )
-        .unwrap();
-        let skybox = pipeline.insert(sky_gradient);
-        */
-
-        // Load the default skybox
-        let skybox = pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
+        // Load the default skybox by creating it from a HDR
+        let hdr = pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
+        let skybox = pipeline.insert(CubeMap::from_equirectangular(hdr, 512));
 
         /* #endregion */
         println!("Successfully initialized the RenderPipeline Renderer!");
@@ -269,8 +256,8 @@ impl SceneRenderer {
                 uniforms.set_texture2d(name, handle);
             }
 
-            // Sky gradient texture
-            uniforms.set_texture2d("skybox", &self.skybox);
+            // Skybox cubemap
+            uniforms.set_cubemap("skybox", &self.skybox);
 
             // If we have shadow mapping disabled we must use the default white texture
             let shadow_mapping_texture = self

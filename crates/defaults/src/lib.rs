@@ -39,6 +39,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/others/hashes.func.glsl");
     persistent!("./assets/defaults/shaders/others/triplanar.func.glsl");
     persistent!("./assets/defaults/shaders/others/sdf.func.glsl");
+    persistent!("./assets/defaults/shaders/others/cubemap.frsh.glsl");
     // Default impls
     persistent!("./assets/defaults/shaders/others/default_impls/general.func.glsl");
     persistent!("./assets/defaults/shaders/others/default_impls/renderer.func.glsl");

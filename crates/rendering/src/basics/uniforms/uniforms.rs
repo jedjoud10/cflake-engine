@@ -4,7 +4,7 @@ use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
     basics::{
         shader::ShaderProgram,
-        texture::{BundledTexture2D, Texture, Texture2D},
+        texture::{BundledTexture2D, Texture, Texture2D, CubeMap},
     },
     pipeline::{Handle, Pipeline},
 };
@@ -158,17 +158,26 @@ impl<'a> Uniforms<'a> {
             }
         }
     }
-    // Textures
+    // Set a simple Texture2D uniform
     pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
         assert!(!texture.is_null(), "Texture bound to uniform '{}' is invalid", name);
         let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D, texture.name().unwrap());
     }
+    // Set a uniform of array of 2D textures, aka BundledTexture2D
     pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
         assert!(!texture.is_null(), "Texture Bundle bound to uniform '{}' is invalid", name);
         let texture = self.pipeline.get(texture).unwrap();
         self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name().unwrap());
     }
+    // Set a cube map texture
+    pub fn set_cubemap(&mut self, name: &str, cubemap: &Handle<CubeMap>) {
+        assert!(!cubemap.is_null(), "CubeMap bound to uniform '{}' is invalid", name);
+        let cubemap = self.pipeline.get(cubemap).unwrap();
+        self.set_texture(name, gl::TEXTURE_CUBE_MAP, cubemap.name().unwrap());
+    }
+
+
     // Atomics
     pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {
         unsafe {

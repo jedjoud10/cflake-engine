@@ -103,7 +103,7 @@ impl<'a> BoundFramebuffer<'a> {
         
         // Special functionality for cases where the attachment is a color attachment
         if let 36064..=36079 = attachment {
-            gl::DrawBuffers(1, &attachment);
+            //gl::DrawBuffers(1, &attachment);
         }
     }
     // Set a single texture as the target texture when drawing

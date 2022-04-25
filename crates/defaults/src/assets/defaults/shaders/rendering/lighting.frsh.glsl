@@ -8,7 +8,7 @@ uniform sampler2D normals_texture;
 uniform sampler2D position_texture;
 uniform sampler2D mask_texture;
 uniform sampler2D depth_texture;
-uniform sampler2D skybox;
+uniform samplerCube skybox;
 uniform sampler2D shadow_map;
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
@@ -120,15 +120,6 @@ vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
 	return outgoing;
 }
 
-const vec2 invAtan = vec2(0.1591, 0.3183);
-vec2 SampleSphericalMap(vec3 v)
-{
-    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += 0.5;
-    return uv;
-}
-
 // Calculate the shaded color for a single pixel 
 vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
 	// The shaded pixel color
@@ -169,7 +160,7 @@ void main() {
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
-		final_color = texture(skybox, SampleSphericalMap(eye_dir)).xyz;
+		final_color = vec3(0.0, 0.0, 0.5);
 		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
@@ -182,5 +173,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(post(uvs, final_color), 0);
+	color = vec4(texture(skybox, eye_dir).xyz, 0);
 }
