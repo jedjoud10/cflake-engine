@@ -253,7 +253,7 @@ impl SceneRenderer {
             let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "mask_texture", "depth_texture"];
             // Set each texture
             for (name, handle) in names.into_iter().zip(self.textures.iter()) {
-                uniforms.set_texture2d(name, handle);
+                //uniforms.set_texture2d(name, handle);
             }
 
             // Skybox cubemap

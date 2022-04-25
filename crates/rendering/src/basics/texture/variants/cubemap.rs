@@ -2,7 +2,7 @@ use std::{ops::{Index, IndexMut}, ffi::c_void, mem::MaybeUninit, ptr::null};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use gl::types::GLuint;
-use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh, GeometryBuilder}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
+use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd, TextureFormat}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh, GeometryBuilder}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
 use super::Texture2D;
 
 // How we will create the cubemap
@@ -25,10 +25,10 @@ pub struct CubeMap {
 impl CubeMap {
     // Parameters for the whole cubemap
     const PARAMS: TextureParams = TextureParams {
-        layout: TextureLayout::HDR,
+        layout: TextureLayout::new(DataType::U8, TextureFormat::RGB8R),
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::ClampToEdge,
-        flags: TextureFlags::MIPMAPS,
+        flags: TextureFlags::empty(),
     };
 
     // Constant IFD since we know the parameters
@@ -108,11 +108,10 @@ impl ObjectSealed for CubeMap {
                     let levels = guess_mipmap_levels(size as u32).max(1) as i32;
 
                     // Allocate 6 textures for the projection
-                    gl::BindTexture(gl::TEXTURE_CUBE_MAP, self.raw.as_ref().unwrap().name);
                     for i in 0..6 {
                         // Initialize a single face in the cubemap
                         let mut ptr = null();
-                        let vec = vec![100.0f32; size as usize * size as usize * 3];
+                        let vec = vec![255u8; size as usize * size as usize * 3];
                         ptr = vec.as_ptr();
                         gl::TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, 0, ifd.0 as i32, size, size, 0, ifd.1, ifd.2, ptr as *const c_void);
                         //gl::TexStorage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, levels, ifd.0, size as i32, size as i32);
@@ -166,8 +165,9 @@ impl ObjectSealed for CubeMap {
 
             // Mipmaps and filters
             //generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            //generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            //gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32); 
+            generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
+            gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32); 
+            gl::BindTexture(gl::TEXTURE_CUBE_MAP, 0);
         }
     }
 }
