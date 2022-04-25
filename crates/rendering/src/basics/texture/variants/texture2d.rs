@@ -6,7 +6,7 @@ use image::{imageops::FilterType, DynamicImage, ImageFormat};
 
 use crate::{
     basics::texture::{
-        generate_filters, generate_mipmaps, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags,
+        configurate, get_texel_byte_size, guess_mipmap_levels, verify_byte_size, RawTexture, ResizableTexture, Texture, TextureBytes, TextureFlags,
         TextureParams, TextureLayout,
     },
     object::ObjectSealed,
@@ -73,11 +73,8 @@ impl ObjectSealed for Texture2D {
                 }
             }
 
-            // Generate mipmaps
-            generate_mipmaps(gl::TEXTURE_2D, &self.params);
-
-            // Generate filters
-            generate_filters(gl::TEXTURE_2D, &self.params);
+            // Generate the OpenGL config for this texture
+            configurate(gl::TEXTURE_2D, &self.params);
         }
 
         // Clear the texture if it's loaded bytes aren't persistent

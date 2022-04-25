@@ -2,7 +2,7 @@ use std::ffi::c_void;
 
 use super::Texture2D;
 use crate::{
-    basics::texture::{generate_filters, generate_mipmaps, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams},
+    basics::texture::{configurate, guess_mipmap_levels, RawTexture, Texture, TextureBytes, TextureFlags, TextureParams},
     object::ObjectSealed,
     pipeline::Pipeline,
 };
@@ -71,11 +71,8 @@ impl ObjectSealed for BundledTexture2D {
                 }
             }
 
-            // Generate mipmaps
-            generate_mipmaps(gl::TEXTURE_2D_ARRAY, &self.params);
-
-            // Generate filters
-            generate_filters(gl::TEXTURE_2D_ARRAY, &self.params);
+            // Generate the OpenGL config for this texture
+            configurate(gl::TEXTURE_2D_ARRAY, &self.params);
         }
 
         // Clear the texture if it's loaded bytes aren't persistent

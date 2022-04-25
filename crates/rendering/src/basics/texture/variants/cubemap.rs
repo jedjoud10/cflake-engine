@@ -2,7 +2,7 @@ use std::{ops::{Index, IndexMut}, ffi::c_void, mem::MaybeUninit, ptr::null};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use gl::types::GLuint;
-use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, generate_mipmaps, generate_filters, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd, TextureFormat}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh, GeometryBuilder}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
+use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd, TextureFormat, configurate}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh, GeometryBuilder}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
 use super::Texture2D;
 
 // How we will create the cubemap
@@ -164,8 +164,7 @@ impl ObjectSealed for CubeMap {
             }
 
             // Mipmaps and filters
-            generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
+            configurate(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
             gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32);
         }
     }

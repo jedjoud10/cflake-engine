@@ -257,7 +257,7 @@ impl SceneRenderer {
             }
 
             // Skybox cubemap
-            uniforms.set_cubemap("skybox_test", &self.skybox);
+            uniforms.set_cubemap("skybox", &self.skybox);
 
             // If we have shadow mapping disabled we must use the default white texture
             let shadow_mapping_texture = self

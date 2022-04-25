@@ -9,7 +9,7 @@ uniform sampler2D position_texture;
 uniform sampler2D mask_texture;
 uniform sampler2D depth_texture;
 uniform sampler2D shadow_map;
-uniform samplerCube skybox_test;
+uniform samplerCube skybox;
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
@@ -173,6 +173,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	vec3 sky = texture(skybox_test, eye_dir).rgb;
-	color = vec4(sky, 0);
+	color = vec4(texture(skybox, eye_dir).rgb, 0);
 }

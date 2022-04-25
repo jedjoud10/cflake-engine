@@ -17,44 +17,8 @@ pub fn guess_mipmap_levels(i: u32) -> u32 {
     num
 }
 
-// Generate mipmaps for a specific texture target
-pub unsafe fn generate_mipmaps(target: u32, params: &TextureParams) {
-    // Generate mipmaps
-    if params.flags.contains(TextureFlags::MIPMAPS) {
-        gl::GenerateMipmap(target);
-    }
-
-    // Texture filtering
-    let (mut min, mag) = match params.filter {
-        TextureFilter::Linear => {
-            (gl::LINEAR, gl::LINEAR)
-            // 'Linear' filter
-        }
-        TextureFilter::Nearest => {
-            // 'Nearest' filter
-            (gl::NEAREST, gl::NEAREST)
-        }
-    };
-
-    // Override if we have mipmapping
-    if params.flags.contains(TextureFlags::MIPMAPS) {
-        min = match params.filter {
-            TextureFilter::Linear => gl::LINEAR_MIPMAP_LINEAR,
-            TextureFilter::Nearest => gl::NEAREST_MIPMAP_NEAREST,
-        };
-    }
-
-    gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, min as i32);
-    gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, mag as i32);
-
-    // Create the anisotropic filtering if needed
-    if params.flags.contains(TextureFlags::ANISOTROPIC) {
-        gl::TexParameterf(target, gl::TEXTURE_MAX_ANISOTROPY_EXT, 2.0);
-    }
-}
-
-// Generate filters for a specific texture target
-pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
+// Configurate a specific opengl texture target
+pub unsafe fn configurate(target: u32, params: &TextureParams) {
     // Set the texture wrap mode
     unsafe fn set_wrap_mode(target: u32, wrap_mode: u32) {
         gl::TexParameteri(target, gl::TEXTURE_WRAP_S, wrap_mode as i32);
@@ -80,6 +44,40 @@ pub unsafe fn generate_filters(target: u32, params: &TextureParams) {
         TextureWrapMode::Repeat => set_wrap_mode(target, gl::REPEAT),
         TextureWrapMode::MirroredRepeat => set_wrap_mode(target, gl::MIRRORED_REPEAT),
     };
+
+    // Generate mipmaps
+    if params.flags.contains(TextureFlags::MIPMAPS) {
+        gl::GenerateMipmap(target);
+    }
+
+    // Texture filtering
+    let (mut min, mag) = match params.filter {
+        TextureFilter::Linear => {
+            (gl::LINEAR, gl::LINEAR)
+            // 'Linear' filter
+        }
+        TextureFilter::Nearest => {
+            // 'Nearest' filter
+            (gl::NEAREST, gl::NEAREST)
+        }
+    };
+
+    // Override if we have mipmapping
+    if params.flags.contains(TextureFlags::MIPMAPS) {
+        min = match params.filter {
+            TextureFilter::Linear => gl::LINEAR_MIPMAP_LINEAR,
+            TextureFilter::Nearest => gl::NEAREST_MIPMAP_NEAREST,
+        };
+    }
+
+    // Create the min mag filters
+    gl::TexParameteri(target, gl::TEXTURE_MIN_FILTER, min as i32);
+    gl::TexParameteri(target, gl::TEXTURE_MAG_FILTER, mag as i32);
+
+    // Create the anisotropic filtering if needed
+    if params.flags.contains(TextureFlags::ANISOTROPIC) {
+        gl::TexParameterf(target, gl::TEXTURE_MAX_ANISOTROPY_EXT, 2.0);
+    }
 }
 
 // Verify that we can safely write bytes to the texture, then return the pointer to the bytes
