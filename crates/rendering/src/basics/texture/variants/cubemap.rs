@@ -28,7 +28,7 @@ impl CubeMap {
         layout: TextureLayout::new(DataType::F32, TextureFormat::RGB32F),
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::ClampToEdge,
-        flags: TextureFlags::empty(),
+        flags: TextureFlags::MIPMAPS,
     };
 
     // Constant IFD since we know the parameters
@@ -106,6 +106,7 @@ impl ObjectSealed for CubeMap {
 
                     // Cubemaps always have mipmaps
                     let levels = guess_mipmap_levels(size as u32).max(1) as i32;
+                    gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
 
                     // Allocate 6 textures for the projection
                     for i in 0..6 {

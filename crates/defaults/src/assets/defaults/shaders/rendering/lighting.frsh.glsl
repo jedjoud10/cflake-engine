@@ -97,41 +97,38 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 }
 
 // Bidirectional reflectance distribution function, aka PBRRRR
-vec3 brdf(SunData sun, PixelData pixel, CameraData camera) {
-	// Main vectors
-	vec3 n = normalize(pixel.normal);
-	vec3 v = normalize(camera.position - pixel.position);
-	vec3 l = -normalize(sun.direction);
-	vec3 h = normalize(v + l);
-
+vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 diffuse, vec3 emissive, SunData sun) {
 	// Constants
-	float roughness = max(pixel.roughness, 0.05);
-	float metallic = pixel.metallic;
-	vec3 f0 = mix(vec3(0.04), pixel.diffuse, metallic);
+	roughness = max(roughness, 0.05);
+	metallic = pow(metallic, 5);
+	vec3 f0 = mix(vec3(0.04), diffuse, metallic);
 	
 	// Ks and Kd
 	vec3 ks = fresnel(f0, v, h, n);
 	vec3 kd = (1 - ks) * (1 - metallic);
 
 	// Le diffuse and specular
-	vec3 brdf = kd * (pixel.diffuse / PI) + specular(f0, roughness, v, l, n, h);
-	vec3 outgoing = pixel.emissive + brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
+	vec3 brdf = kd * (diffuse / PI) + specular(f0, roughness, v, l, n, h);
+	vec3 outgoing = emissive + brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
 
 	return outgoing;
 }
 
 // Calculate the shaded color for a single pixel 
 vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
-	// The shaded pixel color
-	vec3 color = brdf(sun, pixel, camera) * (1 - pixel.in_shadow);
+	// Main vectors
+	vec3 n = normalize(pixel.normal);
 	vec3 v = normalize(camera.position - pixel.position);
+	vec3 l = -normalize(sun.direction);
+	vec3 h = normalize(v + l);
+
+	// The shaded pixel color
+	vec3 color = brdf(n, v, l, h, pixel.roughness, pixel.metallic, pixel.diffuse, pixel.emissive, sun) * (1 - pixel.in_shadow);
 
 	// Ambient color
 	color += 0.03 * pixel.diffuse * pixel.ao;
 	return color;
 }
-
-
 
 // Calculate the sun's strength using the sun's dot product
 float calculate_sun_strength(float sun_up_factor) {
@@ -160,7 +157,7 @@ void main() {
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
-		final_color = texture(skybox, eye_dir).xyz;
+		final_color = texture(skybox, eye_dir).rgb;
 		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
@@ -173,5 +170,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(final_color, 0);
+	color = vec4(post(uvs, final_color), 0);
 }

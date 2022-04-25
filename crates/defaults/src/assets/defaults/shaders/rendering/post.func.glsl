@@ -9,16 +9,19 @@ vec3 aces(vec3 x) {
 }
 
 // Post-rendering effects
-vec3 post(vec2 uvs, vec3 icolor) {
+vec3 post(vec2 uvs, vec3 color) {
     // A vignette effect
     float vignette_strength_x = pow(abs(uvs.x - 0.5), 4);
     float vignette_strength_y = pow(abs(uvs.y - 0.5), 4);
     float vignette_strength = (vignette_strength_x + vignette_strength_y) * 2.0; 
     float vignette = (1-vignette_strength);
 
-    // Gamma correction
-    float gamma = 2.6;
-    vec3 color = aces(icolor);
-    color = pow(color, vec3(1.0/gamma));
-    return color * vignette;
+    // exposure tone mapping
+    const float gamma = 2.2;
+    float exposure = 0.2;
+    vec3 mapped = vec3(1.0) - exp(-color * exposure);
+    // gamma correction 
+    mapped = pow(mapped, vec3(1.0 / gamma));
+    
+    return mapped;
 }

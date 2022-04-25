@@ -58,7 +58,7 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/textures/missing.png");
     persistent!("./assets/defaults/textures/sky_gradient.png");
     // HDRi
-    persistent!("./assets/defaults/hdr/frozen_lake_4k.hdr");
+    persistent!("./assets/defaults/hdr/studio_garden_4k.hdr");
 
 
     println!("Finished pre-loading default assets!");

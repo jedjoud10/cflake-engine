@@ -131,7 +131,7 @@ impl SceneRenderer {
         let shadow_mapping = pipeline.settings().shadow().map(|settings| ShadowMapping::new(pipeline, settings));
         
         // Load the default skybox by creating it from a HDR
-        let hdr = pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/frozen_lake_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
+        let hdr = pipeline.insert(assets::load_with::<Texture2D>("defaults/hdr/studio_garden_4k.hdr", TextureParams::HDR_MAP_LOAD).unwrap());
         let skybox = pipeline.insert(CubeMap::from_equirectangular(hdr, 512));
 
         /* #endregion */
