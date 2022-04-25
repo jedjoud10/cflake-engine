@@ -9,7 +9,7 @@ uniform sampler2D position_texture;
 uniform sampler2D mask_texture;
 uniform sampler2D depth_texture;
 uniform sampler2D shadow_map;
-uniform samplerCube skybox;
+uniform samplerCube skybox_test;
 uniform vec3 sunlight_dir;
 uniform mat4 lightspace_matrix;
 uniform float sunlight_strength;
@@ -160,7 +160,7 @@ void main() {
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
-		final_color = texture(skybox, eye_dir).xyz;
+		final_color = texture(skybox_test, eye_dir).xyz;
 		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
@@ -173,5 +173,6 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(final_color, 0);
+	vec3 sky = texture(skybox_test, eye_dir).rgb;
+	color = vec4(sky, 0);
 }

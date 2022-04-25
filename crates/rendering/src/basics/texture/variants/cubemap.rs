@@ -164,10 +164,9 @@ impl ObjectSealed for CubeMap {
             }
 
             // Mipmaps and filters
-            //generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
+            generate_mipmaps(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
             generate_filters(gl::TEXTURE_CUBE_MAP, &Self::PARAMS);
-            gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32); 
-            gl::BindTexture(gl::TEXTURE_CUBE_MAP, 0);
+            gl::TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32);
         }
     }
 }

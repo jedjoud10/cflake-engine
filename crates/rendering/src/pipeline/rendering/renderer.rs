@@ -253,11 +253,11 @@ impl SceneRenderer {
             let names = ["diffuse_texture", "emissive_texture", "normals_texture", "position_texture", "mask_texture", "depth_texture"];
             // Set each texture
             for (name, handle) in names.into_iter().zip(self.textures.iter()) {
-                //uniforms.set_texture2d(name, handle);
+                uniforms.set_texture2d(name, handle);
             }
 
             // Skybox cubemap
-            uniforms.set_cubemap("skybox", &self.skybox);
+            uniforms.set_cubemap("skybox_test", &self.skybox);
 
             // If we have shadow mapping disabled we must use the default white texture
             let shadow_mapping_texture = self
