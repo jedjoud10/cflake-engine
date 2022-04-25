@@ -25,7 +25,7 @@ pub struct CubeMap {
 impl CubeMap {
     // Parameters for the whole cubemap
     const PARAMS: TextureParams = TextureParams {
-        layout: TextureLayout::new(DataType::U8, TextureFormat::RGB8R),
+        layout: TextureLayout::new(DataType::F32, TextureFormat::RGB32F),
         filter: TextureFilter::Linear,
         wrap: TextureWrapMode::ClampToEdge,
         flags: TextureFlags::empty(),
@@ -110,14 +110,9 @@ impl ObjectSealed for CubeMap {
                     // Allocate 6 textures for the projection
                     for i in 0..6 {
                         // Initialize a single face in the cubemap
-                        let mut ptr = null();
-                        let vec = vec![255u8; size as usize * size as usize * 3];
-                        ptr = vec.as_ptr();
-                        gl::TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, 0, ifd.0 as i32, size, size, 0, ifd.1, ifd.2, ptr as *const c_void);
+                        gl::TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, 0, ifd.0 as i32, size, size, 0, ifd.1, ifd.2, null());
                         //gl::TexStorage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32, levels, ifd.0, size as i32, size as i32);
                     }
-
-                    /*
                     
                     // Load the shader that we will use for projection
                     // TODO: FIX OBJECT DUPLICATIONNN
@@ -127,7 +122,7 @@ impl ObjectSealed for CubeMap {
 
                     // Unit cube that is inside out
                     let cube = assets::load::<Mesh>("defaults/meshes/cube.obj").unwrap();
-                    let cube = pipeline.insert(cube);
+                    let cube = pipeline.insert(cube.flip_triangles());
 
                     // Fetch the added objects
                     let shader = pipeline.get(&shader).unwrap();
@@ -158,8 +153,7 @@ impl ObjectSealed for CubeMap {
                                 render(mesh); 
                             }
                         });
-                    });     
-                    */
+                    });
                 },
             }
 

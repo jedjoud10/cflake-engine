@@ -160,7 +160,7 @@ void main() {
 	if (odepth == 1.0) {
 		// Sky gradient texture moment
 		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
-		final_color = texture(skybox_test, eye_dir).xyz;
+		final_color = texture(skybox, eye_dir).xyz;
 		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
 	} else {
 		// Shadow map
@@ -173,5 +173,5 @@ void main() {
 		final_color = shade(sun, pixel, camera);
 	}
 
-	color = vec4(texture(skybox, eye_dir).rgb, 0);
+	color = vec4(final_color, 0);
 }

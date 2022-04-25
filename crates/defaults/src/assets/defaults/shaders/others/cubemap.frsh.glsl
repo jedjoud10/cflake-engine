@@ -21,5 +21,5 @@ void main() {
     vec2 uv = sample_spherical_map(normalize(local_pos));
 
     // Sample the equirectangular map
-    color = local_pos;
+    color = texture(hdr_map, uv).xyz;
 }
