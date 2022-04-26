@@ -395,7 +395,7 @@ pub struct ShaderInitSettings {
     #[getset(get = "pub")]
     directives: AHashMap<String, Directive>,
     #[getset(get = "pub", get_mut = "pub(crate)")]
-    sources: AHashMap<String, ShaderSource>,
+    sources: AHashMap<String, ShaderSource>,]
 }
 
 impl ShaderInitSettings {
