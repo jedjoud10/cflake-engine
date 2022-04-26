@@ -1,7 +1,7 @@
 use crate::{
     basics::{
         material::{Material, MaterialBuilder},
-        shader::Shader,
+        shader::{Shader, ShaderInitSettings},
         texture::Texture2D,
         uniforms::UniformsSet,
     },
@@ -116,9 +116,16 @@ impl PbrMaterialBuilder {
     }
 }
 
-// Convert
 impl MaterialBuilder for PbrMaterialBuilder {
-    fn build_with_shader(self, pipeline: &mut crate::pipeline::Pipeline, shader: Handle<Shader>) -> Handle<Material> {
+    fn shader(pipeline: &mut crate::pipeline::Pipeline) -> Handle<Shader> {
+        pipeline.insert(Shader::new(
+            ShaderInitSettings::default()
+                .source("defaults/shaders/rendering/default.vrsh.glsl")
+                .source("defaults/shaders/rendering/default.frsh.glsl"),
+        ).unwrap())
+    }
+    
+    fn build_with(self, pipeline: &mut crate::pipeline::Pipeline, shader: Handle<Shader>) -> Handle<Material> {
         // Clone the default texture handles
         let white = pipeline.defaults().white.clone();
         let black = pipeline.defaults().black.clone();

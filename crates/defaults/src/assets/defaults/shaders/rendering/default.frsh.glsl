@@ -5,7 +5,7 @@
 #load model
 
 // Pixel color
-out vec4 frag_color;
+out vec4 color;
 
 // Texture maps
 uniform sampler2D diffuse_m;
@@ -68,5 +68,5 @@ void main() {
     vec3 mapped = shade_pbr(sun, pixel);
     // gamma correction 
     mapped = pow(mapped, vec3(1.0 / gamma));
-	frag_color = vec4(mapped, 1);
+	color = vec4(mapped, 1);
 }

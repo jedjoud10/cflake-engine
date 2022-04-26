@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats};
+use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats, RenderedModel};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
@@ -12,6 +12,7 @@ use crate::{
     utils::{DataType, DEFAULT_WINDOW_SIZE},
 };
 use getset::{Getters, MutGetters};
+use math::bounds::aabb::AABB;
 
 
 // Scene renderer that utilizes clustered-forward rendering to render the scene
@@ -61,7 +62,7 @@ impl SceneRenderer {
         // Scene statistics for the debugger
         let mut stats = SceneRenderStats { drawn: 0, culled: 0, shadowed: 0 };
 
-        // Bind the deferred renderer's framebuffer
+        // We should bind the default framebuffer just in case
         self.framebuffer.bind(|_| {
             // AABB frustum culling cause I'm cool
             let taken = std::mem::take(&mut settings.normal);

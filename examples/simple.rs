@@ -42,8 +42,7 @@ fn init(world: &mut World) {
 
     // A simple material with a specific color
     let color = vek::Rgb::cyan(); 
-    let flat = world.pipeline.defaults().flat.clone();
-    let material = PbrMaterialBuilder::default().tint(color).build_with_shader(&mut world.pipeline, flat);
+    let material = PbrMaterialBuilder::default().tint(color).build(&mut world.pipeline);
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),

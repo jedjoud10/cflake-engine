@@ -20,6 +20,7 @@ pub struct Shader {
 
 impl Shader {
     // Creates a new shader using some shader init settings
+    // TODO: Implement a global shader cache 
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and modify/expand them
         let mut sources = std::mem::take(settings.sources_mut());

@@ -14,17 +14,23 @@ pub struct Material {
 }
 
 // Builds a universal material from anything
+// TODO: Remove this and use the default pipeline shader storage instead.
+// This should allow for simpler logic and shader caching 
 pub trait MaterialBuilder
 where
     Self: Sized,
 {
-    // Builds the material with the default shader
+    // Fetch the shader handle that corresponds to this material
+    fn shader(pipeline: &mut Pipeline) -> Handle<Shader>;
+
+    // Build the material by fetching the shader handle internally
     fn build(self, pipeline: &mut Pipeline) -> Handle<Material> {
-        let shader = pipeline.defaults().shader.clone();
-        self.build_with_shader(pipeline, shader)
+        let shader = Self::shader(pipeline);
+        self.build_with(pipeline, shader)
     }
-    // Build the material using a speficic shader
-    fn build_with_shader(self, pipeline: &mut Pipeline, shader: Handle<Shader>) -> Handle<Material>;
+
+    // Build the material using the corresponding shader
+    fn build_with(self, pipeline: &mut Pipeline, shader: Handle<Shader>) -> Handle<Material>;
 }
 
 impl ObjectSealed for Material {}

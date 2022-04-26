@@ -23,9 +23,6 @@ pub struct DefaultElements {
     pub plane: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
 
-    // Shaders
-    pub shader: Handle<Shader>,
-
     // Materials
     pub missing_pbr_mat: Handle<Material>,
 }
@@ -76,22 +73,13 @@ impl DefaultElements {
                 .source("defaults/shaders/rendering/default.frsh.glsl"),
         ).unwrap());
 
-        // Default missing rendering (PBR) shader
-        let missing_shader = Shader::new(
-            ShaderInitSettings::default()
-                .source("defaults/shaders/rendering/missing.vrsh.glsl")
-                .source("defaults/shaders/rendering/missing.frsh.glsl"),
-        )
-        .unwrap();
-        let _missing_shader = pipeline.insert(missing_shader);
-
         // Default pbr material (uses missing texture)
         let missing_pbr_mat = PbrMaterialBuilder::default()
             .diffuse(missing_texture.clone())
             .normal(normal_map.clone())
             .emissive(black.clone())
             .mask(mask.clone())
-            .build_with_shader(pipeline, shader.clone());
+            .build_with(pipeline, shader.clone());
 
         Self {
             white,
@@ -104,7 +92,6 @@ impl DefaultElements {
             sphere,
             plane,
             missing_pbr_mat,
-            shader,
         }
     }
 }
