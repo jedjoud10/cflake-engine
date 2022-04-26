@@ -3,22 +3,27 @@ use gl::types::GLuint;
 use crate::{
     advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
     basics::{
-        shader::ShaderProgram,
+        shader::Program,
         texture::{BundledTexture2D, Texture, Texture2D, CubeMap},
     },
     pipeline::{Handle, Pipeline},
 };
 // Bound uniform object that can set OpenGL uniforms
 pub struct Uniforms<'a> {
-    program: &'a ShaderProgram,
+    program: &'a Program,
     pipeline: &'a Pipeline,
 }
 
 impl<'a> Uniforms<'a> {
-    // Create a uniforms setter using a shader program and the pipeline
-    pub fn new(program: &ShaderProgram, pipeline: &Pipeline, closure: impl FnOnce(Uniforms)) {
-        unsafe { gl::UseProgram(program.program()) }
+    // Create a uniforms setter using a shader that can get it's program fetched and the pipeline
+    pub fn new(program: &Option<Program>, pipeline: &Pipeline, closure: impl FnOnce(Uniforms)) {
+        // Uh-oh... invalid program
+        let program = program.as_ref().expect("Invalid program given, the shader given was not properly initialized");
+
+        // Bind the OpenGL shader
+        unsafe { gl::UseProgram(program.name()) }
         let mut bound = Uniforms { program, pipeline };
+
         // Set some global uniforms while we're at it
         bound.set_f32("_time", pipeline.elapsed());
         bound.set_f32("_delta", pipeline.delta());

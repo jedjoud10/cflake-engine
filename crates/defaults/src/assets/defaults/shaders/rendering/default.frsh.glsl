@@ -1,14 +1,18 @@
 #version 460 core
-#load renderer
-layout(location = 0) out vec3 frag_diffuse;
-layout(location = 1) out vec3 frag_emissive;
-layout(location = 2) out vec3 frag_normal;
-layout(location = 3) out vec3 frag_pos;
-layout(location = 4) out vec3 frag_mask;
+
+// Load the PBR shading function and basic renderer code
+#load pbr
+
+// Pixel color
+out vec3 frag_color;
+
+// Texture maps
 uniform sampler2D diffuse_m;
 uniform sampler2D emissive_m;
 uniform sampler2D normal_m;
 uniform sampler2D mask_m;
+
+// Attributes
 uniform vec2 uv_scale;
 uniform vec3 tint;
 uniform float emissivity;
@@ -16,13 +20,14 @@ uniform float bumpiness;
 uniform float roughness;
 uniform float metallic;
 uniform float ao_strength;
+
+// Data given from the vertex shader
 in vec3 m_position;
 in vec3 m_normal;
 in vec3 m_tangent;
 in vec3 m_bitangent;
 in vec2 m_uv;
 in vec3 m_color;
-in vec3 test;
 
 void main() {
 	// Load diffuse/emissive, and check if we must alpha clip
@@ -33,10 +38,6 @@ void main() {
 	float alpha2 = emissive.a;
 	if (alpha1 != 1 || alpha2 != 1) { discard; }
 
-	// Color passthrough
-	frag_diffuse = diffuse.xyz * m_color * tint;
-	frag_emissive = emissive.xyz * emissivity;
-
 	// Calculate tangent space normals and use that for bump mapping
 	vec3 normal = texture(normal_m, uv).xyz * 2.0 - 1.0;
 	normal.xy *= bumpiness;
@@ -46,15 +47,18 @@ void main() {
 		normalize(m_tangent),
 		normalize(m_bitangent),
 		normalize(m_normal));
-	frag_normal = normalize(tbn * normalize(normal));	
+	normal = normalize(tbn * normalize(normal));	
 	
 	// This is a certified PBR moment
 	vec3 mask = texture(mask_m, uv).rgb;
 	mask.r = pow(mask.r, ao_strength);
 	mask.g *= roughness;
 	mask.b *= metallic;
-	frag_mask = mask;
 
-	// Other
-	frag_pos = m_position;
+	// Apply shading
+	SunData sun = SunData(vec3(1, 0, 0), 5.0, vec3(1));
+	PixelData pixel = PixelData(diffuse, normal, emissive, m_position, mask.r, mask.g, mask.b, 0.0);
+
+	// PBR moment
+	frag_color = compute_lighting_pbr(sun, pixel);
 }

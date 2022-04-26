@@ -19,7 +19,6 @@ pub fn preload_default_assets() {
     // Rendering
     persistent!("./assets/defaults/shaders/rendering/empty.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/project.vrsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/lighting.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/flat.frsh.glsl");
@@ -40,9 +39,10 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/others/triplanar.func.glsl");
     persistent!("./assets/defaults/shaders/others/sdf.func.glsl");
     persistent!("./assets/defaults/shaders/others/cubemap.frsh.glsl");
-    // Default impls
-    persistent!("./assets/defaults/shaders/others/default_impls/general.func.glsl");
-    persistent!("./assets/defaults/shaders/others/default_impls/renderer.func.glsl");
+    // Snippets
+    persistent!("./assets/defaults/shaders/others/snippets/pbr.func.glsl");
+    persistent!("./assets/defaults/shaders/others/snippets/general.func.glsl");
+    persistent!("./assets/defaults/shaders/others/snippets/renderer.func.glsl");
     // Noise
     persistent!("./assets/defaults/shaders/noises/simplex.func.glsl");
     persistent!("./assets/defaults/shaders/noises/voronoi.func.glsl");

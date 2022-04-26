@@ -1,6 +1,6 @@
 use crate::{
     basics::{
-        shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, ShaderProgram},
+        shader::{compile_shader, load_includes, IncludeExpansionError, ShaderInitSettings, Program, PreCompilationData, SharedExpansionData},
         uniforms::Uniforms,
     },
     object::{ObjectSealed, OpenGLObjectNotInitialized},
@@ -16,20 +16,20 @@ use super::ComputeShaderExecutionSettings;
 pub struct ComputeShader {
     // The OpenGL program linked to this shader
     #[getset(get = "pub")]
-    program: ShaderProgram,
-    // Init settings
-    #[getset(get = "pub")]
-    settings: ShaderInitSettings,
+    program: Option<Program>,
+
+    // Pre-compilation data
+    pre: Option<PreCompilationData>,
 }
 
 impl ObjectSealed for ComputeShader {
     fn init(&mut self, _pipeline: &mut Pipeline) {
-        self.program = compile_shader(self.settings.sources());
+        self.program = Some(compile_shader(self.pre.take().unwrap()));
     }
 
     fn disposed(self) {
         unsafe {
-            gl::DeleteProgram(self.program.program());
+            gl::DeleteProgram(self.program.as_ref().unwrap().name());
         }
     }
 }
@@ -37,26 +37,36 @@ impl ObjectSealed for ComputeShader {
 impl ComputeShader {
     // Creates a new compute shader using some shader init settings
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
-        // Loop through the shader sources and edit them
+        // Get the first source available, since compute shaders only have one shader source
         let mut sources = std::mem::take(settings.sources_mut());
         let (_, source) = sources.iter_mut().next().unwrap();
-        let mut included_paths: AHashSet<String> = AHashSet::new();
+
+        // Data that keeps track of was was expanded and what wasn't
+        let mut shared = SharedExpansionData::default();
+
         // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
         // Include the includables until they cannot be included
-        while load_includes(&settings, source.text_mut(), &mut included_paths)? {
+        while load_includes(&settings, source.text_mut(), &mut shared)? {
             // We are still including paths
         }
-        *settings.sources_mut() = sources;
+        
+        // Create the pre-compilation data 
+        let pre = PreCompilationData {
+            sources,
+            shared,
+        };
+
         // Add this shader source to be generated as a subshader
         Ok(Self {
-            program: Default::default(),
-            settings,
+            program: None,
+            pre: Some(pre),
         })
     }
     // Execute a compute shader
+    // This makes 100% sure that we are already bound to the compute shader, since we require the uniforms
     pub fn run(&self, _pipeline: &Pipeline, settings: ComputeShaderExecutionSettings, _uniforms: Uniforms, force: bool) -> Result<(), OpenGLObjectNotInitialized> {
-        // Check validity
-        if self.program().program() == 0 {
+        // Bruh bruh bruh
+        if self.program().is_none() {
             return Err(OpenGLObjectNotInitialized);
         }
 

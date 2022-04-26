@@ -1,54 +1,61 @@
-use super::{compile_shader, ShaderInitSettings};
+use super::{compile_shader, ShaderInitSettings, SharedExpansionData, PreCompilationData};
 
 use crate::object::ObjectSealed;
 
 use ahash::AHashSet;
 use getset::Getters;
 
-use super::{load_includes, IncludeExpansionError, ShaderProgram};
+use super::{load_includes, IncludeExpansionError, Program};
 
 // A shader that contains just some text sources that it loaded from the corresponding files, and it will send them to the Render Thread so it can actually generate the shader using those sources
 #[derive(Getters)]
 pub struct Shader {
     // The OpenGL program linked to this shader
     #[getset(get = "pub")]
-    program: ShaderProgram,
-    // Init settings
-    #[getset(get = "pub")]
-    settings: ShaderInitSettings,
+    program: Option<Program>,
+
+    // Pre-compilation data
+    pre: Option<PreCompilationData>,
 }
 
 impl Shader {
     // Creates a new shader using some shader init settings
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
-        // Loop through the shader sources and edit them
+        // Loop through the shader sources and modify/expand them
         let mut sources = std::mem::take(settings.sources_mut());
+
+        // Data that keeps track of was was expanded and what wasn't
+        let mut shared = SharedExpansionData::default();
         for (_, source) in sources.iter_mut() {
-            let mut included_paths: AHashSet<String> = AHashSet::new();
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
-            while load_includes(&settings, source.text_mut(), &mut included_paths)? {
+            while load_includes(&settings, source.text_mut(), &mut shared)? {
                 // We are still including paths
             }
         }
-        *settings.sources_mut() = sources;
+
+        // Create the pre-compilation data 
+        let pre = PreCompilationData {
+            sources,
+            shared,
+        };
 
         // Add this shader source to be generated as a subshader
         Ok(Self {
-            program: Default::default(),
-            settings,
+            program: None,
+            pre: Some(pre),
         })
     }
 }
 
 impl ObjectSealed for Shader {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
-        self.program = compile_shader(self.settings.sources_mut());
+        self.program = Some(compile_shader(self.pre.take().unwrap()));
     }
 
     fn disposed(self) {
         unsafe {
-            gl::DeleteProgram(self.program.program());
+            gl::DeleteProgram(self.program.unwrap().name());
         }
     }
 }

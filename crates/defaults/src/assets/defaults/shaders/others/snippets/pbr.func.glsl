@@ -1,27 +1,5 @@
-#version 460 core
-#load general
-
-out vec4 color;
-uniform sampler2D diffuse_texture;
-uniform sampler2D emissive_texture;
-uniform sampler2D normals_texture;
-uniform sampler2D position_texture;
-uniform sampler2D mask_texture;
-uniform sampler2D depth_texture;
-uniform sampler2D shadow_map;
-uniform samplerCube skybox;
-uniform vec3 sunlight_dir;
-uniform mat4 lightspace_matrix;
-uniform float sunlight_strength;
-uniform mat4 inverse_pr_matrix;
-uniform mat4 pv_matrix;
-uniform vec3 camera_pos;
-uniform vec3 camera_dir;
-uniform float time_of_day;
-in vec2 uvs;
-
-#include "defaults/shaders/rendering/shadows.func.glsl"
-#include "defaults/shaders/rendering/post.func.glsl"
+// PBR code automatically implements renderer code
+#load renderer
 
 // Sun data that will be passed to the rendering equation
 struct SunData {
@@ -115,7 +93,10 @@ vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 
 }
 
 // Calculate the shaded color for a single pixel 
-vec3 shade(SunData sun, PixelData pixel, CameraData camera) {   
+vec3 compute_lighting_pbr(SunData sun, PixelData pixel) {   
+    // Create a camera from the uniforms
+    CameraData camera = CameraData(_cam_pos, _cam_dir, _pv_matrix);
+
 	// Main vectors
 	vec3 n = normalize(pixel.normal);
 	vec3 v = normalize(camera.position - pixel.position);
@@ -128,47 +109,4 @@ vec3 shade(SunData sun, PixelData pixel, CameraData camera) {
 	// Ambient color
 	color += 0.03 * pixel.diffuse * pixel.ao;
 	return color;
-}
-
-// Calculate the sun's strength using the sun's dot product
-float calculate_sun_strength(float sun_up_factor) {
-    return clamp(sun_up_factor * 6 - 2.4, 0, 1);
-}
-
-void main() {
-	// Sample the G-Buffer textures
-	vec3 normal = normalize(texture(normals_texture, uvs).rgb);
-	vec3 diffuse = texture(diffuse_texture, uvs).rgb;
-	vec3 emissive = texture(emissive_texture, uvs).rgb;
-	vec3 position = texture(position_texture, uvs).rgb;
-	vec3 mask = texture(mask_texture, uvs).rgb;
-
-	// Calculate the dot product using the sun's direction vector and the up vector
-	float global_sunlight_strength = calculate_sun_strength(time_of_day) * sunlight_strength;	
-
-	// Le pixel direction (going from the camera towards the surface)
-	vec3 eye_dir = normalize((inverse_pr_matrix * vec4(uvs * 2 - 1, 0, 1)).xyz);
-
-	// Get fragment depth
-	vec3 final_color = vec3(0, 0, 0);
-	float odepth = texture(depth_texture, uvs).x;
-
-	// Depth test with the sky
-	if (odepth == 1.0) {
-		// Sky gradient texture moment
-		float sky_uv_sampler = dot(eye_dir, vec3(0, 1, 0));
-		final_color = texture(skybox, eye_dir).rgb;
-		final_color += max(pow(dot(eye_dir, normalize(-sunlight_dir)), 4096), 0) * global_sunlight_strength * 40;
-	} else {
-		// Shadow map
-		float in_shadow = calculate_shadows(position, normal, sunlight_dir, lightspace_matrix, shadow_map);
-
-		// Construct the structs just cause they look pretty
-		SunData sun = SunData(sunlight_dir, global_sunlight_strength, vec3(1));
-		PixelData pixel = PixelData(diffuse, normal, emissive, position, mask.r, mask.g, mask.b, in_shadow);
-		CameraData camera = CameraData(camera_pos, camera_dir, pv_matrix);
-		final_color = shade(sun, pixel, camera);
-	}
-
-	color = vec4(post(uvs, final_color), 0);
 }

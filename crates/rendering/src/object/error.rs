@@ -2,6 +2,8 @@ use std::fmt;
 
 // Created whenever we tried to access some values about a non initialized pipeline object
 #[derive(Debug, Clone)]
+
+// TODO: Ew rename this shit
 pub struct OpenGLObjectNotInitialized;
 
 impl fmt::Display for OpenGLObjectNotInitialized {
