@@ -31,12 +31,13 @@ pub(crate) type ShaderSourceMap = AHashMap<String, ShaderSource>;
 // Data that will be temporarily stored before we actually compile the shader
 // This will contains the sources and the shared expansion data
 pub(crate) struct PreCompilationData {
+    // Fully expanded shader sources that are ready to be compiled
     pub sources: ShaderSourceMap,
-    pub shared: SharedExpansionData
 }
 
 
 // Shared data when calling load_includes; helps for tracking down the snippets that were used, and the final paths that were loaded in
+// This is unique per shader source
 #[derive(Default)]
 pub(crate) struct SharedExpansionData {
     // The paths that were included, and expanded
@@ -54,15 +55,15 @@ pub(crate) fn load_includes(settings: &ShaderInitSettings, source: &mut String, 
         // Check if this is an include statement
         if line.starts_with("#include ") {
             // Get the local path of the include file
-            let local_path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
-            let local_path = local_path.trim_start();
+            let path = line.split("#include ").collect::<Vec<&str>>()[1].replace('"', "");
+            let path = path.trim_start();
 
             // Load the include function text
-            let text = if !shared.paths.contains(&local_path.to_string()) {
+            let text = if !shared.paths.contains(&path.to_string()) {
                 // Load the function shader text
-                shared.paths.insert(local_path.to_string());
-                assets::load(local_path)
-                    .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", local_path)))?
+                shared.paths.insert(path.to_string());
+                assets::load(path)
+                    .map_err(|_| IncludeExpansionError::new(format!("Tried to include function shader '{}' and it was not pre-loaded!.", path)))?
             } else {
                 // We already have this function text loaded, don't duplicate it
                 String::new()

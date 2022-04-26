@@ -57,7 +57,7 @@ void main() {
 
 	// Apply shading
 	SunData sun = SunData(vec3(1, 0, 0), 5.0, vec3(1));
-	PixelData pixel = PixelData(diffuse, normal, emissive, m_position, mask.r, mask.g, mask.b, 0.0);
+	PixelData pixel = PixelData(diffuse.rgb, normal, emissive.rgb, m_position, mask.r, mask.g, mask.b, 0.0);
 
 	// PBR moment
 	frag_color = compute_lighting_pbr(sun, pixel);

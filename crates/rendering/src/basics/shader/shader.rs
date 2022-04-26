@@ -23,10 +23,9 @@ impl Shader {
     pub fn new(mut settings: ShaderInitSettings) -> Result<Self, IncludeExpansionError> {
         // Loop through the shader sources and modify/expand them
         let mut sources = std::mem::take(settings.sources_mut());
-
-        // Data that keeps track of was was expanded and what wasn't
-        let mut shared = SharedExpansionData::default();
         for (_, source) in sources.iter_mut() {
+            // Data that keeps track of was was expanded and what wasn't
+            let mut shared = SharedExpansionData::default();
             // We won't actually generate any subshaders here, so we don't need anything related to the pipeline
             // Include the includables until they cannot be included
             while load_includes(&settings, source.text_mut(), &mut shared)? {
@@ -37,7 +36,6 @@ impl Shader {
         // Create the pre-compilation data 
         let pre = PreCompilationData {
             sources,
-            shared,
         };
 
         // Add this shader source to be generated as a subshader

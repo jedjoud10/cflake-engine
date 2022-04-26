@@ -22,7 +22,7 @@ void main() {
 	gl_Position = _pv_matrix * world;
 
 	// Calculate world normal
-	vec3 normal = (_model_matrix * vec4(mesh_normal, 0.0)).xyz
+	vec3 normal = (_model_matrix * vec4(mesh_normal, 0.0)).xyz;
 
 	// Pass the data to the next shader
 	m_position = world.xyz;
@@ -34,5 +34,5 @@ void main() {
 	m_tangent = (_model_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
 	float _sign = mesh_tangent.w;
 	vec3 bitangent = cross(normalize(m_normal), normalize(mesh_tangent.xyz)) * _sign;
-	m_bitangent = normalize((mesh_matrix * vec4(bitangent, 0.0)).xyz);
+	m_bitangent = normalize((_model_matrix * vec4(bitangent, 0.0)).xyz);
 }

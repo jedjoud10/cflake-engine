@@ -53,7 +53,6 @@ impl ComputeShader {
         // Create the pre-compilation data 
         let pre = PreCompilationData {
             sources,
-            shared,
         };
 
         // Add this shader source to be generated as a subshader
