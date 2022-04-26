@@ -10,12 +10,7 @@ layout(location = 3) in vec2 mesh_uv;
 layout(location = 4) in vec3 mesh_color;
 
 // Data that will be passed to the next shader (the preivous load already defines the renderer matrices)
-out vec3 m_normal;
-out vec3 m_tangent;
-out vec3 m_bitangent;
-out vec2 m_uv;
-out vec3 m_position;
-out vec3 m_color;
+out VertexData vert;
 
 void main() {
 	// Calculate world position first
@@ -25,15 +20,12 @@ void main() {
 	// Calculate world normal
 	vec3 normal = (_model_matrix * vec4(mesh_normal, 0.0)).xyz;
 
-	// Pass the data to the next shader
-	m_position = world.xyz;
-	m_normal = normal;
-	m_uv = mesh_uv;
-	m_color = mesh_color;
-
-	// Calculate the world tangent
-	m_tangent = (_model_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
+	// Calculate the world tangent and bitangent
+	vec3 tangent = (_model_matrix * vec4(mesh_tangent.xyz, 0.0)).xyz;
 	float _sign = mesh_tangent.w;
-	vec3 bitangent = cross(normalize(m_normal), normalize(mesh_tangent.xyz)) * _sign;
-	m_bitangent = normalize((_model_matrix * vec4(bitangent, 0.0)).xyz);
+	vec3 bitangent = cross(normalize(normal), normalize(mesh_tangent.xyz)) * _sign;
+	bitangent = normalize((_model_matrix * vec4(bitangent, 0.0)).xyz);
+
+	// And pass the data to the next shader
+	vert = VertexData(world.xyz, normal, tangent, bitangent, mesh_uv, mesh_color);
 }
