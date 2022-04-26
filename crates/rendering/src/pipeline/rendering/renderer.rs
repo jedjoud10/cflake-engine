@@ -62,7 +62,6 @@ impl SceneRenderer {
         let mut stats = SceneRenderStats { drawn: 0, culled: 0, shadowed: 0 };
 
         // Bind the deferred renderer's framebuffer
-        /*
         self.framebuffer.bind(|_| {
             // AABB frustum culling cause I'm cool
             let taken = std::mem::take(&mut settings.normal);
@@ -73,7 +72,6 @@ impl SceneRenderer {
                 common::render_model(renderer, pipeline)
             }
         });
-        */
 
         // Then render the shadows
         /*

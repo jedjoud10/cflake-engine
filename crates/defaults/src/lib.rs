@@ -21,7 +21,6 @@ pub fn preload_default_assets() {
     persistent!("./assets/defaults/shaders/rendering/project.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/default.frsh.glsl");
-    persistent!("./assets/defaults/shaders/rendering/flat.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/missing.vrsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/missing.frsh.glsl");
     persistent!("./assets/defaults/shaders/rendering/shadows.func.glsl");
@@ -42,7 +41,8 @@ pub fn preload_default_assets() {
     // Snippets
     persistent!("./assets/defaults/shaders/others/snippets/pbr.func.glsl");
     persistent!("./assets/defaults/shaders/others/snippets/general.func.glsl");
-    persistent!("./assets/defaults/shaders/others/snippets/renderer.func.glsl");
+    persistent!("./assets/defaults/shaders/others/snippets/camera.func.glsl");
+    persistent!("./assets/defaults/shaders/others/snippets/model.func.glsl");
     // Noise
     persistent!("./assets/defaults/shaders/noises/simplex.func.glsl");
     persistent!("./assets/defaults/shaders/noises/voronoi.func.glsl");

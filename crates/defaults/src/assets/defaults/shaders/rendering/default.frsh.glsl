@@ -2,9 +2,10 @@
 
 // Load the PBR shading function and basic renderer code
 #load pbr
+#load model
 
 // Pixel color
-out vec3 frag_color;
+out vec4 frag_color;
 
 // Texture maps
 uniform sampler2D diffuse_m;
@@ -60,5 +61,9 @@ void main() {
 	PixelData pixel = PixelData(diffuse.rgb, normal, emissive.rgb, m_position, mask.r, mask.g, mask.b, 0.0);
 
 	// PBR moment
-	frag_color = compute_lighting_pbr(sun, pixel);
+	const float gamma = 2.2;
+    vec3 mapped = shade_pbr(sun, pixel);
+    // gamma correction 
+    mapped = pow(mapped, vec3(1.0 / gamma));
+	frag_color = vec4(mapped, 1);
 }

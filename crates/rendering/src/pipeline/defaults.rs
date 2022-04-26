@@ -25,7 +25,6 @@ pub struct DefaultElements {
 
     // Shaders
     pub shader: Handle<Shader>,
-    pub flat: Handle<Shader>,
 
     // Materials
     pub missing_pbr_mat: Handle<Material>,
@@ -86,13 +85,6 @@ impl DefaultElements {
         .unwrap();
         let _missing_shader = pipeline.insert(missing_shader);
 
-        // Flat shaded shader (low-poly)
-        let flat = pipeline.insert(Shader::new(
-            ShaderInitSettings::default()
-                .source("defaults/shaders/rendering/default.vrsh.glsl")
-                .source("defaults/shaders/rendering/flat.frsh.glsl"),
-        ).unwrap());
-
         // Default pbr material (uses missing texture)
         let missing_pbr_mat = PbrMaterialBuilder::default()
             .diffuse(missing_texture.clone())
@@ -112,7 +104,6 @@ impl DefaultElements {
             sphere,
             plane,
             missing_pbr_mat,
-            flat,
             shader,
         }
     }

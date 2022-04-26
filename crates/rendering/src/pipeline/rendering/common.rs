@@ -22,22 +22,29 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
     }
 }
 
-// Render a model
+// Le oui oui rendering?
 pub(crate) fn render_model<'a>(renderer: RenderedModel<'a>, pipeline: &Pipeline) {
     // Load the default missing material if we don't have a valid one
     let mat_handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
     let mat = pipeline.get(mat_handle).unwrap();
+
     // However, if we have an invalid shader, we must panic
     let shader = pipeline.get(&mat.shader).unwrap();
     let mesh = pipeline.get(renderer.mesh).unwrap();
-
+    
     // Create some uniforms
     Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-        // Set the uniforms
-        uniforms.set_mat44f32("mesh_matrix", renderer.matrix);
+        // Set the camera uniforms
+        let camera = pipeline.camera();
+        uniforms.set_mat44f32("_pv_matrix", &camera.proj_view);
+        uniforms.set_vec2f32("_nf_planes", camera.clips);
+        uniforms.set_vec3f32("_cam_pos", camera.position);
+        uniforms.set_vec3f32("_cam_dir", camera.forward);        
 
-        // Check if we really need to set the material uniforms
-        uniforms.set_mat44f32("proj_view_matrix", &pipeline.camera().proj_view);
+        // Set the model uniforms
+        uniforms.set_mat44f32("_model_matrix", renderer.matrix);
+
+        // Set the unique material uniorms
         mat.uniforms.execute(uniforms);
     });
 

@@ -1,5 +1,6 @@
 #version 460 core
-#load renderer
+#load model
+#load camera
 
 // Mesh data given by the CPU
 layout(location = 0) in vec3 mesh_pos;

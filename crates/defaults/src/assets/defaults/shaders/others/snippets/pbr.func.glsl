@@ -1,5 +1,5 @@
-// PBR code automatically implements renderer code
-#load renderer
+// PBR code automatically implements main camera code
+#load camera
 
 // Sun data that will be passed to the rendering equation
 struct SunData {
@@ -93,7 +93,7 @@ vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 
 }
 
 // Calculate the shaded color for a single pixel 
-vec3 compute_lighting_pbr(SunData sun, PixelData pixel) {   
+vec3 shade_pbr(SunData sun, PixelData pixel) {   
     // Create a camera from the uniforms
     CameraData camera = CameraData(_cam_pos, _cam_dir, _pv_matrix);
 
