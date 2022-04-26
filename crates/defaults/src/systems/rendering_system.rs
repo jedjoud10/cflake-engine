@@ -64,11 +64,6 @@ fn run(world: &mut World) {
             proj_view: camera.projection * camera.view,
         };
         *world.pipeline.camera_mut() = camera;
-    } else {
-        // There isn't a camera, no need to render anything
-        // Force a clear of the default framebuffer, since we won't be overwritting it
-        world.renderer.default_mut().bind(|mut bound| bound.clear(FramebufferClearBits::COLOR | FramebufferClearBits::DEPTH));
-        return;
     }
 
     /*

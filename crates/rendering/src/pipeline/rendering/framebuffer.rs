@@ -18,22 +18,22 @@ bitflags! {
 }
 
 // Client state tracking for the currently bound framebuffer (and for it's resolution as well)
-static mut CURRENTLY_BOUND_FRAMEBUFFER: u32 = 0;
-static mut CURRENT_VIEWPORT_SIZE: vek::Extent2<u32> = vek::Extent2::new(0, 0);
 static mut BOUND: bool = false;
 
 
 // A framebuffer that can be drawn or cleared
 #[derive(Getters)]
-#[getset(get = "pub")]
 pub struct Framebuffer {
     // OpenGL name of the frame buffer
-    id: GLuint,
+    #[getset(get = "pub")]
+    name: GLuint,
 
     // This is here to prevent the user from sending the frame buffer to another thread
+    #[getset(get = "pub")]
     _phantom: PhantomData<*const ()>,
 
     // Current viewport size of the framebuffer
+    #[getset(get = "pub")]
     viewport: vek::Extent2<u32>,
 }
 
@@ -41,8 +41,6 @@ pub struct Framebuffer {
 unsafe fn bind(id: GLuint, viewport: vek::Extent2<u32>) {
     gl::BindFramebuffer(gl::FRAMEBUFFER, id);
     gl::Viewport(0, 0, viewport.w as i32, viewport.h as i32);
-    CURRENTLY_BOUND_FRAMEBUFFER = id;
-    CURRENT_VIEWPORT_SIZE = viewport;
 }
 
 
@@ -120,12 +118,15 @@ impl<'a> BoundFramebuffer<'a> {
         unsafe {
             gl::Viewport(0, 0, size.w as i32, size.h as i32);
             self.fb.viewport = size;
-            CURRENT_VIEWPORT_SIZE = size;
         }
     }
 }
 
 impl Framebuffer {
+    // Get the default frame buffer
+    pub fn default(_pipeline: &Pipeline) -> Self {
+        unsafe { Self::from_raw_parts(_pipeline, 0, _pipeline.window().dimensions()) }
+    }
     // Create a new framebuffer
     pub fn new(_pipeline: &Pipeline) -> Self {
         // Generate a new framebuffer
@@ -135,7 +136,7 @@ impl Framebuffer {
         }
 
         Self {
-            id,
+            name: id,
             viewport: vek::Extent2::one(),
             _phantom: Default::default(),
         }
@@ -143,7 +144,7 @@ impl Framebuffer {
     // Create a new framebuffer from the raw OpenGL id
     pub unsafe fn from_raw_parts(_pipeline: &Pipeline, id: GLuint, viewport: vek::Extent2<u32>) -> Self {
         Self {
-            id,
+            name: id,
             viewport,
             _phantom: Default::default(),
         }
@@ -152,7 +153,7 @@ impl Framebuffer {
     // This binds the shader nonetheless
     unsafe fn bind_unchecked(&mut self, closure: impl FnOnce(BoundFramebuffer)) {
         // Bind the framebuffer as the current frame buffer
-        bind(self.id, self.viewport);
+        bind(self.name, self.viewport);
         BOUND = true;
 
         // Create a bound frame buffer that we can mutate
@@ -175,8 +176,11 @@ impl Framebuffer {
 }
 
 impl Drop for Framebuffer {
-    // Dispose of the frame buffer
+    // Dispose of the frame buffer (if it isn't the default framebuffer)
     fn drop(&mut self) {
-        unsafe { gl::DeleteFramebuffers(1, &self.id) }
+        if self.name != 0 {
+            // From the OpenGL spec: glDeleteFramebuffers silently ignores 0's and names that do not correspond to existing framebuffer objects.
+            unsafe { gl::DeleteFramebuffers(1, &self.name) }
+        }
     }
 }

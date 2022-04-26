@@ -130,7 +130,7 @@ impl Painter {
         let shader = pipeline.get(&self.shader).unwrap();
 
         // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
-        renderer.default_mut().bind(|mut bound| {
+        renderer.framebuffer_mut().bind(|mut bound| {
             // OpenGL settings
             unsafe {
                 gl::BindVertexArray(self.buffers.vao);
