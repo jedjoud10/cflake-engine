@@ -2,14 +2,12 @@ use enum_as_inner::EnumAsInner;
 
 // Light source parameters
 pub struct LightParameters {
-    pub strength: f32,
     pub color: vek::Rgb<f32>,
 }
 
 impl Default for LightParameters {
     fn default() -> Self {
         Self {
-            strength: 1.0,
             color: vek::Rgb::one(),
         }
     }
@@ -33,15 +31,15 @@ pub enum LightType {
 
 impl LightType {
     // Create a new directional light
-    pub fn new_directional(strength: f32, color: vek::Rgb<f32>) -> Self {
+    pub fn directional(color: vek::Rgb<f32>) -> Self {
         Self::Directional {
-            params: LightParameters { strength, color },
+            params: LightParameters { color },
         }
     }
     // Create a new point light
-    pub fn new_point(strength: f32, radius: f32, color: vek::Rgb<f32>) -> Self {
+    pub fn point(radius: f32, color: vek::Rgb<f32>) -> Self {
         Self::Point {
-            params: LightParameters { strength, color },
+            params: LightParameters { color },
             radius,
         }
     }

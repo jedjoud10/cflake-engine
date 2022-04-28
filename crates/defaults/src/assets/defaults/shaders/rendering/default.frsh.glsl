@@ -59,13 +59,9 @@ void main() {
 	mask.g *= roughness;
 	mask.b *= metallic;
 
-	// Apply shading
-	SunData sun = SunData(vec3(0.757, -0.757, 0), 1.0, vec3(1));
-	PixelData pixel = PixelData(diffuse.rgb, normal, emissive.rgb, position, mask.r, mask.g, mask.b, 0.0);
-
 	// PBR moment
 	const float gamma = 2.2;
-    vec3 mapped = shade_pbr(sun, pixel);
+    vec3 mapped = shade_pbr(normal, position, diffuse.rgb, emissive.rgb, mask, 0.0);
     // gamma correction 
     mapped = pow(mapped, vec3(1.0 / gamma));
 	frag_color = vec4(mapped, 1);

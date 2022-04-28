@@ -1,5 +1,9 @@
-// PBR code automatically implements main camera code
+// PBR code automatically implements main camera snippet and sun snippet
 #load camera
+
+// Scene values unique for shading
+uniform vec3 _sun_dir;
+uniform vec3 _sun_intensity;
 
 // Sun data that will be passed to the rendering equation
 struct SunData {
@@ -75,7 +79,7 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 }
 
 // Bidirectional reflectance distribution function, aka PBRRRR
-vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 diffuse, vec3 emissive, SunData sun) {
+vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 diffuse, vec3 emissive) {
 	// Constants
 	roughness = max(roughness, 0.05);
 	metallic = pow(metallic, 5);
@@ -87,26 +91,26 @@ vec3 brdf(vec3 n, vec3 v, vec3 l, vec3 h, float roughness, float metallic, vec3 
 
 	// Le diffuse and specular
 	vec3 brdf = kd * (diffuse / PI) + specular(f0, roughness, v, l, n, h);
-	vec3 outgoing = emissive + brdf * sun.color * sun.strength * max(dot(l, n), 0.0);
+	vec3 outgoing = emissive + brdf * _sun_intensity * max(dot(l, n), 0.0);
 
 	return outgoing;
 }
 
 // Calculate the shaded color for a single pixel 
-vec3 shade_pbr(SunData sun, PixelData pixel) {   
+vec3 shade_pbr(vec3 normal, vec3 position, vec3 diffuse, vec3 emissive, vec3 mask, float shadowed) {   
     // Create a camera from the uniforms
     CameraData camera = CameraData(_cam_pos, _cam_dir, _pv_matrix);
 
 	// Main vectors
-	vec3 n = normalize(pixel.normal);
-	vec3 v = normalize(camera.position - pixel.position);
-	vec3 l = -normalize(sun.direction);
+	vec3 n = normalize(normal);
+	vec3 v = normalize(camera.position - position);
+	vec3 l = -normalize(_sun_dir);
 	vec3 h = normalize(v + l);
 
 	// The shaded pixel color
-	vec3 color = brdf(n, v, l, h, pixel.roughness, pixel.metallic, pixel.diffuse, pixel.emissive, sun) * (1 - pixel.in_shadow);
+	vec3 color = brdf(n, v, l, h, mask.g, mask.b, diffuse, emissive) * (1 - shadowed);
 
 	// Ambient color
-	color += 0.03 * pixel.diffuse * pixel.ao;
+	color += 0.03 * diffuse * mask.r;
 	return color;
 }

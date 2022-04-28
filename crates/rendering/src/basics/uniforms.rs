@@ -22,14 +22,21 @@ impl<'a> Uniforms<'a> {
 
         // Bind the OpenGL shader
         unsafe { gl::UseProgram(program.name()) }
-        let mut bound = Uniforms { program, pipeline };
+        let mut uniforms = Uniforms { program, pipeline };
 
-        // Set some global uniforms while we're at it
-        bound.set_f32("_time", pipeline.elapsed());
-        bound.set_f32("_delta", pipeline.delta());
-        bound.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
-        bound.set_vec2f32("_nf_planes", pipeline.camera().clips);
-        closure(bound);
+        // Set the general snippet uniforms while we're at it
+        uniforms.set_f32("_time", pipeline.elapsed());
+        uniforms.set_f32("_delta", pipeline.delta());
+        uniforms.set_vec2i32("_resolution", pipeline.window().dimensions().as_().into());
+        
+        // Set the camera snippet uniforms
+        let camera = pipeline.camera();
+        uniforms.set_mat44f32("_pv_matrix", &camera.proj_view);
+        uniforms.set_vec2f32("_nf_planes", camera.clips);
+        uniforms.set_vec3f32("_cam_pos", camera.position);
+        uniforms.set_vec3f32("_cam_dir", camera.forward);  
+        
+        closure(uniforms);
     }
     // Get the location of a specific uniform using it's name, and returns an error if it could not
     fn get_location(&self, name: &str) -> i32 {

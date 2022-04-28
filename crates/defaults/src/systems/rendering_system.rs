@@ -66,14 +66,12 @@ fn run(world: &mut World) {
         *world.pipeline.camera_mut() = camera;
     }
 
-    /*
     // A bit of trolling yea?
     let query = world.ecs.query::<(&mut Transform, &Light)>();
     for (transform, _) in query {
-        transform.rotation.rotate_x(-0.06 * world.time.delta() * 0.4);
-        //transform.rotation.rotate_y(0.03 * world.time.delta() * 0.8);
+        transform.rotation.rotate_x(-0.2 * world.time.delta() * 0.4);
+        transform.rotation.rotate_y(0.3 * world.time.delta() * 0.8);
     }
-    */
 
     // Update the matrices of renderers (and bounds), only if the transforms os said renderers were externally modified
     let a = or(modified::<Transform>(), added::<Transform>());

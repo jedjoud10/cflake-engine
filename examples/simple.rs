@@ -33,7 +33,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(0.9, vek::Rgb::one()));
+        let light = Light(LightType::directional(vek::Rgb::one() * 6.0));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
     });

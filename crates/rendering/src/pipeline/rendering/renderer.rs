@@ -1,12 +1,12 @@
 use std::ffi::c_void;
 
-use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats, RenderedModel};
+use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats, RenderedModel, Sun, render};
 use crate::{
     basics::{
         mesh::{Mesh, Vertices},
         shader::{Directive, Shader, ShaderInitSettings},
         texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, CubeMap},
-        uniforms::Uniforms,
+        uniforms::Uniforms, lights::{LightParameters, LightTransform},
     },
     pipeline::{Framebuffer, FramebufferClearBits, Handle, Pipeline},
     utils::{DataType, DEFAULT_WINDOW_SIZE},
@@ -57,11 +57,40 @@ impl SceneRenderer {
         });
     }
 
+    // Try to get the main directional light, and fallbacks to default values if it failed
+    fn get_sun<'a>(settings: &'a RenderingSettings) -> Sun {
+        // Get the sun directional light, if possible
+        let first = settings
+            .lights
+            .iter()
+            .find_map(|(_type, params)| 
+                _type.as_directional().map(|_type| (_type, params))
+            );
+        
+        // Get the relevant info
+        first.map(|(params, transform)| {
+            // Calculate the direction
+            let dir = vek::Mat4::from(*transform.rotation).mul_direction(-vek::Vec3::unit_z());
+            
+            // Passthrough
+            let color = params.color;
+
+            // Construction time
+            Sun {
+                dir,
+                color,
+            }
+        }).unwrap_or_default()
+    }
+
     // Render the whole scene using "clustered-forward" as the rendering method
     pub fn render(&mut self, pipeline: &Pipeline, mut settings: RenderingSettings) {
         // Scene statistics for the debugger
         let mut stats = SceneRenderStats { drawn: 0, culled: 0, shadowed: 0 };
 
+        // Le sun moment
+        let sun = Self::get_sun(&settings);
+        
         // We should bind the default framebuffer just in case
         self.framebuffer.bind(|_| {
             // AABB frustum culling cause I'm cool
@@ -70,30 +99,33 @@ impl SceneRenderer {
 
             // Render each object that isn't culled
             for renderer in objects {
-                common::render_model(renderer, pipeline)
-            }
-        });
+                // Load the default missing material if we don't have a valid one
+                let handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
+                let material = pipeline.get(handle).unwrap();
+                        
+                // However, if we have an invalid shader, we must panic
+                let shader = pipeline.get(material.shader().as_ref().unwrap()).unwrap();
+                let mesh = pipeline.get(renderer.mesh).unwrap();
+                        
+                // Create some uniforms
+                Uniforms::new(shader.program(), pipeline, |mut uniforms| {
+                    // Set the sunlight values shit fard
+                    uniforms.set_vec3f32("_sun_dir", sun.dir);
+                    uniforms.set_vec3f32("_sun_intensity", sun.color.into());
 
-        // Then render the shadows
-        /*
-        if let Some(mapping) = &mut self.shadow_mapping {
-            unsafe {
-                // Update the lightspace matrix
-                // The first directional light that we find will be used as the sunlight
-                let first = settings.lights.iter().find_map(|(_type, params)| _type.as_directional().map(|_type| (_type, params)));
-
-                if let Some((_parameters, transform)) = first {
-                    // No need to update if nothing has changed
-                    if settings.redraw_shadows {
-                        // Only render directional shadow map if we have a sun
-                        mapping.update_matrix(*transform.rotation);
-                        // Then render shadows
-                        mapping.render_all_shadows(&settings.shadowed, pipeline, &mut stats);
-                    }
+                    // Set the model snippet uniforms
+                    uniforms.set_mat44f32("_model_matrix", renderer.matrix);
+                
+                    // Execute the material 
+                    material.execute(pipeline, uniforms);
+                });
+            
+                // Finally render the mesh
+                unsafe {
+                    render(mesh);
                 }
             }
-        }
-        */
+        });
 
         // Store the stats in the pipeline
         *pipeline.stats().borrow_mut() = stats;
@@ -102,22 +134,24 @@ impl SceneRenderer {
     // Screenshot the current frame
     // This must be done after we render everything
     pub fn screenshot(&mut self, dimensions: vek::Extent2<u32>) -> Vec<u8> {
-        // Create a vector that'll hod all of our RGB bytes
+        // Create a vector thats shall hold all of our RGB bytes
         let bytes_num = dimensions.as_::<usize>().product() * 3;
         let mut bytes = vec![0; bytes_num];
-        // Read
-        unsafe {
-            gl::ReadPixels(
-                0,
-                0,
-                dimensions.w as i32,
-                dimensions.h as i32,
-                gl::RGB,
-                gl::UNSIGNED_BYTE,
-                bytes.as_mut_ptr() as *mut c_void,
-            );
-            gl::Finish();
-        }
+        self.framebuffer.bind(|fb| {
+            // Read from OpenGL (slow!)
+            unsafe {
+                gl::ReadPixels(
+                    0,
+                    0,
+                    dimensions.w as i32,
+                    dimensions.h as i32,
+                    gl::RGB,
+                    gl::UNSIGNED_BYTE,
+                    bytes.as_mut_ptr() as *mut c_void,
+                );
+                gl::Finish();
+            }
+        });        
         bytes
     }
 }

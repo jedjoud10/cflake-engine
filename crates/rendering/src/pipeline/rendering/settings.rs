@@ -32,3 +32,18 @@ pub struct RenderingCamera {
     // Near-Far clip planes
     pub clips: vek::Vec2<f32>,
 }
+
+// The first valid directional light in our world
+pub(super) struct Sun {
+    // Forward vector of the sun
+    pub dir: vek::Vec3<f32>,
+
+    // Color + Strength combined
+    pub color: vek::Rgb<f32>,
+}
+
+impl Default for Sun {
+    fn default() -> Self {
+        Self { dir: Default::default(), color: Default::default() }
+    }
+}
