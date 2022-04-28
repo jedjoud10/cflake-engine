@@ -8,9 +8,9 @@ struct SunData {
 	vec3 color;
 };
 
-// Data fetched from the G-Buffer, and the current pixel direction
+// Data fetched from the fragment shader, and the current pixel direction
 struct PixelData {
-	// Given from the G-Buffer
+	// From the fragment shader 
 	vec3 diffuse;
 	vec3 normal;
 	vec3 emissive;

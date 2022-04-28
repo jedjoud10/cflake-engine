@@ -4,9 +4,8 @@ use cflake_engine::{
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
         lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder, MaskBuilder},
         mesh::Mesh,
-        texture::{Texture2D, TextureParams, TextureFilter},
+        texture::{Texture2D, TextureParams, TextureFilter}, material::{Material, PbrMaterial},
     },
     vek, World,
 };
@@ -35,7 +34,7 @@ fn init(world: &mut World) {
     });
 
         // Simple material
-        let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
+        let floor = world.pipeline.insert(Material::new(PbrMaterial::from(vek::Rgb::white())));
     
         // Load a diffuse map
         let diff = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_diff_4k.jpg", TextureParams::DIFFUSE_MAP_LOAD).unwrap();
@@ -49,12 +48,13 @@ fn init(world: &mut World) {
         let norm = assets::load_with::<Texture2D>("user/textures/rocks_ground_06_nor_gl_4k.jpg",TextureParams::NON_COLOR_MAP_LOAD).unwrap();
         let norm = world.pipeline.insert(norm);
 
-
-        let material = PbrMaterialBuilder::default()
+        // AAA
+        let material = Material::new(PbrMaterial::default()
             .diffuse(diff)
             .normal(norm)
             .mask(mask)
-            .build(&mut world.pipeline);
+            .roughness(0.2));
+        let material = world.pipeline.insert(material);
     
         // Create a mesh
         world.ecs.insert(|_, linker| {

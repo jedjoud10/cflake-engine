@@ -26,7 +26,7 @@ impl ObjectSealed for Material {
 
 impl Material {
     // Create a new material with a explicit shader
-    pub fn from_parts<M: MaterialType + 'static>(_type: M, shader: Handle<Shader>) -> Self {
+    pub fn from_parts<M: MaterialType + 'static>(shader: Handle<Shader>, _type: M) -> Self {
         Self {
             shader: Some(shader),
             boxed: Box::new(_type),

@@ -6,10 +6,8 @@ use cflake_engine::{
     },
     rendering::basics::{
         lights::LightType::{self},
-        material::{Material, PbrMaterialBuilder, MaterialBuilder},
         shader::{Shader, ShaderInitSettings},
-        texture::{bundle, Texture2D, TextureParams},
-        uniforms::UniformsSet,
+        texture::{bundle, Texture2D, TextureParams}, material::{Material, PbrMaterial},
     },
     terrain::editing::{Edit, EditParams},
     vek, World,
@@ -42,7 +40,7 @@ fn init(world: &mut World) {
 
     // A simple material with a specific color
     let color = vek::Rgb::cyan(); 
-    let material = PbrMaterialBuilder::default().tint(color).build(&mut world.pipeline);
+    let material = world.pipeline.insert(Material::new(PbrMaterial::from(color)));
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
         voxel_src_path: "user/shaders/voxel_terrain/voxel.func.glsl".to_string(),

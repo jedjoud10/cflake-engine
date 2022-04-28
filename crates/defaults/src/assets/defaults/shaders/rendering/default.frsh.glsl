@@ -5,7 +5,7 @@
 #load model
 
 // Pixel color
-out vec4 color;
+out vec4 frag_color;
 
 // Texture maps
 uniform sampler2D diffuse_m;
@@ -42,16 +42,16 @@ void main() {
 	float alpha2 = emissive.a;
 	if (alpha1 != 1 || alpha2 != 1) { discard; }
 
-	// Calculate tangent space normals and use that for bump mapping
-	normal = texture(normal_m, tex_coords).xyz * 2.0 - 1.0;
-	normal.xy *= bumpiness;
-
 	// Transform the tangent space normal into world space using a TBN matrix
 	mat3 tbn = mat3(
 		normalize(tangent),
 		normalize(bitangent),
 		normalize(normal));
-	normal = normalize(tbn * normalize(normal));	
+
+	// Calculate tangent space normals and use that for bump mapping
+	vec3 sampled_normal = texture(normal_m, tex_coords).xyz * 2.0 - 1.0;
+	sampled_normal.xy *= bumpiness;
+	normal = normalize(tbn * normalize(sampled_normal));	
 	
 	// This is a certified PBR moment
 	vec3 mask = texture(mask_m, tex_coords).rgb;
@@ -60,7 +60,7 @@ void main() {
 	mask.b *= metallic;
 
 	// Apply shading
-	SunData sun = SunData(vec3(1, 0, 0), 5.0, vec3(1));
+	SunData sun = SunData(vec3(0.757, -0.757, 0), 1.0, vec3(1));
 	PixelData pixel = PixelData(diffuse.rgb, normal, emissive.rgb, position, mask.r, mask.g, mask.b, 0.0);
 
 	// PBR moment
@@ -68,5 +68,5 @@ void main() {
     vec3 mapped = shade_pbr(sun, pixel);
     // gamma correction 
     mapped = pow(mapped, vec3(1.0 / gamma));
-	color = vec4(mapped, 1);
+	frag_color = vec4(mapped, 1);
 }

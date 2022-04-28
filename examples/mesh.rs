@@ -2,8 +2,7 @@ use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
-        lights::LightType,
-        material::{MaterialBuilder, PbrMaterialBuilder}, texture::{TextureParams, Texture2D, TextureFilter},
+        lights::LightType, texture::{TextureParams, Texture2D, TextureFilter},
     },
     vek, World,
 };
@@ -31,21 +30,17 @@ fn init(world: &mut World) {
         linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
     });
 
-    // Simple material
-    let material = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
-    let floor = PbrMaterialBuilder::default().tint(vek::Rgb::white()).build(&mut world.pipeline);
-
     // Create a sphere
     let sphere = world.pipeline.defaults().sphere.clone();
     world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(sphere, material)).unwrap();
+        linker.insert(Renderer::from(sphere)).unwrap();
         linker.insert(Transform::at_y(0.5)).unwrap();
     });
 
     // Create a floor
     let plane = world.pipeline.defaults().plane.clone();
     world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::new(plane, floor)).unwrap();
+        linker.insert(Renderer::from(plane)).unwrap();
         linker.insert(Transform::default().scaled_by(vek::Vec3::new(10.0, 1.0, 10.0))).unwrap();
     });
 }

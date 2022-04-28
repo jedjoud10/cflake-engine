@@ -77,13 +77,13 @@ impl DefaultElements {
         ).unwrap());
 
         // Default pbr material (uses missing texture)
-        let missing_pbr_mat = pipeline.insert(Material::from_parts(PbrMaterial {
+        let missing_pbr_mat = pipeline.insert(Material::from_parts(pbr_shader.clone(), PbrMaterial {
             diffuse: missing_texture.clone(),
             normal: normal_map.clone(),
             emissive: black.clone(),
             mask: mask.clone(),
             ..Default::default()
-        }, pbr_shader.clone()));
+        }));
 
         Self {
             white,

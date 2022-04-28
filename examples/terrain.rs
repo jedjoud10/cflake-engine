@@ -6,10 +6,9 @@ use cflake_engine::{
     },
     rendering::basics::{
         lights::LightType::{self},
-        material::Material,
+        material::{Material, PbrMaterial, MaterialType},
         shader::{Shader, ShaderInitSettings},
         texture::{bundle, Texture2D, TextureParams},
-        uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
     vek, World,
@@ -55,18 +54,11 @@ fn init(world: &mut World) {
     let diffuse1 = world.pipeline.insert(diffuse1);
     let normal1 = world.pipeline.insert(normal1);
     let mask1 = world.pipeline.insert(mask1);
-    let material = Material {
-        shader,
-        uniforms: UniformsSet::new(move |mut uniforms| {
-            // Set the textures first
-            uniforms.set_texture2d("diffuse_m", &diffuse1);
-            uniforms.set_texture2d("normal_m", &normal1);
-            uniforms.set_texture2d("mask_m", &mask1);
-            // Then the parameters
-            uniforms.set_f32("bumpiness", 1.0);
-            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
-        }),
-    };
+    let material = Material::from_parts(shader, PbrMaterial::default()
+        .diffuse(diffuse1)
+        .normal(normal1)
+        .mask(mask1)
+        .scale(vek::Vec2::broadcast(0.01)));
     let material = world.pipeline.insert(material);
     // Create some terrain settings
     let terrain_settings = TerrainSettings {

@@ -29,6 +29,12 @@ pub struct PbrMaterial {
     pub metallic: f32,
 }
 
+impl From<vek::Rgb<f32>> for PbrMaterial {
+    fn from(color: vek::Rgb<f32>) -> Self {
+        Self::default().tint(color)
+    }
+}
+
 impl Default for PbrMaterial {
     fn default() -> Self {
         Self {
@@ -47,6 +53,75 @@ impl Default for PbrMaterial {
     }
 }
 
+
+impl PbrMaterial {
+    // Set the diffuse texture
+    pub fn diffuse(mut self, map: Handle<Texture2D>) -> Self {
+        self.diffuse = map;
+        self
+    }
+
+    // Set the normal map texture
+    pub fn normal(mut self, map: Handle<Texture2D>) -> Self {
+        self.normal = map;
+        self
+    }
+
+    // Set the emissive texture
+    pub fn emissive(mut self, map: Handle<Texture2D>) -> Self {
+        self.emissive = map;
+        self
+    }
+
+    // Set the mask texture; A texture that contains AO/Roughness/Metallic in each channel
+    pub fn mask(mut self, mask: Handle<Texture2D>) -> Self {
+        self.mask = mask;
+        self
+    }
+
+    // Update the normal map's strength
+    pub fn bumpiness(mut self, bumpiness: f32) -> Self {
+        self.bumpiness = bumpiness;
+        self
+    }
+
+    // Global emissive strength
+    pub fn emissivity(mut self, emissivity: f32) -> Self {
+        self.emissivity = emissivity;
+        self
+    }
+
+    // Roughness factor
+    pub fn roughness(mut self, roughness: f32) -> Self {
+        self.roughness = roughness;
+        self
+    }
+
+    // Metallic factor
+    pub fn metallic(mut self, metallic: f32) -> Self {
+        self.metallic = metallic;
+        self
+    }
+
+    // Global AO strength
+    pub fn ao_factor(mut self, strength: f32) -> Self {
+        self.ao = strength;
+        self
+    }
+
+    // Main color tint of the material
+    pub fn tint(mut self, tint: vek::Rgb<f32>) -> Self {
+        self.tint = tint;
+        self
+    }
+
+    // UV scale of the material
+    pub fn scale(mut self, uv_scale: vek::Vec2<f32>) -> Self {
+        self.scale = uv_scale;
+        self
+    }
+}
+
 impl MaterialType for PbrMaterial {
     // Get the defauflt PBR shader
     fn shader(&self, pipeline: &Pipeline) -> Handle<Shader> {
@@ -58,7 +133,7 @@ impl MaterialType for PbrMaterial {
         // Fallback to the default textures if needed
         let diffuse = self.diffuse.fallback_to(&pipeline.defaults().white);
         let normal = self.normal.fallback_to(&pipeline.defaults().normal_map);
-        let emissive = self.emissive.fallback_to(&pipeline.defaults().normal_map);
+        let emissive = self.emissive.fallback_to(&pipeline.defaults().black);
         let mask = self.mask.fallback_to(&pipeline.defaults().mask);
 
         // Set the main texture maps

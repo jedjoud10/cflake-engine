@@ -62,14 +62,14 @@ fn init(world: &mut World) {
         for y in 0..11 {
 
             // Create a material with unique roughness / metallic
-            let material = Material::new(pipeline, PbrMaterial {
+            let material = world.pipeline.insert(Material::new(PbrMaterial {
                 diffuse: diff.clone(),
                 normal: norm.clone(),
-                mask,
+                mask: mask.clone(),
                 roughness: y as f32 / 10.0,
                 metallic: x as f32 / 10.0,
                 ..Default::default()
-            });
+            }));
 
             world.ecs.insert(|_, linker| {
                 linker.insert(Renderer::new(sphere.clone(), material)).unwrap();
