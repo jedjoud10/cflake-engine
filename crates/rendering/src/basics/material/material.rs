@@ -1,45 +1,58 @@
+use getset::Getters;
+
 use crate::{
-    basics::{shader::Shader, uniforms::UniformsSet},
+    basics::{shader::Shader, uniforms::Uniforms},
     object::ObjectSealed,
     pipeline::*,
 };
 
-// A generic material that contains a shader and a set of uniforms
+// Material that contains a boxed material type
+#[derive(Getters)]
 pub struct Material {
-    // Shader that will render the surface
-    pub shader: Handle<Shader>,
+    // Shader that we will use for the material
+    #[getset(get = "pub")]
+    shader: Option<Handle<Shader>>,
 
-    // Custom uniforms
-    pub uniforms: UniformsSet,
+    // Unique material type for setting the proper uniforms
+    boxed: Box<dyn MaterialType>,
 }
 
-// Builds a universal material from anything
-// TODO: Remove this and use the default pipeline shader storage instead.
-// This should allow for simpler logic and shader caching 
-pub trait MaterialBuilder
-where
-    Self: Sized,
-{
-    // Fetch the shader handle that corresponds to this material
-    fn shader(pipeline: &mut Pipeline) -> Handle<Shader>;
-
-    // Build the material by fetching the shader handle internally
-    fn build(self, pipeline: &mut Pipeline) -> Handle<Material> {
-        let shader = Self::shader(pipeline);
-        self.build_with(pipeline, shader)
+impl ObjectSealed for Material {
+    fn init(&mut self, pipeline: &mut Pipeline) {
+        // Get the shader if we don't have it yet
+        self.shader.get_or_insert_with(|| self.boxed.shader(pipeline));
     }
-
-    // Build the material using the corresponding shader
-    fn build_with(self, pipeline: &mut Pipeline, shader: Handle<Shader>) -> Handle<Material>;
 }
 
-impl ObjectSealed for Material {}
-
-impl Default for Material {
-    fn default() -> Self {
+impl Material {
+    // Create a new material with a explicit shader
+    pub fn from_parts<M: MaterialType + 'static>(_type: M, shader: Handle<Shader>) -> Self {
         Self {
-            shader: Default::default(),
-            uniforms: UniformsSet::default(),
+            shader: Some(shader),
+            boxed: Box::new(_type),
         }
     }
+
+    // Create a new material given a material type (we will get the shader when we have access to the pipeline)
+    pub fn new<M: MaterialType + 'static>(_type: M) -> Self {
+        Self {
+            shader: None,
+            boxed: Box::new(_type),
+        }
+    }
+
+    // Set the unique material uniforms
+    pub(crate) fn execute(&self, pipeline: &Pipeline, mut uniforms: Uniforms) {
+        self.boxed.set(pipeline, &mut uniforms);
+    }
+}
+
+// Material type trait that will be implement for materials
+// TODO: Find a better name for this shit
+pub trait MaterialType {
+    // Get the default shader for this material type
+    fn shader(&self, pipeline: &Pipeline) -> Handle<Shader>; 
+
+    // Write to the proper uniforms
+    fn set(&self, pipeline: &Pipeline, uniforms: &mut Uniforms);
 }

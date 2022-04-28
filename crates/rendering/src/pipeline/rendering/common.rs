@@ -25,11 +25,11 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
 // Le oui oui rendering?
 pub(crate) fn render_model<'a>(renderer: RenderedModel<'a>, pipeline: &Pipeline) {
     // Load the default missing material if we don't have a valid one
-    let mat_handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
-    let mat = pipeline.get(mat_handle).unwrap();
+    let handle = renderer.material.fallback_to(&pipeline.defaults().missing_pbr_mat);
+    let material = pipeline.get(handle).unwrap();
 
     // However, if we have an invalid shader, we must panic
-    let shader = pipeline.get(&mat.shader).unwrap();
+    let shader = pipeline.get(material.shader().as_ref().unwrap()).unwrap();
     let mesh = pipeline.get(renderer.mesh).unwrap();
     
     // Create some uniforms
@@ -44,8 +44,8 @@ pub(crate) fn render_model<'a>(renderer: RenderedModel<'a>, pipeline: &Pipeline)
         // Set the model uniforms
         uniforms.set_mat44f32("_model_matrix", renderer.matrix);
 
-        // Set the unique material uniorms
-        mat.uniforms.execute(uniforms);
+        // Execute the material 
+        material.execute(pipeline, uniforms);
     });
 
     // Finally render the mesh

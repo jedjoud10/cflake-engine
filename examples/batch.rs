@@ -1,7 +1,7 @@
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
-    rendering::basics::{lights::LightType, material::{PbrMaterialBuilder, MaterialBuilder, MaskBuilder}, texture::{TextureParams, TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, Texture2D}},
+    rendering::basics::{lights::LightType, material::{MaskBuilder, Material, PbrMaterial}, texture::{TextureParams, TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, Texture2D}},
     vek, World,
 };
 // An example with multiple meshes in the same scene
@@ -62,13 +62,14 @@ fn init(world: &mut World) {
         for y in 0..11 {
 
             // Create a material with unique roughness / metallic
-            let material = PbrMaterialBuilder::default()                
-                .mask(mask.clone())
-                .diffuse(diff.clone())
-                .normal(norm.clone())
-                .metallic(x as f32 / 10.0)
-                .roughness(y as f32 / 10.0)
-                .build(&mut world.pipeline);
+            let material = Material::new(pipeline, PbrMaterial {
+                diffuse: diff.clone(),
+                normal: norm.clone(),
+                mask,
+                roughness: y as f32 / 10.0,
+                metallic: x as f32 / 10.0,
+                ..Default::default()
+            });
 
             world.ecs.insert(|_, linker| {
                 linker.insert(Renderer::new(sphere.clone(), material)).unwrap();

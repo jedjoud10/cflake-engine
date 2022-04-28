@@ -1,5 +1,5 @@
 use crate::basics::{
-    material::{Material, MaterialBuilder, PbrMaterialBuilder},
+    material::{Material, PbrMaterial},
     mesh::{Indices, Mesh, Vertices},
     shader::{Shader, ShaderInitSettings},
     texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
@@ -22,6 +22,9 @@ pub struct DefaultElements {
     pub cube: Handle<Mesh>,
     pub plane: Handle<Mesh>,
     pub sphere: Handle<Mesh>,
+
+    // Shaders
+    pub pbr_shader: Handle<Shader>,
 
     // Materials
     pub missing_pbr_mat: Handle<Material>,
@@ -67,19 +70,20 @@ impl DefaultElements {
         let plane = pipeline.insert(assets::load("defaults/meshes/plane.obj").unwrap());
 
         // Default rendering (PBR) shader
-        let shader =  pipeline.insert(Shader::new(
+        let pbr_shader =  pipeline.insert(Shader::new(
             ShaderInitSettings::default()
                 .source("defaults/shaders/rendering/default.vrsh.glsl")
                 .source("defaults/shaders/rendering/default.frsh.glsl"),
         ).unwrap());
 
         // Default pbr material (uses missing texture)
-        let missing_pbr_mat = PbrMaterialBuilder::default()
-            .diffuse(missing_texture.clone())
-            .normal(normal_map.clone())
-            .emissive(black.clone())
-            .mask(mask.clone())
-            .build_with(pipeline, shader.clone());
+        let missing_pbr_mat = pipeline.insert(Material::from_parts(PbrMaterial {
+            diffuse: missing_texture.clone(),
+            normal: normal_map.clone(),
+            emissive: black.clone(),
+            mask: mask.clone(),
+            ..Default::default()
+        }, pbr_shader.clone()));
 
         Self {
             white,
@@ -91,6 +95,7 @@ impl DefaultElements {
             cube,
             sphere,
             plane,
+            pbr_shader,
             missing_pbr_mat,
         }
     }
