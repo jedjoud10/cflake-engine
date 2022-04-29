@@ -1,11 +1,9 @@
 mod buffers;
-mod flags;
 mod geometry;
 mod indices;
 mod mesh;
 mod vertices;
 pub use buffers::*;
-pub use flags::*;
 pub use geometry::*;
 pub use indices::*;
 pub use mesh::*;

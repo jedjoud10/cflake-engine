@@ -109,7 +109,7 @@ impl SceneRenderer {
                         
                 // Create some uniforms
                 Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-                    // Set the sunlight values shit fard
+                    // Set the PBR snippet values
                     uniforms.set_vec3f32("_sun_dir", sun.dir);
                     uniforms.set_vec3f32("_sun_intensity", sun.color.into());
 

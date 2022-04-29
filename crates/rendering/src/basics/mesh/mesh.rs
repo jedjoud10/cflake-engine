@@ -6,7 +6,7 @@ use crate::{
     utils::{AccessType, UpdateFrequency, UsageType},
 };
 
-use super::{GeometryBuilder, Indices, MeshBuffers, MeshFlags, Vertices};
+use super::{GeometryBuilder, Indices, MeshBuffers, MeshFlags, Vertices, Geometry};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use getset::{CopyGetters, Getters, Setters};
@@ -14,38 +14,11 @@ use gl::types::GLuint;
 use math::bounds::aabb::AABB;
 use obj::TexturedVertex;
 
-// A simple mesh that holds vertex, normal, and color data
+// A mesh that is made up of many arbitrary shapes
 #[derive(Getters, CopyGetters, Setters)]
 pub struct Mesh {
-    // Main IDs
-    #[getset(get_copy = "pub(crate)")]
-    vao: GLuint,
-
-    // Buffers
-    #[getset(get = "pub", get_mut = "pub(crate)")]
-    buffers: Option<MeshBuffers>,
-
-    /*
-    pub element_buffer_object: u32,
-
-    pub vertex_buf: u32,
-    pub normal_buf: u32,
-    pub tangent_buf: u32,
-
-    pub color_buf: u32,
-    pub uv_buf: u32,
-    */
-    // Store the vertices
-    #[getset(get = "pub", set = "pub(super)")]
-    vertices: Vertices,
-
-    // And indices
-    #[getset(get = "pub", set = "pub(super)")]
-    indices: Indices,
-
-    // Mesh flags telling us what vertex attributes are suported and shit
-    #[getset(get = "pub")]
-    flags: MeshFlags,
+    // Arbitrary geometries
+    geometries: Vec<Geometry>,
 
     // Mesh limits, can be used for culling
     #[getset(get = "pub")]
