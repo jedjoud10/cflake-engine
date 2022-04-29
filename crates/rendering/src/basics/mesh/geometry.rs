@@ -1,18 +1,16 @@
-use super::{IndexBuilder, Mesh, VertexBuilder};
+use super::{IndexBuilder, Mesh, VertexBuilder, MeshBuffers};
 
-// Mesh geometry builder
-#[derive(Default)]
-pub struct GeometryBuilder {
-    // Vertex builder, really useful for incrementally adding the vertices
-    pub vertices: VertexBuilder,
+// Some arbitrary shape in 3D
+// This geometry must ALWAYS be valid
+pub struct Geometry<Attributes: VertAttrib> {
+    // Underlying buffers
+    buffers: MeshBuffers,
 
-    // Same thing for the index builder
-    pub indices: IndexBuilder,
-}
+    // The vertices and their attributes that make up the geometry
+    vertices: VertexSet,
 
-impl GeometryBuilder {
-    // Build a mesh out of a geometry builder
-    pub fn build(self) -> Mesh {
-        Mesh::new(self.vertices.vertices, self.indices.indices)
-    }
+    // How we connect the vertices to each other (triangles)
+    indices: IndexSet,
+
+    // Geometry flags 
 }
