@@ -17,14 +17,10 @@ use obj::TexturedVertex;
 // A mesh that is made up of many arbitrary shapes
 #[derive(Getters, CopyGetters, Setters)]
 pub struct Mesh {
-    // Arbitrary geometries
+    // Arbitrary geometries, since our models are multi-material
     geometries: Vec<Geometry>,
-
-    // Mesh limits, can be used for culling
-    #[getset(get = "pub")]
-    bounds: AABB,
 }
-
+/*
 impl Asset for Mesh {
     type OptArgs = ();
     fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
@@ -331,3 +327,4 @@ impl Mesh {
         self
     }
 }
+*/
