@@ -80,7 +80,7 @@ fn init(world: &mut World) {
 
     // Rotate each valid renderer entity
     world.events.insert(|world| {
-        for (i, (transform, _)) in world.ecs.query::<(&mut Transform, &Renderer)>().enumerate() {
+        for (i, (transform, _)) in world.ecs.try_query::<(&mut Transform, &Renderer)>().enumerate() {
             transform.rotation = transform.rotation * vek::Quaternion::rotation_x(0.06 * world.time.delta() * (i as f32).sin()) * vek::Quaternion::rotation_z(-0.06 * world.time.delta() * (i as f32).cos());
         } 
     })

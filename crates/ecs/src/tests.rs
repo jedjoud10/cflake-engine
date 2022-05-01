@@ -47,9 +47,9 @@ mod tests {
         for _ in 0..5 {
             manager.prepare();
             let _i = std::time::Instant::now();
-            type Layout<'a> = (&'a Tag, &'a SimpleValue);
+            type Layout<'a> = (&'a Tag, &'a mut SimpleValue);
             let filter = added::<Tag>();
-            let query = manager.query_with::<Layout, _>(filter);
+            let query = manager.try_view_with::<Layout, _>(filter).unwrap();
             dbg!(query.count());
             //dbg!(query);
         }

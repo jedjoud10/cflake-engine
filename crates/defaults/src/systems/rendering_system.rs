@@ -67,7 +67,7 @@ fn run(world: &mut World) {
     }
 
     // A bit of trolling yea?
-    let query = world.ecs.query::<(&mut Transform, &Light)>();
+    let query = world.ecs.try_query::<(&mut Transform, &Light)>();
     for (transform, _) in query {
         transform.rotation.rotate_x(-0.2 * world.time.delta() * 0.4);
         transform.rotation.rotate_y(0.3 * world.time.delta() * 0.8);
@@ -76,7 +76,7 @@ fn run(world: &mut World) {
     // Update the matrices of renderers (and bounds), only if the transforms os said renderers were externally modified
     let a = or(modified::<Transform>(), added::<Transform>());
     let b = or(modified::<Renderer>(), added::<Renderer>());
-    let query = world.ecs.query_with::<(&Transform, &mut Renderer), _>(or(a, b));
+    let query = world.ecs.try_query_with::<(&Transform, &mut Renderer), _>(or(a, b));
     for (transform, renderer) in query {
         // Update the matrix if we need to
         renderer.matrix = transform.transform_matrix();

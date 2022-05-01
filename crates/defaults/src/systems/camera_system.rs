@@ -9,7 +9,7 @@ fn run(world: &mut World) {
     // If there isn't a main camera assigned already, we can be the main one
     if global.camera == Entity::default() {
         // Query all the cameras in the world and get the first one
-        let mut query = world.ecs.query::<(&Camera, &Transform, &Entity)>();
+        let mut query = world.ecs.try_query::<(&Camera, &Transform, &Entity)>();
         //query.next();
         // And try to get the first valid one
         if let Some((_, _, entity)) = query.next() {

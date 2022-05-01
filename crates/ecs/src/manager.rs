@@ -95,23 +95,23 @@ impl EcsManager {
     }
 
     // Normal query without filter
-    pub fn query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> impl Iterator<Item = Layout> + 'a {
-        query(&self.archetypes)
+    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a> {
+        Layout::validate().then(|| query(&self.archetypes)) 
     }
     // Create a query with a specific filter
-    pub fn query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> impl Iterator<Item = Layout> + 'a {
-        filtered(&self.archetypes, filter)
+    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
+        Layout::validate().then(|| filtered(&self.archetypes, filter))
     }
     // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
     // TODO: Make use of Rust's type system to check for immutable borrows instead
     pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(&'a self) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty();
+        let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| query(&self.archetypes))
     }
     // View query with a specific filter
     pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty();
+        let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
     }
 }

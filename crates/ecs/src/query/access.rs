@@ -1,8 +1,8 @@
 use crate::{registry, Archetype, Component, Entity, Mask};
-use std::{ops::BitOr, ptr::NonNull};
+use std::{ops::{BitOr, BitAnd}, ptr::NonNull};
 
 // Layout access that contain the normal mask and writing mask
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct LayoutAccess(Mask, Mask);
 
 impl LayoutAccess {
@@ -26,6 +26,14 @@ impl BitOr for LayoutAccess {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Self(self.0 | rhs.0, self.1 | rhs.1)
+    }
+}
+
+impl BitAnd for LayoutAccess {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0, self.1 & rhs.1)
     }
 }
 

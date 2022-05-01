@@ -19,6 +19,9 @@ where
     // Get the final layout access masks
     fn combined() -> LayoutAccess;
 
+    // This must return "false" if any of the items have intersecting masks
+    fn validate() -> bool;
+
     // Convert the base ptr tuple to the safe borrows using a bundle offset
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self;
 }
@@ -37,6 +40,10 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     fn combined() -> LayoutAccess {
         A::access()
     }
+
+    fn validate() -> bool {
+        false
+    }
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
@@ -53,6 +60,10 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
     fn combined() -> LayoutAccess {
         A::access() | B::access()
     }
+
+    fn validate() -> bool {
+        (A::access() & B::access()) == LayoutAccess::none()
+    }
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> for (A, B, C) {
@@ -68,5 +79,9 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
 
     fn combined() -> LayoutAccess {
         A::access() | B::access() | C::access()
+    }
+
+    fn validate() -> bool {
+        (A::access() & B::access() & C::access()) == LayoutAccess::none()
     }
 }
