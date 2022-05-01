@@ -4,7 +4,7 @@ use gl::types::GLuint;
 
 use crate::{pipeline::Pipeline, utils::UsageType};
 
-use super::storage::TypedStorage;
+use super::storage::GlStorage;
 
 // Buffer trait
 pub trait Buffer
@@ -17,7 +17,7 @@ where
     // Get the OpenGL buffer that backs this buffer
     fn buffer(&self) -> GLuint;
     // Get the raw Storage
-    fn storage(&self) -> &TypedStorage<Self::Element>;
+    fn storage(&self) -> &GlStorage<Self::Element>;
     // Create a new buffer using some capacity, length, and a pointer
     unsafe fn new_raw(cap: usize, len: usize, ptr: *const Self::Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self;
     // Create a new empty vector

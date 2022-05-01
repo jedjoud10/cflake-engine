@@ -1,6 +1,9 @@
+use super::{MeshBuffers, TriangleSet, VertexSet};
+
 // Some arbitrary shape in 3D
 // This geometry must ALWAYS be valid
-pub struct Geometry<Attributes: VertAttrib> {
+#[derive(Default)]
+pub struct Geometry {
     // Underlying buffers
     buffers: MeshBuffers,
 
@@ -8,7 +11,5 @@ pub struct Geometry<Attributes: VertAttrib> {
     vertices: VertexSet,
 
     // How we connect the vertices to each other (triangles)
-    indices: IndexSet,
-
-    // Geometry flags 
+    triangles: TriangleSet,
 }

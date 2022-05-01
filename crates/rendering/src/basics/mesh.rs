@@ -1,10 +1,10 @@
 mod buffers;
 mod geometry;
-mod indices;
+mod triangle;
 mod mesh;
-mod vertices;
+mod vertex;
 pub use buffers::*;
 pub use geometry::*;
-pub use indices::*;
+pub use triangle::*;
 pub use mesh::*;
-pub use vertices::*;
+pub use vertex::*;

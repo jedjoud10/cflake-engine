@@ -8,14 +8,14 @@ use crate::{
     utils::{AccessType, UsageType},
 };
 
-use super::{storage::TypedStorage, Buffer};
+use super::{storage::GlStorage, Buffer};
 
 // A dynamic buffer that can change in size
 // This keeps a Rust copy of the data, so we can add/remove elements to it without the need of reallocating everytime
 #[derive(Getters)]
 pub struct DynamicBuffer<Element> {
     // Storage
-    storage: TypedStorage<Element>,
+    storage: GlStorage<Element>,
     // Rust vector
     #[getset(get = "pub")]
     inner: Vec<Element>,
@@ -29,7 +29,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
         self.storage.buffer()
     }
     // Storage
-    fn storage(&self) -> &TypedStorage<Element> {
+    fn storage(&self) -> &GlStorage<Element> {
         &self.storage
     }
     // Create a dynamic buffer
@@ -41,7 +41,7 @@ impl<Element> Buffer for DynamicBuffer<Element> {
             _ => (),
         }
         // Init and fill
-        let storage = TypedStorage::new(cap, len, ptr, _type, usage);
+        let storage = GlStorage::new(cap, len, ptr, _type, usage);
 
         Self {
             storage,
@@ -107,7 +107,7 @@ impl<Element> DynamicBuffer<Element> {
 #[derive(Getters)]
 pub struct StaticBuffer<Element> {
     // Storage
-    storage: TypedStorage<Element>,
+    storage: GlStorage<Element>,
 }
 
 // Creation
@@ -118,14 +118,14 @@ impl<Element> Buffer for StaticBuffer<Element> {
         self.storage.buffer()
     }
     // Storage
-    fn storage(&self) -> &TypedStorage<Element> {
+    fn storage(&self) -> &GlStorage<Element> {
         &self.storage
     }
     // Create a simple buffer THAT CANNOT CHANGE SIZE
     unsafe fn new_raw(_cap: usize, len: usize, ptr: *const Element, _type: GLuint, usage: UsageType, _pipeline: &Pipeline) -> Self {
         // Init and fill
         assert!(size_of::<Element>() != 0, "Zero sized types not supported!");
-        let storage = TypedStorage::new(len, len, ptr, _type, usage);
+        let storage = GlStorage::new(len, len, ptr, _type, usage);
         Self { storage }
     }
     // Read directly from the OpenGL buffer

@@ -1,35 +1,22 @@
 use arrayvec::ArrayVec;
 use getset::Getters;
 use gl::types::GLuint;
+use crate::advanced::storages::GlStorage;
 
-use crate::advanced::storages::TypedStorage;
-
-// Mesh buffers
-#[derive(Getters)]
-#[getset(get = "pub")]
+// Geometry buffers that contain the underlying OpenGL buffers for our sub-mesh
 pub struct MeshBuffers {
     // All the buffers
-    pub(crate) inner: ArrayVec<GLuint, 6>,
+    inner: ArrayVec<GLuint, 6>,
 
     // Required
-    pub(crate) indices: TypedStorage<u32>,
-    pub(crate) positions: TypedStorage<vek::Vec3<f32>>,
+    indices: GlStorage<u32>,
+    positions: GlStorage<vek::Vec3<f32>>,
 
     // Optional
-    pub(crate) normals: Option<TypedStorage<vek::Vec3<i8>>>,
-    pub(crate) tangents: Option<TypedStorage<vek::Vec4<i8>>>,
-    pub(crate) colors: Option<TypedStorage<vek::Rgb<u8>>>,
-    pub(crate) uvs: Option<TypedStorage<vek::Vec2<u8>>>,
-    /*
-    pub element_buffer_object: u32,
-
-    pub vertex_buf: u32,
-    pub normal_buf: u32,
-    pub tangent_buf: u32,
-
-    pub color_buf: u32,
-    pub uv_buf: u32,
-    */
+    normals: Option<GlStorage<vek::Vec3<i8>>>,
+    tangents: Option<GlStorage<vek::Vec4<i8>>>,
+    colors: Option<GlStorage<vek::Rgb<u8>>>,
+    uvs: Option<GlStorage<vek::Vec2<u8>>>,
 }
 
 impl Drop for MeshBuffers {

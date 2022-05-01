@@ -3,9 +3,9 @@ use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of};
 
-// Raw OpenGL storage, just an allocation helper basically
+// This helps us create data on the GPU using OpenGL buffers
 #[derive(Getters, CopyGetters)]
-pub struct RawStorage {
+pub struct GlBuffer {
     // The OpenGL data for this buffer
     #[getset(get_copy = "pub")]
     buffer: GLuint,
@@ -24,7 +24,7 @@ pub struct RawStorage {
 }
 
 // Creation
-impl RawStorage {
+impl GlBuffer {
     // Create the raw storage, and possibly initialize it
     pub unsafe fn new(cap: usize, len: usize, ptr: *const c_void, _type: u32, usage: UsageType) -> Self {
         let buffer = {
@@ -101,7 +101,7 @@ impl RawStorage {
     }
 }
 
-impl Drop for RawStorage {
+impl Drop for GlBuffer {
     fn drop(&mut self) {
         // Dispose of the OpenGL buffer
         unsafe {
@@ -111,12 +111,12 @@ impl Drop for RawStorage {
     }
 }
 
-// Raw typed OpenGL storage, with a specific type
+// OpenGL storage that stores 
 #[derive(Getters, CopyGetters)]
-pub struct TypedStorage<Element> {
+pub struct GlStorage<Element> {
     // The OpenGL data for this buffer
     #[getset(get = "pub")]
-    raw: RawStorage,
+    raw: GlBuffer,
     #[getset(get_copy = "pub")]
     capacity: usize,
     #[getset(get_copy = "pub")]
@@ -125,11 +125,11 @@ pub struct TypedStorage<Element> {
 }
 
 // Creation
-impl<Element> TypedStorage<Element> {
+impl<Element> GlStorage<Element> {
     // Create the raw storage, and possibly initialize it
     pub unsafe fn new(cap: usize, len: usize, ptr: *const Element, _type: u32, usage: UsageType) -> Self {
         Self {
-            raw: RawStorage::new(cap * size_of::<Element>(), len * size_of::<Element>(), ptr as *const c_void, _type, usage),
+            raw: GlBuffer::new(cap * size_of::<Element>(), len * size_of::<Element>(), ptr as *const c_void, _type, usage),
             _phantom: PhantomData::default(),
             capacity: cap,
             len,
@@ -139,7 +139,7 @@ impl<Element> TypedStorage<Element> {
     pub fn buffer(&self) -> GLuint {
         self.raw.buffer
     }
-    // Update the buffer
+    // Update the buffer using another pointer
     pub fn update(&mut self, ptr: *const Element, cap: usize, len: usize) {
         // Also update self
         self.capacity = self.capacity.max(cap);
@@ -149,9 +149,7 @@ impl<Element> TypedStorage<Element> {
     // Read subdata
     pub fn read(&self, output: *mut Element, len: usize, offset: usize) {
         // Cannot read more than we have allocated
-        if len > self.capacity {
-            panic!()
-        }
+        assert!(len < self.len, "Cannot read more than we have");
         unsafe { self.raw.read(output as *mut c_void, len * size_of::<Element>(), offset * size_of::<Element>()) }
     }
 }
