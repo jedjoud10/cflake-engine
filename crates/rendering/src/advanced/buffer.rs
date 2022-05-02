@@ -1,4 +1,4 @@
-use crate::utils::{AccessType, BufferHints};
+use crate::utils::{BufferHints};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 use opengl::types::GLubyte;
@@ -43,10 +43,10 @@ impl<T: Copy> Buffer<T> {
             // Initialize le data
             if hints.dynamic {
                 // Initialize mutable storage
-                gl::NamedBufferData(buffer, cap, ptr as *const _, hints.into_mutable_buffer_hints());
+                gl::NamedBufferData(buffer, cap, ptr as *const _, hints.usage_hints());
             } else {
                 // Initialize immutable storage
-                gl::NamedBufferStorage(buffer, cap, ptr as *const _, hints.into_immutable_storage_hints());
+                gl::NamedBufferStorage(buffer, cap, ptr as *const _, hints.mapped_access_bit());
             }
         }
 
@@ -71,33 +71,80 @@ impl<T: Copy> Buffer<T> {
         unsafe { Self::from_raw_parts(target, hints, 0, 0, null()) }
     }
 
+    // Get the target gl type
+    pub fn target(&self) -> GLuint {
+        self.target
+    }
+
+    // Get the buffer's gl name
+    pub fn name(&self) -> GLuint {
+        self.buffer
+    }
+
+    // Get a mapped OpenGL pointer
+    unsafe fn map(&self, offset: usize, length: usize) -> *mut T {
+        assert!(offset + length < self.length, "Indices out of bound");
+
+        // Transform        
+        let offset = isize::try_from(offset * size_of::<T>()).unwrap();        
+        let length = isize::try_from(length * size_of::<T>()).unwrap();
+
+        // Map the buffer into client space
+        gl::MapBufferRange(self.target, offset, length, self.hints.mapped_access_bit()) as *mut T
+    }
+
     // Map the buffer for reading
-    fn read(&self, offset: usize, length: usize) -> Read<T> {
-        // Validate the indices
+    pub fn read(&self, offset: usize, length: usize) -> Option<Read<T>> {
+        // Make sure we can even read from the data
+        self.hints.readable().then(|| unsafe {
+            let ptr = self.map(offset, length) as *const T;
+            let slice = std::slice::from_raw_parts(ptr, length);
+            Read {
+                buffer: self,
+                ptr,
+                range: offset..(offset+length),
+                slice,
+            }
+        })
     }
 
     // Map the buffer for writing
-    fn write(&mut self, offset: usize, length: usize) -> Write<T> {
-        // Validate the indices
+    pub fn write(&mut self, offset: usize, length: usize) -> Option<Write<T>> {
+        // Make sure we can even write to the data
+        self.hints.writable().then(|| unsafe {
+            let ptr = self.map(offset, length) as *mut T;
+            let slice = std::slice::from_raw_parts_mut(ptr, length);
+            Write {
+                buffer: self,
+                ptr,
+                range: offset..(offset+length),
+                slice,
+            }
+        })
     }
 }
 
 // Read wrapper that'll let us read data from the buffer
 pub struct Read<'a, T: Copy> {
-    // The buffer
+    // Rust data
     buffer: &'a Buffer<T>,
+    range: Range<usize>,
 
-    // The mapped pointer given by OpenGL
+    // Kinda unsafe but it works
     ptr: *const T,
+    slice: &'a [T],
 }
+
 
 // Write wrapper that'll let us write data to the buffer
 pub struct Write<'a, T: Copy> {
-    // The buffer
+    // Rust data
     buffer: &'a mut Buffer<T>,
+    range: Range<usize>,
 
-    // The mapped pointer given by OpenGL
+    // Indeed
     ptr: *mut T,
+    slice: &'a mut [T],
 }
 
 impl<T: Copy> Drop for Buffer<T> {

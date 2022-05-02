@@ -137,7 +137,7 @@ impl ObjectSealed for CubeMap {
                     
                         Uniforms::new(shader.program(), pipeline, |mut uniforms| {
                             // Set the only uniform that doesn't change; the hdr map
-                            uniforms.set_texture2d("hdr_map", &hdr);
+                            uniforms.set_texture("hdr_map", &hdr);
 
                             // Render the cube 6 times with the appropriate shader and render target
                             for (i, view) in view_matrices.into_iter().enumerate() {

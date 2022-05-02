@@ -137,10 +137,10 @@ impl MaterialType for PbrMaterial {
         let mask = self.mask.fallback_to(&pipeline.defaults().mask);
 
         // Set the main texture maps
-        uniforms.set_texture2d("diffuse_m", diffuse);
-        uniforms.set_texture2d("normal_m", normal);
-        uniforms.set_texture2d("emissive_m", emissive);
-        uniforms.set_texture2d("mask_m", mask);
+        uniforms.set_texture("diffuse_m", diffuse);
+        uniforms.set_texture("normal_m", normal);
+        uniforms.set_texture("emissive_m", emissive);
+        uniforms.set_texture("mask_m", mask);
 
         // Set the PBR parameters
         uniforms.set_vec3f32("tint", self.tint.into());

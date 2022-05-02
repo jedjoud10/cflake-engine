@@ -164,9 +164,12 @@ impl<'a> Uniforms<'a> {
 
         // Bind the texture into the valid texture unity
         if let Some(&offset) = used_texture_units.get(name) {
+            // Fetch the texture using it's handle
+            let texture = self.pipeline.get(texture).unwrap();
+
             unsafe {
                 gl::ActiveTexture(offset as u32 + gl::TEXTURE0);
-                gl::BindTexture(texture.target(), texture.name());
+                gl::BindTexture(texture.target().unwrap(), texture.name().unwrap());
                 gl::Uniform1i(location, offset as i32);
             }
         }

@@ -32,74 +32,93 @@ impl DataType {
     }
 }
 
-// How we will access a buffer object
+// This hints the program how we might acces the data
 #[derive(Clone, Copy)]
-pub enum AccessType {
-    ClientToServer,
-    ServerToClient,
-    ServerToServer,
+pub enum Access {
+    Write, Read, ReadWrite, Copy,
 }
 
 // How frequently we will update the data of a buffer object
 #[derive(Clone, Copy)]
-pub enum UpdateFrequency {
-    WriteOnceReadMany,
-    WriteManyReadMany,
-    WriteSometimesReadMany,
+pub enum Update {
+    Static,
+    Dynamic,
+    Stream,
 }
+
 
 // Some hints that we give OpenGL that tell it how we might access a buffer
 #[derive(Clone, Copy)]
 pub struct BufferHints {
-    // How we will access the buffer on the GPU / CPU side
-    pub access: AccessType,
-
-    // How many times we will update the buffer per frame
-    // TODO: Actually think abt this
-    pub frequency: UpdateFrequency,
+    // Normal hints
+    pub access: Access,
+    pub update: Update,
 
     // This would allow the buffer to resize to any length if it is enabled
     pub dynamic: bool,
+
+    // This hints that buffer should be stored in client memory
+    pub client: bool,
+
+
 }
 
 impl Default for BufferHints {
     fn default() -> Self {
         Self {
-            access: AccessType::ClientToServer,
-            frequency: UpdateFrequency::WriteManyReadMany,
+            access: Access::ReadWrite,
+            update: Update::Stream,
             dynamic: true,
+            client: false,
         }
     }
 }
 
 impl BufferHints {
-    // Get the OpenGL basic buffer flag hints from self
-    pub fn into_mutable_buffer_hints(&self) -> GLuint {
-        match self.access {
-            AccessType::ClientToServer => match self.frequency {
-                UpdateFrequency::WriteOnceReadMany => gl::STATIC_DRAW,
-                UpdateFrequency::WriteManyReadMany => gl::STREAM_DRAW,
-                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_DRAW,
-            },
-            AccessType::ServerToClient => match self.frequency {
-                UpdateFrequency::WriteOnceReadMany => gl::STATIC_READ,
-                UpdateFrequency::WriteManyReadMany => gl::STREAM_READ,
-                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_READ,
-            },
-            AccessType::ServerToServer => match self.frequency {
-                UpdateFrequency::WriteOnceReadMany => gl::STATIC_COPY,
-                UpdateFrequency::WriteManyReadMany => gl::STREAM_COPY,
-                UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_COPY,
-            },
+    // Mutable storage buffer usage hints
+    pub fn usage_hints(&self) -> GLuint {
+        match (self.access, self.update) {
+            (Access::Write, Update::Static) => gl::STATIC_DRAW,
+            (Access::Write, Update::Dynamic) => gl::DYNAMIC_DRAW,
+            (Access::Write, Update::Stream) => gl::STREAM_DRAW,
+            (Access::Read, Update::Static) => gl::STATIC_READ,
+            (Access::Read, Update::Dynamic) => gl::DYNAMIC_READ,
+            (Access::Read, Update::Stream) => gl::STREAM_READ,
+            (Access::ReadWrite, Update::Static) => gl::STATIC_DRAW,
+            (Access::ReadWrite, Update::Dynamic) => gl::DYNAMIC_DRAW,
+            (Access::ReadWrite, Update::Stream) => gl::STREAM_COPY,
+            (Access::Copy, Update::Static) => gl::STATIC_COPY,
+            (Access::Copy, Update::Dynamic) => gl::DYNAMIC_COPY,
+            (Access::Copy, Update::Stream) => gl::STREAM_COPY,
         }
     }
 
-    // Get the OpenGL mapped buffer flag hints from self
-    pub fn into_immutable_storage_hints(&self) -> u32 {
+    // Immutable storage buffer usage hints
+    pub fn mapped_access_bit(&self) -> GLuint {
+        let base = match self.access {
+            Access::Write => gl::MAP_WRITE_BIT,
+            Access::Read => gl::MAP_READ_BIT,
+            Access::ReadWrite => gl::MAP_WRITE_BIT | gl::MAP_READ_BIT,
+            Access::Copy => 0,
+        };
+
+        let client = if self.client { gl::CLIENT_STORAGE_BIT } else { 0 };
+        base | client
+    }
+
+    // Check if we can read from the buffer
+    pub fn readable(&self) -> bool {
         match self.access {
-            AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
-            AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
-            AccessType::ServerToServer => gl::MAP_READ_BIT,
+            Access::Read | Access::ReadWrite => true,
+            _ => false
+        }
+    }
+
+    // Check if we write to the buffer
+    pub fn writable(&self) -> bool {
+        match self.access {
+            Access::Write | Access::ReadWrite => true,
+            _ => false
         }
     }
 }
