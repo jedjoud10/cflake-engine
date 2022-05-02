@@ -1,3 +1,5 @@
+use super::Geometry;
+
 // A mesh that is made up of many arbitrary shapes
 pub struct Mesh {
     // Arbitrary geometries, since our models are multi-material
@@ -16,6 +18,7 @@ impl Mesh {
     }
 }
 
+/*
 impl Asset for Mesh {
     type OptArgs = ();
     fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
@@ -49,8 +52,6 @@ impl Asset for Mesh {
         None
     }
 }
-/*
-
 impl ObjectSealed for Mesh {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
         // Create the OpenGL mesh (even if it is empty)
@@ -167,6 +168,7 @@ impl ObjectSealed for Mesh {
     }
 }
 
+/*
 impl Mesh {
     // Create a new mesh using raw vertices and indices
     pub fn new(vertices: Vertices, indices: Indices) -> Self {
@@ -331,4 +333,7 @@ impl Mesh {
 use assets::Asset;
 use obj::TexturedVertex;
 
+use crate::object::ObjectSealed;
+
 use super::Geometry;
+*/

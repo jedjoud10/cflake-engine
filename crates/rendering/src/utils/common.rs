@@ -1,3 +1,4 @@
+use std::num::NonZeroU32;
 use gl::types::GLuint;
 
 // Simple main OpenGL types

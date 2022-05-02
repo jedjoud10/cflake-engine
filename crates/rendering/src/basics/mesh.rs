@@ -1,10 +1,4 @@
-mod buffers;
 mod geometry;
-mod triangle;
 mod mesh;
-mod vertex;
-pub use buffers::*;
 pub use geometry::*;
-pub use triangle::*;
 pub use mesh::*;
-pub use vertex::*;

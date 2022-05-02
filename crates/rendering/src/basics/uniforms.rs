@@ -173,7 +173,7 @@ impl<'a> Uniforms<'a> {
     }
 
     // Bind a buffer to a specific binding point, without the name
-    pub fn set_buffer<T>(&mut self, buffer: &mut Buffer<T>, binding: u32) {
+    pub fn set_buffer<T: Copy>(&mut self, buffer: &mut Buffer<T>, binding: u32) {
         unsafe {
             gl::BindBuffer(buffer.target(), buffer.buffer());
             gl::BindBufferBase(buffer.target(), binding, buffer.buffer());
