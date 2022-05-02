@@ -1,3 +1,5 @@
+use crate::object::ObjectSealed;
+
 use super::Geometry;
 
 // A mesh that is made up of many arbitrary shapes
@@ -16,6 +18,9 @@ impl Mesh {
     pub fn get_mut(&mut self, idx: usize) -> Option<&mut Geometry> {
         self.geometries.get_mut(idx)
     }
+}
+
+impl ObjectSealed for Mesh {
 }
 
 /*

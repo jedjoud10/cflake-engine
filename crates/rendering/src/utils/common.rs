@@ -74,7 +74,7 @@ impl Default for BufferHints {
 
 impl BufferHints {
     // Get the OpenGL basic buffer flag hints from self
-    pub fn into_access_hints(&self) -> GLuint {
+    pub fn into_mutable_buffer_hints(&self) -> GLuint {
         match self.access {
             AccessType::ClientToServer => match self.frequency {
                 UpdateFrequency::WriteOnceReadMany => gl::STATIC_DRAW,
@@ -95,7 +95,7 @@ impl BufferHints {
     }
 
     // Get the OpenGL mapped buffer flag hints from self
-    pub fn into_mapped_buffer_hints(&self) -> u32 {
+    pub fn into_immutable_storage_hints(&self) -> u32 {
         match self.access {
             AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
             AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,

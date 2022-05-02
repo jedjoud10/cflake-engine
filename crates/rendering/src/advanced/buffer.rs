@@ -2,106 +2,108 @@ use crate::utils::{AccessType, BufferHints};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
 use opengl::types::GLubyte;
-use std::{ffi::c_void, marker::PhantomData, mem::{size_of, ManuallyDrop, MaybeUninit}, ptr::null, ops::Range, alloc::Layout};
-
-// The current location (GPU-CPU) of the buffer
-pub enum Location<T> {
-    Server(GLuint),
-    Client(Vec<T>)
-}
+use std::{ffi::c_void, marker::PhantomData, mem::{size_of, ManuallyDrop, MaybeUninit}, ptr::{null, NonNull}, ops::Range, alloc::Layout};
 
 // Storage that contains a contiguous array of a specific value on the GPU using an OpenGL buffer
-// Buffers can be created on any thread, but the moment you upload them to the GPU, you must access them only from the main thread
+// This must always be created on the OpenGL context thread
 pub struct Buffer<T: Copy> {
     // Buffer info
-    buffer: Location<T>,    
+    buffer: GLuint,
     target: GLuint,
 
     // How we will access this buffer on the GPU/CPU
     hints: BufferHints,
+
+    // Allocation
+    length: usize,
+    capacity: usize,
+
+    // Boo
+    _phantom: PhantomData<*const T>,
 }
 
 impl<T: Copy> Buffer<T> {
-    // Create a buffer from an already existing vector
-    pub fn from_vec(target: GLuint, hints: BufferHints, vec: Vec<T>) -> Self {
+    // Create the buffer from it's raw parts
+    pub unsafe fn from_raw_parts(target: GLuint, hints: BufferHints, length: usize, capacity: usize, ptr: *const T) -> Self {
+        // Create the buffer
+        let mut buffer = 0;
+        gl::GenBuffers(1, &mut buffer);
+        gl::BindBuffer(target, buffer);
+
+        // Initialize the buffer if we can
+        if capacity > 0 {
+            // If the pointer is danling, reset it to the null pointer
+            let ptr = if ptr == NonNull::<T>::dangling().as_ptr() {
+                null()
+            } else { ptr };
+
+            // Transform
+            let cap = isize::try_from(capacity * size_of::<T>()).unwrap();
+            
+            // Initialize le data
+            if hints.dynamic {
+                // Initialize mutable storage
+                gl::NamedBufferData(buffer, cap, ptr as *const _, hints.into_mutable_buffer_hints());
+            } else {
+                // Initialize immutable storage
+                gl::NamedBufferStorage(buffer, cap, ptr as *const _, hints.into_immutable_storage_hints());
+            }
+        }
+
         Self {
             target,
-            buffer: Location::Client(vec),
+            buffer,
             hints,
+            length,
+            capacity,
+            _phantom: Default::default(),
         }
+    }
+
+    // Create the buffer from a vector that might be valid
+    pub fn from_vec(target: GLuint, hints: BufferHints, vec: Vec<T>) -> Self {
+        unsafe { Self::from_raw_parts(target, hints, vec.len(), vec.capacity(), vec.as_ptr()) }
     }
 
     // Create a new empty buffer that can be temporarily be stored on any thread
+    // TODO: Context
     pub fn new(target: GLuint, hints: BufferHints) -> Self {
-        Self {
-            target,
-            buffer: Location::Client(Vec::new()),
-            hints,
-        }
-    } 
-
-
-    // Upload the buffer to the GPU (PS: This must be called on the current OpenGL context thread)
-    // TODO: Context shit
-    pub fn upload(&mut self) -> Option<()> {
-        if let Location::Client(vec) = &mut self.buffer {
-            // Take the vector and send it to the GPU, basically
-            let vec = std::mem::take(vec);
-
-            // Create the GPU buffer
-            unsafe {
-                let mut buffer = 0;
-                gl::GenBuffers(1, &mut buffer);
-                
-                // Initialize it with the data if we can do so
-                if vec.capacity() > 0 {
-                    // Convert the element-cap to byte-cap
-                    let cap = isize::try_from(vec.capacity() * size_of::<T>()).unwrap();
-                    // Read from the cached vec since that's where we'd temporarely store the data
-                    let ptr = vec.as_ptr();
-                    if self.hints.dynamic {
-                        // Allocate a region of GPU memory that we can reallocate whenever we want
-                        gl::NamedBufferData(buffer, cap, ptr as *const c_void, self.hints.into_access_hints());
-                    } else {
-                        // Allocate the memory once, basically locking it
-                        gl::NamedBufferStorage(buffer, cap, ptr as *const c_void, self.hints.into_mapped_buffer_hints());
-                    }
-                } 
-
-                // Save the name of the new buffer
-                self.buffer = Location::Server(buffer);
-            }
-            Some(())
-        } else {
-            // The buffer is already stored on the GPU, nothing to do 
-            None
-        }
+        unsafe { Self::from_raw_parts(target, hints, 0, 0, null()) }
     }
 
-    // Push a new element to the back of the buffer
-    pub fn push(&mut self, val: T) {
-        match self.buffer {
-            Location::Server(buffer) => todo!(),
-            Location::Client(vec) => {
-                // Check if we can reallocate safely, and panic if we cannot
-                let must_reallocate = vec.spare_capacity_mut().len() == 0;
-                assert!(!(must_reallocate && !self.hints.dynamic), "Cannot reallocate, buffer is static!");
-            },
-        }
+    // Map the buffer for reading
+    fn read(&self, offset: usize, length: usize) -> Read<T> {
+        // Validate the indices
     }
-    // Remove the last element from the buffer
-    pub fn pop(&mut self) -> Option<T> {
 
+    // Map the buffer for writing
+    fn write(&mut self, offset: usize, length: usize) -> Write<T> {
+        // Validate the indices
     }
+}
+
+// Read wrapper that'll let us read data from the buffer
+pub struct Read<'a, T: Copy> {
+    // The buffer
+    buffer: &'a Buffer<T>,
+
+    // The mapped pointer given by OpenGL
+    ptr: *const T,
+}
+
+// Write wrapper that'll let us write data to the buffer
+pub struct Write<'a, T: Copy> {
+    // The buffer
+    buffer: &'a mut Buffer<T>,
+
+    // The mapped pointer given by OpenGL
+    ptr: *mut T,
 }
 
 impl<T: Copy> Drop for Buffer<T> {
     fn drop(&mut self) {
         unsafe {
-            match self.buffer {
-                Location::Server(mut buffer) => gl::DeleteBuffers(1, &mut buffer),
-                _ => {}
-            }
+            gl::DeleteBuffers(1, &self.buffer)
         }
     }
 }

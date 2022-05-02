@@ -1,6 +1,6 @@
 use crate::basics::{
     material::{Material, PbrMaterial},
-    mesh::{Indices, Mesh, Vertices},
+    mesh::{Mesh},
     shader::{Shader, ShaderInitSettings},
     texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
 };
@@ -62,13 +62,17 @@ impl DefaultElements {
         let missing_texture = pipeline.insert(missing);
 
         // Default empty mesh
-        let mesh = pipeline.insert(Mesh::new(Vertices::default(), Indices::default()));
-
+        //let mesh = pipeline.insert(Mesh::new(Vertices::default(), Indices::default()));
+        let mesh = todo!();
         // Load the default cube and sphere
+        /*
         let cube = pipeline.insert(assets::load("defaults/meshes/cube.obj").unwrap());
         let sphere = pipeline.insert(assets::load("defaults/meshes/sphere.obj").unwrap());
         let plane = pipeline.insert(assets::load("defaults/meshes/plane.obj").unwrap());
-
+        */
+        let cube = todo!();
+        let sphere = todo!();
+        let plane = todo!();
         // Default rendering (PBR) shader
         let pbr_shader =  pipeline.insert(Shader::new(
             ShaderInitSettings::default()

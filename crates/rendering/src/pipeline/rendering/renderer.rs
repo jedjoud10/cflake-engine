@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use super::{common, RenderingSettings, ShadowMapping, cull_frustum, SceneRenderStats, RenderedModel, Sun, render};
 use crate::{
     basics::{
-        mesh::{Mesh, Vertices},
+        mesh::{Mesh},
         shader::{Directive, Shader, ShaderInitSettings},
         texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams, TextureWrapMode, CubeMap},
         uniforms::Uniforms, lights::{LightParameters, LightTransform},

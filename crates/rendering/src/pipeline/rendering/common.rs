@@ -11,6 +11,7 @@ use crate::{
 // This assumes that the proper matrices, uniforms, and textures have been set before this call
 pub(crate) unsafe fn render(mesh: &Mesh) {
     // Don't render if the mesh is invalid
+    /*
     if mesh.vao() != 0 {
         // Actually draw the mesh
         gl::BindVertexArray(mesh.vao());
@@ -18,6 +19,7 @@ pub(crate) unsafe fn render(mesh: &Mesh) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, indices);
         gl::DrawElements(gl::TRIANGLES, mesh.indices().len() as i32, gl::UNSIGNED_INT, null());
     }
+    */
 }
 
 // A normal object that we will render
