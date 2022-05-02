@@ -25,21 +25,21 @@ pub trait Attribute {
     type Item;
 
     // Given a vertex set, get the corresponding attribute storage pointer
-    fn storage(set: &VertexSet) -> &Storage<Self::Item>;  
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item>;  
 
     // Same as the function above, but this time it gets a mutable reference to the storage
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item>;
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item>;
 }
 
 // Le implementation
 impl Attribute for Position {
     type Item = vek::Vec3<f32>;
 
-    fn storage(set: &VertexSet) -> &Storage<Self::Item> {
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item> {
         &set.positions
     }
 
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item> {
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item> {
         &mut set.positions
     }
 }
@@ -47,11 +47,11 @@ impl Attribute for Position {
 impl Attribute for Normal {
     type Item = vek::Vec3<i8>;
 
-    fn storage(set: &VertexSet) -> &Storage<Self::Item> {
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item> {
         &set.normals
     }
 
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item> {
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item> {
         &mut set.positions
     }
 }
@@ -59,11 +59,11 @@ impl Attribute for Normal {
 impl Attribute for Tangent {
     type Item = vek::Vec4<i8>;
 
-    fn storage(set: &VertexSet) -> &Storage<Self::Item> {
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item> {
         &set.tangents
     }
 
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item> {
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item> {
         &mut set.tangents
     }
 }
@@ -71,11 +71,11 @@ impl Attribute for Tangent {
 impl Attribute for Color {
     type Item = vek::Rgb<u8>;
 
-    fn storage(set: &VertexSet) -> &Storage<Self::Item> {
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item> {
         &set.colors
     }
 
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item> {
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item> {
         &mut set.colors
     }
 }
@@ -83,27 +83,27 @@ impl Attribute for Color {
 impl Attribute for TexCoord {
     type Item = vek::Vec2<u8>;
 
-    fn storage(set: &VertexSet) -> &Storage<Self::Item> {
+    fn storage(set: &VertexSet) -> &AttribStorage<Self::Item> {
         &set.uvs
     }
 
-    fn storage_mut(set: &mut VertexSet) -> &mut Storage<Self::Item> {
+    fn storage_mut(set: &mut VertexSet) -> &mut AttribStorage<Self::Item> {
         &mut set.uvs
     }
 }
 
 
 // Vertex attributes that will be stored for layouts that implement Vertex
-pub struct Storage<T>(Option<NonNull<T>>);
+pub struct AttribStorage<T>(Option<NonNull<T>>);
 
 // A vertex set that contains multiple vertex attributes
 pub struct VertexSet {
     // Unique vertex attributes
-    positions: Storage<vek::Vec3<f32>>,
-    normals: Storage<vek::Vec3<i8>>,
-    tangents: Storage<vek::Vec4<i8>>,
-    colors: Storage<vek::Rgb<u8>>,
-    uvs: Storage<vek::Vec2<u8>>,
+    positions: AttribStorage<vek::Vec3<f32>>,
+    normals: AttribStorage<vek::Vec3<i8>>,
+    tangents: AttribStorage<vek::Vec4<i8>>,
+    colors: AttribStorage<vek::Rgb<u8>>,
+    uvs: AttribStorage<vek::Vec2<u8>>,
 
     // Allocation shit by ourselves
     len: usize,
@@ -111,17 +111,17 @@ pub struct VertexSet {
 }
 
 // Create a dangling attribute vector
-fn null<T>() -> Storage<T> {
-    Storage(None)
+fn null<T>() -> AttribStorage<T> {
+    AttribStorage(None)
 }
 
 // Convert an attribute storage into an immutable slice
-unsafe fn convert<'a, T>(storage: &'a Storage<T>, len: usize) -> Option<&'a [T]> {
+unsafe fn convert<'a, T>(storage: &'a AttribStorage<T>, len: usize) -> Option<&'a [T]> {
     storage.0.map(|ptr| std::slice::from_raw_parts(ptr.as_ptr() as *const T, len))    
 }
 
 // Convert an attribute storage into a mutable slice
-unsafe fn convert_mut<'a, T>(storage: &'a Storage<T>, len: usize) -> Option<&'a mut [T]> {
+unsafe fn convert_mut<'a, T>(storage: &'a AttribStorage<T>, len: usize) -> Option<&'a mut [T]> {
     storage.0.map(|ptr| std::slice::from_raw_parts_mut(ptr.as_ptr(), len))   
 }
 

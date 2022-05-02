@@ -1,26 +1,21 @@
-use std::ptr::null;
-
-use crate::{
-    advanced::storages::Storage,
-    object::ObjectSealed,
-    utils::{AccessType, UpdateFrequency, UsageType},
-};
-
-use super::{GeometryBuilder, Indices, MeshBuffers, MeshFlags, Vertices, Geometry};
-use arrayvec::ArrayVec;
-use assets::Asset;
-use getset::{CopyGetters, Getters, Setters};
-use gl::types::GLuint;
-use math::bounds::aabb::AABB;
-use obj::TexturedVertex;
-
 // A mesh that is made up of many arbitrary shapes
-#[derive(Getters, CopyGetters, Setters)]
 pub struct Mesh {
     // Arbitrary geometries, since our models are multi-material
     geometries: Vec<Geometry>,
 }
-/*
+
+impl Mesh {
+    // Get a specific geometry meshlet immutably
+    pub fn get(&self, idx: usize) -> Option<&Geometry> {
+        self.geometries.get(idx)
+    }
+
+    // Get a specific geometry meshlet mutably
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Geometry> {
+        self.geometries.get_mut(idx)
+    }
+}
+
 impl Asset for Mesh {
     type OptArgs = ();
     fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
@@ -29,6 +24,7 @@ impl Asset for Mesh {
     {
         // Parse the OBJ mesh into an engine mesh
         let parsed_obj = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes).unwrap();
+        /*
         let mut builder = GeometryBuilder::default();
 
         // Load each vertex SoA style
@@ -49,8 +45,11 @@ impl Asset for Mesh {
         // Compute the tangents automatically for imported meshes
         let mesh = builder.build().generate_tangents();
         Some(mesh)
+        */
+        None
     }
 }
+/*
 
 impl ObjectSealed for Mesh {
     fn init(&mut self, _pipeline: &mut crate::pipeline::Pipeline) {
@@ -328,3 +327,8 @@ impl Mesh {
     }
 }
 */
+
+use assets::Asset;
+use obj::TexturedVertex;
+
+use super::Geometry;

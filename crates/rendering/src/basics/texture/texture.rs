@@ -1,9 +1,11 @@
 use gl::types::GLuint;
 
+use crate::object::ObjectSealed;
+
 use super::{get_texel_byte_size, RawTexture, TextureBytes, TextureParams};
 
 // Shared texture logic
-pub trait Texture {
+pub trait Texture: ObjectSealed {
     // Dimension types
     type Dimensions: Default;
 

@@ -2,6 +2,7 @@ pub(crate) mod private {
     use crate::pipeline::Pipeline;
 
     // Just cause I don't the user accessing the methods
+    // TODO: FIX THIS SHITTTT
     pub trait ObjectSealed
     where
         Self: Sized + 'static,

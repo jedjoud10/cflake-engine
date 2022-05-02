@@ -2,7 +2,7 @@ use std::{ops::{Index, IndexMut}, ffi::c_void, mem::MaybeUninit, ptr::null};
 use arrayvec::ArrayVec;
 use assets::Asset;
 use gl::types::GLuint;
-use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd, TextureFormat, configurate}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh, GeometryBuilder}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
+use crate::{basics::{texture::{RawTexture, TextureBytes, TextureParams, Texture, TextureLayout, TextureFlags, guess_mipmap_levels, TextureWrapMode, TextureFilter, get_ifd, TextureFormat, configurate}, shader::{Shader, ShaderInitSettings}, uniforms::Uniforms, mesh::{Mesh}}, utils::DataType, object::ObjectSealed, pipeline::{Pipeline, Handle, Framebuffer, FramebufferClearBits, render}};
 use super::Texture2D;
 
 // How we will create the cubemap

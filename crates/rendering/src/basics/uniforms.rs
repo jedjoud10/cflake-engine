@@ -1,12 +1,11 @@
 use gl::types::GLuint;
 
 use crate::{
-    advanced::{atomic::AtomicGroup, shader_storage::ShaderStorage, storages::Buffer},
     basics::{
         shader::Program,
         texture::{BundledTexture2D, Texture, Texture2D, CubeMap},
     },
-    pipeline::{Handle, Pipeline},
+    pipeline::{Handle, Pipeline}, advanced::buffer::Buffer,
 };
 // Bound uniform object that can set OpenGL uniforms
 pub struct Uniforms<'a> {
@@ -147,12 +146,14 @@ impl<'a> Uniforms<'a> {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_col_ptr());
         }
     }
-    // Internal
-    fn set_texture(&mut self, name: &str, target: GLuint, tex: GLuint) {
+    // Bind a texture to a specific location using it's uniform name
+    pub fn set_texture<Tex: Texture>(&mut self, name: &str, texture: &Handle<Tex>) {
+        // Return early if the location is invalid
         let location = self.get_location(name);
         if location == -1 {
             return;
         }
+
         // Get the active texture ID from the program
         let mut used_texture_units = self.program.used_texture_units().borrow_mut();
         if !used_texture_units.contains_key(name) {
@@ -161,49 +162,21 @@ impl<'a> Uniforms<'a> {
             used_texture_units.insert(name.to_string(), len);
         }
 
-        // Set
+        // Bind the texture into the valid texture unity
         if let Some(&offset) = used_texture_units.get(name) {
             unsafe {
                 gl::ActiveTexture(offset as u32 + gl::TEXTURE0);
-                gl::BindTexture(target, tex);
+                gl::BindTexture(texture.target(), texture.name());
                 gl::Uniform1i(location, offset as i32);
             }
         }
     }
-    // Set a simple Texture2D uniform
-    pub fn set_texture2d(&mut self, name: &str, texture: &Handle<Texture2D>) {
-        assert!(!texture.is_null(), "Texture bound to uniform '{}' is invalid", name);
-        let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D, texture.name().unwrap());
-    }
-    // Set a uniform of array of 2D textures, aka BundledTexture2D
-    pub fn set_bundled_texture2d(&mut self, name: &str, texture: &Handle<BundledTexture2D>) {
-        assert!(!texture.is_null(), "Texture Bundle bound to uniform '{}' is invalid", name);
-        let texture = self.pipeline.get(texture).unwrap();
-        self.set_texture(name, gl::TEXTURE_2D_ARRAY, texture.name().unwrap());
-    }
-    // Set a cube map texture
-    pub fn set_cubemap(&mut self, name: &str, cubemap: &Handle<CubeMap>) {
-        assert!(!cubemap.is_null(), "CubeMap bound to uniform '{}' is invalid", name);
-        let cubemap = self.pipeline.get(cubemap).unwrap();
-        self.set_texture(name, gl::TEXTURE_CUBE_MAP, cubemap.name().unwrap());
-    }
 
-
-    // Atomics
-    pub fn set_atomic_group(&mut self, _name: &str, atomic: &mut AtomicGroup, binding: u32) {
+    // Bind a buffer to a specific binding point, without the name
+    pub fn set_buffer<T>(&mut self, buffer: &mut Buffer<T>, binding: u32) {
         unsafe {
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, atomic.storage().storage().buffer());
-            gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, binding, atomic.storage().storage().buffer());
-            gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, 0);
-        }
-    }
-    // Storages
-    pub fn set_shader_storage<Buffer: crate::advanced::storages::Buffer>(&mut self, _name: &str, shader_storage: &mut ShaderStorage<Buffer>, binding: u32) {
-        unsafe {
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, shader_storage.storage().storage().raw().buffer());
-            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, shader_storage.storage().storage().raw().buffer());
-            gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, 0);
+            gl::BindBuffer(buffer.target(), buffer.buffer());
+            gl::BindBufferBase(buffer.target(), binding, buffer.buffer());
         }
     }
 }

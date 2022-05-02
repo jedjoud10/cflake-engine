@@ -1,35 +1,35 @@
 use crate::utils::{AccessType, BufferHints};
 use getset::{CopyGetters, Getters};
 use gl::types::GLuint;
-use std::{ffi::c_void, marker::PhantomData, mem::{size_of, ManuallyDrop, MaybeUninit}, ptr::null, ops::Range};
+use std::{ffi::c_void, marker::PhantomData, mem::{size_of, ManuallyDrop, MaybeUninit}, ptr::null, ops::Range, alloc::Layout};
 
 // Storage that contains a contiguous array of a specific value on the GPU using OpenGL buffers
-pub struct Buffer<Element> {
+pub struct Buffer<T> {
     // OpenGL buffer info
     buffer: GLuint,
-    _type: GLuint,
+    target: GLuint,
 
     // How we shall access the data on the GPU side
     hints: BufferHints,
     
     // Allocation info shiz
     capacity: usize,
-    len: usize,
+    length: usize,
 
     // Boo bitch
-    _phantom: PhantomData<*const Element>,
+    _phantom: PhantomData<*const T>,
 }
 
 impl<T> Buffer<T> {
     // Create a new storage from it's raw parts    
     // TODO: Create an OpenGL context shit thingy
-    pub unsafe fn from_raw_parts(_type: u32, hints: BufferHints, capacity: usize, len: usize, ptr: *const T) -> Self {
+    pub unsafe fn from_raw_parts(target: u32, hints: BufferHints, capacity: usize, len: usize, ptr: *const T) -> Self {
         Self {
             buffer: {
                 // We must always create the OpenGL buffer
                 let mut buffer = 0;
                 gl::GenBuffers(1, &mut buffer);
-                gl::BindBuffer(_type, buffer);
+                gl::BindBuffer(target, buffer);
                 
                 // Initialize it with the data if needed
                 if capacity > 0 {
@@ -45,29 +45,29 @@ impl<T> Buffer<T> {
                     }
                 }
             },
-            _type,
+            target: target,
             hints,
             capacity,
-            len,
+            length: len,
             _phantom: Default::default(),
         }
     }
 
     // Create a new empty storage
-    pub fn new(_type: u32, hints: BufferHints) -> Self {
+    pub fn new(target: u32, hints: BufferHints) -> Self {
         unsafe {
-            Self::from_raw_parts(_type, hints, 0, 0, null())
+            Self::from_raw_parts(target, hints, 0, 0, null())
         }
     }
 
     // Create a storage from a vector that is already initialized with some data
-    pub fn from_vec(_type: u32, hints: BufferHints, vec: Vec<T>) -> Self {
+    pub fn from_vec(target: u32, hints: BufferHints, vec: Vec<T>) -> Self {
         unsafe {
             // Just to make sure the compiler doesn't drop this vec earlier
             let mut vec = ManuallyDrop::new(vec);
             
             // Oui
-            let me = Self::from_raw_parts(_type, hints, vec.len(), vec.len(), vec.as_ptr());
+            let me = Self::from_raw_parts(target, hints, vec.len(), vec.len(), vec.as_ptr());
 
             // We can now safely drop the vector, since the data's been sent to the GPU
             ManuallyDrop::drop(&mut vec);
@@ -80,26 +80,23 @@ impl<T> Buffer<T> {
         self.buffer
     }
 
-    // Update a range of the buffer using data given from a pointer
-    pub unsafe fn update_range(&mut self, ptr: *const T, offset: usize, length: usize) {
-        // Make sure the range can fit within our allocated space
-        let start = offset;
-        let end = offset + length;
-        assert!(end < self.len, "Given range is too large");
+    // Get the target type of the underlying OpenGL buffer
+    pub fn target(&self) -> GLuint {
+        self.target
     }
 
     // Update the buffer using another pointer
     pub fn update(&mut self, ptr: *const T, cap: usize, len: usize) {
         // Also update self
         self.capacity = self.capacity.max(cap);
-        self.len = len;
+        self.length = len;
         unsafe { self.raw.update(ptr as *const c_void, cap * size_of::<T>(), len * size_of::<T>()) }
     }
 
     // Read a specific part of the vector and write it to a pointer
     pub unsafe fn read_into(&self, output: *mut T, offset: usize, length: usize) {
         // Make sure the range can fit within our allocated space
-        assert!(offset + length < self.len, "Given range is too large");
+        assert!(offset + length < self.length, "Given range is too large");
         
         // Read from the OpenGL buffer
         let offset = isize::try_from(offset * size_of::<T>()).unwrap();
@@ -110,7 +107,7 @@ impl<T> Buffer<T> {
     // Update a part of the buffer using a pointer to some data and a range
     pub unsafe fn write_from(&mut self, input: *const T, offset: usize, length: usize) {
         // Make sure the range can fit within our allocated space
-        assert!(offset + length < self.len, "Given range is too large");
+        assert!(offset + length < self.length, "Given range is too large");
 
         // Write to the OpenGL buffer
         let offset = isize::try_from(offset * size_of::<T>()).unwrap();
@@ -119,47 +116,60 @@ impl<T> Buffer<T> {
     }
 
     // Reallocate the buffer completely using a new pointer
-    pub unsafe fn reallocate(&mut self, input: *const T, length: usize) {
+    pub unsafe fn reallocate(&mut self, input: *const T, capacity: usize) {
         // We cannot reallocate if the buffer isn't dynamic
         assert!(!self.hints.dynamic, "Cannot reallocate");
 
-        let length = isize::try_from(length * size_of::<T>()).unwrap();
-        gl::NamedBufferData(self.buffer, length, input as *const c_void, self.hints.into_access_hints());
+        let capacity = isize::try_from(capacity * size_of::<T>()).unwrap();
+        gl::NamedBufferData(self.buffer, capacity, input as *const c_void, self.hints.into_access_hints());
     }
 
     // Push a new value into the buffer
     pub fn push(&mut self, value: T) {
         // Check if we have enough space allocate to store the value
-        if self.capacity + 1 == self.len {
-            // We shall reallocate
+        if self.capacity == self.length {
+            // We shall reallocate the buffer with a new capacity
+            let new_capacity = if self.capacity == 0 { 1 } else { self.capacity * 2 };
             unsafe {
-                self.reallocate(input, length)
+                // Read from the old buffer and write it to the new buffer
+                let layout = Layout::array(new_capacity);
+                let ptr = std::alloc::alloc(layout) as *mut T;
+                self.read_into(ptr, 0, self.length);
+
+                // Write the new element
+                std::ptr::write(ptr.add(self.length), value);                
+
+                // And reallocate
+                self.capacity = new_capacity;
+                self.reallocate(ptr, self.capacity);
+
+                // We can drop the temporary vector ofc
+                std::alloc::dealloc(ptr, layout);
             }
         } else {
             // We are bing-chilling
-            unsafe { self.write_from(&value, self.len, 1); }
+            unsafe { self.write_from(&value, self.length, 1); }
         }
+
+        // Update the length
+        self.length += 1;
+
     }
 
     // Pop the last value from the buffer
     pub fn pop(&mut self) -> Option<T> {
+        if self.length != 0 {
+            self.length -= 1;
 
-    }
-
-    // Update the buffer
-    pub unsafe fn update(&mut self, ptr: *const c_void, cap: usize, len: usize) {
-        // Check if we need to reallocate
-        self.byte_len = len;
-        if cap > self.byte_cap {
-            // Check if we can reallocate first
-            assert!(self.usage.dynamic, "Buffer is not dynamic, cannot reallocate!");
-
-            // Reallocate
-            self.byte_cap = cap;
-            self.reallocate(ptr, cap);
+            // Read the element from the OpenGL buffer (TODO: Fix)
+            unsafe { 
+                let val = MaybeUninit::<T>::uninit();
+                self.read_into(val.as_mut_ptr(), self.length, 1);
+                Some(val.assume_init())
+            }
         } else {
-            // Update subdata
-            self.update_subdata(ptr, len);
+            // No elements available
+            None
         }
     }
 }

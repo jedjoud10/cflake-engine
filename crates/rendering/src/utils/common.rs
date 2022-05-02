@@ -38,6 +38,7 @@ pub enum AccessType {
     ServerToClient,
     ServerToServer,
 }
+
 // How frequently we will update the data of a buffer object
 #[derive(Clone, Copy)]
 pub enum UpdateFrequency {
@@ -46,15 +47,21 @@ pub enum UpdateFrequency {
     WriteSometimesReadMany,
 }
 
-// How we will use a buffer
+// Some hints that we give OpenGL that tell it how we might access a buffer
 #[derive(Clone, Copy)]
-pub struct UsageType {
+pub struct BufferHints {
+    // How we will access the buffer on the GPU / CPU side
     pub access: AccessType,
+
+    // How many times we will update the buffer per frame
+    // TODO: Actually think abt this
     pub frequency: UpdateFrequency,
+
+    // This would allow the buffer to resize to any length if it is enabled
     pub dynamic: bool,
 }
 
-impl Default for UsageType {
+impl Default for BufferHints {
     fn default() -> Self {
         Self {
             access: AccessType::ClientToServer,
@@ -64,9 +71,9 @@ impl Default for UsageType {
     }
 }
 
-impl UsageType {
-    // Convert this UsageType to a valid OpenGL enum
-    pub fn convert(&self) -> GLuint {
+impl BufferHints {
+    // Get the OpenGL basic buffer flag hints from self
+    pub fn into_access_hints(&self) -> GLuint {
         match self.access {
             AccessType::ClientToServer => match self.frequency {
                 UpdateFrequency::WriteOnceReadMany => gl::STATIC_DRAW,
@@ -83,6 +90,15 @@ impl UsageType {
                 UpdateFrequency::WriteManyReadMany => gl::STREAM_COPY,
                 UpdateFrequency::WriteSometimesReadMany => gl::DYNAMIC_COPY,
             },
+        }
+    }
+
+    // Get the OpenGL mapped buffer flag hints from self
+    pub fn into_mapped_buffer_hints(&self) -> u32 {
+        match self.access {
+            AccessType::ClientToServer => gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT,
+            AccessType::ServerToClient => gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT,
+            AccessType::ServerToServer => gl::MAP_READ_BIT,
         }
     }
 }

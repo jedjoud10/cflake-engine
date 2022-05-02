@@ -12,7 +12,7 @@ use world::{
             query_info, Directive, ShaderInitSettings,
         },
         pipeline::{Handle, Pipeline},
-        utils::{AccessType, UpdateFrequency, UsageType},
+        utils::{AccessType, UpdateFrequency, BufferHints},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, VoxelDataBuffer, CHUNK_SIZE},
 };
@@ -56,17 +56,17 @@ impl VoxelGenerator {
         let second_compute_program = pipeline.get(&second_compute).unwrap().program();
 
         // Usage types
-        let readback = UsageType {
+        let readback = BufferHints {
             access: AccessType::ServerToClient,
             frequency: UpdateFrequency::WriteManyReadMany,
             dynamic: false,
         };
-        let passthrough = UsageType {
+        let passthrough = BufferHints {
             access: AccessType::ServerToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
             dynamic: false,
         };
-        let write = UsageType {
+        let write = BufferHints {
             access: AccessType::ClientToServer,
             frequency: UpdateFrequency::WriteManyReadMany,
             dynamic: true,
