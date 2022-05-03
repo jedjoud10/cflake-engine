@@ -22,6 +22,7 @@ impl Window {
     pub fn set_fullscreen(&mut self, fullscreen: bool) {
         if fullscreen {
             // Enable fullscreen
+            let ct = self.context.split().0;
             let vm = self.context.window().primary_monitor().unwrap().video_modes().next().unwrap();
             self.context.window().set_fullscreen(Some(Fullscreen::Exclusive(vm)));
         } else {

@@ -122,8 +122,11 @@ impl ObjectSealed for CubeMap {
                         .source("defaults/shaders/others/cubemap.frsh.glsl")).unwrap());
 
                     // Unit cube that is inside out
+                    /*
                     let cube = assets::load::<Mesh>("defaults/meshes/cube.obj").unwrap();
                     let cube = pipeline.insert(cube.flip_triangles());
+                    */
+                    let cube = todo!();
 
                     // Fetch the added objects
                     let shader = pipeline.get(&shader).unwrap();
