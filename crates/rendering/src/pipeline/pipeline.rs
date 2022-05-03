@@ -45,42 +45,7 @@ pub struct Pipeline {
     stats: RefCell<SceneRenderStats>
 }
 
-// Initialize glutin and the window
-fn init_glutin_window<U>(el: &EventLoop<U>, title: String, vsync: bool) -> WindowedContext<PossiblyCurrent> {
-    let wb = WindowBuilder::new()
-        .with_resizable(true)
-        .with_title(title)
-        .with_inner_size(LogicalSize::new(DEFAULT_WINDOW_SIZE.w as u32, DEFAULT_WINDOW_SIZE.h as u32));
-    let wc = ContextBuilder::new()
-        .with_double_buffer(Some(true))
-        .with_vsync(vsync)
-        .with_gl_profile(GlProfile::Core)
-        .with_gl_debug_flag(false)
-        .with_gl(GlRequest::Specific(Api::OpenGl, (4, 6)))
-        .build_windowed(wb, el)
-        .unwrap();
-    // Make the context a current context
-    let wc = unsafe { wc.make_current().unwrap() };
-    let _window = wc.window();
-    //window.set_cursor_grab(true).unwrap();
-    //window.set_cursor_visible(false);
-    wc
-}
 
-// Initialize OpenGL
-fn init_opengl(context: &WindowedContext<PossiblyCurrent>) {
-    unsafe {
-        gl::load_with(|x| context.get_proc_address(x));
-
-        // Check if the gl viewport is ok
-        if !gl::Viewport::is_loaded() {
-            panic!()
-        }
-
-        gl::Viewport(0, 0, DEFAULT_WINDOW_SIZE.w as i32, DEFAULT_WINDOW_SIZE.h as i32);
-        SceneRenderer::init_opengl();
-    }
-}
 
 // Create a new pipeline and a linked scene renderer
 pub fn new<U>(el: &EventLoop<U>, title: String, vsync: bool, fullscreen: bool, settings: PipelineSettings) -> (Pipeline, SceneRenderer) {
