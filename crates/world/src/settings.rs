@@ -2,8 +2,8 @@ mod graphics;
 pub use graphics::*;
 mod window;
 use rendering::pipeline::ShadowSettings;
+use serde::{Deserialize, Serialize};
 pub use window::*;
-use serde::{Serialize, Deserialize};
 // Some game settings
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Settings {

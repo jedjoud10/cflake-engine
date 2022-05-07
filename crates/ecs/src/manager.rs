@@ -96,7 +96,7 @@ impl EcsManager {
 
     // Normal query without filter
     pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a> {
-        Layout::validate().then(|| query(&self.archetypes)) 
+        Layout::validate().then(|| query(&self.archetypes))
     }
     // Create a query with a specific filter
     pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {

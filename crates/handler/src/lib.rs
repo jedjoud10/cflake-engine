@@ -86,9 +86,7 @@ fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Even
             world.pipeline.handle_window_event(&mut world.renderer, &event, control_flow);
         }
         // Device event
-        Event::DeviceEvent { device_id: _, event } => {
-            handle_device_event(event, world, control_flow)
-        }
+        Event::DeviceEvent { device_id: _, event } => handle_device_event(event, world, control_flow),
         // Loop events
         Event::MainEventsCleared => {
             // Update the delta time

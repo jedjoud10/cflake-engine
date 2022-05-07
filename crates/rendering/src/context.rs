@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use glutin::{RawContext, ContextWrapper, PossiblyCurrent};
+use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 
 // Main cotnext that stores the OpenGL glunit context
 pub struct Context {

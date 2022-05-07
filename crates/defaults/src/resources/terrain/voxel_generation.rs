@@ -12,7 +12,7 @@ use world::{
             query_info, Directive, ShaderInitSettings,
         },
         pipeline::{Handle, Pipeline},
-        utils::{AccessType, UpdateFrequency, BufferHints},
+        utils::{AccessType, BufferHints, UpdateFrequency},
     },
     terrain::{editing::PackedEdit, PackedVoxel, PackedVoxelData, VoxelDataBuffer, CHUNK_SIZE},
 };

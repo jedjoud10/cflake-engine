@@ -5,7 +5,7 @@ use rendering::gl::types::GLuint;
 use rendering::{
     advanced::storages::{Buffer, DynamicBuffer},
     pipeline::Pipeline,
-    utils::{AccessType::ClientToServer, UpdateFrequency::WriteManyReadMany, BufferHints},
+    utils::{AccessType::ClientToServer, BufferHints, UpdateFrequency::WriteManyReadMany},
 };
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh

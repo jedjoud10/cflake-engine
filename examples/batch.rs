@@ -1,7 +1,11 @@
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
-    rendering::basics::{lights::LightType, material::{MaskBuilder, Material, PbrMaterial}, texture::{TextureParams, TextureLayout, TextureFilter, TextureWrapMode, TextureFlags, Texture2D}},
+    rendering::basics::{
+        lights::LightType,
+        material::{MaskBuilder, Material, PbrMaterial},
+        texture::{Texture2D, TextureFilter, TextureFlags, TextureLayout, TextureParams, TextureWrapMode},
+    },
     vek, World,
 };
 // An example with multiple meshes in the same scene
@@ -29,12 +33,16 @@ fn init(world: &mut World) {
     });
 
     // Mask that is 100% smooth, 100% metallic
-    let mask = Texture2D::new(vek::Extent2::one(), Some(vec![255, 255, 255, 0]), TextureParams {
-        layout: TextureLayout::LOADED,
-        filter: TextureFilter::Nearest,
-        wrap: TextureWrapMode::Repeat,
-        flags: TextureFlags::MIPMAPS,
-    });
+    let mask = Texture2D::new(
+        vek::Extent2::one(),
+        Some(vec![255, 255, 255, 0]),
+        TextureParams {
+            layout: TextureLayout::LOADED,
+            filter: TextureFilter::Nearest,
+            wrap: TextureWrapMode::Repeat,
+            flags: TextureFlags::MIPMAPS,
+        },
+    );
     let mask = world.pipeline.insert(mask);
 
     // Load a diffuse map
@@ -53,14 +61,13 @@ fn init(world: &mut World) {
     let mask = world.pipeline.insert(mask);
 
     // Load a normal map
-    let norm = assets::load_with::<Texture2D>("user/textures/MetalPlates012_4K_NormalGL.jpg",TextureParams::NON_COLOR_MAP_LOAD).unwrap();
+    let norm = assets::load_with::<Texture2D>("user/textures/MetalPlates012_4K_NormalGL.jpg", TextureParams::NON_COLOR_MAP_LOAD).unwrap();
     let norm = world.pipeline.insert(norm);
 
     // Create multiple sphere
     let sphere = world.pipeline.defaults().cube.clone();
     for x in 0..11 {
         for y in 0..11 {
-
             // Create a material with unique roughness / metallic
             let material = world.pipeline.insert(Material::new(PbrMaterial {
                 diffuse: diff.clone(),
@@ -73,7 +80,9 @@ fn init(world: &mut World) {
 
             world.ecs.insert(|_, linker| {
                 linker.insert(Renderer::new(sphere.clone(), material)).unwrap();
-                linker.insert(Transform::from((x as f32 * 10.0, y as f32 * 10.0, 0.0)).scaled_by(vek::Vec3::one() * 5.0)).unwrap();
+                linker
+                    .insert(Transform::from((x as f32 * 10.0, y as f32 * 10.0, 0.0)).scaled_by(vek::Vec3::one() * 5.0))
+                    .unwrap();
             });
         }
     }
@@ -81,7 +90,9 @@ fn init(world: &mut World) {
     // Rotate each valid renderer entity
     world.events.insert(|world| {
         for (i, (transform, _)) in world.ecs.try_query::<(&mut Transform, &Renderer)>().enumerate() {
-            transform.rotation = transform.rotation * vek::Quaternion::rotation_x(0.06 * world.time.delta() * (i as f32).sin()) * vek::Quaternion::rotation_z(-0.06 * world.time.delta() * (i as f32).cos());
-        } 
+            transform.rotation = transform.rotation
+                * vek::Quaternion::rotation_x(0.06 * world.time.delta() * (i as f32).sin())
+                * vek::Quaternion::rotation_z(-0.06 * world.time.delta() * (i as f32).cos());
+        }
     })
 }

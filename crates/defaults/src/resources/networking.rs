@@ -1,4 +1,4 @@
-use world::{resources::Resource, network::NetworkSession};
+use world::{network::NetworkSession, resources::Resource};
 
 // Server/Client networking
 #[derive(Default, Resource)]

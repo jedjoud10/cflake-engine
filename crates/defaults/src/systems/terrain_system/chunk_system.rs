@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use crate::{
     components::{Camera, Chunk, Transform},
-    resources::{WorldData, Terrain},
+    resources::{Terrain, WorldData},
 };
 use world::{input::Keys, terrain::ChunkCoords, World};
 

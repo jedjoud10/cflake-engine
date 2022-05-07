@@ -30,7 +30,7 @@ fn run(world: &mut World) {
         ui.heading("Rendering");
         let stats = world.pipeline.stats().borrow();
         ui.label(format!("Models drawn: {}", stats.drawn));
-        ui.label(format!("Models culled: {}", stats.culled));        
+        ui.label(format!("Models culled: {}", stats.culled));
         ui.label(format!("Shadow-Models drawn: {}", stats.shadowed));
 
         // Terrain

@@ -1,5 +1,8 @@
 use crate::{registry, Archetype, Component, Entity, Mask};
-use std::{ops::{BitOr, BitAnd}, ptr::NonNull};
+use std::{
+    ops::{BitAnd, BitOr},
+    ptr::NonNull,
+};
 
 // Layout access that contain the normal mask and writing mask
 #[derive(Clone, Copy, PartialEq, Eq)]

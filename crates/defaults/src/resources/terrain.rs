@@ -1,12 +1,12 @@
 use std::num::NonZeroU64;
 
 use world::{
-    resources::Resource,
     math::octrees::DiffOctree,
     rendering::pipeline::Pipeline,
+    resources::Resource,
     terrain::{
         editing::{Edit, EditingManager},
-        scheduler::{MeshScheduler},
+        scheduler::MeshScheduler,
         ChunkCoords, CHUNK_SIZE,
     },
 };
@@ -28,7 +28,7 @@ pub struct Terrain {
     // Handles voxel generation on the GPU
     pub generator: VoxelGenerator,
 
-    // Multithreaded mesh generation task system 
+    // Multithreaded mesh generation task system
     pub scheduler: MeshScheduler,
 
     // Simply for editing

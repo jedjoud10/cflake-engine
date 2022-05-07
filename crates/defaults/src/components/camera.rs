@@ -8,7 +8,7 @@ pub struct Camera {
 
     // Perspective matrix for well, perspective
     pub projection: vek::Mat4<f32>,
-    
+
     // Other
     pub fov: f32,
     pub clips: vek::Vec2<f32>,

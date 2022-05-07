@@ -60,7 +60,6 @@ pub fn preload_default_assets() {
     // HDRi
     persistent!("./assets/defaults/hdr/studio_garden_4k.hdr");
 
-
     println!("Finished pre-loading default assets!");
 }
 // Load default systems

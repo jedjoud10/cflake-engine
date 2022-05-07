@@ -2,13 +2,13 @@ use crate::settings::Settings;
 use audio::player::AudioPlayer;
 use ecs::{EcsManager, SystemSet};
 use getset::*;
-use resources::ResourcesSet;
 use gui::GUIManager;
 use input::InputManager;
 use io::IOManager;
 use others::Time;
 use physics::PhysicsSimulation;
 use rendering::pipeline::{Pipeline, SceneRenderer};
+use resources::ResourcesSet;
 
 // The current state of the world
 #[derive(Clone, Copy)]

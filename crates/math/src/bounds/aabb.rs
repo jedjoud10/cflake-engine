@@ -13,21 +13,20 @@ pub struct AABB {
 impl AABB {
     // Create an AABB at a specified position and half-width scale
     pub fn new(pos: vek::Vec3<f32>, hw: vek::Vec3<f32>) -> Self {
-        Self {
-            min: pos - hw,
-            max: pos + hw,
-        }
+        Self { min: pos - hw, max: pos + hw }
     }
     // Create all the points that belong to this AABB in arbitrary order cause I can't give a shit
     pub fn points(&self) -> [vek::Vec3<f32>; 8] {
-        [self.min, 
-        vek::Vec3::new(self.min.x, self.min.y, self.max.z),
-        vek::Vec3::new(self.min.x, self.max.y, self.max.z),
-        vek::Vec3::new(self.min.x, self.max.y, self.min.z),
-        vek::Vec3::new(self.max.x, self.min.y, self.min.z),
-        vek::Vec3::new(self.max.x, self.max.y, self.min.z),
-        vek::Vec3::new(self.max.x, self.min.y, self.max.z),
-        self.max]
+        [
+            self.min,
+            vek::Vec3::new(self.min.x, self.min.y, self.max.z),
+            vek::Vec3::new(self.min.x, self.max.y, self.max.z),
+            vek::Vec3::new(self.min.x, self.max.y, self.min.z),
+            vek::Vec3::new(self.max.x, self.min.y, self.min.z),
+            vek::Vec3::new(self.max.x, self.max.y, self.min.z),
+            vek::Vec3::new(self.max.x, self.min.y, self.max.z),
+            self.max,
+        ]
     }
 }
 
@@ -38,7 +37,7 @@ impl Index<usize> for AABB {
     fn index(&self, index: usize) -> &Self::Output {
         if index == 0 {
             &self.min
-        } else if index == 1{
+        } else if index == 1 {
             &self.max
         } else {
             panic!("no")

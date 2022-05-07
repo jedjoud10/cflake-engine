@@ -14,10 +14,6 @@ impl Window {
         let size = vek::Extent2::from(<(u32, u32)>::from(glutin.inner_size()));
         let fullscreen = glutin.fullscreen().is_some();
 
-        Self {
-            glutin,
-            size,
-            fullscreen,
-        }
+        Self { glutin, size, fullscreen }
     }
 }

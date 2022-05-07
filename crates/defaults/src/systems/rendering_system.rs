@@ -1,11 +1,12 @@
 use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
 use world::{
     ecs::{added, always, modified, never, or},
+    math::bounds::aabb::AABB,
     rendering::{
         basics::lights::LightTransform,
-        pipeline::{RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel, FramebufferClearBits},
+        pipeline::{FramebufferClearBits, RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
     },
-    World, math::bounds::aabb::AABB,
+    World,
 };
 
 // Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
@@ -26,8 +27,7 @@ fn project_aabb(aabb: &AABB, m: vek::Mat4<f32>) -> AABB {
     }
 
     AABB { min, max }
-} 
-
+}
 
 // The 3D scene renderer
 fn run(world: &mut World) {
@@ -81,7 +81,7 @@ fn run(world: &mut World) {
         // Update the matrix if we need to
         renderer.matrix = transform.transform_matrix();
         renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
-    
+
         // Update the AABB bounds by using the mesh bounds
         let mesh = world.pipeline.get(&renderer.mesh);
         renderer.bounds = mesh.map(|mesh| project_aabb(mesh.bounds(), renderer.matrix)).unwrap_or_default();

@@ -2,7 +2,8 @@ use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
     rendering::basics::{
-        lights::LightType, texture::{TextureParams, Texture2D, TextureFilter},
+        lights::LightType,
+        texture::{Texture2D, TextureFilter, TextureParams},
     },
     vek, World,
 };
