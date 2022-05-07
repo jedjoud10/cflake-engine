@@ -8,6 +8,6 @@ mod tests {
     fn test() {
         let test: assets::loader::AssetLoader = todo!();
 
-        let mesh = Mesh::try_load(&test, args)
+        let mesh = Mesh::try_load
     }
 }
