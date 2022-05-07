@@ -50,6 +50,7 @@ impl<T: Cached> GenericSingleRow for SingleRow<T> {
 }
 
 // This is the global pipeline storage that we will use to store the multiple cached objects
+#[derive(Default)]
 pub(super) struct PipelineStorage {
     hashmap: AHashMap<TypeId, Box<dyn GenericSingleRow>>,
 }
@@ -100,19 +101,6 @@ impl PipelineStorage {
     }
 }
 
-impl<T: Cached> Index<Handle<T>> for PipelineStorage {
-    type Output = T;
-
-    fn index(&self, index: Handle<T>) -> &Self::Output {
-        self.get(&index).unwrap()
-    }
-}
-
-impl<T: Cached> IndexMut<Handle<T>> for PipelineStorage {
-    fn index_mut(&mut self, index: Handle<T>) -> &mut Self::Output {
-        self.get_mut(&index).unwrap()
-    }
-}
 
 // A strong object handle that we can use to reference an object within the pipeline
 pub struct Handle<T: Cached> {
