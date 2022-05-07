@@ -6,7 +6,7 @@ pub trait Asset {
     type OptArgs;
 
     // Deserialize the byte data and extra data into the object
-    fn deserialize(meta: &AssetMetadata, bytes: &[u8], args: Self::OptArgs) -> Option<Self>
+    fn deserialize(meta: &AssetMetadata, bytes: &[u8], args: Self::OptArgs) -> Self
     where
         Self: Sized;
 }
