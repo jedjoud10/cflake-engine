@@ -3,7 +3,7 @@ use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
     path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard}, cell::RefCell, str::FromStr, ffi::{OsStr, OsString},
+    sync::{Mutex, MutexGuard}, cell::{RefCell, Ref, RefMut}, str::FromStr, ffi::{OsStr, OsString},
 };
 
 // If we are in Debug, we read the bytes directly from the file system
@@ -51,31 +51,23 @@ impl AssetLoader {
     }
 
     // Try to load an asset with some explicit optional arguments
-    pub fn load_with<A: Asset>(&self, path: &str, args: A::OptArgs) -> Option<A> {
+    pub(crate) fn load_with<A: Asset>(&self, path: &str) -> Option<(AssetMetadata, Ref<[u8]>)> {
         // Try to load some cached bytes, if possible
         let path = PathBuf::from_str(path).unwrap();
         let meta = AssetMetadata::new(path.clone()).unwrap();
+        
+        // Cache the bytes if needed
         let mut borrowed = self.cached.borrow_mut();
-
-        // This simply deserializes the asset
-        if let Some(cached) = borrowed.get(&meta) {
-            // Deserialize the asset using the cached bytes
-            A::try_deserialize(&meta, &cached, args)
-        } else {
-            // Deserialize the asset using new bytes that we will load in
+        if borrowed.get(&meta).is_none() {
+            // Cache the bytes
             let path = path.as_os_str().to_str()?;
             let bytes = read(path, &self.global)?;
-            
-            // Deserialize first, then cache
-            let asset = A::try_deserialize(&meta, &bytes, args);
             borrowed.insert(meta.clone(), bytes);
-            asset
         }
-    } 
 
-    // Try to load an asset with default optional arguments
-    pub fn load<A: Asset>(&self, path: &str) -> Option<A> where A::OptArgs: Default {
-        self.load_with(path, A::OptArgs::default())
+        // And convert to the final tuple
+        let mapped = Ref::map(self.cached.borrow(), |m| m.get(&meta).unwrap().as_slice());
+        Some((meta.clone(), mapped))
     }
 
     // Import an asset during compile time
@@ -86,21 +78,22 @@ impl AssetLoader {
     }
 }
 
-
+/*
 // Default asset implementations
 impl crate::Asset for String {
     type OptArgs = ();
     const EXTENSION: &'static str = "";
 
-    fn try_deserialize(meta: &crate::metadata::AssetMetadata, bytes: &[u8], args: Self::OptArgs) -> Option<Self>
+    fn try_deserialize(meta: &crate::metadata::AssetMetadata, bytes: &[u8], args: &Self::OptArgs) -> Option<Self>
     where Self: Sized {
         Self::from_utf8(bytes.to_vec()).ok()
     }
 
     // We don't implement anything for desrialize, since the from_utf8 function is faillible, so it must be implemented for try_deserialize instead
-    fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Self
+    fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Self
     where
         Self: Sized {
         todo!()
     }
 }
+*/

@@ -1,3 +1,5 @@
+use assets::Asset;
+
 use crate::{Buffer, Context};
 
 // A mesh is a collection of 3D vertices connected by triangles
@@ -15,6 +17,16 @@ pub struct Mesh {
 
     // Indices
     indices: Buffer<u32>,
+}
+
+impl Asset for Mesh {
+    type OptArgs = crate::Context;
+    const EXTENSION: &'static str = ".obj";
+
+    fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Self
+    where
+        Self: Sized {
+    }
 }
 
 impl Mesh {
