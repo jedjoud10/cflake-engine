@@ -103,7 +103,7 @@ impl Asset for Mesh {
         meta.extension() == "obj"
     }
 
-    unsafe fn deserialize(_bytes: &[u8], _args: &Self::OptArgs) -> Self {
+    unsafe fn deserialize(_bytes: &[u8], _args: &Self::OptArgs) -> Option<Self> {
         todo!()
     }
 }

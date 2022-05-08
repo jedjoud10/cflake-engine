@@ -67,6 +67,7 @@ impl AssetLoader {
             let bytes = read(path, &self.global)?;
             borrowed.insert(meta.clone(), bytes);
         }
+        drop(borrowed);
 
         // And convert to the final tuple
         let mapped = Ref::map(self.cached.borrow(), |m| m.get(&meta).unwrap().as_slice());
@@ -81,8 +82,20 @@ impl AssetLoader {
     }
 }
 
-/*
 // Default asset implementations
+impl Asset for String {
+    type OptArgs = ();
+
+    fn is_valid(meta: AssetMetadata) -> bool {
+        true
+    }
+
+    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Option<Self> {
+        Self::from_utf8(bytes.to_vec()).ok()
+    }
+}
+
+/*
 impl crate::Asset for String {
     type OptArgs = ();
     const EXTENSION: &'static str = "";

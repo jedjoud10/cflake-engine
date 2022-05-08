@@ -1,13 +1,13 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::{asset, loader::AssetLoader};
+    use crate::{asset, loader::AssetLoader, Asset};
 
     #[test]
     fn test() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/assets");
         let mut loader = AssetLoader::new(path);
         asset!(&mut loader, "./assets/sus/test.txt");
-        let val = loader.load::<String>("sus/test.txt").unwrap();
+        let val = <String as Asset>::try_load(&loader, "sus/test.txt").unwrap();
         dbg!(val);
 
         /*
