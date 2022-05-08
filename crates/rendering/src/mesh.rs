@@ -1,7 +1,6 @@
-use std::{mem::size_of, ptr::null, num::NonZeroU32};
+use crate::{Attribute, AttributeSet, Buffer, Context, GPUSendable, MutMapped, NamedAttribute, RefMapped};
 use assets::Asset;
-use crate::{Buffer, Context, GPUSendable, Attribute, NamedAttribute, RefMapped, MutMapped, AttributeSet};
-
+use std::{mem::size_of, num::NonZeroU32, ptr::null};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
@@ -16,20 +15,20 @@ bitflags::bitflags! {
 
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
-pub struct SubMesh {    
+pub struct SubMesh {
     // The VAO that wraps everything up (OpenGL side)
     vao: NonZeroU32,
 
     // Vertex attributes and the vertex count
     attributes: AttributeSet,
     vert_count: usize,
-    
+
     // We must always have a valid EBO
     indices: Buffer<u32>,
 
     // Vertex layout for attributes
     layout: VertexLayout,
-    
+
     // Can we modify the VAO after we've created it?
     dynamic: bool,
 }
@@ -49,14 +48,13 @@ impl SubMesh {
         // Create the sub mesh
         Self {
             vao,
-            attributes: AttributeSet::new(vao, ctx, layout, dynamic),       
+            attributes: AttributeSet::new(vao, ctx, layout, dynamic),
             indices: Buffer::new(ctx, !dynamic),
             vert_count: 0,
             layout,
             dynamic,
         }
     }
-
 
     // Get a mapped buffer for a specific vertex attribute, if possible
     pub fn get<U: NamedAttribute>(&self, ctx: &mut Context) -> Option<RefMapped<U::Out>> {
@@ -79,23 +77,18 @@ impl SubMesh {
 
 // A mesh is simply a collection of submeshes
 pub struct Mesh {
-    submeshes: Vec<SubMesh>,    
+    submeshes: Vec<SubMesh>,
 }
-
 
 impl Mesh {
     // Create a new empty mesh that can be modified later
     fn new(_ctx: &mut Context) -> Self {
-        Self {
-            submeshes: Default::default(),
-        }
+        Self { submeshes: Default::default() }
     }
 
     // Create a mesh from multiple submeshes
-    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {    
-        Self {
-            submeshes,
-        }
+    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
+        Self { submeshes }
     }
 }
 

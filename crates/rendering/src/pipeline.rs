@@ -1,10 +1,11 @@
 use std::{
     any::{Any, TypeId},
     marker::PhantomData,
+    ops::{Index, IndexMut},
     sync::{
         atomic::{AtomicU16, AtomicU32, Ordering},
         Arc,
-    }, ops::{Index, IndexMut},
+    },
 };
 
 use ahash::AHashMap;
@@ -12,7 +13,7 @@ use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, Con
 use parking_lot::RwLock;
 use slotmap::SlotMap;
 
-use crate::{PipelineStorage, Cached, Handle};
+use crate::{Cached, Handle, PipelineStorage};
 
 // Create a new window and a valid OpenGL context
 pub fn init(el: &EventLoop<()>) -> (crate::Window, crate::Context) {
@@ -53,18 +54,16 @@ impl Pipeline {
     pub fn new(el: &EventLoop<()>) -> Self {
         // Initialize the OpenGL context and the window
         let (window, context) = init(el);
-        
+
         Self {
-            window, 
+            window,
             context,
-            storage: Default::default()
+            storage: Default::default(),
         }
     }
 
     // Called at the start of every frame
-    pub fn begin(&mut self) {
-
-    }
+    pub fn begin(&mut self) {}
 
     // Called at the end of every frame
     pub fn end(&mut self) {
@@ -82,7 +81,7 @@ impl Pipeline {
     // Get the current rendering window immutably
     pub fn window(&self) -> &crate::Window {
         &self.window
-    } 
+    }
 
     // Get the current rendering window mutably
     pub fn window_mut(&mut self) -> &mut crate::Window {
@@ -90,19 +89,18 @@ impl Pipeline {
     }
 }
 
-
 // Storage access functions
-impl Pipeline {    
-    // Insert an object into the pipeline 
+impl Pipeline {
+    // Insert an object into the pipeline
     pub fn insert<T: Cached>(&mut self, object: T) -> Handle<T> {
-        self.storage.insert(object)       
+        self.storage.insert(object)
     }
-    
+
     // Get an object immutably
     pub fn get<T: Cached>(&self, handle: &Handle<T>) -> Option<&T> {
         self.storage.get(handle)
     }
-    
+
     // Get an object mutably
     pub fn get_mut<T: Cached>(&mut self, handle: &Handle<T>) -> Option<&mut T> {
         self.storage.get_mut(handle)

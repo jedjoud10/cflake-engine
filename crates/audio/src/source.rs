@@ -17,6 +17,6 @@ impl assets::Asset for AudioSource {
     unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Self {
         let cursor = Cursor::new(bytes.to_vec());
         let read = Decoder::new(cursor).unwrap().buffered();
-        AudioSource { buffered: read }    
+        AudioSource { buffered: read }
     }
 }

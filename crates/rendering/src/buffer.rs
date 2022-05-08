@@ -3,8 +3,9 @@ use std::{
     ffi::c_void,
     marker::PhantomData,
     mem::{size_of, ManuallyDrop},
+    num::NonZeroU32,
     ops::Range,
-    ptr::{null, NonNull}, num::NonZeroU32,
+    ptr::{null, NonNull},
 };
 
 // Objects that can be sent to the CPU

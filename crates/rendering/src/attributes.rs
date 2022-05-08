@@ -1,7 +1,6 @@
 use std::{num::NonZeroU32, ptr::null};
 
-use crate::{GPUSendable, SubMesh, Buffer, Context, VertexLayout};
-
+use crate::{Buffer, Context, GPUSendable, SubMesh, VertexLayout};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {
@@ -137,7 +136,7 @@ impl NamedAttribute for Tangent {
 
     fn get_mut(set: &mut AttributeSet) -> Option<&mut Buffer<Self::Out>> {
         set.tangents.as_mut()
-    }    
+    }
 }
 
 impl NamedAttribute for Color {
@@ -164,13 +163,13 @@ impl NamedAttribute for TexCoord0 {
     }
 }
 
-// Temp auxiliary data for generating the vertex attribute buffers 
+// Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
     vao: NonZeroU32,
     index: &'a mut u32,
     ctx: &'a mut Context,
     dynamic: bool,
-    layout: VertexLayout
+    layout: VertexLayout,
 }
 
 // Given a context, layout, target layout and capacity, generate a valid AttribBuf that might be either Some or None
@@ -211,7 +210,7 @@ impl AttributeSet {
             normals: gen(&mut aux, true, VertexLayout::NORMALS),
             tangents: gen(&mut aux, true, VertexLayout::TANGENTS),
             colors: gen(&mut aux, false, VertexLayout::COLORS),
-            tex_coord_0: gen(&mut aux, false, VertexLayout::TEX_COORD_0),            
+            tex_coord_0: gen(&mut aux, false, VertexLayout::TEX_COORD_0),
             count: layout.bits().count_ones(),
         }
     }
