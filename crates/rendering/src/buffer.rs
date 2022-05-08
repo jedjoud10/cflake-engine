@@ -10,8 +10,8 @@ use std::{
 
 // Objects that can be sent to the CPU
 // TODO: Rename
-pub trait GPUSendable: Copy + Sized {}
-impl<T: Copy + Sized> GPUSendable for T {}
+pub trait GPUSendable: Copy + Sized + Sync + Send {}
+impl<T: Copy + Sized + Sync + Send> GPUSendable for T {}
 
 // An abstraction layer over a valid OpenGL buffer
 pub struct Buffer<T: GPUSendable> {
@@ -110,7 +110,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mapped buffer
-    pub fn try_map_range(&self, _ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
+    pub fn try_map_range(&self, _ctx: &Context, range: Range<usize>) -> Option<RefMapped<T>> {
         self.validate(range).map(|(offset, length)| RefMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,

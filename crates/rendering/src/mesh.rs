@@ -57,7 +57,7 @@ impl SubMesh {
     }
 
     // Get a mapped buffer for a specific vertex attribute, if possible
-    pub fn get<U: NamedAttribute>(&self, ctx: &mut Context) -> Option<RefMapped<U::Out>> {
+    pub fn get<U: NamedAttribute>(&self, ctx: &Context) -> Option<RefMapped<U::Out>> {
         U::get(&self.attributes).map(|buffer| buffer.try_map_range(ctx, 0..self.vert_count).unwrap())
     }
 
