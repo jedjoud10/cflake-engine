@@ -26,7 +26,7 @@ pub struct Buffer<T: GPUSendable> {
 
 impl<T: GPUSendable> Buffer<T> {
     // Create a new buffer from it's raw parts
-    pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
+    pub unsafe fn from_raw_parts(ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::GenBuffers(1, &mut buffer);
@@ -58,27 +58,27 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Create a buffer with a specific starting capacity
-    pub fn with_capacity(_ctx: &mut Context, immutable: bool, capacity: usize) -> Self {
-        unsafe { Self::from_raw_parts(_ctx, immutable, 0, capacity, null()) }
+    pub fn with_capacity(ctx: &mut Context, immutable: bool, capacity: usize) -> Self {
+        unsafe { Self::from_raw_parts(ctx, immutable, 0, capacity, null()) }
     }
 
     // Create an empty buffer
-    pub fn new(_ctx: &mut Context, immutable: bool) -> Self {
-        unsafe { Self::from_raw_parts(_ctx, immutable, 0, 0, null()) }
+    pub fn new(ctx: &mut Context, immutable: bool) -> Self {
+        unsafe { Self::from_raw_parts(ctx, immutable, 0, 0, null()) }
     }
 
     // Create a buffer from a vector, and make sure the vector is not dropped before we send it's data to the GPU
-    pub fn from_vec(_ctx: &mut Context, immutable: bool, vec: Vec<T>) -> Self {
+    pub fn from_vec(ctx: &mut Context, immutable: bool, vec: Vec<T>) -> Self {
         unsafe {
             let mut manual = ManuallyDrop::new(vec);
-            let me = Self::from_raw_parts(_ctx, immutable, manual.len(), manual.capacity(), manual.as_ptr());
+            let me = Self::from_raw_parts(ctx, immutable, manual.len(), manual.capacity(), manual.as_ptr());
             ManuallyDrop::drop(&mut manual);
             me
         }
     }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
+    pub fn bind(&mut self, ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
         unsafe {
             gl::BindBuffer(target, self.buffer.get());
             f(self, self.buffer.get());
@@ -110,7 +110,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mapped buffer
-    pub fn try_map_range(&self, _ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
+    pub fn try_map_range(&self, ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
         self.validate(range).map(|(offset, length)| RefMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,
@@ -119,7 +119,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mutable mapped buffer
-    pub fn try_map_range_mut(&mut self, _ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
+    pub fn try_map_range_mut(&mut self, ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
         self.validate(range).map(|(offset, length)| MutMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,
@@ -128,7 +128,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Overwrite the buffer with some new values
-    pub fn overwrite(&mut self, _ctx: &mut Context, new: Vec<T>) {
+    pub fn overwrite(&mut self, ctx: &mut Context, new: Vec<T>) {
         // Keep these values cached
         let new_capacity = new.capacity();
         let new_length = new.len();
@@ -136,14 +136,14 @@ impl<T: GPUSendable> Buffer<T> {
         // Check if we can fill the data without having to reallocate
         if new_capacity <= self.capacity {
             // We should just update subdata through the mapper
-            let mapped = self.try_map_range_mut(_ctx, 0..new.len()).unwrap();
+            let mapped = self.try_map_range_mut(ctx, 0..new.len()).unwrap();
             let slice = mapped.as_slice_mut();
 
             // Overwrite "slice" using elements from "new"
             unsafe {
                 // I use unsafe cause idk how to do it safely lul
-                let manual = ManuallyDrop::new(new);
-                std::ptr::copy(new.as_ptr(), slice.as_mut_ptr(), new_length);
+                let mut manual = ManuallyDrop::new(new);
+                std::ptr::copy(manual.as_ptr(), slice.as_mut_ptr(), new_length);
                 ManuallyDrop::drop(&mut manual);
             }
         } else {
@@ -154,7 +154,7 @@ impl<T: GPUSendable> Buffer<T> {
             } else {
                 // Simply reallocate the buffer
                 unsafe {
-                    let manual = ManuallyDrop::new(new);
+                    let mut manual = ManuallyDrop::new(new);
                     let byte_capacity = isize::try_from(new_capacity * size_of::<T>()).unwrap();
                     gl::NamedBufferData(self.buffer.get(), byte_capacity, manual.as_ptr() as _, 0);
                     ManuallyDrop::drop(&mut manual);

@@ -68,8 +68,8 @@ impl SubMesh {
     }
 
     // Overwrite the indices internally
-    pub fn set_indices(&mut self, indices: Vec<u32>) {
-        self.indices.overwrite(indices)
+    pub fn set_indices(&mut self, ctx: &mut Context, indices: Vec<u32>) {
+        self.indices.overwrite(ctx, indices)
     }
 
     // Insert a vertex set into the sub
@@ -82,12 +82,12 @@ pub struct Mesh {
 
 impl Mesh {
     // Create a new empty mesh that can be modified later
-    fn new(_ctx: &mut Context) -> Self {
+    fn new(ctx: &mut Context) -> Self {
         Self { submeshes: Default::default() }
     }
 
     // Create a mesh from multiple submeshes
-    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
+    fn from_submeshes(ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
         Self { submeshes }
     }
 }
