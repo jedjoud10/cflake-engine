@@ -2,15 +2,18 @@ use crate::{metadata::AssetMetadata, Asset};
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
+    cell::{Ref, RefCell, RefMut},
+    ffi::{OsStr, OsString},
     path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard}, cell::{RefCell, Ref, RefMut}, str::FromStr, ffi::{OsStr, OsString},
+    str::FromStr,
+    sync::{Mutex, MutexGuard},
 };
 
 // If we are in Debug, we read the bytes directly from the file system
 #[cfg(debug_assertions)]
 fn read(path: &str, asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
-    use std::{io::Read, path::Path, fs::File};
-    
+    use std::{fs::File, io::Read, path::Path};
+
     // Get the path of the file (global)
     let file_path = {
         let mut file_path = asset_dir_path.clone();
@@ -18,7 +21,7 @@ fn read(path: &str, asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
         dbg!(&file_path);
         file_path
     };
-    
+
     // We do a bit of reading
     let mut file = File::open(file_path).ok()?;
     let mut bytes = Vec::new();
@@ -55,7 +58,7 @@ impl AssetLoader {
         // Try to load some cached bytes, if possible
         let path = PathBuf::from_str(path).unwrap();
         let meta = AssetMetadata::new(path.clone()).unwrap();
-        
+
         // Cache the bytes if needed
         let mut borrowed = self.cached.borrow_mut();
         if borrowed.get(&meta).is_none() {

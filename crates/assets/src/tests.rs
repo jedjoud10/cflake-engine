@@ -11,7 +11,7 @@ pub mod tests {
         dbg!(val);
 
         /*
-        
+
                 // Test
         asset!("./assets/sus/test.txt");
         init!("/src/assets");

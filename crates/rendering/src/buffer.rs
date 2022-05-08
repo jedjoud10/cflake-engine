@@ -55,17 +55,17 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Create a buffer with a specific starting capacity
-    pub fn with_capacity(_ctx: &Context, immutable: bool, capacity: usize) -> Self {
+    pub fn with_capacity(_ctx: &mut Context, immutable: bool, capacity: usize) -> Self {
         unsafe { Self::from_raw_parts(_ctx, immutable, 0, capacity, null()) }
     }
 
     // Create an empty buffer
-    pub fn new(_ctx: &Context, immutable: bool) -> Self {
+    pub fn new(_ctx: &mut Context, immutable: bool) -> Self {
         unsafe { Self::from_raw_parts(_ctx, immutable, 0, 0, null()) }
     }
 
     // Create a buffer from a vector, and make sure the vector is not dropped before we send it's data to the GPU
-    pub fn from_vec(_ctx: &Context, immutable: bool, vec: Vec<T>) -> Self {
+    pub fn from_vec(_ctx: &mut Context, immutable: bool, vec: Vec<T>) -> Self {
         unsafe {
             let mut manual = ManuallyDrop::new(vec);
             let me = Self::from_raw_parts(_ctx, immutable, manual.len(), manual.capacity(), manual.as_ptr());
@@ -84,6 +84,15 @@ impl<T: GPUSendable> Buffer<T> {
             let length = range.end - range.start;
             (offset, length)
         })
+    }
+
+    // Bind the buffer temporarily to a specific target, and unbind it when done
+    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
+        unsafe {
+            gl::BindBuffer(target, self.buffer);
+            f(self, self.buffer);
+            gl::BindBuffer(target, 0);
+        }
     }
 
     // Map the OpenGL buffer directly, without checking anything and without drop safety

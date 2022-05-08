@@ -3,22 +3,20 @@ use std::io::Cursor;
 use rodio::{source::Buffered, Decoder, Source};
 
 // A single audio source that can be loaded
-#[derive(Default)]
 pub struct AudioSource {
-    // Loaded bytes
-    pub(crate) buffered: Option<Buffered<Decoder<Cursor<Vec<u8>>>>>,
+    pub(crate) buffered: Buffered<Decoder<Cursor<Vec<u8>>>>,
 }
 
-// Each audio source is loadable
 impl assets::Asset for AudioSource {
     type OptArgs = ();
-    fn deserialize(_meta: &assets::metadata::AssetMetadata, bytes: &[u8], _input: Self::OptArgs) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        // Rodio moment
+
+    fn is_valid(meta: assets::metadata::AssetMetadata) -> bool {
+        todo!()
+    }
+
+    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Self {
         let cursor = Cursor::new(bytes.to_vec());
         let read = Decoder::new(cursor).unwrap().buffered();
-        Some(AudioSource { buffered: Some(read) })
+        AudioSource { buffered: read }    
     }
 }

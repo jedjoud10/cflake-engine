@@ -28,11 +28,11 @@ impl Default for AudioPlayer {
 
 impl AudioPlayer {
     // Play a global audio source with modifier
-    pub fn play<T: Source + Send + 'static>(&self, source: &AudioSource, function: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send) -> Option<AudioSourceTracker>
+    pub fn play<T: Source + Send + 'static>(&self, source: &AudioSource, map: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send) -> Option<AudioSourceTracker>
     where
         <T as Iterator>::Item: rodio::Sample + Send,
     {
-        let buffered = function(source.buffered.clone().unwrap());
+        let buffered = map(source.buffered.clone());
         let sink = Sink::try_new(&self.stream_handle).unwrap();
         // Run the modifiers
         sink.append(buffered);
@@ -47,12 +47,12 @@ impl AudioPlayer {
         &self,
         source: &AudioSource,
         position: vek::Vec3<f32>,
-        function: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send,
+        map: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send,
     ) -> Option<AudioSourceTracker>
     where
         <T as Iterator>::Item: rodio::Sample + Send + Debug,
     {
-        let buffered = function(source.buffered.clone().unwrap());
+        let buffered = map(source.buffered.clone());
         // Create a new spatial sink
         // Convert positions
         let pos = [position.x, position.y, position.z];

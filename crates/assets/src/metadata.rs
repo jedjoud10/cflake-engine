@@ -23,4 +23,9 @@ impl AssetMetadata {
             relative_path: path.as_os_str().to_os_string(),
         })
     }
+
+    // Get the extension as a &str
+    pub fn extension(&self) -> &str {
+        self.extension.as_os_str().to_str().unwrap()
+    }
 }
