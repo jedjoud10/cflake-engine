@@ -74,6 +74,15 @@ impl<T: GPUSendable> Buffer<T> {
         }
     }
 
+    // Bind the buffer temporarily to a specific target, and unbind it when done
+    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
+        unsafe {
+            gl::BindBuffer(target, self.buffer.get());
+            f(self, self.buffer.get());
+            gl::BindBuffer(target, 0);
+        }
+    }
+
     // Given an element index range, return the offset/length tuple
     fn validate(&self, range: Range<usize>) -> Option<(usize, usize)> {
         // Check if the range encapsulates the full range of the buffer
@@ -84,15 +93,6 @@ impl<T: GPUSendable> Buffer<T> {
             let length = range.end - range.start;
             (offset, length)
         })
-    }
-
-    // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
-        unsafe {
-            gl::BindBuffer(target, self.buffer.get());
-            f(self, self.buffer.get());
-            gl::BindBuffer(target, 0);
-        }
     }
 
     // Map the OpenGL buffer directly, without checking anything and without drop safety
@@ -107,7 +107,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mapped buffer
-    pub fn try_map_range(&self, range: Range<usize>) -> Option<RefMapped<T>> {
+    pub fn try_map_range(&self, _ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
         self.validate(range).map(|(offset, length)| RefMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,
@@ -116,13 +116,20 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mutable mapped buffer
-    pub fn try_map_range_mut(&mut self, range: Range<usize>) -> Option<MutMapped<T>> {
+    pub fn try_map_range_mut(&mut self, _ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
         self.validate(range).map(|(offset, length)| MutMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,
             length,
         })
     }
+
+    // Overwrite the buffer with some new values
+    pub fn overwrite(&mut self, new: Vec<T>) {
+
+    }
+
+    // Add values to the end of the buffer, and reallocate it if needed
 }
 
 // An immutable mapped buffer that we can use to read data from the OpenGL buffer
@@ -134,7 +141,7 @@ pub struct RefMapped<'a, T: GPUSendable> {
 
 impl<'a, T: GPUSendable> RefMapped<'a, T> {
     // Create an immutable slice from the mapped region
-    pub fn as_slice(&self) -> &'a [T] {
+    pub fn as_slice(&'a self) -> &'a [T] {
         unsafe { std::slice::from_raw_parts(self.ptr, self.length) }
     }
 }
@@ -166,12 +173,12 @@ impl<'a, T: GPUSendable> Drop for MutMapped<'a, T> {
 
 impl<'a, T: GPUSendable> MutMapped<'a, T> {
     // Create an immutable slice from the mapped region
-    pub fn as_slice(&self) -> &'a [T] {
+    pub fn as_slice(&'a self) -> &'a [T] {
         unsafe { std::slice::from_raw_parts(self.ptr, self.length) }
     }
 
     // Create a mutable slice from the mapped region
-    pub fn as_lice_mut(&self) -> &'a mut [T] {
+    pub fn as_slice_mut(&'a self) -> &'a mut [T] {
         unsafe { std::slice::from_raw_parts_mut(self.ptr, self.length) }
     }
 }

@@ -8,6 +8,8 @@ mod pipeline;
 mod storage;
 mod tests;
 mod window;
+mod attributes;
+pub use attributes::*;
 pub use buffer::*;
 pub use context::*;
 pub use mesh::*;
