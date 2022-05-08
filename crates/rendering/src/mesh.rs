@@ -1,4 +1,4 @@
-use std::{mem::size_of, ptr::null};
+use std::{mem::size_of, ptr::null, num::NonZeroU32};
 
 use assets::Asset;
 use crate::{Buffer, Context, GPUSendable};
@@ -74,110 +74,151 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
 }
 
 // The currently stored VAO in the submesh
-#[derive(Default)]
+#[repr(align(32))]
 struct VertexArrayObject {
-    name: u32,
-    enabled_attributes_count: u32,
 }
 
-// Given a context an a VAO, create an empty attribute buffer
-fn generate_attrib_buffer<T: Attribute>(ctx: &mut Context, normalized: bool, vao: &mut VertexArrayObject) -> Buffer<T> {
-    let mut buffer = Buffer::<T>::new(ctx, false);
-
-    // Bind the buffer to bind the attributes
-    buffer.bind(ctx, gl::ARRAY_BUFFER, |_, _| unsafe {
-        // Enable the pointer
-        let index = vao.enabled_attributes_count;
-        gl::VertexAttribPointer(index, T::COUNT_PER_VERTEX as i32, T::GL_TYPE, normalized.into(), 0, null());
-        gl::EnableVertexArrayAttrib(vao.name, index);
-
-        // Increment the counter, since we've enabled the attribute
-        vao.enabled_attributes_count += 1;
-    });
-
-    buffer
-}
-
-// What attributes are enabled in a submesh
+// Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
-    struct SubMeshLayout: u8 {
+    struct VertexLayout: u8 {
         const POSITIONS = 1;
         const NORMALS = 1 << 2;
         const TANGENTS = 1 << 3;
         const COLORS = 1 << 4;
-        const TEX_COORD0 = 1 << 5;
-        const INDICES = 1 << 6;
+        const TEX_COORD_0 = 1 << 5;
     }
+}
+
+// Temp auxiliary data for generating the vertex attribute buffers 
+struct AuxBufGen<'a> {
+    vao: NonZeroU32,
+    index: &'a mut u32,
+    ctx: &'a mut Context,
+    dynamic: bool,
+    layout: VertexLayout
+}
+
+// Attribute buffer that *might* be disabled, or maybe enabled
+type AttribBuf<T> = Option<Buffer<T>>;
+
+// Given a context, layout, target layout and capacity, generate a valid AttribBuf that might be either Some or None
+fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool, target: VertexLayout) -> AttribBuf<T> {
+    aux.layout.contains(target).then(|| {
+        let mut buffer = Buffer::<T>::new(aux.ctx, !aux.dynamic);
+
+        // Bind the buffer to bind the attributes
+        buffer.bind(aux.ctx, gl::ARRAY_BUFFER, |_, _| unsafe {
+            // Enable the pointer
+            gl::VertexAttribPointer(*aux.index, T::COUNT_PER_VERTEX as i32, T::GL_TYPE, normalized.into(), 0, null());
+            gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
+
+            // Increment the counter, since we've enabled the attribute
+            *aux.index += 1;
+        });
+
+        buffer
+    })
 }
 
 
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {    
-    // Vertex attributes
-    positions: Buffer<vek::Vec3<f32>>,
-    normals: Buffer<vek::Vec3<i8>>,
-    tangents: Buffer<vek::Vec4<i8>>,
-    colors: Buffer<vek::Rgb<u8>>,
-    tex_coord: Buffer<vek::Vec2<u8>>,
+    // The VAO that wraps everything up (OpenGL side)
+    vao: NonZeroU32,
+
+    // Vertex attributes and the vertex count
+    positions: AttribBuf<vek::Vec3<f32>>,
+    normals: AttribBuf<vek::Vec3<i8>>,
+    tangents: AttribBuf<vek::Vec4<i8>>,
+    colors: AttribBuf<vek::Rgb<u8>>,
+    tex_coord_0: AttribBuf<vek::Vec2<u8>>,
+    vert_count: usize,
     
-    // Indices
+    // We must always have a valid EBO
     indices: Buffer<u32>,
+
+    // Vertex layout for attributes
+    layout: VertexLayout,
+
+    // How many enabled attributes we have
+    attributes: u32,
+    
+    // Can we modify the VAO after we've created it?
+    dynamic: bool,
 }
 
 impl SubMesh {
-    // This creates a new submesh with attribute layout defined by "enabled" and with a specific vertex capacity
-    fn new(ctx: &mut Context, enabled: SubMeshLayout, capacity: usize) -> (Self, VertexArrayObject) {
+    // This creates a new submesh with attribute layout defined by "layout"
+    // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
+    fn new(ctx: &mut Context, layout: VertexLayout, dynamic: bool) -> Self {
         // Create and bind the VAO, then create a safe VAO wrapper
-        let mut vao = unsafe {
+        let vao = unsafe {
             let mut name = 0;
             gl::GenVertexArrays(1, &mut name);
             gl::BindVertexArray(name);
-            VertexArrayObject {
-                name,
-                enabled_attributes_count: 0,
-            }
+            NonZeroU32::new(name).unwrap()
         };
 
-        // Create the sub mesh with empty buffers
-        let me = Self {
-            positions: generate_attrib_buffer(ctx, false, &mut vao),
-            normals: generate_attrib_buffer(ctx, false, &mut vao),
-            tangents: generate_attrib_buffer(ctx, false, &mut vao),
-            colors: generate_attrib_buffer(ctx, false, &mut vao),
-            tex_coord: generate_attrib_buffer(ctx, false, &mut vao),
-            indices: generate_attrib_buffer(ctx, false, &mut vao),
+        // Helper struct to make buffer initializiation a bit easier
+        let mut index = 0u32;
+        let mut aux = AuxBufGen {
+            vao,
+            index: &mut index,
+            ctx,
+            dynamic,
+            layout,
         };
 
-        (todo!(), vao)
+        // Create the sub mesh with valid buffers (if they are enabled)
+        Self {
+            vao,
+            positions: gen(&mut aux, false, VertexLayout::POSITIONS),
+            normals: gen(&mut aux, true, VertexLayout::NORMALS),
+            tangents: gen(&mut aux, true, VertexLayout::TANGENTS),
+            colors: gen(&mut aux, false, VertexLayout::COLORS),
+            tex_coord_0: gen(&mut aux, false, VertexLayout::TEX_COORD_0),            
+            indices: Buffer::new(ctx, !dynamic),
+            vert_count: 0,
+            layout,
+            attributes: layout.bits.count_ones(),
+            dynamic,
+        }
     }
+
+    // Add some vertices, and make sure the layout matches with our own
+    /*
+    pub fn insert(&mut self, vertices: VertexSet) -> Option<()> {
+        None
+    }
+    */
+    // Set the triangles
 }
 
 // A mesh is simply a collection of submeshes
 pub struct Mesh {
-    // Separate vector for storing the VAOs of each submesh
-    vaos: Vec<u32>,
-
-    // Each submesh
-    shared: Vec<SubMesh>,    
+    submeshes: Vec<SubMesh>,    
 }
 
 
 impl Mesh {
     // Create a new empty mesh that can be modified later
-    fn new(_ctx: &Context) -> Self {
-        todo!()
+    fn new(_ctx: &mut Context) -> Self {
+        Self {
+            submeshes: Default::default(),
+        }
     }
 
     // Create a mesh from multiple submeshes
-    fn from_submeshes(_ctx: &Context, submeshes: Vec<SubMesh>) -> Self {
-        todo!()
+    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {    
+        Self {
+            submeshes,
+        }
     }
 }
 
 impl Mesh {
     // Add a submesh into the mesh
-    // 
 }
 
 impl Asset for Mesh {
