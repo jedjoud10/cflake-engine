@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, ptr::null};
 
-use crate::{Buffer, Context, GPUSendable, SubMesh, VertexLayout};
+use crate::{Buffer, Context, GPUSendable, VertexLayout};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {

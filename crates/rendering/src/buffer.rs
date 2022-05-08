@@ -5,7 +5,7 @@ use std::{
     mem::{size_of, ManuallyDrop},
     num::NonZeroU32,
     ops::Range,
-    ptr::{null, NonNull},
+    ptr::{null},
 };
 
 // Objects that can be sent to the CPU
@@ -26,7 +26,7 @@ pub struct Buffer<T: GPUSendable> {
 
 impl<T: GPUSendable> Buffer<T> {
     // Create a new buffer from it's raw parts
-    pub unsafe fn from_raw_parts(ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
+    pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::GenBuffers(1, &mut buffer);
@@ -78,7 +78,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
+    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
         unsafe {
             gl::BindBuffer(target, self.buffer.get());
             f(self, self.buffer.get());
@@ -110,7 +110,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mapped buffer
-    pub fn try_map_range(&self, ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
+    pub fn try_map_range(&self, _ctx: &mut Context, range: Range<usize>) -> Option<RefMapped<T>> {
         self.validate(range).map(|(offset, length)| RefMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,
@@ -119,7 +119,7 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Using a range of elements, we shall make a mutable mapped buffer
-    pub fn try_map_range_mut(&mut self, ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
+    pub fn try_map_range_mut(&mut self, _ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
         self.validate(range).map(|(offset, length)| MutMapped {
             ptr: self.map_raw_unchecked(offset, length),
             buf: self,

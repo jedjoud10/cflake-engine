@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use assets::Asset;
+    
 
-    use crate::{Buffer, Mesh, Normal, Position, SubMesh, Tangent};
+    use crate::{SubMesh};
 
     #[test]
     fn test() {
         //let test: assets::loader::AssetLoader = todo!();
 
-        let mesh: SubMesh = todo!();
+        let _mesh: SubMesh = todo!();
     }
 }

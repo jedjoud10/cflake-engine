@@ -1,9 +1,6 @@
 use std::{
     any::{Any, TypeId},
-    cell::UnsafeCell,
     marker::PhantomData,
-    ops::{Index, IndexMut},
-    ptr::NonNull,
     sync::Arc,
 };
 
@@ -98,17 +95,13 @@ impl PipelineStorage {
     // Get an object immutably
     pub fn get<T: Cached>(&self, handle: &Handle<T>) -> Option<&T> {
         self.hashmap
-            .get(&TypeId::of::<T>())
-            .map(|boxed| boxed.as_any().downcast_ref::<SingleRow<T>>().unwrap().slotmap.get(handle.key))
-            .flatten()
+            .get(&TypeId::of::<T>()).and_then(|boxed| boxed.as_any().downcast_ref::<SingleRow<T>>().unwrap().slotmap.get(handle.key))
     }
 
     // Get an object mutably
     pub fn get_mut<T: Cached>(&mut self, handle: &Handle<T>) -> Option<&mut T> {
         self.hashmap
-            .get_mut(&TypeId::of::<T>())
-            .map(|boxed| boxed.as_any_mut().downcast_mut::<SingleRow<T>>().unwrap().slotmap.get_mut(handle.key))
-            .flatten()
+            .get_mut(&TypeId::of::<T>()).and_then(|boxed| boxed.as_any_mut().downcast_mut::<SingleRow<T>>().unwrap().slotmap.get_mut(handle.key))
     }
 }
 

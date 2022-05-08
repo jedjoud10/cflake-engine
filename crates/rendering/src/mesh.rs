@@ -1,6 +1,6 @@
-use crate::{Attribute, AttributeSet, Buffer, Context, GPUSendable, MutMapped, NamedAttribute, RefMapped};
+use crate::{AttributeSet, Buffer, Context, MutMapped, NamedAttribute, RefMapped};
 use assets::Asset;
-use std::{mem::size_of, num::NonZeroU32, ptr::null};
+use std::{num::NonZeroU32};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
@@ -82,12 +82,12 @@ pub struct Mesh {
 
 impl Mesh {
     // Create a new empty mesh that can be modified later
-    fn new(ctx: &mut Context) -> Self {
+    fn new(_ctx: &mut Context) -> Self {
         Self { submeshes: Default::default() }
     }
 
     // Create a mesh from multiple submeshes
-    fn from_submeshes(ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
+    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
         Self { submeshes }
     }
 }
@@ -103,7 +103,7 @@ impl Asset for Mesh {
         meta.extension() == "obj"
     }
 
-    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Self {
+    unsafe fn deserialize(_bytes: &[u8], _args: &Self::OptArgs) -> Self {
         todo!()
     }
 }
