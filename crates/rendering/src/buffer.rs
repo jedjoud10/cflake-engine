@@ -18,6 +18,7 @@ pub struct Buffer<T: GPUSendable> {
     buffer: NonZeroU32,
     length: usize,
     capacity: usize,
+    immutable: bool,
 
     _phantom: PhantomData<*const T>,
 }
@@ -50,6 +51,7 @@ impl<T: GPUSendable> Buffer<T> {
             buffer: NonZeroU32::new(buffer).unwrap(),
             length,
             capacity,
+            immutable,
             _phantom: Default::default(),
         }
     }
@@ -125,8 +127,43 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Overwrite the buffer with some new values
-    pub fn overwrite(&mut self, new: Vec<T>) {
+    pub fn overwrite(&mut self, _ctx: &mut Context, new: Vec<T>) {
+        // Keep these values cached
+        let new_capacity = new.capacity();
+        let new_length = new.len();
 
+        // Check if we can fill the data without having to reallocate
+        if new_capacity <= self.capacity {
+            // We should just update subdata through the mapper
+            let mapped = self.try_map_range_mut(_ctx, 0..new.len()).unwrap();
+            let slice = mapped.as_slice_mut();
+
+            // Overwrite "slice" using elements from "new"
+            unsafe {
+                // I use unsafe cause idk how to do it safely lul
+                let manual = ManuallyDrop::new(new);
+                std::ptr::copy(new.as_ptr(), slice.as_mut_ptr(), new_length);
+                ManuallyDrop::drop(&mut manual);
+            }
+        } else {
+            // We must reallocate
+            if self.immutable {
+                // Oopsie woopsie, uwu we made a fucky wucky, a little fucko-boingo
+                panic!()
+            } else {
+                // Simply reallocate the buffer
+                unsafe {
+                    let manual = ManuallyDrop::new(new);
+                    let byte_capacity = isize::try_from(new_capacity * size_of::<T>()).unwrap();
+                    gl::NamedBufferData(self.buffer.get(), byte_capacity, manual.as_ptr() as _, 0);
+                    ManuallyDrop::drop(&mut manual);
+                }
+            }
+        }
+
+        // Funny rust length and capacity moment
+        self.capacity = new_capacity;
+        self.length = new_length;
     }
 
     // Add values to the end of the buffer, and reallocate it if needed
