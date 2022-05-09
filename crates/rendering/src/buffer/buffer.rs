@@ -8,25 +8,24 @@ use std::{
     ptr::null,
 };
 
-use super::BufferTarget;
-
 // Objects that can be sent to the CPU
 // TODO: Rename
 pub trait GPUSendable: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> GPUSendable for T {}
 
 // An abstraction layer over a valid OpenGL buffer
-pub struct Buffer<Target: BufferTarget> {
+// This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
+pub struct Buffer<T: GPUSendable> {
     // OpenGL buffer data
     buffer: NonZeroU32,
     length: usize,
     capacity: usize,
     immutable: bool,
 
-    _phantom: PhantomData<*const Target>,
+    _phantom: PhantomData<T>,
 }
 
-impl<Target: BufferTarget> Buffer<T> {
+impl<T: GPUSendable> Buffer<T> {
     // Create a new buffer from it's raw parts
     pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
