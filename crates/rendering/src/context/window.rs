@@ -1,5 +1,3 @@
-
-
 // A window that we will use to render the game
 pub struct Window {
     glutin: glutin::window::Window,

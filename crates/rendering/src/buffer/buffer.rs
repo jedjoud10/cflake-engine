@@ -5,8 +5,10 @@ use std::{
     mem::{size_of, ManuallyDrop},
     num::NonZeroU32,
     ops::Range,
-    ptr::{null},
+    ptr::null,
 };
+
+use super::BufferTarget;
 
 // Objects that can be sent to the CPU
 // TODO: Rename
@@ -14,17 +16,17 @@ pub trait GPUSendable: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> GPUSendable for T {}
 
 // An abstraction layer over a valid OpenGL buffer
-pub struct Buffer<T: GPUSendable> {
+pub struct Buffer<Target: BufferTarget> {
     // OpenGL buffer data
     buffer: NonZeroU32,
     length: usize,
     capacity: usize,
     immutable: bool,
 
-    _phantom: PhantomData<*const T>,
+    _phantom: PhantomData<*const Target>,
 }
 
-impl<T: GPUSendable> Buffer<T> {
+impl<Target: BufferTarget> Buffer<T> {
     // Create a new buffer from it's raw parts
     pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
@@ -78,11 +80,11 @@ impl<T: GPUSendable> Buffer<T> {
     }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, target: u32, f: impl FnOnce(&Self, u32)) {
+    pub fn bind(&mut self, _ctx: &mut Context, target: NonZeroU32, f: impl FnOnce(&Self, u32)) {
         unsafe {
-            gl::BindBuffer(target, self.buffer.get());
+            gl::BindBuffer(target.get(), self.buffer.get());
             f(self, self.buffer.get());
-            gl::BindBuffer(target, 0);
+            gl::BindBuffer(target.get(), 0);
         }
     }
 

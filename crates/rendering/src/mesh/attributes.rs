@@ -1,75 +1,83 @@
-use std::{num::NonZeroU32, ptr::null};
-use crate::{buffer::{Buffer, GPUSendable}, context::Context};
 use super::VertexLayout;
+use crate::{
+    buffer::{Buffer, GPUSendable},
+    context::Context,
+};
+use std::{num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {
-    const GL_TYPE: u32;
+    const GL_TYPE: NonZeroU32;
 }
 
 // A compound attribute, like a vector (as in vec2, vec3, vec4) that consists of multiple attributes
 pub trait Attribute: GPUSendable {
-    const GL_TYPE: u32;
-    const COUNT_PER_VERTEX: u32;
+    const GL_TYPE: NonZeroU32;
+    const COUNT_PER_VERTEX: NonZeroU32;
+}
+
+// Le fonction cause I don't wanna make it look ugly
+const fn ct(gltype: u32) -> NonZeroU32 {
+    unsafe { NonZeroU32::new_unchecked(gltype) }
 }
 
 // Base attribute implementaions
 impl BaseAttribute for f32 {
-    const GL_TYPE: u32 = gl::FLOAT;
+    const GL_TYPE: NonZeroU32 = ct(gl::FLOAT);
 }
 
 impl BaseAttribute for i32 {
-    const GL_TYPE: u32 = gl::INT;
+    const GL_TYPE: NonZeroU32 = ct(gl::INT);
 }
 
 impl BaseAttribute for u32 {
-    const GL_TYPE: u32 = gl::UNSIGNED_INT;
+    const GL_TYPE: NonZeroU32 = ct(gl::UNSIGNED_INT);
 }
 
 impl BaseAttribute for i16 {
-    const GL_TYPE: u32 = gl::SHORT;
+    const GL_TYPE: NonZeroU32 = ct(gl::SHORT);
 }
 
 impl BaseAttribute for u16 {
-    const GL_TYPE: u32 = gl::UNSIGNED_SHORT;
+    const GL_TYPE: NonZeroU32 = ct(gl::UNSIGNED_SHORT);
 }
 
 impl BaseAttribute for i8 {
-    const GL_TYPE: u32 = gl::BYTE;
+    const GL_TYPE: NonZeroU32 = ct(gl::BYTE);
 }
 
 impl BaseAttribute for u8 {
-    const GL_TYPE: u32 = gl::UNSIGNED_BYTE;
+    const GL_TYPE: NonZeroU32 = ct(gl::UNSIGNED_BYTE);
 }
 
 impl<T: BaseAttribute> Attribute for T {
-    const GL_TYPE: u32 = <T as BaseAttribute>::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 1;
+    const GL_TYPE: NonZeroU32 = <T as BaseAttribute>::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(1);
 }
 
 impl<T: BaseAttribute> Attribute for vek::Vec2<T> {
-    const GL_TYPE: u32 = T::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 2;
+    const GL_TYPE: NonZeroU32 = T::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(2);
 }
 
 impl<T: BaseAttribute> Attribute for vek::Vec3<T> {
-    const GL_TYPE: u32 = T::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 3;
+    const GL_TYPE: NonZeroU32 = T::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(3);
 }
 
 impl<T: BaseAttribute> Attribute for vek::Vec4<T> {
-    const GL_TYPE: u32 = T::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 4;
+    const GL_TYPE: NonZeroU32 = T::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(4);
 }
 
 impl<T: BaseAttribute> Attribute for vek::Rgb<T> {
-    const GL_TYPE: u32 = T::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 3;
+    const GL_TYPE: NonZeroU32 = T::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(3);
 }
 
 impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
-    const GL_TYPE: u32 = T::GL_TYPE;
-    const COUNT_PER_VERTEX: u32 = 4;
+    const GL_TYPE: NonZeroU32 = T::GL_TYPE;
+    const COUNT_PER_VERTEX: NonZeroU32 = ct(4);
 }
 
 // Attribute buffer that *might* be disabled, or maybe enabled
@@ -178,9 +186,9 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool, target: Vert
         let mut buffer = Buffer::<T>::new(aux.ctx, !aux.dynamic);
 
         // Bind the buffer to bind the attributes
-        buffer.bind(aux.ctx, gl::ARRAY_BUFFER, |_, _| unsafe {
+        buffer.bind(aux.ctx, NonZeroU32::new(gl::ARRAY_BUFFER).unwrap(), |_, _| unsafe {
             // Enable the pointer
-            gl::VertexAttribPointer(*aux.index, T::COUNT_PER_VERTEX as i32, T::GL_TYPE, normalized.into(), 0, null());
+            gl::VertexAttribPointer(*aux.index, T::COUNT_PER_VERTEX.get() as i32, T::GL_TYPE.get(), normalized.into(), 0, null());
             gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
 
             // Increment the counter, since we've enabled the attribute

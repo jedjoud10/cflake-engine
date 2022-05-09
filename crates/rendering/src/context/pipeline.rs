@@ -1,11 +1,6 @@
-use std::{
-    ops::{Index, IndexMut},
-};
-
+use std::ops::{Index, IndexMut};
 
 use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest};
-
-
 
 use super::{Cached, Handle, PipelineStorage};
 

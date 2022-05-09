@@ -9,7 +9,9 @@ pub trait Asset {
     fn is_valid(meta: AssetMetadata) -> bool;
 
     // Deserialize an asset, assuming that the given bytes are already in the valid format
-    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Option<Self> where Self: Sized;
+    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Option<Self>
+    where
+        Self: Sized;
 
     // Load an asset by reading the asset loader's bytes and using explicity opt args
     fn try_load_with(loader: &AssetLoader, path: &str, args: &Self::OptArgs) -> Option<Self>

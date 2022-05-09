@@ -1,7 +1,10 @@
-use super::attributes::{NamedAttribute, AttributeSet};
-use crate::{buffer::{Buffer, GPUSendable, RefMapped, MutMapped}, context::Context};
+use super::attributes::{AttributeSet, NamedAttribute};
+use crate::{
+    buffer::{Buffer, MutMapped, RefMapped},
+    context::Context,
+};
 use assets::Asset;
-use std::{num::NonZeroU32};
+use std::num::NonZeroU32;
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {

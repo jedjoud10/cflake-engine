@@ -1,12 +1,16 @@
-use num::{Integer, Bounded, Num, Float};
 use crate::buffer::GPUSendable;
-use std::{mem::size_of, marker::PhantomData};
+use std::mem::size_of;
 
 // Defines how texels must be stored within textures
 pub trait TexelLayout {
     const GL_TYPE: u32;
     const CHANNELS: u32;
     const BYTES_PER_CHANNEL: u32;
+
+    // Count the number of bytes that make each texel
+    fn bytes() -> u32 {
+        Self::BYTES_PER_CHANNEL * Self::CHANNELS
+    }
 }
 
 // A range texel limiter that will hint the texture that the integer must be accessed as a floating point value, and that it must be in the 0-1 range
@@ -32,61 +36,61 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u32::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<i32> {
                 const GL_TYPE: u32 = gl::[<$t 32I>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i32::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<u16> {
                 const GL_TYPE: u32 = gl::[<$t 16UI>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<i16> {
                 const GL_TYPE: u32 = gl::[<$t 16I>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<u8> {
                 const GL_TYPE: u32 = gl::[<$t 8UI>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<i8> {
                 const GL_TYPE: u32 = gl::[<$t 8I>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<f32> {
                 const GL_TYPE: u32 = gl::[<$t 32F>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
             }
-            
+
             impl TexelLayout for $t<Ranged<u16>> {
                 const GL_TYPE: u32 = gl::[<$t 16>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<Normalized<i16>> {
                 const GL_TYPE: u32 = gl::[<$t 16_SNORM>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<Ranged<u8>> {
                 const GL_TYPE: u32 = gl::[<$t 8>];
                 const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS * 8;
             }
-            
+
             impl TexelLayout for $t<Normalized<i8>> {
                 const GL_TYPE: u32 = gl::[<$t 8_SNORM>];
                 const CHANNELS: u32 = $count;
@@ -101,8 +105,3 @@ impl_texel_layout!(R, R, 1);
 impl_texel_layout!(RG, RG, 2);
 impl_texel_layout!(RGB, RGB, 3);
 impl_texel_layout!(RGBA, RGBA, 4);
-
-// Calculate the amount of bytes that we need to allocate for a single texel 
-pub const fn byte_count_per_texel<L: TexelLayout>() -> u32 {
-    L::BYTES_PER_CHANNEL * L::CHANNELS
-}
