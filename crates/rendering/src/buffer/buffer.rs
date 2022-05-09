@@ -13,9 +13,15 @@ use std::{
 pub trait GPUSendable: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> GPUSendable for T {}
 
+// Common OpenGL buffer types
+pub type ArrayBuffer<T: GPUSendable> = Buffer<T, {gl::ARRAY_BUFFER}>;
+pub type ElementBuffer<T: GPUSendable + num::Integer> = Buffer<T, {gl::ELEMENT_ARRAY_BUFFER}>;
+pub type AtomicBuffer<T: GPUSendable> = Buffer<T, {gl::ATOMIC_COUNTER_BUFFER}>;
+
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
-pub struct Buffer<T: GPUSendable> {
+// This also takes a constant that represents it's OpenGL target
+pub struct Buffer<T: GPUSendable, const Target: u32> {
     // OpenGL buffer data
     buffer: NonZeroU32,
     length: usize,
@@ -25,7 +31,7 @@ pub struct Buffer<T: GPUSendable> {
     _phantom: PhantomData<T>,
 }
 
-impl<T: GPUSendable> Buffer<T> {
+impl<T: GPUSendable, const Target: u32> Buffer<T, Target> {
     // Create a new buffer from it's raw parts
     pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
@@ -78,12 +84,26 @@ impl<T: GPUSendable> Buffer<T> {
         }
     }
 
-    // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, target: NonZeroU32, f: impl FnOnce(&Self, u32)) {
+    // Gets the buffer's internal OpenGL name
+    fn name(&self) -> NonZeroU32 {
+        self.buffer
+    }
+    
+    // Gets the buffer's target type
+    fn target(&self) -> NonZeroU32 {
         unsafe {
-            gl::BindBuffer(target.get(), self.buffer.get());
+            NonZeroU32::new_unchecked(Target)
+        }
+    }
+    
+
+    // Bind the buffer temporarily to a specific target, and unbind it when done
+    pub fn bind(&mut self, _ctx: &mut Context, f: impl FnOnce(&Self, u32)) {
+        unsafe {
+            let target = self.target().get();
+            gl::BindBuffer(target, self.buffer.get());
             f(self, self.buffer.get());
-            gl::BindBuffer(target.get(), 0);
+            gl::BindBuffer(target, 0);
         }
     }
 
@@ -114,8 +134,9 @@ impl<T: GPUSendable> Buffer<T> {
     pub fn try_map_range(&self, _ctx: &Context, range: Range<usize>) -> Option<RefMapped<T>> {
         self.validate(range).map(|(offset, length)| RefMapped {
             ptr: self.map_raw_unchecked(offset, length),
-            buf: self,
+            buf: self.buffer,
             length,
+            _phantom: Default::default(),
         })
     }
 
@@ -123,8 +144,9 @@ impl<T: GPUSendable> Buffer<T> {
     pub fn try_map_range_mut(&mut self, _ctx: &mut Context, range: Range<usize>) -> Option<MutMapped<T>> {
         self.validate(range).map(|(offset, length)| MutMapped {
             ptr: self.map_raw_unchecked(offset, length),
-            buf: self,
+            buf: self.buffer,
             length,
+            _phantom: Default::default(),
         })
     }
 
@@ -173,7 +195,8 @@ impl<T: GPUSendable> Buffer<T> {
 
 // An immutable mapped buffer that we can use to read data from the OpenGL buffer
 pub struct RefMapped<'a, T: GPUSendable> {
-    buf: &'a Buffer<T>,
+    _phantom: PhantomData<&'a [T]>,
+    buf: NonZeroU32,
     ptr: *const T,
     length: usize,
 }
@@ -188,7 +211,7 @@ impl<'a, T: GPUSendable> RefMapped<'a, T> {
 impl<'a, T: GPUSendable> Drop for RefMapped<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            let res = gl::UnmapNamedBuffer(self.buf.buffer.get());
+            let res = gl::UnmapNamedBuffer(self.buf.get());
             assert!(res == gl::TRUE);
         }
     }
@@ -196,7 +219,8 @@ impl<'a, T: GPUSendable> Drop for RefMapped<'a, T> {
 
 // A mutable mapped buffer that we can use to write/read to/from the OpenGL buffer
 pub struct MutMapped<'a, T: GPUSendable> {
-    buf: &'a mut Buffer<T>,
+    _phantom: PhantomData<&'a [T]>,
+    buf: NonZeroU32,
     ptr: *mut T,
     length: usize,
 }
@@ -204,7 +228,7 @@ pub struct MutMapped<'a, T: GPUSendable> {
 impl<'a, T: GPUSendable> Drop for MutMapped<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            let res = gl::UnmapNamedBuffer(self.buf.buffer.get());
+            let res = gl::UnmapNamedBuffer(self.buf.get());
             assert!(res == gl::TRUE);
         }
     }

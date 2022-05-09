@@ -1,6 +1,6 @@
 use super::attributes::{AttributeSet, NamedAttribute};
 use crate::{
-    buffer::{Buffer, MutMapped, RefMapped},
+    buffer::{Buffer, MutMapped, RefMapped, ElementBuffer},
     context::Context,
 };
 use assets::Asset;
@@ -28,7 +28,7 @@ pub struct SubMesh {
     vert_count: usize,
 
     // We must always have a valid EBO
-    indices: Buffer<u32>,
+    indices: ElementBuffer<u32>,
 
     // Vertex layout for attributes
     layout: VertexLayout,
