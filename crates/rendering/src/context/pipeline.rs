@@ -7,10 +7,10 @@ use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, Con
 
 
 
-use crate::{Cached, Handle, PipelineStorage};
+use super::{Cached, Handle, PipelineStorage};
 
 // Create a new window and a valid OpenGL context
-pub fn init(el: &EventLoop<()>) -> (crate::Window, crate::Context) {
+pub fn init(el: &EventLoop<()>) -> (super::Window, super::Context) {
     // Build a valid window
     let wb = WindowBuilder::new().with_resizable(true).with_inner_size(LogicalSize::new(1920u32, 1080));
 
@@ -30,14 +30,14 @@ pub fn init(el: &EventLoop<()>) -> (crate::Window, crate::Context) {
     gl::load_with(|x| context.get_proc_address(x));
 
     // Construct a tuple using a pipeline window and the new pipeline context
-    (crate::Window::new(window), crate::Context::new(context))
+    (super::Window::new(window), super::Context::new(context))
 }
 
 // The renderer pipeline that will contain every object using handles
 pub struct Pipeline {
     // Window & Context
-    window: crate::Window,
-    context: crate::Context,
+    window: super::Window,
+    context: super::Context,
 
     // Pipeline storage for object caching
     storage: PipelineStorage,
@@ -68,17 +68,17 @@ impl Pipeline {
 // State fetchers
 impl Pipeline {
     // Get the OpenGL context, since we're going to need it for creating objects
-    pub fn context(&self) -> crate::Context {
+    pub fn context(&self) -> super::Context {
         self.context.clone()
     }
 
     // Get the current rendering window immutably
-    pub fn window(&self) -> &crate::Window {
+    pub fn window(&self) -> &super::Window {
         &self.window
     }
 
     // Get the current rendering window mutably
-    pub fn window_mut(&mut self) -> &mut crate::Window {
+    pub fn window_mut(&mut self) -> &mut super::Window {
         &mut self.window
     }
 }

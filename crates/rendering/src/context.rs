@@ -1,19 +1,8 @@
-use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
-use std::{marker::PhantomData, rc::Rc};
-
-// Main cotnext that stores the OpenGL glunit context
-#[derive(Clone)]
-pub struct Context {
-    ctx: Rc<RawContext<PossiblyCurrent>>,
-    _phantom: PhantomData<*const ()>,
-}
-
-impl Context {
-    // Create a context wrapper using a Glutin context
-    pub(crate) fn new(ctx: ContextWrapper<PossiblyCurrent, ()>) -> Self {
-        Self {
-            ctx: Rc::new(ctx),
-            _phantom: Default::default(),
-        }
-    }
-}
+mod context;
+mod pipeline;
+mod storage;
+mod window;
+pub use context::*;
+pub use pipeline::*;
+pub use storage::*;
+pub use window::*;
