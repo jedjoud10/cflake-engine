@@ -8,6 +8,8 @@ use std::{
     ptr::null,
 };
 
+use super::BufferAccess;
+
 // Objects that can be sent to the CPU
 // TODO: Rename
 pub trait GPUSendable: Copy + Sized + Sync + Send {}
@@ -22,13 +24,38 @@ pub type UniformBuffer<T> = Buffer<T, {gl::UNIFORM_BUFFER}>;
 
 // Buffers can be split into two types; dynamic buffers, and immutable buffers.
 // TODO: Rename
-enum RefreshSpec {
+enum Specification {
     // Immutable buffers can be allocated only once
     Immutable(u32),
     
     // Dynamic buffers can be allocated multiple times
     Dynamic(u32),
 }
+
+impl Specification {
+    // Convert a buffer access to a specification
+    pub fn new(access: BufferAccess) -> Self {
+        if access.contains(BufferAccess::DYNAMIC) {
+            // Mutable; can reallocate; meaning that the u32 represents buffer usage hints
+            // TODO: Check if OpenGL actually cares about the hints lol
+            let hints = if access.contains(BufferAccess::READ) {
+                gl::DYNAMIC_READ
+            } else if access.contains(BufferAccess::WRITE) {
+                gl::DYNAMIC_DRAW
+            } else {
+                gl::DYNAMIC_COPY
+            };
+            Self::Dynamic(hints)
+        } else {
+            // Immutable; cannot reallocate; meaning that the u32 represents immutable storage flags
+            let write = u32::from(access.contains(BufferAccess::WRITE)) * gl::MAP_WRITE_BIT;
+            let read = u32::from(access.contains(BufferAccess::READ)) * gl::MAP_READ_BIT;
+            let flags = write | read;
+            Self::Immutable(flags)
+        }
+    }
+}
+
 
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
@@ -38,13 +65,13 @@ pub struct Buffer<T: GPUSendable, const TARGET: u32> {
     buffer: NonZeroU32,
     length: usize,
     capacity: usize,
-    spec: RefreshSpec,
+    spec: Specification,
     _phantom: PhantomData<*const T>,
 }
 
 impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts
-    pub unsafe fn from_raw_parts(_ctx: &Context, immutable: bool, length: usize, capacity: usize, ptr: *const T) -> Self {
+    pub unsafe fn from_raw_parts(_ctx: &Context, access: BufferAccess, length: usize, capacity: usize, ptr: *const T) -> Self {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::GenBuffers(1, &mut buffer);
@@ -56,13 +83,18 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         // Validate the pointer
         let ptr = if capacity == 0 { null() } else { ptr as *const c_void };
 
-        // Cock and balls
-        if immutable {
-            // Upload immutable data to the GPU. Immutable buffers cannot be reallocated
-            gl::NamedBufferStorage(buffer, byte_capacity, ptr as _, 0);
-        } else {
-            // Upload mutable data to the GPU. Mutable buffers can be resized and reallocated
-            gl::NamedBufferData(buffer, byte_capacity, ptr as _, 0);
+        // Convert the buffer access to the valid usage/flags
+        let spec = Specification::new(access);
+
+        match spec {
+            Specification::Immutable(flags) => {
+                // Upload immutable data to the GPU. Immutable buffers cannot be reallocated
+                gl::NamedBufferStorage(buffer, byte_capacity, ptr as _, flags);
+            },
+            Specification::Dynamic(usage) => {
+                // Upload mutable data to the GPU. Mutable buffers can be resized and reallocated
+                gl::NamedBufferData(buffer, byte_capacity, ptr as _, 0);
+            }
         }
 
         // Create the buffer struct
@@ -70,26 +102,26 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
             buffer: NonZeroU32::new(buffer).unwrap(),
             length,
             capacity,
-            spec: RefreshSpec::Dynamic(0),
+            spec: Specification::Dynamic(0),
             _phantom: Default::default(),
         }
     }
 
     // Create a buffer with a specific starting capacity
-    pub fn with_capacity(ctx: &mut Context, immutable: bool, capacity: usize) -> Self {
-        unsafe { Self::from_raw_parts(ctx, immutable, 0, capacity, null()) }
+    pub fn with_capacity(ctx: &mut Context, access: BufferAccess, capacity: usize) -> Self {
+        unsafe { Self::from_raw_parts(ctx, access, 0, capacity, null()) }
     }
 
     // Create an empty buffer
-    pub fn new(ctx: &mut Context, immutable: bool) -> Self {
-        unsafe { Self::from_raw_parts(ctx, immutable, 0, 0, null()) }
+    pub fn new(ctx: &mut Context, access: BufferAccess) -> Self {
+        unsafe { Self::from_raw_parts(ctx, access, 0, 0, null()) }
     }
 
     // Create a buffer from a vector, and make sure the vector is not dropped before we send it's data to the GPU
-    pub fn from_vec(ctx: &mut Context, immutable: bool, vec: Vec<T>) -> Self {
+    pub fn from_vec(ctx: &mut Context, access: BufferAccess, vec: Vec<T>) -> Self {
         unsafe {
             let mut manual = ManuallyDrop::new(vec);
-            let me = Self::from_raw_parts(ctx, immutable, manual.len(), manual.capacity(), manual.as_ptr());
+            let me = Self::from_raw_parts(ctx, access, manual.len(), manual.capacity(), manual.as_ptr());
             ManuallyDrop::drop(&mut manual);
             me
         }
@@ -166,7 +198,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         let new_length = new.len();
 
         match self.spec {
-            RefreshSpec::Immutable(flags) => {
+            Specification::Immutable(flags) => {
                 // Oopsie woopsie, uwu we made a fucky wucky, a little fucko-boingo
                 assert!(new_capacity < self.capacity, "Cannot reallocate immutable buffer");
 
@@ -182,7 +214,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                     ManuallyDrop::drop(&mut manual);
                 }
             },
-            RefreshSpec::Dynamic(usage) => {
+            Specification::Dynamic(usage) => {
                 // Simply reallocate the buffer, since we know it is dynamic
                 unsafe {
                     let mut manual = ManuallyDrop::new(new);
@@ -210,7 +242,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         let new_length = self.length + slice.len();
 
         match self.spec {
-            RefreshSpec::Immutable(flags) => {
+            Specification::Immutable(flags) => {
                 // Oopsie woopsie, uwu we made a fucky wucky, a little fucko-boingo
                 assert!(new_capacity < self.capacity, "Cannot reallocate immutable buffer");
 
@@ -223,7 +255,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                     std::ptr::copy(slice.as_ptr(), output.as_mut_ptr(), slice.len());
                 }
             },
-            RefreshSpec::Dynamic(usage) => {
+            Specification::Dynamic(usage) => {
                 // Reallocate the whole dynamic buffer
                 unsafe {
                     let byte_capacity = isize::try_from(new_capacity * size_of::<T>()).unwrap();

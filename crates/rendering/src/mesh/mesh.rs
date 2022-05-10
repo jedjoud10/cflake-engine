@@ -1,6 +1,6 @@
-use super::attributes::{AttributeSet, NamedAttribute};
+use super::{attributes::{AttributeSet, NamedAttribute, vertex::*}, GeometryBuilder};
 use crate::{
-    buffer::{Buffer, MutMapped, RefMapped, ElementBuffer},
+    buffer::{Buffer, MutMapped, RefMapped, ElementBuffer, BufferAccess},
     context::Context,
 };
 use assets::Asset;
@@ -32,15 +32,14 @@ pub struct SubMesh {
 
     // Vertex layout for attributes
     layout: VertexLayout,
-
-    // Can we modify the VAO after we've created it?
-    dynamic: bool,
 }
 
 impl SubMesh {
-    // This creates a new submesh with attribute layout defined by "layout"
+
+    // Construct a submesh using a geometry builder
+    // This creates a new submesh with attribute layout defined by the builder itself
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
-    pub fn new(ctx: &mut Context, layout: VertexLayout, dynamic: bool) -> Self {
+    pub fn new(ctx: &mut Context, builder: GeometryBuilder) -> Self {
         // Create and bind the VAO, then create a safe VAO wrapper
         let vao = unsafe {
             let mut name = 0;
@@ -49,14 +48,17 @@ impl SubMesh {
             NonZeroU32::new(name).unwrap()
         };
 
-        // Create the sub mesh
+        // How we shall access the vertex attribute and index buffers
+        let access = BufferAccess::WRITE | BufferAccess::WRITE;
+
+        // Create the sub mesh using the builder's layout and attributes
+        let layout = builder.layout();
         Self {
             vao,
-            attributes: AttributeSet::new(vao, ctx, layout, dynamic),
-            indices: Buffer::new(ctx, !dynamic),
+            attributes: AttributeSet::new(vao, ctx, layout, access),
+            indices: Buffer::from_vec(ctx, access, builder.indices),
             vert_count: 0,
             layout,
-            dynamic,
         }
     }
 
@@ -70,13 +72,6 @@ impl SubMesh {
         let count = self.vert_count;
         U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..count).unwrap())
     }
-
-    // Overwrite the indices internally
-    pub fn set_indices(&mut self, ctx: &mut Context, indices: Vec<u32>) {
-        self.indices.overwrite(ctx, indices)
-    }
-
-    // Insert a vertex set into the sub
 }
 
 // A mesh is simply a collection of submeshes
@@ -96,9 +91,6 @@ impl Mesh {
     }
 }
 
-impl Mesh {
-    // Add a submesh into the mesh
-}
 
 impl Asset for Mesh {
     type OptArgs = ();

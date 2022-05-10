@@ -1,6 +1,6 @@
-use super::VertexLayout;
+use super::{VertexLayout, GeometryBuilder};
 use crate::{
-    buffer::{Buffer, GPUSendable, ArrayBuffer},
+    buffer::{Buffer, GPUSendable, ArrayBuffer, BufferAccess},
     context::Context,
 };
 use std::{ptr::null, num::NonZeroU32};
@@ -96,9 +96,14 @@ pub struct AttributeSet {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait NamedAttribute {
     type Out: GPUSendable;
+    const LAYOUT_ID: VertexLayout;
 
+    // Get the OpenGL array buffer from a specific attribute set
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>>;
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>>;
+
+    // Set a specific vector inside a geometry builder
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>);
 }
 
 // Named attributes implement for empty structs
@@ -110,6 +115,7 @@ pub struct TexCoord0;
 
 impl NamedAttribute for Position {
     type Out = vek::Vec3<f32>;
+    const LAYOUT_ID: VertexLayout = VertexLayout::POSITIONS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.positions.as_ref()
@@ -118,10 +124,15 @@ impl NamedAttribute for Position {
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
         set.positions.as_mut()
     }
+
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
+        builder.positions = vec;
+    }
 }
 
 impl NamedAttribute for Normal {
     type Out = vek::Vec3<i8>;
+    const LAYOUT_ID: VertexLayout = VertexLayout::NORMALS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.normals.as_ref()
@@ -130,10 +141,15 @@ impl NamedAttribute for Normal {
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
         set.normals.as_mut()
     }
+
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
+        builder.normals = vec;
+    }
 }
 
 impl NamedAttribute for Tangent {
     type Out = vek::Vec4<i8>;
+    const LAYOUT_ID: VertexLayout = VertexLayout::TANGENTS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.tangents.as_ref()
@@ -142,10 +158,15 @@ impl NamedAttribute for Tangent {
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
         set.tangents.as_mut()
     }
+
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
+        builder.tangents = vec;
+    }
 }
 
 impl NamedAttribute for Color {
     type Out = vek::Rgb<u8>;
+    const LAYOUT_ID: VertexLayout = VertexLayout::COLORS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.colors.as_ref()
@@ -154,10 +175,15 @@ impl NamedAttribute for Color {
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
         set.colors.as_mut()
     }
+
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
+        builder.colors = vec;
+    }
 }
 
 impl NamedAttribute for TexCoord0 {
     type Out = vek::Vec2<u8>;
+    const LAYOUT_ID: VertexLayout = VertexLayout::TEX_COORD_0;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.tex_coord_0.as_ref()
@@ -166,21 +192,36 @@ impl NamedAttribute for TexCoord0 {
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
         set.tex_coord_0.as_mut()
     }
+
+    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
+        builder.tex_coord_0 = vec;
+    }
 }
+
+// Type aliases for the underlying vertex attribute data
+pub mod vertex {
+    use super::*;
+    pub type VePos = <Position as NamedAttribute>::Out;
+    pub type VeNormal = <Normal as NamedAttribute>::Out;
+    pub type VeTangent = <Tangent as NamedAttribute>::Out;
+    pub type VeColor = <Color as NamedAttribute>::Out;
+    pub type VeTexCoord0 = <TexCoord0 as NamedAttribute>::Out;
+}
+
 
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
     vao: NonZeroU32,
     index: &'a mut u32,
     ctx: &'a mut Context,
-    dynamic: bool,
+    access: BufferAccess,
     layout: VertexLayout,
 }
 
 // Given a context, layout, target layout and capacity, generate a valid AttribBuf that might be either Some or None
 fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool, target: VertexLayout) -> AttribBuf<T> {
     aux.layout.contains(target).then(|| {
-        let mut buffer = ArrayBuffer::<T>::new(aux.ctx, !aux.dynamic);
+        let mut buffer = ArrayBuffer::<T>::new(aux.ctx, aux.access);
 
         // Bind the buffer to bind the attributes
         buffer.bind(aux.ctx, |_, _| unsafe {
@@ -197,15 +238,15 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool, target: Vert
 }
 
 impl AttributeSet {
-    // Create a new attribute set using a context, a VAO, the layout, and the dynamic state of the submesh
-    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, layout: VertexLayout, dynamic: bool) -> Self {
+    // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
+    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, access: BufferAccess, builder: GeometryBuilder) -> Self {
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
         let mut aux = AuxBufGen {
             vao,
             index: &mut index,
             ctx,
-            dynamic,
+            access,
             layout,
         };
 
