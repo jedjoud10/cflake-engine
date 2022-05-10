@@ -2,7 +2,7 @@ use crate::buffer::GPUSendable;
 use std::mem::size_of;
 
 // Defines how texels must be stored within textures
-pub trait TexelLayout {
+pub trait TexelLayout: 'static {
     const GL_TYPE: u32;
     const CHANNELS: u32;
     const BYTES_PER_CHANNEL: u32;

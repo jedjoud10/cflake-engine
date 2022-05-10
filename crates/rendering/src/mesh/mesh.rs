@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
-    context::Context,
+    context::{Context, Cached},
 };
 use assets::Asset;
 use std::num::NonZeroU32;
@@ -99,8 +99,14 @@ impl Mesh {
     fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
         Self { submeshes }
     }
+
+    // Insert a submesh into the mesh
+    fn insert(&mut self, _ctx: &mut Context, submesh: SubMesh)  {
+
+    }
 }
 
+impl Cached for Mesh {}
 impl Asset for Mesh {
     type OptArgs = ();
 

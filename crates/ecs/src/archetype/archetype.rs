@@ -2,10 +2,8 @@ use crate::{
     entity::{Entity, EntityLinkings},
     registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
-use getset::{CopyGetters, Getters, MutGetters};
 use std::any::Any;
 // Combination of multiple component types
-#[derive(Getters, CopyGetters, MutGetters)]
 pub struct Archetype {
     // Main
     pub(crate) mask: Mask,

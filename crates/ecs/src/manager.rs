@@ -1,4 +1,3 @@
-use getset::Getters;
 use slotmap::SlotMap;
 
 use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier, Mask, MaskMap, QueryLayout, StorageVec};
@@ -8,15 +7,10 @@ pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
-#[derive(Getters)]
 pub struct EcsManager {
-    #[getset(get = "pub")]
     pub(crate) entities: EntitySet,
-    #[getset(get = "pub")]
     pub(crate) archetypes: ArchetypeSet,
     pub(crate) uniques: UniqueStoragesSet,
-
-    // Others
     count: u64,
 }
 
@@ -94,14 +88,26 @@ impl EcsManager {
         Some(())
     }
 
+    // Get the entities
+    pub fn entities(&self) -> &EntitySet {
+        &self.entities
+    }
+
+    // Get the archetypes
+    pub fn archetypes(&self) -> &ArchetypeSet {
+        &self.archetypes
+    }
+
     // Normal query without filter
     pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a> {
         Layout::validate().then(|| query(&self.archetypes))
     }
+
     // Create a query with a specific filter
     pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a mut self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
         Layout::validate().then(|| filtered(&self.archetypes, filter))
     }
+
     // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
     // TODO: Make use of Rust's type system to check for immutable borrows instead
@@ -109,6 +115,7 @@ impl EcsManager {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| query(&self.archetypes))
     }
+
     // View query with a specific filter
     pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(&'a self, filter: Filter) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty() && Layout::validate();

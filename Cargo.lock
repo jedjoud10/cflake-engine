@@ -886,7 +886,6 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
  "ecs-derive",
- "getset",
  "itertools",
  "lazy_static",
  "nohash-hasher",
@@ -2657,6 +2656,7 @@ dependencies = [
  "lazy_static",
  "math",
  "mikktspace",
+ "nohash-hasher",
  "num",
  "obj-rs",
  "opengl",

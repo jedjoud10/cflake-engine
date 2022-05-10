@@ -137,12 +137,11 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, f: impl FnOnce(&Self, u32)) {
+    pub fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(&Self, u32)) {
         unsafe {
             let target = self.target().get();
             gl::BindBuffer(target, self.buffer.get());
-            f(self, self.buffer.get());
-            gl::BindBuffer(target, 0);
+            function(self, self.buffer.get());
         }
     }
 
@@ -263,6 +262,12 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
 
         self.capacity = new_capacity;
         self.length = new_length;
+    }
+
+    // Pop an element from the back of the buffer
+    pub fn pop(&mut self, _ctx: &mut Context) -> Option<()> {
+        self.length -= self.length.checked_sub(1)?;
+        Some(())
     }
 }
 
