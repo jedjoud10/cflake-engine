@@ -1,4 +1,4 @@
-use super::{vertex::*, NamedAttribute, Position, SubMesh, VertexLayout};
+use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
 use crate::context::Context;
 
 // Procedural geometry builder that will help us generate submeshes

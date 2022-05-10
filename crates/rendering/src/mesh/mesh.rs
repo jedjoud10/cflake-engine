@@ -1,5 +1,5 @@
 use super::{
-    attributes::{vertex::*, AttributeSet, NamedAttribute},
+    attributes::{AttributeSet, NamedAttribute},
     GeometryBuilder,
 };
 use crate::{

@@ -1,9 +1,9 @@
 use super::{GeometryBuilder, VertexLayout};
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferAccess, GPUSendable},
+    buffer::{ArrayBuffer, BufferAccess, GPUSendable},
     context::Context,
 };
-use std::{mem::take, num::NonZeroU32, ptr::null};
+use std::{num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {

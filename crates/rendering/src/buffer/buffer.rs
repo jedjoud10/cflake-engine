@@ -92,7 +92,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
             }
             Specification::Dynamic(usage) => {
                 // Upload mutable data to the GPU. Mutable buffers can be resized and reallocated
-                gl::NamedBufferData(buffer, byte_capacity, ptr as _, 0);
+                gl::NamedBufferData(buffer, byte_capacity, ptr as _, usage);
             }
         }
 
@@ -195,7 +195,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         let new_length = new.len();
 
         match self.spec {
-            Specification::Immutable(flags) => {
+            Specification::Immutable(_) => {
                 // Oopsie woopsie, uwu we made a fucky wucky, a little fucko-boingo
                 assert!(new_capacity < self.capacity, "Cannot reallocate immutable buffer");
 
@@ -239,7 +239,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         let new_length = self.length + slice.len();
 
         match self.spec {
-            Specification::Immutable(flags) => {
+            Specification::Immutable(_) => {
                 // Oopsie woopsie, uwu we made a fucky wucky, a little fucko-boingo
                 assert!(new_capacity < self.capacity, "Cannot reallocate immutable buffer");
 
