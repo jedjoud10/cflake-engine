@@ -1,5 +1,4 @@
 use crate::context::Context;
-
 use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
 
 
@@ -35,9 +34,9 @@ impl GeometryBuilder {
     }
 
     // Set each type of attribute vector using trait magic
-    pub fn insert<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn set_attributes<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);
-        self.layout.insert(U::LAYOUT_ID);
+        self.layout.insert(U::LAYOUT);
     }
 
     // Set the indices alone lul
@@ -50,8 +49,24 @@ impl GeometryBuilder {
         self.layout
     }
 
-    // Build the final submesh using a specific context
-    pub fn build(ctx: &mut Context) -> SubMesh {
-        todo!()
+    // Check if the vectors are valid (AKA they have the same length)
+    pub fn valid(&self) -> bool {
+        let first = self.positions.len();
+        let arr = [self.normals.len(), 
+            self.tangents.len(),
+            self.colors.len(),
+            self.tex_coord_0.len()
+        ];
+        arr.into_iter().all(|len| len == first)
+    }
+
+    // Build the final submesh without checking for validity or anything
+    pub unsafe fn build_unchecked(self, ctx: &mut Context) -> SubMesh {
+        SubMesh::new_unchecked(ctx, self)
+    }
+
+    // Build the final submesh using a specific context, and make sure the vecs are valid
+    pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {        
+        self.valid().then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
     }
 }

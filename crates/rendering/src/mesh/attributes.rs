@@ -3,7 +3,7 @@ use crate::{
     buffer::{Buffer, GPUSendable, ArrayBuffer, BufferAccess},
     context::Context,
 };
-use std::{ptr::null, num::NonZeroU32};
+use std::{ptr::null, num::NonZeroU32, mem::take};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {
@@ -78,7 +78,7 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
 // Attribute buffer that *might* be disabled, or maybe enabled
 type AttribBuf<T> = Option<ArrayBuffer<T>>;
 
-// Multiple attributes stored in the same struct
+// Multiple OpenGL attribute buffers stored in the same struct
 pub struct AttributeSet {
     // The actual attribute buffers
     positions: AttribBuf<vek::Vec3<f32>>,
@@ -95,8 +95,8 @@ pub struct AttributeSet {
 
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait NamedAttribute {
-    type Out: GPUSendable;
-    const LAYOUT_ID: VertexLayout;
+    type Out: Attribute + GPUSendable;
+    const LAYOUT: VertexLayout;
 
     // Get the OpenGL array buffer from a specific attribute set
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>>;
@@ -115,7 +115,7 @@ pub struct TexCoord0;
 
 impl NamedAttribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT_ID: VertexLayout = VertexLayout::POSITIONS;
+    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.positions.as_ref()
@@ -132,7 +132,7 @@ impl NamedAttribute for Position {
 
 impl NamedAttribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT_ID: VertexLayout = VertexLayout::NORMALS;
+    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.normals.as_ref()
@@ -149,7 +149,7 @@ impl NamedAttribute for Normal {
 
 impl NamedAttribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT_ID: VertexLayout = VertexLayout::TANGENTS;
+    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.tangents.as_ref()
@@ -166,7 +166,7 @@ impl NamedAttribute for Tangent {
 
 impl NamedAttribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT_ID: VertexLayout = VertexLayout::COLORS;
+    const LAYOUT: VertexLayout = VertexLayout::COLORS;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.colors.as_ref()
@@ -183,7 +183,7 @@ impl NamedAttribute for Color {
 
 impl NamedAttribute for TexCoord0 {
     type Out = vek::Vec2<u8>;
-    const LAYOUT_ID: VertexLayout = VertexLayout::TEX_COORD_0;
+    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
 
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
         set.tex_coord_0.as_ref()
@@ -218,15 +218,15 @@ struct AuxBufGen<'a> {
     layout: VertexLayout,
 }
 
-// Given a context, layout, target layout and capacity, generate a valid AttribBuf that might be either Some or None
-fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool, target: VertexLayout) -> AttribBuf<T> {
-    aux.layout.contains(target).then(|| {
-        let mut buffer = ArrayBuffer::<T>::new(aux.ctx, aux.access);
+// Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder 
+fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Vec<T::Out>) -> AttribBuf<T::Out> {
+    aux.layout.contains(T::LAYOUT).then(|| {
+        let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
 
         // Bind the buffer to bind the attributes
         buffer.bind(aux.ctx, |_, _| unsafe {
             // Enable the pointer
-            gl::VertexAttribPointer(*aux.index, T::COUNT_PER_VERTEX as i32, T::GL_TYPE, normalized.into(), 0, null());
+            gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
             gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
 
             // Increment the counter, since we've enabled the attribute
@@ -247,17 +247,20 @@ impl AttributeSet {
             index: &mut index,
             ctx,
             access,
-            layout,
+            layout: builder.layout(),
         };
+        
+        // We do a bit of yoinking
+        let count = builder.layout().bits().count_ones();
 
         // Create the set with valid buffers (if they are enabled)
         Self {
-            positions: gen(&mut aux, false, VertexLayout::POSITIONS),
-            normals: gen(&mut aux, true, VertexLayout::NORMALS),
-            tangents: gen(&mut aux, true, VertexLayout::TANGENTS),
-            colors: gen(&mut aux, false, VertexLayout::COLORS),
-            tex_coord_0: gen(&mut aux, false, VertexLayout::TEX_COORD_0),
-            count: layout.bits().count_ones(),
+            positions: gen::<Position>(&mut aux, false, builder.positions),
+            normals: gen::<Normal>(&mut aux, true, builder.normals),
+            tangents: gen::<Tangent>(&mut aux, true, builder.tangents),
+            colors: gen::<Color>(&mut aux, false, builder.colors),
+            tex_coord_0: gen::<TexCoord0>(&mut aux, false, builder.tex_coord_0),
+            count,
         }
     }
 }

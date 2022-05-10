@@ -35,13 +35,13 @@ pub struct SubMesh {
 }
 
 impl SubMesh {
-
     // Construct a submesh using a geometry builder
     // This creates a new submesh with attribute layout defined by the builder itself
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
-    pub fn new(ctx: &mut Context, builder: GeometryBuilder) -> Self {
+    // PS: This doesn't check if the builder contains different length-vectors
+    pub(super) unsafe fn new_unchecked(ctx: &mut Context, mut builder: GeometryBuilder) -> Self {
         // Create and bind the VAO, then create a safe VAO wrapper
-        let vao = unsafe {
+        let vao = {
             let mut name = 0;
             gl::GenVertexArrays(1, &mut name);
             gl::BindVertexArray(name);
@@ -51,15 +51,22 @@ impl SubMesh {
         // How we shall access the vertex attribute and index buffers
         let access = BufferAccess::WRITE | BufferAccess::WRITE;
 
-        // Create the sub mesh using the builder's layout and attributes
+        // Only take the indices from the builder, cause we store them in a different place than the vertex attributes
+        let indices = std::mem::take(&mut builder.indices);
         let layout = builder.layout();
+        
         Self {
             vao,
-            attributes: AttributeSet::new(vao, ctx, layout, access),
-            indices: Buffer::from_vec(ctx, access, builder.indices),
+            attributes: AttributeSet::new(vao, ctx, access, builder),
+            indices: Buffer::from_vec(ctx, access, indices),
             vert_count: 0,
             layout,
         }
+    }
+
+    // Get the current submesh's layout
+    pub fn layout(&self) -> VertexLayout {
+        self.layout
     }
 
     // Get a mapped buffer for a specific vertex attribute, if possible
