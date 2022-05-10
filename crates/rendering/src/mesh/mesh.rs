@@ -28,7 +28,7 @@ pub struct SubMesh {
     vert_count: usize,
 
     // We must always have a valid EBO
-    indices: ElementBuffer<u32>,
+    indices: ElementBuffer,
 
     // Vertex layout for attributes
     layout: VertexLayout,

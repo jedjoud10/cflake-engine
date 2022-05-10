@@ -80,11 +80,13 @@ type AttribBuf<T> = Option<ArrayBuffer<T>>;
 
 // Multiple attributes stored in the same struct
 pub struct AttributeSet {
-    // Actualy attribute buffers
+    // The actual attribute buffers
     positions: AttribBuf<vek::Vec3<f32>>,
     normals: AttribBuf<vek::Vec3<i8>>,
     tangents: AttribBuf<vek::Vec4<i8>>,
     colors: AttribBuf<vek::Rgb<u8>>,
+
+    // Multiple texture coordiantes (TODO)
     tex_coord_0: AttribBuf<vek::Vec2<u8>>,
 
     // The number of enabled attributes
