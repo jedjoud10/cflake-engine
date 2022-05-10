@@ -1,6 +1,9 @@
-use super::{attributes::{AttributeSet, NamedAttribute, vertex::*}, GeometryBuilder};
+use super::{
+    attributes::{vertex::*, AttributeSet, NamedAttribute},
+    GeometryBuilder,
+};
 use crate::{
-    buffer::{Buffer, MutMapped, RefMapped, ElementBuffer, BufferAccess},
+    buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
     context::Context,
 };
 use assets::Asset;
@@ -54,7 +57,7 @@ impl SubMesh {
         // Only take the indices from the builder, cause we store them in a different place than the vertex attributes
         let indices = std::mem::take(&mut builder.indices);
         let layout = builder.layout();
-        
+
         Self {
             vao,
             attributes: AttributeSet::new(vao, ctx, access, builder),
@@ -97,7 +100,6 @@ impl Mesh {
         Self { submeshes }
     }
 }
-
 
 impl Asset for Mesh {
     type OptArgs = ();

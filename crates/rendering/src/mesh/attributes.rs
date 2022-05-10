@@ -1,9 +1,9 @@
-use super::{VertexLayout, GeometryBuilder};
+use super::{GeometryBuilder, VertexLayout};
 use crate::{
-    buffer::{Buffer, GPUSendable, ArrayBuffer, BufferAccess},
+    buffer::{ArrayBuffer, Buffer, BufferAccess, GPUSendable},
     context::Context,
 };
-use std::{ptr::null, num::NonZeroU32, mem::take};
+use std::{mem::take, num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait BaseAttribute: GPUSendable {
@@ -208,7 +208,6 @@ pub mod vertex {
     pub type VeTexCoord0 = <TexCoord0 as NamedAttribute>::Out;
 }
 
-
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
     vao: NonZeroU32,
@@ -218,7 +217,7 @@ struct AuxBufGen<'a> {
     layout: VertexLayout,
 }
 
-// Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder 
+// Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
 fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Vec<T::Out>) -> AttribBuf<T::Out> {
     aux.layout.contains(T::LAYOUT).then(|| {
         let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
@@ -249,7 +248,7 @@ impl AttributeSet {
             access,
             layout: builder.layout(),
         };
-        
+
         // We do a bit of yoinking
         let count = builder.layout().bits().count_ones();
 

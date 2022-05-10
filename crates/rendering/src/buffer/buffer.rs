@@ -16,18 +16,18 @@ pub trait GPUSendable: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> GPUSendable for T {}
 
 // Common OpenGL buffer types
-pub type ArrayBuffer<T> = Buffer<T, {gl::ARRAY_BUFFER}>;
-pub type ElementBuffer = Buffer<u32, {gl::ELEMENT_ARRAY_BUFFER}>;
-pub type AtomicBuffer = Buffer<u32, {gl::ATOMIC_COUNTER_BUFFER}>;
-pub type ComputeStorage<T> = Buffer<T, {gl::SHADER_STORAGE_BUFFER}>;
-pub type UniformBuffer<T> = Buffer<T, {gl::UNIFORM_BUFFER}>;
+pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
+pub type ElementBuffer = Buffer<u32, { gl::ELEMENT_ARRAY_BUFFER }>;
+pub type AtomicBuffer = Buffer<u32, { gl::ATOMIC_COUNTER_BUFFER }>;
+pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
+pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
 
 // Buffers can be split into two types; dynamic buffers, and immutable buffers.
 // TODO: Rename
 enum Specification {
     // Immutable buffers can be allocated only once
     Immutable(u32),
-    
+
     // Dynamic buffers can be allocated multiple times
     Dynamic(u32),
 }
@@ -55,7 +55,6 @@ impl Specification {
         }
     }
 }
-
 
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
@@ -90,7 +89,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
             Specification::Immutable(flags) => {
                 // Upload immutable data to the GPU. Immutable buffers cannot be reallocated
                 gl::NamedBufferStorage(buffer, byte_capacity, ptr as _, flags);
-            },
+            }
             Specification::Dynamic(usage) => {
                 // Upload mutable data to the GPU. Mutable buffers can be resized and reallocated
                 gl::NamedBufferData(buffer, byte_capacity, ptr as _, 0);
@@ -131,13 +130,11 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
     fn name(&self) -> NonZeroU32 {
         self.buffer
     }
-    
+
     // Gets the buffer's target type
     fn target(&self) -> NonZeroU32 {
-        unsafe {
-            NonZeroU32::new_unchecked(TARGET)
-        }
-    }    
+        unsafe { NonZeroU32::new_unchecked(TARGET) }
+    }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
     pub fn bind(&mut self, _ctx: &mut Context, f: impl FnOnce(&Self, u32)) {
@@ -213,7 +210,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                     std::ptr::copy(manual.as_ptr(), output.as_mut_ptr(), new_length);
                     ManuallyDrop::drop(&mut manual);
                 }
-            },
+            }
             Specification::Dynamic(usage) => {
                 // Simply reallocate the buffer, since we know it is dynamic
                 unsafe {
@@ -222,9 +219,9 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                     gl::NamedBufferData(self.buffer.get(), byte_capacity, manual.as_ptr() as _, usage);
                     ManuallyDrop::drop(&mut manual);
                 }
-            },
+            }
         }
-        
+
         self.capacity = new_capacity;
         self.length = new_length;
     }
@@ -254,14 +251,14 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                 unsafe {
                     std::ptr::copy(slice.as_ptr(), output.as_mut_ptr(), slice.len());
                 }
-            },
+            }
             Specification::Dynamic(usage) => {
                 // Reallocate the whole dynamic buffer
                 unsafe {
                     let byte_capacity = isize::try_from(new_capacity * size_of::<T>()).unwrap();
                     gl::NamedBufferData(self.buffer.get(), byte_capacity, slice.as_ptr() as _, usage);
                 }
-            },
+            }
         }
 
         self.capacity = new_capacity;

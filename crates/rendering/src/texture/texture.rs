@@ -1,5 +1,5 @@
-use std::num::NonZeroU32;
 use crate::context::Context;
+use std::num::NonZeroU32;
 
 use super::TexelLayout;
 
@@ -13,7 +13,6 @@ pub trait Texture<T: TexelLayout> {
 
     // Get the texture's name, using a context
     fn name(&self, _ctx: &Context) -> NonZeroU32;
-
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;

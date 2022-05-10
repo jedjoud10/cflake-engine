@@ -1,11 +1,10 @@
+use super::{vertex::*, NamedAttribute, Position, SubMesh, VertexLayout};
 use crate::context::Context;
-use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
 
-
-// Procedural geometry builder that will help us generate submeshes 
+// Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
 pub struct GeometryBuilder {
-    // Rust vectors of vertex attributes 
+    // Rust vectors of vertex attributes
     pub(super) positions: Vec<VePos>,
     pub(super) normals: Vec<VeNormal>,
     pub(super) tangents: Vec<VeTangent>,
@@ -34,7 +33,7 @@ impl GeometryBuilder {
     }
 
     // Set each type of attribute vector using trait magic
-    pub fn set_attributes<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn insert<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);
         self.layout.insert(U::LAYOUT);
     }
@@ -52,11 +51,7 @@ impl GeometryBuilder {
     // Check if the vectors are valid (AKA they have the same length)
     pub fn valid(&self) -> bool {
         let first = self.positions.len();
-        let arr = [self.normals.len(), 
-            self.tangents.len(),
-            self.colors.len(),
-            self.tex_coord_0.len()
-        ];
+        let arr = [self.normals.len(), self.tangents.len(), self.colors.len(), self.tex_coord_0.len()];
         arr.into_iter().all(|len| len == first)
     }
 
@@ -66,7 +61,7 @@ impl GeometryBuilder {
     }
 
     // Build the final submesh using a specific context, and make sure the vecs are valid
-    pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {        
+    pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {
         self.valid().then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
     }
 }
