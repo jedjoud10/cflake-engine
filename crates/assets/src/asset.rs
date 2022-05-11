@@ -1,10 +1,13 @@
 use crate::{loader::AssetLoader, metadata::AssetMetadata};
-// A single asset, that can be loaded directly from raw bytes
-// Each asset has some extra data that can be used to construct the object
-pub trait Asset<'args> {
-    // Extra data that can be used to construct the object
-    type OptArgs: 'args;
 
+// An asset is a specific type of resource that we can fetch from the asset manager
+// Assets can be used for general purpose caching
+pub trait Asset<'args> {
+
+}
+
+// An asset file is an asset that is represented by a singular file, like a texture or a sound effect
+pub trait AssetFile<'args>: Asset<'args> {
     // Check if the metadat for a specific asset is valid
     fn is_valid(meta: AssetMetadata) -> bool;
 
@@ -12,6 +15,15 @@ pub trait Asset<'args> {
     unsafe fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Option<Self>
     where
         Self: Sized;
+}
+
+pub trait Asset<'args> {
+    // Extra data that can be used to construct the object
+    type OptArgs: 'args;
+
+
+
+
 
     // Load an asset by reading the asset loader's bytes and using explicity opt args
     fn try_load_with<'l>(loader: &AssetLoader, path: &str, args: Self::OptArgs) -> Option<Self>

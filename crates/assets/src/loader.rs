@@ -1,4 +1,4 @@
-use crate::{metadata::AssetMetadata, Asset};
+use crate::{metadata::AssetMetadata, Asset, LoadError};
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
@@ -38,7 +38,7 @@ fn read(path: &str, _asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
 // Asset manager that will cache all the assets and help us load them in
 pub struct AssetLoader {
     // Byte caching
-    cached: RefCell<AHashMap<AssetMetadata, Vec<u8>>>,
+    cached: AHashMap<AssetMetadata, Vec<u8>>,
 
     // Global assets path
     global: PathBuf,
@@ -54,31 +54,32 @@ impl AssetLoader {
     }
 
     // Try to load an asset with some explicit optional arguments
-    pub(crate) fn load_with<'args, A: Asset<'args>>(&self, path: &str) -> Option<(AssetMetadata, Ref<[u8]>)> {
+    pub(crate) fn load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Result<(AssetMetadata, &'loader [u8]), LoadError> {
         // Try to load some cached bytes, if possible
-        let path = PathBuf::from_str(path).unwrap();
-        let meta = AssetMetadata::new(path.clone()).unwrap();
+        let pathbuf = PathBuf::from_str(path).unwrap();
+        let path = pathbuf.as_os_str().to_str().unwrap();
+        let meta = AssetMetadata::new(pathbuf).unwrap();
 
-        // Cache the bytes if needed
-        let mut borrowed = self.cached.borrow_mut();
-        if borrowed.get(&meta).is_none() {
-            // Cache the bytes
-            let path = path.as_os_str().to_str()?;
-            let bytes = read(path, &self.global)?;
-            borrowed.insert(meta.clone(), bytes);
-        }
-        drop(borrowed);
-
+        // Cache vs fast load to fetch the bytes
+        let bytes = if self.cached.get(&meta).is_none() {
+            // Cache the bytes if needed            
+            let bytes = read(path, &self.global).ok_or(LoadError::Invalid(path))?;
+            self.cached.insert(meta.clone(), bytes);
+            self.cached.get(&meta).unwrap().as_ref()
+        } else {
+            // Might fail, so we have to check the result
+            self.cached.get(&meta).ok_or(LoadError::Invalid(path))?
+        };
+        
         // And convert to the final tuple
-        let mapped = Ref::map(self.cached.borrow(), |m| m.get(&meta).unwrap().as_slice());
-        Some((meta.clone(), mapped))
+        Ok((meta.clone(), bytes.as_slice()))
     }
 
     // Import an asset during compile time
     pub fn import(&mut self, path: &str, bytes: Vec<u8>) {
         let path = path.split("assets/").last().unwrap();
         let meta = AssetMetadata::new(path).unwrap();
-        self.cached.borrow_mut().entry(meta).or_insert(bytes);
+        self.cached.entry(meta).or_insert(bytes);
     }
 }
 
