@@ -3,8 +3,8 @@ use std::num::NonZeroU32;
 
 use super::TexelLayout;
 
-// Texture filtering type
-pub enum Filter {
+// Texture filtering type (neartest neighbor vs bilinear)
+pub enum MinMagFilter {
     Nearest, Bilinear
 }
 

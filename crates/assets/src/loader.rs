@@ -54,7 +54,7 @@ impl AssetLoader {
     }
 
     // Try to load an asset with some explicit optional arguments
-    pub(crate) fn load_with<A: Asset>(&self, path: &str) -> Option<(AssetMetadata, Ref<[u8]>)> {
+    pub(crate) fn load_with<'args, A: Asset<'args>>(&self, path: &str) -> Option<(AssetMetadata, Ref<[u8]>)> {
         // Try to load some cached bytes, if possible
         let path = PathBuf::from_str(path).unwrap();
         let meta = AssetMetadata::new(path.clone()).unwrap();
@@ -83,14 +83,14 @@ impl AssetLoader {
 }
 
 // Default asset implementations
-impl Asset for String {
+impl Asset<'static> for String {
     type OptArgs = ();
 
     fn is_valid(meta: AssetMetadata) -> bool {
         true
     }
 
-    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Option<Self> {
+    unsafe fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Option<Self> {
         Self::from_utf8(bytes.to_vec()).ok()
     }
 }

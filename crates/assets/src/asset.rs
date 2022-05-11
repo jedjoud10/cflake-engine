@@ -1,20 +1,20 @@
 use crate::{loader::AssetLoader, metadata::AssetMetadata};
 // A single asset, that can be loaded directly from raw bytes
 // Each asset has some extra data that can be used to construct the object
-pub trait Asset {
+pub trait Asset<'args> {
     // Extra data that can be used to construct the object
-    type OptArgs;
+    type OptArgs: 'args;
 
     // Check if the metadat for a specific asset is valid
     fn is_valid(meta: AssetMetadata) -> bool;
 
     // Deserialize an asset, assuming that the given bytes are already in the valid format
-    unsafe fn deserialize(bytes: &[u8], args: &Self::OptArgs) -> Option<Self>
+    unsafe fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Option<Self>
     where
         Self: Sized;
 
     // Load an asset by reading the asset loader's bytes and using explicity opt args
-    fn try_load_with(loader: &AssetLoader, path: &str, args: &Self::OptArgs) -> Option<Self>
+    fn try_load_with<'l>(loader: &AssetLoader, path: &str, args: Self::OptArgs) -> Option<Self>
     where
         Self: Sized,
     {
@@ -23,11 +23,11 @@ pub trait Asset {
     }
 
     // Load an asset using default opt args
-    fn try_load(loader: &AssetLoader, path: &str) -> Option<Self>
+    fn try_load<'l>(loader: &'l AssetLoader, path: &str) -> Option<Self>
     where
         Self: Sized,
         Self::OptArgs: Default,
     {
-        Self::try_load_with(loader, path, &Default::default())
+        Self::try_load_with(loader, path, Default::default())
     }
 }

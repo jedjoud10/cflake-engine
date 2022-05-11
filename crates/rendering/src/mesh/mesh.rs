@@ -23,17 +23,10 @@ bitflags::bitflags! {
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
-    // The VAO that wraps everything up (OpenGL side)
     vao: NonZeroU32,
-
-    // Vertex attributes and the vertex count
     attributes: AttributeSet,
     vert_count: usize,
-
-    // We must always have a valid EBO
     indices: ElementBuffer,
-
-    // Vertex layout for attributes
     layout: VertexLayout,
 }
 
@@ -106,15 +99,16 @@ impl Mesh {
     }
 }
 
-impl Cached for Mesh {}
-impl Asset for Mesh {
-    type OptArgs = ();
+impl<'args> Asset<'args> for Mesh {
+    type OptArgs = &'args mut Context;
 
     fn is_valid(meta: assets::metadata::AssetMetadata) -> bool {
         meta.extension() == "obj"
     }
 
-    unsafe fn deserialize(_bytes: &[u8], _args: &Self::OptArgs) -> Option<Self> {
+    unsafe fn deserialize(bytes: &[u8], context: Self::OptArgs) -> Option<Self>
+    where
+        Self: Sized {
         todo!()
     }
 }
