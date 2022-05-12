@@ -4,9 +4,9 @@ use super::{
 };
 use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
-    context::{Context, Cached},
+    context::{Cached, Context},
 };
-use assets::{Asset, loader::AssetBytes};
+use assets::{loader::AssetBytes, Asset};
 use obj::TexturedVertex;
 use std::num::NonZeroU32;
 
@@ -96,11 +96,13 @@ impl Mesh {
 
     // Create a mesh that can hold a specific number of submeshes in memory
     fn with_capacity(_ctx: &mut Context, capacity: usize) -> Self {
-        Self { submeshes: Vec::with_capacity(capacity) }
+        Self {
+            submeshes: Vec::with_capacity(capacity),
+        }
     }
 
     // Insert a submesh into the mesh
-    fn insert(&mut self, _ctx: &mut Context, submesh: SubMesh)  {
+    fn insert(&mut self, _ctx: &mut Context, submesh: SubMesh) {
         self.submeshes.push(submesh)
     }
 }
@@ -144,6 +146,6 @@ impl<'ctx> Asset<'ctx> for Mesh {
         //builder.indices.indices = parsed_obj.indices;
 
         // Compute the tangents automatically for imported meshes
-        //let mesh = builder.build().generate_tangents(); 
+        //let mesh = builder.build().generate_tangents();
     }
 }

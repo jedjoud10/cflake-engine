@@ -1,6 +1,6 @@
-use std::num::NonZeroU32;
-use assets::{Asset, loader::AssetLoader};
 use crate::context::Context;
+use assets::{loader::AssetLoader, Asset};
+use std::num::NonZeroU32;
 
 // A single shader source that can make up a bigger shader. A source is usually a single text file ending with .glsl
 pub struct Source {
@@ -20,7 +20,7 @@ impl Asset<'static> for Shard {
     fn is_extension_valid(extension: &str) -> bool {
         match extension {
             "vert.glsl" | "frag.glsl" | "cmpt.glsl" | "func.glsl" => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -34,24 +34,21 @@ fn process_shader_shard(base: Shard, loader: &mut AssetLoader) -> Result<Shard, 
     todo!()
 }
 
-
 impl<'a> Asset<'a> for Source {
     type Args = &'a mut Context;
 
     fn is_extension_valid(extension: &str) -> bool {
         match extension {
             "vert.glsl" | "frag.glsl" | "cmpt.glsl" => true,
-            _ => false
+            _ => false,
         }
     }
 
     fn try_load_with(loader: &mut AssetLoader, path: &str, args: Self::Args) -> Result<Self, assets::LoadError> {
         let base = Shard::try_load(loader, path)?;
-        
     }
 
     fn deserialize<'loader>(bytes: assets::loader::AssetBytes, args: Self::Args) -> Self {
         todo!()
     }
-
 }

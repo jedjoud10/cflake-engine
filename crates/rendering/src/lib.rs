@@ -4,5 +4,5 @@ pub extern crate opengl as gl;
 pub mod buffer;
 pub mod context;
 pub mod mesh;
-pub mod texture;
 pub mod shader;
+pub mod texture;

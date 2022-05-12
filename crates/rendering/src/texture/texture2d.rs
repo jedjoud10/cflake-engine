@@ -1,6 +1,6 @@
-use std::{marker::PhantomData, num::NonZeroU32};
+use super::{MinMagFilter, TexelLayout, Texture};
 use crate::context::Cached;
-use super::{TexelLayout, Texture, MinMagFilter};
+use std::{marker::PhantomData, num::NonZeroU32};
 
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
@@ -11,7 +11,7 @@ pub struct Texture2D<T: TexelLayout> {
     dimensions: vek::Extent2<u32>,
     mipmaps: bool,
     filter: MinMagFilter,
-    
+
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
 }

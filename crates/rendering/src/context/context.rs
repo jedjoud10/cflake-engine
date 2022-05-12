@@ -1,5 +1,5 @@
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
-use std::{marker::PhantomData, rc::Rc, collections::HashMap};
+use std::{collections::HashMap, marker::PhantomData, rc::Rc};
 
 // Main cotnext that stores the OpenGL glunit context
 #[derive(Clone)]

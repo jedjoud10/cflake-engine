@@ -4,7 +4,7 @@ pub enum LoadError {
     Invalid(String),
 
     // The asset cannot be loaded because the extension is mismatching
-    ExtensionMismatch(String)
+    ExtensionMismatch(String),
 }
 
 impl std::error::Error for LoadError {}

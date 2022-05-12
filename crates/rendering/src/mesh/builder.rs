@@ -1,5 +1,8 @@
 use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
-use crate::{context::Context, mesh::{Normal, TexCoord0, Tangent, Color}};
+use crate::{
+    context::Context,
+    mesh::{Color, Normal, Tangent, TexCoord0},
+};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -28,9 +31,9 @@ impl Default for GeometryBuilder {
             tex_coord_0: Default::default(),
             indices: Default::default(),
             layout: VertexLayout::empty(),
-        }    
+        }
     }
-} 
+}
 
 impl GeometryBuilder {
     // Set each type of attribute vector using trait magic
@@ -55,19 +58,21 @@ impl GeometryBuilder {
         fn valid<A: NamedAttribute>(builder: &GeometryBuilder, count: usize, vec: &Vec<A::Out>) -> bool {
             let factor = usize::from(builder.layout.contains(A::LAYOUT));
             (count - factor * vec.len()) == 0
-        }  
+        }
 
         // If we have no position vertices, then wtf we doing bruv?
         let length = if self.positions.is_empty() {
             return true;
-        } else { self.positions.len() };
+        } else {
+            self.positions.len()
+        };
 
         // Check if each vector is valid
         let valids = [
             valid::<Normal>(&self, length, &self.normals),
             valid::<Tangent>(&self, length, &self.tangents),
             valid::<Color>(&self, length, &self.colors),
-            valid::<TexCoord0>(&self, length, &self.tex_coord_0)
+            valid::<TexCoord0>(&self, length, &self.tex_coord_0),
         ];
 
         // They must ALL be valid

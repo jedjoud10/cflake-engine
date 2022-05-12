@@ -5,7 +5,8 @@ use super::TexelLayout;
 
 // Texture filtering type (neartest neighbor vs bilinear)
 pub enum MinMagFilter {
-    Nearest, Bilinear
+    Nearest,
+    Bilinear,
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D

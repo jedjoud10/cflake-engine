@@ -1,8 +1,8 @@
-mod shader;
-mod program;
-mod source;
 mod compute;
-pub use shader::*;
-pub use program::*;
-pub use source::*;
+mod program;
+mod shader;
+mod source;
 pub use compute::*;
+pub use program::*;
+pub use shader::*;
+pub use source::*;
