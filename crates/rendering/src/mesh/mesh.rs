@@ -99,16 +99,14 @@ impl Mesh {
     }
 }
 
-impl<'args> Asset<'args> for Mesh {
-    type OptArgs = &'args mut Context;
+impl<'ctx> Asset<'ctx> for Mesh {
+    type OptArgs = &'ctx mut Context;
 
-    fn is_valid(meta: assets::metadata::AssetMetadata) -> bool {
-        meta.extension() == "obj"
+    fn is_extension_valid(extension: &str) -> bool {
+        extension == "obj"
     }
 
-    unsafe fn deserialize(bytes: &[u8], context: Self::OptArgs) -> Option<Self>
-    where
-        Self: Sized {
+    fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Self {
         todo!()
     }
 }
