@@ -34,18 +34,13 @@ fn read(path: &str, asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
 fn read(path: &str, _asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
     None
 }
-
-// This hints that the underlying raw bytes has been cached withint the asset loader
-pub struct CachedBytes<'a>(pub(crate) &'a [u8]);
-// This hints that the data has been validated and that it can be successfully deserialized by the asset
-pub struct Validated<T>(pub(crate) T);
-// Asset bytes are bytes that we shall use to construct assets
-pub type AssetBytes<'a> = Validated<CachedBytes<'a>>;
+// Bytes that the asset loader will use to deserialize assets
+pub struct AssetBytes<'loader>(pub(crate) &'loader [u8]);
 
 // This forces us to pass through the Asset::validate_bytes
 impl<'a> AsRef<[u8]> for AssetBytes<'a> {
     fn as_ref(&self) -> &'a [u8] {
-        self.0 .0
+        self.0
     }
 }
 
@@ -67,8 +62,14 @@ impl AssetLoader {
         }
     }
 
-    // Load the raw bytes from a path, and make sure to cache the bytes if we succeed to load them
-    pub fn load<'loader, 'err, 'path: 'err>(&'loader mut self, path: &'path str) -> Option<CachedBytes<'loader>> {
+    // Load an asset by deserializing it's bytes
+    pub fn try_load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, args: A::Args, path: &str) -> Option<A> {
+        // Check if the extension is valid, and return None if it doesn't validate any of the extensions for the asset
+        let extension = Path::new(path).extension().and_then(OsStr::to_str)?;
+        if A::extensions().contains(&extension) {
+            return None;
+        }
+
         // Load the bytes from the file if they don't exist
         if self.cached.get(path).is_none() {
             // Cache the bytes if needed (but split the path)
@@ -77,9 +78,11 @@ impl AssetLoader {
         }
 
         // Make sure to only get a slice of the bytes, and not the whole vec
-        self.cached.get(path).map(|vec| CachedBytes(vec.as_ref()))
-    }
+        let slice = self.cached.get(path).map(|vec| AssetBytes(vec.as_ref()))?;
 
+        // Deserialize the asset
+        Ok(A::deserialize(slice, args))
+    }   
     // Cache an asset manually, given it's path and it's bytes
     pub fn import(&mut self, path: &str, bytes: Vec<u8>) {
         let path = path.split("assets/").last().unwrap();
