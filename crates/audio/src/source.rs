@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use assets::Asset;
+use assets::{Asset, loader::AssetBytes};
 use rodio::{source::Buffered, Decoder, Source};
 
 // A single audio source that can be loaded
@@ -9,19 +9,17 @@ pub struct AudioSource {
 }
 
 impl Asset<'static> for AudioSource {
-    type OptArgs = ();
+    type Args = ();
 
     fn is_extension_valid(extension: &str) -> bool {
         match extension {
-            "ogg" => true,
-            "mp3" => true,
-            "wav" => true,
+            "ogg" | "mp3" | "wav" => true,
             _ => false,
         } 
     }
 
-    fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Self {
-        let cursor = Cursor::new(bytes.to_vec());
+    fn deserialize(bytes: AssetBytes, args: Self::Args) -> Self {
+        let cursor = Cursor::new(bytes.as_ref().to_vec());
         let read = Decoder::new(cursor).ok().unwrap().buffered();
         AudioSource { buffered: read }    
     }    

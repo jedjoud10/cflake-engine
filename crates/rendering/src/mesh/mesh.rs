@@ -6,7 +6,7 @@ use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
     context::{Context, Cached},
 };
-use assets::Asset;
+use assets::{Asset, loader::AssetBytes};
 use std::num::NonZeroU32;
 
 // Specified what attributes are enabled in a vertex set
@@ -100,13 +100,13 @@ impl Mesh {
 }
 
 impl<'ctx> Asset<'ctx> for Mesh {
-    type OptArgs = &'ctx mut Context;
+    type Args = &'ctx mut Context;
 
     fn is_extension_valid(extension: &str) -> bool {
         extension == "obj"
     }
 
-    fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Self {
+    fn deserialize(bytes: AssetBytes, args: Self::Args) -> Self {
         todo!()
     }
 }

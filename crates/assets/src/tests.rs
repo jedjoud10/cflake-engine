@@ -1,16 +1,15 @@
 #[cfg(test)]
 pub mod tests {
     use crate::{asset, loader::AssetLoader, Asset};
-
     impl Asset<'static> for String {
-        type OptArgs = ();
+        type Args = ();
 
         fn is_extension_valid(extension: &str) -> bool {
             extension == "txt"
         }
 
-        fn deserialize(bytes: &[u8], args: Self::OptArgs) -> Self {
-            String::from_utf8(bytes.to_vec()).unwrap()
+        fn deserialize<'loader>(bytes: crate::loader::AssetBytes, args: Self::Args) -> Self {
+            String::from_utf8(bytes.as_ref().to_vec()).unwrap()
         }
     }
 
