@@ -31,7 +31,7 @@ impl Asset<'static> for Shard {
 
 // Process some shader source code, expanding certain directives and reducing constants to their literal values
 fn process_shader_shard(base: Shard, loader: &mut AssetLoader) -> Result<Shard, assets::LoadError> {
-
+    todo!()
 }
 
 
@@ -45,7 +45,7 @@ impl<'a> Asset<'a> for Source {
         }
     }
 
-    fn try_load_with<'err, 'loader, 'path: 'err>(loader: &'loader mut AssetLoader, path: &'path str, args: Self::Args) -> Result<Self, assets::LoadError<'err>> {
+    fn try_load_with(loader: &mut AssetLoader, path: &str, args: Self::Args) -> Result<Self, assets::LoadError> {
         let base = Shard::try_load(loader, path)?;
         
     }

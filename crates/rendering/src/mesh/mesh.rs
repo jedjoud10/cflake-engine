@@ -7,6 +7,7 @@ use crate::{
     context::{Context, Cached},
 };
 use assets::{Asset, loader::AssetBytes};
+use obj::TexturedVertex;
 use std::num::NonZeroU32;
 
 // Specified what attributes are enabled in a vertex set
@@ -93,9 +94,14 @@ impl Mesh {
         Self { submeshes }
     }
 
+    // Create a mesh that can hold a specific number of submeshes in memory
+    fn with_capacity(_ctx: &mut Context, capacity: usize) -> Self {
+        Self { submeshes: Vec::with_capacity(capacity) }
+    }
+
     // Insert a submesh into the mesh
     fn insert(&mut self, _ctx: &mut Context, submesh: SubMesh)  {
-
+        self.submeshes.push(submesh)
     }
 }
 
@@ -106,7 +112,38 @@ impl<'ctx> Asset<'ctx> for Mesh {
         extension == "obj"
     }
 
-    fn deserialize(bytes: AssetBytes, args: Self::Args) -> Self {
-        todo!()
+    fn deserialize(bytes: AssetBytes, ctx: Self::Args) -> Self {
+        // Parse the OBJ mesh into an engine mesh
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
+        let mut builder = GeometryBuilder::default();
+        let capacity = parsed.vertices.len();
+
+        // Create all the buffers at once
+        let mut positions = Vec::with_capacity(capacity);
+        let mut normals = Vec::with_capacity(capacity);
+        let mut tex_coords_0 = Vec::with_capacity(capacity);
+
+        // Fill each buffer now
+        use vek::{Vec2, Vec3};
+        for vertex in parsed.vertices {
+            positions.push(Vec3::from_slice(&vertex.position));
+            normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
+            tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
+        }
+
+        // Set the very sussy bakas (POV: You are slowly going insane)
+        builder.set::<super::Position>(positions);
+        builder.set::<super::Normal>(normals);
+        builder.set::<super::TexCoord0>(tex_coords_0);
+        builder.set_indices(parsed.indices);
+
+        Self {
+            submeshes: vec![builder.build(ctx).unwrap()],
+        }
+        // Also load the triangles
+        //builder.indices.indices = parsed_obj.indices;
+
+        // Compute the tangents automatically for imported meshes
+        //let mesh = builder.build().generate_tangents(); 
     }
 }

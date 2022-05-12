@@ -1,5 +1,5 @@
 use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
-use crate::context::Context;
+use crate::{context::Context, mesh::{Normal, TexCoord0, Tangent, Color}};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -18,9 +18,8 @@ pub struct GeometryBuilder {
     layout: VertexLayout,
 }
 
-impl GeometryBuilder {
-    // Create a new geometry builder
-    pub fn new() -> Self {
+impl Default for GeometryBuilder {
+    fn default() -> Self {
         Self {
             positions: Default::default(),
             normals: Default::default(),
@@ -29,11 +28,13 @@ impl GeometryBuilder {
             tex_coord_0: Default::default(),
             indices: Default::default(),
             layout: VertexLayout::empty(),
-        }
+        }    
     }
+} 
 
+impl GeometryBuilder {
     // Set each type of attribute vector using trait magic
-    pub fn insert<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn set<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);
         self.layout.insert(U::LAYOUT);
     }
@@ -48,11 +49,29 @@ impl GeometryBuilder {
         self.layout
     }
 
-    // Check if the vectors are valid (AKA they have the same length)
+    // Check if the vectors are valid
     pub fn valid(&self) -> bool {
-        let first = self.positions.len();
-        let arr = [self.normals.len(), self.tangents.len(), self.colors.len(), self.tex_coord_0.len()];
-        arr.into_iter().all(|len| len == first)
+        // Check if a vertex layout type is present within our current vertex layout, and return a usize that represents it (1 for true, 0 for false)
+        fn valid<A: NamedAttribute>(builder: &GeometryBuilder, count: usize, vec: &Vec<A::Out>) -> bool {
+            let factor = usize::from(builder.layout.contains(A::LAYOUT));
+            (count - factor * vec.len()) == 0
+        }  
+
+        // If we have no position vertices, then wtf we doing bruv?
+        let length = if self.positions.is_empty() {
+            return true;
+        } else { self.positions.len() };
+
+        // Check if each vector is valid
+        let valids = [
+            valid::<Normal>(&self, length, &self.normals),
+            valid::<Tangent>(&self, length, &self.tangents),
+            valid::<Color>(&self, length, &self.colors),
+            valid::<TexCoord0>(&self, length, &self.tex_coord_0)
+        ];
+
+        // They must ALL be valid
+        valids.into_iter().all(|a| a)
     }
 
     // Build the final submesh without checking for validity or anything

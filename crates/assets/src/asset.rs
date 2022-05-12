@@ -23,7 +23,7 @@ pub trait Asset<'args>: where Self: Sized {
     }
 
     // Load an asset by reading the asset loader's bytes and using explicit opt args
-    fn try_load_with<'loader>(loader: &'loader mut AssetLoader, path: &str, args: Self::Args) -> Result<Self, LoadError> {
+    fn try_load_with(loader: &mut AssetLoader, path: &str, args: Self::Args) -> Result<Self, LoadError> {
         // Make sure the path extension is valid and that it actually exists
         let cached = loader.load(path).ok_or(LoadError::Invalid(path.to_string()));
         let validated = cached.and_then(|cached| Self::validate_bytes(cached, path))?;
@@ -34,7 +34,7 @@ pub trait Asset<'args>: where Self: Sized {
     }
 
     // Load an asset using default opt args
-    fn try_load<'loader>(loader: &'loader mut AssetLoader, path: &str) -> Result<Self, LoadError>
+    fn try_load(loader: &mut AssetLoader, path: &str) -> Result<Self, LoadError>
     where
         Self: Sized,
         Self::Args: Default,
