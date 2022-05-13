@@ -1,6 +1,6 @@
 use crate::context::{Context, ToGlType};
-use assets::{loader::AssetLoader, Asset};
-use std::num::NonZeroU32;
+use assets::{loader::{AssetLoader, AssetBytes}, Asset};
+use std::{num::NonZeroU32, borrow::Cow};
 
 // The type of each shader source
 #[derive(Clone, Copy)]
@@ -35,8 +35,14 @@ pub struct Source {
     stage: SourceStage,
 }
 
-// This is the raw GLSL text that we load from the shader files
-struct RawSource(String);
+// This is a raw source that simply contains the raw GLSL code given from the file. This code is unprocessed, so it might contain preprocessor directives
+pub struct RawSource {
+    // The raw text given by the source
+    raw_txt: String,
+
+    // The file extension of the raw source
+    extension: String,
+}
 
 impl Asset<'static> for RawSource {
     type Args = ();
@@ -45,19 +51,7 @@ impl Asset<'static> for RawSource {
         &["vert.glsl", "frag.glsl", "cmpt.glsl", "func.glsl"]
     }
 
-    fn deserialize<'loader>(bytes: assets::loader::AssetBytes, args: Self::Args) -> Self {
-        RawSource(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
-    }
-}
-
-impl<'a> Asset<'a> for Source {
-    type Args = &'a mut Context;
-
-    fn extensions() -> &'static [&'static str] {
-        &["vert.glsl", "frag.glsl", "cmpt.glsl"]
-    }
-
-    fn deserialize<'loader>(bytes: assets::loader::AssetBytes, args: Self::Args) -> Self {
-        todo!()
+    fn deserialize<'loader>(bytes: AssetBytes, path: std::path::PathBuf, args: Self::Args) -> Self {
+        Self { raw_txt: String::from_utf8(bytes.as_ref().to_vec()).unwrap(), extension: path.extension().unwrap().to_str().unwrap().to_string() }
     }
 }

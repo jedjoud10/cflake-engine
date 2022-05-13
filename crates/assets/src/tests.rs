@@ -4,7 +4,7 @@ pub mod tests {
     impl Asset<'static> for String {
         type Args = ();
 
-        fn deserialize<'loader>(bytes: crate::loader::AssetBytes, args: Self::Args) -> Self {
+        fn deserialize<'loader>(bytes: crate::loader::AssetBytes, path: std::path::PathBuf, args: Self::Args) -> Self {
             String::from_utf8(bytes.as_ref().to_vec()).unwrap()
         }
 

@@ -114,7 +114,7 @@ impl<'ctx> Asset<'ctx> for Mesh {
         &["obj"]
     }
 
-    fn deserialize(bytes: AssetBytes, ctx: Self::Args) -> Self {
+    fn deserialize<'loader>(bytes: AssetBytes, path: std::path::PathBuf, ctx: Self::Args) -> Self {
         // Parse the OBJ mesh into an engine mesh
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
         let mut builder = GeometryBuilder::default();

@@ -1,14 +1,10 @@
-use std::{ffi::OsStr, path::Path};
+use std::{ffi::OsStr, path::{Path, PathBuf}};
 
-use crate::{
-    loader::{AssetBytes, AssetLoader},
-};
-// A single asset that will have access to the loader to be able to create Self
+use crate::loader::{AssetBytes, AssetLoader, CompoundLoadingContext};
+
+// An asset that will be loaded from a single unique file
 // Each asset has some extra data that can be used to construct the object
-pub trait Asset<'args>
-where
-    Self: Sized,
-{
+pub trait Asset<'args> {
     // Extra data that can be used to construct the object
     type Args: 'args;
 
@@ -16,5 +12,20 @@ where
     fn extensions() -> &'static [&'static str];
 
     // Deserialize asset bytes, assuming that the given bytes are already in the valid format to deserialize
-    fn deserialize<'loader>(bytes: AssetBytes, args: Self::Args) -> Self;
+    fn deserialize<'loader>(bytes: AssetBytes, path: PathBuf, args: Self::Args) -> Self;
+}
+
+// A compound asset simply takes multiple paths to construct an object
+pub trait CompoundAsset<'args>
+where
+    Self: Sized,
+{
+    // Extra data that can be used to construct the object
+    type Args: 'args;
+
+    // The extensions supported by the paths that we will use to load the asset
+    fn extensions() -> &'static [&'static str];
+
+    // Given the asset loader, we shall deserialize this compound asset using a compound context loader
+    fn deserialize<'loader>(ctx: CompoundLoadingContext, args: Self::Args) -> Self;
 }
