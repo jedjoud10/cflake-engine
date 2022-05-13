@@ -114,8 +114,8 @@ impl<'ctx> Asset<'ctx> for Mesh {
         &["obj"]
     }
 
-    fn deserialize<'l>(data: assets::loader::LoadingData<'l, 'ctx, Self>) -> Self {
-        let (bytes, ctx, path) = data.split();
+    fn deserialize<'l>(data: assets::loader::LoadedData<'l, 'ctx, Self>) -> Self {
+        let (bytes, ctx, path) = data;
 
         // Parse the OBJ mesh into an engine mesh
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();

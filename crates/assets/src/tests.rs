@@ -8,8 +8,8 @@ pub mod tests {
             &["txt"]
         }
 
-        fn deserialize<'l>(data: crate::loader::LoadingData<'l, 'static, Self>) -> Self {
-            let (bytes, args, path) = data.split();
+        fn deserialize<'l>(data: crate::loader::LoadedData<'l, 'static, Self>) -> Self {
+            let (bytes, args, path) = data;
             String::from_utf8(bytes.to_vec()).unwrap()
         }
     }

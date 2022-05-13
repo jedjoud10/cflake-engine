@@ -10,19 +10,9 @@ use std::{
 };
 
 // Dis dumb but it works
-pub struct LoadingData<'l, 'args, A: Asset<'args>> {
-    slice: &'l [u8],
-    args: A::Args,
-    path: PathBuf
-}
+// TODO: Rename
+pub type LoadedData<'l, 'args, A: Asset<'args>> = (&'l [u8], A::Args, PathBuf);
 
-impl<'l, 'args, A: Asset<'args>> LoadingData<'l, 'args, A> {
-    // Split the loading data into it's raw form
-    pub fn split(self) -> (&'l [u8], A::Args, PathBuf) {
-        let Self { slice, args, path } = self;
-        (slice, args, path)
-    }
-}
 
 // Asset manager that will cache all the assets and help us load them in
 pub struct AssetLoader {
@@ -60,11 +50,11 @@ impl AssetLoader {
         let slice = self.cached.get(&path).map(Vec::as_slice)?;
 
         // Deserialize the asset
-        Some(A::deserialize(LoadingData {
+        Some(A::deserialize((
             slice,
             args,
             path,
-        }))
+        )))
     }
 
     // Load an asset using some default loading arguments
