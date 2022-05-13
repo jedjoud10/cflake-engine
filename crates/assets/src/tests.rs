@@ -4,12 +4,12 @@ pub mod tests {
     impl Asset<'static> for String {
         type Args = ();
 
-        fn is_extension_valid(extension: &str) -> bool {
-            extension == "txt"
-        }
-
         fn deserialize<'loader>(bytes: crate::loader::AssetBytes, args: Self::Args) -> Self {
             String::from_utf8(bytes.as_ref().to_vec()).unwrap()
+        }
+
+        fn extensions() -> &'static [&'static str] {
+            &["txt"]
         }
     }
 
@@ -18,7 +18,7 @@ pub mod tests {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/assets");
         let mut loader = AssetLoader::new(path);
         asset!(&mut loader, "./assets/sus/test.txt");
-        let val = <String as Asset>::try_load(&mut loader, "sus/test.txt").unwrap();
+        let val = loader.try_load::<String>("sus/test.txt").unwrap();
         dbg!(val);
 
         /*

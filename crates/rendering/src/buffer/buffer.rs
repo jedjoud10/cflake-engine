@@ -1,4 +1,4 @@
-use crate::context::Context;
+use crate::context::{Context, ToGlName, ToGlType};
 use std::{
     ffi::c_void,
     marker::PhantomData,
@@ -124,16 +124,6 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
             ManuallyDrop::drop(&mut manual);
             me
         }
-    }
-
-    // Gets the buffer's internal OpenGL name
-    fn name(&self) -> NonZeroU32 {
-        self.buffer
-    }
-
-    // Gets the buffer's target type
-    fn target(&self) -> NonZeroU32 {
-        unsafe { NonZeroU32::new_unchecked(TARGET) }
     }
 
     // Bind the buffer temporarily to a specific target, and unbind it when done
@@ -271,6 +261,17 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
     }
 }
 
+impl<T: GPUSendable, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
+    fn name(&self) -> NonZeroU32 {
+        self.buffer
+    }
+}
+
+impl<T: GPUSendable, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
+    fn target(&self) -> NonZeroU32 {
+        unsafe { NonZeroU32::new_unchecked(TARGET) }
+    }
+}
 // An immutable mapped buffer that we can use to read data from the OpenGL buffer
 pub struct RefMapped<'a, T: GPUSendable> {
     _phantom: PhantomData<&'a [T]>,

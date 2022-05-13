@@ -110,8 +110,8 @@ impl Mesh {
 impl<'ctx> Asset<'ctx> for Mesh {
     type Args = &'ctx mut Context;
 
-    fn is_extension_valid(extension: &str) -> bool {
-        extension == "obj"
+    fn extensions() -> &'static [&'static str] {
+        &["obj"]
     }
 
     fn deserialize(bytes: AssetBytes, ctx: Self::Args) -> Self {

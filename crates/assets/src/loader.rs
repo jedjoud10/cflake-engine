@@ -1,4 +1,4 @@
-use crate::{Asset, LoadError};
+use crate::{Asset};
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
@@ -62,7 +62,7 @@ impl AssetLoader {
         }
     }
 
-    // Load an asset by deserializing it's bytes
+    // Load an asset by deserializing it's bytes using some explicit loading arguments
     pub fn try_load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, args: A::Args, path: &str) -> Option<A> {
         // Check if the extension is valid, and return None if it doesn't validate any of the extensions for the asset
         let extension = Path::new(path).extension().and_then(OsStr::to_str)?;
@@ -81,8 +81,14 @@ impl AssetLoader {
         let slice = self.cached.get(path).map(|vec| AssetBytes(vec.as_ref()))?;
 
         // Deserialize the asset
-        Ok(A::deserialize(slice, args))
+        Some(A::deserialize(slice, args))
     }   
+
+    // Load an asset by deserializing it's bytes and using some default loading arguments
+    pub fn try_load<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Option<A> where A::Args: Default {
+        self.try_load_with(Default::default(), path)
+    }
+
     // Cache an asset manually, given it's path and it's bytes
     pub fn import(&mut self, path: &str, bytes: Vec<u8>) {
         let path = path.split("assets/").last().unwrap();

@@ -11,11 +11,8 @@ pub struct AudioSource {
 impl Asset<'static> for AudioSource {
     type Args = ();
 
-    fn is_extension_valid(extension: &str) -> bool {
-        match extension {
-            "ogg" | "mp3" | "wav" => true,
-            _ => false,
-        }
+    fn extensions() -> &'static [&'static str] {
+        &["mp3", "ogg", "wav"]
     }
 
     fn deserialize(bytes: AssetBytes, args: Self::Args) -> Self {

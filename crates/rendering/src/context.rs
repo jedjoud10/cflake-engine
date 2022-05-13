@@ -2,6 +2,8 @@ mod context;
 mod pipeline;
 mod storage;
 mod window;
+mod object;
+pub use object::*;
 pub use context::*;
 pub use pipeline::*;
 pub use storage::*;
