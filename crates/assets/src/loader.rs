@@ -1,4 +1,4 @@
-use crate::{Asset, CompoundAsset};
+use crate::{Asset};
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
@@ -9,28 +9,18 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-// Bytes that the asset loader will use to deserialize assets
-pub struct AssetBytes<'loader>(pub(crate) &'loader [u8]);
-
-// This forces us to pass through the Asset::validate_bytes
-impl<'a> AsRef<[u8]> for AssetBytes<'a> {
-    fn as_ref(&self) -> &'a [u8] {
-        self.0
-    }
+// Dis dumb but it works
+pub struct LoadingData<'l, 'args, A: Asset<'args>> {
+    slice: &'l [u8],
+    args: A::Args,
+    path: PathBuf
 }
 
-// This is given to CompoundAssets to be able to deserialize them
-pub struct CompoundLoadingContext<'loader>(&'loader mut AssetLoader);
-
-impl<'loader> AsMut<AssetLoader> for CompoundLoadingContext<'loader> {
-    fn as_mut(&mut self) -> &mut AssetLoader {
-        self.0
-    }
-}
-
-impl<'loader> AsRef<AssetLoader> for CompoundLoadingContext<'loader> {
-    fn as_ref(&self) -> &AssetLoader {
-        self.0
+impl<'l, 'args, A: Asset<'args>> LoadingData<'l, 'args, A> {
+    // Split the loading data into it's raw form
+    pub fn split(self) -> (&'l [u8], A::Args, PathBuf) {
+        let Self { slice, args, path } = self;
+        (slice, args, path)
     }
 }
 
@@ -52,14 +42,12 @@ impl AssetLoader {
         }
     }
 
-    // Load an asset by deserializing it's bytes using some explicit loading arguments
-    pub fn try_load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, args: A::Args, path: &str) -> Option<A> {
+    // Load an asset using some explicit loading arguments
+    pub fn load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str, args: A::Args) -> Option<A> {
         // Check if the extension is valid, and return None if it doesn't validate any of the extensions for the asset
         let path = PathBuf::from_str(path).unwrap();
         let extension = path.extension().and_then(OsStr::to_str)?;
-        if A::extensions().contains(&extension) {
-            return None;
-        }
+        (!A::extensions().contains(&extension)).then(|| ())?;
 
         // Load the bytes from the file if they don't exist
         if self.cached.get(&path).is_none() {
@@ -69,48 +57,24 @@ impl AssetLoader {
         }
 
         // Make sure to only get a slice of the bytes, and not the whole vec
-        let slice = self.cached.get(&path).map(|vec| AssetBytes(vec.as_ref()))?;
+        let slice = self.cached.get(&path).map(Vec::as_slice)?;
 
         // Deserialize the asset
-        Some(A::deserialize(slice, path, args))
+        Some(A::deserialize(LoadingData {
+            slice,
+            args,
+            path,
+        }))
     }
 
-    // Load an asset by deserializing it's bytes and using some default loading arguments
-    pub fn try_load<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Option<A>
-    where
-        A::Args: Default,
-    {
-        self.try_load_with(Default::default(), path)
-    }
-
-    // Load a compound asset given multiple paths and some explicit loading arguments
-    pub fn try_load_compound_with<'loader, 'args, A: CompoundAsset<'args>>(&'loader mut self, args: A::Args, paths: &[&str]) -> Option<A> {
-        // Check if all the extensions of each path are all valid
-        let valid = paths
-            .iter()
-            .map(|path| Path::new(path).extension().and_then(OsStr::to_str))
-            .filter_map(|a| a)
-            .all(|extension| A::extensions().contains(&extension));
-
-        // Sometimes, it can look beautiful
-        valid.then(|| {
-            // Just create the compound asset without loading anything automatically
-            let context = CompoundLoadingContext(self);
-            A::deserialize(context, args)
-        })
+    // Load an asset using some default loading arguments
+    pub fn load<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Option<A> where A::Args: Default {
+        self.load_with(path, Default::default())
     }
 
     // Cache an asset manually, given it's path and it's bytes
-    pub fn import(&mut self, path: &str, bytes: Vec<u8>) {
-        let path = PathBuf::from_str(path.split("assets/").last().unwrap()).unwrap();
+    pub fn import(&mut self, path: impl AsRef<Path>, bytes: Vec<u8>) {
+        let path  = path.as_ref().strip_prefix("assets/").unwrap().to_path_buf();
         self.cached.entry(path).or_insert(bytes);
-    }
-
-    // Load a compound asset given multiple paths and some default loading arguments
-    pub fn try_load_compound<'loader, 'args, A: CompoundAsset<'args>>(&'loader mut self, paths: &[&str]) -> Option<A>
-    where
-        A::Args: Default,
-    {
-        self.try_load_compound_with(Default::default(), paths)
     }
 }
