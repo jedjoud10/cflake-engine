@@ -15,7 +15,7 @@ impl Asset<'static> for AudioSource {
         &["mp3", "ogg", "wav"]
     }
     
-    fn deserialize(bytes: &[u8], path: std::path::PathBuf, args: Self::Args, ctx: assets::loader::LoadingContext) -> Self {
+    fn deserialize(bytes: &[u8], args: Self::Args, meta: assets::loader::Meta) -> Self {
         let cursor = Cursor::new(bytes.as_ref().to_vec());
         let read = Decoder::new(cursor).ok().unwrap().buffered();
         AudioSource { buffered: read }

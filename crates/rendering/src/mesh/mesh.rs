@@ -114,7 +114,7 @@ impl<'ctx> Asset<'ctx> for Mesh {
         &["obj"]
     }
 
-    fn deserialize(bytes: &[u8], path: std::path::PathBuf, args: Self::Args, ctx: assets::loader::LoadingContext) -> Self {
+    fn deserialize(bytes: &[u8], ctx: Self::Args, meta: assets::loader::Meta) -> Self {
         // Parse the OBJ mesh into an engine mesh
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
         let mut builder = GeometryBuilder::default();
@@ -140,7 +140,7 @@ impl<'ctx> Asset<'ctx> for Mesh {
         builder.set_indices(parsed.indices);
 
         Self {
-            submeshes: vec![builder.build(args).unwrap()],
+            submeshes: vec![builder.build(ctx).unwrap()],
         }
         // Also load the triangles
         //builder.indices.indices = parsed_obj.indices;
