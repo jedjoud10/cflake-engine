@@ -10,9 +10,7 @@ use std::{
 };
 
 // Dis dumb but it works
-// TODO: Rename
-pub type LoadedData<'l, 'args, A: Asset<'args>> = (&'l [u8], A::Args, PathBuf);
-
+pub struct LoadingContext(());
 
 // Asset manager that will cache all the assets and help us load them in
 pub struct AssetLoader {
@@ -50,11 +48,7 @@ impl AssetLoader {
         let slice = self.cached.get(&path).map(Vec::as_slice)?;
 
         // Deserialize the asset
-        Some(A::deserialize((
-            slice,
-            args,
-            path,
-        )))
+        Some(A::deserialize(slice, path, args, LoadingContext(())))
     }
 
     // Load an asset using some default loading arguments

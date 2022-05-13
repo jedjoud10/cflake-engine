@@ -51,8 +51,7 @@ impl Asset<'static> for RawSource {
         &["vert.glsl", "frag.glsl", "cmpt.glsl", "func.glsl"]
     }
 
-    fn deserialize<'l>(data: assets::loader::LoadedData<'l, 'static, Self>) -> Self {
-        let (bytes, args, path) = data;
+    fn deserialize(bytes: &[u8], path: std::path::PathBuf, args: Self::Args, ctx: assets::loader::LoadingContext) -> Self {
         Self { raw_txt: String::from_utf8(bytes.as_ref().to_vec()).unwrap(), path }
     }
 }

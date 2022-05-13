@@ -8,9 +8,8 @@ pub mod tests {
             &["txt"]
         }
 
-        fn deserialize<'l>(data: crate::loader::LoadedData<'l, 'static, Self>) -> Self {
-            let (bytes, args, path) = data;
-            String::from_utf8(bytes.to_vec()).unwrap()
+        fn deserialize(bytes: &[u8], path: std::path::PathBuf, args: Self::Args, ctx: crate::loader::LoadingContext) -> Self {
+            todo!()
         }
     }
 
