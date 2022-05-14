@@ -1,4 +1,4 @@
-use super::{vertex::*, VertexLayout, NamedAttribute};
+use super::{attributes::{out::*, NamedAttribute}, VertexLayout};
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
 #[derive(Default)]
@@ -55,13 +55,5 @@ impl VertexAssembly {
     }
 }
 
-// A single triangle that is made up of 3 indices
-// A triangle can share multiple vertices
-pub struct Triangle([u32; 3]);
-impl From<[u32; 3]> for Triangle {
-    fn from(arr: [u32; 3]) -> Self {
-        Triangle(arr)
-    }
-}
-// A triangle assembly is the same thing, but with triangles instead
-pub type TriangleAssembly = Vec<Triangle>;
+// Assembly that stores the indices that we will use to conenct each vertex to each other
+pub type IndexAssembly = Vec<u32>;

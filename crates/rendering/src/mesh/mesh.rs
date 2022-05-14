@@ -1,10 +1,10 @@
 use super::{
     attributes::{AttributeSet, NamedAttribute},
-    GeometryBuilder, Triangle,
+    GeometryBuilder,
 };
 use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
-    context::{Cached, Context},
+    context::{Cached, Context, ToGlName},
 };
 use assets::{Asset};
 use obj::TexturedVertex;
@@ -55,13 +55,9 @@ impl SubMesh {
         let access = BufferAccess::WRITE | BufferAccess::WRITE;
 
         // Only take the indices from the builder, cause we store them in a different place than the vertex attributes
-        let indices = std::mem::take(builder.get_tris_mut());
+        let indices = std::mem::take(builder.get_indices_mut());
         let layout = builder.layout();
 
-        // Convert the triangle vector into just indices
-        let mut manual = ManuallyDrop::new(indices);
-        let indices = Vec::from_raw_parts(manual.as_mut_ptr() as *mut u32, manual.len() * 3, manual.capacity() * 3);
-        
         Self {
             vao,
             attributes: AttributeSet::new(vao, ctx, access, builder),
@@ -85,6 +81,12 @@ impl SubMesh {
     pub fn get_mut<U: NamedAttribute>(&mut self, ctx: &mut Context) -> Option<MutMapped<U::Out>> {
         let count = self.vert_count;
         U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..count).unwrap())
+    }
+}
+
+impl ToGlName for SubMesh {
+    fn name(&self) -> NonZeroU32 {
+        self.vao
     }
 }
 
@@ -116,7 +118,7 @@ impl Mesh {
         self.submeshes.push(submesh)
     }
 }
-/*
+
 impl<'ctx> Asset<'ctx> for Mesh {
     type Args = &'ctx mut Context;
 
@@ -137,6 +139,7 @@ impl<'ctx> Asset<'ctx> for Mesh {
 
         // Fill each buffer now
         use vek::{Vec2, Vec3};
+        use super::attributes::marker::*;
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
@@ -144,9 +147,9 @@ impl<'ctx> Asset<'ctx> for Mesh {
         }
 
         // Set the very sussy bakas (POV: You are slowly going insane)
-        builder.set::<super::Position>(positions);
-        builder.set::<super::Normal>(normals);
-        builder.set::<super::TexCoord0>(tex_coords_0);
+        builder.set_attrib::<Position>(positions);
+        builder.set_attrib::<Normal>(normals);
+        builder.set_attrib::<TexCoord0>(tex_coords_0);
         builder.set_indices(parsed.indices);
 
         Self {
@@ -159,4 +162,3 @@ impl<'ctx> Asset<'ctx> for Mesh {
         //let mesh = builder.build().generate_tangents();
     }
 }
-*/

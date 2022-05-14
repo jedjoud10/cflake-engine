@@ -1,7 +1,7 @@
-use rendering::basics::mesh::GeometryBuilder;
+use rendering::mesh::Position;
 
 use super::settings::MesherSettings;
-use super::{builder::*, GeneratedMeshSurface};
+use super::{builder::*};
 use crate::{ChunkCoords, VoxelData};
 
 // A struct for organization
@@ -23,10 +23,10 @@ impl Mesher {
         }
     }
     // Generate the mesh from the voxel data
-    pub fn build(self, data: &VoxelData) -> (GeometryBuilder, GeometryBuilder, GeneratedMeshSurface) {
+    pub fn build(self, data: &VoxelData) -> (GeometryBuilder, GeometryBuilder) {
         // Gotta combine the main mesh and the skirts one
-        let (main, surface) = self.builder.build(data);
+        let (main) = self.builder.build(data);
         let skirts = self.skirts_builder.build(data);
-        (main, skirts, surface)
+        (main, skirts)
     }
 }

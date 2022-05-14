@@ -1,8 +1,8 @@
-use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout, VertexAssembly, TriangleAssembly};
 use crate::{
     context::Context,
-    mesh::{Color, Normal, Tangent, TexCoord0},
 };
+
+use super::{VertexAssembly, attributes::NamedAttribute, VertexLayout, IndexAssembly, SubMesh};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -12,7 +12,7 @@ pub struct GeometryBuilder {
     vertices: VertexAssembly,
 
     // Indices stored as triangles
-    triangles: TriangleAssembly,
+    indices: Vec<u32>,
 }
 
 impl GeometryBuilder {
@@ -36,24 +36,24 @@ impl GeometryBuilder {
         self.vertices.layout()
     }
 
-    // Set the indices (triangles)
-    pub fn set_tris(&mut self, assembly: TriangleAssembly) {
-        self.triangles = assembly;
+    // Set the indices
+    pub fn set_indices(&mut self, assembly: IndexAssembly) {
+        self.indices = assembly;
     }
 
-    // Get the indices (triangles) immutably 
-    pub fn get_tris(&self) -> &TriangleAssembly {
-        &self.triangles
+    // Get the indices immutably 
+    pub fn get_indices(&self) -> &IndexAssembly {
+        &self.indices
     }
 
-    // Get the indices (triangles) mutably
-    pub fn get_tris_mut(&mut self) -> &mut TriangleAssembly {
-        &mut self.triangles
+    // Get the indices mutably
+    pub fn get_indices_mut(&mut self) -> &mut IndexAssembly {
+        &mut self.indices
     }
 
     // Check if the builder can be used to generate a submesh
     pub fn valid(&self) -> bool {
-        self.vertices.len().is_some()
+        self.vertices.len().is_some() && self.indices.len() % 3 == 0
     }
 
     // Build the final submesh without checking for validity or anything

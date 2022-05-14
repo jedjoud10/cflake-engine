@@ -110,141 +110,146 @@ pub trait NamedAttribute {
     fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>);
 }
 
-// Named attributes implement for empty structs
-pub struct Position;
-pub struct Normal;
-pub struct Tangent;
-pub struct Color;
-pub struct TexCoord0;
-
-impl NamedAttribute for Position {
-    type Out = vek::Vec3<f32>;
-    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.positions.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.positions.as_mut()
-    }
-
-    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
-        assembly.positions.as_ref()
-    }
-
-    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
-        assembly.positions.as_mut()
-    }
-
-    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-        assembly.positions.insert(vec);
-    }
-}
-
-impl NamedAttribute for Normal {
-    type Out = vek::Vec3<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.normals.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.normals.as_mut()
-    }
-
-    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
-        assembly.normals.as_ref()
-    }
-
-    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
-        assembly.normals.as_mut()
-    }
-
-    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-        assembly.normals.insert(vec);
-    }
-}
-
-impl NamedAttribute for Tangent {
-    type Out = vek::Vec4<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.tangents.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.tangents.as_mut()
-    }
-
-    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
-        assembly.tangents.as_ref()
-    }
-
-    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
-        assembly.tangents.as_mut()
-    }
-
-    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-        assembly.tangents.insert(vec);
-    }
-}
-
-impl NamedAttribute for Color {
-    type Out = vek::Rgb<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::COLORS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.colors.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.colors.as_mut()
-    }
-
-    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
-        assembly.colors.as_ref()
-    }
-
-    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
-        assembly.colors.as_mut()
-    }
-
-    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-        assembly.colors.insert(vec);
-    }
-}
-
-impl NamedAttribute for TexCoord0 {
-    type Out = vek::Vec2<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.tex_coord_0.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.tex_coord_0.as_mut()
-    }
-
-    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
-        assembly.tex_coord_0.as_ref()
-    }
-
-    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
-        assembly.tex_coord_0.as_mut()
-    }
-
-    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-        assembly.tex_coord_0.insert(vec);
-    }
-}
-
-// Type aliases for the underlying vertex attribute data
-pub mod vertex {
+pub mod marker {
     use super::*;
+
+    // Named attributes implement for empty structs
+    pub struct Position;
+    pub struct Normal;
+    pub struct Tangent;
+    pub struct Color;
+    pub struct TexCoord0;
+
+    impl NamedAttribute for Position {
+        type Out = vek::Vec3<f32>;
+        const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.positions.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.positions.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.positions.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.positions.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.positions.insert(vec);
+        }
+    }
+
+    impl NamedAttribute for Normal {
+        type Out = vek::Vec3<i8>;
+        const LAYOUT: VertexLayout = VertexLayout::NORMALS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.normals.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.normals.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.normals.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.normals.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.normals.insert(vec);
+        }
+    }
+
+    impl NamedAttribute for Tangent {
+        type Out = vek::Vec4<i8>;
+        const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.tangents.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.tangents.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.tangents.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.tangents.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.tangents.insert(vec);
+        }
+    }
+
+    impl NamedAttribute for Color {
+        type Out = vek::Rgb<u8>;
+        const LAYOUT: VertexLayout = VertexLayout::COLORS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.colors.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.colors.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.colors.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.colors.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.colors.insert(vec);
+        }
+    }
+
+    impl NamedAttribute for TexCoord0 {
+        type Out = vek::Vec2<u8>;
+        const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.tex_coord_0.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.tex_coord_0.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.tex_coord_0.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.tex_coord_0.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.tex_coord_0.insert(vec);
+        }
+    }
+}
+
+
+pub mod out {
+    // Type aliases for the underlying vertex attribute data
+    use super::{marker::*, NamedAttribute};
     pub type VePos = <Position as NamedAttribute>::Out;
     pub type VeNormal = <Normal as NamedAttribute>::Out;
     pub type VeTangent = <Tangent as NamedAttribute>::Out;
@@ -302,11 +307,11 @@ impl AttributeSet {
 
         // Create the set with valid buffers (if they are enabled)
         Self {
-            positions: gen::<Position>(&mut aux, false,),
-            normals: gen::<Normal>(&mut aux, true),
-            tangents: gen::<Tangent>(&mut aux, true),
-            colors: gen::<Color>(&mut aux, false),
-            tex_coord_0: gen::<TexCoord0>(&mut aux, false),
+            positions: gen::<marker::Position>(&mut aux, false,),
+            normals: gen::<marker::Normal>(&mut aux, true),
+            tangents: gen::<marker::Tangent>(&mut aux, true),
+            colors: gen::<marker::Color>(&mut aux, false),
+            tex_coord_0: gen::<marker::TexCoord0>(&mut aux, false),
             count: valid_attrib_count,
         }
     }

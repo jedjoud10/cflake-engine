@@ -1,4 +1,4 @@
-use crate::context::Context;
+use crate::context::{Context, ToGlName, ToGlType};
 use std::num::NonZeroU32;
 
 use super::TexelLayout;
@@ -10,7 +10,7 @@ pub enum MinMagFilter {
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
-pub trait Texture<T: TexelLayout> {
+pub trait Texture<T: TexelLayout>: ToGlName + ToGlType {
     // Textures can have different dimensions
     type Dimensions;
 
@@ -20,12 +20,6 @@ pub trait Texture<T: TexelLayout> {
         gl::GenTextures(1, &mut tex);
         NonZeroU32::new_unchecked(tex)
     }
-
-    // Get the texture's target, as a function
-    fn target(&self) -> NonZeroU32;
-
-    // Get the texture's OpenGL ID name
-    fn name(&self) -> NonZeroU32;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;

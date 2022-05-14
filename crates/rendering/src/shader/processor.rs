@@ -23,12 +23,12 @@ pub struct Processor<'a> {
 
 impl<'a> Processor<'a> {
     // Include a constant directive
-    pub fn insert_const(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn constant(&mut self, name: impl ToString, value: impl ToString) {
         self.constants.insert(name.to_string(), value.to_string());
     }
 
     // Include a snippet directive
-    pub fn insert_snippet(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn snippet(&mut self, name: impl ToString, value: impl ToString) {
         self.snippets.insert(name.to_string(), value.to_string());
     }
 
