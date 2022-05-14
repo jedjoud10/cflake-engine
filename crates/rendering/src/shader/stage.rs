@@ -3,36 +3,36 @@ use assets::Asset;
 use super::RawText;
 
 // This trait is implemented for each shader stage, like the vertex stage or fragment stage
-// TODO: Rename
-pub trait StageDescriptor where Self: Sized {
+pub trait Stage: Sized + From<String> + AsRef<str> {
     const GL_TYPE: u32;
     const EXTENSION: &'static str;
-
-    // Convert a string into a valid stage descriptor
-    fn from_string(string: String) -> Self;
 } 
 
-// Simple stage wrapper
-pub struct Stage<T: StageDescriptor>(T);
+// A vertex stage that will be loaded from .vrsh files
+pub struct VertexStage(String);
 
-impl<T: StageDescriptor> From<String> for Stage<T> {
-    fn from(string: String) -> Self {
-        Self(T::from_string(string))
+impl From<String> for VertexStage {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
-impl<T: StageDescriptor> From<&str> for Stage<T> {
-    fn from(str: &str) -> Self {
-        Self(T::from_string(str.to_string()))
+impl AsRef<str> for VertexStage {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
-// Automatically implemented the asset trait for stages
-impl<T: StageDescriptor> Asset<'static> for Stage<T> {
+impl Stage for VertexStage {
+    const GL_TYPE: u32 = gl::VERTEX_SHADER;
+    const EXTENSION: &'static str = ".vrsh.glsl";
+}
+
+impl Asset<'static> for VertexStage {
     type Args = ();
 
     fn extensions() -> &'static [&'static str] {
-        &[T::EXTENSION]
+        &[Self::EXTENSION]
     }
 
     fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
@@ -40,41 +40,66 @@ impl<T: StageDescriptor> Asset<'static> for Stage<T> {
     }
 }
 
-// A vertex stage that will be loaded from .vrsh files
-pub struct Vertex(String);
-impl StageDescriptor for Vertex {
-    const GL_TYPE: u32 = gl::VERTEX_SHADER;
-    const EXTENSION: &'static str = ".vrsh.glsl";
+// A fragment stage that will be loaded from .frsh files
+pub struct FragmentStage(String);
 
-    fn from_string(string: String) -> Self {
-        Self(string)
+impl From<String> for FragmentStage {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
-// A fragment stage that will be loaded from .frsh files
-pub struct Fragment(String);
-impl StageDescriptor for Fragment {
+impl AsRef<str> for FragmentStage {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Stage for FragmentStage {
     const GL_TYPE: u32 = gl::FRAGMENT_SHADER;
     const EXTENSION: &'static str = ".frsh.glsl";
-
-    fn from_string(string: String) -> Self {
-        Self(string)
-    }
 }
 
+impl Asset<'static> for FragmentStage {
+    type Args = ();
+
+    fn extensions() -> &'static [&'static str] {
+        &[Self::EXTENSION]
+    }
+
+    fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
+        Self::from(RawText::deserialize(bytes, args).0)
+    }
+}
 
 // A compute stage (only for compute shaders) that will be loaded from .cmpt files
-pub struct Compute(String);
-impl StageDescriptor for Compute {
-    const GL_TYPE: u32 = gl::COMPUTE_SHADER;
-    const EXTENSION: &'static str = ".cmpt.glsl";
+pub struct ComputeStage(String);
 
-    fn from_string(string: String) -> Self {
-        Self(string)
+impl From<String> for ComputeStage {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
-// Type aliases cause I'm very cool
-pub type VertexStage = Stage<Vertex>;
-pub type FragmentStage = Stage<Fragment>;
-pub type ComputeStage = Stage<Compute>; 
+impl AsRef<str> for ComputeStage {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Stage for ComputeStage {
+    const GL_TYPE: u32 = gl::COMPUTE_SHADER;
+    const EXTENSION: &'static str = ".cmpt.glsl";
+}
+
+impl Asset<'static> for ComputeStage {
+    type Args = ();
+
+    fn extensions() -> &'static [&'static str] {
+        &[Self::EXTENSION]
+    }
+
+    fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
+        Self::from(RawText::deserialize(bytes, args).0)
+    }
+}
