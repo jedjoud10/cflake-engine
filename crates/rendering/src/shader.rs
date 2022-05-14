@@ -1,8 +1,10 @@
 mod compute;
 mod program;
 mod shader;
-mod source;
+mod stage;
+mod text;
+pub use text::*;
 pub use compute::*;
 pub use program::*;
 pub use shader::*;
-pub use source::*;
+pub use stage::*;

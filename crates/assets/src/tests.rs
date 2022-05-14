@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use crate::{asset, loader::AssetLoader, Asset};
+    use crate::{asset, loader::{AssetLoader}, Asset};
     impl Asset<'static> for String {
         type Args = ();
 
@@ -8,9 +8,10 @@ pub mod tests {
             &["txt"]
         }
 
-        fn deserialize(bytes: &[u8], args: Self::Args, meta: crate::loader::Meta) -> Self {
-            String::from_utf8(bytes.to_vec()).unwrap()
+        fn deserialize(bytes: crate::loader::CachedSlice, args: Self::Args) -> Self {
+            String::from_utf8(bytes.as_ref().to_vec()).unwrap()
         }
+
     }
 
     #[test]
