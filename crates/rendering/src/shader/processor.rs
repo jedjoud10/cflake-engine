@@ -1,7 +1,7 @@
+use super::{RawText, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::loader::AssetLoader;
-use super::{Stage, RawText};
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
@@ -10,7 +10,7 @@ pub struct Constant<T: ToString>(T);
 pub struct Processor<'a> {
     // This is the asset loader that we will use to load include files
     loader: &'a mut AssetLoader,
-    
+
     // A hashmap containing the constant values that we must replace
     // #const [name] [opt<default>]
     // #const [name]
@@ -36,7 +36,7 @@ impl<'a> Processor<'a> {
     pub fn filter<S: Stage>(&mut self, stage: S) -> S {
         // We must filter infinitely until we find no more directives
         let mut lines = stage.as_ref().to_string().lines().map(str::to_string).collect::<Vec<String>>();
-        loop {            
+        loop {
             // Simply iterate through each line, and check if it starts with a directive that we must replace (whitespaces ignored)
             let mut skipped = 0usize;
             for line in lines.iter_mut() {
@@ -49,7 +49,7 @@ impl<'a> Processor<'a> {
                 // Very funny indeed
                 if trimmed.contains("#const") {
                     // Split into words, and classify name and default value
-                    let words =  trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let words = trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
                     let default = words.get(1).cloned();
 
@@ -69,15 +69,15 @@ impl<'a> Processor<'a> {
                     // Don't overwrite really, and skip to the next line
                     skipped += 1;
                     continue;
-                }           
-                
+                }
+
                 // Overwrite line with new output
                 *line = output;
             }
 
             // Make sure we split the lines again
             lines = lines.join("\n").lines().map(str::to_string).collect::<Vec<String>>();
-            
+
             // If we skipped all the lines, it means that we did absolutely nothing, and we can exit
             if skipped == lines.len() {
                 break;
@@ -86,5 +86,5 @@ impl<'a> Processor<'a> {
 
         // Combine the lines into a string and return the new, filtered stage
         S::from(lines.join("\n"))
-    } 
+    }
 }

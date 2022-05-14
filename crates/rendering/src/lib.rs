@@ -5,5 +5,5 @@ pub mod buffer;
 pub mod context;
 pub mod mesh;
 pub mod shader;
-pub mod texture;
 mod tests;
+pub mod texture;

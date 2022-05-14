@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 // If we are in Debug, we read the bytes directly from the file system
 #[cfg(debug_assertions)]

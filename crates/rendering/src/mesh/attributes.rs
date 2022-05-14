@@ -1,4 +1,4 @@
-use super::{GeometryBuilder, VertexLayout, VertexAssembly};
+use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
     buffer::{ArrayBuffer, BufferAccess, GPUSendable},
     context::Context,
@@ -246,7 +246,6 @@ pub mod marker {
     }
 }
 
-
 pub mod out {
     // Type aliases for the underlying vertex attribute data
     use super::{marker::*, NamedAttribute};
@@ -271,7 +270,7 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
     aux.builder.get_attrib_mut::<T>().map(|vec| {
         // We do a bit of stealing
         let vec = std::mem::take(vec);
-        
+
         // Create the array buffer
         let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
 
@@ -307,7 +306,7 @@ impl AttributeSet {
 
         // Create the set with valid buffers (if they are enabled)
         Self {
-            positions: gen::<marker::Position>(&mut aux, false,),
+            positions: gen::<marker::Position>(&mut aux, false),
             normals: gen::<marker::Normal>(&mut aux, true),
             tangents: gen::<marker::Tangent>(&mut aux, true),
             colors: gen::<marker::Color>(&mut aux, false),

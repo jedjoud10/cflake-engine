@@ -6,9 +6,9 @@ use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
     context::{Cached, Context, ToGlName},
 };
-use assets::{Asset};
+use assets::Asset;
 use obj::TexturedVertex;
-use std::{num::NonZeroU32, mem::ManuallyDrop};
+use std::{mem::ManuallyDrop, num::NonZeroU32};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
@@ -138,8 +138,8 @@ impl<'ctx> Asset<'ctx> for Mesh {
         let mut tex_coords_0 = Vec::with_capacity(capacity);
 
         // Fill each buffer now
-        use vek::{Vec2, Vec3};
         use super::attributes::marker::*;
+        use vek::{Vec2, Vec3};
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));

@@ -13,4 +13,4 @@ impl Asset<'static> for RawText {
     fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
         todo!()
     }
-} 
+}

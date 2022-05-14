@@ -6,7 +6,7 @@ use super::RawText;
 pub trait Stage: Sized + From<String> + AsRef<str> {
     const GL_TYPE: u32;
     const EXTENSION: &'static str;
-} 
+}
 
 // A vertex stage that will be loaded from .vrsh files
 pub struct VertexStage(String);

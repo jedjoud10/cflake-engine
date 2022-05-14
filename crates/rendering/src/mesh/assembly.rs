@@ -1,4 +1,7 @@
-use super::{attributes::{out::*, NamedAttribute}, VertexLayout};
+use super::{
+    attributes::{out::*, NamedAttribute},
+    VertexLayout,
+};
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
 #[derive(Default)]

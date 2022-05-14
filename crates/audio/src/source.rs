@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use assets::{Asset};
+use assets::Asset;
 use rodio::{source::Buffered, Decoder, Source};
 
 // A single audio source that can be loaded
@@ -14,7 +14,7 @@ impl Asset<'static> for AudioSource {
     fn extensions() -> &'static [&'static str] {
         &["mp3", "ogg", "wav"]
     }
-    
+
     fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
         let cursor = Cursor::new(bytes.as_ref().to_vec());
         let read = Decoder::new(cursor).ok().unwrap().buffered();

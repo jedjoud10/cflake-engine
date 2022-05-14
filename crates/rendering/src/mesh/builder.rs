@@ -1,8 +1,6 @@
-use crate::{
-    context::Context,
-};
+use crate::context::Context;
 
-use super::{VertexAssembly, attributes::NamedAttribute, VertexLayout, IndexAssembly, SubMesh};
+use super::{attributes::NamedAttribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -41,7 +39,7 @@ impl GeometryBuilder {
         self.indices = assembly;
     }
 
-    // Get the indices immutably 
+    // Get the indices immutably
     pub fn get_indices(&self) -> &IndexAssembly {
         &self.indices
     }

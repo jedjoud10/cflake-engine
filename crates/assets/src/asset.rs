@@ -1,5 +1,9 @@
-use std::{ffi::OsStr, path::{Path, PathBuf}, time::Instant};
 use crate::loader::{AssetLoader, CachedSlice};
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 // An asset that will be loaded from a single unique file
 // Each asset has some extra data that can be used to construct the object

@@ -1,4 +1,4 @@
-use crate::{Asset};
+use crate::Asset;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use std::{
@@ -50,19 +50,22 @@ impl AssetLoader {
 
         // Load the cached bytes and increment the accessed counter
         let slice = self.cached.get(&path).map(Vec::as_slice)?;
-        
+
         // Deserialize the asset
         Some(A::deserialize(CachedSlice(slice), args))
     }
 
     // Load an asset using some default loading arguments
-    pub fn load<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Option<A> where A::Args: Default {
+    pub fn load<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str) -> Option<A>
+    where
+        A::Args: Default,
+    {
         self.load_with(path, Default::default())
     }
 
     // Import a persistant asset using it's global asset path and it's raw bytes
     pub fn import(&mut self, path: impl AsRef<Path>, bytes: Vec<u8>) {
-        let path  = path.as_ref().strip_prefix("assets/").unwrap().to_path_buf();
+        let path = path.as_ref().strip_prefix("assets/").unwrap().to_path_buf();
         self.cached.entry(path).or_insert(bytes);
     }
 }

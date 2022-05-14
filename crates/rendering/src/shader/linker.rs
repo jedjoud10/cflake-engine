@@ -1,6 +1,6 @@
 use crate::context::Context;
 
-use super::{VertexStage, FragmentStage, Shader, ComputeStage, ComputeShader, Processor};
+use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Shader, VertexStage};
 
 // This trait will be implemented for valid combinations of multiple unique stages
 pub trait StageSet {

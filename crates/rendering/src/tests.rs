@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::shader::{VertexStage, FragmentStage, StageLinker, ComputeStage};
+    use crate::shader::{ComputeStage, FragmentStage, StageLinker, VertexStage};
 
-    
     #[test]
-    fn test() {
-    }
+    fn test() {}
 }
