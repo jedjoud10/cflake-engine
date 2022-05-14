@@ -1,4 +1,4 @@
-use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout};
+use super::{vertex::*, NamedAttribute, SubMesh, VertexLayout, VertexAssembly, TriangleAssembly};
 use crate::{
     context::Context,
     mesh::{Color, Normal, Tangent, TexCoord0},
@@ -6,77 +6,54 @@ use crate::{
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
+#[derive(Default)]
 pub struct GeometryBuilder {
-    // Rust vectors of vertex attributes
-    pub(super) positions: Vec<VePos>,
-    pub(super) normals: Vec<VeNormal>,
-    pub(super) tangents: Vec<VeTangent>,
-    pub(super) colors: Vec<VeColor>,
-    pub(super) tex_coord_0: Vec<VeTexCoord0>,
+    // Vertices and their attributes
+    vertices: VertexAssembly,
 
-    // Index vector
-    pub(super) indices: Vec<u32>,
-
-    // Other
-    layout: VertexLayout,
-}
-
-impl Default for GeometryBuilder {
-    fn default() -> Self {
-        Self {
-            positions: Default::default(),
-            normals: Default::default(),
-            tangents: Default::default(),
-            colors: Default::default(),
-            tex_coord_0: Default::default(),
-            indices: Default::default(),
-            layout: VertexLayout::empty(),
-        }
-    }
+    // Indices stored as triangles
+    triangles: TriangleAssembly,
 }
 
 impl GeometryBuilder {
-    // Set each type of attribute vector using trait magic
-    pub fn set<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
-        U::insert(self, vec);
-        self.layout.insert(U::LAYOUT);
+    // Set a single unique vertex attribute
+    pub fn set_attrib<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+        self.vertices.insert::<U>(vec);
     }
 
-    // Set the indices alone lul
-    pub fn set_indices(&mut self, vec: Vec<u32>) {
-        self.indices = vec;
+    // Get a vertex attribute immutably
+    pub fn get_attrib<U: NamedAttribute>(&self) -> Option<&Vec<U::Out>> {
+        self.vertices.get::<U>()
     }
 
-    // Get the specific vertex layout that this geometry builder will use to build it's submesh
+    // Get an attribute vector mutably
+    pub fn get_attrib_mut<U: NamedAttribute>(&mut self) -> Option<&mut Vec<U::Out>> {
+        self.vertices.get_mut::<U>()
+    }
+
+    // Get the vertex layout that we have created
     pub fn layout(&self) -> VertexLayout {
-        self.layout
+        self.vertices.layout()
     }
 
-    // Check if the vectors are valid
+    // Set the indices (triangles)
+    pub fn set_tris(&mut self, assembly: TriangleAssembly) {
+        self.triangles = assembly;
+    }
+
+    // Get the indices (triangles) immutably 
+    pub fn get_tris(&self) -> &TriangleAssembly {
+        &self.triangles
+    }
+
+    // Get the indices (triangles) mutably
+    pub fn get_tris_mut(&mut self) -> &mut TriangleAssembly {
+        &mut self.triangles
+    }
+
+    // Check if the builder can be used to generate a submesh
     pub fn valid(&self) -> bool {
-        // Check if a vertex layout type is present within our current vertex layout, and return a usize that represents it (1 for true, 0 for false)
-        fn valid<A: NamedAttribute>(builder: &GeometryBuilder, count: usize, vec: &Vec<A::Out>) -> bool {
-            let factor = usize::from(builder.layout.contains(A::LAYOUT));
-            (count - factor * vec.len()) == 0
-        }
-
-        // If we have no position vertices, then wtf we doing bruv?
-        let length = if self.positions.is_empty() {
-            return true;
-        } else {
-            self.positions.len()
-        };
-
-        // Check if each vector is valid
-        let valids = [
-            valid::<Normal>(&self, length, &self.normals),
-            valid::<Tangent>(&self, length, &self.tangents),
-            valid::<Color>(&self, length, &self.colors),
-            valid::<TexCoord0>(&self, length, &self.tex_coord_0),
-        ];
-
-        // They must ALL be valid
-        valids.into_iter().all(|a| a)
+        self.vertices.len().is_some()
     }
 
     // Build the final submesh without checking for validity or anything

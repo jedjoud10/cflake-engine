@@ -1,6 +1,6 @@
 use super::{
     attributes::{AttributeSet, NamedAttribute},
-    GeometryBuilder,
+    GeometryBuilder, Triangle,
 };
 use crate::{
     buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
@@ -8,7 +8,7 @@ use crate::{
 };
 use assets::{Asset};
 use obj::TexturedVertex;
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, mem::ManuallyDrop};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
@@ -18,6 +18,12 @@ bitflags::bitflags! {
         const TANGENTS = 1 << 3;
         const COLORS = 1 << 4;
         const TEX_COORD_0 = 1 << 5;
+    }
+}
+
+impl Default for VertexLayout {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
@@ -49,9 +55,13 @@ impl SubMesh {
         let access = BufferAccess::WRITE | BufferAccess::WRITE;
 
         // Only take the indices from the builder, cause we store them in a different place than the vertex attributes
-        let indices = std::mem::take(&mut builder.indices);
+        let indices = std::mem::take(builder.get_tris_mut());
         let layout = builder.layout();
 
+        // Convert the triangle vector into just indices
+        let mut manual = ManuallyDrop::new(indices);
+        let indices = Vec::from_raw_parts(manual.as_mut_ptr() as *mut u32, manual.len() * 3, manual.capacity() * 3);
+        
         Self {
             vao,
             attributes: AttributeSet::new(vao, ctx, access, builder),
@@ -106,7 +116,7 @@ impl Mesh {
         self.submeshes.push(submesh)
     }
 }
-
+/*
 impl<'ctx> Asset<'ctx> for Mesh {
     type Args = &'ctx mut Context;
 
@@ -149,3 +159,4 @@ impl<'ctx> Asset<'ctx> for Mesh {
         //let mesh = builder.build().generate_tangents();
     }
 }
+*/

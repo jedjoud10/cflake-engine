@@ -1,4 +1,4 @@
-use super::{GeometryBuilder, VertexLayout};
+use super::{GeometryBuilder, VertexLayout, VertexAssembly};
 use crate::{
     buffer::{ArrayBuffer, BufferAccess, GPUSendable},
     context::Context,
@@ -102,8 +102,12 @@ pub trait NamedAttribute {
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>>;
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>>;
 
-    // Set a specific vector inside a geometry builder
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>);
+    // Get the Rust vector from a vertex assembly (PS: The vector might be null)
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>>;
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>>;
+
+    // Insert a vector into an assembly
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>);
 }
 
 // Named attributes implement for empty structs
@@ -125,8 +129,16 @@ impl NamedAttribute for Position {
         set.positions.as_mut()
     }
 
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.positions = vec;
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+        assembly.positions.as_ref()
+    }
+
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+        assembly.positions.as_mut()
+    }
+
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+        assembly.positions.insert(vec);
     }
 }
 
@@ -142,8 +154,16 @@ impl NamedAttribute for Normal {
         set.normals.as_mut()
     }
 
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.normals = vec;
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+        assembly.normals.as_ref()
+    }
+
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+        assembly.normals.as_mut()
+    }
+
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+        assembly.normals.insert(vec);
     }
 }
 
@@ -159,8 +179,16 @@ impl NamedAttribute for Tangent {
         set.tangents.as_mut()
     }
 
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.tangents = vec;
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+        assembly.tangents.as_ref()
+    }
+
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+        assembly.tangents.as_mut()
+    }
+
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+        assembly.tangents.insert(vec);
     }
 }
 
@@ -176,8 +204,16 @@ impl NamedAttribute for Color {
         set.colors.as_mut()
     }
 
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.colors = vec;
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+        assembly.colors.as_ref()
+    }
+
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+        assembly.colors.as_mut()
+    }
+
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+        assembly.colors.insert(vec);
     }
 }
 
@@ -193,8 +229,16 @@ impl NamedAttribute for TexCoord0 {
         set.tex_coord_0.as_mut()
     }
 
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.tex_coord_0 = vec;
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+        assembly.tex_coord_0.as_ref()
+    }
+
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+        assembly.tex_coord_0.as_mut()
+    }
+
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+        assembly.tex_coord_0.insert(vec);
     }
 }
 
@@ -212,14 +256,18 @@ pub mod vertex {
 struct AuxBufGen<'a> {
     vao: NonZeroU32,
     index: &'a mut u32,
+    builder: GeometryBuilder,
     ctx: &'a mut Context,
     access: BufferAccess,
-    layout: VertexLayout,
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Vec<T::Out>) -> AttribBuf<T::Out> {
-    aux.layout.contains(T::LAYOUT).then(|| {
+fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> AttribBuf<T::Out> {
+    aux.builder.get_attrib_mut::<T>().map(|vec| {
+        // We do a bit of stealing
+        let vec = std::mem::take(vec);
+        
+        // Create the array buffer
         let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
 
         // Bind the buffer to bind the attributes
@@ -239,27 +287,27 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Ve
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
     pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, access: BufferAccess, builder: GeometryBuilder) -> Self {
+        // Count the number of valid attributes
+        let valid_attrib_count = builder.layout().bits().count_ones();
+
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
         let mut aux = AuxBufGen {
             vao,
             index: &mut index,
+            builder,
             ctx,
             access,
-            layout: builder.layout(),
         };
-
-        // We do a bit of yoinking
-        let count = builder.layout().bits().count_ones();
 
         // Create the set with valid buffers (if they are enabled)
         Self {
-            positions: gen::<Position>(&mut aux, false, builder.positions),
-            normals: gen::<Normal>(&mut aux, true, builder.normals),
-            tangents: gen::<Tangent>(&mut aux, true, builder.tangents),
-            colors: gen::<Color>(&mut aux, false, builder.colors),
-            tex_coord_0: gen::<TexCoord0>(&mut aux, false, builder.tex_coord_0),
-            count,
+            positions: gen::<Position>(&mut aux, false,),
+            normals: gen::<Normal>(&mut aux, true),
+            tangents: gen::<Tangent>(&mut aux, true),
+            colors: gen::<Color>(&mut aux, false),
+            tex_coord_0: gen::<TexCoord0>(&mut aux, false),
+            count: valid_attrib_count,
         }
     }
 }
