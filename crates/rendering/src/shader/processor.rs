@@ -41,17 +41,17 @@ impl<'a> Processor<'a> {
             let mut skipped = 0usize;
             for line in lines.iter_mut() {
                 // A bit of line trolling
-                let trimmed = line.trim_start();
+                let trimmed = line.trim();
 
                 // Output line
                 let mut output = String::new();
 
                 // Very funny indeed
-                if trimmed.starts_with("#const") {
+                if trimmed.contains("#const") {
                     // Split into words, and classify name and default value
-                    let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
-                    let name = words[1];
-                    let default = words.get(2).cloned();
+                    let words =  trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let name = words[0];
+                    let default = words.get(1).cloned();
 
                     // Then try to load the value from the processor
                     let loaded = self.constants.get(name).map(String::as_str);
