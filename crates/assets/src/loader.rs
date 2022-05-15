@@ -39,10 +39,10 @@ impl AssetLoader {
     pub fn load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str, args: A::Args) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(path).unwrap();
-        let extension = path.extension().and_then(OsStr::to_str)?;
+        let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once(".")?;
 
         // If the asset has no extensions, we shall not check
-        //((!A::extensions().contains(&extension)) || A::extensions().is_empty()).then(|| ())?;
+        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then(|| ())?;
 
         // If we have no bytes currently cached, try to load and cache them
         if self.cached.get(&path).is_none() {
