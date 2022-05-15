@@ -1,4 +1,4 @@
-use super::{Stage, VertexStage, FragmentStage};
+use super::{FragmentStage, Stage, VertexStage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{loader::AssetLoader, Asset};
@@ -17,7 +17,6 @@ impl Asset<'static> for RawText {
         todo!()
     }
 }
-
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
@@ -76,7 +75,7 @@ impl<'a> Processor<'a> {
                     // Split into words, and classify name
                     let words = trimmed.split("#snip").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
-                    
+
                     // Try to get the snippet
                     let snippet = self.snippets.get(name).cloned().unwrap();
                     output = snippet;

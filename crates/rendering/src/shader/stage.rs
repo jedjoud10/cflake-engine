@@ -1,7 +1,10 @@
-use std::{num::NonZeroU32, ffi::CString, ptr::{null, null_mut}};
-use assets::Asset;
 use crate::context::{Context, ToGlType};
-
+use assets::Asset;
+use std::{
+    ffi::CString,
+    num::NonZeroU32,
+    ptr::{null, null_mut},
+};
 
 // This trait is implemented for each shader stage, like the vertex stage or fragment stage
 pub trait Stage: Sized + From<String> + Into<String> + AsRef<str> + ToGlType {
@@ -19,7 +22,6 @@ pub struct ComputeStage(String);
 // I love procedural programming
 macro_rules! impl_stage_traits {
     ($t: ty, $gl: expr, $ext: expr) => {
-        
         impl From<String> for $t {
             fn from(s: String) -> Self {
                 Self(s)
@@ -44,16 +46,15 @@ macro_rules! impl_stage_traits {
             }
         }
 
-        impl Stage for $t {
-        }
+        impl Stage for $t {}
 
         impl Asset<'static> for $t {
             type Args = ();
-        
+
             fn extensions() -> &'static [&'static str] {
                 &[$ext]
             }
-        
+
             fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
                 Self::from(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
             }
@@ -64,7 +65,6 @@ macro_rules! impl_stage_traits {
 impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, ".vrsh.glsl");
 impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, ".frsh.glsl");
 impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, ".cmpt.glsl");
-
 
 // Compile a single shader stage, and handle errors
 pub unsafe fn compile<S: Stage>(ctx: &mut Context, stage: S) -> NonZeroU32 {
@@ -87,15 +87,21 @@ pub unsafe fn compile<S: Stage>(ctx: &mut Context, stage: S) -> NonZeroU32 {
             let mut vec = Vec::with_capacity(len as usize + 1);
             gl::GetShaderInfoLog(program, len, null_mut(), vec.spare_capacity_mut().as_mut_ptr() as _);
             vec
-        }).unwrap();
+        })
+        .unwrap();
 
         // Get the source code for this stage, and identify each line with it's line out
-        let source = source.lines().enumerate().map(|(count, line)| format!("({}): {}", count + 1, line)).collect::<Vec<String>>().join("\n");
-        
+        let source = source
+            .lines()
+            .enumerate()
+            .map(|(count, line)| format!("({}): {}", count + 1, line))
+            .collect::<Vec<String>>()
+            .join("\n");
+
         // Print the error message
         panic!("Source: \n{}\n Error: \n{}", source, message);
     }
 
     // Return the program GL name
     NonZeroU32::new(program).unwrap()
-} 
+}

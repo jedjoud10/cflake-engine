@@ -68,7 +68,6 @@ impl GeometryBuilder {
     }
 }
 
-
 impl Asset<'static> for GeometryBuilder {
     type Args = ();
 

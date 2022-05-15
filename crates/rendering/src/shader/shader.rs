@@ -1,6 +1,6 @@
 use crate::context::{Cached, ToGlName};
 
-use super::{FragmentStage, VertexStage, Program};
+use super::{FragmentStage, Program, VertexStage};
 
 // A shader that will render our objects onto the screen
 // This will make use of two shader stages, the vertex stage, and fragment stage
