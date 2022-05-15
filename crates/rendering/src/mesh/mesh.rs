@@ -123,42 +123,11 @@ impl<'ctx> Asset<'ctx> for Mesh {
     type Args = &'ctx mut Context;
 
     fn extensions() -> &'static [&'static str] {
-        &["obj"]
+        GeometryBuilder::extensions()
     }
 
     fn deserialize(bytes: assets::loader::CachedSlice, ctx: Self::Args) -> Self {
-        // Parse the OBJ mesh into an engine mesh
-        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
-        let mut builder = GeometryBuilder::default();
-        let capacity = parsed.vertices.len();
-
-        // Create all the buffers at once
-        let mut positions = Vec::with_capacity(capacity);
-        let mut normals = Vec::with_capacity(capacity);
-        let mut tex_coords_0 = Vec::with_capacity(capacity);
-
-        // Fill each buffer now
-        use super::attributes::marker::*;
-        use vek::{Vec2, Vec3};
-        for vertex in parsed.vertices {
-            positions.push(Vec3::from_slice(&vertex.position));
-            normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
-            tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
-        }
-
-        // Set the very sussy bakas (POV: You are slowly going insane)
-        builder.set_attrib::<Position>(positions);
-        builder.set_attrib::<Normal>(normals);
-        builder.set_attrib::<TexCoord0>(tex_coords_0);
-        builder.set_indices(parsed.indices);
-
-        Self {
-            submeshes: vec![builder.build(ctx).unwrap()],
-        }
-        // Also load the triangles
-        //builder.indices.indices = parsed_obj.indices;
-
-        // Compute the tangents automatically for imported meshes
-        //let mesh = builder.build().generate_tangents();
+        let main = GeometryBuilder::deserialize(bytes, ()).build(ctx).unwrap();
+        Self::from_submeshes(ctx, vec![main])
     }
 }

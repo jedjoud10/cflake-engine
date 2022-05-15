@@ -1,3 +1,6 @@
+use assets::Asset;
+use obj::TexturedVertex;
+
 use crate::context::Context;
 
 use super::{attributes::NamedAttribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
@@ -62,5 +65,43 @@ impl GeometryBuilder {
     // Build the final submesh using a specific context, and make sure the vecs are valid
     pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {
         self.valid().then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
+    }
+}
+
+
+impl Asset<'static> for GeometryBuilder {
+    type Args = ();
+
+    fn extensions() -> &'static [&'static str] {
+        &["obj"]
+    }
+
+    fn deserialize(bytes: assets::loader::CachedSlice, ctx: Self::Args) -> Self {
+        // Parse the OBJ mesh into an geoemtry builder
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
+        let mut builder = GeometryBuilder::default();
+        let capacity = parsed.vertices.len();
+
+        // Create all the buffers at once
+        let mut positions = Vec::with_capacity(capacity);
+        let mut normals = Vec::with_capacity(capacity);
+        let mut tex_coords_0 = Vec::with_capacity(capacity);
+
+        // Fill each buffer now
+        use super::attributes::marker::*;
+        use vek::{Vec2, Vec3};
+        for vertex in parsed.vertices {
+            positions.push(Vec3::from_slice(&vertex.position));
+            normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
+            tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
+        }
+
+        // Set the very sussy bakas (POV: You are slowly going insane)
+        builder.set_attrib::<Position>(positions);
+        builder.set_attrib::<Normal>(normals);
+        builder.set_attrib::<TexCoord0>(tex_coords_0);
+        builder.set_indices(parsed.indices);
+
+        builder
     }
 }

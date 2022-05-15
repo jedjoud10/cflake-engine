@@ -48,7 +48,7 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
-                    // Split into words, and classify name and default value
+                    // Split into words, and classify name and optional default value
                     let words = trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
                     let default = words.get(1).cloned();
@@ -57,6 +57,13 @@ impl<'a> Processor<'a> {
                     let loaded = self.constants.get(name).map(String::as_str);
                     output = loaded.or(default).unwrap().to_string();
                 } else if trimmed.starts_with("#snip") {
+                    // Split into words, and classify name
+                    let words = trimmed.split("#snip").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let name = words[0];
+                    
+                    // Try to get the snippet
+                    let snippet = self.snippets.get(name).cloned().unwrap();
+                    output = snippet;
                 } else if trimmed.starts_with("#include") {
                     // Split into words, and classify path
                     let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
