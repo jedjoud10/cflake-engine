@@ -25,8 +25,8 @@ impl<T: TexelLayout> ToGlName for Texture2D<T> {
 }
 
 impl<T: TexelLayout> ToGlType for Texture2D<T> {
-    fn target(&self) -> NonZeroU32 {
-        unsafe { NonZeroU32::new_unchecked(gl::TEXTURE_2D) }
+    fn target(&self) -> u32 {
+        gl::TEXTURE_2D
     }
 }
 

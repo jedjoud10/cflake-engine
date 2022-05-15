@@ -1,7 +1,23 @@
-use super::{RawText, Stage};
+use super::{Stage, VertexStage, FragmentStage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::loader::AssetLoader;
+use assets::{loader::AssetLoader, Asset};
+
+// This is just a wrapper for String. It can be loaded from any file really, but we will only load it from shader files
+struct RawText(String);
+
+impl Asset<'static> for RawText {
+    type Args = ();
+
+    fn extensions() -> &'static [&'static str] {
+        &[VertexStage::extension()]
+    }
+
+    fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
+        todo!()
+    }
+}
+
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
@@ -44,7 +60,7 @@ impl<'a> Processor<'a> {
                 let trimmed = line.trim();
 
                 // Output line
-                let mut output = String::new();
+                let output;
 
                 // Very funny indeed
                 if trimmed.contains("#const") {

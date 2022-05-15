@@ -7,5 +7,5 @@ pub trait ToGlName {
 
 // Objects that have a specific and unique OpenGL type, like shader sources
 pub trait ToGlType {
-    fn target(&self) -> NonZeroU32;
+    fn target(&self) -> u32;
 }

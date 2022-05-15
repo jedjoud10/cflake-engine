@@ -1,1 +1,0 @@
-// A fence is just an asynchronous OpenGL task that might return 

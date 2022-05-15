@@ -129,7 +129,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
     // Bind the buffer temporarily to a specific target, and unbind it when done
     pub fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(&Self, u32)) {
         unsafe {
-            let target = self.target().get();
+            let target = self.target();
             gl::BindBuffer(target, self.buffer.get());
             function(self, self.buffer.get());
         }
@@ -268,8 +268,8 @@ impl<T: GPUSendable, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
 }
 
 impl<T: GPUSendable, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
-    fn target(&self) -> NonZeroU32 {
-        unsafe { NonZeroU32::new_unchecked(TARGET) }
+    fn target(&self) -> u32 {
+        TARGET
     }
 }
 // An immutable mapped buffer that we can use to read data from the OpenGL buffer

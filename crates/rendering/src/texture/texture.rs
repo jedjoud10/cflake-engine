@@ -27,9 +27,9 @@ pub trait Texture<T: TexelLayout>: ToGlName + ToGlType {
     // Bind the texture so we can modify it
     fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(&Self, u32)) {
         unsafe {
-            let target = self.target().get();
-            gl::BindTexture(target, self.target().get());
-            function(self, self.target().get());
+            let target = self.target();
+            gl::BindTexture(target, self.target());
+            function(self, self.target());
         }
     }
 

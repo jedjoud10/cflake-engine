@@ -7,3 +7,4 @@ pub mod mesh;
 pub mod shader;
 mod tests;
 pub mod texture;
+pub mod task;
