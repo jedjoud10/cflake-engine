@@ -4,6 +4,8 @@ use ahash::AHashMap;
 
 use crate::context::{ToGlName, Context, Bind, Active};
 
+use super::Uniforms;
+
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
     // The program OpenGL name
@@ -28,13 +30,22 @@ impl Program {
     }
 }
 
-impl Bind for Program {
+impl<'a> Bind<'a> for Program {
+    type Bound = ;
     fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
         unsafe {
             gl::UseProgram(self.program.get());
             function(Active(self));
         }
     }
+
+}
+
+impl<'a> Active<'a, Program> {
+    // Create a uniforms setter using a bound program
+    pub fn uniforms(&'a mut self) -> Uniforms<'a> {
+        Uniforms(self)
+    } 
 }
 
 impl ToGlName for Program {
