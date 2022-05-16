@@ -30,11 +30,14 @@ impl Default for VertexLayout {
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
+    // The OpenGL VAO name
     vao: NonZeroU32,
+
+    // The vertex attribute buffers
     attributes: AttributeSet,
-    vert_count: usize,
+
+    // The index buffer (PS: Supports only triangles rn)
     indices: ElementBuffer,
-    layout: VertexLayout,
 }
 
 impl SubMesh {
@@ -54,33 +57,31 @@ impl SubMesh {
         // How we shall access the vertex attribute and index buffers
         let access = BufferAccess::WRITE | BufferAccess::WRITE;
 
-        // Only take the indices from the builder, cause we store them in a different place than the vertex attributes
+        // Only take the indices from the builder
         let indices = std::mem::take(builder.get_indices_mut());
-        let layout = builder.layout();
 
         Self {
             vao,
             attributes: AttributeSet::new(vao, ctx, access, builder),
             indices: Buffer::from_vec(ctx, access, indices),
-            vert_count: 0,
-            layout,
         }
     }
 
     // Get the current submesh's layout
     pub fn layout(&self) -> VertexLayout {
-        self.layout
+        self.attributes.layout()
     }
 
     // Get a mapped buffer for a specific vertex attribute, if possible
     pub fn get<U: NamedAttribute>(&self, ctx: &Context) -> Option<RefMapped<U::Out>> {
-        U::get(&self.attributes).map(|buffer| buffer.try_map_range(ctx, 0..self.vert_count).unwrap())
+        let len = self.attributes.len()?;
+        U::get(&self.attributes).map(|buffer| buffer.try_map_range(ctx, 0..len).unwrap())
     }
 
     // Get a mutable mapped buffer for a specifc vertex attribute, if possible
     pub fn get_mut<U: NamedAttribute>(&mut self, ctx: &mut Context) -> Option<MutMapped<U::Out>> {
-        let count = self.vert_count;
-        U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..count).unwrap())
+        let len = self.attributes.len()?;
+        U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..len).unwrap())
     }
 }
 

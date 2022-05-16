@@ -1,4 +1,4 @@
-use super::{FragmentStage, Stage, VertexStage};
+use super::{FragmentStage, Stage, VertexStage, Processed};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{loader::AssetLoader, Asset};
@@ -10,11 +10,11 @@ impl Asset<'static> for RawText {
     type Args = ();
 
     fn extensions() -> &'static [&'static str] {
-        &[VertexStage::extension()]
+        &[]
     }
 
     fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
-        todo!()
+        Self(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
     }
 }
 
@@ -48,7 +48,7 @@ impl<'a> Processor<'a> {
     }
 
     // Filter and process a single stage
-    pub fn filter<S: Stage>(&mut self, stage: S) -> S {
+    pub(super) fn filter<S: Stage>(&mut self, stage: S) -> Processed<S> {
         // We must filter infinitely until we find no more directives
         let mut lines = stage.as_ref().to_string().lines().map(str::to_string).collect::<Vec<String>>();
         loop {
@@ -107,6 +107,6 @@ impl<'a> Processor<'a> {
         }
 
         // Combine the lines into a string and return the new, filtered stage
-        S::from(lines.join("\n"))
+        Processed(S::from(lines.join("\n")))
     }
 }

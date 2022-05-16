@@ -1,7 +1,7 @@
 use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
-    buffer::{ArrayBuffer, BufferAccess, GPUSendable},
-    context::Context,
+    buffer::{ArrayBuffer, BufferAccess, GPUSendable, Buffer},
+    context::{Context, Bind},
 };
 use std::{num::NonZeroU32, ptr::null};
 
@@ -89,8 +89,8 @@ pub struct AttributeSet {
     // Multiple texture coordiantes (TODO)
     tex_coord_0: AttribBuf<vek::Vec2<u8>>,
 
-    // The number of enabled attributes
-    count: u32,
+    // The enabled attributes
+    layout: VertexLayout,
 }
 
 // A named attribute that has a specific name, like "Position", or "Normal"
@@ -275,7 +275,7 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
         let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
 
         // Bind the buffer to bind the attributes
-        buffer.bind(aux.ctx, |_, _| unsafe {
+        buffer.bind(aux.ctx, |_| unsafe {
             // Enable the pointer
             gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
             gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
@@ -291,8 +291,8 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
     pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, access: BufferAccess, builder: GeometryBuilder) -> Self {
-        // Count the number of valid attributes
-        let valid_attrib_count = builder.layout().bits().count_ones();
+        // We do a bit of copying
+        let layout = builder.layout();
 
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
@@ -311,7 +311,30 @@ impl AttributeSet {
             tangents: gen::<marker::Tangent>(&mut aux, true),
             colors: gen::<marker::Color>(&mut aux, false),
             tex_coord_0: gen::<marker::TexCoord0>(&mut aux, false),
-            count: valid_attrib_count,
+            layout,
         }
+    }
+
+    // Get the layout that we are using
+    pub fn layout(&self) -> VertexLayout {
+        self.layout
+    }
+
+    // Get the number of vertices that we have in total (this will return None if one or more vectors have different lengths)
+    pub fn len(&self) -> Option<usize> {
+        // This function just takes an AttribBuf<T> and returns an Option<usize>
+        fn len<T: Attribute>(vec: &AttribBuf<T>) -> Option<usize> {
+            vec.as_ref().map(Buffer::len)
+        }
+
+        // Make sure all the lengths (that are valid) be equal to each other
+        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
+        let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
+
+        // Iterate and check
+        let valid = arr.into_iter().filter_map(|a| a).all(|len| len == first);
+
+        // Trollinnggggg
+        valid.then(|| first)
     }
 }

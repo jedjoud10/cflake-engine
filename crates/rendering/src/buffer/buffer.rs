@@ -1,4 +1,4 @@
-use crate::context::{Context, ToGlName, ToGlType};
+use crate::context::{Context, ToGlName, ToGlType, Bind, Active};
 use std::{
     ffi::c_void,
     marker::PhantomData,
@@ -60,11 +60,17 @@ impl Specification {
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T: GPUSendable, const TARGET: u32> {
-    // OpenGL buffer data
+    // OpenGL buffer name
     buffer: NonZeroU32,
-    length: usize,
+
+    // Rust side values
+    len: usize,
     capacity: usize,
+
+    // This tells us if this is an immutable or resizable buffer
     spec: Specification,
+
+    // Unsend + unsync
     _phantom: PhantomData<*const T>,
 }
 
@@ -99,7 +105,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         // Create the buffer struct
         Self {
             buffer: NonZeroU32::new(buffer).unwrap(),
-            length,
+            len: length,
             capacity,
             spec: Specification::Dynamic(0),
             _phantom: Default::default(),
@@ -126,19 +132,20 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
-    // Bind the buffer temporarily to a specific target, and unbind it when done
-    pub fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(&Self, u32)) {
-        unsafe {
-            let target = self.target();
-            gl::BindBuffer(target, self.buffer.get());
-            function(self, self.buffer.get());
-        }
+    // Get the current length of the buffer
+    pub fn len(&self) -> usize {
+        self.len
+    }
+    
+    // Get the current capacity of the buffer
+    pub fn capacity(&self) -> usize {
+        self.capacity
     }
 
     // Given an element index range, return the offset/length tuple
     fn validate(&self, range: Range<usize>) -> Option<(usize, usize)> {
         // Check if the range encapsulates the full range of the buffer
-        let valid = range.end >= self.length || range.start >= self.length;
+        let valid = range.end >= self.len || range.start >= self.len;
         (valid).then(|| {
             // Calculate offset and length
             let offset = range.start;
@@ -212,20 +219,20 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         }
 
         self.capacity = new_capacity;
-        self.length = new_length;
+        self.len = new_length;
     }
 
     // Add values to the end of the buffer, and reallocate it if needed
     pub fn extend_by_slice(&mut self, ctx: &mut Context, slice: &[T]) {
         // Calculate the new capacity only if the current cap + new len overflow
-        let new_capacity = if self.capacity + slice.len() > self.length {
+        let new_capacity = if self.capacity + slice.len() > self.len {
             (self.capacity + slice.len()).next_power_of_two()
         } else {
             self.capacity
         };
 
         // Calculate the new length as well
-        let new_length = self.length + slice.len();
+        let new_length = self.len + slice.len();
 
         match self.spec {
             Specification::Immutable(_) => {
@@ -233,7 +240,7 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
                 assert!(new_capacity < self.capacity, "Cannot reallocate immutable buffer");
 
                 // Update the subdata, starting from the end of the current buffer
-                let mapped = self.try_map_range_mut(ctx, self.length..new_length).unwrap();
+                let mapped = self.try_map_range_mut(ctx, self.len..new_length).unwrap();
                 let output = mapped.as_slice_mut();
 
                 // Overwrite "output" using elements from "slice"
@@ -251,12 +258,12 @@ impl<T: GPUSendable, const TARGET: u32> Buffer<T, TARGET> {
         }
 
         self.capacity = new_capacity;
-        self.length = new_length;
+        self.len = new_length;
     }
 
     // Pop an element from the back of the buffer
     pub fn pop(&mut self, _ctx: &mut Context) -> Option<()> {
-        self.length -= self.length.checked_sub(1)?;
+        self.len -= self.len.checked_sub(1)?;
         Some(())
     }
 }
@@ -272,6 +279,25 @@ impl<T: GPUSendable, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
         TARGET
     }
 }
+
+impl<T: GPUSendable, const TARGET: u32> Bind for Buffer<T, TARGET> {
+    fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
+        unsafe {
+            let target = self.target();
+            gl::BindBuffer(target, self.buffer.get());
+            function(Active(self));
+        }
+    }
+}
+
+impl<T: GPUSendable, const TARGET: u32> Drop for Buffer<T, TARGET> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.buffer.get());
+        }
+    }
+}
+
 // An immutable mapped buffer that we can use to read data from the OpenGL buffer
 pub struct RefMapped<'a, T: GPUSendable> {
     _phantom: PhantomData<&'a [T]>,
