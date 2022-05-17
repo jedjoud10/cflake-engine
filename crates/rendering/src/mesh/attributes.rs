@@ -1,6 +1,6 @@
 use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
-    buffer::{ArrayBuffer, BufferAccess, GPUSendable, Buffer},
+    buffer::{ArrayBuffer, BufferAccess, GPUSendable, Buffer, Specification},
     context::{Context, Bind},
 };
 use std::{num::NonZeroU32, ptr::null};
@@ -78,8 +78,10 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
 // Attribute buffer that *might* be disabled, or maybe enabled
 type AttribBuf<T> = Option<ArrayBuffer<T>>;
 
+Texture2D<Fixed<>Rgba<f32>>
+
 // Multiple OpenGL attribute buffers stored in the same struct
-pub struct AttributeSet {
+pub struct AttributeSet<S: Specification> {
     // The actual attribute buffers
     positions: AttribBuf<vek::Vec3<f32>>,
     normals: AttribBuf<vek::Vec3<i8>>,
