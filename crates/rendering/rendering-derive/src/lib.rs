@@ -14,7 +14,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
                 let span = field_name.span();
                 let field_name_stringified = LitStr::new(&field_name.to_string(), span);
                 quote_spanned! { span=>
-                    self.#field_name.set_raw_uniform_value(ctx, #field_name_stringified, bound);
+                    self.#field_name.set_raw_uniform_value(#field_name_stringified, bound);
                 }
             });
     
@@ -23,7 +23,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
                 // The macro will take any struct, and use it as uniforms for shaders
                 // The struct must contain members that all implement UniformValue
                 unsafe impl #impl_generics UniformStruct for #ident #ty_generics #where_clause {
-                    unsafe fn set_uniform_values(&self, ctx: &mut Context, bound: Active<Program>) {
+                    unsafe fn set_uniform_values(&self, bound: &mut Active<Program>) {
                         #(#data_expanded_members)*
                     }
                 }                

@@ -54,3 +54,9 @@ impl<'a, T> AsRef<T> for Active<'a, T> {
         self.inner
     }
 }
+
+impl<'a, T> AsMut<T> for Active<'a, T> {
+    fn as_mut(&mut self) -> &mut T {
+        self.inner
+    }
+}
