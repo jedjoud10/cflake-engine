@@ -1,4 +1,4 @@
-use crate::context::{Cached, ToGlName};
+use crate::context::{Cached, ToGlName, Bind, Active};
 
 use super::{FragmentStage, Program, VertexStage};
 

@@ -1,4 +1,4 @@
-use crate::{context::Context, task::Fence};
+use crate::{context::{Context, Active, Bind, ToGlName}, task::Fence};
 
 use super::{ComputeStage, Program};
 
@@ -18,7 +18,7 @@ impl AsMut<Program> for ComputeShader {
     }
 }
 
-impl ComputeShader {
+impl<'a> Active<'a, ComputeShader> {    
     // Execute a compute shader, and return an async handle (basically just a GL fence)
     pub fn execute(&mut self, ctx: &mut Context, x: u32, y: u32, z: u32) -> Fence {
         todo!()

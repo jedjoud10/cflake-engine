@@ -82,9 +82,9 @@ impl StageSet for ComputeStage {
     }
 }
 
-// A shader linker will take multiple shader sources and combine them to create a specific shader (this is simply a wrapper around StageSet btw)
-pub struct StageLinker;
-impl StageLinker {
+// A shader linker/compiler will take multiple shader sources and combine them to create a specific shader (this is simply a wrapper around StageSet btw)
+pub struct ShaderCompiler;
+impl ShaderCompiler {
     // Simply link multiple shader stages into a shader
     pub fn link<C: StageSet>(input: C, processor: Processor, ctx: &mut Context) -> C::OutShaderType {
         unsafe { C::link(input, processor, ctx) }

@@ -1,6 +1,6 @@
 use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
-    buffer::{ArrayBuffer, BufferAccess, GPUSendable, Buffer, Specification},
+    buffer::{ArrayBuffer, GPUSendable, Buffer, BufferMode},
     context::{Context, Bind},
 };
 use std::{num::NonZeroU32, ptr::null};
@@ -78,10 +78,8 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
 // Attribute buffer that *might* be disabled, or maybe enabled
 type AttribBuf<T> = Option<ArrayBuffer<T>>;
 
-Texture2D<Fixed<>Rgba<f32>>
-
 // Multiple OpenGL attribute buffers stored in the same struct
-pub struct AttributeSet<S: Specification> {
+pub struct AttributeSet {
     // The actual attribute buffers
     positions: AttribBuf<vek::Vec3<f32>>,
     normals: AttribBuf<vek::Vec3<i8>>,
@@ -264,7 +262,7 @@ struct AuxBufGen<'a> {
     index: &'a mut u32,
     builder: GeometryBuilder,
     ctx: &'a mut Context,
-    access: BufferAccess,
+    mode: BufferMode,
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
