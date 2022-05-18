@@ -5,6 +5,8 @@ mod program;
 mod shader;
 mod stage;
 mod introspection;
+mod uniforms;
+pub use uniforms::*;
 pub use introspection::*;
 pub use compute::*;
 pub use linker::*;

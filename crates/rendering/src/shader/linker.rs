@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
-use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
+use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage, introspect};
 use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages
@@ -38,8 +38,13 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
     }
 
     // Return the program GL name
-    //NonZeroU32::new(program).unwrap()
-    todo!()
+    let program = NonZeroU32::new(program).unwrap();
+    Program {
+        program,
+        mappings: Default::default(),
+        introspection: introspect(program),
+        _phantom: Default::default(),
+    }
 }
 
 // This trait will be implemented for valid combinations of multiple unique stages

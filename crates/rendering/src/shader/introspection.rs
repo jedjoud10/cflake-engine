@@ -1,4 +1,4 @@
-use std::{ptr::{null, null_mut}, ffi::CString};
+use std::{ptr::{null, null_mut}, ffi::CString, num::NonZeroU32};
 
 use crate::{context::Context, object::ToGlName};
 
@@ -28,8 +28,8 @@ pub struct Introspection {
 }
 
 // Introspect a shader, and construct an Introspection struct
-pub(super) unsafe fn introspect(ctx: &mut Context, shader: impl AsRef<Program>) -> Introspection {
-    let program = shader.as_ref().name().get();
+pub(super) unsafe fn introspect(program: NonZeroU32) -> Introspection {
+    let program = program.get();
 
     // Count the number of uniform blocks and shader storage blocks
     let mut uniforms = 0;  

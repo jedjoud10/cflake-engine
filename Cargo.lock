@@ -2643,10 +2643,19 @@ dependencies = [
  "parking_lot 0.12.0",
  "paste",
  "rayon",
+ "rendering-derive",
  "serde",
  "slotmap",
  "smallvec",
  "vek",
+]
+
+[[package]]
+name = "rendering-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

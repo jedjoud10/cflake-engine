@@ -7,7 +7,7 @@ use crate::{
 use std::{num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
-pub trait BaseAttribute: Shared {
+trait BaseAttribute: Shared {
     const GL_TYPE: u32;
 }
 

@@ -5,25 +5,29 @@ use crate::{
 use ahash::AHashMap;
 use std::{marker::PhantomData, num::NonZeroU32};
 
+use super::Introspection;
+
 // Cached program mappings
+#[derive(Default)]
 pub(super) struct Mappings {
     // Cached uniform locations for performance
     pub(super) locations: AHashMap<String, u32>,
 
-    // Cached uniform binding points
+    // Cached block binding points
     pub(super) bindings: AHashMap<String, u32>,
 }
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
     // The program OpenGL name
-    program: NonZeroU32,
+    pub(super) program: NonZeroU32,
 
     // Le cached
     pub(super) mappings: Mappings,
+    pub(super) introspection: Introspection,
 
     // Unsend and unsync lul
-    _phantom: PhantomData<*const ()>,
+    pub(super) _phantom: PhantomData<*const ()>,
 }
 
 impl Bind for Program {
