@@ -13,7 +13,7 @@ fn main() {
 
     Registry::new(
         Api::Gl,
-        (4, 5),
+        (4, 6),
         Profile::Core,
         Fallbacks::All,
         ["GL_ARB_bindless_texture", "GL_EXT_texture_filter_anisotropic"],
