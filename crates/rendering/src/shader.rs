@@ -1,11 +1,11 @@
-mod blocks;
 mod compute;
 mod linker;
 mod processor;
 mod program;
 mod shader;
 mod stage;
-pub use blocks::*;
+mod introspection;
+pub use introspection::*;
 pub use compute::*;
 pub use linker::*;
 pub use processor::*;
