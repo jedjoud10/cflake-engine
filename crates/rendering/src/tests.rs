@@ -2,6 +2,5 @@
 mod tests {
 
     #[test]
-    fn test() {
-    }
+    fn test() {}
 }

@@ -1,4 +1,4 @@
-use super::{FragmentStage, Stage, VertexStage, Processed};
+use super::{FragmentStage, Processed, Stage, VertexStage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{loader::AssetLoader, Asset};

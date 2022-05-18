@@ -1,0 +1,1 @@
+// A sampler is the interface between Textures and Shaders. Samplers allow us to read pixels from textures within shaders.

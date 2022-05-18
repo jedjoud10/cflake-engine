@@ -1,14 +1,17 @@
-use crate::{context::{Context}, object::{ToGlType, ToGlName}};
+use crate::{
+    context::Context,
+    object::{ToGlName, ToGlType},
+};
 use assets::Asset;
 use std::{
     ffi::CString,
+    marker::PhantomData,
     num::NonZeroU32,
-    ptr::{null, null_mut}, marker::PhantomData,
+    ptr::{null, null_mut},
 };
 
 // This trait is implemented for each shader stage, like the vertex stage or fragment stage
-pub trait Stage: Sized + From<String> + Into<String> + AsRef<str> + ToGlType {
-}
+pub trait Stage: Sized + From<String> + Into<String> + AsRef<str> + ToGlType {}
 
 // A vertex stage that will be loaded from .vrsh files
 pub struct VertexStage(String);
@@ -67,7 +70,6 @@ impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, ".cmpt.glsl");
 // This implies that the source code for the underlying stage has been filtered and is ready for compliation
 pub(super) struct Processed<T: Stage>(pub(super) T);
 
-
 // This implies that the underlying shader source has been compiled
 pub(super) struct Compiled<T: Stage>(PhantomData<T>, NonZeroU32);
 
@@ -80,9 +82,7 @@ impl<T: Stage> ToGlName for Compiled<T> {
 impl<T: Stage> Drop for Compiled<T> {
     fn drop(&mut self) {
         // Automatically delete the stage shader after we successfully use it
-        unsafe {
-            gl::DeleteShader(self.1.get())
-        } 
+        unsafe { gl::DeleteShader(self.1.get()) }
     }
 }
 

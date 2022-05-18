@@ -1,4 +1,4 @@
-use crate::context::{Cached};
+use crate::context::Cached;
 
 use super::{FragmentStage, Program, VertexStage};
 

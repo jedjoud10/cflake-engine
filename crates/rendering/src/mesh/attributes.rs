@@ -1,7 +1,8 @@
 use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
     buffer::{ArrayBuffer, Buffer, BufferMode},
-    context::{Context}, object::{Shared, Bind},
+    context::Context,
+    object::{Bind, Shared},
 };
 use std::{num::NonZeroU32, ptr::null};
 

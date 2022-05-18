@@ -1,6 +1,9 @@
-use std::{num::NonZeroU32, marker::PhantomData};
+use crate::{
+    context::Context,
+    object::{Active, Bind, ToGlName},
+};
 use ahash::AHashMap;
-use crate::{context::Context, object::{Bind, ToGlName, Active}};
+use std::{marker::PhantomData, num::NonZeroU32};
 
 // Cached program mappings
 pub(super) struct Mappings {
@@ -27,17 +30,12 @@ impl Bind for Program {
     fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
         unsafe {
             gl::UseProgram(self.program.get());
-            function(Active {
-                inner: self,
-                context: _ctx,
-            });
+            function(Active { inner: self });
         }
     }
-
 }
 
-impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {
-}
+impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {}
 
 impl ToGlName for Program {
     fn name(&self) -> NonZeroU32 {
@@ -47,8 +45,6 @@ impl ToGlName for Program {
 
 impl Drop for Program {
     fn drop(&mut self) {
-        unsafe {
-            gl::DeleteProgram(self.program.get())
-        }
+        unsafe { gl::DeleteProgram(self.program.get()) }
     }
 }

@@ -1,8 +1,8 @@
+mod command;
 mod context;
 mod pipeline;
 mod storage;
 mod window;
-mod command;
 pub use command::*;
 pub use context::*;
 pub use pipeline::*;

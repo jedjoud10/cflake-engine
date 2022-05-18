@@ -18,5 +18,4 @@ impl AsMut<Program> for ComputeShader {
     }
 }
 
-impl<'a> Active<'a, ComputeShader> {    
-}
+impl<'a> Active<'a, ComputeShader> {}

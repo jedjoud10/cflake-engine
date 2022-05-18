@@ -13,8 +13,8 @@ impl Fence {
             match gl::ClientWaitSync(self.0, gl::SYNC_FLUSH_COMMANDS_BIT, 0) {
                 gl::ALREADY_SIGNALED | gl::CONDITION_SATISFIED => true,
                 gl::TIMEOUT_EXPIRED => false,
-                gl::WAIT_FAILED | _ => panic!(""), 
-            } 
+                gl::WAIT_FAILED | _ => panic!(""),
+            }
         }
     }
 }
@@ -33,7 +33,7 @@ pub struct CommandStream<O, F: FnOnce(&mut Context) -> O>(PhantomData<*const F>,
 
 impl<O, F: FnOnce(&mut Context) -> O> CommandStream<O, F> {
     // Initialize a new command stream, and run everything within it
-    // This will give back a command stream that we can flush/wait for 
+    // This will give back a command stream that we can flush/wait for
     pub fn new(ctx: &mut Context, func: F) -> Self {
         unsafe {
             // We do this just in case
@@ -44,7 +44,7 @@ impl<O, F: FnOnce(&mut Context) -> O> CommandStream<O, F> {
         let out = func(ctx);
         Self(Default::default(), out)
     }
-    
+
     /*
     // Flush the command stream and simply return a fence, telling us when all the tasks finish executing
     pub fn flush(self, ctx: &mut Context) -> (Fence, O) {

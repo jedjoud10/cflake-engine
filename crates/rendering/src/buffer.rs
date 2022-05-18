@@ -1,6 +1,6 @@
 use crate::context::CommandStream;
+use crate::object::{self, Active, Bind, ToGlName, ToGlType};
 use crate::{context::Context, object::Shared};
-use crate::object::{self, ToGlName, ToGlType, Bind, Active};
 use std::{
     ffi::c_void,
     marker::PhantomData,
@@ -11,7 +11,7 @@ use std::{
 };
 
 // Some settings that tell us how exactly we should create the buffer
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferMode {
     // glBufferStorage, immutable / unresizable
     // Static buffers can only be set once through their initialization
@@ -21,9 +21,9 @@ pub enum BufferMode {
     // Dynamic buffers can be modified, though they have a specific number of elements that must be constant
     Dynamic,
 
-    // glBufferData + GL_DYNAMIC_DRAW 
+    // glBufferData + GL_DYNAMIC_DRAW
     // Just like dynamic buffers, but resizable
-    Resizable
+    Resizable,
 }
 
 // Simply used for organization
@@ -32,7 +32,7 @@ enum BufferType {
     Immutable(u32),
 
     // Normal buffers allocated through glBufferData
-    Default(u32)
+    Default(u32),
 }
 
 // Common OpenGL buffer types
@@ -52,6 +52,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
     // I am slowly going insane
     len: usize,
     capacity: usize,
+    mode: BufferMode,
 
     // Unsend + unsync
     _phantom: PhantomData<*const T>,
@@ -59,7 +60,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
-    unsafe fn from_raw_parts(ctx: &mut Context, _type: BufferType, capacity: usize, length: usize, ptr: *const T) -> Self {
+    unsafe fn from_raw_parts(ctx: &mut Context, mode: BufferMode, capacity: usize, length: usize, ptr: *const T) -> Self {
         // Create a command stream since we HAVE to make sure we still have the pointer in memory
         let cmd = CommandStream::new(ctx, |_| {
             // Create the new OpenGL buffer
@@ -73,78 +74,67 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
 
             // Initialize the buffer correctly
-            match _type {
-                BufferType::Immutable(flags) => gl::NamedBufferStorage(buffer, bytes, ptr, flags),
-                BufferType::Default(hints) => gl::NamedBufferData(buffer, bytes, ptr, hints),
-            } 
+            match mode {
+                BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, 0),
+                BufferMode::Dynamic => gl::NamedBufferStorage(buffer, bytes, ptr, gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT),
+                BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
+            }
 
             // Create the buffer struct
             Self {
                 buffer: NonZeroU32::new(buffer).unwrap(),
                 len: length,
                 capacity,
+                mode,
                 _phantom: Default::default(),
             }
         });
-        
+
         // Await, basically
         cmd.wait(ctx)
     }
 
-    // Lil wrapper around from_raw_parts
-    unsafe fn setup(_ctx: &mut Context, _type: BufferType, data: &[T]) -> Self {
-        Self::from_raw_parts(_ctx, _type, data.len(), data.len(), data.as_ptr())
-    }
-
-    // Create a static/immutable buffer
-    unsafe fn immutable(_ctx: &mut Context, data: &[T]) -> Self {
-        Self::setup(_ctx, BufferType::Immutable(0), data)
-    }
-
-    // Create a dynamic buffer
-    unsafe fn dynamic(_ctx: &mut Context, data: &[T]) -> Self {
-        Self::setup(_ctx, BufferType::Immutable(gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT), data)
-    }
-
-    // Create a resizable buffer
-    unsafe fn resizable(_ctx: &mut Context, data: &[T]) -> Self {
-        Self::setup(_ctx, BufferType::Default(gl::DYNAMIC_DRAW), data)
-    }
-
     // Create a buffer using a buffer mode and a slice containing some data
     pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Self {
-        let func = match mode {
-            BufferMode::Static => Self::immutable,
-            BufferMode::Dynamic => Self::dynamic,
-            BufferMode::Resizable => Self::resizable,
-        };
-
-        unsafe { func(_ctx, data) }
+        unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) }
     }
 
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.len
     }
-    
+
     // Get the current capacity of the buffer
     pub fn capacity(&self) -> usize {
         self.capacity
     }
 
-    /*
-    // Given an element index range, return the offset/length tuple
-    fn validate(&self, range: Range<usize>) -> Option<(usize, usize)> {
-        // Check if the range encapsulates the full range of the buffer
-        let valid = range.end >= self.len || range.start >= self.len;
-        (valid).then(|| {
-            // Calculate offset and length
-            let offset = range.start;
-            let length = range.end - range.start;
-            (offset, length)
-        })
+    // Overwrite the whole buffer if possible
+    pub fn update(&mut self, ctx: &mut Context, data: &[T]) {
+        // Cannot update static buffers
+        assert_ne!(self.mode, BufferMode::Static);
+
+        // Make sure the lengths match up (in case of a dynamic buffer)
+        assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
+
+        // Generic update method
+        unsafe {
+            let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
+            gl::NamedBufferSubData(self.buffer.get(), 0, bytes, data.as_ptr() as _);
+        }
     }
-    */
+
+    // Read back the whole buffer, and store it inside output
+    pub fn read(&self, ctx: &Context, output: &mut [T]) {
+        // Make sure the lengths always match up
+        assert!(output.len() == self.len());
+
+        // Generic reading method
+        unsafe {
+            let bytes = isize::try_from(output.len() * size_of::<T>()).unwrap();
+            gl::GetNamedBufferSubData(self.buffer.get(), 0, bytes, output.as_mut_ptr() as _);
+        }
+    }
 }
 
 impl<T: Shared, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
@@ -164,10 +154,7 @@ impl<T: Shared, const TARGET: u32> Bind for Buffer<T, TARGET> {
         unsafe {
             let target = self.target();
             gl::BindBuffer(target, self.buffer.get());
-            function(Active {
-                inner: self,
-                context: _ctx,
-            });
+            function(Active { inner: self });
         }
     }
 }

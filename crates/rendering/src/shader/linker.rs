@@ -1,9 +1,9 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
-use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Shader, VertexStage, Program};
+use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
 use crate::{context::Context, object::ToGlName};
 
-// Compile a shader program using multiple unlinked shader stages 
+// Compile a shader program using multiple unlinked shader stages
 unsafe fn compile(names: &[NonZeroU32]) -> Program {
     // Create the program and link the stages to it
     let program = gl::CreateProgram();
@@ -25,7 +25,8 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
             let mut vec = Vec::with_capacity(len as usize + 1);
             gl::GetProgramInfoLog(program, len, null_mut(), vec.spare_capacity_mut().as_mut_ptr() as _);
             vec
-        }).unwrap();
+        })
+        .unwrap();
 
         // Print the error message
         panic!("Error: \n{}", message);
@@ -73,10 +74,10 @@ impl StageSet for ComputeStage {
     unsafe fn link(input: Self, mut processor: Processor, ctx: &mut Context) -> Self::OutShaderType {
         // Process shader directives and includes
         let compute = processor.filter(input);
-        
+
         // Compile the single stage
         let compute = super::stage::compile(ctx, compute);
-    
+
         // And compile the main shader
         ComputeShader(compile(&[compute.name()]))
     }

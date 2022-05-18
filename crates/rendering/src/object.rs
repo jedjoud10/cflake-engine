@@ -1,5 +1,5 @@
-use std::num::NonZeroU32;
 use crate::context::Context;
+use std::num::NonZeroU32;
 
 // Objects that have a specific and unique OpenGL name, like buffers or textures
 pub trait ToGlName {
@@ -26,7 +26,6 @@ impl<T: Copy + Sized + Sync + Send> Shared for T {}
 // This implies that the internal object is a bound OpenGL object that we can modify
 pub struct Active<'a, T> {
     pub(crate) inner: &'a mut T,
-    pub(crate) context: &'a mut Context, 
 }
 
 impl<'a, T: ToGlType> ToGlType for Active<'a, T> {

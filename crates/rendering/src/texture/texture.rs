@@ -1,4 +1,7 @@
-use crate::{context::Context, object::{ToGlName, ToGlType, Bind}};
+use crate::{
+    context::Context,
+    object::{Bind, ToGlName, ToGlType},
+};
 use std::num::NonZeroU32;
 
 use super::TexelLayout;
@@ -23,7 +26,6 @@ pub trait Texture<T: TexelLayout>: ToGlName + ToGlType + Bind {
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;
-
 
     // Calculate the number of texels that make up this texture
     fn count_texels(&self) -> u32;

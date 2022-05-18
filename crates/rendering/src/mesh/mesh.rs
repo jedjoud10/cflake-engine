@@ -3,8 +3,9 @@ use super::{
     GeometryBuilder,
 };
 use crate::{
-    buffer::{Buffer, ElementBuffer, BufferMode},
-    context::{Cached, Context}, object::ToGlName,
+    buffer::{Buffer, BufferMode, ElementBuffer},
+    context::{Cached, Context},
+    object::ToGlName,
 };
 use assets::Asset;
 use obj::TexturedVertex;
