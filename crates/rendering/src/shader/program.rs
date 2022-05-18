@@ -34,7 +34,7 @@ impl Bind for Program {
     fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
         unsafe {
             gl::UseProgram(self.program.get());
-            function(Active { inner: self });
+            function(Active::new(self, _ctx));
         }
     }
 }

@@ -36,7 +36,7 @@ impl<T: TexelLayout> Bind for Texture2D<T> {
         unsafe {
             let target = self.target();
             gl::BindTexture(target, self.target());
-            function(Active { inner: self });
+            function(Active::new(self, _ctx));
         }
     }
 }

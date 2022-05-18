@@ -25,7 +25,16 @@ impl<T: Copy + Sized + Sync + Send> Shared for T {}
 
 // This implies that the internal object is a bound OpenGL object that we can modify
 pub struct Active<'a, T> {
-    pub(crate) inner: &'a mut T,
+    inner: &'a mut T,
+}
+
+impl<'a, T> Active<'a, T> {
+    // Create a bound object, indeed
+    pub fn new(obj: &'a mut T, _ctx: &mut Context) -> Self {
+        Self {
+            inner: obj
+        }
+    }
 }
 
 impl<'a, T: ToGlType> ToGlType for Active<'a, T> {
@@ -37,5 +46,11 @@ impl<'a, T: ToGlType> ToGlType for Active<'a, T> {
 impl<'a, T: ToGlName> ToGlName for Active<'a, T> {
     fn name(&self) -> NonZeroU32 {
         self.inner.name()
+    }
+}
+
+impl<'a, T> AsRef<T> for Active<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.inner
     }
 }

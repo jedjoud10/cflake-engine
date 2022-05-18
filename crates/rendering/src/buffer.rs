@@ -154,7 +154,7 @@ impl<T: Shared, const TARGET: u32> Bind for Buffer<T, TARGET> {
         unsafe {
             let target = self.target();
             gl::BindBuffer(target, self.buffer.get());
-            function(Active { inner: self });
+            function(Active::new(self, _ctx));
         }
     }
 }
