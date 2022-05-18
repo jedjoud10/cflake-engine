@@ -1,4 +1,6 @@
-use crate::context::{Context, ToGlName, ToGlType, Bind, Active, GPUSendable, Shared};
+use crate::context::CommandStream;
+use crate::{context::Context, object::Shared};
+use crate::object::{self, ToGlName, ToGlType, Bind, Active};
 use std::{
     ffi::c_void,
     marker::PhantomData,
@@ -9,6 +11,7 @@ use std::{
 };
 
 // Some settings that tell us how exactly we should create the buffer
+#[derive(Clone, Copy)]
 pub enum BufferMode {
     // glBufferStorage, immutable / unresizable
     // Static buffers can only be set once through their initialization
@@ -30,40 +33,6 @@ enum BufferType {
 
     // Normal buffers allocated through glBufferData
     Default(u32)
-}
-
-
-// Objects that can be used to initialize buffers and be used within then
-pub trait BufferContent<'a>: GPUSendable {
-    // Get a c_void pointer from Self
-    fn as_c_void_ptr(&'a self) -> *const c_void;
-
-    // Get the capacity that Self represents within the buffer
-    fn capacity(&'a self) -> usize;
-    
-    // Get the length that Self represents within the length
-    fn length(&'a self) -> usize;
-
-    // Get the number of bytes this is made out of
-    fn size_of(&'a self) -> usize;
-}
-
-impl<T: Shared> BufferContent<'static> for T {
-    fn as_c_void_ptr(&'a self) -> *const c_void {
-        self as *const Self as *const c_void
-    }
-
-    fn capacity(&'a self) -> usize {
-        1
-    }
-
-    fn length(&'a self) -> usize {
-        1
-    }
-
-    fn size_of(&'a self) -> usize {
-        size_of::<T>()
-    }
 }
 
 // Common OpenGL buffer types
@@ -90,61 +59,67 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
-    unsafe fn from_raw_parts(_type: BufferType, capacity: usize, length: usize, ptr: *const T) -> Self {
-        // Create the new OpenGL buffer
-        let mut buffer = 0;
-        gl::GenBuffers(1, &mut buffer);
+    unsafe fn from_raw_parts(ctx: &mut Context, _type: BufferType, capacity: usize, length: usize, ptr: *const T) -> Self {
+        // Create a command stream since we HAVE to make sure we still have the pointer in memory
+        let cmd = CommandStream::new(ctx, |_| {
+            // Create the new OpenGL buffer
+            let mut buffer = 0;
+            gl::GenBuffers(1, &mut buffer);
 
-        // Convert size to byte size
-        let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
+            // Convert size to byte size
+            let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
 
-        // Validate the pointer
-        let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
+            // Validate the pointer
+            let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
 
-        // Initialize the buffer correctly
-        match _type {
-            BufferType::Immutable(flags) => gl::NamedBufferStorage(buffer, bytes, ptr, flags),
-            BufferType::Default(hints) => gl::NamedBufferData(buffer, bytes, ptr, hints),
-        } 
+            // Initialize the buffer correctly
+            match _type {
+                BufferType::Immutable(flags) => gl::NamedBufferStorage(buffer, bytes, ptr, flags),
+                BufferType::Default(hints) => gl::NamedBufferData(buffer, bytes, ptr, hints),
+            } 
 
-        // Create the buffer struct
-        Self {
-            buffer: NonZeroU32::new(buffer).unwrap(),
-            len: length,
-            capacity,
-            _phantom: Default::default(),
-        }
+            // Create the buffer struct
+            Self {
+                buffer: NonZeroU32::new(buffer).unwrap(),
+                len: length,
+                capacity,
+                _phantom: Default::default(),
+            }
+        });
+        
+        // Await, basically
+        cmd.wait(ctx)
     }
 
     // Lil wrapper around from_raw_parts
-    unsafe fn setup(_type: BufferType, data: T) -> Self {
-        Self::from_raw_parts(_type, data.len(), data.len(), data.as_ptr())
+    unsafe fn setup(_ctx: &mut Context, _type: BufferType, data: &[T]) -> Self {
+        Self::from_raw_parts(_ctx, _type, data.len(), data.len(), data.as_ptr())
     }
 
-    // Create a static/immutable buffer using a slice
-    pub fn immutable(_ctx: &mut Context, data: T) -> Self {
-        unsafe { Self::setup(BufferType::Immutable(0), data) }
+    // Create a static/immutable buffer
+    unsafe fn immutable(_ctx: &mut Context, data: &[T]) -> Self {
+        Self::setup(_ctx, BufferType::Immutable(0), data)
     }
 
-    // Create a dynamic buffer using a slice
-    pub fn dynamic(_ctx: &mut Context, data: T) -> Self {
-        unsafe { Self::setup(BufferType::Immutable(gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT), data) }
+    // Create a dynamic buffer
+    unsafe fn dynamic(_ctx: &mut Context, data: &[T]) -> Self {
+        Self::setup(_ctx, BufferType::Immutable(gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT), data)
     }
 
-    // Create a resizable buffer using a slice
-    pub fn resizable(_ctx: &mut Context, data: &[T]) -> Self {
-        unsafe { Self::setup(BufferType::Default(gl::DYNAMIC_DRAW), data) }
+    // Create a resizable buffer
+    unsafe fn resizable(_ctx: &mut Context, data: &[T]) -> Self {
+        Self::setup(_ctx, BufferType::Default(gl::DYNAMIC_DRAW), data)
     }
 
-    // Create a buffer using a buffer mode and some initialization contents
-    pub fn new<I: BufferContent<T>>(_ctx: &mut Context, mode: BufferMode, data: I) -> Self {
+    // Create a buffer using a buffer mode and a slice containing some data
+    pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Self {
         let func = match mode {
             BufferMode::Static => Self::immutable,
             BufferMode::Dynamic => Self::dynamic,
             BufferMode::Resizable => Self::resizable,
         };
 
-        func(_ctx, data)
+        unsafe { func(_ctx, data) }
     }
 
     // Get the current length of the buffer
@@ -172,19 +147,19 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     */
 }
 
-impl<T: GPUSendable, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
+impl<T: Shared, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
     fn name(&self) -> NonZeroU32 {
         self.buffer
     }
 }
 
-impl<T: GPUSendable, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
+impl<T: Shared, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
     fn target(&self) -> u32 {
         TARGET
     }
 }
 
-impl<T: GPUSendable, const TARGET: u32> Bind for Buffer<T, TARGET> {
+impl<T: Shared, const TARGET: u32> Bind for Buffer<T, TARGET> {
     fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
         unsafe {
             let target = self.target();
@@ -197,7 +172,7 @@ impl<T: GPUSendable, const TARGET: u32> Bind for Buffer<T, TARGET> {
     }
 }
 
-impl<T: GPUSendable, const TARGET: u32> Drop for Buffer<T, TARGET> {
+impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1, &self.buffer.get());

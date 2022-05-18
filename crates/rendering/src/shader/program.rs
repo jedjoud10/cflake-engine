@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, marker::PhantomData};
 use ahash::AHashMap;
-use crate::context::{ToGlName, Context, Bind, Active};
+use crate::{context::Context, object::{Bind, ToGlName, Active}};
 
 // Cached program mappings
 pub(super) struct Mappings {

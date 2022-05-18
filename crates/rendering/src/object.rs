@@ -1,6 +1,5 @@
 use std::num::NonZeroU32;
-
-use super::Context;
+use crate::context::Context;
 
 // Objects that have a specific and unique OpenGL name, like buffers or textures
 pub trait ToGlName {
@@ -19,11 +18,10 @@ pub trait Bind {
 }
 
 // Objects that can be shared/sent to the GPU through OpenGL functions
-// This represents a SINGLE value, not multiple, so no slices / arrays
 pub trait Shared: Copy + Sized + Sync + Send {}
 
-// Manual implementations
-
+// TODO: Manual implementations
+impl<T: Copy + Sized + Sync + Send> Shared for T {}
 
 // This implies that the internal object is a bound OpenGL object that we can modify
 pub struct Active<'a, T> {

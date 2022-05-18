@@ -1,4 +1,4 @@
-use crate::context::{Context, ToGlType, ToGlName};
+use crate::{context::{Context}, object::{ToGlType, ToGlName}};
 use assets::Asset;
 use std::{
     ffi::CString,

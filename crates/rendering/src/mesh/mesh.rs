@@ -3,8 +3,8 @@ use super::{
     GeometryBuilder,
 };
 use crate::{
-    buffer::{Buffer, BufferAccess, ElementBuffer, MutMapped, RefMapped},
-    context::{Cached, Context, ToGlName},
+    buffer::{Buffer, ElementBuffer, BufferMode},
+    context::{Cached, Context}, object::ToGlName,
 };
 use assets::Asset;
 use obj::TexturedVertex;
@@ -45,7 +45,7 @@ impl SubMesh {
     // This creates a new submesh with attribute layout defined by the builder itself
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
     // PS: This doesn't check if the builder contains different length-vectors
-    pub(super) unsafe fn new_unchecked(ctx: &mut Context, mut builder: GeometryBuilder) -> Self {
+    pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
         // Create and bind the VAO, then create a safe VAO wrapper
         let vao = {
             let mut name = 0;
@@ -54,16 +54,12 @@ impl SubMesh {
             NonZeroU32::new(name).unwrap()
         };
 
-        // How we shall access the vertex attribute and index buffers
-        let access = BufferAccess::WRITE | BufferAccess::WRITE;
-
         // Only take the indices from the builder
-        let indices = std::mem::take(builder.get_indices_mut());
 
         Self {
             vao,
-            attributes: AttributeSet::new(vao, ctx, access, builder),
-            indices: Buffer::from_vec(ctx, access, indices),
+            attributes: AttributeSet::new(vao, ctx, BufferMode::Static, &builder),
+            indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()),
         }
     }
 
@@ -72,6 +68,7 @@ impl SubMesh {
         self.attributes.layout()
     }
 
+    /*
     // Get a mapped buffer for a specific vertex attribute, if possible
     pub fn get<U: NamedAttribute>(&self, ctx: &Context) -> Option<RefMapped<U::Out>> {
         let len = self.attributes.len()?;
@@ -83,6 +80,7 @@ impl SubMesh {
         let len = self.attributes.len()?;
         U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..len).unwrap())
     }
+    */
 }
 
 impl ToGlName for SubMesh {

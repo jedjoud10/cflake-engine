@@ -1,7 +1,7 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
 use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Shader, VertexStage, Program};
-use crate::context::{Context, ToGlName};
+use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages 
 unsafe fn compile(names: &[NonZeroU32]) -> Program {

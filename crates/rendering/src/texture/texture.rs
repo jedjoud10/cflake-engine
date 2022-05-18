@@ -1,4 +1,4 @@
-use crate::context::{Context, ToGlName, ToGlType};
+use crate::{context::Context, object::{ToGlName, ToGlType}};
 use std::num::NonZeroU32;
 
 use super::TexelLayout;

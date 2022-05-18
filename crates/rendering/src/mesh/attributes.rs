@@ -1,17 +1,17 @@
 use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
-    buffer::{ArrayBuffer, GPUSendable, Buffer, BufferMode},
-    context::{Context, Bind},
+    buffer::{ArrayBuffer, Buffer, BufferMode},
+    context::{Context}, object::{Shared, Bind},
 };
 use std::{num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
-pub trait BaseAttribute: GPUSendable {
+pub trait BaseAttribute: Shared {
     const GL_TYPE: u32;
 }
 
 // A compound attribute, like a vector (as in vec2, vec3, vec4) that consists of multiple attributes
-pub trait Attribute: GPUSendable {
+pub trait Attribute: Shared {
     const GL_TYPE: u32;
     const COUNT_PER_VERTEX: u32;
 }
@@ -95,7 +95,7 @@ pub struct AttributeSet {
 
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait NamedAttribute {
-    type Out: Attribute + GPUSendable;
+    type Out: Attribute + Shared;
     const LAYOUT: VertexLayout;
 
     // Get the OpenGL array buffer from a specific attribute set
@@ -260,19 +260,16 @@ pub mod out {
 struct AuxBufGen<'a> {
     vao: NonZeroU32,
     index: &'a mut u32,
-    builder: GeometryBuilder,
+    builder: &'a GeometryBuilder,
     ctx: &'a mut Context,
     mode: BufferMode,
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
 fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> AttribBuf<T::Out> {
-    aux.builder.get_attrib_mut::<T>().map(|vec| {
-        // We do a bit of stealing
-        let vec = std::mem::take(vec);
-
+    aux.builder.get_attrib::<T>().map(|vec| {
         // Create the array buffer
-        let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
+        let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec);
 
         // Bind the buffer to bind the attributes
         buffer.bind(aux.ctx, |_| unsafe {
@@ -290,7 +287,7 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
 
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
-    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, access: BufferAccess, builder: GeometryBuilder) -> Self {
+    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
         // We do a bit of copying
         let layout = builder.layout();
 
@@ -301,7 +298,7 @@ impl AttributeSet {
             index: &mut index,
             builder,
             ctx,
-            access,
+            mode,
         };
 
         // Create the set with valid buffers (if they are enabled)

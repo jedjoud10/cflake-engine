@@ -1,4 +1,4 @@
-use crate::buffer::GPUSendable;
+use crate::object::Shared;
 use std::mem::size_of;
 
 // Defines how texels must be stored within textures
@@ -15,17 +15,17 @@ pub trait TexelLayout: 'static {
 
 // A range texel limiter that will hint the texture that the integer must be accessed as a floating point value, and that it must be in the 0-1 range
 #[derive(Clone, Copy)]
-pub struct Ranged<T: GPUSendable>(T);
+pub struct Ranged<T: Shared>(T);
 
 // A normalized texel limiter that will the texture that the integer must be accessed as a floating point value, and that it must be in the -1 - 1 range
 #[derive(Clone, Copy)]
-pub struct Normalized<T: GPUSendable>(T);
+pub struct Normalized<T: Shared>(T);
 
 // Multiple channels
-pub struct R<T: GPUSendable>(T);
-pub struct RG<T: GPUSendable>(vek::Vec2<T>);
-pub struct RGB<T: GPUSendable>(vek::Vec3<T>);
-pub struct RGBA<T: GPUSendable>(vek::Vec4<T>);
+pub struct R<T: Shared>(T);
+pub struct RG<T: Shared>(vek::Vec2<T>);
+pub struct RGB<T: Shared>(vek::Vec3<T>);
+pub struct RGBA<T: Shared>(vek::Vec4<T>);
 
 // Macro that will automatically implement the texel layout of all integers / floats for a specific channel layout type
 macro_rules! impl_texel_layout {

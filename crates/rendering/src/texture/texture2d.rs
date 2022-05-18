@@ -1,5 +1,5 @@
 use super::{MinMagFilter, TexelLayout, Texture};
-use crate::context::{Cached, ToGlName, ToGlType};
+use crate::{context::Cached, object::{ToGlName, ToGlType}};
 use std::{marker::PhantomData, num::NonZeroU32};
 
 // A 2D texture that will be used for rendering objects
