@@ -1,4 +1,4 @@
-use crate::{context::Context, object::{ToGlName, ToGlType}};
+use crate::{context::Context, object::{ToGlName, ToGlType, Bind}};
 use std::num::NonZeroU32;
 
 use super::TexelLayout;
@@ -10,7 +10,7 @@ pub enum MinMagFilter {
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
-pub trait Texture<T: TexelLayout>: ToGlName + ToGlType {
+pub trait Texture<T: TexelLayout>: ToGlName + ToGlType + Bind {
     // Textures can have different dimensions
     type Dimensions;
 
@@ -18,20 +18,12 @@ pub trait Texture<T: TexelLayout>: ToGlName + ToGlType {
     unsafe fn gen_gl_tex(ctx: &mut Context) -> NonZeroU32 {
         let mut tex = 0u32;
         gl::GenTextures(1, &mut tex);
-        NonZeroU32::new_unchecked(tex)
+        NonZeroU32::new(tex).unwrap()
     }
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;
 
-    // Bind the texture so we can modify it
-    fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(&Self, u32)) {
-        unsafe {
-            let target = self.target();
-            gl::BindTexture(target, self.target());
-            function(self, self.target());
-        }
-    }
 
     // Calculate the number of texels that make up this texture
     fn count_texels(&self) -> u32;
