@@ -109,10 +109,15 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.capacity
     }
 
+    // Get the buffer mode that we used to initialize this buffer
+    pub fn mode(&self) -> BufferMode {
+        self.mode
+    }
+
     // Overwrite the whole buffer if possible
     pub fn update(&mut self, ctx: &mut Context, data: &[T]) {
         // Cannot update static buffers
-        assert_ne!(self.mode, BufferMode::Static);
+        assert_ne!(self.mode, BufferMode::Static, "Cannot update buffers that were initialized using BufferMode::Static");
 
         // Make sure the lengths match up (in case of a dynamic buffer)
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());

@@ -1,4 +1,4 @@
-use crate::{context::Context, object::Active};
+use crate::{context::Context, object::Active, texture::{Texture, TexelLayout}};
 use rendering_derive::Uniform;
 use super::Program;
 
@@ -144,6 +144,17 @@ impl_vectors_uniform_value!(i, i32);
 
 // Matrices
 impl_matrices_uniform_value!();
+
+
+// Implement the uniform value for textures and buffers
+impl<T: Texture> UniformValue for T {
+    unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+        let p = bound.as_ref().program.get();
+        if let Some(loc) = bound.fetch_uniform_location(name) {
+            // Bindless textures go BRRRRRRR
+        }
+    }
+}
 
 
 

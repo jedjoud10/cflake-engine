@@ -1,4 +1,4 @@
-use super::{MinMagFilter, TexelLayout, Texture};
+use super::{TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -12,6 +12,7 @@ pub struct Texture2D<T: TexelLayout> {
 
     // Main texture settings
     dimensions: vek::Extent2<u32>,
+    mode: TextureMode,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -41,7 +42,8 @@ impl<T: TexelLayout> Bind for Texture2D<T> {
     }
 }
 
-impl<T: TexelLayout> Texture<T> for Texture2D<T> {
+impl<T: TexelLayout> Texture for Texture2D<T> {
+    type Layout = T;
     type Dimensions = vek::Extent2<u32>;
 
     fn dimensions(&self) -> Self::Dimensions {
@@ -50,5 +52,9 @@ impl<T: TexelLayout> Texture<T> for Texture2D<T> {
 
     fn count_texels(&self) -> u32 {
         self.dimensions.product()
+    }
+
+    fn mode(&self) -> super::TextureMode {
+        self.mode
     }
 }
