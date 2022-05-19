@@ -117,7 +117,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Overwrite the whole buffer if possible
     pub fn update(&mut self, ctx: &mut Context, data: &[T]) {
         // Cannot update static buffers
-        assert_ne!(self.mode, BufferMode::Static, "Cannot update buffers that were initialized using BufferMode::Static");
+        assert_ne!(self.mode, BufferMode::Static, "Cannot update buffers that were initialized using BufferMode::Static.");
 
         // Make sure the lengths match up (in case of a dynamic buffer)
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
@@ -132,7 +132,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Read back the whole buffer, and store it inside output
     pub fn read(&self, ctx: &Context, output: &mut [T]) {
         // Make sure the lengths always match up
-        assert!(output.len() == self.len());
+        assert!(output.len() == self.len(), "Current length and output length do not match up.");
 
         // Generic reading method
         unsafe {
