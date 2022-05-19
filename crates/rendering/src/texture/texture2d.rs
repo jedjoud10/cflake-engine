@@ -1,9 +1,9 @@
-use super::{TexelLayout, Texture, TextureMode, create_texture_raw};
+use super::{TexelLayout, Texture, TextureMode, create_texture_raw, convert_level_count, create_bindless_handle};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
 };
-use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}};
+use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}, ptr::{NonNull, null}};
 
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
@@ -13,7 +13,8 @@ pub struct Texture2D<T: TexelLayout> {
     // Main texture settings
     dimensions: vek::Extent2<u16>,
     mode: TextureMode,
-    levels: u8,
+    levels: NonZeroU8,
+    bindless: Option<u64>,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -62,16 +63,12 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         self.mode
     }
 
-    fn count_texels(&self) -> u32 {
-        self.dimensions.as_().product()
-    }
-
     fn get_layer(&self, level: u8) -> Option<super::MipLayerRef<Self>> {
-        (level < self.levels).then(|| super::MipLayerRef::new(self, level)) 
+        (level < self.levels.get()).then(|| super::MipLayerRef::new(self, level)) 
     }
 
     fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLayerMut<Self>> {
-        (level < self.levels).then(|| super::MipLayerMut::new(self, level)) 
+        (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level)) 
     }
 
     unsafe fn clear_mip_layer_unchecked(&mut self, ctx: &mut crate::context::Context, level: u8, val: Self::Layout, region: Self::Region) {
@@ -99,30 +96,43 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         gl::GetTextureSubImage(self.name().get(), level as i32, offset.x, offset.y, 0, extent.w, extent.h, 1, format_, type_, buf_size, out as _)
     }
 
-    fn new_unchecked(ctx: &mut crate::context::Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, data: &[Self::Layout]) -> Option<Self> {
+    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
         // Create a new raw OpenGL texture object
-        let tex = unsafe {
-            create_texture_raw(gl::TEXTURE_2D);
-        };
+        let tex = create_texture_raw();
 
         // Check for mipmaps
-        let levels = levels.get();
-        let mipmaps = levels > 1;
+        let mipmaps = convert_level_count(levels);
+
+        // Convert dimensions
+        let width = dimensions.w as i32;
+        let height = dimensions.h as i32;
 
         // Pre-allocate storage using the texture mode (immutable vs mutable textures)
-        unsafe {
-            match mode {
-                TextureMode::Dynamic | TextureMode::Bindless => gl::TextureStorage2D(tex.get(), levels, T::INTERNAL_FORMAT, size.w as i32, size.h as i32),
-                TextureMode::Resizable => gl::TexImage2D(gl::TEXTURE_2D, levels, T::INTERNAL_FORMAT, size.w as i32, size.h as i32, 0, T::FORMAT, gl::UNSIGNED_BYTE, ),
-            }
+        match mode {
+            TextureMode::Dynamic | TextureMode::Bindless => {
+                // Initialize the storage
+                gl::TextureStorage2D(tex.get(), mipmaps.1 as i32, T::INTERNAL_FORMAT, dimensions.w as i32, dimensions.h as i32);
+
+                // Fill the storage (only if the pointer is valid)
+                if let Some(ptr) = ptr {
+                    gl::TextureSubImage2D(tex.get(), 0, 0, 0, width, height, T::FORMAT, gl::UNSIGNED_BYTE, ptr as _);
+                }
+            },
+            TextureMode::Resizable => {
+                // Bind the texture (only for resizable textures tho)
+                gl::BindTexture(gl::TEXTURE_2D, tex.get());
+
+                // Initialize the texture with the valid data
+                gl::TexImage2D(gl::TEXTURE_2D, levels.get() as _, T::INTERNAL_FORMAT as i32, width, height, 0, T::FORMAT, gl::UNSIGNED_BYTE, ptr.unwrap_or_else(null) as _)
+            },
         }
 
 
         // Fill the texture with data
         // Make bindless and resident (optional)
-        // Create the handle and make it resident
-        let handle = gl::GetTextureHandleARB(self.name().get());
-        gl::MakeTextureHandleResidentARB(handle);
-        handle
+        let bindless = (TextureMode::Bindless == mode).then(|| create_bindless_handle(tex));
+        
+        // Create the texture wrapper
+        Texture2D { texture: tex, dimensions, mode, levels, bindless, _phantom: Default::default() }
     }
 }

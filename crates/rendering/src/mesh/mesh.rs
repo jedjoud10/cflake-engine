@@ -55,12 +55,10 @@ impl SubMesh {
             NonZeroU32::new(name).unwrap()
         };
 
-        // Only take the indices from the builder
-
         Self {
             vao,
             attributes: AttributeSet::new(vao, ctx, BufferMode::Static, &builder),
-            indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()),
+            indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
     }
 

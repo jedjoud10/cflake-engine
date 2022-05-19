@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
 };
-use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}};
+use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}, ptr::NonNull};
 use super::TexelLayout;
 
 // This will create a raw OpenGL texture
@@ -11,6 +11,20 @@ pub(super) unsafe fn create_texture_raw() -> NonZeroU32 {
     gl::GenTextures(1, &mut tex);
     NonZeroU32::new(tex).unwrap()
 }
+
+// Convert some mip-map level counts into a bool and a u8
+pub(super) unsafe fn convert_level_count(levels: NonZeroU8) -> (bool, u8) {
+    let levels = levels.get();
+    let mipmaps = levels > 1;
+    (mipmaps, levels)
+}
+
+// Make a bindless resident handle for a texture
+pub(super) unsafe fn create_bindless_handle(texture: NonZeroU32) -> u64 {
+    let handle = gl::GetTextureHandleARB(texture.get());
+    gl::MakeTextureHandleResidentARB(handle);
+    handle
+} 
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -65,7 +79,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     // Update a sub-region of the mip-layer using a data slice
     fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[T::Layout]) {
         // Length should never be greater
-        assert!((data.len() as u32) < self.texture.count_texels(), "Current length and output length do not match up.");
+        assert!((data.len() as u32) < self.texture.texel_count(), "Current length and output length do not match up.");
 
         // Le update texture subimage
         unsafe {
@@ -75,13 +89,56 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
 }
 
 // Texture dimensions trait. This is going to be implemented for vek::Extent2 and vek::Extent3
-pub trait Dim {
+pub trait Dim: Copy {
     // Count the number of texels
     fn texel_count(&self) -> u32;
 
     // Check if the dimensions can be used to create a texture
     fn valid(&self) -> bool;
+
+    // Get the max element from these dimensions
+    fn max(&self) -> u16;
+
+    // Caclulate the number of mipmap layers that a texture can have
+    fn levels(&self) -> NonZeroU8 {
+        let mut cur = self.max() as f32;
+        let mut num = 0u32;
+        while cur > 1.0 {
+            cur /= 2.0;
+            num += 1;
+        }
+        NonZeroU8::new(u8::try_from(num).unwrap()).unwrap()
+    }
 }
+
+impl Dim for vek::Extent2<u16> {
+    fn texel_count(&self) -> u32 {
+        self.as_::<u32>().product()
+    }
+
+    fn valid(&self) -> bool {
+        *self == vek::Extent2::zero()
+    }
+
+    fn max(&self) -> u16 {
+        self.reduce_max()
+    }
+}
+
+impl Dim for vek::Extent3<u16> {
+    fn texel_count(&self) -> u32 {
+        self.as_::<u32>().product()
+    }
+
+    fn valid(&self) -> bool {
+        *self == vek::Extent3::zero()
+    }
+
+    fn max(&self) -> u16 {
+        self.reduce_max()
+    }
+}
+
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlType + Bind + Sized {
@@ -95,18 +152,29 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     type Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, data: &[Self::Layout]) -> Option<Self> {
-        // Validate texture parameters
-        let valid = dimensions.valid();
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+        // Validate the dimensions (make sure they aren't zero in ANY axii)
+        let dims_valid = dimensions.valid();
 
-        // Create texture
-        valid.then(|| unsafe {
-            Self::new_unchecked(ctx, mode, dimensions, levels, data)
+        // Validate length (make sure the data slice matches up with dimensions)
+        let len_valid = if !data.is_empty() {
+            data.len() as u64 == (dimensions.texel_count() as u64) * (Self::Layout::bytes() as u64)
+        } else { true };
+
+
+        // Create the texture if the requirements are all valid
+        (dims_valid && len_valid).then(|| unsafe {
+            // Convert some parameters to their raw counterpart
+            let ptr = (!data.is_empty()).then(|| data.as_ptr());
+            let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
+
+            // Create the texture
+            Self::from_raw_parts(ctx, mode, dimensions, levels, ptr)
         })
     }
 
-    // Create a new texture that contains some data without checking for safety
-    unsafe fn new_unchecked(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, data: &[Self::Layout]) -> Self;
+    // Create the texture from it's raw parts, like levels and pointer
+    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;

@@ -27,6 +27,11 @@ impl GeometryBuilder {
         self.vertices.get::<U>()
     }
 
+    // Get the vertex count
+    pub fn vertex_count(&self) -> Option<usize> {
+        self.vertices.len()
+    }
+
     // Get an attribute vector mutably
     pub fn get_attrib_mut<U: NamedAttribute>(&mut self) -> Option<&mut Vec<U::Out>> {
         self.vertices.get_mut::<U>()
@@ -54,7 +59,10 @@ impl GeometryBuilder {
 
     // Check if the builder can be used to generate a submesh
     pub fn valid(&self) -> bool {
-        self.vertices.len().is_some() && self.indices.len() % 3 == 0
+        // We must have at least 1 vertex and at least 1 triangle
+        let tri = self.indices.len() % 3 == 0;
+        let vert = self.vertices.len().map(|len| len > 1).unwrap_or_default();
+        vert && tri
     }
 
     // Build the final submesh without checking for validity or anything

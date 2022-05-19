@@ -270,7 +270,7 @@ struct AuxBufGen<'a> {
 fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> AttribBuf<T::Out> {
     aux.builder.get_attrib::<T>().map(|vec| {
         // Create the array buffer
-        let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec);
+        let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
 
         // Bind the buffer to bind the attributes
         buffer.bind(aux.ctx, |_| unsafe {
