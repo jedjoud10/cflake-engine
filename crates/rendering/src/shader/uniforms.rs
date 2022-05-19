@@ -1,6 +1,10 @@
-use crate::{context::Context, object::Active, texture::{Texture, TexelLayout}};
-use rendering_derive::Uniform;
 use super::Program;
+use crate::{
+    context::Context,
+    object::Active,
+    texture::{TexelLayout, Texture},
+};
+use rendering_derive::Uniform;
 
 // A uniform value that can be stored within some uniforms
 pub trait UniformValue {
@@ -10,7 +14,7 @@ pub trait UniformValue {
 
 // This macro will automatically implement the trait for single element types, like basic numbers
 macro_rules! impl_basic_uniform_value {
-    ($glfunc:ident, $t:ty) => {     
+    ($glfunc:ident, $t:ty) => {
         paste::paste! {
             impl UniformValue for $t {
                 unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
@@ -26,7 +30,7 @@ macro_rules! impl_basic_uniform_value {
 
 // This macro will automatically implement the trait for arrays
 macro_rules! impl_arrays_uniform_value {
-    ($glfunc:ident, $t:ty) => {     
+    ($glfunc:ident, $t:ty) => {
         paste::paste! {
             impl UniformValue for [$t] {
                 unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
@@ -42,7 +46,7 @@ macro_rules! impl_arrays_uniform_value {
 
 // This macro will automatically implement the trait for math vectors
 macro_rules! impl_vectors_uniform_value {
-    ($glfunc:ident, $t:ty) => {     
+    ($glfunc:ident, $t:ty) => {
         paste::paste! {
             impl UniformValue for vek::Vec2<$t> {
                 unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
@@ -94,7 +98,7 @@ macro_rules! impl_vectors_uniform_value {
 
 // This macro will automatically implement the trait for matrices
 macro_rules! impl_matrices_uniform_value {
-    () => {     
+    () => {
         paste::paste! {
             impl UniformValue for vek::Mat4<f32> {
                 unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
@@ -126,7 +130,6 @@ macro_rules! impl_matrices_uniform_value {
     };
 }
 
-
 // Automatic implementations for basic types
 impl_basic_uniform_value!(f, f32);
 impl_basic_uniform_value!(ui, u32);
@@ -145,7 +148,6 @@ impl_vectors_uniform_value!(i, i32);
 // Matrices
 impl_matrices_uniform_value!();
 
-
 // Implement the uniform value for textures and buffers
 impl<T: Texture> UniformValue for T {
     unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
@@ -155,8 +157,6 @@ impl<T: Texture> UniformValue for T {
         }
     }
 }
-
-
 
 // A uniform struct will set multiple uniform values at once
 pub unsafe trait UniformStruct {

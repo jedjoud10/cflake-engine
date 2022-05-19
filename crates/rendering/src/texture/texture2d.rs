@@ -1,4 +1,4 @@
-use super::{TexelLayout, Texture, TextureMode, raw::RawTexture};
+use super::{raw::RawTexture, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},

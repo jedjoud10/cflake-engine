@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
-use super::{ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage, introspect};
+use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
 use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages

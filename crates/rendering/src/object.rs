@@ -31,9 +31,7 @@ pub struct Active<'a, T> {
 impl<'a, T> Active<'a, T> {
     // Create a bound object, indeed
     pub fn new(obj: &'a mut T, _ctx: &mut Context) -> Self {
-        Self {
-            inner: obj
-        }
+        Self { inner: obj }
     }
 }
 

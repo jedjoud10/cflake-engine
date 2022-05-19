@@ -1,9 +1,9 @@
+use self::raw::RawTexture;
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
 };
-use std::{num::NonZeroU32, marker::PhantomData};
-use self::raw::RawTexture;
+use std::{marker::PhantomData, num::NonZeroU32};
 
 use super::TexelLayout;
 
@@ -30,7 +30,7 @@ pub enum TextureMode {
 pub struct RefMipLayer<'a, T: Texture> {
     // El texture
     texture: &'a T,
-    
+
     // The level of the mip layer
     level: u32,
 
@@ -43,7 +43,7 @@ pub struct RefMipLayer<'a, T: Texture> {
 pub struct MutMipLayer<'a, T: Texture> {
     // El texture
     texture: &'a mut T,
-    
+
     // The level of the mip layer
     level: u32,
 
@@ -52,12 +52,15 @@ pub struct MutMipLayer<'a, T: Texture> {
     _phantom: PhantomData<*const ()>,
 }
 
-
 // Raw texture stuff, like allocations and generation
 pub(super) mod raw {
-    use std::{num::NonZeroU32, ffi::c_void};
+    use std::{ffi::c_void, num::NonZeroU32};
 
-    use crate::{object::{ToGlName, ToGlType, Bind}, context::Context, texture::TexelLayout};
+    use crate::{
+        context::Context,
+        object::{Bind, ToGlName, ToGlType},
+        texture::TexelLayout,
+    };
 
     use super::TextureMode;
     // Very raw texture indeed
@@ -66,7 +69,7 @@ pub(super) mod raw {
         type Layout: TexelLayout;
 
         // Textures can have different dimensions
-        type Dimensions;  
+        type Dimensions;
 
         // Create a new raw OpenGL texture object
         unsafe fn gen_gl_tex(ctx: &mut Context) -> NonZeroU32 {
@@ -74,7 +77,7 @@ pub(super) mod raw {
             gl::GenTextures(1, &mut tex);
             NonZeroU32::new(tex).unwrap()
         }
-    
+
         // Fetch the bindless texture handle for this texture if possible
         unsafe fn gen_gl_bindless_handle(&mut self, ctx: &mut Context, mode: TextureMode) -> Option<u64> {
             // Check if the texture is even valid
@@ -103,7 +106,7 @@ pub trait Texture: RawTexture {
     fn count_texels(&self) -> u32;
 
     // Get a single mip level from the texture, immutably
-    fn get_layer(&self, level: u32) -> Option<RefMipLayer<Self>>; 
+    fn get_layer(&self, level: u32) -> Option<RefMipLayer<Self>>;
 
     // Get a single mip level from the texture, mutably
     fn get_layer_mut(&mut self, level: u32) -> Option<MutMipLayer<Self>>;
