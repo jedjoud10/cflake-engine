@@ -65,7 +65,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         let cmd = CommandStream::new(ctx, |_| {
             // Create the new OpenGL buffer
             let mut buffer = 0;
-            gl::GenBuffers(1, &mut buffer);
+            gl::CreateBuffers(1, &mut buffer);
 
             // Convert size to byte size
             let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
@@ -95,8 +95,10 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Create a buffer using a buffer mode and a slice containing some data
-    pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Self {
-        unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) }
+    pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Option<Self> {
+        (!data.is_empty()).then(|| unsafe {
+            Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr())
+        })
     }
 
     // Get the current length of the buffer
