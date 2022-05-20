@@ -1,9 +1,13 @@
+use super::{Sampler, SamplerParameters, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
 };
-use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}, ptr::NonNull};
-use super::{TexelLayout, SamplerParameters, Sampler};
+use std::{
+    marker::PhantomData,
+    num::{NonZeroU32, NonZeroU8},
+    ptr::NonNull,
+};
 
 // This will create a raw OpenGL texture
 pub(super) unsafe fn create_texture_raw() -> NonZeroU32 {
@@ -24,7 +28,7 @@ pub(super) unsafe fn create_bindless_handle(texture: NonZeroU32) -> u64 {
     let handle = gl::GetTextureHandleARB(texture.get());
     gl::MakeTextureHandleResidentARB(handle);
     handle
-} 
+}
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -64,7 +68,6 @@ pub struct MipLayerMut<'a, T: Texture> {
     level: u8,
 }
 
-
 impl<'a, T: Texture> MipLayerMut<'a, T> {
     // Create a new mip layer mutable view using a texture and a level
     pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
@@ -85,7 +88,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
         unsafe {
             self.update_unchecked(ctx, region, data);
         }
-    } 
+    }
 }
 
 // Texture dimensions trait. This is going to be implemented for vek::Extent2 and vek::Extent3
@@ -139,7 +142,6 @@ impl Dim for vek::Extent3<u16> {
     }
 }
 
-
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Output texel layout
@@ -147,7 +149,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
     // Textures can have different dimensions
     type Dimensions: Dim;
-    
+
     // A region that might fill the texture, like a rectangle for 2d textures and cubes for 3d textures
     type Region;
 
@@ -159,8 +161,9 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
             data.len() as u64 == (dimensions.texel_count() as u64) * (Self::Layout::bytes() as u64)
-        } else { true };
-
+        } else {
+            true
+        };
 
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {

@@ -1,15 +1,18 @@
 use std::{marker::PhantomData, num::NonZeroU32};
 
-use crate::{object::{ToGlName, ToGlType}, context::Context};
+use crate::{
+    context::Context,
+    object::{ToGlName, ToGlType},
+};
 
-use super::{Texture, TexelLayout};
+use super::{TexelLayout, Texture};
 
 // Texel filters that are applied to the sampler's mininifcation and magnification parameters
 pub enum Filter {
     // Filtering for any texture
     Nearest,
     Linear,
-    
+
     // Filtering for textures that use mipmaps
     TryMipMapNearest,
     TryMipMapLinear,
@@ -26,7 +29,10 @@ pub struct SamplerParameters<T: TexelLayout> {
 
 impl<T: TexelLayout> Default for SamplerParameters<T> {
     fn default() -> Self {
-        Self { filter: Filter::Linear, border: Default::default() }
+        Self {
+            filter: Filter::Linear,
+            border: Default::default(),
+        }
     }
 }
 
@@ -65,7 +71,10 @@ impl<T: Texture> Sampler<T> {
 
         // Set the sampler parameters
 
-        Self { sampler: name, _phantom: Default::default() }
+        Self {
+            sampler: name,
+            _phantom: Default::default(),
+        }
     }
 }
 

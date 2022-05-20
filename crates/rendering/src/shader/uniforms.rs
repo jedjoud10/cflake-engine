@@ -2,7 +2,7 @@ use super::Program;
 use crate::{
     context::Context,
     object::Active,
-    texture::{TexelLayout, Texture, R, Texture2D, Sampler},
+    texture::{Sampler, TexelLayout, Texture, Texture2D, R},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -29,19 +29,19 @@ macro_rules! impl_scalar_arrays {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }       
+            }
 
             impl<'a, const SIZE: usize> SetRawUniform for &'a [$t; SIZE] {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }      
+            }
 
             impl<const SIZE: usize> SetRawUniform for [$t; SIZE] {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }  
+            }
 
             impl<'a> Array for &'a [$t] {}
             impl<'a, const SIZE: usize> Array for &'a [$t; SIZE] {}
@@ -62,24 +62,24 @@ macro_rules! impl_vector_arrays {
 // Implement the array trait for arrays of vector types ($t being the vector type directly)
 macro_rules! impl_vector_arrays_unique {
     ($glfunc:ident, $count:expr, $t:ty) => {
-        paste::paste! {            
-            // Vec2 arrays    
+        paste::paste! {
+            // Vec2 arrays
             impl<'a> SetRawUniform for &'a [$t] {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
                 }
-            }   
+            }
             impl<'a, const SIZE: usize> SetRawUniform for &'a [$t; SIZE] {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
                 }
-            }      
+            }
 
             impl<const SIZE: usize> SetRawUniform for [$t; SIZE] {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
                 }
-            }  
+            }
 
             impl<'a> Array for &'a [$t] {}
             impl<'a, const SIZE: usize> Array for &'a [$t; SIZE] {}
@@ -124,7 +124,7 @@ macro_rules! impl_math_vectors {
 
             impl Vector<4> for vek::Vec4<$t> {}
 
-            
+
             impl SetRawUniform for vek::Rgba<$t> {
                 unsafe fn set(self, loc: i32, program: u32) {
                     gl::[<ProgramUniform 4 $glfunc>](program, loc, self.r, self.g, self.b, self.a)
@@ -136,7 +136,7 @@ macro_rules! impl_math_vectors {
     };
 }
 
-// Implement the matrix trait for 4x4, 3x3, and 2x2 floating point matrices 
+// Implement the matrix trait for 4x4, 3x3, and 2x2 floating point matrices
 macro_rules! impl_matrices {
     () => {
         paste::paste! {
@@ -185,7 +185,7 @@ impl_scalars!(f, f32);
 impl_scalars!(i, i32);
 impl_scalars!(ui, u32);
 
-// Array implementations (scalars) 
+// Array implementations (scalars)
 impl_scalar_arrays!(f, f32);
 impl_scalar_arrays!(i, i32);
 impl_scalar_arrays!(ui, u32);

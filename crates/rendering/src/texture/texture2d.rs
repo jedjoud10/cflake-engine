@@ -1,9 +1,13 @@
-use super::{TexelLayout, Texture, TextureMode, create_texture_raw, convert_level_count, create_bindless_handle};
+use super::{convert_level_count, create_bindless_handle, create_texture_raw, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
 };
-use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}, ptr::{NonNull, null}};
+use std::{
+    marker::PhantomData,
+    num::{NonZeroU32, NonZeroU8},
+    ptr::{null, NonNull},
+};
 
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
@@ -64,11 +68,11 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
     }
 
     fn get_layer(&self, level: u8) -> Option<super::MipLayerRef<Self>> {
-        (level < self.levels.get()).then(|| super::MipLayerRef::new(self, level)) 
+        (level < self.levels.get()).then(|| super::MipLayerRef::new(self, level))
     }
 
     fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLayerMut<Self>> {
-        (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level)) 
+        (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
     }
 
     unsafe fn clear_mip_layer_unchecked(&mut self, ctx: &mut crate::context::Context, level: u8, val: Self::Layout, region: Self::Region) {
@@ -76,7 +80,19 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         let type_ = gl::UNSIGNED_BYTE;
         let offset = region.0.as_();
         let extent = region.1.as_();
-        gl::ClearTexSubImage(self.name().get(), level as i32, offset.x, offset.y, 0, extent.w, extent.h, 1, format_, type_, &region as *const Self::Region as _);
+        gl::ClearTexSubImage(
+            self.name().get(),
+            level as i32,
+            offset.x,
+            offset.y,
+            0,
+            extent.w,
+            extent.h,
+            1,
+            format_,
+            type_,
+            &region as *const Self::Region as _,
+        );
     }
 
     unsafe fn update_mip_layer_unchecked(&mut self, ctx: &mut crate::context::Context, level: u8, ptr: *const Self::Layout, region: Self::Region) {
@@ -93,7 +109,20 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         let offset = region.0.as_();
         let extent = region.1.as_();
         let buf_size = i32::try_from(extent.as_::<u32>().product() * Self::Layout::bytes()).unwrap();
-        gl::GetTextureSubImage(self.name().get(), level as i32, offset.x, offset.y, 0, extent.w, extent.h, 1, format_, type_, buf_size, out as _)
+        gl::GetTextureSubImage(
+            self.name().get(),
+            level as i32,
+            offset.x,
+            offset.y,
+            0,
+            extent.w,
+            extent.h,
+            1,
+            format_,
+            type_,
+            buf_size,
+            out as _,
+        )
     }
 
     unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
@@ -117,22 +146,38 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
                 if let Some(ptr) = ptr {
                     gl::TextureSubImage2D(tex.get(), 0, 0, 0, width, height, T::FORMAT, gl::UNSIGNED_BYTE, ptr as _);
                 }
-            },
+            }
             TextureMode::Resizable => {
                 // Bind the texture (only for resizable textures tho)
                 gl::BindTexture(gl::TEXTURE_2D, tex.get());
 
                 // Initialize the texture with the valid data
-                gl::TexImage2D(gl::TEXTURE_2D, levels.get() as _, T::INTERNAL_FORMAT as i32, width, height, 0, T::FORMAT, gl::UNSIGNED_BYTE, ptr.unwrap_or_else(null) as _)
-            },
+                gl::TexImage2D(
+                    gl::TEXTURE_2D,
+                    levels.get() as _,
+                    T::INTERNAL_FORMAT as i32,
+                    width,
+                    height,
+                    0,
+                    T::FORMAT,
+                    gl::UNSIGNED_BYTE,
+                    ptr.unwrap_or_else(null) as _,
+                )
+            }
         }
-
 
         // Fill the texture with data
         // Make bindless and resident (optional)
         let bindless = (TextureMode::Bindless == mode).then(|| create_bindless_handle(tex));
-        
+
         // Create the texture wrapper
-        Texture2D { texture: tex, dimensions, mode, levels, bindless, _phantom: Default::default() }
+        Texture2D {
+            texture: tex,
+            dimensions,
+            mode,
+            levels,
+            bindless,
+            _phantom: Default::default(),
+        }
     }
 }

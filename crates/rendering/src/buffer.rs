@@ -96,9 +96,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Create a buffer using a buffer mode and a slice containing some data
     pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Option<Self> {
-        (!data.is_empty()).then(|| unsafe {
-            Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr())
-        })
+        (!data.is_empty()).then(|| unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) })
     }
 
     // Get the current length of the buffer
@@ -120,7 +118,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     pub fn clear(&mut self, ctx: &mut Context) {
         // Cannot clear static buffers
         assert_ne!(self.mode, BufferMode::Static, "Cannot clear Static buffers");
-    
+
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, null());
