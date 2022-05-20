@@ -203,7 +203,6 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
-
 // The main struct that will allow us to set the uniforms
 pub struct Uniforms<'a>(Active<'a, Program>);
 

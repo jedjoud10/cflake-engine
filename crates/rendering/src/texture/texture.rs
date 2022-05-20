@@ -3,7 +3,7 @@ use crate::{
     object::{Bind, ToGlName, ToGlType},
 };
 use std::{marker::PhantomData, num::{NonZeroU32, NonZeroU8}, ptr::NonNull};
-use super::TexelLayout;
+use super::{TexelLayout, SamplerParameters, Sampler};
 
 // This will create a raw OpenGL texture
 pub(super) unsafe fn create_texture_raw() -> NonZeroU32 {
@@ -184,6 +184,11 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
+
+    // Create a sampler for this texture using specific settings
+    fn sampler(&self, params: SamplerParameters<Self::Layout>, ctx: &mut Context) -> Sampler<Self> {
+        Sampler::new(self, params, ctx)
+    }
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {
