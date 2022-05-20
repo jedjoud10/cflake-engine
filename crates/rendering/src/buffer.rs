@@ -116,15 +116,25 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.mode
     }
 
+    // Try to clear the whole buffer
+    pub fn clear(&mut self, ctx: &mut Context) {
+        // Cannot clear static buffers
+        assert_ne!(self.mode, BufferMode::Static, "Cannot clear Static buffers");
+    
+        unsafe {
+            let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
+            gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, null());
+        }
+    }
+
     // Overwrite the whole buffer if possible
     pub fn update(&mut self, ctx: &mut Context, data: &[T]) {
         // Cannot update static buffers
-        assert_ne!(self.mode, BufferMode::Static, "Cannot update buffers that were initialized using BufferMode::Static.");
+        assert_ne!(self.mode, BufferMode::Static, "Cannot update Static buffers");
 
         // Make sure the lengths match up (in case of a dynamic buffer)
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
 
-        // Generic update method
         unsafe {
             let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
             gl::NamedBufferSubData(self.buffer.get(), 0, bytes, data.as_ptr() as _);
@@ -136,7 +146,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         // Make sure the lengths always match up
         assert!(output.len() == self.len(), "Current length and output length do not match up.");
 
-        // Generic reading method
         unsafe {
             let bytes = isize::try_from(output.len() * size_of::<T>()).unwrap();
             gl::GetNamedBufferSubData(self.buffer.get(), 0, bytes, output.as_mut_ptr() as _);

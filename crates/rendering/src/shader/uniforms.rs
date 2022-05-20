@@ -2,25 +2,18 @@ use super::Program;
 use crate::{
     context::Context,
     object::Active,
-    texture::{TexelLayout, Texture},
+    texture::{TexelLayout, Texture, R, Texture2D, Sampler},
 };
-use rendering_derive::Uniform;
 
-// A uniform value that can be stored within some uniforms
-pub trait UniformValue {
-    // Update the uniform within the currentlty bound program
-    unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>);
-}
-
-// This macro will automatically implement the trait for single element types, like basic numbers
+// This macro will automatically implement the set function for single element types, like basic numbers and scalars
 macro_rules! impl_basic_uniform_value {
-    ($glfunc:ident, $t:ty) => {
+    ($glfunc:ident, $name:ident, $t:ty) => {
         paste::paste! {
-            impl UniformValue for $t {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 1 $glfunc>](p, loc as i32, *self)
+            fn [<set_ $name>] (&mut self, name: &'static str, val: $t) {
+                unsafe {
+                    let p = self.0.as_ref().program.get();
+                    if let Some(loc) = self.0.fetch_uniform_location(name) {
+                        gl::[<ProgramUniform 1 $glfunc>](p, loc as i32, val)
                     }
                 }
             }
@@ -28,37 +21,41 @@ macro_rules! impl_basic_uniform_value {
     };
 }
 
-// This macro will automatically implement the trait for arrays
+// This macro will automatically implement the set function for arrays
 macro_rules! impl_arrays_uniform_value {
-    ($glfunc:ident, $t:ty) => {
+    ($glfunc:ident, $name:ident, $t:ty) => {
         paste::paste! {
-            impl UniformValue for [$t] {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 1 $glfunc v>](p, loc as i32, self.len() as i32, self.as_ptr())
+            fn [<set_ $name _array>](&mut self, name: &'static str, array: &[$t]) {
+                let p = self.0.as_ref().program.get();
+                unsafe {
+                    if let Some(loc) = self.0.fetch_uniform_location(name) {
+                        gl::[<ProgramUniform 1 $glfunc v>](p, loc as i32, array.len() as i32, array.as_ptr())
                     }
                 }
-            }
+            }            
         }
     };
 }
+/*
+
+
 
 // This macro will automatically implement the trait for math vectors
 macro_rules! impl_vectors_uniform_value {
-    ($glfunc:ident, $t:ty) => {
+    ($glfunc:ident, $suffix:ident, $t:ty) => {
         paste::paste! {
-            impl UniformValue for vek::Vec2<$t> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
+            fn [<$suffix vec3>](&mut self, name: &'static str, bound: &mut Active<Program>) {
+                let p = self.0.as_ref().program.get();
+                unsafe {
+                    if let Some(loc) = self.0.fetch_uniform_location(name) {
                         gl::[<ProgramUniform 2 $glfunc>](p, loc as i32, self.x, self.y)
                     }
                 }
             }
+            /*
 
-            impl UniformValue for vek::Vec3<$t> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Vec3<$t> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
                         gl::[<ProgramUniform 3 $glfunc>](p, loc as i32, self.x, self.y, self.z)
@@ -66,8 +63,8 @@ macro_rules! impl_vectors_uniform_value {
                 }
             }
 
-            impl UniformValue for vek::Vec4<$t> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Vec4<$t> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
                         gl::[<ProgramUniform 4 $glfunc>](p, loc as i32, self.x, self.y, self.z, self.w)
@@ -75,8 +72,8 @@ macro_rules! impl_vectors_uniform_value {
                 }
             }
 
-            impl UniformValue for vek::Rgb<$t> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Rgb<$t> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
                         gl::[<ProgramUniform 3 $glfunc>](p, loc as i32, self.r, self.g, self.b)
@@ -84,14 +81,15 @@ macro_rules! impl_vectors_uniform_value {
                 }
             }
 
-            impl UniformValue for vek::Rgba<$t> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Rgba<$t> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
                         gl::[<ProgramUniform 4 $glfunc>](p, loc as i32, self.r, self.g, self.b, self.a)
                     }
                 }
             }
+            */
         }
     };
 }
@@ -100,29 +98,29 @@ macro_rules! impl_vectors_uniform_value {
 macro_rules! impl_matrices_uniform_value {
     () => {
         paste::paste! {
-            impl UniformValue for vek::Mat4<f32> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Mat4<f32> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix4fv(p, loc as i32, 1, Self::GL_SHOULD_TRANSPOSE as _, self.as_col_ptr())
+                        gl::ProgramUniformMatrix4fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                     }
                 }
             }
 
-            impl UniformValue for vek::Mat3<f32> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Mat3<f32> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix3fv(p, loc as i32, 1, Self::GL_SHOULD_TRANSPOSE as _, self.as_col_ptr())
+                        gl::ProgramUniformMatrix3fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                     }
                 }
             }
 
-            impl UniformValue for vek::Mat2<f32> {
-                unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
+            impl<'a> UniformValue for &'a vek::Mat2<f32> {
+                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
                     let p = bound.as_ref().program.get();
                     if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix2fv(p, loc as i32, 1, Self::GL_SHOULD_TRANSPOSE as _, self.as_col_ptr())
+                        gl::ProgramUniformMatrix2fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                     }
                 }
             }
@@ -130,36 +128,29 @@ macro_rules! impl_matrices_uniform_value {
     };
 }
 
-// Automatic implementations for basic types
-impl_basic_uniform_value!(f, f32);
-impl_basic_uniform_value!(ui, u32);
-impl_basic_uniform_value!(i, i32);
+*/
 
-// Arrays
-impl_arrays_uniform_value!(f, f32);
-impl_arrays_uniform_value!(ui, u32);
-impl_arrays_uniform_value!(i, i32);
 
-// Vectors
-impl_vectors_uniform_value!(f, f32);
-impl_vectors_uniform_value!(ui, u32);
-impl_vectors_uniform_value!(i, i32);
+// The main struct that will allow us to set the uniforms
+pub struct Uniforms<'a>(Active<'a, Program>);
 
-// Matrices
-impl_matrices_uniform_value!();
+impl<'a> Uniforms<'a> {
+    // Basic scalar types
+    impl_basic_uniform_value!(f, float, f32);
+    impl_basic_uniform_value!(i, int, i32);
+    impl_basic_uniform_value!(ui, uint, u32);
 
-// Implement the uniform value for textures and buffers
-impl<T: Texture> UniformValue for T {
-    unsafe fn set_raw_uniform_value(&self, name: &'static str, bound: &mut Active<Program>) {
-        let p = bound.as_ref().program.get();
-        if let Some(loc) = bound.fetch_uniform_location(name) {
-            // Bindless textures go BRRRRRRR
-        }
-    }
+    // Vectors make use of generic traits
+    impl_arrays_uniform_value!(f, float, f32);
+    impl_arrays_uniform_value!(i, int, i32);
+    impl_arrays_uniform_value!(ui, uint, u32);
+
+    // 
 }
 
-// A uniform struct will set multiple uniform values at once
-pub unsafe trait UniformStruct {
-    // Set multiple uniform values at once
-    unsafe fn set_uniform_values(&self, bound: &mut Active<Program>);
+fn test() {
+    let u: Uniforms<'static> = todo!();
+    u.set_array::<u32>();
+    u.set_scalar::<u32>();
+    u.set_vec3::<u32>()
 }
