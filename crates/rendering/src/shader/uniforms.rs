@@ -5,152 +5,254 @@ use crate::{
     texture::{TexelLayout, Texture, R, Texture2D, Sampler},
 };
 
-// This macro will automatically implement the set function for single element types, like basic numbers and scalars
-macro_rules! impl_basic_uniform_value {
-    ($glfunc:ident, $name:ident, $t:ty) => {
+// IMplement the scalar trait for single, scalar uniform types
+macro_rules! impl_scalars {
+    ($glfunc:ident, $t:ty) => {
         paste::paste! {
-            fn [<set_ $name>] (&mut self, name: &'static str, val: $t) {
-                unsafe {
-                    let p = self.0.as_ref().program.get();
-                    if let Some(loc) = self.0.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 1 $glfunc>](p, loc as i32, val)
-                    }
+            impl SetRawUniform for $t {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 1 $glfunc>](program, loc, self)
                 }
             }
+
+            impl Scalar for $t {}
         }
     };
 }
 
-// This macro will automatically implement the set function for arrays
-macro_rules! impl_arrays_uniform_value {
-    ($glfunc:ident, $name:ident, $t:ty) => {
+// Implement the array trait for arrays of scalar types
+macro_rules! impl_scalar_arrays {
+    ($glfunc:ident, $t:ty) => {
         paste::paste! {
-            fn [<set_ $name _array>](&mut self, name: &'static str, array: &[$t]) {
-                let p = self.0.as_ref().program.get();
-                unsafe {
-                    if let Some(loc) = self.0.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 1 $glfunc v>](p, loc as i32, array.len() as i32, array.as_ptr())
-                    }
+            // Scalar arrays
+            impl<'a> SetRawUniform for &'a [$t] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }            
-        }
-    };
-}
-/*
+            }       
 
-
-
-// This macro will automatically implement the trait for math vectors
-macro_rules! impl_vectors_uniform_value {
-    ($glfunc:ident, $suffix:ident, $t:ty) => {
-        paste::paste! {
-            fn [<$suffix vec3>](&mut self, name: &'static str, bound: &mut Active<Program>) {
-                let p = self.0.as_ref().program.get();
-                unsafe {
-                    if let Some(loc) = self.0.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 2 $glfunc>](p, loc as i32, self.x, self.y)
-                    }
+            impl<'a, const SIZE: usize> SetRawUniform for &'a [$t; SIZE] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }
-            /*
+            }      
 
-            impl<'a> UniformValue for &'a vek::Vec3<$t> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 3 $glfunc>](p, loc as i32, self.x, self.y, self.z)
-                    }
+            impl<const SIZE: usize> SetRawUniform for [$t; SIZE] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 1 $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr())
                 }
-            }
+            }  
 
-            impl<'a> UniformValue for &'a vek::Vec4<$t> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 4 $glfunc>](p, loc as i32, self.x, self.y, self.z, self.w)
-                    }
-                }
-            }
-
-            impl<'a> UniformValue for &'a vek::Rgb<$t> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 3 $glfunc>](p, loc as i32, self.r, self.g, self.b)
-                    }
-                }
-            }
-
-            impl<'a> UniformValue for &'a vek::Rgba<$t> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::[<ProgramUniform 4 $glfunc>](p, loc as i32, self.r, self.g, self.b, self.a)
-                    }
-                }
-            }
-            */
+            impl<'a> Array for &'a [$t] {}
+            impl<'a, const SIZE: usize> Array for &'a [$t; SIZE] {}
+            impl<'a, const SIZE: usize> Array for [$t; SIZE] {}
         }
     };
 }
 
-// This macro will automatically implement the trait for matrices
-macro_rules! impl_matrices_uniform_value {
+// Simply macro wrapper around impl_vector_arrays_unique to automate it even more
+macro_rules! impl_vector_arrays {
+    ($glfunc:ident, $t:ty) => {
+        impl_vector_arrays_unique!($glfunc, 2, vek::Vec2<$t>);
+        impl_vector_arrays_unique!($glfunc, 3, vek::Vec3<$t>);
+        impl_vector_arrays_unique!($glfunc, 4, vek::Vec4<$t>);
+    };
+}
+
+// Implement the array trait for arrays of vector types ($t being the vector type directly)
+macro_rules! impl_vector_arrays_unique {
+    ($glfunc:ident, $count:expr, $t:ty) => {
+        paste::paste! {            
+            // Vec2 arrays    
+            impl<'a> SetRawUniform for &'a [$t] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
+                }
+            }   
+            impl<'a, const SIZE: usize> SetRawUniform for &'a [$t; SIZE] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
+                }
+            }      
+
+            impl<const SIZE: usize> SetRawUniform for [$t; SIZE] {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform $count $glfunc v>](program, loc as i32, self.len() as i32, self.as_ptr() as _)
+                }
+            }  
+
+            impl<'a> Array for &'a [$t] {}
+            impl<'a, const SIZE: usize> Array for &'a [$t; SIZE] {}
+            impl<'a, const SIZE: usize> Array for [$t; SIZE] {}
+        }
+    };
+}
+
+// Implement the vector trait for mathetmatical vectors that consist of scalar types
+macro_rules! impl_math_vectors {
+    ($glfunc:ident, $t:ty) => {
+        paste::paste! {
+            impl SetRawUniform for vek::Vec2<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 2 $glfunc>](program, loc, self.x, self.y)
+                }
+            }
+
+            impl Vector<2> for vek::Vec2<$t> {}
+
+            impl SetRawUniform for vek::Vec3<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 3 $glfunc>](program, loc, self.x, self.y, self.z)
+                }
+            }
+
+            impl Vector<3> for vek::Vec3<$t> {}
+
+            impl SetRawUniform for vek::Rgb<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 3 $glfunc>](program, loc, self.r, self.g, self.b)
+                }
+            }
+
+            impl Vector<3> for vek::Rgb<$t> {}
+
+            impl SetRawUniform for vek::Vec4<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 4 $glfunc>](program, loc, self.x, self.y, self.z, self.w)
+                }
+            }
+
+            impl Vector<4> for vek::Vec4<$t> {}
+
+            
+            impl SetRawUniform for vek::Rgba<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 4 $glfunc>](program, loc, self.r, self.g, self.b, self.a)
+                }
+            }
+
+            impl Vector<4> for vek::Rgb<$t> {}
+        }
+    };
+}
+
+// Implement the matrix trait for 4x4, 3x3, and 2x2 floating point matrices 
+macro_rules! impl_matrices {
     () => {
         paste::paste! {
-            impl<'a> UniformValue for &'a vek::Mat4<f32> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix4fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
-                    }
+            impl<'a> SetRawUniform for &'a vek::Mat4<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix4fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                 }
             }
 
-            impl<'a> UniformValue for &'a vek::Mat3<f32> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix3fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
-                    }
+            impl<'a> SetRawUniform for &'a vek::Mat3<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix3fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                 }
             }
 
-            impl<'a> UniformValue for &'a vek::Mat2<f32> {
-                unsafe fn set_raw_uniform_value(self, name: &'static str, bound: &mut Active<Program>) {
-                    let p = bound.as_ref().program.get();
-                    if let Some(loc) = bound.fetch_uniform_location(name) {
-                        gl::ProgramUniformMatrix2fv(p, loc as i32, 1, gl::FALSE, self.as_col_ptr())
-                    }
+            impl<'a> SetRawUniform for &'a vek::Mat2<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix2fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
                 }
             }
+
+            impl<'a> Matrix<4, 4> for &'a vek::Mat4<f32> {}
+            impl<'a> Matrix<3, 3> for &'a vek::Mat3<f32> {}
+            impl<'a> Matrix<2, 2> for &'a vek::Mat2<f32> {}
         }
     };
 }
 
-*/
+// Insanity
+mod raw {
+    // A uniform variable trait that will set a unique uniform within a shader
+    pub trait SetRawUniform {
+        unsafe fn set(self, loc: i32, program: u32);
+    }
+}
+use raw::SetRawUniform;
+
+// Wrapper traits
+pub trait Scalar: SetRawUniform {}
+pub trait Array: SetRawUniform {}
+pub trait Vector<const SIZE: u32>: SetRawUniform {}
+pub trait Matrix<const HEIGHT: u32, const WIDTH: u32>: SetRawUniform {}
+
+// Scalar implementations
+impl_scalars!(f, f32);
+impl_scalars!(i, i32);
+impl_scalars!(ui, u32);
+
+// Array implementations (scalars) 
+impl_scalar_arrays!(f, f32);
+impl_scalar_arrays!(i, i32);
+impl_scalar_arrays!(ui, u32);
+
+// Array implementations (vectors)
+impl_vector_arrays!(f, f32);
+impl_vector_arrays!(i, i32);
+impl_vector_arrays!(ui, u32);
+
+// Vector implementations
+impl_math_vectors!(f, f32);
+impl_math_vectors!(i, i32);
+impl_math_vectors!(ui, u32);
+
+// Matrix implementations
+impl_matrices!();
 
 
 // The main struct that will allow us to set the uniforms
 pub struct Uniforms<'a>(Active<'a, Program>);
 
 impl<'a> Uniforms<'a> {
-    // Basic scalar types
-    impl_basic_uniform_value!(f, float, f32);
-    impl_basic_uniform_value!(i, int, i32);
-    impl_basic_uniform_value!(ui, uint, u32);
+    // Set the type for any object, as long as it implements SetRawUniform
+    fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
+        let p = self.0.as_ref().program.get();
+        if let Some(loc) = self.0.fetch_uniform_location(name) {
+            unsafe { val.set(loc as i32, p) }
+        }
+    }
 
-    // Vectors make use of generic traits
-    impl_arrays_uniform_value!(f, float, f32);
-    impl_arrays_uniform_value!(i, int, i32);
-    impl_arrays_uniform_value!(ui, uint, u32);
+    // Set a single scalar type using the Scalar trait
+    pub fn set_scalar<S: Scalar>(&mut self, name: &'static str, scalar: S) {
+        self.set_raw(name, scalar);
+    }
 
-    // 
-}
+    // Set an array of values values
+    pub fn set_array<S: Array>(&mut self, name: &'static str, array: S) {
+        self.set_raw(name, array);
+    }
 
-fn test() {
-    let u: Uniforms<'static> = todo!();
-    u.set_array::<u32>();
-    u.set_scalar::<u32>();
-    u.set_vec3::<u32>()
+    // Set a 2D vector that consists of scalar values
+    pub fn set_vec2<V: Vector<2>>(&mut self, name: &'static str, vec: V) {
+        self.set_raw(name, vec);
+    }
+
+    // Set a 3D vector that consists of scalar values
+    pub fn set_vec3<V: Vector<3>>(&mut self, name: &'static str, vec: V) {
+        self.set_raw(name, vec);
+    }
+
+    // Set a 4D vector that consists of scalar values
+    pub fn set_vec4<V: Vector<4>>(&mut self, name: &'static str, vec: V) {
+        self.set_raw(name, vec);
+    }
+
+    // Set a 4x4 matrix
+    pub fn set_mat4x4<M: Matrix<4, 4>>(&mut self, name: &'static str, mat: M) {
+        self.set_raw(name, mat);
+    }
+
+    // Set a 3x3 matrix
+    pub fn set_mat3x3<M: Matrix<3, 3>>(&mut self, name: &'static str, mat: M) {
+        self.set_raw(name, mat);
+    }
+
+    // Set a 2x2 matrix
+    pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &'static str, mat: M) {
+        self.set_raw(name, mat);
+    }
 }
