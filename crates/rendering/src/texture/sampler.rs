@@ -8,14 +8,24 @@ use crate::{
 use super::{TexelLayout, Texture};
 
 // Texel filters that are applied to the sampler's mininifcation and magnification parameters
+#[repr(u32)]
 pub enum Filter {
     // Filtering for any texture
-    Nearest,
-    Linear,
+    Nearest = gl::NEAREST,
+    Linear = gl::LINEAR,
 
     // Filtering for textures that use mipmaps
-    TryMipMapNearest,
-    TryMipMapLinear,
+    TryMipMapNearest = gl::NEAREST_MIPMAP_NEAREST,
+    TryMipMapLinear = gl::LINEAR_MIPMAP_LINEAR,
+}
+
+// Wrapping mode utilised by TEXTURE_WRAP_R and TEXTURE_WRAP_T
+pub enum Wrap<T: TexelLayout> {
+    // Oop sorry no more custom discriminent :(
+    ClampToEdge,
+    ClampToBorder(T),
+    Repeat,
+    MirroredRepeat,
 }
 
 // Some parameters that we can use to create a new sampler
@@ -23,15 +33,15 @@ pub struct SamplerParameters<T: TexelLayout> {
     // Minification and magnification combined
     filter: Filter,
 
-    // Border color
-    border: T,
+    // T and R wrapping modes
+    wrap: Wrap<T>,
 }
 
 impl<T: TexelLayout> Default for SamplerParameters<T> {
     fn default() -> Self {
         Self {
             filter: Filter::Linear,
-            border: Default::default(),
+            wrap: Wrap::Repeat,
         }
     }
 }
@@ -43,9 +53,9 @@ impl<T: TexelLayout> SamplerParameters<T> {
         self
     }
 
-    // Set the border color of these parameters
-    pub fn border(mut self, border: T) -> Self {
-        self.border = border;
+    // Set the wrapping mode
+    pub fn wrap(mut self, wrap: Wrap<T>) -> Self {
+        self.wrap = wrap;
         self
     }
 }
@@ -54,6 +64,7 @@ impl<T: TexelLayout> SamplerParameters<T> {
 pub struct Sampler<T: Texture> {
     // The raw OpenGL name of the underlying sampler object
     sampler: NonZeroU32,
+
 
     // Unsend and unsync
     _phantom: PhantomData<*const T>,
@@ -70,6 +81,38 @@ impl<T: Texture> Sampler<T> {
         };
 
         // Set the sampler parameters
+        unsafe {
+            // We do a bit of enum fetching (this is safe) (trust)
+            let filter = std::mem::transmute::<Filter, u32>(params.filter);
+
+            // Min and mag filters conversion cause OpenGL suxs
+            let min = filter as i32;
+            let mag = filter as i32;
+
+            // Set the filters
+            gl::SamplerParameteri(name.get(), gl::TEXTURE_MIN_FILTER, min);
+            gl::SamplerParameteri(name.get(), gl::TEXTURE_MAG_FILTER, mag);
+
+            
+            // Convert the wrapping mode enum to the raw opengl type
+            let (wrap, border) = match params.wrap {
+                Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
+                Wrap::ClampToBorder(b) => (gl::CLAMP_TO_BORDER, Some(b)),
+                Wrap::Repeat => (gl::REPEAT, None),
+                Wrap::MirroredRepeat => (gl::MIRRORED_REPEAT, None),
+            };
+            
+            // Set the wrapping mode (for all 3 axii)
+            gl::SamplerParameteri(name.get(), gl::TEXTURE_WRAP_S, wrap as i32);
+            gl::SamplerParameteri(name.get(), gl::TEXTURE_WRAP_T, wrap as i32);
+            gl::SamplerParameteri(name.get(), gl::TEXTURE_WRAP_R, wrap as i32);
+            
+            // Set the border color (if needed)
+            if let Some(border) = border {
+                // TODO: Check if this actually works
+                gl::SamplerParameterfv(name.get(), gl::TEXTURE_BORDER_COLOR, &border as *const T::Layout as *const f32);
+            }
+        }
 
         Self {
             sampler: name,
