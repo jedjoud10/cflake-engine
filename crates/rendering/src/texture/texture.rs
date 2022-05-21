@@ -1,4 +1,4 @@
-use super::{Sampler, TexelLayout};
+use super::{TexelLayout, Sampler};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -144,7 +144,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     type Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampler: &Sampler, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.valid();
 
@@ -162,12 +162,12 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
 
             // Create the texture
-            Self::from_raw_parts(ctx, mode, sampler, dimensions, levels, ptr)
+            Self::from_raw_parts(ctx, mode, sampling, dimensions, levels, ptr)
         })
     }
 
     // Create the texture from it's raw parts, like levels and pointer
-    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, sampler: &Sampler, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
+    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, sampling: super::Sampling, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;
@@ -178,7 +178,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
-    // Get this texture's sampler
+    // Get this texture's unique sampler
     fn sampler(&self) -> &Sampler;
 
     // Calculate the number of texels that make up this texture

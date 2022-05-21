@@ -125,7 +125,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         )
     }
 
-    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, sampler: &super::Sampler, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
+    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, sampling: super::Sampling, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
         // Create a new raw OpenGL texture object
         let tex = create_texture_raw();
 
@@ -166,8 +166,8 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             }
         }
 
-        // Clone the sampler, and make it unique for this specific texture (this will create a bindless handle while it's at it)
-        let sampler = sampler.clone_unique(mode, tex);
+        // Appply the sampling parameters and create a new sampler
+        let sampler = super::apply(tex, gl::TEXTURE_2D, mode, sampling);
 
         // Create the texture wrapper
         Texture2D {

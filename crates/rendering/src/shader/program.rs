@@ -3,7 +3,7 @@ use crate::{
     object::{Active, Bind, ToGlName},
 };
 use ahash::AHashMap;
-use std::{marker::PhantomData, num::NonZeroU32};
+use std::{marker::PhantomData, num::NonZeroU32, cell::Cell};
 
 use super::Introspection;
 
@@ -26,6 +26,9 @@ pub struct Program {
     pub(super) mappings: Mappings,
     pub(super) introspection: Introspection,
 
+    // Cached texture units
+    pub(super) texture_units: AHashMap<&'static str, u32>,
+
     // Unsend and unsync lul
     pub(super) _phantom: PhantomData<*const ()>,
 }
@@ -41,7 +44,9 @@ impl Bind for Program {
 
 impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {
     // Fetch the location of a single uniform using it's name
-    pub fn fetch_uniform_location(&mut self, name: &'static str) -> Option<u32> {
+    pub fn uniform_location(&mut self, name: &'static str) -> Option<u32> {
+        todo!()
+        /*
         // Check if the uniform was already stored within the program
         let program = self.as_mut();
 
@@ -56,6 +61,7 @@ impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {
             // Validate location
             (location != -1).then(|| location as u32)
         })
+        */
     }
 }
 

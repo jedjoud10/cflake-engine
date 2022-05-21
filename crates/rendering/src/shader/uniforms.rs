@@ -1,8 +1,10 @@
+use std::num::NonZeroU32;
+
 use super::Program;
 use crate::{
     context::Context,
-    object::Active,
-    texture::{Sampler, TexelLayout, Texture, Texture2D, R},
+    object::{Active, ToGlType, ToGlName},
+    texture::{Sampler, TexelLayout, Texture, Texture2D, R, Bindless},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -203,6 +205,13 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
+// Normal implementations now
+impl<'a> SetRawUniform for &'a Sampler {
+    unsafe fn set(self, loc: i32, program: u32) {
+        todo!()
+    }
+}
+
 // The main struct that will allow us to set the uniforms
 pub struct Uniforms<'a>(Active<'a, Program>);
 
@@ -210,7 +219,7 @@ impl<'a> Uniforms<'a> {
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
         let p = self.0.as_ref().program.get();
-        if let Some(loc) = self.0.fetch_uniform_location(name) {
+        if let Some(loc) = self.0.uniform_location(name) {
             unsafe { val.set(loc as i32, p) }
         }
     }
@@ -253,5 +262,44 @@ impl<'a> Uniforms<'a> {
     // Set a 2x2 matrix
     pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &'static str, mat: M) {
         self.set_raw(name, mat);
+    }
+
+    // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
+    unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: NonZeroU32) {
+        // First of all, we must get the texture unit offset
+        let count = self.0.as_mut().texture_units.len() as u32;
+        let offset = *self.0.as_mut().texture_units.entry(name).or_insert(count);
+
+        // Set the uniforms properly now 
+        let p = self.0.as_ref().program.get();
+        if let Some(loc) = self.0.uniform_location(name) {
+            gl::ActiveTexture(gl::TEXTURE0 + offset);
+            gl::BindTexture(target, texture.get());
+            gl::ProgramUniform1i(p, loc as i32, offset as i32);
+        }
+    }
+
+    // Set a texture sampler, assuming that it uses bindless textures
+    unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: Bindless) {
+        // If the texture isn't resident, we have to make it resident
+        if !bindless.resident.get() {
+            // TODO: Convert the texture into a resident texture
+        } else {
+            // The bindless texture handle is already resident, we just need to set the uniform 
+            let p = self.0.as_ref().program.get();
+            if let Some(loc) = self.0.uniform_location(name) {
+                gl::ProgramUniformHandleui64ARB(p, loc as i32, bindless.handle);
+            }
+        }       
+    }
+
+    // Set a texture sampler, switching between the bindless and normal methods
+    pub fn set_sampler(&mut self, name: &'static str, sampler: &Sampler) {
+        unsafe {
+            match sampler.bindless {
+                Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
+                None => self.set_normal_sampler_unchecked(name, sampler.target, sampler.texture),
+            }
+        }
     }
 }
