@@ -1,4 +1,4 @@
-use super::{convert_level_count, create_bindless_handle, create_texture_raw, TexelLayout, Texture, TextureMode};
+use super::{convert_level_count, create_texture_raw, TexelLayout, Texture, TextureMode, Sampler};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -6,7 +6,7 @@ use crate::{
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull},
+    ptr::{null, NonNull}, rc::Rc,
 };
 
 // A 2D texture that will be used for rendering objects
@@ -18,7 +18,7 @@ pub struct Texture2D<T: TexelLayout> {
     dimensions: vek::Extent2<u16>,
     mode: TextureMode,
     levels: NonZeroU8,
-    bindless: Option<u64>,
+    sampler: Sampler,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -91,7 +91,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             1,
             format_,
             type_,
-            &region as *const Self::Region as _,
+            &val as *const Self::Layout as _,
         );
     }
 
@@ -125,7 +125,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         )
     }
 
-    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
+    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, sampler: &super::Sampler, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
         // Create a new raw OpenGL texture object
         let tex = create_texture_raw();
 
@@ -138,7 +138,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
 
         // Pre-allocate storage using the texture mode (immutable vs mutable textures)
         match mode {
-            TextureMode::Dynamic | TextureMode::Bindless => {
+            TextureMode::Dynamic => {
                 // Initialize the storage
                 gl::TextureStorage2D(tex.get(), mipmaps.1 as i32, T::INTERNAL_FORMAT, dimensions.w as i32, dimensions.h as i32);
 
@@ -166,9 +166,8 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             }
         }
 
-        // Fill the texture with data
-        // Make bindless and resident (optional)
-        let bindless = (TextureMode::Bindless == mode).then(|| create_bindless_handle(tex));
+        // Clone the sampler, and make it unique for this specific texture (this will create a bindless handle while it's at it)
+        let sampler = sampler.clone_unique(mode, tex);
 
         // Create the texture wrapper
         Texture2D {
@@ -176,8 +175,12 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             dimensions,
             mode,
             levels,
-            bindless,
             _phantom: Default::default(),
+            sampler,
         }
+    }
+
+    fn sampler(&self) -> &super::Sampler {
+        &self.sampler
     }
 }

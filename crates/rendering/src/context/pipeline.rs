@@ -63,8 +63,8 @@ impl Pipeline {
 // State fetchers
 impl Pipeline {
     // Get the OpenGL context, since we're going to need it for creating objects
-    pub fn context(&self) -> super::Context {
-        self.context.clone()
+    pub fn context(&self) -> &super::Context {
+        &self.context
     }
 
     // Get the current rendering window immutably

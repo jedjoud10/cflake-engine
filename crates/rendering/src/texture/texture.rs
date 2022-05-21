@@ -1,4 +1,4 @@
-use super::{Sampler, SamplerParameters, TexelLayout};
+use super::{Sampler, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -23,13 +23,6 @@ pub(super) unsafe fn convert_level_count(levels: NonZeroU8) -> (bool, u8) {
     (mipmaps, levels)
 }
 
-// Make a bindless resident handle for a texture
-pub(super) unsafe fn create_bindless_handle(texture: NonZeroU32) -> u64 {
-    let handle = gl::GetTextureHandleARB(texture.get());
-    gl::MakeTextureHandleResidentARB(handle);
-    handle
-}
-
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TextureMode {
@@ -38,9 +31,6 @@ pub enum TextureMode {
 
     // Resizable textures are just dynamic textures that can change their size at will
     Resizable,
-
-    // A bindless dynamic texture
-    Bindless,
 }
 
 // An immutable mip layer that we can use to read from the texture
@@ -154,7 +144,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     type Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampler: &Sampler, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.valid();
 
@@ -172,12 +162,12 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
 
             // Create the texture
-            Self::from_raw_parts(ctx, mode, dimensions, levels, ptr)
+            Self::from_raw_parts(ctx, mode, sampler, dimensions, levels, ptr)
         })
     }
 
     // Create the texture from it's raw parts, like levels and pointer
-    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
+    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, sampler: &Sampler, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;
@@ -188,10 +178,8 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
-    // Create a sampler for this texture using specific settings
-    fn sampler(&self, params: SamplerParameters<Self::Layout>, ctx: &mut Context) -> Sampler<Self> {
-        Sampler::new(self, params, ctx)
-    }
+    // Get this texture's sampler
+    fn sampler(&self) -> &Sampler;
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {

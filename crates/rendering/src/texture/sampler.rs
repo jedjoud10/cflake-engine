@@ -1,13 +1,13 @@
-use std::{marker::PhantomData, num::NonZeroU32};
+use std::{marker::PhantomData, num::NonZeroU32, rc::Rc, collections::HashSet, cell::RefCell};
 
 use crate::{
     context::Context,
     object::{ToGlName, ToGlType},
 };
 
-use super::{TexelLayout, Texture};
+use super::{TexelLayout, Texture, TextureMode};
 
-// Texel filters that are applied to the sampler's mininifcation and magnification parameters
+// Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[repr(u32)]
 pub enum Filter {
     // Filtering for any texture
@@ -20,59 +20,43 @@ pub enum Filter {
 }
 
 // Wrapping mode utilised by TEXTURE_WRAP_R and TEXTURE_WRAP_T
-pub enum Wrap<T: TexelLayout> {
+pub enum Wrap {
     // Oop sorry no more custom discriminent :(
     ClampToEdge,
-    ClampToBorder(T),
+    ClampToBorder(vek::Rgba<f32>),
     Repeat,
     MirroredRepeat,
 }
 
-// Some parameters that we can use to create a new sampler
-pub struct SamplerParameters<T: TexelLayout> {
-    // Minification and magnification combined
-    filter: Filter,
 
-    // T and R wrapping modes
-    wrap: Wrap<T>,
+// A linked sampler is simply a sampler that is associated with a texture
+
+// A sampler is the interface between Textures and Shaders. Samplers allow us to read textures within shaders
+pub struct Sampler {
+    // The raw OpenGL name of the underlying sampler object
+    name: Rc<NonZeroU32>,
+
+    // The name of the bound texture
+    texture: Option<NonZeroU32>,
+
+    // Optional bindless handle of said texture
+    handle: Option<u64>
 }
 
-impl<T: TexelLayout> Default for SamplerParameters<T> {
-    fn default() -> Self {
-        Self {
-            filter: Filter::Linear,
-            wrap: Wrap::Repeat,
+impl Drop for Sampler {
+    fn drop(&mut self) {
+        // If we have no more sampler objects, we must deallocate the last one
+        if Rc::strong_count(&self.name) == 1 {
+            unsafe {
+                gl::DeleteSamplers(1, &self.name.get());
+            }
         }
     }
 }
 
-impl<T: TexelLayout> SamplerParameters<T> {
-    // Update the filter of these parameters
-    pub fn filter(mut self, filter: Filter) -> Self {
-        self.filter = filter;
-        self
-    }
-
-    // Set the wrapping mode
-    pub fn wrap(mut self, wrap: Wrap<T>) -> Self {
-        self.wrap = wrap;
-        self
-    }
-}
-
-// A sampler is the interface between Textures and Shaders. Samplers allow us to read textures within shaders
-pub struct Sampler<T: Texture> {
-    // The raw OpenGL name of the underlying sampler object
-    sampler: NonZeroU32,
-
-
-    // Unsend and unsync
-    _phantom: PhantomData<*const T>,
-}
-
-impl<T: Texture> Sampler<T> {
-    // Create a new sampler using a texture
-    pub fn new(texture: &T, params: SamplerParameters<T::Layout>, ctx: &mut Context) -> Self {
+impl Sampler {
+    // Create a new sampler using some sampling parameters
+    pub fn new(filter: Filter, wrap: Wrap, ctx: &mut Context) -> Self {
         // Create a raw sampler object
         let name = unsafe {
             let mut name = 0u32;
@@ -83,7 +67,7 @@ impl<T: Texture> Sampler<T> {
         // Set the sampler parameters
         unsafe {
             // We do a bit of enum fetching (this is safe) (trust)
-            let filter = std::mem::transmute::<Filter, u32>(params.filter);
+            let filter = std::mem::transmute::<Filter, u32>(filter);
 
             // Min and mag filters conversion cause OpenGL suxs
             let min = filter as i32;
@@ -95,7 +79,7 @@ impl<T: Texture> Sampler<T> {
 
             
             // Convert the wrapping mode enum to the raw opengl type
-            let (wrap, border) = match params.wrap {
+            let (wrap, border) = match wrap {
                 Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
                 Wrap::ClampToBorder(b) => (gl::CLAMP_TO_BORDER, Some(b)),
                 Wrap::Repeat => (gl::REPEAT, None),
@@ -109,20 +93,35 @@ impl<T: Texture> Sampler<T> {
             
             // Set the border color (if needed)
             if let Some(border) = border {
-                // TODO: Check if this actually works
-                gl::SamplerParameterfv(name.get(), gl::TEXTURE_BORDER_COLOR, &border as *const T::Layout as *const f32);
+                gl::SamplerParameterfv(name.get(), gl::TEXTURE_BORDER_COLOR, border.as_ptr());
             }
         }
 
+        // Construct unique sampler object
         Self {
-            sampler: name,
-            _phantom: Default::default(),
+            name: Rc::new(name),
+            texture: None,
+            handle: None,
+        }
+    }
+
+    // Clone the sampler, but create a unique bindless handle if we need to
+    pub(super) fn clone_unique(&self, mode: TextureMode, name: NonZeroU32) -> Self {
+        // Create the bindless handle (if needed)
+        let handle = (mode == TextureMode::Dynamic).then(|| unsafe {
+            gl::GetTextureSamplerHandleARB(name.get(), self.name.get())
+        });
+
+        Self {
+            name: self.name.clone(),
+            texture: self.texture.clone(),
+            handle
         }
     }
 }
 
-impl<T: Texture> ToGlName for Sampler<T> {
+impl ToGlName for Sampler {
     fn name(&self) -> NonZeroU32 {
-        self.sampler
+        *self.name
     }
 }
