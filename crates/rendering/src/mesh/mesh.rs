@@ -8,6 +8,7 @@ use crate::{
     object::ToGlName,
 };
 use assets::Asset;
+use math::bounds::aabb::AABB;
 use obj::TexturedVertex;
 use std::{mem::ManuallyDrop, num::NonZeroU32};
 
@@ -66,20 +67,6 @@ impl SubMesh {
     pub fn layout(&self) -> VertexLayout {
         self.attributes.layout()
     }
-
-    /*
-    // Get a mapped buffer for a specific vertex attribute, if possible
-    pub fn get<U: NamedAttribute>(&self, ctx: &Context) -> Option<RefMapped<U::Out>> {
-        let len = self.attributes.len()?;
-        U::get(&self.attributes).map(|buffer| buffer.try_map_range(ctx, 0..len).unwrap())
-    }
-
-    // Get a mutable mapped buffer for a specifc vertex attribute, if possible
-    pub fn get_mut<U: NamedAttribute>(&mut self, ctx: &mut Context) -> Option<MutMapped<U::Out>> {
-        let len = self.attributes.len()?;
-        U::get_mut(&mut self.attributes).map(|buffer| buffer.try_map_range_mut(ctx, 0..len).unwrap())
-    }
-    */
 }
 
 impl ToGlName for SubMesh {
@@ -90,24 +77,29 @@ impl ToGlName for SubMesh {
 
 // A mesh is simply a collection of submeshes
 pub struct Mesh {
+    // Multiple submeshes make up a mesh
     submeshes: Vec<SubMesh>,
+
+    // The full AABB bounds of the mesh
+    bounds: AABB,
 }
 
 impl Mesh {
     // Create a new empty mesh that can be modified later
     fn new(_ctx: &mut Context) -> Self {
-        Self { submeshes: Default::default() }
+        Self { submeshes: Default::default(), bounds: todo!() }
     }
 
     // Create a mesh from multiple submeshes
     fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
-        Self { submeshes }
+        Self { submeshes, bounds: todo!() }
     }
 
     // Create a mesh that can hold a specific number of submeshes in memory
     fn with_capacity(_ctx: &mut Context, capacity: usize) -> Self {
         Self {
             submeshes: Vec::with_capacity(capacity),
+            bounds: todo!()
         }
     }
 

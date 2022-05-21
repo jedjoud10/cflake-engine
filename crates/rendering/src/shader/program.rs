@@ -7,27 +7,19 @@ use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
 
 use super::Introspection;
 
-// Cached program mappings
-#[derive(Default)]
-pub(super) struct Mappings {
-    // Cached uniform locations for performance
-    pub(super) locations: AHashMap<String, u32>,
-
-    // Cached block binding points
-    pub(super) bindings: AHashMap<String, u32>,
-}
-
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
     // The program OpenGL name
     pub(super) program: NonZeroU32,
 
-    // Le cached
-    pub(super) mappings: Mappings,
-    pub(super) introspection: Introspection,
-
     // Cached texture units
     pub(super) texture_units: AHashMap<&'static str, u32>,
+
+    // Cached binding points
+    pub(super) binding_points: AHashMap<&'static str, u32>,
+
+    // Cached pre-fetched uniform locations
+    pub(super) uniform_locations: AHashMap<String, u32>,
 
     // Unsend and unsync lul
     pub(super) _phantom: PhantomData<*const ()>,

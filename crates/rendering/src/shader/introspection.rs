@@ -26,10 +26,46 @@ pub struct Block {
     size: usize,
 }
 
+// A single uniform value stored within the shader
+pub struct Uniform {
+    // Full name of the uniform
+    name: String,
+
+    // Location for this uniform
+    location: u32,
+}
+
+impl Uniform {
+    // Get the uniform's name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    // Get the uniform's location
+    pub fn location(&self) -> u32 {
+        self.location
+    }
+}
+
 // Shader introspection is how we can fetch the shader block binding points and such
 pub struct Introspection {
     // All the blocks that are stored within the introspection data
     blocks: Vec<Block>,
+
+    // All the uniform variables that the shader program uses
+    uniforms: Vec<Uniform>,
+}
+
+impl Introspection {
+    // Get all the blocks that were fetched
+    pub fn blocks(&self) -> &[Block] {
+        self.blocks.as_slice()
+    }
+
+    // Get all the uniforms that were fetched
+    pub fn uniforms(&self) -> &[Uniform] {
+        self.uniforms.as_slice()
+    }
 }
 
 // Introspect a shader, and construct an Introspection struct
@@ -144,5 +180,10 @@ pub(super) unsafe fn introspect(program: NonZeroU32) -> Introspection {
     let mut blocks = fetch_blocks(program, gl::UNIFORM_BLOCK, uniforms);
     blocks.extend(fetch_blocks(program, gl::SHADER_STORAGE_BLOCK, storages));
 
-    Introspection { blocks }
+    // Fetch uniform variables and store them within a single vector
+
+    // Fetch the valid uniforms
+    let uniforms = Default::default();
+
+    Introspection { blocks, uniforms }
 }

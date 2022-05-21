@@ -3,7 +3,8 @@ use std::{
     collections::HashSet,
     marker::PhantomData,
     num::NonZeroU32,
-    rc::Rc, time::{Duration, Instant},
+    rc::Rc,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -79,9 +80,9 @@ impl Bindless {
     }
 
     // Get the current residency state
-    pub fn is_resident(&self) -> bool { 
+    pub fn is_resident(&self) -> bool {
         self.resident.get()
-    }    
+    }
 
     // Get the current time-out value
     pub fn timeout(&self) -> Duration {
@@ -147,7 +148,7 @@ pub(super) unsafe fn apply(ctx: &mut Context, name: NonZeroU32, target: u32, mod
             // TODO: Handle custom values for timeout residency
             timeout: Duration::from_millis(200),
             last: Cell::new(Instant::now()),
-        }); 
+        });
 
         // Then clone it to be able to store it within the context
         ctx.bindless.push(rc.clone());

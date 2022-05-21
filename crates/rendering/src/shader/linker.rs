@@ -39,12 +39,25 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
 
     // Return the program GL name
     let program = NonZeroU32::new(program).unwrap();
+
+    // Use shader introspection to pre-fetch the shader uniform/storage blocks and uniform locations
+    let introspection = introspect(program);
+
+    // Fetch all the uniform locations
+    let uniform_locations = introspection
+        .uniforms()
+        .iter()
+        .map(|uniform| 
+            (uniform.name().to_string(),
+            uniform.location())
+        ).collect();
+
     Program {
         program,
-        mappings: Default::default(),
-        introspection: introspect(program),
         _phantom: Default::default(),
         texture_units: Default::default(),
+        binding_points: Default::default(),
+        uniform_locations,
     }
 }
 

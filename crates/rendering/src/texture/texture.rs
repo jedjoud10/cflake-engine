@@ -1,4 +1,4 @@
-use super::{Sampler, TexelLayout, Bindless};
+use super::{Bindless, Sampler, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},

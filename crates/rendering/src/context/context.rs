@@ -1,7 +1,15 @@
+use crate::texture::Bindless;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{collections::HashMap, marker::PhantomData, rc::Rc, num::NonZeroU64, time::{Duration, Instant}, cell::{RefCell, Cell}, hash::BuildHasherDefault};
-use crate::texture::Bindless;
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+    hash::BuildHasherDefault,
+    marker::PhantomData,
+    num::NonZeroU64,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use super::CommandStream;
 
@@ -40,18 +48,21 @@ impl Context {
         let now = Instant::now();
 
         // Convert resident handles to non-resident handles if they timeout
-        let cmd = CommandStream::new(self, |ctx| {            
-            ctx.bindless.iter().filter(|bindless| {
-                // Check if it lived longer than last and if the texture is resident
-                let next = bindless.last() + bindless.timeout();
+        let cmd = CommandStream::new(self, |ctx| {
+            ctx.bindless
+                .iter()
+                .filter(|bindless| {
+                    // Check if it lived longer than last and if the texture is resident
+                    let next = bindless.last() + bindless.timeout();
 
-                // Check both requirements
-                now >= next && bindless.is_resident()      
-            }).for_each(|bindless| {   
-                // Make the texture non-resident
-                unsafe { gl::MakeTextureHandleNonResidentARB(bindless.handle()) };
-                bindless.resident.set(false);
-            });
+                    // Check both requirements
+                    now >= next && bindless.is_resident()
+                })
+                .for_each(|bindless| {
+                    // Make the texture non-resident
+                    unsafe { gl::MakeTextureHandleNonResidentARB(bindless.handle()) };
+                    bindless.resident.set(false);
+                });
         });
 
         // Flush all commands at the same time

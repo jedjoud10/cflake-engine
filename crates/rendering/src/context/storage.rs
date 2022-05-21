@@ -114,6 +114,9 @@ pub struct Handle<T: Cached> {
     _phantom: PhantomData<T>,
 }
 
+unsafe impl<T: Cached> Sync for Handle<T> {}
+unsafe impl<T: Cached> Send for Handle<T> {}
+
 impl<T: Cached> Handle<T> {
     // Try to get the number of strong handles that are currently referencing our cached object
     pub fn count_strong(&self) -> usize {
