@@ -1,4 +1,10 @@
-use std::{marker::PhantomData, num::NonZeroU32, rc::Rc, collections::HashSet, cell::{RefCell, Cell}};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashSet,
+    marker::PhantomData,
+    num::NonZeroU32,
+    rc::Rc,
+};
 
 use crate::{
     context::Context,
@@ -28,7 +34,7 @@ pub enum Wrap {
     MirroredRepeat,
 }
 
-// Some special sampling parameters for textures 
+// Some special sampling parameters for textures
 pub struct Sampling {
     filter: Filter,
     wrap: Wrap,
@@ -62,7 +68,6 @@ pub struct Sampler {
     pub(crate) bindless: Option<Bindless>,
 }
 
-
 // Apply some sampling parameters to a specific texture, and convert it into a sampler object
 pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sampling: Sampling) -> Sampler {
     // We do a bit of enum fetching (this is safe) (trust)
@@ -76,7 +81,6 @@ pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sam
     gl::TextureParameteri(name.get(), gl::TEXTURE_MIN_FILTER, min);
     gl::TextureParameteri(name.get(), gl::TEXTURE_MAG_FILTER, mag);
 
-    
     // Convert the wrapping mode enum to the raw opengl type
     let (wrap, border) = match sampling.wrap {
         Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
@@ -84,29 +88,23 @@ pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sam
         Wrap::Repeat => (gl::REPEAT, None),
         Wrap::MirroredRepeat => (gl::MIRRORED_REPEAT, None),
     };
-    
+
     // Set the wrapping mode (for all 3 axii)
     gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_S, wrap as i32);
     gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_T, wrap as i32);
     gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_R, wrap as i32);
-    
+
     // Set the border color (if needed)
     if let Some(border) = border {
         gl::TextureParameterfv(name.get(), gl::TEXTURE_BORDER_COLOR, border.as_ptr());
     }
 
     // Create the bindless handle if we need to use bindles textures
-    let bindless = (mode == TextureMode::Dynamic).then(|| {
-        Bindless {
-            handle: gl::GetTextureHandleARB(name.get()),
-            resident: Cell::new(false),
-        }  
+    let bindless = (mode == TextureMode::Dynamic).then(|| Bindless {
+        handle: gl::GetTextureHandleARB(name.get()),
+        resident: Cell::new(false),
     });
 
     // Create the sampler object
-    Sampler {
-        texture: name,
-        target,
-        bindless,
-    }
-} 
+    Sampler { texture: name, target, bindless }
+}

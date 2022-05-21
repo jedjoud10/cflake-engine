@@ -1,4 +1,4 @@
-use super::{TexelLayout, Sampler};
+use super::{Sampler, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -167,7 +167,14 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     }
 
     // Create the texture from it's raw parts, like levels and pointer
-    unsafe fn from_raw_parts(ctx: &mut Context, mode: TextureMode, sampling: super::Sampling, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const Self::Layout>) -> Self;
+    unsafe fn from_raw_parts(
+        ctx: &mut Context,
+        mode: TextureMode,
+        sampling: super::Sampling,
+        dimensions: Self::Dimensions,
+        levels: NonZeroU8,
+        ptr: Option<*const Self::Layout>,
+    ) -> Self;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;

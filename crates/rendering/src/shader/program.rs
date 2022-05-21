@@ -3,7 +3,7 @@ use crate::{
     object::{Active, Bind, ToGlName},
 };
 use ahash::AHashMap;
-use std::{marker::PhantomData, num::NonZeroU32, cell::Cell};
+use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
 
 use super::Introspection;
 

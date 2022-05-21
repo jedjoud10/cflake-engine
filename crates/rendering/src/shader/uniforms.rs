@@ -3,8 +3,8 @@ use std::num::NonZeroU32;
 use super::Program;
 use crate::{
     context::Context,
-    object::{Active, ToGlType, ToGlName},
-    texture::{Sampler, TexelLayout, Texture, Texture2D, R, Bindless},
+    object::{Active, ToGlName, ToGlType},
+    texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -270,7 +270,7 @@ impl<'a> Uniforms<'a> {
         let count = self.0.as_mut().texture_units.len() as u32;
         let offset = *self.0.as_mut().texture_units.entry(name).or_insert(count);
 
-        // Set the uniforms properly now 
+        // Set the uniforms properly now
         let p = self.0.as_ref().program.get();
         if let Some(loc) = self.0.uniform_location(name) {
             gl::ActiveTexture(gl::TEXTURE0 + offset);
@@ -285,12 +285,12 @@ impl<'a> Uniforms<'a> {
         if !bindless.resident.get() {
             // TODO: Convert the texture into a resident texture
         } else {
-            // The bindless texture handle is already resident, we just need to set the uniform 
+            // The bindless texture handle is already resident, we just need to set the uniform
             let p = self.0.as_ref().program.get();
             if let Some(loc) = self.0.uniform_location(name) {
                 gl::ProgramUniformHandleui64ARB(p, loc as i32, bindless.handle);
             }
-        }       
+        }
     }
 
     // Set a texture sampler, switching between the bindless and normal methods

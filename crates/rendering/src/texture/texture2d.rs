@@ -1,4 +1,4 @@
-use super::{convert_level_count, create_texture_raw, TexelLayout, Texture, TextureMode, Sampler};
+use super::{convert_level_count, create_texture_raw, Sampler, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -6,7 +6,8 @@ use crate::{
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull}, rc::Rc,
+    ptr::{null, NonNull},
+    rc::Rc,
 };
 
 // A 2D texture that will be used for rendering objects
@@ -125,7 +126,14 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         )
     }
 
-    unsafe fn from_raw_parts(ctx: &mut crate::context::Context, mode: TextureMode, sampling: super::Sampling, dimensions: Self::Dimensions, levels: NonZeroU8, ptr: Option<*const T>) -> Self {
+    unsafe fn from_raw_parts(
+        ctx: &mut crate::context::Context,
+        mode: TextureMode,
+        sampling: super::Sampling,
+        dimensions: Self::Dimensions,
+        levels: NonZeroU8,
+        ptr: Option<*const T>,
+    ) -> Self {
         // Create a new raw OpenGL texture object
         let tex = create_texture_raw();
 
