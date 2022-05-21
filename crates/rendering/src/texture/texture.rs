@@ -1,4 +1,4 @@
-use super::{Sampler, TexelLayout};
+use super::{Sampler, TexelLayout, Bindless};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -185,7 +185,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
-    // Get this texture's unique sampler
+    // Get this texture's unique sampler immutably
     fn sampler(&self) -> &Sampler;
 
     // Calculate the number of texels that make up this texture

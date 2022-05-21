@@ -3,7 +3,7 @@ use std::{
     collections::HashSet,
     marker::PhantomData,
     num::NonZeroU32,
-    rc::Rc,
+    rc::Rc, time::{Duration, Instant},
 };
 
 use crate::{
@@ -47,13 +47,51 @@ impl Sampling {
     }
 }
 
-// Data specifically for bindless textures
-pub(crate) struct Bindless {
+// Some unique data that will be specifically valid for bindless textures
+pub struct Bindless {
     // The GPU handle for the texture
     pub(crate) handle: u64,
 
     // Is the handle resident (does the texutre live on the GPU)?
     pub(crate) resident: Cell<bool>,
+
+    // Residency time-out that will be used to automatically disable residency if the texture sampler isn't used as much
+    pub(crate) timeout: Duration,
+
+    // The last time this bindless texture's sampelr was used
+    pub(crate) last: Cell<Instant>,
+}
+
+impl Drop for Bindless {
+    fn drop(&mut self) {
+        // If we drop a bindless handle, we must make it non-resident
+        unsafe {
+            self.resident.set(false);
+            gl::MakeTextureHandleNonResidentARB(self.handle);
+        }
+    }
+}
+
+impl Bindless {
+    // Get the bindless handle
+    pub fn handle(&self) -> u64 {
+        self.handle
+    }
+
+    // Get the current residency state
+    pub fn is_resident(&self) -> bool { 
+        self.resident.get()
+    }    
+
+    // Get the current time-out value
+    pub fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    // Get the last time we used the bindless sampler
+    pub fn last(&self) -> Instant {
+        self.last.get()
+    }
 }
 
 // A sampler is used as an interface between textures and Shaders. We can use samplers to read textures within shaders, and each texture has a unique sampler associated with it
@@ -65,11 +103,11 @@ pub struct Sampler {
     pub(crate) target: u32,
 
     // Optional bindless handle (since not all textures are bindless textures)
-    pub(crate) bindless: Option<Bindless>,
+    pub(crate) bindless: Option<Rc<Bindless>>,
 }
 
 // Apply some sampling parameters to a specific texture, and convert it into a sampler object
-pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sampling: Sampling) -> Sampler {
+pub(super) unsafe fn apply(ctx: &mut Context, name: NonZeroU32, target: u32, mode: TextureMode, sampling: Sampling) -> Sampler {
     // We do a bit of enum fetching (this is safe) (trust)
     let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
 
@@ -100,9 +138,22 @@ pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sam
     }
 
     // Create the bindless handle if we need to use bindles textures
-    let bindless = (mode == TextureMode::Dynamic).then(|| Bindless {
-        handle: gl::GetTextureHandleARB(name.get()),
-        resident: Cell::new(false),
+    let bindless = (mode == TextureMode::Dynamic).then(|| {
+        // Create the RC first
+        let rc = Rc::new(Bindless {
+            handle: gl::GetTextureHandleARB(name.get()),
+            resident: Cell::new(false),
+
+            // TODO: Handle custom values for timeout residency
+            timeout: Duration::from_millis(200),
+            last: Cell::new(Instant::now()),
+        }); 
+
+        // Then clone it to be able to store it within the context
+        ctx.bindless.push(rc.clone());
+
+        // Boink
+        rc
     });
 
     // Create the sampler object

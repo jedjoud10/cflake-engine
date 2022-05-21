@@ -175,7 +175,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         }
 
         // Appply the sampling parameters and create a new sampler
-        let sampler = super::apply(tex, gl::TEXTURE_2D, mode, sampling);
+        let sampler = super::apply(ctx, tex, gl::TEXTURE_2D, mode, sampling);
 
         // Create the texture wrapper
         Texture2D {

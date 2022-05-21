@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, time::Instant};
 
 use super::Program;
 use crate::{
@@ -282,8 +282,11 @@ impl<'a> Uniforms<'a> {
     // Set a texture sampler, assuming that it uses bindless textures
     unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: &Bindless) {
         // If the texture isn't resident, we have to make it resident
+        bindless.last.set(Instant::now());
         if !bindless.resident.get() {
-            // TODO: Convert the texture into a resident texture
+            // Make the bindless texture a resident bindless texture
+            bindless.resident.set(true);
+            gl::MakeTextureHandleResidentARB(bindless.handle);
         } else {
             // The bindless texture handle is already resident, we just need to set the uniform
             let p = self.0.as_ref().program.get();
