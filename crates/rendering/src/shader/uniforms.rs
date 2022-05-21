@@ -280,7 +280,7 @@ impl<'a> Uniforms<'a> {
     }
 
     // Set a texture sampler, assuming that it uses bindless textures
-    unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: Bindless) {
+    unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: &Bindless) {
         // If the texture isn't resident, we have to make it resident
         if !bindless.resident.get() {
             // TODO: Convert the texture into a resident texture
@@ -296,7 +296,7 @@ impl<'a> Uniforms<'a> {
     // Set a texture sampler, switching between the bindless and normal methods
     pub fn set_sampler(&mut self, name: &'static str, sampler: &Sampler) {
         unsafe {
-            match sampler.bindless {
+            match &sampler.bindless {
                 Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
                 None => self.set_normal_sampler_unchecked(name, sampler.target, sampler.texture),
             }

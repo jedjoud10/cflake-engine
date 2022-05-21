@@ -44,6 +44,7 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
         mappings: Default::default(),
         introspection: introspect(program),
         _phantom: Default::default(),
+        texture_units: Default::default(),
     }
 }
 
