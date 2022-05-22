@@ -115,15 +115,16 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.mode
     }
 
-    // Try to clear the whole buffer
-    pub fn clear(&mut self, ctx: &mut Context) {
+    // Try to clear the whole buffer to the given value
+    pub fn clear(&mut self, ctx: &mut Context, val: T) {
         // Cannot clear static buffers
         assert_ne!(self.mode, BufferMode::Static, "Cannot clear Static buffers");
 
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             if bytes != 0 {
-                gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, null());
+                let borrow = &val as *const T; 
+                gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, borrow as _);
             }
         }
     }
@@ -137,6 +138,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
 
         unsafe {
+            self.len = data.len();
+            self.capacity = data.len();
             let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
             gl::NamedBufferSubData(self.buffer.get(), 0, bytes, data.as_ptr() as _);
         }

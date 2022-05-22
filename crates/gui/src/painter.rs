@@ -83,6 +83,9 @@ impl Painter {
 
         // Use the default framebuffer for drawing
         let def = ctx.framebuffers().main();
+        // Assuming that we only have one texture to deal with
+        let main = &self.texture.unwrap().1;
+        uniforms.set_sampler("u_sampler", main.sampler());
         /*
         // Apply the texture deltas
         self.apply_deltas(pipeline, deltas);

@@ -1,7 +1,8 @@
 // Re-export the OpenGL crate
 pub extern crate opengl as gl;
 
-pub mod buffer;
+mod others;
+pub use others::*;
 pub mod context;
 pub mod mesh;
 pub mod object;
