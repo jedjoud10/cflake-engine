@@ -1,4 +1,3 @@
-use crate::context::CommandStream;
 use crate::object::{self, Active, Bind, ToGlName, ToGlType};
 use crate::{context::Context, object::Shared};
 use std::{
@@ -61,37 +60,34 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
     unsafe fn from_raw_parts(ctx: &mut Context, mode: BufferMode, capacity: usize, length: usize, ptr: *const T) -> Self {
-        // Create a command stream since we HAVE to make sure we still have the pointer in memory
-        let cmd = CommandStream::new(ctx, |_| {
-            // Create the new OpenGL buffer
-            let mut buffer = 0;
-            gl::CreateBuffers(1, &mut buffer);
+        // Create the new OpenGL buffer
+        let mut buffer = 0;
+        gl::CreateBuffers(1, &mut buffer);
 
-            // Convert size to byte size
-            let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
+        // Convert size to byte size
+        let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
 
-            // Validate the pointer
-            let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
+        // Validate the pointer
+        let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
 
-            // Initialize the buffer correctly
-            match mode {
-                BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, 0),
-                BufferMode::Dynamic => gl::NamedBufferStorage(buffer, bytes, ptr, gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT),
-                BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
-            }
+        // Initialize the buffer correctly
+        match mode {
+            BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, 0),
+            BufferMode::Dynamic => gl::NamedBufferStorage(buffer, bytes, ptr, gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT),
+            BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
+        }
 
-            // Create the buffer struct
-            Self {
-                buffer: NonZeroU32::new(buffer).unwrap(),
-                len: length,
-                capacity,
-                mode,
-                _phantom: Default::default(),
-            }
-        });
+        // Todo: Use a fence instead of this
+        gl::Finish();
 
-        // Await, basically
-        cmd.wait(ctx)
+        // Create the buffer struct
+        Self {
+            buffer: NonZeroU32::new(buffer).unwrap(),
+            len: length,
+            capacity,
+            mode,
+            _phantom: Default::default(),
+        }
     }
 
     // Create a buffer using a buffer mode and a slice containing some data

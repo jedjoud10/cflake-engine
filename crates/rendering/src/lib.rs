@@ -6,5 +6,6 @@ pub mod context;
 pub mod mesh;
 pub mod object;
 pub mod shader;
+pub mod scene;
 mod tests;
 pub mod texture;

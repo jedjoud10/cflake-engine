@@ -187,6 +187,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
     // Create an immutable texture sampler
     fn sampler(&self) -> Sampler<Self>;
+    
     // Get the bindless state for this texture
     fn bindless(&self) -> Option<&Bindless>;
 

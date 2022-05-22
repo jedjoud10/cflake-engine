@@ -1,62 +1,58 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
+use rendering::buffer::{ArrayBuffer, ElementBuffer};
+use rendering::context::{Context, CommandStream};
 use rendering::gl;
 use rendering::gl::types::GLuint;
-use rendering::{
-    advanced::storages::{Buffer, DynamicBuffer},
-    pipeline::Pipeline,
-    utils::{AccessType::ClientToServer, BufferHints, UpdateFrequency::WriteManyReadMany},
-};
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
 pub(crate) struct Buffers {
     // We create a single VAO and update the buffers every time we render, sounds pretty inefficient but it works
     pub(crate) vao: GLuint,
 
-    // No optimizations yet
-    pub(crate) indices: DynamicBuffer<u32>,
-    pub(crate) vertices: DynamicBuffer<egui::epaint::Vertex>,
+    // Very naive dynamic buffers
+    pub(crate) indices: ElementBuffer,
+    pub(crate) vertices: ArrayBuffer<egui::epaint::Vertex>,
 }
 
 impl Buffers {
-    // Create some new buffers
-    // This is guaranteed to be executed on the pipeline, so there is nothing to be worried about
-    pub fn new(pipeline: &Pipeline) -> Self {
-        // Create a simple VAO
-        let mut vao = 0;
+    // Create the raw OpenGL buffers that we shall use for rendering
+    pub fn new(ctx: &mut Context) -> Self {
         unsafe {
+            // Create a simple VAO
+            let mut vao = 0;
             gl::GenVertexArrays(1, &mut vao);
-            gl::BindVertexArray(vao);
-        }
+            gl::BindVertexArray(vao);            
 
-        // Also generate the buffers
-        const USAGE_TYPE: BufferHints = BufferHints {
-            access: ClientToServer,
-            frequency: WriteManyReadMany,
-            dynamic: true,
-        };
-        // Dynamic raw buffers
-        let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
-        let vertices = DynamicBuffer::<egui::epaint::Vertex>::empty(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
+            // Also generate the buffers
+            const USAGE_TYPE: BufferHints = BufferHints {
+                access: ClientToServer,
+                frequency: WriteManyReadMany,
+                dynamic: true,
+            };
+            // Dynamic raw buffers
+            let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
+            let vertices = DynamicBuffer::<egui::epaint::Vertex>::empty(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
 
-        // Bind the vertex attributes
-        unsafe {
-            const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertices.storage().buffer());
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as *const c_void);
-            gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as *const c_void);
+            // Bind the vertex attributes
+            unsafe {
+                const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
+                gl::BindBuffer(gl::ARRAY_BUFFER, vertices.storage().buffer());
+                gl::EnableVertexAttribArray(0);
+                gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
+                gl::EnableVertexAttribArray(1);
+                gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as *const c_void);
+                gl::EnableVertexAttribArray(2);
+                gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as *const c_void);
 
-            // Unbind
-            gl::BindVertexArray(0);
-        }
+                // Unbind
+                gl::BindVertexArray(0);
+            }
 
-        // Self
-        println!("GUI Painter Buffers Init Successful!");
-        Self { vao, indices, vertices }
+            // Self
+            println!("GUI Painter Buffers Init Successful!");
+            Self { vao, indices, vertices }
+        }     
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {

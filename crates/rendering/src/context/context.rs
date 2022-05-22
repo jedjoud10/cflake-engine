@@ -10,9 +10,6 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
-
-use super::CommandStream;
-
 // Main cotnext that stores the OpenGL glunit context
 #[derive(Clone)]
 pub struct Context {
@@ -47,25 +44,20 @@ impl Context {
         let now = Instant::now();
 
         // Convert resident handles to non-resident handles if they timeout
-        let cmd = CommandStream::new(self, |ctx| {
-            ctx.bindless
-                .iter()
-                .filter(|bindless| {
-                    // Check if it lived longer than last and if the texture is resident
-                    let next = bindless.last_shader_usage() + bindless.timeout();
+        self.bindless
+            .iter()
+            .filter(|bindless| {
+                // Check if it lived longer than last and if the texture is resident
+                let next = bindless.last_shader_usage() + bindless.timeout();
 
-                    // Check both requirements
-                    now >= next && bindless.is_resident()
-                })
-                .for_each(|bindless| {
-                    // Make the texture non-resident
-                    unsafe { gl::MakeTextureHandleNonResidentARB(bindless.handle()) };
-                    bindless.resident.set(false);
-                });
-        });
-
-        // Flush all commands at the same time
-        cmd.wait(self);
+                // Check both requirements
+                now >= next && bindless.is_resident()
+            })
+            .for_each(|bindless| {
+                // Make the texture non-resident
+                unsafe { gl::MakeTextureHandleNonResidentARB(bindless.handle()) };
+                bindless.resident.set(false);
+            });
     }
 
     // This shall be called at the end of every frame
