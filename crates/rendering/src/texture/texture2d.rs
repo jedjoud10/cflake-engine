@@ -1,4 +1,4 @@
-use super::{convert_level_count, create_texture_raw, Sampler, TexelLayout, Texture, TextureMode};
+use super::{convert_level_count, create_texture_raw, TexelLayout, Texture, TextureMode, Bindless};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -19,7 +19,7 @@ pub struct Texture2D<T: TexelLayout> {
     dimensions: vek::Extent2<u16>,
     mode: TextureMode,
     levels: NonZeroU8,
-    sampler: Sampler,
+    bindless: Option<Rc<Bindless>>,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -174,8 +174,11 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             }
         }
 
-        // Appply the sampling parameters and create a new sampler
-        let sampler = super::apply(ctx, tex, gl::TEXTURE_2D, mode, sampling);
+        // Create a bindless handle if needed
+        let bindless = super::create_bindless(ctx, tex, 200, mode);
+        
+        // Appply the sampling parameters for this texture
+        super::apply(tex, gl::TEXTURE_2D, mode, sampling);
 
         // Create the texture wrapper
         Texture2D {
@@ -184,11 +187,15 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
             mode,
             levels,
             _phantom: Default::default(),
-            sampler,
+            bindless,
         }
     }
 
-    fn sampler(&self) -> &super::Sampler {
-        &self.sampler
+    fn sampler(&self) -> super::Sampler<Self> {
+        super::Sampler(self)
+    }
+
+    fn bindless(&self) -> Option<&Bindless> {
+        self.bindless.as_ref().map(Rc::as_ref)
     }
 }

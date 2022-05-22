@@ -23,9 +23,8 @@ pub struct Context {
     // The current rendering frame
     frame: u128,
 
-    // A list of bindless textures, and their residency states
-    // 123, 400ms, 13th frame
-    pub(crate) bindless: Vec<Rc<Bindless>>,
+    // A list of bindless textures that are currently active
+    pub(crate) bindless: Vec<(Rc<Bindless>)>,
 }
 
 impl Context {
@@ -53,7 +52,7 @@ impl Context {
                 .iter()
                 .filter(|bindless| {
                     // Check if it lived longer than last and if the texture is resident
-                    let next = bindless.last() + bindless.timeout();
+                    let next = bindless.last_shader_usage() + bindless.timeout();
 
                     // Check both requirements
                     now >= next && bindless.is_resident()

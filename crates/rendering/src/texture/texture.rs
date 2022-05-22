@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TexelLayout};
+use super::{Bindless, TexelLayout, Sampler};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -185,8 +185,10 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
-    // Get this texture's unique sampler immutably
-    fn sampler(&self) -> &Sampler;
+    // Create an immutable texture sampler
+    fn sampler(&self) -> Sampler<Self>;
+    // Get the bindless state for this texture
+    fn bindless(&self) -> Option<&Bindless>;
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {
@@ -202,6 +204,26 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Calculate the uncompressed size of the texture
     fn byte_count(&self) -> u64 {
         u64::from(Self::Layout::bytes()) * u64::from(self.texel_count())
+    }
+
+    // Force this texture to be stored within system memory (if it is a bindless texture)
+    fn try_make_non_resident(&mut self) {
+        if let Some(bindless) = self.bindless() {
+            unsafe {
+                gl::MakeImageHandleNonResidentARB(bindless.handle);
+                bindless.resident.set(false);
+            }
+        }
+    }
+
+    // Force this texture to be stored within vram (if it is a bindless texture)
+    fn try_make_resident(&mut self) {
+        if let Some(bindless) = self.bindless() {
+            unsafe {
+                gl::MakeTextureHandleResidentARB(bindless.handle);
+                bindless.resident.set(true);
+            }
+        }
     }
 
     // Clear a region of a mip layer by filling it with a constant value, without checking anything

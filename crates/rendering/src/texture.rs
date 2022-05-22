@@ -2,6 +2,8 @@ mod layout;
 mod sampling;
 mod texture;
 mod texture2d;
+mod bindless;
+pub use bindless::*;
 pub use layout::*;
 pub use sampling::*;
 pub use texture::*;
