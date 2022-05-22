@@ -170,12 +170,8 @@ impl<T: Shared, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
 }
 
 impl<T: Shared, const TARGET: u32> Bind for Buffer<T, TARGET> {
-    fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
-        unsafe {
-            let target = self.target();
-            gl::BindBuffer(target, self.buffer.get());
-            function(Active::new(self, _ctx));
-        }
+    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut Context) {
+        gl::BindBuffer(TARGET, self.name().get())
     }
 }
 

@@ -40,12 +40,8 @@ impl<T: TexelLayout> ToGlType for Texture2D<T> {
 }
 
 impl<T: TexelLayout> Bind for Texture2D<T> {
-    fn bind(&mut self, _ctx: &mut crate::context::Context, function: impl FnOnce(crate::object::Active<Self>)) {
-        unsafe {
-            let target = self.target();
-            gl::BindTexture(target, self.target());
-            function(Active::new(self, _ctx));
-        }
+    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut crate::context::Context) {
+        gl::BindTexture(self.target(), self.name().get())
     }
 }
 

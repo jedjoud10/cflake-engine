@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    object::{Active, Bind, ToGlName},
+    object::{Active, Bind, ToGlName, ToGlType},
 };
 use ahash::AHashMap;
 use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
@@ -25,12 +25,10 @@ pub struct Program {
     pub(super) _phantom: PhantomData<*const ()>,
 }
 
+
 impl Bind for Program {
-    fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
-        unsafe {
-            gl::UseProgram(self.program.get());
-            function(Active::new(self, _ctx));
-        }
+    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut Context) {
+        gl::UseProgram(self.target())
     }
 }
 
@@ -60,6 +58,13 @@ impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {
 impl ToGlName for Program {
     fn name(&self) -> NonZeroU32 {
         self.program
+    }
+}
+
+impl ToGlType for Program {
+    fn target(&self) -> u32 {
+        // This is technically not right, but it is rather a hack to keep the fexibility of the state tracker
+        gl::PROGRAM
     }
 }
 

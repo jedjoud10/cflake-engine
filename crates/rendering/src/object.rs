@@ -12,9 +12,22 @@ pub trait ToGlType {
 }
 
 // This will be implemented for OpenGL objects that can be bound
-pub trait Bind {
-    // Bind an object so we can update/modify it
-    fn bind(&mut self, _ctx: &mut Context, function: impl FnOnce(Active<Self>));
+pub trait Bind: ToGlType + ToGlName + Sized {
+    // This will check if the current object is bound into the context
+    fn is_bound(&self, ctx: &Context) -> bool {
+        ctx.bound.get(&self.target()).map(|name| *name == self.name().get()).unwrap_or_default()
+    }
+
+    // This must always bind the object, This is used internally, so I should probably just hide it
+    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut Context);
+
+    // Bind an object, but make sure that it is already unbounded first
+    fn bind(&mut self, ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
+        if !self.is_bound(ctx) {
+            unsafe { self.bind_raw_unchecked(ctx) };
+            function(Active(self));
+        }
+    }
 }
 
 // Objects that can be shared/sent to the GPU through OpenGL functions
@@ -24,37 +37,16 @@ pub trait Shared: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> Shared for T {}
 
 // This implies that the internal object is a bound OpenGL object that we can modify
-pub struct Active<'a, T> {
-    inner: &'a mut T,
-}
-
-impl<'a, T> Active<'a, T> {
-    // Create a bound object, indeed
-    pub fn new(obj: &'a mut T, _ctx: &mut Context) -> Self {
-        Self { inner: obj }
-    }
-}
-
-impl<'a, T: ToGlType> ToGlType for Active<'a, T> {
-    fn target(&self) -> u32 {
-        self.inner.target()
-    }
-}
-
-impl<'a, T: ToGlName> ToGlName for Active<'a, T> {
-    fn name(&self) -> NonZeroU32 {
-        self.inner.name()
-    }
-}
+pub struct Active<'a, T>(&'a mut T);
 
 impl<'a, T> AsRef<T> for Active<'a, T> {
     fn as_ref(&self) -> &T {
-        self.inner
+        self.0
     }
 }
 
 impl<'a, T> AsMut<T> for Active<'a, T> {
     fn as_mut(&mut self) -> &mut T {
-        self.inner
+        self.0
     }
 }

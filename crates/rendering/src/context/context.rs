@@ -1,4 +1,5 @@
-use crate::texture::Bindless;
+use crate::{texture::Bindless};
+use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{
@@ -6,10 +7,14 @@ use std::{
     collections::HashMap,
     hash::BuildHasherDefault,
     marker::PhantomData,
-    num::NonZeroU64,
+    num::{NonZeroU64, NonZeroU32},
     rc::Rc,
     time::{Duration, Instant},
 };
+
+// HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
+type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
+
 // Main cotnext that stores the OpenGL glunit context
 #[derive(Clone)]
 pub struct Context {
@@ -22,6 +27,9 @@ pub struct Context {
 
     // A list of bindless textures that are currently active
     pub(crate) bindless: Vec<(Rc<Bindless>)>,
+
+    // A list of objects that are currently bound
+    pub(crate) bound: BindingHashMap
 }
 
 impl Context {
@@ -32,6 +40,7 @@ impl Context {
             _phantom: Default::default(),
             frame: 0,
             bindless: Default::default(),
+            bound: Default::default(),
         }
     }
 
