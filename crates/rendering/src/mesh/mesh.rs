@@ -87,7 +87,10 @@ pub struct Mesh {
 impl Mesh {
     // Create a new empty mesh that can be modified later
     fn new(_ctx: &mut Context) -> Self {
-        Self { submeshes: Default::default(), bounds: todo!() }
+        Self {
+            submeshes: Default::default(),
+            bounds: todo!(),
+        }
     }
 
     // Create a mesh from multiple submeshes
@@ -99,7 +102,7 @@ impl Mesh {
     fn with_capacity(_ctx: &mut Context, capacity: usize) -> Self {
         Self {
             submeshes: Vec::with_capacity(capacity),
-            bounds: todo!()
+            bounds: todo!(),
         }
     }
 

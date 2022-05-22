@@ -1,7 +1,7 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use rendering::buffer::{ArrayBuffer, ElementBuffer, BufferMode};
-use rendering::context::{Context};
+use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
+use rendering::context::Context;
 use rendering::gl;
 use rendering::gl::types::GLuint;
 use rendering::object::ToGlName;
@@ -23,7 +23,7 @@ impl Buffers {
             // Create a simple VAO
             let mut vao = 0;
             gl::GenVertexArrays(1, &mut vao);
-            gl::BindVertexArray(vao);            
+            gl::BindVertexArray(vao);
 
             // Dynamic raw buffers
             let indices = ElementBuffer::new(ctx, BufferMode::Resizable, &[]).unwrap();
@@ -47,7 +47,7 @@ impl Buffers {
             // Self
             println!("GUI Painter Buffers Init Successful!");
             Self { vao, indices, vertices }
-        }     
+        }
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {

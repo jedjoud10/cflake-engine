@@ -1,17 +1,16 @@
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
 use crate::buffers::Buffers;
 use crate::common::{convert_image, get_dimensions, get_id};
 use assets::loader::AssetLoader;
 use egui::TexturesDelta;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::gl;
 use rendering::context::Context;
-use rendering::shader::{Shader, VertexStage, ShaderCompiler, FragmentStage, Processor, Uniforms};
-use rendering::texture::{Texture2D, RGBA, Ranged, Texture};
+use rendering::gl;
+use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage};
+use rendering::texture::{Ranged, Texture, Texture2D, RGBA};
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
 use vek::Clamp;
-
 
 // The texels that will be stored within the main egui texture
 type Texel = RGBA<Ranged<u8>>;
@@ -33,7 +32,7 @@ fn clip_rect(rect: Rect, ctx: &mut Context) -> (vek::Vec2<i32>, vek::Extent2<i32
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
-    // A simple 2D shader that will draw the shapes 
+    // A simple 2D shader that will draw the shapes
     shader: Shader,
 
     // Main egui texture ID, and the OpenGL texture

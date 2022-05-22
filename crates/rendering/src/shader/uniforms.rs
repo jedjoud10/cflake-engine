@@ -1,10 +1,10 @@
-use std::{num::NonZeroU32, time::Instant, cell::Cell};
+use std::{cell::Cell, num::NonZeroU32, time::Instant};
 
 use super::Program;
 use crate::{
     context::Context,
     object::{Active, ToGlName, ToGlType},
-    texture::{Bindless, TexelLayout, Texture, Texture2D, R, Sampler},
+    texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
 };
 
 // IMplement the scalar trait for single, scalar uniform types

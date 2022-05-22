@@ -6,7 +6,7 @@ pub use others::*;
 pub mod context;
 pub mod mesh;
 pub mod object;
-pub mod shader;
 pub mod scene;
+pub mod shader;
 mod tests;
 pub mod texture;

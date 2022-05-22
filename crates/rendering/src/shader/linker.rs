@@ -44,13 +44,7 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
     let introspection = introspect(program);
 
     // Fetch all the uniform locations
-    let uniform_locations = introspection
-        .uniforms()
-        .iter()
-        .map(|uniform| 
-            (uniform.name().to_string(),
-            uniform.location())
-        ).collect();
+    let uniform_locations = introspection.uniforms().iter().map(|uniform| (uniform.name().to_string(), uniform.location())).collect();
 
     Program {
         program,

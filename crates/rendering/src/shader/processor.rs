@@ -40,7 +40,7 @@ impl<'a> From<&'a mut AssetLoader> for Processor<'a> {
     fn from(loader: &'a mut AssetLoader) -> Self {
         Self::new(loader)
     }
-} 
+}
 
 impl<'a> Processor<'a> {
     // Create a processor from an asset loader

@@ -1,4 +1,4 @@
-use super::{Bindless, TexelLayout, Sampler};
+use super::{Bindless, Sampler, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -187,7 +187,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
     // Create an immutable texture sampler
     fn sampler(&self) -> Sampler<Self>;
-    
+
     // Get the bindless state for this texture
     fn bindless(&self) -> Option<&Bindless>;
 

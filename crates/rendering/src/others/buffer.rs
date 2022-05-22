@@ -123,7 +123,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             if bytes != 0 {
-                let borrow = &val as *const T; 
+                let borrow = &val as *const T;
                 gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, borrow as _);
             }
         }

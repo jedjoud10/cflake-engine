@@ -1,4 +1,9 @@
-use std::{time::{Instant, Duration}, cell::Cell, num::NonZeroU32, rc::Rc};
+use std::{
+    cell::Cell,
+    num::NonZeroU32,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use crate::context::Context;
 

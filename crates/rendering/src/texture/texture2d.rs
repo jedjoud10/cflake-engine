@@ -1,4 +1,4 @@
-use super::{convert_level_count, create_texture_raw, TexelLayout, Texture, TextureMode, Bindless};
+use super::{convert_level_count, create_texture_raw, Bindless, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -176,7 +176,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
 
         // Create a bindless handle if needed
         let bindless = super::create_bindless(ctx, tex, 200, mode);
-        
+
         // Appply the sampling parameters for this texture
         super::apply(tex, gl::TEXTURE_2D, mode, sampling);
 
