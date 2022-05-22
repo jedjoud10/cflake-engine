@@ -1,78 +1,68 @@
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-
 use crate::buffers::Buffers;
 use crate::common::{convert_image, get_dimensions, get_id};
+use assets::loader::AssetLoader;
 use egui::TexturesDelta;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams};
-use rendering::basics::uniforms::Uniforms;
 use rendering::gl;
-use rendering::pipeline::SceneRenderer;
-use rendering::utils::DataType;
-use rendering::{
-    basics::{
-        shader::{Shader, ShaderInitSettings},
-        texture::TextureWrapMode,
-    },
-    pipeline::{Handle, Pipeline},
-};
+use rendering::context::Context;
+use rendering::shader::{Shader, VertexStage, ShaderCompiler, FragmentStage, Processor, Uniforms};
+use rendering::texture::{Texture2D, RGBA, Ranged, Texture};
 use vek::Clamp;
+
+
+// The texels that will be stored within the main egui texture
+type Texel = RGBA<Ranged<u8>>;
+
+// This will get a clip rectangle that we will use for OpenGL scissor tests
+fn clip_rect(rect: Rect, ctx: &mut Context) -> (vek::Vec2<i32>, vek::Extent2<i32>) {
+    /*
+    let pixels_per_point = ctx.window().pixels_per_point() as f32;
+    let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
+    let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
+    let dims = ctx.window().dimensions().as_().into();
+    let clip_min = clip_min.clamped(vek::Vec2::zero(), dims);
+    let clip_max = clip_max.clamped(vek::Vec2::zero(), dims);
+    let clip_min: vek::Vec2<i32> = clip_min.round().as_();
+    let clip_max: vek::Vec2<i32> = clip_max.round().as_();
+    */
+    todo!()
+}
 
 // Painter that will draw the egui elements onto the screen
 pub struct Painter {
-    // Store everything we need to render the egui meshes
-    pub(crate) shader: Handle<Shader>,
+    // A simple 2D shader that will draw the shapes 
+    shader: Shader,
 
-    // Multiple textures
-    pub(crate) textures: HashMap<u64, Handle<Texture2D>, BuildHasherDefault<NoHashHasher<u64>>>,
-    pub(crate) buffers: Buffers,
+    // Main egui texture ID, and the OpenGL texture
+    texture: Option<(u64, Texture2D<Texel>)>,
+
+    // Raw OpenGL buffers
+    buffers: Buffers,
 }
 
 impl Painter {
-    // Create a new painter
-    pub fn new(pipeline: &mut Pipeline) -> Self {
-        // Load the GUI shader
-        let shader_settings = ShaderInitSettings::default()
-            .source("defaults/shaders/gui/vert.vrsh.glsl")
-            .source("defaults/shaders/gui/frag.frsh.glsl");
-        let shader = Shader::new(shader_settings).unwrap();
-        let shader = pipeline.insert(shader);
+    // Create a new painter using an asset loader an OpenGL context
+    pub(super) fn new(loader: &mut AssetLoader, ctx: &mut Context) -> Self {
+        // Load the shader stages first, then compile a shader
+        let vert = loader.load::<VertexStage>("defaults/shaders/gui/vert.vrsh.glsl").unwrap();
+        let frag = loader.load::<FragmentStage>("defaults/shaders/gui/frag.frsh.glsl").unwrap();
+
+        // Link the stages and compile the shader
+        let shader = ShaderCompiler::link((vert, frag), Processor::from(loader), ctx);
+
         Self {
             shader,
-            textures: Default::default(),
-            buffers: Buffers::new(pipeline),
+            texture: None,
+            buffers: Buffers::new(ctx),
         }
     }
-    // Set uniforms
-    fn set_mesh_uniforms(&mut self, mesh: &Mesh, uniforms: &mut Uniforms, last_texture: &mut Handle<Texture2D>) {
-        // Get ID
-        let id = match mesh.texture_id {
-            egui::TextureId::Managed(id) => id,
-            egui::TextureId::User(_) => todo!(),
-        };
 
-        let handle = self.textures.get(&id).unwrap();
-        // Only set the uniform if we need to
-        if handle != last_texture {
-            uniforms.set_texture2d("u_sampler", handle);
-            *last_texture = handle.clone();
-        }
-    }
-    // Draw a single egui mesh
-    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &Pipeline) {
-        // We already have the shader bound, so we just need to draw
-        // Get the rect size so we can use the scissor test
-        let pixels_per_point = pipeline.window().pixels_per_point() as f32;
-        let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
-        let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let dims = pipeline.window().dimensions().as_().into();
-        let clip_min = clip_min.clamped(vek::Vec2::zero(), dims);
-        let clip_max = clip_max.clamped(vek::Vec2::zero(), dims);
-        let clip_min: vek::Vec2<i32> = clip_min.round().as_();
-        let clip_max: vek::Vec2<i32> = clip_max.round().as_();
-
+    // Draw a single egui mesh onto the screen
+    fn draw(&mut self, clip: (vek::Vec2<i32>, vek::Extent2<i32>), mesh: Mesh, ctx: &mut Context) {
+        /*
         //scissor Y coordinate is from the bottom
         unsafe {
             gl::Scissor(clip_min.x, dims.y as i32 - clip_max.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
@@ -81,48 +71,19 @@ impl Painter {
         // Gotta fil the buffers with new data, then we can draw
         self.buffers.fill_buffers(mesh.vertices, mesh.indices);
         self.buffers.draw();
+        */
     }
-    // Apply the texture deltas
-    fn apply_deltas(&mut self, pipeline: &mut Pipeline, deltas: TexturesDelta) {
-        // Create / modify
-        for (tid, delta) in deltas.set {
-            if let Some(handle) = self.textures.get(&get_id(tid)) {
-                // Simply update the texture
-                let texture = pipeline.get_mut(handle).unwrap();
-                if delta.is_whole() {
-                    // Resize and write
-                    texture.resize_then_write(get_dimensions(&delta.image), convert_image(delta.image));
-                }
-            } else {
-                // If we don't have the texture ID stored, we must create it
-                let texture = Texture2D::new(
-                    get_dimensions(&delta.image),
-                    Some(convert_image(delta.image)),
-                    TextureParams {
-                        wrap: TextureWrapMode::ClampToEdge,
-                        flags: TextureFlags::RESIZABLE,
-                        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
-                        filter: TextureFilter::Linear,
-                    },
-                );
-                // Create the texture handle
-                let texture = pipeline.insert(texture);
-                self.textures.insert(get_id(tid), texture);
-            }
-        }
-        // Delete
-        for tid in deltas.free {
-            // Dropping the handle will automatically get rid of the texture
-            self.textures.remove(&get_id(tid)).unwrap();
-        }
-    }
-    // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, renderer: &mut SceneRenderer, clipped_meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
-        // No need to draw if we don't have any meshes or if our shader is invalid
-        if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
+
+    // Draw the whole graphical user interface onto the screen.
+    pub fn draw_gui(&mut self, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
+        // No meshes, no drawing. Ez
+        if meshes.is_empty() {
             return;
         }
 
+        // Use the default framebuffer for drawing
+        let def = ctx.framebuffers().main();
+        /*
         // Apply the texture deltas
         self.apply_deltas(pipeline, deltas);
 
@@ -162,5 +123,6 @@ impl Painter {
                 gl::Disable(gl::SCISSOR_TEST);
             }
         });
+        */
     }
 }

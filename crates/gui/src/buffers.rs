@@ -1,9 +1,10 @@
 use std::{ffi::c_void, mem::size_of, ptr::null};
 
-use rendering::buffer::{ArrayBuffer, ElementBuffer};
-use rendering::context::{Context, CommandStream};
+use rendering::buffer::{ArrayBuffer, ElementBuffer, BufferMode};
+use rendering::context::{Context};
 use rendering::gl;
 use rendering::gl::types::GLuint;
+use rendering::object::ToGlName;
 
 // Some pre allocated buffers that we can edit everytime we draw a specific clipped mesh
 pub(crate) struct Buffers {
@@ -24,20 +25,14 @@ impl Buffers {
             gl::GenVertexArrays(1, &mut vao);
             gl::BindVertexArray(vao);            
 
-            // Also generate the buffers
-            const USAGE_TYPE: BufferHints = BufferHints {
-                access: ClientToServer,
-                frequency: WriteManyReadMany,
-                dynamic: true,
-            };
             // Dynamic raw buffers
-            let indices = DynamicBuffer::<u32>::empty(gl::ELEMENT_ARRAY_BUFFER, USAGE_TYPE, pipeline);
-            let vertices = DynamicBuffer::<egui::epaint::Vertex>::empty(gl::ARRAY_BUFFER, USAGE_TYPE, pipeline);
+            let indices = ElementBuffer::new(ctx, BufferMode::Resizable, &[]).unwrap();
+            let vertices = ArrayBuffer::new(ctx, BufferMode::Resizable, &[]).unwrap();
 
             // Bind the vertex attributes
             unsafe {
                 const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
-                gl::BindBuffer(gl::ARRAY_BUFFER, vertices.storage().buffer());
+                gl::BindBuffer(gl::ARRAY_BUFFER, vertices.name().get());
                 gl::EnableVertexAttribArray(0);
                 gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
                 gl::EnableVertexAttribArray(1);
@@ -56,15 +51,15 @@ impl Buffers {
     }
     // Fill the buffers with new mesh data
     pub fn fill_buffers(&mut self, vertices: Vec<egui::epaint::Vertex>, indices: Vec<u32>) {
-        self.vertices.write(&vertices);
-        self.indices.write(&indices);
+        //self.vertices.write(&vertices);
+        //self.indices.write(&indices);
     }
-    // And draw
+
+    // Draw the buffers onto the screen
     pub fn draw(&mut self) {
         unsafe {
-            // Le drawing
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indices.storage().buffer());
-            gl::DrawElements(gl::TRIANGLES, self.indices.len() as i32, gl::UNSIGNED_INT, null());
+            //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.indices.storage().buffer());
+            //gl::DrawElements(gl::TRIANGLES, self.indices.len() as i32, gl::UNSIGNED_INT, null());
         }
     }
 }

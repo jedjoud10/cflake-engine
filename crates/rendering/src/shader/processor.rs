@@ -36,7 +36,22 @@ pub struct Processor<'a> {
     snippets: AHashMap<String, String>,
 }
 
+impl<'a> From<&'a mut AssetLoader> for Processor<'a> {
+    fn from(loader: &'a mut AssetLoader) -> Self {
+        Self::new(loader)
+    }
+} 
+
 impl<'a> Processor<'a> {
+    // Create a processor from an asset loader
+    pub fn new(loader: &'a mut AssetLoader) -> Self {
+        Self {
+            loader,
+            constants: Default::default(),
+            snippets: Default::default(),
+        }
+    }
+
     // Include a constant directive
     pub fn constant(&mut self, name: impl ToString, value: impl ToString) {
         self.constants.insert(name.to_string(), value.to_string());

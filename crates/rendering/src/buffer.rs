@@ -59,13 +59,18 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
-    unsafe fn from_raw_parts(ctx: &mut Context, mode: BufferMode, capacity: usize, length: usize, ptr: *const T) -> Self {
+    unsafe fn from_raw_parts(ctx: &mut Context, mode: BufferMode, capacity: usize, length: usize, ptr: *const T) -> Option<Self> {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::CreateBuffers(1, &mut buffer);
 
         // Convert size to byte size
         let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
+
+        // We must some pre-existing data if we are a dynamic or static buffer
+        if bytes == 0 && (mode == BufferMode::Dynamic || mode == BufferMode::Static) {
+            return None;
+        }
 
         // Validate the pointer
         let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
@@ -81,18 +86,18 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         gl::Finish();
 
         // Create the buffer struct
-        Self {
+        Some(Self {
             buffer: NonZeroU32::new(buffer).unwrap(),
             len: length,
             capacity,
             mode,
             _phantom: Default::default(),
-        }
+        })
     }
 
     // Create a buffer using a buffer mode and a slice containing some data
     pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Option<Self> {
-        (!data.is_empty()).then(|| unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) })
+        unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) }
     }
 
     // Get the current length of the buffer
@@ -117,7 +122,9 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
-            gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, null());
+            if bytes != 0 {
+                gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, null());
+            }
         }
     }
 
