@@ -1,4 +1,4 @@
-use super::{convert_level_count, create_texture_raw, Bindless, TexelLayout, Texture, TextureMode};
+use super::{allocator::TextureAllocator, Bindless, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -45,6 +45,53 @@ impl<T: TexelLayout> Bind for Texture2D<T> {
     }
 }
 
+unsafe impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
+    unsafe fn alloc_immutable_storage(name: NonZeroU32, levels: u8, dimensions: Self::Dimensions) {
+        gl::TextureStorage2D(name.get(), levels as i32, Self::Layout::INTERNAL_FORMAT, dimensions.w as i32, dimensions.h as i32);
+    }
+
+    unsafe fn alloc_resizable_storage(name: NonZeroU32, level: u8, dimensions: Self::Dimensions, ptr: *const Self::Layout) {
+        gl::BindTexture(gl::TEXTURE_2D, name.get());
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            level as i32,
+            Self::Layout::INTERNAL_FORMAT as i32,
+            dimensions.w as i32,
+            dimensions.h as i32,
+            0,
+            Self::Layout::FORMAT,
+            gl::UNSIGNED_BYTE,
+            ptr as _,
+        );
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+    }
+
+    unsafe fn update_sub_region(name: NonZeroU32, level: u8, region: Self::Region, ptr: *const Self::Layout) {
+        gl::TextureSubImage2D(
+            name.get(),
+            level as i32,
+            region.0.x as i32,
+            region.0.y as i32,
+            region.1.w as i32,
+            region.1.h as i32,
+            Self::Layout::FORMAT,
+            gl::UNSIGNED_BYTE,
+            ptr as _,
+        );
+    }
+
+    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: Self::Dimensions, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self {
+        Self {
+            texture: name,
+            dimensions,
+            mode,
+            levels,
+            bindless,
+            _phantom: Default::default(),
+        }
+    }
+}
+
 impl<T: TexelLayout> Texture for Texture2D<T> {
     type Layout = T;
 
@@ -64,6 +111,14 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         self.mode
     }
 
+    fn sampler(&self) -> super::Sampler<Self> {
+        super::Sampler(self)
+    }
+
+    fn bindless(&self) -> Option<&Bindless> {
+        self.bindless.as_ref().map(Rc::as_ref)
+    }
+
     fn get_layer(&self, level: u8) -> Option<super::MipLayerRef<Self>> {
         (level < self.levels.get()).then(|| super::MipLayerRef::new(self, level))
     }
@@ -72,126 +127,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
     }
 
-    unsafe fn clear_mip_layer_unchecked(&mut self, ctx: &mut crate::context::Context, level: u8, val: Self::Layout, region: Self::Region) {
-        let format_ = Self::Layout::FORMAT;
-        let type_ = gl::UNSIGNED_BYTE;
-        let offset = region.0.as_();
-        let extent = region.1.as_();
-        gl::ClearTexSubImage(
-            self.name().get(),
-            level as i32,
-            offset.x,
-            offset.y,
-            0,
-            extent.w,
-            extent.h,
-            1,
-            format_,
-            type_,
-            &val as *const Self::Layout as _,
-        );
-    }
-
-    unsafe fn update_mip_layer_unchecked(&mut self, ctx: &mut crate::context::Context, level: u8, ptr: *const Self::Layout, region: Self::Region) {
-        let format_ = Self::Layout::FORMAT;
-        let type_ = gl::UNSIGNED_BYTE;
-        let offset = region.0.as_();
-        let extent = region.1.as_();
-        gl::TextureSubImage2D(self.name().get(), level as i32, offset.x, offset.y, extent.w, extent.h, format_, type_, ptr as _)
-    }
-
-    unsafe fn read_mip_layer_unchecked(&self, ctx: &crate::context::Context, level: u8, out: *mut Self::Layout, region: Self::Region) {
-        let format_ = Self::Layout::FORMAT;
-        let type_ = gl::UNSIGNED_BYTE;
-        let offset = region.0.as_();
-        let extent = region.1.as_();
-        let buf_size = i32::try_from(extent.as_::<u32>().product() * Self::Layout::bytes()).unwrap();
-        gl::GetTextureSubImage(
-            self.name().get(),
-            level as i32,
-            offset.x,
-            offset.y,
-            0,
-            extent.w,
-            extent.h,
-            1,
-            format_,
-            type_,
-            buf_size,
-            out as _,
-        )
-    }
-
-    unsafe fn from_raw_parts(
-        ctx: &mut crate::context::Context,
-        mode: TextureMode,
-        sampling: super::Sampling,
-        dimensions: Self::Dimensions,
-        levels: NonZeroU8,
-        ptr: Option<*const T>,
-    ) -> Self {
-        // Create a new raw OpenGL texture object
-        let tex = create_texture_raw();
-
-        // Check for mipmaps
-        let mipmaps = convert_level_count(levels);
-
-        // Convert dimensions
-        let width = dimensions.w as i32;
-        let height = dimensions.h as i32;
-
-        // Pre-allocate storage using the texture mode (immutable vs mutable textures)
-        match mode {
-            TextureMode::Dynamic => {
-                // Initialize the storage
-                gl::TextureStorage2D(tex.get(), mipmaps.1 as i32, T::INTERNAL_FORMAT, dimensions.w as i32, dimensions.h as i32);
-
-                // Fill the storage (only if the pointer is valid)
-                if let Some(ptr) = ptr {
-                    gl::TextureSubImage2D(tex.get(), 0, 0, 0, width, height, T::FORMAT, gl::UNSIGNED_BYTE, ptr as _);
-                }
-            }
-            TextureMode::Resizable => {
-                // Bind the texture (only for resizable textures tho)
-                gl::BindTexture(gl::TEXTURE_2D, tex.get());
-
-                // Initialize the texture with the valid data
-                gl::TexImage2D(
-                    gl::TEXTURE_2D,
-                    levels.get() as _,
-                    T::INTERNAL_FORMAT as i32,
-                    width,
-                    height,
-                    0,
-                    T::FORMAT,
-                    gl::UNSIGNED_BYTE,
-                    ptr.unwrap_or_else(null) as _,
-                )
-            }
-        }
-
-        // Create a bindless handle if needed
-        let bindless = super::create_bindless(ctx, tex, 200, mode);
-
-        // Appply the sampling parameters for this texture
-        super::apply(tex, gl::TEXTURE_2D, mode, sampling);
-
-        // Create the texture wrapper
-        Texture2D {
-            texture: tex,
-            dimensions,
-            mode,
-            levels,
-            _phantom: Default::default(),
-            bindless,
-        }
-    }
-
-    fn sampler(&self) -> super::Sampler<Self> {
-        super::Sampler(self)
-    }
-
-    fn bindless(&self) -> Option<&Bindless> {
-        self.bindless.as_ref().map(Rc::as_ref)
+    fn dimensions_to_region_at_origin(dimensions: Self::Dimensions) -> Self::Region {
+        (vek::Vec2::zero(), dimensions)
     }
 }

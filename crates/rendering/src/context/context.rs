@@ -1,4 +1,4 @@
-use crate::{texture::Bindless};
+use crate::texture::Bindless;
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
@@ -7,7 +7,7 @@ use std::{
     collections::HashMap,
     hash::BuildHasherDefault,
     marker::PhantomData,
-    num::{NonZeroU64, NonZeroU32},
+    num::{NonZeroU32, NonZeroU64},
     rc::Rc,
     time::{Duration, Instant},
 };
@@ -29,7 +29,7 @@ pub struct Context {
     pub(crate) bindless: Vec<(Rc<Bindless>)>,
 
     // A list of objects that are currently bound
-    pub(crate) bound: BindingHashMap
+    pub(crate) bound: BindingHashMap,
 }
 
 impl Context {

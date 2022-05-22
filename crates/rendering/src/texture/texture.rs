@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TexelLayout};
+use super::{Bindless, Sampler, TextureAllocator, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -6,22 +6,8 @@ use crate::{
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::NonNull,
+    ptr::{null, NonNull},
 };
-
-// This will create a raw OpenGL texture
-pub(super) unsafe fn create_texture_raw() -> NonZeroU32 {
-    let mut tex = 0u32;
-    gl::GenTextures(1, &mut tex);
-    NonZeroU32::new(tex).unwrap()
-}
-
-// Convert some mip-map level counts into a bool and a u8
-pub(super) unsafe fn convert_level_count(levels: NonZeroU8) -> (bool, u8) {
-    let levels = levels.get();
-    let mipmaps = levels > 1;
-    (mipmaps, levels)
-}
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -66,7 +52,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
 
     // Update a sub-region of the mip-layer, but without checking for safety
     unsafe fn update_unchecked(&mut self, ctx: &mut Context, region: T::Region, data: &[T::Layout]) {
-        self.texture.update_mip_layer_unchecked(ctx, self.level, data.as_ptr(), region);
+        //self.texture.update_mip_layer_unchecked(ctx, self.level, data.as_ptr(), region);
     }
 
     // Update a sub-region of the mip-layer using a data slice
@@ -144,7 +130,10 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     type Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self>
+    where
+        Self: TextureAllocator,
+    {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.valid();
 
@@ -161,26 +150,62 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             let ptr = (!data.is_empty()).then(|| data.as_ptr());
             let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
 
-            // Create the texture
-            Self::from_raw_parts(ctx, mode, sampling, dimensions, levels, ptr)
+            // Create a new raw OpenGL texture object
+            let tex = {
+                let mut tex = 0u32;
+                gl::GenTextures(1, &mut tex);
+                NonZeroU32::new(tex).unwrap()
+            };
+
+            // Check for mipmaps
+            let mipmaps = {
+                let levels = levels.get();
+                let mipmaps = levels > 1;
+                (mipmaps, levels)
+            };
+
+            // Convert the dimensions into a region with an origin at 0, 0, 0
+            let region = Self::dimensions_to_region_at_origin(dimensions);
+
+            // Pre-allocate storage using the texture mode (immutable vs mutable textures)
+            match mode {
+                TextureMode::Dynamic => {
+                    // Initialize the storage
+                    Self::alloc_immutable_storage(tex, mipmaps.1, dimensions);
+
+                    // Fill the storage (only if the pointer is valid)
+                    if let Some(ptr) = ptr {
+                        Self::update_sub_region(tex, mipmaps.1, region, ptr);
+                    }
+                }
+                TextureMode::Resizable => {
+                    // Initialize the texture with the valid data
+                    Self::alloc_resizable_storage(tex, mipmaps.1, dimensions, ptr.unwrap_or_else(null));
+                }
+            }
+
+            // Create a bindless handle if needed
+            let bindless = super::create_bindless(ctx, tex, 200, mode);
+
+            // Appply the sampling parameters for this texture
+            super::apply(tex, gl::TEXTURE_2D, mode, sampling);
+
+            // Create the object
+            Self::from_raw_parts(tex, dimensions, mode, levels, bindless)
         })
     }
-
-    // Create the texture from it's raw parts, like levels and pointer
-    unsafe fn from_raw_parts(
-        ctx: &mut Context,
-        mode: TextureMode,
-        sampling: super::Sampling,
-        dimensions: Self::Dimensions,
-        levels: NonZeroU8,
-        ptr: Option<*const Self::Layout>,
-    ) -> Self;
 
     // Get the texture's dimensions
     fn dimensions(&self) -> Self::Dimensions;
 
     // Get the texture's region
-    fn region(&self) -> Self::Region;
+    fn region(&self) -> Self::Region {
+        Self::dimensions_to_region_at_origin(self.dimensions())
+    }
+
+    // Convert a dimension into a region that this texture internally uses
+    // TODO: Rename and or generalize
+    fn dimensions_to_region_at_origin(dimensions: Self::Dimensions) -> Self::Region;
 
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
@@ -226,13 +251,4 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             }
         }
     }
-
-    // Clear a region of a mip layer by filling it with a constant value, without checking anything
-    unsafe fn clear_mip_layer_unchecked(&mut self, ctx: &mut Context, level: u8, val: Self::Layout, region: Self::Region);
-
-    // Update the contents of a whole single mip layer without checking anything
-    unsafe fn update_mip_layer_unchecked(&mut self, ctx: &mut Context, level: u8, ptr: *const Self::Layout, region: Self::Region);
-
-    // Read the contents of a whole single mip layer into an array
-    unsafe fn read_mip_layer_unchecked(&self, ctx: &Context, level: u8, out: *mut Self::Layout, region: Self::Region);
 }

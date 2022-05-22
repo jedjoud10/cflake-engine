@@ -25,7 +25,6 @@ pub struct Program {
     pub(super) _phantom: PhantomData<*const ()>,
 }
 
-
 impl Bind for Program {
     unsafe fn bind_raw_unchecked(&mut self, ctx: &mut Context) {
         gl::UseProgram(self.target())

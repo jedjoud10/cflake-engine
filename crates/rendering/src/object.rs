@@ -25,6 +25,7 @@ pub trait Bind: ToGlType + ToGlName + Sized {
     fn bind(&mut self, ctx: &mut Context, function: impl FnOnce(Active<Self>)) {
         if !self.is_bound(ctx) {
             unsafe { self.bind_raw_unchecked(ctx) };
+            ctx.bound.insert(self.target(), self.name().get());
             function(Active(self));
         }
     }
