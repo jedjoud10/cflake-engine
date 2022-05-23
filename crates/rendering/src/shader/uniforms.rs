@@ -206,9 +206,9 @@ impl_math_vectors!(ui, u32);
 impl_matrices!();
 
 // The main struct that will allow us to set the uniforms
-pub struct Uniforms<'a>(Active<'a, Program>);
+pub struct Uniforms<'uniforms, 'bound: 'uniforms>(pub(super) &'uniforms mut Active<'bound, Program>);
 
-impl<'a> Uniforms<'a> {
+impl<'uniforms, 'bound: 'uniforms> Uniforms<'uniforms, 'bound,> {
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
         let p = self.0.as_ref().program.get();

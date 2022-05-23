@@ -5,7 +5,7 @@ use crate::{
 use ahash::AHashMap;
 use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
 
-use super::Introspection;
+use super::{Introspection, Uniforms};
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
@@ -31,7 +31,12 @@ impl Bind for Program {
     }
 }
 
-impl<'borrow, 'bound: 'borrow> Active<'bound, Program> {
+impl<'bound> Active<'bound, Program> {
+    // Get the uniforms of the currently bound program so we can modify them
+    pub fn uniforms<'uniforms>(&'uniforms mut self) -> Uniforms<'uniforms, 'bound> {
+        Uniforms(self)
+    }
+
     // Fetch the location of a single uniform using it's name
     pub fn uniform_location(&mut self, name: &'static str) -> Option<u32> {
         todo!()

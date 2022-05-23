@@ -211,7 +211,6 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized + TextureAllocator {
             };
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
-            let region = <Self::TexelRegion as Region>::with_extent(dimensions);
             match mode {
                 TextureMode::Dynamic => Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _),
                 TextureMode::Resizable => Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _),

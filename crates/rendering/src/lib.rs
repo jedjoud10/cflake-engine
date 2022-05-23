@@ -8,5 +8,6 @@ pub mod mesh;
 pub mod object;
 pub mod scene;
 pub mod shader;
+pub mod material;
 mod tests;
 pub mod texture;
