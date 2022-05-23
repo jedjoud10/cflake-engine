@@ -6,7 +6,7 @@ use crate::{
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull}, rc::Rc,
+    ptr::{null, NonNull}, rc::Rc, ffi::c_void,
 };
 
 // Some settings that tell us exactly how we should generate a texture
@@ -49,6 +49,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
         Self { texture, level }
     }
+    /*
 
     // Update a sub-region of the mip-layer, but without checking for safety
     unsafe fn update_unchecked(&mut self, ctx: &mut Context, region: T::Region, data: &[T::Layout]) {
@@ -65,20 +66,21 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
             self.update_unchecked(ctx, region, data);
         }
     }
+    */
 }
 
-// Texture dimensions trait. This is going to be implemented for vek::Extent2 and vek::Extent3
-pub trait Dim: Copy {
-    // Count the number of texels
+// Texture dimensions traits that are simply implemented for extents
+pub trait Extent: Copy {
+    // Count the number of texels within this region
     fn texel_count(&self) -> u32;
 
-    // Check if the dimensions can be used to create a texture
-    fn valid(&self) -> bool;
+    // Check if this region can be used to create a texture or update it
+    fn is_valid(&self) -> bool;
 
     // Get the max element from these dimensions
     fn max(&self) -> u16;
 
-    // Caclulate the number of mipmap layers that a texture can have
+    // Caclulate the number of mipmap layers that a texture can have (assuming that the offset is 0)
     fn levels(&self) -> NonZeroU8 {
         let mut cur = self.max() as f32;
         let mut num = 0u32;
@@ -90,12 +92,13 @@ pub trait Dim: Copy {
     }
 }
 
-impl Dim for vek::Extent2<u16> {
+// Implementations of extent for 2D and 3D extents
+impl Extent for vek::Extent2<u16> {
     fn texel_count(&self) -> u32 {
         self.as_::<u32>().product()
     }
 
-    fn valid(&self) -> bool {
+    fn is_valid(&self) -> bool {
         *self == vek::Extent2::zero()
     }
 
@@ -104,12 +107,12 @@ impl Dim for vek::Extent2<u16> {
     }
 }
 
-impl Dim for vek::Extent3<u16> {
+impl Extent for vek::Extent3<u16> {
     fn texel_count(&self) -> u32 {
         self.as_::<u32>().product()
     }
 
-    fn valid(&self) -> bool {
+    fn is_valid(&self) -> bool {
         *self == vek::Extent3::zero()
     }
 
@@ -118,21 +121,68 @@ impl Dim for vek::Extent3<u16> {
     }
 }
 
+// Texture region trait that will be implemented for (origin, extent) tuples
+pub trait Region {
+    // Regions are defined by their origin and extents
+    type O: Default + Copy;
+    type E: Copy + Extent;
+
+    // Get the region's origin
+    fn origin(&self) -> &Self::O;
+
+    // Get the region's extent
+    fn extent(&self) -> &Self::E;   
+    
+    // Create a region with a default origin using an extent
+    fn with_extent(extent: Self::E) -> Self;
+}
+
+impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
+    type O = vek::Vec2<u16>;
+    type E = vek::Extent2<u16>;
+
+    fn origin(&self) -> &Self::O {
+        &self.0
+    }
+
+    fn extent(&self) -> &Self::E {
+        &self.1
+    }
+
+    fn with_extent(extent: Self::E) -> Self {
+        (Default::default(), extent)
+    }
+}
+
+impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
+    type O = vek::Vec3<u16>;
+    type E = vek::Extent3<u16>;
+
+    fn origin(&self) -> &Self::O {
+        &self.0
+    }
+
+    fn extent(&self) -> &Self::E {
+        &self.1
+    }
+
+    fn with_extent(extent: Self::E) -> Self {
+        (Default::default(), extent)
+    }
+}
+
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     // Output texel layout
     type Layout: TexelLayout;
 
-    // Textures can have different dimensions
-    type Dimensions: Dim;
-
-    // A region that might fill the texture, like a rectangle for 2d textures and cubes for 3d textures
-    type Region;
+    // A texture region that might cover the whole texture or just partially
+    type TexelRegion: Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: <Self::TexelRegion as Region>::E, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
-        let dims_valid = dimensions.valid();
+        let dims_valid = dimensions.is_valid();
 
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
@@ -144,7 +194,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {
             // Convert some parameters to their raw counterpart
-            let ptr = (!data.is_empty()).then(|| data.as_ptr());
+            let ptr = (!data.is_empty()).then(|| data.as_ptr()).unwrap_or_else(null);
             let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
 
             // Create a new raw OpenGL texture object
@@ -161,23 +211,11 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
                 (mipmaps, levels)
             };
 
-            // Convert the dimensions into a region with an origin at 0, 0, 0
-            let region = Self::dimensions_to_region_at_origin(dimensions);
-
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
                 TextureMode::Dynamic => {
-                    // Initialize the storage
-                    Self::alloc_immutable_storage(tex, mipmaps.1, dimensions);
-
-                    // Fill the storage (only if the pointer is valid)
-                    if let Some(ptr) = ptr {
-                        Self::update_sub_region(tex, mipmaps.1, region, ptr);
-                    }
                 }
                 TextureMode::Resizable => {
-                    // Initialize the texture with the valid data
-                    Self::alloc_resizable_storage(tex, mipmaps.1, dimensions, ptr.unwrap_or_else(null));
                 }
             }
 
@@ -197,12 +235,14 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
         })
     }
 
-    // Get the texture's dimensions
-    fn dimensions(&self) -> Self::Dimensions;
+    // Get the texture's region (origin state is default)
+    fn region(&self) -> Self::TexelRegion {
+        Self::TexelRegion::with_extent(self.dimensions())
+    }
 
-    // Get the texture's region
-    fn region(&self) -> Self::Region;
-    
+    // Get the texture's dimensions
+    fn dimensions(&self) -> <Self::TexelRegion as Region>::E;
+
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
@@ -248,15 +288,6 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
         }
     }
 
-    // Get the raw OpenGL function that we will use to allocate raw immutable storage
-    unsafe fn alloc_immutable_fn() -> fn(NonZeroU32, u8, Self::Dimensions, Option<NonNull<Self::Layout>>);
-
-    // Get the raw OpenGL function that we will use to allocate resizable storage (using glImage*)
-    unsafe fn alloc_resizable_fn() -> fn(NonZeroU32, u8, Self::Dimensions, Option<NonNull<Self::Layout>>);
-
-    // Get the raw OpenGL function that we will use to update a sub-region of the texture
-    unsafe fn update_subregion_fn() -> fn();
-
     // Construct the texture object from it's raw parts
-    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: Self::Dimensions, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
+    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: <Self::TexelRegion as Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
 }
