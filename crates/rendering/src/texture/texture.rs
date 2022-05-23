@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TextureAllocator, TexelLayout};
+use super::{Bindless, Sampler, TexelLayout};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -6,7 +6,7 @@ use crate::{
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull},
+    ptr::{null, NonNull}, rc::Rc,
 };
 
 // Some settings that tell us exactly how we should generate a texture
@@ -130,10 +130,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     type Region;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self>
-    where
-        Self: TextureAllocator,
-    {
+    fn new(ctx: &mut Context, mode: TextureMode, dimensions: Self::Dimensions, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.valid();
 
@@ -190,6 +187,11 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             // Appply the sampling parameters for this texture
             super::apply(tex, gl::TEXTURE_2D, mode, sampling);
 
+            // Apply mipmapping
+            if mipmaps.0 {
+                gl::GenerateTextureMipmap(tex.get());
+            }
+
             // Create the object
             Self::from_raw_parts(tex, dimensions, mode, levels, bindless)
         })
@@ -199,14 +201,8 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
     fn dimensions(&self) -> Self::Dimensions;
 
     // Get the texture's region
-    fn region(&self) -> Self::Region {
-        Self::dimensions_to_region_at_origin(self.dimensions())
-    }
-
-    // Convert a dimension into a region that this texture internally uses
-    // TODO: Rename and or generalize
-    fn dimensions_to_region_at_origin(dimensions: Self::Dimensions) -> Self::Region;
-
+    fn region(&self) -> Self::Region;
+    
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
@@ -251,4 +247,16 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             }
         }
     }
+
+    // Get the raw OpenGL function that we will use to allocate raw immutable storage
+    unsafe fn alloc_immutable_fn() -> fn(NonZeroU32, u8, Self::Dimensions, Option<NonNull<Self::Layout>>);
+
+    // Get the raw OpenGL function that we will use to allocate resizable storage (using glImage*)
+    unsafe fn alloc_resizable_fn() -> fn(NonZeroU32, u8, Self::Dimensions, Option<NonNull<Self::Layout>>);
+
+    // Get the raw OpenGL function that we will use to update a sub-region of the texture
+    unsafe fn update_subregion_fn() -> fn();
+
+    // Construct the texture object from it's raw parts
+    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: Self::Dimensions, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
 }

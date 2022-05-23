@@ -1,4 +1,4 @@
-use super::{allocator::TextureAllocator, Bindless, TexelLayout, Texture, TextureMode};
+use super::{Bindless, TexelLayout, Texture, TextureMode};
 use crate::{
     context::Cached,
     object::{Active, Bind, ToGlName, ToGlType},
@@ -45,6 +45,7 @@ impl<T: TexelLayout> Bind for Texture2D<T> {
     }
 }
 
+/*
 unsafe impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
     unsafe fn alloc_immutable_storage(name: NonZeroU32, levels: u8, dimensions: Self::Dimensions) {
         gl::TextureStorage2D(name.get(), levels as i32, Self::Layout::INTERNAL_FORMAT, dimensions.w as i32, dimensions.h as i32);
@@ -131,3 +132,4 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         (vek::Vec2::zero(), dimensions)
     }
 }
+*/
