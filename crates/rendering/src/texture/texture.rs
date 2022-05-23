@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TexelLayout};
+use super::{Bindless, Sampler, TexelLayout, TextureAllocator};
 use crate::{
     context::Context,
     object::{Bind, ToGlName, ToGlType},
@@ -49,30 +49,28 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
         Self { texture, level }
     }
-    /*
 
     // Update a sub-region of the mip-layer, but without checking for safety
-    unsafe fn update_unchecked(&mut self, ctx: &mut Context, region: T::Region, data: &[T::Layout]) {
-        //self.texture.update_mip_layer_unchecked(ctx, self.level, data.as_ptr(), region);
+    unsafe fn update_unchecked(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
+        T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
     }
 
     // Update a sub-region of the mip-layer using a data slice
-    fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[T::Layout]) {
-        // Length should never be greater
-        assert!((data.len() as u32) < self.texture.texel_count(), "Current length and output length do not match up.");
+    fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
+        // The length of the buffer should be equal to the surface area of the region
+        assert!((data.len() as u32) == region.area(), "Input data length is not equal to region area surface");        
 
         // Le update texture subimage
         unsafe {
             self.update_unchecked(ctx, region, data);
         }
     }
-    */
 }
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy {
-    // Count the number of texels within this region
-    fn texel_count(&self) -> u32;
+    // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
+    fn area(&self) -> u32;
 
     // Check if this region can be used to create a texture or update it
     fn is_valid(&self) -> bool;
@@ -94,7 +92,7 @@ pub trait Extent: Copy {
 
 // Implementations of extent for 2D and 3D extents
 impl Extent for vek::Extent2<u16> {
-    fn texel_count(&self) -> u32 {
+    fn area(&self) -> u32 {
         self.as_::<u32>().product()
     }
 
@@ -108,7 +106,7 @@ impl Extent for vek::Extent2<u16> {
 }
 
 impl Extent for vek::Extent3<u16> {
-    fn texel_count(&self) -> u32 {
+    fn area(&self) -> u32 {
         self.as_::<u32>().product()
     }
 
@@ -135,6 +133,9 @@ pub trait Region {
     
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;
+
+    // Calculate the surface area of the region
+    fn area(&self) -> u32;
 }
 
 impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
@@ -151,6 +152,10 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
 
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
+    }
+    
+    fn area(&self) -> u32 {
+        self.extent().area()
     }
 }
 
@@ -169,15 +174,16 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
+
+    fn area(&self) -> u32 {
+        self.extent().area()
+    }
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
-pub trait Texture: ToGlName + ToGlType + Bind + Sized {
+pub trait Texture: ToGlName + ToGlType + Bind + Sized + TextureAllocator {
     // Output texel layout
     type Layout: TexelLayout;
-
-    // A texture region that might cover the whole texture or just partially
-    type TexelRegion: Region;
 
     // Create a new texutre that contains some data
     fn new(ctx: &mut Context, mode: TextureMode, dimensions: <Self::TexelRegion as Region>::E, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
@@ -186,7 +192,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
-            data.len() as u64 == (dimensions.texel_count() as u64) * (Self::Layout::bytes() as u64)
+            data.len() as u64 == (dimensions.area() as u64) * (Self::Layout::bytes() as u64)
         } else {
             true
         };
@@ -204,19 +210,11 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
                 NonZeroU32::new(tex).unwrap()
             };
 
-            // Check for mipmaps
-            let mipmaps = {
-                let levels = levels.get();
-                let mipmaps = levels > 1;
-                (mipmaps, levels)
-            };
-
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
+            let region = <Self::TexelRegion as Region>::with_extent(dimensions);
             match mode {
-                TextureMode::Dynamic => {
-                }
-                TextureMode::Resizable => {
-                }
+                TextureMode::Dynamic => Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _),
+                TextureMode::Resizable => Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _),
             }
 
             // Create a bindless handle if needed
@@ -225,8 +223,8 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
             // Appply the sampling parameters for this texture
             super::apply(tex, gl::TEXTURE_2D, mode, sampling);
 
-            // Apply mipmapping
-            if mipmaps.0 {
+            // Apply mipmapping automatically
+            if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex.get());
             }
 
@@ -254,7 +252,7 @@ pub trait Texture: ToGlName + ToGlType + Bind + Sized {
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {
-        self.dimensions().texel_count()
+        self.dimensions().area()
     }
 
     // Get a single mip level from the texture, immutably
