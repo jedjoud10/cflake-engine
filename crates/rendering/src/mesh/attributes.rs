@@ -2,7 +2,7 @@ use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
     buffer::{ArrayBuffer, Buffer, BufferMode},
     context::Context,
-    object::{Bind, Shared},
+    object::{Shared, ToGlType, ToGlName},
 };
 use std::{num::NonZeroU32, ptr::null};
 
@@ -268,19 +268,19 @@ struct AuxBufGen<'a> {
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
 fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> AttribBuf<T::Out> {
-    aux.builder.get_attrib::<T>().map(|vec| {
+    aux.builder.get_attrib::<T>().map(|vec| unsafe {
         // Create the array buffer
         let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
-
+        
         // Bind the buffer to bind the attributes
-        buffer.bind(aux.ctx, |_| unsafe {
-            // Enable the pointer
-            gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
-            gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
+        gl::BindBuffer(buffer.target(), buffer.name().get());
 
-            // Increment the counter, since we've enabled the attribute
-            *aux.index += 1;
-        });
+        // Enable the pointer
+        gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
+        gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
+        
+        // Increment the counter, since we've enabled the attribute
+        *aux.index += 1;        
 
         buffer
     })

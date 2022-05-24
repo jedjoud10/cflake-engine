@@ -1,7 +1,7 @@
 use super::{Bindless, Sampler, TexelLayout, TextureAllocator};
 use crate::{
     context::Context,
-    object::{Bind, ToGlName, ToGlType},
+    object::{ToGlName, ToGlType},
 };
 use std::{
     marker::PhantomData,
@@ -181,7 +181,7 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
-pub trait Texture: ToGlName + ToGlType + Bind + Sized + TextureAllocator {
+pub trait Texture: ToGlName + ToGlType + Sized + TextureAllocator {
     // Output texel layout
     type Layout: TexelLayout;
 

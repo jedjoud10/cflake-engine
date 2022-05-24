@@ -3,7 +3,7 @@ use std::{cell::Cell, num::NonZeroU32, time::Instant};
 use super::Program;
 use crate::{
     context::Context,
-    object::{Active, ToGlName, ToGlType},
+    object::{ToGlName, ToGlType},
     texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
 };
 
@@ -206,14 +206,18 @@ impl_math_vectors!(ui, u32);
 impl_matrices!();
 
 // The main struct that will allow us to set the uniforms
-pub struct Uniforms<'uniforms, 'bound: 'uniforms>(pub(super) &'uniforms mut Active<'bound, Program>);
+pub struct Uniforms<'uniforms>(pub(super) &'uniforms mut Program);
 
-impl<'uniforms, 'bound: 'uniforms> Uniforms<'uniforms, 'bound,> {
+impl<'uniforms> Uniforms<'uniforms> {
+    // Get the uniform location of a uniform using it's name
+    fn location(&self, name: &'static str) -> Option<i32> {
+        None
+    }
+
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
-        let p = self.0.as_ref().program.get();
-        if let Some(loc) = self.0.uniform_location(name) {
-            unsafe { val.set(loc as i32, p) }
+        if let Some(loc) = self.location(name) {
+            unsafe { val.set(loc as i32, self.0.name().get()) }
         }
     }
 
@@ -260,15 +264,14 @@ impl<'uniforms, 'bound: 'uniforms> Uniforms<'uniforms, 'bound,> {
     // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
     unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: NonZeroU32) {
         // First of all, we must get the texture unit offset
-        let count = self.0.as_mut().texture_units.len() as u32;
-        let offset = *self.0.as_mut().texture_units.entry(name).or_insert(count);
+        let count = self.0.texture_units.len() as u32;
+        let offset = *self.0.texture_units.entry(name).or_insert(count);
 
         // Set the uniforms properly now
-        let p = self.0.as_ref().program.get();
-        if let Some(loc) = self.0.uniform_location(name) {
+        if let Some(loc) = self.location(name) {
             gl::ActiveTexture(gl::TEXTURE0 + offset);
             gl::BindTexture(target, texture.get());
-            gl::ProgramUniform1i(p, loc as i32, offset as i32);
+            gl::ProgramUniform1i(self.0.name().get(), loc as i32, offset as i32);
         }
     }
 
@@ -282,9 +285,8 @@ impl<'uniforms, 'bound: 'uniforms> Uniforms<'uniforms, 'bound,> {
             gl::MakeTextureHandleResidentARB(bindless.handle);
         } else {
             // The bindless texture handle is already resident, we just need to set the uniform
-            let p = self.0.as_ref().program.get();
-            if let Some(loc) = self.0.uniform_location(name) {
-                gl::ProgramUniformHandleui64ARB(p, loc as i32, bindless.handle);
+            if let Some(loc) = self.location(name) {
+                gl::ProgramUniformHandleui64ARB(self.0.name().get(), loc as i32, bindless.handle);
             }
         }
     }

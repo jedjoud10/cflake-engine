@@ -1,4 +1,4 @@
-use crate::object::{self, Active, Bind, ToGlName, ToGlType};
+use crate::object::{self, ToGlName, ToGlType};
 use crate::{context::Context, object::Shared};
 use std::{
     ffi::c_void,
@@ -166,12 +166,6 @@ impl<T: Shared, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
 impl<T: Shared, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
     fn target(&self) -> u32 {
         TARGET
-    }
-}
-
-impl<T: Shared, const TARGET: u32> Bind for Buffer<T, TARGET> {
-    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut Context) {
-        gl::BindBuffer(TARGET, self.name().get())
     }
 }
 

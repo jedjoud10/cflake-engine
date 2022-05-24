@@ -1,7 +1,7 @@
 use super::{Bindless, TexelLayout, Texture, TextureMode, TextureAllocator, Region};
 use crate::{
     context::Cached,
-    object::{Active, Bind, ToGlName, ToGlType},
+    object::{ToGlName, ToGlType},
 };
 use std::{
     marker::PhantomData,
@@ -36,12 +36,6 @@ impl<T: TexelLayout> ToGlName for Texture2D<T> {
 impl<T: TexelLayout> ToGlType for Texture2D<T> {
     fn target(&self) -> u32 {
         gl::TEXTURE_2D
-    }
-}
-
-impl<T: TexelLayout> Bind for Texture2D<T> {
-    unsafe fn bind_raw_unchecked(&mut self, ctx: &mut crate::context::Context) {
-        gl::BindTexture(self.target(), self.name().get())
     }
 }
 

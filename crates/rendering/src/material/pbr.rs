@@ -29,7 +29,9 @@ impl Material for StandardMaterial {
 
 impl MaterialInstance for StandardMaterial {
     // Set the PBR uniforms
+    /*
     fn set(&mut self, storage: &CacheStorage, uniforms: Uniforms) {
         uniforms.set_sampler("diffuse_map", self.)
     }
+    */
 }

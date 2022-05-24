@@ -1,4 +1,4 @@
-use crate::{context::Context, object::Active};
+use crate::{context::Context};
 
 use super::{ComputeStage, Program};
 
@@ -17,5 +17,3 @@ impl AsMut<Program> for ComputeShader {
         &mut self.0
     }
 }
-
-impl<'a> Active<'a, ComputeShader> {}
