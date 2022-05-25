@@ -1,7 +1,7 @@
 use super::{Bindless, TexelLayout, Texture, TextureMode, TextureAllocator, Region};
 use crate::{
     context::Cached,
-    object::{ToGlName, ToGlType},
+    object::{Name, Target},
 };
 use std::{
     marker::PhantomData,
@@ -13,7 +13,7 @@ use std::{
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
     // Internal OpenGL shit
-    texture: NonZeroU32,
+    texture: Name,
 
     // Main texture settings
     dimensions: vek::Extent2<u16>,
@@ -27,36 +27,38 @@ pub struct Texture2D<T: TexelLayout> {
 
 impl<T: TexelLayout> Cached for Texture2D<T> {}
 
+impl<T: TexelLayout> 
+
 impl<T: TexelLayout> ToGlName for Texture2D<T> {
-    fn name(&self) -> NonZeroU32 {
-        self.texture
+    fn name(&self) -> &Name {
+        &self.texture
     }
 }
 
 impl<T: TexelLayout> ToGlType for Texture2D<T> {
-    fn target(&self) -> u32 {
-        gl::TEXTURE_2D
+    fn target(&self) -> &Target {
+        Target::from(gl::TEXTURE_2D)
     }
 }
 
 impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
     type TexelRegion = (vek::Vec2<u16>, vek::Extent2<u16>);
 
-    unsafe fn alloc_immutable_storage(name: NonZeroU32, extent: <Self::TexelRegion as Region>::E, levels: u8, ptr: *const std::ffi::c_void) {
-        gl::TextureStorage2D(name.get(), levels as i32, T::INTERNAL_FORMAT, extent.w as i32, extent.h as i32);
-        gl::TextureSubImage2D(name.get(), 0, 0, 0, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
+    unsafe fn alloc_immutable_storage(name: u32, extent: <Self::TexelRegion as Region>::E, levels: u8, ptr: *const std::ffi::c_void) {
+        gl::TextureStorage2D(name, levels as i32, T::INTERNAL_FORMAT, extent.w as i32, extent.h as i32);
+        gl::TextureSubImage2D(name, 0, 0, 0, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
     }
 
-    unsafe fn alloc_resizable_storage(name: NonZeroU32, extent: <Self::TexelRegion as Region>::E, unique_level: u8, ptr: *const std::ffi::c_void) {
-        gl::BindTexture(gl::TEXTURE_2D, name.get());
+    unsafe fn alloc_resizable_storage(name: u32, extent: <Self::TexelRegion as Region>::E, unique_level: u8, ptr: *const std::ffi::c_void) {
+        gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(gl::TEXTURE_2D, unique_level as i32, T::INTERNAL_FORMAT as i32, extent.w as i32, extent.h as i32, 0, T::FORMAT, T::TYPE, ptr);
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
-    unsafe fn update_subregion(name: NonZeroU32, region: Self::TexelRegion, ptr: *const std::ffi::c_void) {
+    unsafe fn update_subregion(name: u32, region: Self::TexelRegion, ptr: *const std::ffi::c_void) {
         let origin = region.origin();
         let extent = region.extent();
-        gl::TextureSubImage2D(name.get(), 0, origin.x as i32, origin.y as i32, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
+        gl::TextureSubImage2D(name, 0, origin.x as i32, origin.y as i32, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
     }
 }
 
@@ -88,7 +90,7 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
         (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
     }
     
-    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: <Self::TexelRegion as super::Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self {
-        Self { texture: name, dimensions, mode, levels, bindless, _phantom: Default::default() }
+    unsafe fn from_raw_parts(name: u32, dimensions: <Self::TexelRegion as super::Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self {
+        Self { texture: Name::from(name), dimensions, mode, levels, bindless, _phantom: Default::default() }
     }
 }
