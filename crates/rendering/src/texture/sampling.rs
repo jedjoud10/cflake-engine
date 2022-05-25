@@ -49,7 +49,7 @@ impl Sampling {
 }
 
 // Apply some sampling parameters to a specific texture
-pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sampling: Sampling) {
+pub(super) unsafe fn apply(name: u32, target: u32, mode: TextureMode, sampling: Sampling) {
     // We do a bit of enum fetching (this is safe) (trust)
     let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
 
@@ -58,8 +58,8 @@ pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sam
     let mag = filter as i32;
 
     // Set the filters
-    gl::TextureParameteri(name.get(), gl::TEXTURE_MIN_FILTER, min);
-    gl::TextureParameteri(name.get(), gl::TEXTURE_MAG_FILTER, mag);
+    gl::TextureParameteri(name, gl::TEXTURE_MIN_FILTER, min);
+    gl::TextureParameteri(name, gl::TEXTURE_MAG_FILTER, mag);
 
     // Convert the wrapping mode enum to the raw opengl type
     let (wrap, border) = match sampling.wrap {
@@ -70,13 +70,13 @@ pub(super) unsafe fn apply(name: NonZeroU32, target: u32, mode: TextureMode, sam
     };
 
     // Set the wrapping mode (for all 3 axii)
-    gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_S, wrap as i32);
-    gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_T, wrap as i32);
-    gl::TextureParameteri(name.get(), gl::TEXTURE_WRAP_R, wrap as i32);
+    gl::TextureParameteri(name, gl::TEXTURE_WRAP_S, wrap as i32);
+    gl::TextureParameteri(name, gl::TEXTURE_WRAP_T, wrap as i32);
+    gl::TextureParameteri(name, gl::TEXTURE_WRAP_R, wrap as i32);
 
     // Set the border color (if needed)
     if let Some(border) = border {
-        gl::TextureParameterfv(name.get(), gl::TEXTURE_BORDER_COLOR, border.as_ptr());
+        gl::TextureParameterfv(name, gl::TEXTURE_BORDER_COLOR, border.as_ptr());
     }
 }
 

@@ -207,7 +207,7 @@ pub trait Texture: ToGlName + ToGlType + Sized + TextureAllocator {
             let tex = {
                 let mut tex = 0u32;
                 gl::GenTextures(1, &mut tex);
-                NonZeroU32::new(tex).unwrap()
+                tex
             };
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
@@ -224,7 +224,7 @@ pub trait Texture: ToGlName + ToGlType + Sized + TextureAllocator {
 
             // Apply mipmapping automatically
             if levels.get() > 1 {
-                gl::GenerateTextureMipmap(tex.get());
+                gl::GenerateTextureMipmap(tex);
             }
 
             // Create the object
@@ -286,5 +286,5 @@ pub trait Texture: ToGlName + ToGlType + Sized + TextureAllocator {
     }
 
     // Construct the texture object from it's raw parts
-    unsafe fn from_raw_parts(name: NonZeroU32, dimensions: <Self::TexelRegion as Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
+    unsafe fn from_raw_parts(name: u32, dimensions: <Self::TexelRegion as Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
 }

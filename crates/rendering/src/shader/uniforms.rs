@@ -217,7 +217,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
         if let Some(loc) = self.location(name) {
-            unsafe { val.set(loc as i32, self.0.name().get()) }
+            unsafe { val.set(loc as i32, self.0.name()) }
         }
     }
 
@@ -262,7 +262,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
-    unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: NonZeroU32) {
+    unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: u32) {
         // First of all, we must get the texture unit offset
         let count = self.0.texture_units.len() as u32;
         let offset = *self.0.texture_units.entry(name).or_insert(count);
@@ -270,8 +270,8 @@ impl<'uniforms> Uniforms<'uniforms> {
         // Set the uniforms properly now
         if let Some(loc) = self.location(name) {
             gl::ActiveTexture(gl::TEXTURE0 + offset);
-            gl::BindTexture(target, texture.get());
-            gl::ProgramUniform1i(self.0.name().get(), loc as i32, offset as i32);
+            gl::BindTexture(target, texture);
+            gl::ProgramUniform1i(self.0.name(), loc as i32, offset as i32);
         }
     }
 
@@ -286,7 +286,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         } else {
             // The bindless texture handle is already resident, we just need to set the uniform
             if let Some(loc) = self.location(name) {
-                gl::ProgramUniformHandleui64ARB(self.0.name().get(), loc as i32, bindless.handle);
+                gl::ProgramUniformHandleui64ARB(self.0.name(), loc as i32, bindless.handle);
             }
         }
     }

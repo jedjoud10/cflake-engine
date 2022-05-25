@@ -1,14 +1,14 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
 use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
-use crate::{context::Context, object::ToGlName};
+use crate::{context::Context, object::{ToGlName, Name}};
 
 // Compile a shader program using multiple unlinked shader stages
-unsafe fn compile(names: &[NonZeroU32]) -> Program {
+unsafe fn compile(names: &[Name]) -> Program {
     // Create the program and link the stages to it
     let program = gl::CreateProgram();
     for name in names {
-        gl::AttachShader(program, name.get());
+        gl::AttachShader(program, name.id());
     }
 
     // Link the stages together to finalize the shader
@@ -34,14 +34,14 @@ unsafe fn compile(names: &[NonZeroU32]) -> Program {
 
     // Delete the shader stages since we already linked them
     for name in names {
-        gl::DeleteShader(name.get());
+        gl::DeleteShader(name.id());
     }
 
     // Return the program GL name
-    let program = NonZeroU32::new(program).unwrap();
+    let program = Name::from(program);
 
     // Use shader introspection to pre-fetch the shader uniform/storage blocks and uniform locations
-    let introspection = introspect(program);
+    let introspection = introspect(program.id());
 
     // Fetch all the uniform locations
     let uniform_locations = introspection.uniforms().iter().map(|uniform| (uniform.name().to_string(), uniform.location())).collect();

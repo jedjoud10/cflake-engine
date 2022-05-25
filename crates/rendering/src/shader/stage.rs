@@ -71,10 +71,10 @@ impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, ".cmpt.glsl");
 pub(super) struct Processed<T: Stage>(pub(super) T);
 
 // This implies that the underlying shader source has been compiled
-pub(super) struct Compiled<T: Stage>(PhantomData<T>, NonZeroU32);
+pub(super) struct Compiled<T: Stage>(PhantomData<T>, u32);
 
 impl<T: Stage> ToGlName for Compiled<T> {
-    fn name(&self) -> NonZeroU32 {
+    fn name(&self) -> u32 {
         self.1
     }
 }
@@ -82,7 +82,7 @@ impl<T: Stage> ToGlName for Compiled<T> {
 impl<T: Stage> Drop for Compiled<T> {
     fn drop(&mut self) {
         // Automatically delete the stage shader after we successfully use it
-        unsafe { gl::DeleteShader(self.1.get()) }
+        unsafe { gl::DeleteShader(self.1) }
     }
 }
 
@@ -124,5 +124,5 @@ pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -
     }
 
     // Return the stage GL name
-    Compiled(Default::default(), NonZeroU32::new(shader).unwrap())
+    Compiled(Default::default(), shader)
 }

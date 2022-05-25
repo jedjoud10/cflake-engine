@@ -57,11 +57,11 @@ impl Bindless {
 }
 
 // Create a new bindless handle for a texture
-pub(super) unsafe fn create_bindless(ctx: &mut Context, name: NonZeroU32, timeout: u64, mode: TextureMode) -> Option<Rc<Bindless>> {
+pub(super) unsafe fn create_bindless(ctx: &mut Context, name: u32, timeout: u64, mode: TextureMode) -> Option<Rc<Bindless>> {
     (mode == TextureMode::Dynamic).then(|| {
         // Create the RC first
         let rc = Rc::new(Bindless {
-            handle: gl::GetTextureHandleARB(name.get()),
+            handle: gl::GetTextureHandleARB(name),
             resident: Cell::new(false),
             timeout: Duration::from_millis(timeout),
             last_shader_usage: Cell::new(Instant::now()),

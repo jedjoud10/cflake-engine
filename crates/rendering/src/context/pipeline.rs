@@ -1,8 +1,5 @@
 use std::ops::{Index, IndexMut};
-
 use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest};
-
-use super::{Cached, Handle, PipelineStorage};
 
 // Create a new window and a valid OpenGL context
 pub fn init(el: &EventLoop<()>) -> (super::Window, super::Context) {
@@ -33,9 +30,6 @@ pub struct Pipeline {
     // Window & Context
     window: super::Window,
     context: super::Context,
-
-    // Pipeline storage for object caching
-    storage: PipelineStorage,
 }
 
 impl Pipeline {
@@ -47,7 +41,6 @@ impl Pipeline {
         Self {
             window,
             context,
-            storage: Default::default(),
         }
     }
 
