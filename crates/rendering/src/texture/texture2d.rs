@@ -1,7 +1,6 @@
 use super::{Bindless, TexelLayout, Texture, TextureMode, TextureAllocator, Region};
 use crate::{
-    context::Cached,
-    object::{Name, Target},
+    object::{Name, ToGlName, ToGlTarget},
 };
 use std::{
     marker::PhantomData,
@@ -13,7 +12,7 @@ use std::{
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
     // Internal OpenGL shit
-    texture: Name,
+    name: Name,
 
     // Main texture settings
     dimensions: vek::Extent2<u16>,
@@ -25,19 +24,15 @@ pub struct Texture2D<T: TexelLayout> {
     _phantom: PhantomData<*const T>,
 }
 
-impl<T: TexelLayout> Cached for Texture2D<T> {}
-
-impl<T: TexelLayout> 
-
 impl<T: TexelLayout> ToGlName for Texture2D<T> {
-    fn name(&self) -> &Name {
-        &self.texture
+    fn name(&self) -> u32 {
+        *self.name
     }
 }
 
-impl<T: TexelLayout> ToGlType for Texture2D<T> {
-    fn target(&self) -> &Target {
-        Target::from(gl::TEXTURE_2D)
+impl<T: TexelLayout> ToGlTarget for Texture2D<T> {
+    fn target() -> u32 {
+        gl::TEXTURE_2D
     }
 }
 
@@ -91,6 +86,6 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
     }
     
     unsafe fn from_raw_parts(name: u32, dimensions: <Self::TexelRegion as super::Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self {
-        Self { texture: Name::from(name), dimensions, mode, levels, bindless, _phantom: Default::default() }
+        Self { name: Name::from(name), dimensions, mode, levels, bindless, _phantom: Default::default() }
     }
 }

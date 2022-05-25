@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    object::{ToGlName, ToGlType},
+    object::{ToGlName, ToGlTarget},
 };
 use assets::Asset;
 use std::{
@@ -11,7 +11,7 @@ use std::{
 };
 
 // This trait is implemented for each shader stage, like the vertex stage or fragment stage
-pub trait Stage: Sized + From<String> + Into<String> + AsRef<str> + ToGlType {}
+pub trait Stage: Sized + From<String> + Into<String> + AsRef<str> + ToGlTarget {}
 
 // A vertex stage that will be loaded from .vrsh files
 pub struct VertexStage(String);
@@ -41,8 +41,8 @@ macro_rules! impl_stage_traits {
             }
         }
 
-        impl ToGlType for $t {
-            fn target(&self) -> u32 {
+        impl ToGlTarget for $t {
+            fn target() -> u32 {
                 $gl
             }
         }
@@ -90,7 +90,7 @@ impl<T: Stage> Drop for Compiled<T> {
 pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
     // Create the stage source
     let stage = stage.0;
-    let shader = gl::CreateShader(stage.target());
+    let shader = gl::CreateShader(U::target());
     let source: String = stage.into();
 
     // Specify the stage source and compile it

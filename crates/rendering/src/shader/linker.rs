@@ -4,11 +4,11 @@ use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, P
 use crate::{context::Context, object::{ToGlName, Name}};
 
 // Compile a shader program using multiple unlinked shader stages
-unsafe fn compile(names: &[Name]) -> Program {
+unsafe fn compile(names: &[u32]) -> Program {
     // Create the program and link the stages to it
     let program = gl::CreateProgram();
     for name in names {
-        gl::AttachShader(program, name.id());
+        gl::AttachShader(program, *name);
     }
 
     // Link the stages together to finalize the shader
@@ -34,20 +34,17 @@ unsafe fn compile(names: &[Name]) -> Program {
 
     // Delete the shader stages since we already linked them
     for name in names {
-        gl::DeleteShader(name.id());
+        gl::DeleteShader(*name);
     }
 
-    // Return the program GL name
-    let program = Name::from(program);
-
     // Use shader introspection to pre-fetch the shader uniform/storage blocks and uniform locations
-    let introspection = introspect(program.id());
+    let introspection = introspect(program);
 
     // Fetch all the uniform locations
     let uniform_locations = introspection.uniforms().iter().map(|uniform| (uniform.name().to_string(), uniform.location())).collect();
 
     Program {
-        program,
+        name: Name::from(program),
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),

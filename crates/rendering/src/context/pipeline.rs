@@ -49,7 +49,6 @@ impl Pipeline {
 
     // Called at the end of every frame
     pub fn end(&mut self) {
-        self.storage.cleanse();
     }
 }
 
@@ -68,37 +67,5 @@ impl Pipeline {
     // Get the current rendering window mutably
     pub fn window_mut(&mut self) -> &mut super::Window {
         &mut self.window
-    }
-}
-
-// Storage access functions
-impl Pipeline {
-    // Insert an object into the pipeline
-    pub fn insert<T: Cached>(&mut self, object: T) -> Handle<T> {
-        self.storage.insert(object)
-    }
-
-    // Get an object immutably
-    pub fn get<T: Cached>(&self, handle: &Handle<T>) -> Option<&T> {
-        self.storage.get(handle)
-    }
-
-    // Get an object mutably
-    pub fn get_mut<T: Cached>(&mut self, handle: &Handle<T>) -> Option<&mut T> {
-        self.storage.get_mut(handle)
-    }
-}
-
-impl<T: Cached> Index<Handle<T>> for Pipeline {
-    type Output = T;
-
-    fn index(&self, index: Handle<T>) -> &Self::Output {
-        self.get(&index).unwrap()
-    }
-}
-
-impl<T: Cached> IndexMut<Handle<T>> for Pipeline {
-    fn index_mut(&mut self, index: Handle<T>) -> &mut Self::Output {
-        self.get_mut(&index).unwrap()
     }
 }

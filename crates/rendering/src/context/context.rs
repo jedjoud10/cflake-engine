@@ -1,4 +1,3 @@
-use crate::texture::Bindless;
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
@@ -11,6 +10,8 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
+
+use crate::texture::Bindless;
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
@@ -26,7 +27,7 @@ pub struct Context {
     frame: u128,
 
     // A list of bindless textures that are currently active
-    pub(crate) bindless: Vec<(Rc<Bindless>)>,
+    pub(crate) bindless: Vec<Rc<Bindless>>,
 
     // A list of objects that are currently bound
     pub(crate) bound: BindingHashMap,

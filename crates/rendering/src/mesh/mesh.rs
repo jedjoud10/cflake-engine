@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
-    context::{Cached, Context},
-    object::ToGlName,
+    context::{Context},
+    object::{ToGlName, Name},
 };
 use assets::Asset;
 use math::bounds::aabb::AABB;
@@ -33,7 +33,7 @@ impl Default for VertexLayout {
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
     // The OpenGL VAO name
-    vao: NonZeroU32,
+    name: Name,
 
     // The vertex attribute buffers
     attributes: AttributeSet,
@@ -53,11 +53,11 @@ impl SubMesh {
             let mut name = 0;
             gl::GenVertexArrays(1, &mut name);
             gl::BindVertexArray(name);
-            NonZeroU32::new(name).unwrap()
+            name
         };
 
         Self {
-            vao,
+            name: Name::from(vao),
             attributes: AttributeSet::new(vao, ctx, BufferMode::Static, &builder),
             indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
@@ -70,49 +70,13 @@ impl SubMesh {
 }
 
 impl ToGlName for SubMesh {
-    fn name(&self) -> NonZeroU32 {
-        self.vao
+    fn name(&self) -> u32 {
+        *self.name
     }
 }
 
-// A mesh is simply a collection of submeshes
-pub struct Mesh {
-    // Multiple submeshes make up a mesh
-    submeshes: Vec<SubMesh>,
-
-    // The full AABB bounds of the mesh
-    bounds: AABB,
-}
-
-impl Mesh {
-    // Create a new empty mesh that can be modified later
-    fn new(_ctx: &mut Context) -> Self {
-        Self {
-            submeshes: Default::default(),
-            bounds: todo!(),
-        }
-    }
-
-    // Create a mesh from multiple submeshes
-    fn from_submeshes(_ctx: &mut Context, submeshes: Vec<SubMesh>) -> Self {
-        Self { submeshes, bounds: todo!() }
-    }
-
-    // Create a mesh that can hold a specific number of submeshes in memory
-    fn with_capacity(_ctx: &mut Context, capacity: usize) -> Self {
-        Self {
-            submeshes: Vec::with_capacity(capacity),
-            bounds: todo!(),
-        }
-    }
-
-    // Insert a submesh into the mesh
-    fn insert(&mut self, _ctx: &mut Context, submesh: SubMesh) {
-        self.submeshes.push(submesh)
-    }
-}
-
-impl<'ctx> Asset<'ctx> for Mesh {
+/*
+impl<'ctx> Asset<'ctx> for Vec<SubMesh> {
     type Args = &'ctx mut Context;
 
     fn extensions() -> &'static [&'static str] {
@@ -124,3 +88,4 @@ impl<'ctx> Asset<'ctx> for Mesh {
         Self::from_submeshes(ctx, vec![main])
     }
 }
+*/

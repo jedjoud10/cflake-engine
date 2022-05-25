@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     context::Context,
-    object::{ToGlName, ToGlType},
+    object::{ToGlName, ToGlTarget},
 };
 
 use super::{Bindless, TexelLayout, Texture, TextureMode};

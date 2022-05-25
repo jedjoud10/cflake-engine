@@ -70,8 +70,6 @@ impl Introspection {
 
 // Introspect a shader, and construct an Introspection struct
 pub(super) unsafe fn introspect(program: u32) -> Introspection {
-    let program = program.get();
-
     // Count the number of uniform blocks and shader storage blocks
     let mut uniforms = 0;
     let mut storages = 0;

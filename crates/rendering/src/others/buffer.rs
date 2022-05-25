@@ -1,4 +1,4 @@
-use crate::object::{self, ToGlName, ToGlType};
+use crate::object::{self, ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
 use std::{
     ffi::c_void,
@@ -46,7 +46,7 @@ pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
 // This also takes a constant that represents it's OpenGL target
 pub struct Buffer<T: Shared, const TARGET: u32> {
     // OpenGL buffer name
-    buffer: NonZeroU32,
+    buffer: u32,
 
     // I am slowly going insane
     len: usize,
@@ -87,7 +87,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         // Create the buffer struct
         Some(Self {
-            buffer: NonZeroU32::new(buffer).unwrap(),
+            buffer,
             len: length,
             capacity,
             mode,
@@ -124,7 +124,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             if bytes != 0 {
                 let borrow = &val as *const T;
-                gl::ClearNamedBufferSubData(self.buffer.get(), gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, borrow as _);
+                gl::ClearNamedBufferSubData(self.buffer, gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, borrow as _);
             }
         }
     }
@@ -141,7 +141,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             self.len = data.len();
             self.capacity = data.len();
             let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
-            gl::NamedBufferSubData(self.buffer.get(), 0, bytes, data.as_ptr() as _);
+            gl::NamedBufferSubData(self.buffer, 0, bytes, data.as_ptr() as _);
         }
     }
 
@@ -152,19 +152,21 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         unsafe {
             let bytes = isize::try_from(output.len() * size_of::<T>()).unwrap();
-            gl::GetNamedBufferSubData(self.buffer.get(), 0, bytes, output.as_mut_ptr() as _);
+            gl::GetNamedBufferSubData(self.buffer, 0, bytes, output.as_mut_ptr() as _);
         }
     }
 }
 
+
+
 impl<T: Shared, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
-    fn name(&self) -> NonZeroU32 {
+    fn name(&self) -> u32 {
         self.buffer
     }
 }
 
-impl<T: Shared, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
-    fn target(&self) -> u32 {
+impl<T: Shared, const TARGET: u32> ToGlTarget for Buffer<T, TARGET> {
+    fn target() -> u32 {
         TARGET
     }
 }
@@ -172,7 +174,7 @@ impl<T: Shared, const TARGET: u32> ToGlType for Buffer<T, TARGET> {
 impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(1, &self.buffer.get());
+            gl::DeleteBuffers(1, &self.buffer);
         }
     }
 }

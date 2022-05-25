@@ -1,29 +1,15 @@
 use crate::context::Context;
 use std::{num::NonZeroU32, rc::Rc, ops::Deref};
-
-// An object that is represented by it's target raw type and it's raw name
-pub struct GlObject {
-    // The raw OpenGL object ID of the object of this unique type 
-    name: Name,
-
-    // The raw OpenGL target
-    target: Target,
-}
-
-impl GlObject {
-    // Create a new object with the raw name and raw target types
-    pub(crate) fn from_raw_parts(name: u32, target: u32) -> Self {
-        Self { name: Name::Unique(name), target: Target(target) }
+pub(crate) use raw::*;
+mod raw {
+    // This trait will be implemented on objects that contain a raw OpenGL name
+    pub trait ToGlName {
+        fn name(&self) -> u32;
     }
 
-    // Get the name wrapper
-    pub fn name(&self) -> &Name {
-        &self.name
-    }
-    
-    // Get the target wrapper
-    pub fn target(&self) -> &Target {
-        &self.target
+    // This trait will be implemented on objects that have a unique OpenGL type
+    pub trait ToGlTarget {
+        fn target() -> u32;
     }
 }
 
@@ -34,13 +20,13 @@ pub trait Shared: Copy + Sized + Sync + Send {}
 impl<T: Copy + Sized + Sync + Send> Shared for T {}
 
 
-// Copy-on-write reference counted pointer for shared raw OpenGL object
+// Copy-on-write reference counted pointer for shared raw OpenGL object names
 pub enum Name {
     // This is an owned OpenGL object that is not shared
-    Unique(gl::types::GLuint),
+    Unique(u32),
 
     // This is a shared OpenGL object
-    Shared(Rc<gl::types::GLuint>)
+    Shared(Rc<u32>)
 }
 
 impl Name {
@@ -59,24 +45,19 @@ impl Name {
     }
 }
 
+impl From<u32> for Name {
+    fn from(name: u32) -> Self {
+        Name::Unique(name)
+    }
+}
+
 impl Deref for Name {
-    type Target = gl::types::GLuint;
+    type Target = u32;
 
     fn deref(&self) -> &Self::Target {
         match self {
             Name::Unique(x) => x,
             Name::Shared(x) => x.as_ref(),
         }
-    }
-}
-
-// A simple OpenGL target wrapper
-pub struct Target(gl::types::GLuint);
-
-impl Deref for Target {
-    type Target = gl::types::GLuint;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }

@@ -2,7 +2,7 @@ use super::{GeometryBuilder, VertexAssembly, VertexLayout};
 use crate::{
     buffer::{ArrayBuffer, Buffer, BufferMode},
     context::Context,
-    object::{Shared, ToGlType, ToGlName},
+    object::{Shared, ToGlTarget, ToGlName},
 };
 use std::{num::NonZeroU32, ptr::null};
 
@@ -259,7 +259,7 @@ pub mod out {
 
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
-    vao: NonZeroU32,
+    vao: u32,
     index: &'a mut u32,
     builder: &'a GeometryBuilder,
     ctx: &'a mut Context,
@@ -273,11 +273,11 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
         let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
         
         // Bind the buffer to bind the attributes
-        gl::BindBuffer(buffer.target(), buffer.name().get());
+        gl::BindBuffer(ArrayBuffer::<<T as NamedAttribute>::Out>::target(), buffer.name());
 
         // Enable the pointer
         gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
-        gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
+        gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
         
         // Increment the counter, since we've enabled the attribute
         *aux.index += 1;        
@@ -288,7 +288,7 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Attr
 
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
-    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
+    pub(super) fn new(vao: u32, ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
         // We do a bit of copying
         let layout = builder.layout();
 

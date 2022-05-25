@@ -3,7 +3,7 @@ use std::{cell::Cell, num::NonZeroU32, time::Instant};
 use super::Program;
 use crate::{
     context::Context,
-    object::{ToGlName, ToGlType},
+    object::{ToGlName, ToGlTarget},
     texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
 };
 
@@ -296,7 +296,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         unsafe {
             match sampler.0.bindless() {
                 Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
-                None => self.set_normal_sampler_unchecked(name, sampler.0.target(), sampler.0.name()),
+                None => self.set_normal_sampler_unchecked(name, T::target(), sampler.0.name()),
             }
         }
     }

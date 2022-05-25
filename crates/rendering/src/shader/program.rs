@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    object::{ToGlName, ToGlType, Name},
+    object::{ToGlName, ToGlTarget, Name},
 };
 use ahash::AHashMap;
 use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
@@ -10,7 +10,7 @@ use super::{Introspection, Uniforms};
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
     // The program OpenGL name
-    pub(super) program: Name,
+    pub(super) name: Name,
 
     // Cached texture units
     pub(super) texture_units: AHashMap<&'static str, u32>,
@@ -34,19 +34,18 @@ impl Program {
 
 impl ToGlName for Program {
     fn name(&self) -> u32 {
-        self.program.id()
+        *self.name
     }
 }
 
-impl ToGlType for Program {
-    fn target(&self) -> u32 {
-        // This is technically not right, but it is rather a hack to keep the fexibility of the state tracker
+impl ToGlTarget for Program {
+    fn target() -> u32 {
         gl::PROGRAM
     }
 }
 
 impl Drop for Program {
     fn drop(&mut self) {
-        unsafe { gl::DeleteProgram(self.program.id()) }
+        unsafe { gl::DeleteProgram(*self.name) }
     }
 }
