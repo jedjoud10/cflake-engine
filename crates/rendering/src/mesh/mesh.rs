@@ -5,12 +5,12 @@ use super::{
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     context::{Context},
-    object::{ToGlName, Name},
+    object::{ToGlName},
 };
 use assets::Asset;
 use math::bounds::aabb::AABB;
 use obj::TexturedVertex;
-use std::{mem::ManuallyDrop, num::NonZeroU32};
+use std::{mem::ManuallyDrop, num::NonZeroU32, ptr::null};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {
@@ -33,7 +33,7 @@ impl Default for VertexLayout {
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
     // The OpenGL VAO name
-    name: Name,
+    name:u32,
 
     // The vertex attribute buffers
     attributes: AttributeSet,
@@ -57,7 +57,7 @@ impl SubMesh {
         };
 
         Self {
-            name: Name::from(vao),
+            name:u32::from(vao),
             attributes: AttributeSet::new(vao, ctx, BufferMode::Static, &builder),
             indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
@@ -67,11 +67,18 @@ impl SubMesh {
     pub fn layout(&self) -> VertexLayout {
         self.attributes.layout()
     }
+
+    // Draw the submesh onto the current framebuffer
+    #[inline(always)]
+    pub unsafe fn draw(&self) {
+        gl::BindVertexArray(self.name);
+        gl::DrawElements(gl::TRIANGLES, self.indices.len() as i32, gl::UNSIGNED_INT, null());
+    }
 }
 
 impl ToGlName for SubMesh {
     fn name(&self) -> u32 {
-        *self.name
+        self.name
     }
 }
 

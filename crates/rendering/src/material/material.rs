@@ -1,9 +1,13 @@
 use assets::loader::AssetLoader;
-
 use crate::{shader::{Shader, Uniforms}, context::Context};
 
 // A material is what we shall use to render surfaces onto the screen
 pub trait Material {
+    // Get the render depth target for this material (when should objects of this material be rendered?)
+    fn layer() -> i32 {
+        0
+    }
+
     // Load the shader that we will use for this material
     fn shader(ctx: &mut Context, loader: &mut AssetLoader) -> Shader;
 }

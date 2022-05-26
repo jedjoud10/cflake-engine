@@ -20,6 +20,18 @@ pub struct StandardMaterial {
     metallic_strength: f32,
 }
 
+impl Default for StandardMaterial {
+    fn default() -> Self {
+        Self { 
+            diffuse: None,
+            normal: None,
+            mask: None, 
+            normal_map_strength: 1.0,
+            roughness_strength: 1.0,
+            metallic_strength: 1.0 }
+    }
+}
+
 impl Material for StandardMaterial {
     // This will load the default PBR shader
     fn shader(ctx: &mut crate::context::Context, loader: &mut assets::loader::AssetLoader) -> crate::shader::Shader {

@@ -1,7 +1,7 @@
 use std::{num::NonZeroU32, ptr::null_mut};
 
 use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
-use crate::{context::Context, object::{ToGlName, Name}};
+use crate::{context::Context, object::{ToGlName}};
 
 // Compile a shader program using multiple unlinked shader stages
 unsafe fn compile(names: &[u32]) -> Program {
@@ -44,7 +44,7 @@ unsafe fn compile(names: &[u32]) -> Program {
     let uniform_locations = introspection.uniforms().iter().map(|uniform| (uniform.name().to_string(), uniform.location())).collect();
 
     Program {
-        name: Name::from(program),
+        name:u32::from(program),
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),
