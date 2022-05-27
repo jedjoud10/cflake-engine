@@ -68,11 +68,24 @@ impl SubMesh {
         self.attributes.layout()
     }
 
-    // Draw the submesh onto the current framebuffer
-    #[inline(always)]
-    pub unsafe fn draw(&self) {
-        gl::BindVertexArray(self.name);
-        gl::DrawElements(gl::TRIANGLES, self.indices.len() as i32, gl::UNSIGNED_INT, null());
+    // Get the underlying attribute set immutably
+    pub fn attributes(&self) -> &AttributeSet {
+        &self.attributes
+    }
+
+    // Get the underlying attribute set mutably
+    pub fn attributes_mut(&mut self) -> &mut AttributeSet {
+        &mut self.attributes
+    }
+
+    // Get the underlying index buffer immutably
+    pub fn indices(&self) -> &ElementBuffer {
+        &self.indices
+    }
+
+    // Get the underlying index buffer mutably
+    pub fn indices_mut(&mut self) -> &mut ElementBuffer {
+        &mut self.indices
     }
 }
 

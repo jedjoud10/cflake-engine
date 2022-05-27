@@ -1,9 +1,13 @@
-/*
-// A surface that we will draw onto the screen
-pub struct Surface<'object> {
+use crate::{material::Material, mesh::SubMesh};
+
+
+// A surface is just a submesh that is associated with a material
+// Technically, the OpenGL renderer will just need a surface to be able to render anything onto the screen
+pub struct Surface<'object, M: Material> {
     submesh: &'object SubMesh,
-    material: &'object dyn Material,
+    material: &'object M,
 }
+/*
 /*
 // A simple model that we will render
 pub struct Mode<'object> {

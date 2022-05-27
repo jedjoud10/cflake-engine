@@ -1,6 +1,6 @@
 mod context;
-mod pipeline;
-mod window;
+mod device;
+mod graphics;
 pub use context::*;
-pub use pipeline::*;
-pub use window::*;
+pub use device::*;
+pub use graphics::*;

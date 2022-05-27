@@ -1,19 +1,21 @@
 use assets::loader::AssetLoader;
-use crate::{shader::{Shader, Uniforms}, context::Context};
 
-// A material is what we shall use to render surfaces onto the screen
+use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh};
+
+// A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material {
-    // Get the render depth target for this material (when should objects of this material be rendered?)
-    fn layer() -> i32 {
-        0
-    }
+    // Get the execution order for this material
+    fn layer() -> i32;
 
-    // Load the shader that we will use for this material
-    fn shader(ctx: &mut Context, loader: &mut AssetLoader) -> Shader;
-}
+    // Create this new material by initializing it with the default shader 
+    fn new(ctx: &mut Context, loader: &mut AssetLoader) -> Self;
 
-// A material instance is just like a material, but it will actually set the uniforms directly
-pub trait MaterialInstance {
-    // Set the valid uniforms from this material
-   // fn set(&mut self, storage: &mut Storage, uniforms: Uniforms);
+    // Create this new material using an explicit shader
+    fn with_shader(ctx: &mut Context, shader: Shader) -> Self;
+
+    // Set the shader uniforms and return the shader
+    fn set_uniforms(&mut self, ctx: &mut Context, device: &mut Device) -> &Shader;
+
+    // Draw all of the given submeshes
+    fn execute(&self, to_draw: Vec<&dyn Draw>) -> ;
 }

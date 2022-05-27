@@ -1,11 +1,16 @@
-// A window that we will use to render the game
-pub struct Window {
+// A device is just some sort of wrapper around glutin windows
+pub struct Device {
+    // The underlying glutin window
     glutin: glutin::window::Window,
-    size: vek::Extent2<u32>,
-    fullscreen: bool,
-}
 
-impl Window {
+    // Size (in points) of the device window
+    size: vek::Extent2<u32>,
+
+    // Fullscreen state of the window
+    fullscreen: bool,
+} 
+
+impl Device {
     // Create a new window using a Glutin window
     pub(crate) fn new(glutin: glutin::window::Window) -> Self {
         // Convert the size into a tuple

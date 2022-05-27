@@ -76,19 +76,16 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
     const COUNT_PER_VERTEX: u32 = 4;
 }
 
-// Attribute buffer that *might* be disabled, or maybe enabled
-type AttribBuf<T> = Option<ArrayBuffer<T>>;
-
 // Multiple OpenGL attribute buffers stored in the same struct
 pub struct AttributeSet {
     // The actual attribute buffers
-    positions: AttribBuf<vek::Vec3<f32>>,
-    normals: AttribBuf<vek::Vec3<i8>>,
-    tangents: AttribBuf<vek::Vec4<i8>>,
-    colors: AttribBuf<vek::Rgb<u8>>,
+    positions: Option<ArrayBuffer<vek::Vec3<f32>>>,
+    normals: Option<ArrayBuffer<vek::Vec3<i8>>>,
+    tangents: Option<ArrayBuffer<vek::Vec4<i8>>>,
+    colors: Option<ArrayBuffer<vek::Rgb<u8>>>,
 
     // Multiple texture coordiantes (TODO)
-    tex_coord_0: AttribBuf<vek::Vec2<u8>>,
+    tex_coord_0: Option<ArrayBuffer<vek::Vec2<u8>>>,
 
     // The enabled attributes
     layout: VertexLayout,
@@ -267,7 +264,7 @@ struct AuxBufGen<'a> {
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> AttribBuf<T::Out> {
+fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
     aux.builder.get_attrib::<T>().map(|vec| unsafe {
         // Create the array buffer
         let mut buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
@@ -321,7 +318,7 @@ impl AttributeSet {
     // Get the number of vertices that we have in total (this will return None if one or more vectors have different lengths)
     pub fn len(&self) -> Option<usize> {
         // This function just takes an AttribBuf<T> and returns an Option<usize>
-        fn len<T: Attribute>(vec: &AttribBuf<T>) -> Option<usize> {
+        fn len<T: Attribute>(vec: &Option<ArrayBuffer<T>>) -> Option<usize> {
             vec.as_ref().map(Buffer::len)
         }
 
@@ -334,5 +331,15 @@ impl AttributeSet {
 
         // Trollinnggggg
         valid.then(|| first)
+    }
+
+    // Get an immutable attribute buffer from the set
+    pub fn get<T: NamedAttribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
+        T::get(self)
+    }
+
+    // Get a mutable attribute buffer from the set
+    pub fn get_mut<T: NamedAttribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
+        T::get_mut(self)
     }
 }

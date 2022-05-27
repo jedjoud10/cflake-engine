@@ -1,7 +1,5 @@
 use crate::{texture::{RGB, Ranged, Texture2D, R}, shader::Uniforms};
 
-use super::{Material, MaterialInstance};
-
 // Type aliases for texture maps
 type DiffuseMap = Texture2D<RGB<Ranged<u8>>>;
 type NormalMap = Texture2D<RGB<Ranged<u8>>>;
@@ -30,20 +28,4 @@ impl Default for StandardMaterial {
             roughness_strength: 1.0,
             metallic_strength: 1.0 }
     }
-}
-
-impl Material for StandardMaterial {
-    // This will load the default PBR shader
-    fn shader(ctx: &mut crate::context::Context, loader: &mut assets::loader::AssetLoader) -> crate::shader::Shader {
-        todo!()
-    }
-}
-
-impl MaterialInstance for StandardMaterial {
-    // Set the PBR uniforms
-    /*
-    fn set(&mut self, storage: &CacheStorage, uniforms: Uniforms) {
-        uniforms.set_sampler("diffuse_map", self.)
-    }
-    */
 }

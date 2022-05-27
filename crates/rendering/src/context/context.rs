@@ -78,4 +78,26 @@ impl Context {
         // Handle object states
         self.update_bindless_textures();
     }
+
+    // This will check if an object of a unique target type is currently bound to the context
+    pub(crate) fn is_bound(&self, target: u32, object: u32) -> bool {
+        self.bound.get(&target).map(|&bound| bound == object).unwrap_or_default()
+    }
+
+    // This will bind an object if it wasn't bound already
+    // This will return Some(()) if the object was successfully bound, and None when the object was already bound
+    pub(crate) fn bind(&mut self, raw: unsafe fn(u32, u32), target: u32, object: u32) -> Option<()> {
+        let bound = self.bound.entry(target).or_insert_with(|| unsafe {
+            // If this is a totally new object, then force the first bind
+            raw(target, object);
+            object
+        });
+
+        // Check if the currently bound object must be rebound or not
+        (*bound != object).then(|| unsafe {
+            // We must rebind the object
+            raw(target, object);
+            *bound = object;
+        })
+    }
 }
