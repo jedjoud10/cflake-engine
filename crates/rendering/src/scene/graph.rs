@@ -22,7 +22,7 @@ impl<'object, M: Material> Draw<'object> for SurfaceCluster<'object, M> {
 
     // Draw all of the surfaces onto the screen using the unique material
     fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) {
-        self.material.
+        let rz = canvas.rasterizer();
     }
 }
 
