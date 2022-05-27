@@ -1,12 +1,31 @@
-use crate::{material::Material, mesh::SubMesh};
+use crate::{material::Material, mesh::SubMesh, context::Context, framebuffer::Canvas};
 
+// A trait that will be implemented for objects that can be drawed onto the screen, like surface clusters or instanced surface clusters
+pub trait Draw<'object> {    
+    // This will cull any objects that we must not draw
+    fn cull(frustum: f32);
 
-// A surface is just a submesh that is associated with a material
-// Technically, the OpenGL renderer will just need a surface to be able to render anything onto the screen
-pub struct Surface<'object, M: Material> {
-    submesh: &'object SubMesh,
-    material: &'object M,
+    // This will draw all of the objects
+    fn draw(&self, ctx: &mut Context, canvas: &mut Canvas);
 }
+
+// A surface cluster is a collection of multiple submeshes that we must render with the same material
+pub struct SurfaceCluster<'object, M: Material> {
+    material: &'object M,
+    submeshes: Vec<&'object SubMesh>,
+}
+
+impl<'object, M: Material> Draw<'object> for SurfaceCluster<'object, M> {
+    fn cull(frustum: f32) {
+        todo!()
+    }
+
+    // Draw all of the surfaces onto the screen using the unique material
+    fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) {
+        self.material.
+    }
+}
+
 /*
 /*
 // A simple model that we will render
