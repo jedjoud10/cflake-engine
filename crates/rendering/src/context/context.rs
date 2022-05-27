@@ -85,19 +85,11 @@ impl Context {
     }
 
     // This will bind an object if it wasn't bound already
-    // This will return Some(()) if the object was successfully bound, and None when the object was already bound
-    pub(crate) fn bind(&mut self, raw: unsafe fn(u32, u32), target: u32, object: u32) -> Option<()> {
-        let bound = self.bound.entry(target).or_insert_with(|| unsafe {
-            // If this is a totally new object, then force the first bind
-            raw(target, object);
-            object
-        });
+    // This will execute the "update" callback whenever we must bind the object
+    pub(crate) fn bind(&mut self, target: u32, object: u32, update: impl FnOnce(u32, u32)) {
+        // Bind the raw object first
+        (!self.is_bound(target, object)).then(|| update(target, object));
 
-        // Check if the currently bound object must be rebound or not
-        (*bound != object).then(|| unsafe {
-            // We must rebind the object
-            raw(target, object);
-            *bound = object;
-        })
+        *self.bound.entry(target).or_insert(object) = object;
     }
 }

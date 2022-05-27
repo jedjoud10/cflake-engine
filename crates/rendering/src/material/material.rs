@@ -1,6 +1,6 @@
 use assets::loader::AssetLoader;
 
-use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh};
+use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh, scene::Draw};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material {
@@ -17,5 +17,5 @@ pub trait Material {
     fn set_uniforms(&mut self, ctx: &mut Context, device: &mut Device) -> &Shader;
 
     // Draw all of the given submeshes
-    fn execute(&self, to_draw: Vec<&dyn Draw>) -> ;
+    //fn execute(&self, to_draw: Vec<&T>);
 }
