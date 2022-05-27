@@ -1,11 +1,48 @@
+use std::marker::PhantomData;
+
+use crate::{context::Context, shader::Shader, raster::Rasterizer};
+
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the device using the canvas() function
-pub struct Canvas<'a>(&'a mut Framebuffer);
+pub struct Canvas {
+    // The raw framebuffer name (This can be 0 to depict the default framebuffer)
+    name: u32,
 
-impl<'a> Canvas<'a> {
+    // The size of the framebuffer, in pixels
+    size: vek::Extent2<u16>,
+
+    _phantom: PhantomData<*const ()>,
+}
+impl Canvas {    
+    // Create a new canvas with a specific size (size must be valid)
+    pub fn new(ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
+        // Validate size first
+        assert_ne!(size, vek::Extent2::default(), "Size of canvas cannot be zero");
+
+        // Create the raw OpenGL framebuffer
+        let name = unsafe {
+            let mut name = 0u32;
+            gl::GenFramebuffers(1, &mut name);
+            name
+        };
+
+        // Then we can create the canvas object
+        Self { name, size, _phantom: Default::default() }
+    }
+
+    // Bind the underlying framebuffer if it isn't bound already
+    fn bind(&mut self, ctx: &mut Context) {
+        // Make sure the framebuffer is bound, and that the viewport is valid
+        ctx.bind(gl::FRAMEBUFFER, self.name, |target, name| unsafe {
+            gl::BindFramebuffer(target, name);
+            gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
+        }); 
+    }
+
     // Clear the whole framebuffer using the proper flags
     pub fn clear(&mut self, ctx: &mut Context, color: Option<vek::Rgba<f32>>, depth: Option<f32>, stencil: Option<i32>) {
+
         // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 
@@ -38,9 +75,8 @@ impl<'a> Canvas<'a> {
             gl::Clear(flags);
         }
     }
-
-    // Get the canvas' rasterizer so we can draw stuff onto the canvas
-    pub fn rasterizer(&'a mut self) -> Rasterizer<'a> {
-        Rasterizer(self.0)
+    // Get the canvas' rasterizer so we can draw stuff onto the canvas using a specific shader
+    pub fn rasterizer<'canvas, 'shader>(&'canvas mut self, shader: &'shader mut Shader) -> Rasterizer<'canvas, 'shader> {
+        Rasterizer { canvas: self, shader }
     }
 }

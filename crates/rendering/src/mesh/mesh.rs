@@ -5,7 +5,7 @@ use super::{
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     context::{Context},
-    object::{ToGlName},
+    object::{ToGlName}, raster::{Rasterizable, Rasterizer},
 };
 use assets::Asset;
 use math::bounds::aabb::AABB;
@@ -93,6 +93,9 @@ impl ToGlName for SubMesh {
     fn name(&self) -> u32 {
         self.name
     }
+}
+
+impl Rasterizable for SubMesh {
 }
 
 /*

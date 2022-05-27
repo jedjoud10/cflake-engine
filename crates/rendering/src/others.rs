@@ -1,2 +1,3 @@
 pub mod buffer;
-pub mod framebuffer;
+pub mod canvas;
+pub mod raster;

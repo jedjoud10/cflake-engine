@@ -9,22 +9,7 @@ pub trait Draw<'object> {
     fn draw(&self, ctx: &mut Context, canvas: &mut Canvas);
 }
 
-// A surface cluster is a collection of multiple submeshes that we must render with the same material
-pub struct SurfaceCluster<'object, M: Material> {
-    material: &'object M,
-    submeshes: Vec<&'object SubMesh>,
-}
-
-impl<'object, M: Material> Draw<'object> for SurfaceCluster<'object, M> {
-    fn cull(frustum: f32) {
-        todo!()
-    }
-
-    // Draw all of the surfaces onto the screen using the unique material
-    fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) {
-        let rz = canvas.rasterizer();
-    }
-}
+// A model cluster contains multiples surfaces and their 
 
 /*
 /*
