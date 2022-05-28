@@ -29,9 +29,13 @@ impl Graphics {
         // Initialize OpenGL
         gl::load_with(|x| context.get_proc_address(x));
 
-        // Construct a tuple using a pipeline window and the new pipeline context
+        // To create a device, we must have a context
+        let mut ctx = super::Context::new(context);
+        let device = super::Device::new(&mut ctx, window);
+
+        // Return the event loop along side the graphics pipeline
         (el, Self {
-            shared: (super::Device::new(window), super::Context::new(context))
+            shared: (device, ctx)
         })
     }
 

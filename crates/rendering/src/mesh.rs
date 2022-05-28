@@ -1,5 +1,5 @@
 pub mod assembly;
-mod attributes;
+pub mod attributes;
 mod builder;
 mod mesh;
 pub use assembly::*;

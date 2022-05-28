@@ -5,7 +5,7 @@ use super::{
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     context::{Context},
-    object::{ToGlName}, raster::{Rasterizable, Rasterizer},
+    object::{ToGlName},
 };
 use assets::Asset;
 use math::bounds::aabb::AABB;
@@ -32,9 +32,6 @@ impl Default for VertexLayout {
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
-    // The OpenGL VAO name
-    name:u32,
-
     // The vertex attribute buffers
     attributes: AttributeSet,
 
@@ -48,17 +45,8 @@ impl SubMesh {
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
     // PS: This doesn't check if the builder contains different length-vectors
     pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
-        // Create and bind the VAO, then create a safe VAO wrapper
-        let vao = {
-            let mut name = 0;
-            gl::GenVertexArrays(1, &mut name);
-            gl::BindVertexArray(name);
-            name
-        };
-
         Self {
-            name:u32::from(vao),
-            attributes: AttributeSet::new(vao, ctx, BufferMode::Static, &builder),
+            attributes: AttributeSet::new(ctx, BufferMode::Static, &builder),
             indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
     }
@@ -87,15 +75,6 @@ impl SubMesh {
     pub fn indices_mut(&mut self) -> &mut ElementBuffer {
         &mut self.indices
     }
-}
-
-impl ToGlName for SubMesh {
-    fn name(&self) -> u32 {
-        self.name
-    }
-}
-
-impl Rasterizable for SubMesh {
 }
 
 /*

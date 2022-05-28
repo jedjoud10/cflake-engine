@@ -1,18 +1,13 @@
 use std::ptr::null;
-use crate::{mesh::SubMesh, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer};
+use crate::{mesh::{SubMesh, attributes::AttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer};
 
-// Primitive types for rasterization
-pub enum Primitive {
-    Points, Triangles, 
-}
+// An object that can be rasterized and drawn onto the screen
+pub trait ToRasterBuffers {
+    // Get the VAO handle of the object
+    fn vao(&self) -> &AttributeSet;
 
-// This trait will draw the current object onto a rasterizer using a unique shared active shader
-pub trait Rasterizable {
-    // Get the VAO and the index buffer for this rasterizable object
-    fn buffers(&self) -> (&VertexArrayObject, &ElementBuffer);
-
-    // Get the primitive type that we will use
-    fn primitive() -> Primitive;
+    // Get the EBO handle of the object
+    fn ebo(&self) -> &ElementBuffer;
 }
 
 // A rasterizer is what will draw our vertices and triangles onto the screen, so we can actually see them as lit pixels
@@ -26,22 +21,32 @@ pub struct Rasterizer<'canvas, 'shader> {
 }
 
 impl<'canvas, 'shader> Rasterizer<'canvas, 'shader> {
-    // Draw multiple raster primitives onto the screen
-    #[inline(always)]
-    pub fn draw<R: Rasterizable>(&mut self, objects: &[&R]) {
-        // Bind the raw shader program 
+    // This will bind the underlying shader that we use to rasterize objects
+    fn bind(&self) {
         unsafe {
-           gl::UseProgram(self.shader.as_ref().name());
+            gl::UseProgram(self.shader.as_ref().name())
         }
+    }
 
-
-        // Then we can rasterize the objects onto the canvas
+    // This will draw a set of attributes and indices directly onto the screen
+    #[inline(always)]
+    pub fn draw<T: ToRasterBuffers>(&mut self, objects: &[&T]) {
+        // Bind the shader
+        self.bind();
+        
+        // Iterate through each object and draw it
         for object in objects {
-            // Create some raster info for the current object
+            // Get the raw OpenGL names
+            let vao = object.vao();
+            let ebo = object.ebo();
 
             unsafe {
-                object.raster(self.canvas, self.shader);
+                // Assign the values and render
+                gl::BindVertexArray(vao.name());
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo.name());
+                gl::DrawElements(gl::TRIANGLES, ebo.len() as i32, gl::UNSIGNED_INT, null());
             }
         }
+
     }
 }

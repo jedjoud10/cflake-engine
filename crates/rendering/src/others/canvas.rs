@@ -15,6 +15,15 @@ pub struct Canvas {
     _phantom: PhantomData<*const ()>,
 }
 impl Canvas {    
+    // Create a new canvas from the raw OpenGl ID of a framebuffer
+    pub unsafe fn from_raw_parts(ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
+        Self {
+            name,
+            size,
+            _phantom: Default::default(),
+        }
+    }
+
     // Create a new canvas with a specific size (size must be valid)
     pub fn new(ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         // Validate size first
@@ -31,6 +40,12 @@ impl Canvas {
         Self { name, size, _phantom: Default::default() }
     }
 
+    // Resize the canvas to a new size
+    fn resize(&mut self, new: vek::Extent2<u16>) {
+        assert_ne!(new, vek::Extent2::default(), "Size of canvas cannot be zero");
+        self.size = new;
+    }
+
     // Bind the underlying framebuffer if it isn't bound already
     fn bind(&mut self, ctx: &mut Context) {
         // Make sure the framebuffer is bound, and that the viewport is valid
@@ -42,7 +57,6 @@ impl Canvas {
 
     // Clear the whole framebuffer using the proper flags
     pub fn clear(&mut self, ctx: &mut Context, color: Option<vek::Rgba<f32>>, depth: Option<f32>, stencil: Option<i32>) {
-
         // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 

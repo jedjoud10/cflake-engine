@@ -77,7 +77,11 @@ impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
 }
 
 // Multiple OpenGL attribute buffers stored in the same struct
+// This basically represents a VAO
 pub struct AttributeSet {
+    // The raw name of the VAO
+    name: u32,
+
     // The actual attribute buffers
     positions: Option<ArrayBuffer<vek::Vec3<f32>>>,
     normals: Option<ArrayBuffer<vek::Vec3<i8>>>,
@@ -285,7 +289,15 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Opti
 
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
-    pub(super) fn new(vao: u32, ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
+    pub(super) fn new(ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
+        // Create and bind the VAO, then create a safe VAO wrapper
+        let vao = unsafe {
+            let mut name = 0;
+            gl::GenVertexArrays(1, &mut name);
+            gl::BindVertexArray(name);
+            name
+        };
+
         // We do a bit of copying
         let layout = builder.layout();
 
@@ -301,6 +313,7 @@ impl AttributeSet {
 
         // Create the set with valid buffers (if they are enabled)
         Self {
+            name: vao,
             positions: gen::<marker::Position>(&mut aux, false),
             normals: gen::<marker::Normal>(&mut aux, true),
             tangents: gen::<marker::Tangent>(&mut aux, true),
@@ -341,5 +354,11 @@ impl AttributeSet {
     // Get a mutable attribute buffer from the set
     pub fn get_mut<T: NamedAttribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
         T::get_mut(self)
+    }
+}
+
+impl ToGlName for AttributeSet {
+    fn name(&self) -> u32 {
+        self.name
     }
 }
