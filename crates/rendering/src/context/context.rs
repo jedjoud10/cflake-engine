@@ -11,13 +11,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::texture::Bindless;
+use crate::{texture::Bindless, raster::{RasterMode, FaceCullMode}};
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
 
 // Main cotnext that stores the OpenGL glunit context
-#[derive(Clone)]
 pub struct Context {
     // Kinda useless for now
     ctx: Rc<RawContext<PossiblyCurrent>>,
@@ -91,5 +90,43 @@ impl Context {
         (!self.is_bound(target, object)).then(|| update(target, object));
 
         *self.bound.entry(target).or_insert(object) = object;
+    }
+
+    // Set the global raster mode that we use to rasterize meshes
+    pub(crate) unsafe fn set_raster_mode(&mut self, mode: RasterMode) {
+        // Set the global OpenGL face culling mode
+        unsafe fn set_cull_mode(mode: FaceCullMode) {
+            // Check if we must cull the faces or not
+            if let FaceCullMode::None = mode {
+                gl::Disable(gl::CULL_FACE);
+                return;
+            } else {
+                gl::Enable(gl::CULL_FACE)
+            };
+
+            // Get the face culling direction, either front or back, and winding order
+            let (direction, ccw) = match mode {
+                FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
+                FaceCullMode::Back(ccw) => (gl::BACK, ccw),
+                _ => todo!(),
+            };
+
+            // Set the face culling direction
+            gl::CullFace(direction);
+
+            // And set winding order
+            gl::FrontFace(if ccw { gl::CCW } else { gl::CW });
+        }
+
+        // Set the global OpenGL point size
+        unsafe fn set_point_size(diameter: f32) {
+            gl::PointSize(diameter);
+        }
+        
+        // Switch on the primitive type
+        match mode {
+            RasterMode::Triangles { cull } => set_cull_mode(cull),
+            RasterMode::Points { diameter } => set_point_size(diameter),
+        }        
     }
 }

@@ -90,7 +90,7 @@ impl Canvas {
         }
     }
     // Get the canvas' rasterizer so we can draw stuff onto the canvas using a specific shader
-    pub fn rasterizer<'canvas, 'shader>(&'canvas mut self, shader: &'shader mut Shader) -> Rasterizer<'canvas, 'shader> {
-        Rasterizer { canvas: self, shader }
+    pub fn rasterizer<'canvas, 'shader, 'context>(&'canvas mut self, shader: &'shader mut Shader, ctx: &'context mut Context) -> Rasterizer<'canvas, 'shader, 'context> {
+        Rasterizer { canvas: self, shader, context: ctx }
     }
 }

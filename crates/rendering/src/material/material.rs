@@ -1,6 +1,6 @@
 use assets::loader::AssetLoader;
 
-use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh, scene::Draw};
+use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material {
