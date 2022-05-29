@@ -1,5 +1,5 @@
 use super::{
-    attributes::{AttributeSet, NamedAttribute},
+    vao::{standard::StandardAttributeSet},
     GeometryBuilder,
 };
 use crate::{
@@ -29,14 +29,21 @@ impl Default for VertexLayout {
     }
 }
 
+// Tells us how we should store the vertex attributes within the submesh
+pub trait VertexStorage {}
+
+impl VertexStorage for StandardAttributeSet {
+
+}
+
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
     // The vertex attribute buffers
-    attributes: AttributeSet,
+    attributes: StandardAttributeSet,
 
     // The index buffer (PS: Supports only triangles rn)
-    indices: ElementBuffer,
+    indices: ElementBuffer<u32>,
 }
 
 impl SubMesh {
@@ -46,7 +53,7 @@ impl SubMesh {
     // PS: This doesn't check if the builder contains different length-vectors
     pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
         Self {
-            attributes: AttributeSet::new(ctx, BufferMode::Static, &builder),
+            attributes: StandardAttributeSet::new(ctx, BufferMode::Static, &builder),
             indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
     }
@@ -57,22 +64,22 @@ impl SubMesh {
     }
 
     // Get the underlying attribute set immutably
-    pub fn attributes(&self) -> &AttributeSet {
+    pub fn attributes(&self) -> &StandardAttributeSet {
         &self.attributes
     }
 
     // Get the underlying attribute set mutably
-    pub fn attributes_mut(&mut self) -> &mut AttributeSet {
+    pub fn attributes_mut(&mut self) -> &mut StandardAttributeSet {
         &mut self.attributes
     }
 
     // Get the underlying index buffer immutably
-    pub fn indices(&self) -> &ElementBuffer {
+    pub fn indices(&self) -> &ElementBuffer<u32> {
         &self.indices
     }
 
     // Get the underlying index buffer mutably
-    pub fn indices_mut(&mut self) -> &mut ElementBuffer {
+    pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
         &mut self.indices
     }
 }

@@ -3,10 +3,7 @@ use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, Con
 
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
-pub struct Graphics {
-    // Both are stored in a tuple since we must access both of them at the same time
-    shared: (super::Device, super::Context),
-}
+pub struct Graphics(pub super::Device, pub super::Context);
 
 impl Graphics {
     // Create some new graphics given a glutin event loop
@@ -34,19 +31,7 @@ impl Graphics {
         let device = super::Device::new(&mut ctx, window);
 
         // Return the event loop along side the graphics pipeline
-        (el, Self {
-            shared: (device, ctx)
-        })
-    }
-
-    // Get the underlying tuple immutably
-    pub fn get(&self) -> (&super::Device, &super::Context) {
-        (&self.shared.0, &self.shared.1)
-    }
-    
-    // Get the underlying tuple mutably
-    pub fn get_mut(&mut self) -> (&mut super::Device, &mut super::Context) {
-        (&mut self.shared.0, &mut self.shared.1)
+        (el, Self(device, ctx))
     }
 }
 

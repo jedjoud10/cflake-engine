@@ -12,6 +12,4 @@ pub trait ToGlTarget {
 
 // Objects that can be shared/sent to the GPU through OpenGL functions
 pub trait Shared: Copy + Sized + Sync + Send {}
-
-// TODO: Manual implementations
 impl<T: Copy + Sized + Sync + Send> Shared for T {}

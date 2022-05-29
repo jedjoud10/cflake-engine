@@ -29,12 +29,22 @@ impl Device {
     }
 
     // Get the default window canvas
-    fn canvas(&self) -> &Canvas {
+    pub fn canvas(&self) -> &Canvas {
         &self.canvas
     }
 
+    // Get the size of the device window
+    pub fn size(&self) -> vek::Extent2<u16> {
+        self.size
+    }
+
+    // Get the raw glutin window
+    pub fn window(&self) -> &glutin::window::Window {
+        &self.glutin
+    }
+
     // Get the default window canvas mutably
-    fn canvas_mut(&mut self) -> &mut Canvas {
+    pub fn canvas_mut(&mut self) -> &mut Canvas {
         &mut self.canvas
     }
 }

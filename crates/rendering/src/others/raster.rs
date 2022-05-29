@@ -1,5 +1,5 @@
 use std::{ptr::null, rc::Rc};
-use crate::{mesh::{SubMesh, attributes::AttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer, context::Context};
+use crate::{mesh::{SubMesh, vao::standard::StandardAttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer, context::Context};
 
 // How rasterized triangles should be culled
 pub enum FaceCullMode {
@@ -22,10 +22,10 @@ pub enum RasterMode {
 // An object that can be rasterized and drawn onto the screen
 pub trait ToRasterBuffers {
     // Get the VAO handle of the object
-    fn vao(&self) -> &AttributeSet;
+    fn vao(&self) -> &StandardAttributeSet;
 
     // Get the EBO handle of the object
-    fn ebo(&self) -> &ElementBuffer;
+    fn ebo(&self) -> &ElementBuffer<u32>;
 }
 
 // A rasterizer is what will draw our vertices and triangles onto the screen, so we can actually see them as lit pixels
@@ -41,27 +41,44 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 }
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
-    // This will bind the underlying shader that we use to rasterize objects
-    fn bind(&self) {
+    // Bind the shader and raster mode to the OpenGL context, and return the raw primitive type
+    fn prepare(&mut self, mode: RasterMode) -> u32 {
+        // Bind shader first
         unsafe {
             gl::UseProgram(self.shader.as_ref().name())
         }
-    }
 
-    // This will draw a set of attributes and indices directly onto the screen
-    #[inline(always)]
-    pub fn draw<T: ToRasterBuffers>(&mut self, objects: &[&T], mode: RasterMode) {
-        // Bind the shader
-        self.bind();
-
-        // Set the proper drawing settings
-        unsafe { self.context.set_raster_mode(mode) };
-        
         // Get the primitive type for rasterization
-        let primitive = match mode {
+        let primitive = match &mode {
             RasterMode::Triangles { .. } => gl::TRIANGLES,
             RasterMode::Points { .. } => gl::POINTS,
         };
+
+        // Set the proper drawing settings
+        unsafe { self.context.set_raster_mode(mode); }
+        primitive
+    }
+
+    // Rasterize the raw VAO an EBO without setting the mode or binding the shader
+    unsafe fn draw_from_raw_parts(&mut self, primitive: u32, vao: u32, ebo: u32, count: u32) {
+        gl::BindVertexArray(vao);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::DrawElements(primitive, count as i32, gl::UNSIGNED_INT, null());
+    }
+
+    // Draw a single VAO and a EBO using their raw OpenGL names directly
+    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, mode: RasterMode) {
+        // Bind the shader/raster modes to the context
+        let primitive = self.prepare(mode);
+
+        // Draw the VAO and EBO
+        self.draw_from_raw_parts(primitive, vao, ebo, count);
+    }
+
+    // This will draw a set of attributes and indices directly onto the screen
+    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], mode: RasterMode) {
+        // Bind the shader/raster modes to the context
+        let primitive = self.prepare(mode);
 
         // Iterate through each object and draw it
         for object in objects {
@@ -70,10 +87,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
             let ebo = object.ebo();
 
             unsafe {
-                // Assign the values and render
-                gl::BindVertexArray(vao.name());
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo.name());
-                gl::DrawElements(primitive, ebo.len() as i32, gl::UNSIGNED_INT, null());
+                self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32)
             }
         }
     }

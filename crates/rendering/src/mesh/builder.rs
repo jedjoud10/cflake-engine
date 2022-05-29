@@ -3,7 +3,7 @@ use obj::TexturedVertex;
 
 use crate::context::Context;
 
-use super::{attributes::NamedAttribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
+use super::{vao::attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -18,12 +18,12 @@ pub struct GeometryBuilder {
 
 impl GeometryBuilder {
     // Set a single unique vertex attribute
-    pub fn set_attrib<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn set_attribute_vec<U: Attribute>(&mut self, vec: Vec<U::Out>) {
         self.vertices.insert::<U>(vec);
     }
 
     // Get a vertex attribute immutably
-    pub fn get_attrib<U: NamedAttribute>(&self) -> Option<&Vec<U::Out>> {
+    pub fn get_attribute_vec<U: Attribute>(&self) -> Option<&Vec<U::Out>> {
         self.vertices.get::<U>()
     }
 
@@ -33,7 +33,7 @@ impl GeometryBuilder {
     }
 
     // Get an attribute vector mutably
-    pub fn get_attrib_mut<U: NamedAttribute>(&mut self) -> Option<&mut Vec<U::Out>> {
+    pub fn get_attribute_vec_mut<U: Attribute>(&mut self) -> Option<&mut Vec<U::Out>> {
         self.vertices.get_mut::<U>()
     }
 
@@ -95,7 +95,7 @@ impl Asset<'static> for GeometryBuilder {
         let mut tex_coords_0 = Vec::with_capacity(capacity);
 
         // Fill each buffer now
-        use super::attributes::marker::*;
+        use super::vao::attributes::named::*;
         use vek::{Vec2, Vec3};
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));
@@ -104,9 +104,9 @@ impl Asset<'static> for GeometryBuilder {
         }
 
         // Set the very sussy bakas (POV: You are slowly going insane)
-        builder.set_attrib::<Position>(positions);
-        builder.set_attrib::<Normal>(normals);
-        builder.set_attrib::<TexCoord0>(tex_coords_0);
+        builder.set_attribute_vec::<Position>(positions);
+        builder.set_attribute_vec::<Normal>(normals);
+        builder.set_attribute_vec::<TexCoord0>(tex_coords_0);
         builder.set_indices(parsed.indices);
 
         builder

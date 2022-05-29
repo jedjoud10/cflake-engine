@@ -36,8 +36,8 @@ enum BufferType {
 
 // Common OpenGL buffer types
 pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
-pub type ElementBuffer = Buffer<u32, { gl::ELEMENT_ARRAY_BUFFER }>;
-pub type AtomicBuffer = Buffer<u32, { gl::ATOMIC_COUNTER_BUFFER }>;
+pub type ElementBuffer<T> = Buffer<T, { gl::ELEMENT_ARRAY_BUFFER }>;
+pub type AtomicBuffer<T> = Buffer<T, { gl::ATOMIC_COUNTER_BUFFER }>;
 pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
 pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
 
@@ -95,6 +95,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         })
     }
 
+    // Create an empty resizable buffer
+    pub fn empty(_ctx: &mut Context) -> Self {
+        unsafe { Self::from_raw_parts(_ctx, BufferMode::Resizable, 0, 0, null()) }.unwrap()
+    }
+
     // Create a buffer using a buffer mode and a slice containing some data
     pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Option<Self> {
         unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) }
@@ -129,8 +134,15 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
+    // Try to reallocate the buffer to a new storage. This is only possible if the buffer is resizable
+    unsafe fn reallocate(&mut self, ctx: &mut Context, len: usize, ptr: *const T) {
+        assert_eq!(self.mode, BufferMode::Resizable, "Resizable buffers are the only buffers that can be reallocated");
+        let bytes = isize::try_from(len * size_of::<T>()).unwrap();
+        gl::NamedBufferData(self.buffer, bytes, ptr as _, gl::DYNAMIC_DRAW);
+    }
+
     // Overwrite the whole buffer if possible
-    pub fn update(&mut self, ctx: &mut Context, data: &[T]) {
+    pub fn write(&mut self, ctx: &mut Context, data: &[T]) {
         // Cannot update static buffers
         assert_ne!(self.mode, BufferMode::Static, "Cannot update Static buffers");
 

@@ -38,8 +38,12 @@ pub struct Painter {
     // Main egui texture ID, and the OpenGL texture
     texture: Option<(u64, Texture2D<Texel>)>,
 
-    // Raw OpenGL buffers
-    buffers: Buffers,
+    // The VAO for the whole painter mesh
+    vao: u32,
+
+    // Dynamic buffers that we will update each frame
+    indices: ElementBuffer<u32>,
+    vertices: ArrayBuffer<egui::epaint::Vertex>,
 }
 
 impl Painter {

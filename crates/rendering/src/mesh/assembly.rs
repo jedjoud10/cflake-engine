@@ -1,17 +1,16 @@
 use super::{
-    attributes::{out::*, NamedAttribute},
-    VertexLayout,
+    vao::attributes::{output as out, Attribute}, VertexLayout
 };
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
 #[derive(Default)]
 pub struct VertexAssembly {
     // Rust vectors of vertex attributes
-    pub(super) positions: Option<Vec<VePos>>,
-    pub(super) normals: Option<Vec<VeNormal>>,
-    pub(super) tangents: Option<Vec<VeTangent>>,
-    pub(super) colors: Option<Vec<VeColor>>,
-    pub(super) tex_coord_0: Option<Vec<VeTexCoord0>>,
+    pub(super) positions: Option<Vec<out::VePos>>,
+    pub(super) normals: Option<Vec<out::VeNormal>>,
+    pub(super) tangents: Option<Vec<out::VeTangent>>,
+    pub(super) colors: Option<Vec<out::VeColor>>,
+    pub(super) tex_coord_0: Option<Vec<out::VeTexCoord0>>,
 
     // The vertex attributes that are enabled
     layout: VertexLayout,
@@ -19,18 +18,18 @@ pub struct VertexAssembly {
 
 impl VertexAssembly {
     // Insert an attribute vector into the assembly
-    pub fn insert<U: NamedAttribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn insert<U: Attribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);
         self.layout.insert(U::LAYOUT);
     }
 
     // Get an attribute vector immutably
-    pub fn get<U: NamedAttribute>(&self) -> Option<&Vec<U::Out>> {
+    pub fn get<U: Attribute>(&self) -> Option<&Vec<U::Out>> {
         U::get_from_assembly(self)
     }
 
     // Get an attribute vector mutably
-    pub fn get_mut<U: NamedAttribute>(&mut self) -> Option<&mut Vec<U::Out>> {
+    pub fn get_mut<U: Attribute>(&mut self) -> Option<&mut Vec<U::Out>> {
         U::get_from_assembly_mut(self)
     }
 
