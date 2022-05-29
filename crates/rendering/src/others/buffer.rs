@@ -148,14 +148,14 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             // Reallocate if we need to, but if we don't need to just update a subregion of the buffer
             if data.len() > self.len() {
                 gl::NamedBufferData(self.buffer, bytes, data.as_ptr() as _, gl::DYNAMIC_DRAW);
-            } else {                
+            } else {
                 gl::NamedBufferSubData(self.buffer, 0, bytes, data.as_ptr() as _);
-            }            
+            }
         }
 
         // Update length and capacity states at the end
         self.len = data.len();
-        self.capacity = data.len();           
+        self.capacity = data.len();
     }
 
     // Read back the whole buffer, and store it inside output

@@ -1,17 +1,17 @@
 use assets::loader::AssetLoader;
-use egui::{TexturesDelta, TextureId, ImageData, Color32};
 use egui::{epaint::Mesh, ClippedMesh, Rect};
+use egui::{Color32, ImageData, TextureId, TexturesDelta};
 use nohash_hasher::NoHashHasher;
-use rendering::buffer::{ArrayBuffer, ElementBuffer, Buffer, BufferMode};
-use rendering::canvas::rasterizer::{RasterSettings, PrimitiveMode, FaceCullMode, BlendMode, Factor};
+use rendering::buffer::{ArrayBuffer, Buffer, BufferMode, ElementBuffer};
+use rendering::canvas::rasterizer::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage};
-use rendering::texture::{Ranged, Texture, Texture2D, RGBA, TextureMode, Sampling, Filter, Wrap};
+use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-use std::mem::{ManuallyDrop, size_of};
+use std::mem::{size_of, ManuallyDrop};
 use std::ptr::null;
 use vek::Clamp;
 
@@ -23,11 +23,15 @@ fn image_data_to_texels(image: &ImageData) -> Vec<Texel> {
     match image {
         // I don't like this but I have to cope
         ImageData::Color(color) => unsafe {
-            color.pixels.iter().map(|pixel| {
-                let vec = vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a());
-                let ranged = vec.map(Ranged);
-                RGBA(ranged)
-            }).collect::<Vec<Texel>>()
+            color
+                .pixels
+                .iter()
+                .map(|pixel| {
+                    let vec = vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a());
+                    let ranged = vec.map(Ranged);
+                    RGBA(ranged)
+                })
+                .collect::<Vec<Texel>>()
         },
 
         // Iterate through each alpha pixel and create a full color from it
@@ -37,9 +41,9 @@ fn image_data_to_texels(image: &ImageData) -> Vec<Texel> {
                 texels.push(RGBA(vek::Vec4::broadcast(Ranged(*alpha))));
             }
             texels
-        },
+        }
     }
-} 
+}
 
 // A global painter that will draw the eGUI elements onto the screen canvas
 pub struct Painter {
@@ -102,7 +106,7 @@ impl Painter {
 
     // Draw the whole user interface onto the screen
     pub fn draw(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
-        // Update the main texture        
+        // Update the main texture
         if let Some((tid, delta)) = deltas.set.iter().find(|(&tid, _)| tid == TextureId::Managed(0)) {
             // Insert the texture if we don't have it already
             self.texture.get_or_insert_with(|| {
@@ -111,7 +115,6 @@ impl Painter {
                 Texture2D::new(ctx, TextureMode::Resizable, dimensions, Sampling::new(Filter::Nearest, Wrap::ClampToEdge), false, &texels).unwrap()
             });
         }
-
 
         // Setup shader uniforms
         let mut uniforms = self.shader.as_mut().uniforms();
@@ -139,6 +142,6 @@ impl Painter {
             unsafe {
                 rasterizer.draw_unchecked(self.vao, self.indices.name(), self.indices.len() as u32, &settings);
             }
-        } 
+        }
     }
 }

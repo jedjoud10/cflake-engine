@@ -28,10 +28,7 @@ pub struct Context {
 impl Context {
     // Create a context wrapper using a Glutin context
     pub(crate) fn new(ctx: ContextWrapper<PossiblyCurrent, ()>) -> Self {
-        Self {
-            ctx,
-            bound: Default::default(),
-        }
+        Self { ctx, bound: Default::default() }
     }
 
     // This will check if an object of a unique target type is currently bound to the context

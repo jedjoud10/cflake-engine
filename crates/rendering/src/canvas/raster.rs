@@ -8,7 +8,11 @@ use crate::{
     object::ToGlName,
     shader::Shader,
 };
-use std::{ptr::null, rc::Rc, mem::{transmute, transmute_copy}};
+use std::{
+    mem::{transmute, transmute_copy},
+    ptr::null,
+    rc::Rc,
+};
 
 // How rasterized triangles should be culled
 #[derive(Clone)]
