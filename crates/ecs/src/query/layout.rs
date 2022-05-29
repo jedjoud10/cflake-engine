@@ -85,3 +85,23 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
         (A::access() & B::access() & C::access()) == LayoutAccess::none()
     }
 }
+
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> QueryLayout<'a> for (A, B, C, D) {
+    type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>, NonNull<C::Item>, NonNull<D::Item>);
+
+    fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
+        (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype), D::fetch(archetype))
+    }
+
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle), D::offset(tuple.3, bundle))
+    }
+
+    fn combined() -> LayoutAccess {
+        A::access() | B::access() | C::access() | D::access()
+    }
+
+    fn validate() -> bool {
+        (A::access() & B::access() & C::access() & D::access()) == LayoutAccess::none()
+    }
+}

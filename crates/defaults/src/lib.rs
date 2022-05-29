@@ -3,7 +3,7 @@ use systems::*;
 use world::{
     assets::persistent,
     ecs::{registry, EventExecutionOrder},
-    World,
+    //World,
 };
 // Default components
 pub mod components;
@@ -63,6 +63,7 @@ pub fn preload_default_assets() {
     println!("Finished pre-loading default assets!");
 }
 // Load default systems
+/*
 pub fn load_default_systems(world: &mut World) {
     // Engine defaults
     EventExecutionOrder::set(i32::MIN);
@@ -100,3 +101,4 @@ pub fn load_default_systems(world: &mut World) {
     world.resources.insert(crate::resources::NetworkManager::default()).unwrap();
     world.resources.insert(crate::resources::Physics::default()).unwrap();
 }
+*/

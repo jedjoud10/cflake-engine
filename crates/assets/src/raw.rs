@@ -8,7 +8,7 @@ pub fn read(path: &Path, asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
     // Get the path of the file (global)
     let file_path = {
         let mut file_path = asset_dir_path.clone();
-        file_path.push(path.clone());
+        file_path.push(path);
         file_path
     };
 
