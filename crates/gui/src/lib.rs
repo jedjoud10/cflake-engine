@@ -1,5 +1,4 @@
 mod interface;
-mod mesh;
 mod painter;
 pub use egui;
 pub use egui_winit;

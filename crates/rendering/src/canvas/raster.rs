@@ -1,6 +1,6 @@
 use crate::{
     buffer::ElementBuffer,
-    canvas::blend::BlendMode,
+    canvas::blend::{BlendMode, Factor},
     canvas::Canvas,
     commons::Comparison,
     context::Context,
@@ -8,10 +8,10 @@ use crate::{
     object::ToGlName,
     shader::Shader,
 };
-use std::{ptr::null, rc::Rc};
+use std::{ptr::null, rc::Rc, mem::{transmute, transmute_copy}};
 
 // How rasterized triangles should be culled
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum FaceCullMode {
     // The boolean specifies if the culling should be Counter Clockwise
     Front(bool),
@@ -22,7 +22,7 @@ pub enum FaceCullMode {
 }
 
 // Main rasterizer settings like sissor tests and depth tests
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct RasterSettings {
     // Should we check for vertex depth when rasteizing?
     pub depth_test: Option<Comparison>,
@@ -41,7 +41,7 @@ pub struct RasterSettings {
 }
 
 // Depicts the exact primitives we will use to draw the mesh
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum PrimitiveMode {
     Triangles { cull: FaceCullMode },
     Points { diameter: f32 },
@@ -66,7 +66,7 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     // Prepare the rasterizer by setting the global raster settings
-    fn prepare(&mut self, settings: RasterSettings) -> u32 {
+    fn prepare(&mut self, settings: &RasterSettings) -> u32 {
         self.context.bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe { gl::UseProgram(name) });
 
         // Get the OpenGL primitive type
@@ -76,7 +76,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         };
 
         // Set the global OpenGL face culling mode
-        unsafe fn set_cull_mode(mode: FaceCullMode) {
+        unsafe fn set_cull_mode(mode: &FaceCullMode) {
             // Check if we must cull the faces or not
             if let FaceCullMode::None = mode {
                 gl::Disable(gl::CULL_FACE);
@@ -96,25 +96,25 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
             gl::CullFace(direction);
 
             // And set winding order
-            gl::FrontFace(if ccw { gl::CCW } else { gl::CW });
+            gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
         }
 
         // Set the global OpenGL point size
-        unsafe fn set_point_size(diameter: f32) {
-            gl::PointSize(diameter);
+        unsafe fn set_point_size(diameter: &f32) {
+            gl::PointSize(*diameter);
         }
 
         // Set the OpenGL primitive parameters
-        match settings.primitive {
+        match &settings.primitive {
             PrimitiveMode::Triangles { cull } => unsafe { set_cull_mode(cull) },
             PrimitiveMode::Points { diameter } => unsafe { set_point_size(diameter) },
         }
 
         // Handle depth testing and it's parameters
         unsafe {
-            if let Some(func) = settings.depth_test {
+            if let Some(func) = &settings.depth_test {
                 gl::Enable(gl::DEPTH_TEST);
-                gl::DepthFunc(std::mem::transmute::<Comparison, u32>(func));
+                gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
             } else {
                 gl::Disable(gl::DEPTH_TEST);
             }
@@ -122,7 +122,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
 
         // Handle scissor testing and it's parameters
         unsafe {
-            if let Some((origin, size)) = settings.scissor_test {
+            if let Some((origin, size)) = &settings.scissor_test {
                 gl::Enable(gl::SCISSOR_TEST);
                 gl::Scissor(origin.x, self.canvas.size().h as i32 - origin.y, size.w, size.h);
             } else {
@@ -143,7 +143,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         unsafe {
             if let Some(mode) = settings.blend {
                 gl::Enable(gl::BLEND);
-                gl::BlendFunc(mode.s_factor.convert(), mode.d_factor.convert());
+                gl::BlendFunc(transmute::<Factor, u32>(mode.s_factor), transmute::<Factor, u32>(mode.d_factor));
             } else {
                 gl::Disable(gl::BLEND)
             }
@@ -160,7 +160,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and a EBO using their raw OpenGL names directly
-    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, settings: RasterSettings) {
+    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, settings: &RasterSettings) {
         let primitive = self.prepare(settings);
 
         // Draw the VAO and EBO
@@ -168,7 +168,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and EBO
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, settings: RasterSettings) {
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, settings: &RasterSettings) {
         let primitive = self.prepare(settings);
 
         let vao = obj.vao();
@@ -178,7 +178,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // This will draw a set of VAOs and EBOs directly onto the screen
-    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], settings: RasterSettings) {
+    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], settings: &RasterSettings) {
         let primitive = self.prepare(settings);
 
         // Iterate through each object and draw it

@@ -27,7 +27,7 @@ pub struct Program {
 
 impl Program {
     // Get the uniforms of the currently bound program so we can modify them
-    pub fn uniforms(&mut self, ctx: &mut Context) -> Uniforms {
+    pub fn uniforms(&mut self) -> Uniforms {
         Uniforms(self)
     }
 }

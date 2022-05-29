@@ -8,11 +8,8 @@ use rendering::{
 
 // A simple manager that will encapsulate everything that is related to GUI
 pub struct UserInterface {
-    // Main egui related fields
     egui: egui::Context,
     state: egui_winit::State,
-
-    // Custom painter to draw them shits
     painter: Painter,
 }
 
@@ -48,16 +45,16 @@ impl UserInterface {
 
     // This should be called at the end of each game update frame (after rendering is done)
     pub fn draw(&mut self, device: &mut Device, ctx: &mut Context) {
-        /*
-        let window = pipeline.window().context().window();
+        // Stop the eGUi frame handler
         let output = self.egui.end_frame();
-        // Decompose
-        self.state.handle_platform_output(window, &mut self.egui, output.platform_output);
+        self.state.handle_platform_output(device.window(), &mut self.egui, output.platform_output);
+
+        // Decompose the given state into it's raw parts
         let clipped_shapes = output.shapes;
         let deltas = output.textures_delta;
         let meshes = self.egui.tessellate(clipped_shapes);
-        // Draw the GUI
-        self.painter.draw_gui(pipeline, renderer, meshes, deltas);
-        */
+
+        // Handle the parts and rasterize the elements
+        self.painter.draw(device, ctx, meshes, deltas);
     }
 }

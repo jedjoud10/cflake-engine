@@ -1,50 +1,53 @@
 use assets::loader::AssetLoader;
-use egui::TexturesDelta;
+use egui::{TexturesDelta, TextureId, ImageData, Color32};
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::buffer::{ArrayBuffer, ElementBuffer};
+use rendering::buffer::{ArrayBuffer, ElementBuffer, Buffer, BufferMode};
+use rendering::canvas::rasterizer::{RasterSettings, PrimitiveMode, FaceCullMode, BlendMode, Factor};
 use rendering::context::{Context, Device};
 use rendering::gl;
+use rendering::object::ToGlName;
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage};
-use rendering::texture::{Ranged, Texture, Texture2D, RGBA};
+use rendering::texture::{Ranged, Texture, Texture2D, RGBA, TextureMode, Sampling, Filter, Wrap};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::mem::{ManuallyDrop, size_of};
+use std::ptr::null;
 use vek::Clamp;
 
-// The texels that will be stored within the main egui texture
+// The texel that will be stored within the main eGUI texture
 type Texel = RGBA<Ranged<u8>>;
 
-// This will get a clip rectangle that we will use for OpenGL scissor tests
-fn clip_rect(rect: Rect, device: &Device) -> (vek::Vec2<i32>, vek::Extent2<i32>) {
-    // Convert the eGUi positions into vek positions
-    let min = vek::Vec2::<f32>::from(<(f32, f32)>::from(rect.min));
-    let max = vek::Vec2::<f32>::from(<(f32, f32)>::from(rect.max));
+// Convert some image data into the RGBA texels
+fn image_data_to_texels(image: &ImageData) -> Vec<Texel> {
+    match image {
+        // I don't like this but I have to cope
+        ImageData::Color(color) => unsafe {
+            color.pixels.iter().map(|pixel| {
+                let vec = vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a());
+                let ranged = vec.map(Ranged);
+                RGBA(ranged)
+            }).collect::<Vec<Texel>>()
+        },
 
-    // Convert the extents to pixels
-    let ppo = device.window().scale_factor() as f32;
-    let min = min * ppo;
-    let max = max * ppo;
-
-    // Clamp to the window size and round to the nearest pixel
-    let size = vek::Vec2::<f32>::from(device.size().as_::<f32>());
-    let min = min.clamped(vek::Vec2::zero(), size);
-    let max = max.clamped(vek::Vec2::zero(), size);
-
-    // Le rounding and casting
-    let min = min.round().as_::<i32>();
-    let max = max.round().as_::<i32>();
-
-    // Convert the min/max bounds to a rectange
-    (min, vek::Extent2::<i32>::from(max - min))
-}
+        // Iterate through each alpha pixel and create a full color from it
+        ImageData::Alpha(alpha) => {
+            let mut texels = Vec::<Texel>::with_capacity(alpha.pixels.len() * 4);
+            for alpha in alpha.pixels.iter() {
+                texels.push(RGBA(vek::Vec4::broadcast(Ranged(*alpha))));
+            }
+            texels
+        },
+    }
+} 
 
 // A global painter that will draw the eGUI elements onto the screen canvas
 pub struct Painter {
     // A simple 2D shader that will draw the shapes
     shader: Shader,
 
-    // Main egui texture ID, and the OpenGL texture
-    texture: Option<(u64, Texture2D<Texel>)>,
+    // Main font texture
+    texture: Option<Texture2D<Texel>>,
 
     // The VAO for the whole painter mesh
     vao: u32,
@@ -64,72 +67,78 @@ impl Painter {
         // Link the stages and compile the shader
         let shader = ShaderCompiler::link((vert, frag), Processor::from(loader), ctx);
 
+        // Create the main mesh VAO
+        let mut vao = 0;
+        unsafe {
+            gl::GenVertexArrays(1, &mut vao);
+            gl::BindVertexArray(vao);
+        }
+
+        // Resizable buffers for vertices and indices
+        let vertices = ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
+        let indices = ElementBuffer::<u32>::new(ctx, BufferMode::Resizable, &[]).unwrap();
+
+        // Set the vertex attribute parameters for the position, uv, and color attributes
+        unsafe {
+            const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
+            gl::BindBuffer(gl::ARRAY_BUFFER, vertices.name());
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as _);
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as _);
+            gl::BindVertexArray(0);
+        }
+
         Self {
             shader,
             texture: None,
-            vao: todo!(),
-            indices: todo!(),
-            vertices: todo!(),
+            vao,
+            indices,
+            vertices,
         }
     }
 
     // Draw the whole user interface onto the screen
-    pub fn draw_gui(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
-        // Update the main texture
+    pub fn draw(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
+        // Update the main texture        
+        if let Some((tid, delta)) = deltas.set.iter().find(|(&tid, _)| tid == TextureId::Managed(0)) {
+            // Insert the texture if we don't have it already
+            self.texture.get_or_insert_with(|| {
+                let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
+                let texels = image_data_to_texels(&delta.image);
+                Texture2D::new(ctx, TextureMode::Resizable, dimensions, Sampling::new(Filter::Nearest, Wrap::ClampToEdge), false, &texels).unwrap()
+            });
+        }
 
-        // Setup shader uniforms and bind canvas
+
+        // Setup shader uniforms
+        let mut uniforms = self.shader.as_mut().uniforms();
+        let sampler = self.texture.as_ref().unwrap().sampler();
+        uniforms.set_sampler("u_sampler", sampler);
 
         // Setup OpenGL settings like blending settings and all
+        let settings = RasterSettings {
+            depth_test: None,
+            scissor_test: None,
+            primitive: PrimitiveMode::Triangles { cull: FaceCullMode::None },
+            srgb: true,
+            blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
+        };
 
-        // Setup Scissor and disable depth
+        // Bind the canvas and rasterize the meshes
+        let mut rasterizer = device.canvas_mut().rasterizer(&mut self.shader, ctx);
 
-        /*
-        // Use the default framebuffer for drawing
-        let def = ctx.framebuffers().main();
-        // Assuming that we only have one texture to deal with
-        let main = &self.texture.unwrap().1;
-        uniforms.set_sampler("u_sampler", main.sampler());
-        */
-        /*
-        // Apply the texture deltas
-        self.apply_deltas(pipeline, deltas);
+        // Draw the meshes
+        for mesh in meshes {
+            // Update the buffers using data from the clipped mesh
+            self.vertices.write(mesh.1.vertices.as_slice());
+            self.indices.write(mesh.1.indices.as_slice());
 
-        // Since all the elements use the same shader, we can simply set it once
-        let shader = pipeline.get(&self.shader).unwrap();
-
-        // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
-        renderer.framebuffer_mut().bind(|mut bound| {
-            // OpenGL settings
             unsafe {
-                gl::BindVertexArray(self.buffers.vao);
-                gl::Enable(gl::FRAMEBUFFER_SRGB);
-                gl::Enable(gl::BLEND);
-                gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
-                gl::Disable(gl::CULL_FACE);
-                gl::Disable(gl::DEPTH_TEST);
-                gl::Enable(gl::SCISSOR_TEST);
+                rasterizer.draw_unchecked(self.vao, self.indices.name(), self.indices.len() as u32, &settings);
             }
-
-            // We can bind once, and mutate multiple times
-            Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-                // Draw each mesh
-                let mut last_texture = Handle::<Texture2D>::default();
-                for ClippedMesh(rect, mesh) in clipped_meshes {
-                    self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
-                    self.draw_mesh(rect, mesh, pipeline);
-                }
-            });
-
-            // Reset
-            unsafe {
-                gl::Disable(gl::FRAMEBUFFER_SRGB);
-                gl::BindVertexArray(0);
-                gl::Disable(gl::BLEND);
-                gl::Enable(gl::CULL_FACE);
-                gl::Enable(gl::DEPTH_TEST);
-                gl::Disable(gl::SCISSOR_TEST);
-            }
-        });
-        */
+        } 
     }
 }

@@ -15,24 +15,24 @@ pub trait TexelLayout: 'static + Default {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
     }
 }
-
+// TODO: Make the generic types a bit more strict
 // A range texel limiter that will hint the texture that the integer must be accessed as a floating point value, and that it must be in the 0-1 range
 #[derive(Clone, Copy, Default)]
-pub struct Ranged<T: Shared>(T);
+pub struct Ranged<T: Shared>(pub T);
 
 // A normalized texel limiter that will the texture that the integer must be accessed as a floating point value, and that it must be in the -1 - 1 range
 #[derive(Clone, Copy, Default)]
-pub struct Normalized<T: Shared>(T);
+pub struct Normalized<T: Shared>(pub T);
 
 // Multiple channels
-pub struct R<T: Shared>(T);
-pub struct RG<T: Shared>(vek::Vec2<T>);
-pub struct RGB<T: Shared>(vek::Vec3<T>);
-pub struct RGBA<T: Shared>(vek::Vec4<T>);
+pub struct R<T: Shared>(pub T);
+pub struct RG<T: Shared>(pub vek::Vec2<T>);
+pub struct RGB<T: Shared>(pub vek::Vec3<T>);
+pub struct RGBA<T: Shared>(pub vek::Vec4<T>);
 
 // Unique depth and stencil channels
-pub struct Depth<T: Shared>(T);
-pub struct Stencil<T: Shared>(T);
+pub struct Depth<T: Shared>(pub T);
+pub struct Stencil<T: Shared>(pub T);
 
 impl<T: Default + Shared> Default for R<T> {
     fn default() -> Self {

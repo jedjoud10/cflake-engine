@@ -1,6 +1,6 @@
 // Common OpenGL wrapper types
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Comparison {
     Always = gl::ALWAYS,
     Never = gl::NEVER,

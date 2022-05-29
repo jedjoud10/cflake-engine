@@ -292,6 +292,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a texture sampler, switching between the bindless and normal methods
+    // TODO: Handle texture samplers that might outlive the program
     pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(&'me mut self, name: &'static str, sampler: Sampler<'sampler, T>) {
         unsafe {
             match sampler.0.bindless() {

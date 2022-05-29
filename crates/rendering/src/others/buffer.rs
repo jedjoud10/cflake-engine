@@ -121,7 +121,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Try to clear the whole buffer to the given value
-    pub fn clear(&mut self, ctx: &mut Context, val: T) {
+    pub fn clear(&mut self, val: T) {
         // Cannot clear static buffers
         assert_ne!(self.mode, BufferMode::Static, "Cannot clear Static buffers");
 
@@ -134,15 +134,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
-    // Try to reallocate the buffer to a new storage. This is only possible if the buffer is resizable
-    unsafe fn reallocate(&mut self, ctx: &mut Context, len: usize, ptr: *const T) {
-        assert_eq!(self.mode, BufferMode::Resizable, "Resizable buffers are the only buffers that can be reallocated");
-        let bytes = isize::try_from(len * size_of::<T>()).unwrap();
-        gl::NamedBufferData(self.buffer, bytes, ptr as _, gl::DYNAMIC_DRAW);
-    }
-
     // Overwrite the whole buffer if possible
-    pub fn write(&mut self, ctx: &mut Context, data: &[T]) {
+    pub fn write(&mut self, data: &[T]) {
         // Cannot update static buffers
         assert_ne!(self.mode, BufferMode::Static, "Cannot update Static buffers");
 
@@ -150,15 +143,23 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
 
         unsafe {
-            self.len = data.len();
-            self.capacity = data.len();
             let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
-            gl::NamedBufferSubData(self.buffer, 0, bytes, data.as_ptr() as _);
+
+            // Reallocate if we need to, but if we don't need to just update a subregion of the buffer
+            if data.len() > self.len() {
+                gl::NamedBufferData(self.buffer, bytes, data.as_ptr() as _, gl::DYNAMIC_DRAW);
+            } else {                
+                gl::NamedBufferSubData(self.buffer, 0, bytes, data.as_ptr() as _);
+            }            
         }
+
+        // Update length and capacity states at the end
+        self.len = data.len();
+        self.capacity = data.len();           
     }
 
     // Read back the whole buffer, and store it inside output
-    pub fn read(&self, ctx: &Context, output: &mut [T]) {
+    pub fn read(&self, output: &mut [T]) {
         // Make sure the lengths always match up
         assert!(output.len() == self.len(), "Current length and output length do not match up.");
 
