@@ -1,7 +1,7 @@
+use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
+use crate::context::Context;
 use assets::Asset;
 use obj::TexturedVertex;
-use crate::context::Context;
-use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread

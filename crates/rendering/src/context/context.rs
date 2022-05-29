@@ -11,7 +11,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{texture::Bindless, raster::{PrimitiveMode, FaceCullMode, RasterSettings}};
+use crate::{
+    canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
+    texture::Bindless,
+};
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
@@ -30,9 +33,6 @@ pub struct Context {
 
     // A list of objects that are currently bound
     pub(crate) bound: BindingHashMap,
-
-    // The currently used raster settings
-    pub(crate) raster: RasterSettings,
 }
 
 impl Context {
@@ -44,13 +44,6 @@ impl Context {
             frame: 0,
             bindless: Default::default(),
             bound: Default::default(),
-            raster: RasterSettings {
-                depth_test: false,
-                sissor_test: None,
-                primitive: PrimitiveMode::Triangles { cull: FaceCullMode::Back(true) },
-                srgb: false,
-                blend: None,
-            }
         }
     }
 
@@ -101,6 +94,4 @@ impl Context {
 
         *self.bound.entry(target).or_insert(object) = object;
     }
-
-    // Set the global 
 }

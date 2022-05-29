@@ -3,6 +3,5 @@ mod tests {
     use crate::material::StandardMaterial;
 
     #[test]
-    fn test() {
-    }
+    fn test() {}
 }

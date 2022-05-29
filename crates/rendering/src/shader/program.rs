@@ -10,7 +10,7 @@ use super::{Introspection, Uniforms};
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
     // The program OpenGL name
-    pub(super) name:u32,
+    pub(super) name: u32,
 
     // Cached texture units
     pub(super) texture_units: AHashMap<&'static str, u32>,

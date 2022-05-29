@@ -1,7 +1,11 @@
 use std::ptr::null;
 
-use crate::{object::{Shared, ToGlName}, mesh::{VertexLayout, VertexAssembly, GeometryBuilder}, buffer::{ArrayBuffer, BufferMode, Buffer}, context::Context};
-
+use crate::{
+    buffer::{ArrayBuffer, Buffer, BufferMode},
+    context::Context,
+    mesh::{GeometryBuilder, VertexAssembly, VertexLayout},
+    object::{Shared, ToGlName},
+};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -254,7 +258,6 @@ pub struct AttributeSet {
     layout: VertexLayout,
 }
 
-
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
     vao: u32,
@@ -269,16 +272,16 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
     aux.builder.get_attribute_vec::<T>().map(|vec| unsafe {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
-        
+
         // Bind the buffer to bind the attributes
         gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
 
         // Enable the pointer
         gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
         gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
-        
+
         // Increment the counter, since we've enabled the attribute
-        *aux.index += 1;        
+        *aux.index += 1;
 
         buffer
     })

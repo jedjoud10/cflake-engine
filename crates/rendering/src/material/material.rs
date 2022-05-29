@@ -1,13 +1,17 @@
 use assets::loader::AssetLoader;
 
-use crate::{context::{Context, Device}, shader::{Shader, Uniforms}, mesh::SubMesh};
+use crate::{
+    context::{Context, Device},
+    mesh::SubMesh,
+    shader::{Shader, Uniforms},
+};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material {
     // Get the execution order for this material
     fn layer() -> i32;
 
-    // Create this new material by initializing it with the default shader 
+    // Create this new material by initializing it with the default shader
     fn new(ctx: &mut Context, loader: &mut AssetLoader) -> Self;
 
     // Create this new material using an explicit shader

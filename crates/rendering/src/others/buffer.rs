@@ -169,8 +169,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 }
 
-
-
 impl<T: Shared, const TARGET: u32> ToGlName for Buffer<T, TARGET> {
     fn name(&self) -> u32 {
         self.buffer

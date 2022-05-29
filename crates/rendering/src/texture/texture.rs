@@ -4,9 +4,11 @@ use crate::{
     object::{ToGlName, ToGlTarget},
 };
 use std::{
+    ffi::c_void,
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull}, rc::Rc, ffi::c_void,
+    ptr::{null, NonNull},
+    rc::Rc,
 };
 
 // Some settings that tell us exactly how we should generate a texture
@@ -58,7 +60,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     // Update a sub-region of the mip-layer using a data slice
     fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
         // The length of the buffer should be equal to the surface area of the region
-        assert!((data.len() as u32) == region.area(), "Input data length is not equal to region area surface");        
+        assert!((data.len() as u32) == region.area(), "Input data length is not equal to region area surface");
 
         // Le update texture subimage
         unsafe {
@@ -129,8 +131,8 @@ pub trait Region {
     fn origin(&self) -> &Self::O;
 
     // Get the region's extent
-    fn extent(&self) -> &Self::E;   
-    
+    fn extent(&self) -> &Self::E;
+
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;
 
@@ -153,7 +155,7 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
     fn with_extent(extent: Self::E) -> Self {
         (Default::default(), extent)
     }
-    
+
     fn area(&self) -> u32 {
         self.extent().area()
     }

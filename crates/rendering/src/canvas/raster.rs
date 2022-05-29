@@ -1,42 +1,50 @@
+use crate::{
+    buffer::ElementBuffer,
+    canvas::blend::BlendMode,
+    canvas::Canvas,
+    commons::Comparison,
+    context::Context,
+    mesh::{attributes::AttributeSet, SubMesh},
+    object::ToGlName,
+    shader::Shader,
+};
 use std::{ptr::null, rc::Rc};
-use crate::{mesh::{SubMesh, attributes::AttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer, context::Context, blend::BlendMode};
 
 // How rasterized triangles should be culled
-#[derive(PartialEq)]
+#[derive(Clone, Copy)]
 pub enum FaceCullMode {
     // The boolean specifies if the culling should be Counter Clockwise
-    Front(bool), Back(bool),
-    
+    Front(bool),
+    Back(bool),
+
     // Don't cull anything
     None,
 }
 
 // Main rasterizer settings like sissor tests and depth tests
+#[derive(Clone, Copy)]
 pub struct RasterSettings {
     // Should we check for vertex depth when rasteizing?
-    depth_test: bool,
+    pub depth_test: Option<Comparison>,
 
     // A sissor test basically limits the area of effect when rasterizing. Pretty useful for UI
-    sissor_test: Option<vek::Aabr<i32>>,
+    pub sissor_test: Option<vek::Aabr<i32>>,
 
     // The current primitive that we will render with. Currently supported: Triangles and Points
-    primitive: PrimitiveMode,
+    pub primitive: PrimitiveMode,
 
     // Should we render in SRGB or not?
-    srgb: bool,
+    pub srgb: bool,
 
     // Transparancy blending mode
-    blend: Option<BlendMode>
+    pub blend: Option<BlendMode>,
 }
 
 // Depicts the exact primitives we will use to draw the mesh
-#[derive(PartialEq)]
+#[derive(Clone, Copy)]
 pub enum PrimitiveMode {
-    Triangles {
-        cull: FaceCullMode,
-    }, Points {
-        diameter: f32
-    }
+    Triangles { cull: FaceCullMode },
+    Points { diameter: f32 },
 }
 
 // An object that can be rasterized and drawn onto the screen
@@ -51,28 +59,22 @@ pub trait ToRasterBuffers {
 // A rasterizer is what will draw our vertices and triangles onto the screen, so we can actually see them as lit pixels
 // Each rasterizer will use a unique shared shader
 pub struct Rasterizer<'canvas, 'shader, 'context> {
-    // The canvas we will be rasterizing onto
     pub(super) canvas: &'canvas mut Canvas,
-
-    // The unique shader that we are using to rasterize our primitives
     pub(super) shader: &'shader mut Shader,
-
     pub(super) context: &'context mut Context,
 }
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
-    // Bind the shader and raster mode to the OpenGL context, and return the raw primitive type
+    // Prepare the rasterizer by setting the global raster settings
     fn prepare(&mut self, settings: RasterSettings) -> u32 {
-        // Bind the shader first
         self.context.bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe { gl::UseProgram(name) });
 
-        // Get the primitive type for rasterization
-        let primitive = match &settings.primitive {
+        // Get the OpenGL primitive type
+        let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
             PrimitiveMode::Points { .. } => gl::POINTS,
         };
 
-        // Set the proper primitive settings
         // Set the global OpenGL face culling mode
         unsafe fn set_cull_mode(mode: FaceCullMode) {
             // Check if we must cull the faces or not
@@ -101,18 +103,23 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         unsafe fn set_point_size(diameter: f32) {
             gl::PointSize(diameter);
         }
-        
-        // Set the primitive's settings (only if there was a change in primtive type tho)
-        let primitive = if self.context.raster.primitive != settings.primitive {
-            // Update the context state and OpenGL state
-            self.context.raster.primitive = settings.primitive;
-            match settings.primitive {
-                PrimitiveMode::Triangles { cull } => unsafe { set_cull_mode(cull); gl::TRIANGLES },
-                PrimitiveMode::Points { diameter } => unsafe { set_point_size(diameter); gl::POINTS },
+
+        // Set the OpenGL primitive parameters
+        match settings.primitive {
+            PrimitiveMode::Triangles { cull } => unsafe { set_cull_mode(cull) },
+            PrimitiveMode::Points { diameter } => unsafe { set_point_size(diameter) },
+        }
+
+        // Handle depth testing and it's parameters
+        unsafe {
+            if let Some(func) = settings.depth_test {
+                gl::Enable(gl::DEPTH_TEST);
+                gl::DepthFunc(std::mem::transmute::<Comparison, u32>(func));
+            } else {
+                gl::Disable(gl::DEPTH_TEST);
             }
-        } else { self.context.raster.primitive };
-        
-            
+        }
+
         primitive
     }
 
@@ -124,32 +131,26 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and a EBO using their raw OpenGL names directly
-    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, mode: PrimitiveMode) {
-        // Bind the shader/raster modes to the context
-        let primitive = self.prepare(mode);
+    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, settings: RasterSettings) {
+        let primitive = self.prepare(settings);
 
         // Draw the VAO and EBO
         self.draw_from_raw_parts(primitive, vao, ebo, count);
     }
 
     // Draw a single VAO and EBO
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, mode: PrimitiveMode) {
-        // Bind the shader/raster modes to the context
-        let primitive = self.prepare(mode);
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, settings: RasterSettings) {
+        let primitive = self.prepare(settings);
 
-        // Get the raw OpenGL names
         let vao = obj.vao();
         let ebo = obj.ebo();
 
-        unsafe {
-            self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32)
-        }
+        unsafe { self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32) }
     }
 
     // This will draw a set of VAOs and EBOs directly onto the screen
-    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], mode: PrimitiveMode) {
-        // Bind the shader/raster modes to the context
-        let primitive = self.prepare(mode);
+    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], settings: RasterSettings) {
+        let primitive = self.prepare(settings);
 
         // Iterate through each object and draw it
         for object in objects {
@@ -157,9 +158,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
             let vao = object.vao();
             let ebo = object.ebo();
 
-            unsafe {
-                self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32)
-            }
+            unsafe { self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32) }
         }
     }
 }

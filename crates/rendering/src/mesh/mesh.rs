@@ -1,11 +1,8 @@
-use super::{
-    attributes::AttributeSet,
-    GeometryBuilder,
-};
+use super::{attributes::AttributeSet, GeometryBuilder};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
-    context::{Context},
-    object::{ToGlName},
+    context::Context,
+    object::ToGlName,
 };
 use assets::Asset;
 use math::bounds::aabb::AABB;

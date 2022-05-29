@@ -1,4 +1,7 @@
-use crate::{texture::{RGB, Ranged, Texture2D, R}, shader::Uniforms};
+use crate::{
+    shader::Uniforms,
+    texture::{Ranged, Texture2D, R, RGB},
+};
 
 // Type aliases for texture maps
 type DiffuseMap = Texture2D<RGB<Ranged<u8>>>;
@@ -20,12 +23,13 @@ pub struct StandardMaterial {
 
 impl Default for StandardMaterial {
     fn default() -> Self {
-        Self { 
+        Self {
             diffuse: None,
             normal: None,
-            mask: None, 
+            mask: None,
             normal_map_strength: 1.0,
             roughness_strength: 1.0,
-            metallic_strength: 1.0 }
+            metallic_strength: 1.0,
+        }
     }
 }

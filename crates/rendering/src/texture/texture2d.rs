@@ -1,7 +1,5 @@
-use super::{Bindless, TexelLayout, Texture, TextureMode, TextureAllocator, Region};
-use crate::{
-    object::{ToGlName, ToGlTarget},
-};
+use super::{Bindless, Region, TexelLayout, Texture, TextureAllocator, TextureMode};
+use crate::object::{ToGlName, ToGlTarget};
 use std::{
     marker::PhantomData,
     num::{NonZeroU32, NonZeroU8},
@@ -12,7 +10,7 @@ use std::{
 // A 2D texture that will be used for rendering objects
 pub struct Texture2D<T: TexelLayout> {
     // Internal OpenGL shit
-    name:u32,
+    name: u32,
 
     // Main texture settings
     dimensions: vek::Extent2<u16>,
@@ -46,7 +44,17 @@ impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
 
     unsafe fn alloc_resizable_storage(name: u32, extent: <Self::TexelRegion as Region>::E, unique_level: u8, ptr: *const std::ffi::c_void) {
         gl::BindTexture(gl::TEXTURE_2D, name);
-        gl::TexImage2D(gl::TEXTURE_2D, unique_level as i32, T::INTERNAL_FORMAT as i32, extent.w as i32, extent.h as i32, 0, T::FORMAT, T::TYPE, ptr);
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            unique_level as i32,
+            T::INTERNAL_FORMAT as i32,
+            extent.w as i32,
+            extent.h as i32,
+            0,
+            T::FORMAT,
+            T::TYPE,
+            ptr,
+        );
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
@@ -59,7 +67,6 @@ impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
 
 impl<T: TexelLayout> Texture for Texture2D<T> {
     type Layout = T;
-    
 
     fn dimensions(&self) -> <Self::TexelRegion as super::Region>::E {
         self.dimensions
@@ -84,8 +91,15 @@ impl<T: TexelLayout> Texture for Texture2D<T> {
     fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLayerMut<Self>> {
         (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
     }
-    
+
     unsafe fn from_raw_parts(name: u32, dimensions: <Self::TexelRegion as super::Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self {
-        Self { name:u32::from(name), dimensions, mode, levels, bindless, _phantom: Default::default() }
+        Self {
+            name: u32::from(name),
+            dimensions,
+            mode,
+            levels,
+            bindless,
+            _phantom: Default::default(),
+        }
     }
 }

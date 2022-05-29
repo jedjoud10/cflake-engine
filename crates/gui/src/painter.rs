@@ -80,10 +80,8 @@ impl Painter {
         // Setup shader uniforms and bind canvas
 
         // Setup OpenGL settings like blending settings and all
-        
+
         // Setup Scissor and disable depth
-
-
 
         /*
         // Use the default framebuffer for drawing

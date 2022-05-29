@@ -1,4 +1,4 @@
-use crate::{context::Context};
+use crate::context::Context;
 
 use super::{ComputeStage, Program};
 

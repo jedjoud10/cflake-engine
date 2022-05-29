@@ -1,23 +1,24 @@
 // Blend mode factor source.
+#[derive(Clone, Copy)]
 pub enum FactorMode {
-    Zero, One,
-    SrcColor, DstColor,
-    SrcAlpha, DstAlpha,
-} 
+    Zero,
+    One,
+    SrcColor,
+    DstColor,
+    SrcAlpha,
+    DstAlpha,
+}
 
 // The factor type that we will use for the sFactor and dFactor values
+#[derive(Clone, Copy)]
 pub struct Factor {
     mode: FactorMode,
     one_minus_value: bool,
 }
 
-
 impl Factor {
     fn with(mode: FactorMode, one_minus_value: bool) -> Self {
-        Self {
-            mode,
-            one_minus_value,
-        }
+        Self { mode, one_minus_value }
     }
 
     // Convert the factor to the OpenGL raw factor
@@ -40,6 +41,7 @@ impl Factor {
 }
 
 // Blending mode when utilising alpha blending moment
+#[derive(Clone, Copy)]
 pub struct BlendMode {
     s_factor: Factor,
     d_factor: Factor,
@@ -47,9 +49,6 @@ pub struct BlendMode {
 
 impl BlendMode {
     pub fn with(s_factor: Factor, d_factor: Factor) -> Self {
-        Self {
-            s_factor,
-            d_factor,
-        }
+        Self { s_factor, d_factor }
     }
 }

@@ -1,7 +1,10 @@
 use crate::painter::Painter;
 use assets::loader::AssetLoader;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{context::{Context, Device}, gl};
+use rendering::{
+    context::{Context, Device},
+    gl,
+};
 
 // A simple manager that will encapsulate everything that is related to GUI
 pub struct UserInterface {

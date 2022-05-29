@@ -1,6 +1,5 @@
 use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest};
 
-
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
 pub struct Graphics(pub super::Device, pub super::Context);
@@ -34,4 +33,3 @@ impl Graphics {
         (el, Self(device, ctx))
     }
 }
-

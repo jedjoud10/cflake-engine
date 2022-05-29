@@ -15,7 +15,7 @@ pub struct Device {
 
     // Raw underlying default canvas
     canvas: Canvas,
-} 
+}
 
 impl Device {
     // Create a new window using a Glutin window
@@ -25,7 +25,12 @@ impl Device {
         let fullscreen = glutin.fullscreen().is_some();
 
         // Device creation
-        Self { glutin, size, fullscreen, canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size) } }
+        Self {
+            glutin,
+            size,
+            fullscreen,
+            canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size) },
+        }
     }
 
     // Get the default window canvas

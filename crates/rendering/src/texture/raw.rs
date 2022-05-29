@@ -1,8 +1,8 @@
-use std::{ffi::c_void};
+use std::ffi::c_void;
 
-use super::{Region, Texture, Extent, TexelLayout};
+use super::{Extent, Region, TexelLayout, Texture};
 
-// A raw texture allocator that will simply call the unique OpenGL functions for each texture type 
+// A raw texture allocator that will simply call the unique OpenGL functions for each texture type
 pub trait TextureAllocator {
     // A texture region that might cover the whole texture or just partially
     type TexelRegion: Region;
