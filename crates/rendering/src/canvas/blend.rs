@@ -43,8 +43,8 @@ impl Factor {
 // Blending mode when utilising alpha blending moment
 #[derive(Clone, Copy)]
 pub struct BlendMode {
-    s_factor: Factor,
-    d_factor: Factor,
+    pub(super) s_factor: Factor,
+    pub(super) d_factor: Factor,
 }
 
 impl BlendMode {

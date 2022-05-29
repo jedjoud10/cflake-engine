@@ -43,9 +43,14 @@ impl Canvas {
     }
 
     // Resize the canvas to a new size
-    fn resize(&mut self, new: vek::Extent2<u16>) {
+    pub fn resize(&mut self, new: vek::Extent2<u16>) {
         assert_ne!(new, vek::Extent2::default(), "Size of canvas cannot be zero");
         self.size = new;
+    }
+
+    // Get the current size of the canvas
+    pub fn size(&self) -> vek::Extent2<u16> {
+        self.size
     }
 
     // Bind the underlying framebuffer if it isn't bound already

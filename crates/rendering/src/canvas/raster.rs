@@ -27,8 +27,8 @@ pub struct RasterSettings {
     // Should we check for vertex depth when rasteizing?
     pub depth_test: Option<Comparison>,
 
-    // A sissor test basically limits the area of effect when rasterizing. Pretty useful for UI
-    pub sissor_test: Option<vek::Aabr<i32>>,
+    // A scissor test basically limits the area of effect when rasterizing. Pretty useful for UI
+    pub scissor_test: Option<(vek::Vec2<i32>, vek::Extent2<i32>)>,
 
     // The current primitive that we will render with. Currently supported: Triangles and Points
     pub primitive: PrimitiveMode,
@@ -117,6 +117,35 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
                 gl::DepthFunc(std::mem::transmute::<Comparison, u32>(func));
             } else {
                 gl::Disable(gl::DEPTH_TEST);
+            }
+        }
+
+        // Handle scissor testing and it's parameters
+        unsafe {
+            if let Some((origin, size)) = settings.scissor_test {
+                gl::Enable(gl::SCISSOR_TEST);
+                gl::Scissor(origin.x, self.canvas.size().h as i32 - origin.y, size.w, size.h);
+            } else {
+                gl::Disable(gl::SCISSOR_TEST);
+            }
+        }
+
+        // Handle the SRGB framebuffer mode
+        unsafe {
+            if settings.srgb {
+                gl::Enable(gl::FRAMEBUFFER_SRGB);
+            } else {
+                gl::Disable(gl::FRAMEBUFFER_SRGB);
+            }
+        }
+
+        // Handle blending and it's parameters
+        unsafe {
+            if let Some(mode) = settings.blend {
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(mode.s_factor.convert(), mode.d_factor.convert());
+            } else {
+                gl::Disable(gl::BLEND)
             }
         }
 

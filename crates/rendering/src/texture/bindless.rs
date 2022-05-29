@@ -68,7 +68,7 @@ pub(super) unsafe fn create_bindless(ctx: &mut Context, name: u32, timeout: u64,
         });
 
         // Then clone it to be able to store it within the context
-        ctx.bindless.push(rc.clone());
+        //ctx.bindless.push(rc.clone());
 
         // Boink
         rc

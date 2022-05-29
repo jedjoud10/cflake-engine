@@ -32,4 +32,9 @@ impl Graphics {
         // Return the event loop along side the graphics pipeline
         (el, Self(device, ctx))
     }
+
+    // Apply all the changes that we commited to the main framebuffer, and swap the front and back buffers
+    pub fn draw(&mut self) {
+        self.1.raw().swap_buffers();
+    }
 }
