@@ -1,5 +1,5 @@
 use super::{
-    vao::attributes::{output as out, Attribute}, VertexLayout
+    attributes::{output as out, Attribute}, VertexLayout
 };
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU

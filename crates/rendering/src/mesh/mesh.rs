@@ -1,5 +1,5 @@
 use super::{
-    vao::{standard::StandardAttributeSet},
+    attributes::AttributeSet,
     GeometryBuilder,
 };
 use crate::{
@@ -29,18 +29,11 @@ impl Default for VertexLayout {
     }
 }
 
-// Tells us how we should store the vertex attributes within the submesh
-pub trait VertexStorage {}
-
-impl VertexStorage for StandardAttributeSet {
-
-}
-
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct SubMesh {
     // The vertex attribute buffers
-    attributes: StandardAttributeSet,
+    attributes: AttributeSet,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: ElementBuffer<u32>,
@@ -53,7 +46,7 @@ impl SubMesh {
     // PS: This doesn't check if the builder contains different length-vectors
     pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
         Self {
-            attributes: StandardAttributeSet::new(ctx, BufferMode::Static, &builder),
+            attributes: AttributeSet::new(ctx, BufferMode::Static, &builder),
             indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
         }
     }
@@ -64,12 +57,12 @@ impl SubMesh {
     }
 
     // Get the underlying attribute set immutably
-    pub fn attributes(&self) -> &StandardAttributeSet {
+    pub fn attributes(&self) -> &AttributeSet {
         &self.attributes
     }
 
     // Get the underlying attribute set mutably
-    pub fn attributes_mut(&mut self) -> &mut StandardAttributeSet {
+    pub fn attributes_mut(&mut self) -> &mut AttributeSet {
         &mut self.attributes
     }
 

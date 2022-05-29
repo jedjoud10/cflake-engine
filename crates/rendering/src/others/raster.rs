@@ -1,7 +1,8 @@
 use std::{ptr::null, rc::Rc};
-use crate::{mesh::{SubMesh, vao::standard::StandardAttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer, context::Context};
+use crate::{mesh::{SubMesh, attributes::AttributeSet}, object::ToGlName, canvas::Canvas, shader::Shader, buffer::ElementBuffer, context::Context, blend::BlendMode};
 
 // How rasterized triangles should be culled
+#[derive(PartialEq)]
 pub enum FaceCullMode {
     // The boolean specifies if the culling should be Counter Clockwise
     Front(bool), Back(bool),
@@ -10,8 +11,27 @@ pub enum FaceCullMode {
     None,
 }
 
-// Depicts how OpenGL should draw the raster buffers
-pub enum RasterMode {
+// Main rasterizer settings like sissor tests and depth tests
+pub struct RasterSettings {
+    // Should we check for vertex depth when rasteizing?
+    depth_test: bool,
+
+    // A sissor test basically limits the area of effect when rasterizing. Pretty useful for UI
+    sissor_test: Option<vek::Aabr<i32>>,
+
+    // The current primitive that we will render with. Currently supported: Triangles and Points
+    primitive: PrimitiveMode,
+
+    // Should we render in SRGB or not?
+    srgb: bool,
+
+    // Transparancy blending mode
+    blend: Option<BlendMode>
+}
+
+// Depicts the exact primitives we will use to draw the mesh
+#[derive(PartialEq)]
+pub enum PrimitiveMode {
     Triangles {
         cull: FaceCullMode,
     }, Points {
@@ -22,7 +42,7 @@ pub enum RasterMode {
 // An object that can be rasterized and drawn onto the screen
 pub trait ToRasterBuffers {
     // Get the VAO handle of the object
-    fn vao(&self) -> &StandardAttributeSet;
+    fn vao(&self) -> &AttributeSet;
 
     // Get the EBO handle of the object
     fn ebo(&self) -> &ElementBuffer<u32>;
@@ -42,20 +62,57 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     // Bind the shader and raster mode to the OpenGL context, and return the raw primitive type
-    fn prepare(&mut self, mode: RasterMode) -> u32 {
-        // Bind shader first
-        unsafe {
-            gl::UseProgram(self.shader.as_ref().name())
-        }
+    fn prepare(&mut self, settings: RasterSettings) -> u32 {
+        // Bind the shader first
+        self.context.bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe { gl::UseProgram(name) });
 
         // Get the primitive type for rasterization
-        let primitive = match &mode {
-            RasterMode::Triangles { .. } => gl::TRIANGLES,
-            RasterMode::Points { .. } => gl::POINTS,
+        let primitive = match &settings.primitive {
+            PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
+            PrimitiveMode::Points { .. } => gl::POINTS,
         };
 
-        // Set the proper drawing settings
-        unsafe { self.context.set_raster_mode(mode); }
+        // Set the proper primitive settings
+        // Set the global OpenGL face culling mode
+        unsafe fn set_cull_mode(mode: FaceCullMode) {
+            // Check if we must cull the faces or not
+            if let FaceCullMode::None = mode {
+                gl::Disable(gl::CULL_FACE);
+                return;
+            } else {
+                gl::Enable(gl::CULL_FACE)
+            };
+
+            // Get the face culling direction, either front or back, and winding order
+            let (direction, ccw) = match mode {
+                FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
+                FaceCullMode::Back(ccw) => (gl::BACK, ccw),
+                _ => todo!(),
+            };
+
+            // Set the face culling direction
+            gl::CullFace(direction);
+
+            // And set winding order
+            gl::FrontFace(if ccw { gl::CCW } else { gl::CW });
+        }
+
+        // Set the global OpenGL point size
+        unsafe fn set_point_size(diameter: f32) {
+            gl::PointSize(diameter);
+        }
+        
+        // Set the primitive's settings (only if there was a change in primtive type tho)
+        let primitive = if self.context.raster.primitive != settings.primitive {
+            // Update the context state and OpenGL state
+            self.context.raster.primitive = settings.primitive;
+            match settings.primitive {
+                PrimitiveMode::Triangles { cull } => unsafe { set_cull_mode(cull); gl::TRIANGLES },
+                PrimitiveMode::Points { diameter } => unsafe { set_point_size(diameter); gl::POINTS },
+            }
+        } else { self.context.raster.primitive };
+        
+            
         primitive
     }
 
@@ -67,7 +124,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and a EBO using their raw OpenGL names directly
-    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, mode: RasterMode) {
+    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, mode: PrimitiveMode) {
         // Bind the shader/raster modes to the context
         let primitive = self.prepare(mode);
 
@@ -75,8 +132,22 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         self.draw_from_raw_parts(primitive, vao, ebo, count);
     }
 
-    // This will draw a set of attributes and indices directly onto the screen
-    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], mode: RasterMode) {
+    // Draw a single VAO and EBO
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, mode: PrimitiveMode) {
+        // Bind the shader/raster modes to the context
+        let primitive = self.prepare(mode);
+
+        // Get the raw OpenGL names
+        let vao = obj.vao();
+        let ebo = obj.ebo();
+
+        unsafe {
+            self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32)
+        }
+    }
+
+    // This will draw a set of VAOs and EBOs directly onto the screen
+    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], mode: PrimitiveMode) {
         // Bind the shader/raster modes to the context
         let primitive = self.prepare(mode);
 

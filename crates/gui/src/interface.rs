@@ -1,7 +1,7 @@
 use crate::painter::Painter;
 use assets::loader::AssetLoader;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{context::Context, gl};
+use rendering::{context::{Context, Device}, gl};
 
 // A simple manager that will encapsulate everything that is related to GUI
 pub struct UserInterface {
@@ -38,13 +38,13 @@ impl UserInterface {
     }
 
     // This should be called at the start of each game update frame
-    pub fn begin_frame(&mut self, window: &egui_winit::winit::window::Window) {
+    pub fn begin(&mut self, window: &egui_winit::winit::window::Window) {
         let raw_input = self.state.take_egui_input(window);
         self.egui.begin_frame(raw_input);
     }
 
     // This should be called at the end of each game update frame (after rendering is done)
-    pub fn draw_frame(&mut self, ctx: &mut Context) {
+    pub fn draw(&mut self, device: &mut Device, ctx: &mut Context) {
         /*
         let window = pipeline.window().context().window();
         let output = self.egui.end_frame();

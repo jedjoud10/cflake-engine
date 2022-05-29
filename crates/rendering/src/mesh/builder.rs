@@ -1,9 +1,7 @@
 use assets::Asset;
 use obj::TexturedVertex;
-
 use crate::context::Context;
-
-use super::{vao::attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
+use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
@@ -95,7 +93,7 @@ impl Asset<'static> for GeometryBuilder {
         let mut tex_coords_0 = Vec::with_capacity(capacity);
 
         // Fill each buffer now
-        use super::vao::attributes::named::*;
+        use super::attributes::named::*;
         use vek::{Vec2, Vec3};
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));

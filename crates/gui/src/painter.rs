@@ -1,10 +1,9 @@
-use crate::buffers::Buffers;
-use crate::common::{convert_image, get_dimensions, get_id};
 use assets::loader::AssetLoader;
 use egui::TexturesDelta;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use nohash_hasher::NoHashHasher;
-use rendering::context::Context;
+use rendering::buffer::{ArrayBuffer, ElementBuffer};
+use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage};
 use rendering::texture::{Ranged, Texture, Texture2D, RGBA};
@@ -16,21 +15,30 @@ use vek::Clamp;
 type Texel = RGBA<Ranged<u8>>;
 
 // This will get a clip rectangle that we will use for OpenGL scissor tests
-fn clip_rect(rect: Rect, ctx: &mut Context) -> (vek::Vec2<i32>, vek::Extent2<i32>) {
-    /*
-    let pixels_per_point = ctx.window().pixels_per_point() as f32;
-    let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
-    let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-    let dims = ctx.window().dimensions().as_().into();
-    let clip_min = clip_min.clamped(vek::Vec2::zero(), dims);
-    let clip_max = clip_max.clamped(vek::Vec2::zero(), dims);
-    let clip_min: vek::Vec2<i32> = clip_min.round().as_();
-    let clip_max: vek::Vec2<i32> = clip_max.round().as_();
-    */
-    todo!()
+fn clip_rect(rect: Rect, device: &Device) -> (vek::Vec2<i32>, vek::Extent2<i32>) {
+    // Convert the eGUi positions into vek positions
+    let min = vek::Vec2::<f32>::from(<(f32, f32)>::from(rect.min));
+    let max = vek::Vec2::<f32>::from(<(f32, f32)>::from(rect.max));
+
+    // Convert the extents to pixels
+    let ppo = device.window().scale_factor() as f32;
+    let min = min * ppo;
+    let max = max * ppo;
+
+    // Clamp to the window size and round to the nearest pixel
+    let size = vek::Vec2::<f32>::from(device.size().as_::<f32>());
+    let min = min.clamped(vek::Vec2::zero(), size);
+    let max = max.clamped(vek::Vec2::zero(), size);
+
+    // Le rounding and casting
+    let min = min.round().as_::<i32>();
+    let max = max.round().as_::<i32>();
+
+    // Convert the min/max bounds to a rectange
+    (min, vek::Extent2::<i32>::from(max - min))
 }
 
-// Painter that will draw the egui elements onto the screen
+// A global painter that will draw the eGUI elements onto the screen canvas
 pub struct Painter {
     // A simple 2D shader that will draw the shapes
     shader: Shader,
@@ -59,36 +67,31 @@ impl Painter {
         Self {
             shader,
             texture: None,
-            buffers: Buffers::new(ctx),
+            vao: todo!(),
+            indices: todo!(),
+            vertices: todo!(),
         }
     }
 
-    // Draw a single egui mesh onto the screen
-    fn draw(&mut self, clip: (vek::Vec2<i32>, vek::Extent2<i32>), mesh: Mesh, ctx: &mut Context) {
+    // Draw the whole user interface onto the screen
+    pub fn draw_gui(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
+        // Update the main texture
+
+        // Setup shader uniforms and bind canvas
+
+        // Setup OpenGL settings like blending settings and all
+        
+        // Setup Scissor and disable depth
+
+
+
         /*
-        //scissor Y coordinate is from the bottom
-        unsafe {
-            gl::Scissor(clip_min.x, dims.y as i32 - clip_max.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
-        }
-
-        // Gotta fil the buffers with new data, then we can draw
-        self.buffers.fill_buffers(mesh.vertices, mesh.indices);
-        self.buffers.draw();
-        */
-    }
-
-    // Draw the whole graphical user interface onto the screen.
-    pub fn draw_gui(&mut self, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
-        // No meshes, no drawing. Ez
-        if meshes.is_empty() {
-            return;
-        }
-
         // Use the default framebuffer for drawing
         let def = ctx.framebuffers().main();
         // Assuming that we only have one texture to deal with
         let main = &self.texture.unwrap().1;
         uniforms.set_sampler("u_sampler", main.sampler());
+        */
         /*
         // Apply the texture deltas
         self.apply_deltas(pipeline, deltas);
