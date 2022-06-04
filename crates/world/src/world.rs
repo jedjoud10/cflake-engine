@@ -1,13 +1,12 @@
 use std::{any::Any, ptr::NonNull, ffi::c_void};
-
 use ahash::AHashMap;
 use gui::egui::util::id_type_map::TypeId;
 
 // A resource is some arbitrary unique data that will be shared between multiple systems
 pub trait Resource: Any {}
 
-// A "world" simply contains multiple resources
-pub struct World(AHashMap<TypeId, Box<dyn Any>>);
+// A world is just a simple container that stores multiple resources. 
+pub struct World(AHashMap<TypeId, RefCell<Box<dyn Any>>>);
 
 impl World {
     // Insert a new resource into the world
