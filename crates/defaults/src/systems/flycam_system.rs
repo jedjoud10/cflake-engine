@@ -5,7 +5,11 @@ use crate::components::{Camera, Transform};
 use crate::resources::WorldData;
 
 // Move the main camera around
-fn run(world: &mut World) {
+fn run(world: &mut World, ) {
+    let input = world.get_mut::<Input>().unwrap();
+    let ecs = world.get_mut::<Ecs>().unwrap();
+    let time = world.get_mut::<Time>().unwrap();
+
     if !world.input.is_accepting_input() {
         return;
     }
