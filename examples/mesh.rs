@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
@@ -45,3 +46,5 @@ fn init(world: &mut World) {
         linker.insert(Transform::default().scaled_by(vek::Vec3::new(10.0, 1.0, 10.0))).unwrap();
     });
 }
+*/
+fn main() {}

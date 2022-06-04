@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Renderer, Transform},
@@ -96,3 +97,5 @@ fn init(world: &mut World) {
         }
     })
 }
+*/
+fn main() {}

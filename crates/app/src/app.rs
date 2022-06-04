@@ -1,18 +1,22 @@
-use mimalloc::MiMalloc;
-use rendering::pipeline::*;
-use settings::*;
-pub use world::*;
+// The main app that we wil create and execute
+// This encapsulates all of the game logic
+pub struct App {
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+}
 
-pub use defaults;
-use glutin::{
-    event::{DeviceEvent, Event},
-    event_loop::{ControlFlow, EventLoop},
-};
-use spin_sleep::LoopHelper;
-use world::ecs::EventExecutionOrder;
+impl App {
+    // Create an application with a specfic title
+    pub fn new(title: impl Into<String>) {
+
+    }
+
+    // Insert a startup system into the application that will execute once we begin
+    // Insert a normal system that will execute each frame
+    pub fn insert(&mut self, system: fn(&mut Self)) {
+        
+    }
+}
+
 
 // Start le engine
 pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {

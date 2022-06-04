@@ -85,10 +85,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "000444226fcff248f2bc4c7625be32c63caccfecc2723a2b9f78a7487a49c407"
 
 [[package]]
-name = "anymap"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33954243bd79057c2de7338850b85983a44588021f8a5fee574a8888c6de4344"
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "glutin",
+ "lazy_static",
+ "mimalloc",
+ "spin_sleep",
+ "vek",
+]
 
 [[package]]
 name = "approx"
@@ -373,7 +378,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "cflake-engine"
 version = "0.1.2"
 dependencies = [
- "handler",
+ "app",
 ]
 
 [[package]]
@@ -758,24 +763,6 @@ name = "dconf_rs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7046468a81e6a002061c01e6a7c83139daf91b11c30e66795b13217c2d885c8b"
-
-[[package]]
-name = "defaults"
-version = "0.1.0"
-dependencies = [
- "ahash 0.7.6",
- "bitflags",
- "enum-as-inner",
- "getset",
- "image",
- "itertools",
- "parking_lot 0.12.1",
- "rapier3d",
- "rayon",
- "time",
- "vek",
- "world",
-]
 
 [[package]]
 name = "deflate"
@@ -1272,19 +1259,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
-name = "handler"
-version = "0.1.0"
-dependencies = [
- "defaults",
- "glutin",
- "lazy_static",
- "mimalloc",
- "spin_sleep",
- "vek",
- "world",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1598,7 +1572,6 @@ dependencies = [
  "ahash 0.7.6",
  "enum-as-inner",
  "getset",
- "others",
  "slotmap",
  "vek",
 ]
@@ -2051,15 +2024,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num_threads"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2819ce041d2ee131036f4fc9d6ae7ae125a3a40e97ba64d04fe799ad9dabbb44"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "obj-rs"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2170,13 +2134,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88cfece6e95d2e717e0872a7f53a8684712ad13822a7979bc760b9c77ec0013b"
 dependencies = [
  "shared_library",
-]
-
-[[package]]
-name = "others"
-version = "0.1.0"
-dependencies = [
- "getset",
 ]
 
 [[package]]
@@ -2981,17 +2938,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "time"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
-dependencies = [
- "itoa",
- "libc",
- "num_threads",
-]
-
-[[package]]
 name = "tinyvec"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3466,33 +3412,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d107f8c6e916235c4c01cabb3e8acf7bea8ef6a63ca2e7fa0527c049badfc48c"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "world"
-version = "0.1.0"
-dependencies = [
- "ahash 0.7.6",
- "anymap",
- "assets",
- "audio",
- "ecs",
- "getset",
- "glutin",
- "gui",
- "input",
- "io",
- "itertools",
- "lazy_static",
- "math",
- "network",
- "others",
- "physics",
- "rendering",
- "resources",
- "serde",
- "terrain",
- "vek",
 ]
 
 [[package]]

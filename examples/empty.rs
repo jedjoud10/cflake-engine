@@ -1,3 +1,4 @@
+/*
 use cflake_engine::*;
 
 // An empty game window
@@ -14,3 +15,5 @@ fn init(world: &mut World) {
 fn run(world: &mut World) {
     println!("Hello World, frame {}", world.time.count().unwrap())
 }
+*/
+fn main() {}

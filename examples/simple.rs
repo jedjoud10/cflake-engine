@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets,
     defaults::{
@@ -54,3 +55,6 @@ fn init(world: &mut World) {
     terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
     world.resources.insert(terrain).unwrap();
 }
+*/
+
+fn main() {}
