@@ -88,10 +88,21 @@ checksum = "000444226fcff248f2bc4c7625be32c63caccfecc2723a2b9f78a7487a49c407"
 name = "app"
 version = "0.1.0"
 dependencies = [
+ "assets",
+ "audio",
+ "ecs",
  "glutin",
+ "gui",
+ "input",
+ "io",
  "lazy_static",
+ "math",
  "mimalloc",
+ "network",
+ "physics",
+ "rendering",
  "spin_sleep",
+ "terrain",
  "vek",
 ]
 

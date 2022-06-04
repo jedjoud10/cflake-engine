@@ -1,11 +1,11 @@
-/*
 use cflake_engine::*;
 
 // An empty game window
 fn main() {
-    cflake_engine::start("cflake-examples/empty", init)
+    //cflake_engine::("cflake-examples/empty", init)
 }
 
+/*
 // Init the empty world
 fn init(world: &mut World) {
     world.events.insert(run);
@@ -16,4 +16,3 @@ fn run(world: &mut World) {
     println!("Hello World, frame {}", world.time.count().unwrap())
 }
 */
-fn main() {}

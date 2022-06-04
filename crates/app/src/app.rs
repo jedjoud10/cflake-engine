@@ -1,7 +1,8 @@
 // The main app that we wil create and execute
 // This encapsulates all of the game logic
 pub struct App {
-
+    systems: Vec<fn(&mut Self)>,
+    //resources: Vec<Box<dyn Resource>>,
 }
 
 impl App {
@@ -13,11 +14,22 @@ impl App {
     // Insert a startup system into the application that will execute once we begin
     // Insert a normal system that will execute each frame
     pub fn insert(&mut self, system: fn(&mut Self)) {
-        
+
+    }
+
+    // Gets an immutable resource bundle from the app
+    // Gets a mutable resource bundle from the app
+    pub fn get_mut<B: ResBundle>(&mut self) -> B {
+        todo!()
+    }
+
+    // Start the engine and consume the app
+    pub fn execute(mut self) {
+
     }
 }
 
-
+/*
 // Start le engine
 pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
     // Load the config file (create it if it doesn't exist already)
@@ -79,6 +91,8 @@ pub fn start(title: impl Into<String>, init_world: fn(&mut World)) {
         handle_glutin_events(&mut sleeper, &mut world, event, control_flow);
     });
 }
+
+
 // Handle events
 fn handle_glutin_events(sleeper: &mut LoopHelper, world: &mut World, event: Event<()>, control_flow: &mut ControlFlow) {
     match event {
@@ -140,3 +154,4 @@ fn handle_device_event(event: DeviceEvent, world: &mut World, _control_flow: &mu
         _ => (),
     }
 }
+*/
