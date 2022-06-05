@@ -19,7 +19,6 @@ rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 gui = { path = "../gui" }
-resources = { path = "../resources" }
 io = { path = "../io" }
 terrain = { path = "../terrain" }
 audio = { path = "../audio" }
