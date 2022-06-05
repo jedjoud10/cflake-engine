@@ -10,7 +10,7 @@ pub trait Resource: 'static {
 
 // A resource refernce, like a & reference or &mut reference
 // TODO: Rename
-pub trait ResRef<'a> {
+pub trait ResRef<'a>: 'a {
     type Inner: Resource + 'static;
     
     // Get the TypeId of the underlying raw resource
@@ -19,7 +19,7 @@ pub trait ResRef<'a> {
     }
     
     // Convert a mutable boxed reference to the resource reference
-    fn as_mut(boxed: &'a mut Box<dyn Resource>) -> Self;
+    fn from_mut(boxed: &'a mut Box<dyn Resource>) -> Self;
 }
 
 
@@ -27,14 +27,14 @@ pub trait ResRef<'a> {
 impl<'a, T: Resource> ResRef<'a> for &'a T {
     type Inner = T;
 
-    fn as_mut(boxed: &'a mut Box<dyn Resource>) -> Self {
+    fn from_mut(boxed: &'a mut Box<dyn Resource>) -> Self {
         boxed.as_any().downcast_ref().unwrap()
     }
 }
 impl<'a, T: Resource> ResRef<'a> for &'a mut T {
     type Inner = T;
     
-    fn as_mut(boxed: &'a mut Box<dyn Resource>) -> Self {
+    fn from_mut(boxed: &'a mut Box<dyn Resource>) -> Self {
         boxed.as_any_mut().downcast_mut().unwrap()
     }
 }

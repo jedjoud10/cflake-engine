@@ -78,6 +78,16 @@ impl Archetype {
         self.entities.len()
     }
 
+    // Get a list of the entities that are stored within this archetype
+    pub fn entities(&self) -> &[Entity] {
+        &self.entities
+    }
+
+    // Get the unique archetype mask
+    pub fn mask(&self) -> Mask {
+        self.mask
+    } 
+
     // Remove an entity from the archetype it is currently linked to
     // This will return the removed boxed components that validate the given mask
     pub(crate) fn remove(archetypes: &mut ArchetypeSet, entities: &mut EntitySet, entity: Entity, filter: Mask) -> Vec<(Mask, Box<dyn Any>)> {

@@ -1,27 +1,41 @@
-// The main app that we wil create and execute
-// This encapsulates all of the game logic
+use std::{collections::HashMap, any::TypeId};
+use resources::{ResBundle, Resource};
+use crate::World;
+
+// An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
-    systems: Vec<fn(&mut Self)>,
-    //resources: Vec<Box<dyn Resource>>,
+    // Window settings for the graphics
+    title: String,
+    fullscreen: bool,
+    screensize: vek::Extent2<u16>,
+    vsync: bool,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self { 
+            title: "Default title".to_string(),
+            fullscreen: false,
+            screensize: vek::Extent2::new(1920, 1080),
+            vsync: false 
+        }
+    }
 }
 
 impl App {
-    // Create an application with a specfic title
-    pub fn new(title: impl Into<String>) {
-
-    }
 
     // Insert a startup system into the application that will execute once we begin
+    pub fn insert_startup(&mut self, system: fn(&mut World)) {
+
+    }
+    
     // Insert a normal system that will execute each frame
-    pub fn insert(&mut self, system: fn(&mut Self)) {
+    pub fn insert_framed(&mut self, system: fn(&mut World)) {
 
     }
 
-    // Gets an immutable resource bundle from the app
-    // Gets a mutable resource bundle from the app
-    pub fn get_mut<B: ResBundle>(&mut self) -> B {
-        todo!()
-    }
+
+    
 
     // Start the engine and consume the app
     pub fn execute(mut self) {

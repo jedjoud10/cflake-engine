@@ -101,6 +101,7 @@ dependencies = [
  "network",
  "physics",
  "rendering",
+ "resources",
  "spin_sleep",
  "terrain",
  "vek",
@@ -2575,6 +2576,18 @@ dependencies = [
 [[package]]
 name = "resources"
 version = "0.1.0"
+dependencies = [
+ "resources-derive",
+ "slotmap",
+]
+
+[[package]]
+name = "resources-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "rodio"
