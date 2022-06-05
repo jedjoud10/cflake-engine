@@ -9,8 +9,11 @@ pub trait QueryLayout<'a>
 where
     Self: Sized,
 {
-    // Types
+    // A tuple that contains the underlying base pointers for the components
     type PtrTuple: 'static + Copy;
+
+    // Tuple that contains the components. This is mostly used to check if the query layout can be safely sent to another thread for parallel execution
+    type Tuple: 'static;
 
     // Get the pointer tuple from an archetype
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple;
@@ -27,13 +30,10 @@ where
 
 impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     type PtrTuple = NonNull<A::Item>;
+    type Tuple = A::Item;
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
         A::fetch(archetype)
-    }
-
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        A::offset(tuple, bundle)
     }
 
     fn combined() -> LayoutAccess {
@@ -43,17 +43,19 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     fn validate() -> bool {
         true
     }
+
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
+        A::offset(tuple, bundle)
+    }
+
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
     type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>);
+    type Tuple = (A::Item, B::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
         (A::fetch(archetype), B::fetch(archetype))
-    }
-
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle))
     }
 
     fn combined() -> LayoutAccess {
@@ -63,17 +65,18 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
     fn validate() -> bool {
         (A::access() & B::access()) == LayoutAccess::none()
     }
+
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle))
+    }
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> for (A, B, C) {
     type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>, NonNull<C::Item>);
+    type Tuple = (A::Item, B::Item, C::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
         (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype))
-    }
-
-    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 
     fn combined() -> LayoutAccess {
@@ -82,5 +85,9 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
 
     fn validate() -> bool {
         (A::access() & B::access() & C::access()) == LayoutAccess::none()
+    }
+
+    fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 }

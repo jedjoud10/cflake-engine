@@ -1,6 +1,6 @@
-use crate::{Archetype, ArchetypeSet, ComponentStateRow, Evaluate, Input, LayoutAccess, QueryLayout};
+use crate::{Archetype, ArchetypeSet, StateRow, Evaluate, Input, LayoutAccess, QueryLayout};
 
-// Currently loaded chunk
+// The main threaded iterators used "chunks" to keep track of the currently loaded archetype and it's base storage pointers
 struct Chunk<'a, Layout: QueryLayout<'a>> {
     // Loaded archetype
     archetype: &'a Archetype,
@@ -38,7 +38,7 @@ pub struct QueryItem<'a, Layout: QueryLayout<'a>> {
     tuple: Layout,
 
     // Current component states
-    state: ComponentStateRow,
+    state: StateRow,
 
     // The archetype it came from
     archetype: &'a Archetype,
@@ -71,7 +71,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
         let chunks = archetypes
             .iter()
             .filter_map(|(_, archetype)| {
-                (archetype.mask & mask == mask).then(|| {
+                (archetype.mask() & mask == mask).then(|| {
                     // Combine the archetype and pointers into a chunk
                     Chunk {
                         archetype,
@@ -113,22 +113,21 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         // Load a component bundle
         let chunk = self.loaded.as_ref().unwrap();
         let bundle = chunk.load(self.bundle);
+        
         // Update the bundle states
         let old = chunk
             .archetype
-            .states
+            .states()
             .update(self.bundle, |mutated, _| *mutated = *mutated | self.access.writing())
             .unwrap();
         self.bundle += 1;
 
-        // Create the query item
-        let item = QueryItem {
+        // Create the query item and return it
+        Some(QueryItem {
             tuple: bundle,
             state: old,
             archetype: chunk.archetype,
-        };
-
-        Some(item)
+        })
     }
 }
 

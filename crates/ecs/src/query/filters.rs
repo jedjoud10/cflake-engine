@@ -1,12 +1,12 @@
 use crate::{
     registry::{self},
-    Component, ComponentStateRow, Mask, QueryLayout,
+    Component, StateRow, Mask, QueryLayout,
 };
 use std::marker::PhantomData;
 
 // Input data given to the filter
 pub struct Input {
-    pub(super) row: ComponentStateRow,
+    pub(super) row: StateRow,
 }
 
 // Basic evaluator that will be implemented for the filter sources and modifiers

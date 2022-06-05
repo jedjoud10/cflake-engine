@@ -1,8 +1,8 @@
-use crate::component::Component;
+use crate::Component;
 use std::{any::Any, ffi::c_void, ptr::NonNull};
 
 // A component storage that is implemented for Vec<T>
-pub(crate) trait StorageVec {
+pub trait StorageVec {
     // As any and as any mut
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;

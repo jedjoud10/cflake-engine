@@ -1,5 +1,3 @@
-use std::{collections::HashMap, any::TypeId};
-use resources::{ResBundle, Resource};
 use crate::World;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
@@ -9,10 +7,14 @@ pub struct App {
     fullscreen: bool,
     screensize: vek::Extent2<u16>,
     vsync: bool,
+
+    // Systems
+    systems: Vec<System>,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    // Create a new world builder
+    pub fn new() -> Self {
         Self { 
             title: "Default title".to_string(),
             fullscreen: false,
@@ -20,22 +22,34 @@ impl Default for App {
             vsync: false 
         }
     }
-}
 
-impl App {
+    // Set the window title
+    pub fn set_window_title(mut self, title: impl ToString) -> Self {
+        self.title = title.to_string();
+        self
+    }
+
+    // Set the window starting screensize
+    pub fn set_window_size(mut self, size: vek::Extent2<u16>) -> Self {
+        self.screensize = size;
+        self
+    }
+
+    // Set the window vsync toggle
+    pub fn set_window_vsync(mut self, enabled: bool) -> Self {
+        self.vsync = enabled;
+        self
+    }
 
     // Insert a startup system into the application that will execute once we begin
-    pub fn insert_startup(&mut self, system: fn(&mut World)) {
+    pub fn insert_startup(mut self, system: fn(&mut World)) {
 
     }
     
     // Insert a normal system that will execute each frame
-    pub fn insert_framed(&mut self, system: fn(&mut World)) {
+    pub fn insert_update(mut self, system: fn(&mut World)) {
 
-    }
-
-
-    
+    }    
 
     // Start the engine and consume the app
     pub fn execute(mut self) {

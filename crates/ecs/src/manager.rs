@@ -8,10 +8,19 @@ pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
 pub struct EcsManager {
+    // Entities are just objects that contain an ID and some component masks
+    // Entities are linked to multiple components, but they don't store the component data by themselves
     pub(crate) entities: EntitySet,
+
+    // Archetypes are a subset of entities that all share the same component mask
+    // We use an archetypal ECS because it is a bit more efficient when iterating through components, though it is slower when modifying entity component layouts 
     pub(crate) archetypes: ArchetypeSet,
+
+    // The unique storage set serves as a base where we can store empty versions of the vectors that are stored within the archetypes
     pub(crate) uniques: UniqueStoragesSet,
-    count: u64,
+
+    // Was the ecs manager executed already?
+    executed: bool,
 }
 
 impl Default for EcsManager {
@@ -24,31 +33,30 @@ impl Default for EcsManager {
             entities: Default::default(),
             archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
             uniques,
-            count: Default::default(),
+            executed: false,
         }
     }
 }
 
 impl EcsManager {
-    // Prepare the Ecs Manager for one execution
+    // Prepare the ecs for one frame of execution 
     pub fn prepare(&mut self) {
-        // Reset the archetype component mutation bits
-        for (_, archetype) in self.archetypes.iter_mut() {
-            archetype.prepare(self.count)
+        if !self.executed {
+            for (_, a) in self.archetypes.iter_mut() {
+                a.states().reset();
+            }
         }
-
-        // Iteration counter that keeps track how many times we've run the ECS system
-        self.count += 1;
+        self.executed = true;
     }
 
     // Modify an entity's component layout
-    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(Entity, &mut LinkModifier)) -> Option<()> {
+    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(&mut LinkModifier)) -> Option<()> {
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
 
         // Create a link modifier, so we can insert/remove components
         let mut linker = LinkModifier::new(self, entity).unwrap();
-        function(entity, &mut linker);
+        function(&mut linker);
 
         // Apply the changes
         linker.apply(&mut copied);
@@ -56,7 +64,7 @@ impl EcsManager {
         Some(())
     }
 
-    // Get an entity entry
+    // Get a single entity entry, if possible
     pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
         Entry::new(self, entity)
     }
@@ -88,7 +96,7 @@ impl EcsManager {
         Some(())
     }
 
-    // Get the entities
+    // Get all the entities that are stored within the manager
     pub fn entities(&self) -> &EntitySet {
         &self.entities
     }
@@ -98,8 +106,10 @@ impl EcsManager {
         &self.archetypes
     }
 
-    // Normal query without filter
-    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a> {
+
+    /* #region Main thread queries */
+    // Normal query without filter 
+    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a>{
         Layout::validate().then(|| query(&self.archetypes))
     }
 
@@ -121,4 +131,9 @@ impl EcsManager {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
     }
+    /* #endregion */
+
+    /* #region Parallel thread queries (with the help of rayon) */
+    /* #endregion */
+
 }

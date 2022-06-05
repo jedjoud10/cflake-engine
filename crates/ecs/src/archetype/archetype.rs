@@ -1,19 +1,19 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
+    registry, ArchetypeSet, StateRow, States, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
 };
 use std::any::Any;
 // Combination of multiple component types
 pub struct Archetype {
     // Main
-    pub(crate) mask: Mask,
+    mask: Mask,
 
     // Components
-    pub(crate) vectors: MaskMap<Box<dyn StorageVec>>,
-    pub(crate) states: ComponentStateSet,
+    vectors: MaskMap<Box<dyn StorageVec>>,
+    states: States,
 
     // Entities
-    pub(crate) entities: Vec<Entity>,
+    entities: Vec<Entity>,
 }
 
 impl Archetype {
@@ -46,7 +46,7 @@ impl Archetype {
     // Add an entity into the archetype and update it's linkings
     pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
-        self.states.push(ComponentStateRow::new(self.mask));
+        self.states.push(StateRow::new(self.mask));
         self.entities.push(entity);
         linkings.bundle = self.len() - 1;
         linkings.mask = self.mask;
@@ -87,6 +87,16 @@ impl Archetype {
     pub fn mask(&self) -> Mask {
         self.mask
     } 
+
+    // Get the current component states immutably
+    pub fn states(&self) -> &States {
+        &self.states
+    }
+
+    // Get the raw boxed storage vectors
+    pub fn storage(&self) -> &MaskMap<Box<dyn StorageVec>> {
+        &self.vectors
+    }
 
     // Remove an entity from the archetype it is currently linked to
     // This will return the removed boxed components that validate the given mask
@@ -145,14 +155,5 @@ impl Archetype {
         // And insert into the new archetype
         let new = archetypes.get_mut(&new).unwrap();
         new.push(entity, linkings, removed);
-    }
-
-    // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
-    pub(crate) fn prepare(&mut self, count: u64) {
-        // Don't do anything for the first frame of execution
-        if count == 0 {
-            return;
-        }
-        self.states.reset();
     }
 }

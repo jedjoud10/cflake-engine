@@ -1,9 +1,18 @@
-use super::Component;
 use crate::Mask;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
 use std::any::{type_name, TypeId};
+pub use ecs_derive::Component;
+
+// This is a certified hood classic
+pub trait Component
+where
+    Self: 'static,
+{
+}
+
+
 // Registered components
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());

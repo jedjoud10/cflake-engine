@@ -24,7 +24,7 @@ impl<'a> Entry<'a> {
         let mask = registry::mask::<T>();
 
         // Handle unlinked components
-        if self.archetype.mask & mask != mask {
+        if self.archetype.mask() & mask != mask {
             return Err(EntryError::MissingComponent(registry::name::<T>()));
         }
 
@@ -33,7 +33,7 @@ impl<'a> Entry<'a> {
     // Get a pointer to a linked component
     pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntryError> {
         let mask = self.mask::<T>()?;
-        let ptr = self.archetype.vectors[&mask].get_storage_ptr();
+        let ptr = self.archetype.storage()[&mask].get_storage_ptr();
         Ok(ptr.cast::<T>().as_ptr().add(self.bundle))
     }
     // Get an immutable reference to a linked component
@@ -44,7 +44,7 @@ impl<'a> Entry<'a> {
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, EntryError> {
         // Update the mutation state
         let mask = self.mask::<T>()?;
-        self.archetype.states.update(self.bundle, |mutated, _| mutated.set(mask.offset(), true));
+        self.archetype.states().update(self.bundle, |mutated, _| mutated.set(mask.offset(), true));
         self.get_mut_silent()
     }
     // Get a mutable reference to a linked component silently, without triggering a mutation state change
@@ -54,7 +54,7 @@ impl<'a> Entry<'a> {
     // Check if a specific component was mutated
     pub fn was_mutated<T: Component>(&self) -> Result<bool, EntryError> {
         let mask = self.mask::<T>()?;
-        let mutated = self.archetype.states.get(self.bundle).unwrap();
+        let mutated = self.archetype.states().get(self.bundle).unwrap();
         Ok(mutated.mutated(mask.offset()))
     }
 }
