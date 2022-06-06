@@ -262,7 +262,12 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
-    unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: u32) {
+    unsafe fn set_normal_sampler_unchecked(
+        &mut self,
+        name: &'static str,
+        target: u32,
+        texture: u32,
+    ) {
         // First of all, we must get the texture unit offset
         let count = self.0.texture_units.len() as u32;
         let offset = *self.0.texture_units.entry(name).or_insert(count);
@@ -293,7 +298,11 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a texture sampler, switching between the bindless and normal methods
     // TODO: Handle texture samplers that might outlive the program
-    pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(&'me mut self, name: &'static str, sampler: Sampler<'sampler, T>) {
+    pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(
+        &'me mut self,
+        name: &'static str,
+        sampler: Sampler<'sampler, T>,
+    ) {
         unsafe {
             match sampler.0.bindless() {
                 Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),

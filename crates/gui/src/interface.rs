@@ -47,7 +47,8 @@ impl UserInterface {
     pub fn draw(&mut self, device: &mut Device, ctx: &mut Context) {
         // Stop the eGUi frame handler
         let output = self.egui.end_frame();
-        self.state.handle_platform_output(device.window(), &mut self.egui, output.platform_output);
+        self.state
+            .handle_platform_output(device.window(), &mut self.egui, output.platform_output);
 
         // Decompose the given state into it's raw parts
         let clipped_shapes = output.shapes;

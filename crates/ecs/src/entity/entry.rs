@@ -44,7 +44,9 @@ impl<'a> Entry<'a> {
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, EntryError> {
         // Update the mutation state
         let mask = self.mask::<T>()?;
-        self.archetype.states().update(self.bundle, |mutated, _| mutated.set(mask.offset(), true));
+        self.archetype
+            .states()
+            .update(self.bundle, |mutated, _| mutated.set(mask.offset(), true));
         self.get_mut_silent()
     }
     // Get a mutable reference to a linked component silently, without triggering a mutation state change

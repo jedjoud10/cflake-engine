@@ -1,15 +1,15 @@
 #![feature(int_roundings)]
 mod archetype;
-mod registry;
 mod entity;
 mod manager;
-mod query;
 mod mask;
+mod query;
+mod registry;
 pub use archetype::*;
 pub use entity::*;
-pub use registry::*;
 pub use manager::*;
-pub use query::*;
 pub use mask::*;
+pub use query::*;
+pub use registry::*;
 
 mod tests;

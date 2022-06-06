@@ -28,12 +28,18 @@ pub struct Context {
 impl Context {
     // Create a context wrapper using a Glutin context
     pub(crate) fn new(ctx: ContextWrapper<PossiblyCurrent, ()>) -> Self {
-        Self { ctx, bound: Default::default() }
+        Self {
+            ctx,
+            bound: Default::default(),
+        }
     }
 
     // This will check if an object of a unique target type is currently bound to the context
     pub(crate) fn is_bound(&self, target: u32, object: u32) -> bool {
-        self.bound.get(&target).map(|&bound| bound == object).unwrap_or_default()
+        self.bound
+            .get(&target)
+            .map(|&bound| bound == object)
+            .unwrap_or_default()
     }
 
     // This will bind an object if it wasn't bound already

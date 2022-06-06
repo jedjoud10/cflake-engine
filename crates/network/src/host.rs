@@ -62,12 +62,19 @@ impl Host {
                         let uuid = uuid::Uuid::new_v4();
                         let payload = uuid.as_bytes().to_vec();
                         self.clients.insert(client_addr, uuid);
-                        self.sender.send(Packet::reliable_ordered(client_addr, payload.clone(), None)).unwrap();
-                        self.sender.send(Packet::reliable_ordered(client_addr, Vec::new(), None)).unwrap();
+                        self.sender
+                            .send(Packet::reliable_ordered(client_addr, payload.clone(), None))
+                            .unwrap();
+                        self.sender
+                            .send(Packet::reliable_ordered(client_addr, Vec::new(), None))
+                            .unwrap();
                         // Can't do anything unless we are connected
                         continue;
                     }
-                    println!("Server: Received packet from Client '{}'", self.clients.get_by_left(&client_addr).unwrap());
+                    println!(
+                        "Server: Received packet from Client '{}'",
+                        self.clients.get_by_left(&client_addr).unwrap()
+                    );
                     if packet.payload().len() >= size_of::<PayloadBucketId>() {
                         // Add the data to the network cache
                         let _bucket_id = self.cache.push(packet);
@@ -77,8 +84,14 @@ impl Host {
                     // A client has succsessfully made a connection, we can register them as our own
 
                     // Simple check just in case
-                    assert!(self.clients.contains_left(&client_addr), "Client UUID not generated!");
-                    println!("Server: Client '{}' succsesfully connected", self.clients.get_by_left(&client_addr).unwrap());
+                    assert!(
+                        self.clients.contains_left(&client_addr),
+                        "Client UUID not generated!"
+                    );
+                    println!(
+                        "Server: Client '{}' succsesfully connected",
+                        self.clients.get_by_left(&client_addr).unwrap()
+                    );
                 }
                 SocketEvent::Timeout(_client_addr) => {
                     // A client has timed out
@@ -86,7 +99,10 @@ impl Host {
                 }
                 SocketEvent::Disconnect(client_addr) => {
                     // A client has been disconnected
-                    assert!(self.clients.contains_left(&client_addr), "Client was not connected in the first place!");
+                    assert!(
+                        self.clients.contains_left(&client_addr),
+                        "Client was not connected in the first place!"
+                    );
                     let (_, uuid) = self.clients.remove_by_left(&client_addr).unwrap();
                     println!("Server: Client '{}' succsesfully disconnected", uuid);
                 }
@@ -96,7 +112,12 @@ impl Host {
         Ok(())
     }
     // Send a packet to the a specific client using it's UUID
-    pub fn send<P: Payload + 'static>(&self, payload: P, _type: PacketType, uuid: Uuid) -> Option<()> {
+    pub fn send<P: Payload + 'static>(
+        &self,
+        payload: P,
+        _type: PacketType,
+        uuid: Uuid,
+    ) -> Option<()> {
         // Get the client's socket address
         let addr = self.clients.get_by_right(&uuid)?;
         send(*addr, payload, &self.sender, _type).unwrap();

@@ -73,8 +73,18 @@ pub(super) unsafe fn introspect(program: u32) -> Introspection {
     // Count the number of uniform blocks and shader storage blocks
     let mut uniforms = 0;
     let mut storages = 0;
-    gl::GetProgramInterfaceiv(program, gl::UNIFORM_BLOCK, gl::ACTIVE_RESOURCES, &mut uniforms);
-    gl::GetProgramInterfaceiv(program, gl::SHADER_STORAGE_BLOCK, gl::ACTIVE_RESOURCES, &mut storages);
+    gl::GetProgramInterfaceiv(
+        program,
+        gl::UNIFORM_BLOCK,
+        gl::ACTIVE_RESOURCES,
+        &mut uniforms,
+    );
+    gl::GetProgramInterfaceiv(
+        program,
+        gl::SHADER_STORAGE_BLOCK,
+        gl::ACTIVE_RESOURCES,
+        &mut storages,
+    );
 
     // Raw block properties given directly from opengl
     #[repr(C)]

@@ -3,7 +3,9 @@ use egui::{epaint::Mesh, ClippedMesh, Rect};
 use egui::{Color32, ImageData, TextureId, TexturesDelta};
 use nohash_hasher::NoHashHasher;
 use rendering::buffer::{ArrayBuffer, Buffer, BufferMode, ElementBuffer};
-use rendering::canvas::rasterizer::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings};
+use rendering::canvas::rasterizer::{
+    BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings,
+};
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
@@ -65,8 +67,12 @@ impl Painter {
     // Create a new painter using an asset loader an OpenGL context
     pub(super) fn new(loader: &mut AssetLoader, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
-        let vert = loader.load::<VertexStage>("defaults/shaders/gui/vert.vrsh.glsl").unwrap();
-        let frag = loader.load::<FragmentStage>("defaults/shaders/gui/frag.frsh.glsl").unwrap();
+        let vert = loader
+            .load::<VertexStage>("defaults/shaders/gui/vert.vrsh.glsl")
+            .unwrap();
+        let frag = loader
+            .load::<FragmentStage>("defaults/shaders/gui/frag.frsh.glsl")
+            .unwrap();
 
         // Link the stages and compile the shader
         let shader = ShaderCompiler::link((vert, frag), Processor::from(loader), ctx);
@@ -79,7 +85,8 @@ impl Painter {
         }
 
         // Resizable buffers for vertices and indices
-        let vertices = ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
+        let vertices =
+            ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
         let indices = ElementBuffer::<u32>::new(ctx, BufferMode::Resizable, &[]).unwrap();
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
@@ -89,9 +96,23 @@ impl Painter {
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
             gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as _);
+            gl::VertexAttribPointer(
+                1,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                STRIDE,
+                (size_of::<f32>() * 2) as isize as _,
+            );
             gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as _);
+            gl::VertexAttribPointer(
+                2,
+                4,
+                gl::UNSIGNED_BYTE,
+                gl::FALSE,
+                STRIDE,
+                (size_of::<f32>() * 4) as isize as _,
+            );
             gl::BindVertexArray(0);
         }
 
@@ -105,14 +126,32 @@ impl Painter {
     }
 
     // Draw the whole user interface onto the screen
-    pub fn draw(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
+    pub fn draw(
+        &mut self,
+        device: &mut Device,
+        ctx: &mut Context,
+        meshes: Vec<ClippedMesh>,
+        deltas: TexturesDelta,
+    ) {
         // Update the main texture
-        if let Some((tid, delta)) = deltas.set.iter().find(|(&tid, _)| tid == TextureId::Managed(0)) {
+        if let Some((tid, delta)) = deltas
+            .set
+            .iter()
+            .find(|(&tid, _)| tid == TextureId::Managed(0))
+        {
             // Insert the texture if we don't have it already
             self.texture.get_or_insert_with(|| {
                 let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
                 let texels = image_data_to_texels(&delta.image);
-                Texture2D::new(ctx, TextureMode::Resizable, dimensions, Sampling::new(Filter::Nearest, Wrap::ClampToEdge), false, &texels).unwrap()
+                Texture2D::new(
+                    ctx,
+                    TextureMode::Resizable,
+                    dimensions,
+                    Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
+                    false,
+                    &texels,
+                )
+                .unwrap()
             });
         }
 
@@ -125,7 +164,9 @@ impl Painter {
         let settings = RasterSettings {
             depth_test: None,
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles { cull: FaceCullMode::None },
+            primitive: PrimitiveMode::Triangles {
+                cull: FaceCullMode::None,
+            },
             srgb: true,
             blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
         };
@@ -140,7 +181,12 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                rasterizer.draw_unchecked(self.vao, self.indices.name(), self.indices.len() as u32, &settings);
+                rasterizer.draw_unchecked(
+                    self.vao,
+                    self.indices.name(),
+                    self.indices.len() as u32,
+                    &settings,
+                );
             }
         }
     }

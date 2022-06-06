@@ -70,7 +70,8 @@ impl GeometryBuilder {
 
     // Build the final submesh using a specific context, and make sure the vecs are valid
     pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {
-        self.valid().then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
+        self.valid()
+            .then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
     }
 }
 

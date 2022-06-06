@@ -25,7 +25,11 @@ impl Canvas {
     // Create a new canvas with a specific size (size must be valid)
     pub fn new(ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         // Validate size first
-        assert_ne!(size, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            size,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
 
         // Create the raw OpenGL framebuffer
         let name = unsafe {
@@ -44,7 +48,11 @@ impl Canvas {
 
     // Resize the canvas to a new size
     pub fn resize(&mut self, new: vek::Extent2<u16>) {
-        assert_ne!(new, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            new,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
         self.size = new;
     }
 
@@ -63,7 +71,13 @@ impl Canvas {
     }
 
     // Clear the whole framebuffer using the proper flags
-    pub fn clear(&mut self, ctx: &mut Context, color: Option<vek::Rgba<f32>>, depth: Option<f32>, stencil: Option<i32>) {
+    pub fn clear(
+        &mut self,
+        ctx: &mut Context,
+        color: Option<vek::Rgba<f32>>,
+        depth: Option<f32>,
+        stencil: Option<i32>,
+    ) {
         // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 
@@ -97,7 +111,11 @@ impl Canvas {
         }
     }
     // Get the canvas' rasterizer so we can draw stuff onto the canvas using a specific shader
-    pub fn rasterizer<'canvas, 'shader, 'context>(&'canvas mut self, shader: &'shader mut Shader, ctx: &'context mut Context) -> Rasterizer<'canvas, 'shader, 'context> {
+    pub fn rasterizer<'canvas, 'shader, 'context>(
+        &'canvas mut self,
+        shader: &'shader mut Shader,
+        ctx: &'context mut Context,
+    ) -> Rasterizer<'canvas, 'shader, 'context> {
         Rasterizer {
             canvas: self,
             shader,

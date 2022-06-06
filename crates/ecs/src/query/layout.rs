@@ -47,7 +47,6 @@ impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
         A::offset(tuple, bundle)
     }
-
 }
 
 impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> QueryLayout<'a> for (A, B) {
@@ -76,7 +75,11 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
     type Tuple = (A::Item, B::Item, C::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype))
+        (
+            A::fetch(archetype),
+            B::fetch(archetype),
+            C::fetch(archetype),
+        )
     }
 
     fn combined() -> LayoutAccess {
@@ -88,6 +91,10 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
+        (
+            A::offset(tuple.0, bundle),
+            B::offset(tuple.1, bundle),
+            C::offset(tuple.2, bundle),
+        )
     }
 }

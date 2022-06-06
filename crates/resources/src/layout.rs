@@ -1,7 +1,13 @@
-use std::{any::TypeId, cell::{Ref, RefMut, RefCell}, borrow::Borrow, ptr::NonNull, collections::HashMap};
 use ahash::AHashSet;
+use std::{
+    any::TypeId,
+    borrow::Borrow,
+    cell::{Ref, RefCell, RefMut},
+    collections::HashMap,
+    ptr::NonNull,
+};
 
-use crate::{Resource, ResourceSet, ResourceError};
+use crate::{Resource, ResourceError, ResourceSet};
 
 // Resource fetchers are just references to resources, like &mut T or Option<&mut T>
 pub trait ResHandle<'a>: Sized {
@@ -14,19 +20,25 @@ pub trait ResHandle<'a>: Sized {
 
     // Get the underlying pointer for the raw data
     fn fetch_ptr(set: &mut ResourceSet) -> Result<NonNull<Self::Inner>, ResourceError> {
-        let boxed = set.get_mut(&Self::id()).ok_or(ResourceError::missing::<Self::Inner>())?;
+        let boxed = set
+            .get_mut(&Self::id())
+            .ok_or(ResourceError::missing::<Self::Inner>())?;
         let ptr = boxed.as_any_mut().downcast_mut::<Self::Inner>().unwrap() as *mut Self::Inner;
         Ok(NonNull::new(ptr).unwrap())
     }
 
     // Convert the pointer into the proper handle
-    unsafe fn cast_unchecked(ptr: Result<NonNull<Self::Inner>, ResourceError>) -> Result<Self, ResourceError>;
+    unsafe fn cast_unchecked(
+        ptr: Result<NonNull<Self::Inner>, ResourceError>,
+    ) -> Result<Self, ResourceError>;
 }
 
 impl<'a, T: Resource> ResHandle<'a> for &'a T {
     type Inner = T;
 
-    unsafe fn cast_unchecked(ptr: Result<NonNull<Self::Inner>, ResourceError>) -> Result<Self, ResourceError> {
+    unsafe fn cast_unchecked(
+        ptr: Result<NonNull<Self::Inner>, ResourceError>,
+    ) -> Result<Self, ResourceError> {
         Ok(&*(ptr?.as_ptr() as *const T))
     }
 }
@@ -34,7 +46,9 @@ impl<'a, T: Resource> ResHandle<'a> for &'a T {
 impl<'a, T: Resource> ResHandle<'a> for &'a mut T {
     type Inner = T;
 
-    unsafe fn cast_unchecked(ptr: Result<NonNull<Self::Inner>, ResourceError>) -> Result<Self, ResourceError> {
+    unsafe fn cast_unchecked(
+        ptr: Result<NonNull<Self::Inner>, ResourceError>,
+    ) -> Result<Self, ResourceError> {
         Ok(&mut *(ptr?.as_ptr() as *mut T))
     }
 }
@@ -42,7 +56,9 @@ impl<'a, T: Resource> ResHandle<'a> for &'a mut T {
 impl<'a, T: Resource> ResHandle<'a> for Option<&'a T> {
     type Inner = T;
 
-    unsafe fn cast_unchecked(ptr: Result<NonNull<Self::Inner>, ResourceError>) -> Result<Self, ResourceError> {
+    unsafe fn cast_unchecked(
+        ptr: Result<NonNull<Self::Inner>, ResourceError>,
+    ) -> Result<Self, ResourceError> {
         let res = ptr.ok().map(|ptr| &*(ptr.as_ptr() as *const T));
         Ok(res)
     }
@@ -51,7 +67,9 @@ impl<'a, T: Resource> ResHandle<'a> for Option<&'a T> {
 impl<'a, T: Resource> ResHandle<'a> for Option<&'a mut T> {
     type Inner = T;
 
-    unsafe fn cast_unchecked(ptr: Result<NonNull<Self::Inner>, ResourceError>) -> Result<Self, ResourceError> {
+    unsafe fn cast_unchecked(
+        ptr: Result<NonNull<Self::Inner>, ResourceError>,
+    ) -> Result<Self, ResourceError> {
         let res = ptr.ok().map(|ptr| &mut *(ptr.as_ptr() as *mut T));
         Ok(res)
     }
@@ -110,12 +128,19 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A
     }
 }
 
-impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>> Layout<'a> for (A, B, C, D) {
+impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>> Layout<'a>
+    for (A, B, C, D)
+{
     fn types() -> Vec<TypeId> {
         vec![A::id(), B::id(), C::id(), D::id()]
     }
 
     unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
-        Ok((fetch::<A>(set)?, fetch::<B>(set)?, fetch::<C>(set)?, fetch::<D>(set)?))
+        Ok((
+            fetch::<A>(set)?,
+            fetch::<B>(set)?,
+            fetch::<C>(set)?,
+            fetch::<D>(set)?,
+        ))
     }
 }

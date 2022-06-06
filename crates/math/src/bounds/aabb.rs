@@ -13,7 +13,10 @@ pub struct AABB {
 impl AABB {
     // Create an AABB at a specified position and half-width scale
     pub fn new(pos: vek::Vec3<f32>, hw: vek::Vec3<f32>) -> Self {
-        Self { min: pos - hw, max: pos + hw }
+        Self {
+            min: pos - hw,
+            max: pos + hw,
+        }
     }
     // Create all the points that belong to this AABB in arbitrary order cause I can't give a shit
     pub fn points(&self) -> [vek::Vec3<f32>; 8] {

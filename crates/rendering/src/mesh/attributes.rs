@@ -277,7 +277,14 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
         gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
 
         // Enable the pointer
-        gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
+        gl::VertexAttribPointer(
+            *aux.index,
+            T::Out::COUNT_PER_VERTEX as i32,
+            T::Out::GL_TYPE,
+            normalized.into(),
+            0,
+            null(),
+        );
         gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
 
         // Increment the counter, since we've enabled the attribute
@@ -337,7 +344,13 @@ impl AttributeSet {
         }
 
         // Make sure all the lengths (that are valid) be equal to each other
-        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check

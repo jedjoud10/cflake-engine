@@ -15,11 +15,11 @@ pub struct App {
 impl App {
     // Create a new world builder
     pub fn new() -> Self {
-        Self { 
+        Self {
             title: "Default title".to_string(),
             fullscreen: false,
             screensize: vek::Extent2::new(1920, 1080),
-            vsync: false 
+            vsync: false,
         }
     }
 
@@ -42,19 +42,13 @@ impl App {
     }
 
     // Insert a startup system into the application that will execute once we begin
-    pub fn insert_startup(mut self, system: fn(&mut World)) {
+    pub fn insert_startup(mut self, system: fn(&mut World)) {}
 
-    }
-    
     // Insert a normal system that will execute each frame
-    pub fn insert_update(mut self, system: fn(&mut World)) {
-
-    }    
+    pub fn insert_update(mut self, system: fn(&mut World)) {}
 
     // Start the engine and consume the app
-    pub fn execute(mut self) {
-
-    }
+    pub fn execute(mut self) {}
 }
 
 /*

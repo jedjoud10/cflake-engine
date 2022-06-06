@@ -53,14 +53,22 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Update a sub-region of the mip-layer, but without checking for safety
-    unsafe fn update_unchecked(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
+    unsafe fn update_unchecked(
+        &mut self,
+        ctx: &mut Context,
+        region: T::TexelRegion,
+        data: &[T::Layout],
+    ) {
         T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
     }
 
     // Update a sub-region of the mip-layer using a data slice
     fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
         // The length of the buffer should be equal to the surface area of the region
-        assert!((data.len() as u32) == region.area(), "Input data length is not equal to region area surface");
+        assert!(
+            (data.len() as u32) == region.area(),
+            "Input data length is not equal to region area surface"
+        );
 
         // Le update texture subimage
         unsafe {
@@ -188,7 +196,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     type Layout: TexelLayout;
 
     // Create a new texutre that contains some data
-    fn new(ctx: &mut Context, mode: TextureMode, dimensions: <Self::TexelRegion as Region>::E, sampling: super::Sampling, mipmaps: bool, data: &[Self::Layout]) -> Option<Self> {
+    fn new(
+        ctx: &mut Context,
+        mode: TextureMode,
+        dimensions: <Self::TexelRegion as Region>::E,
+        sampling: super::Sampling,
+        mipmaps: bool,
+        data: &[Self::Layout],
+    ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
 
@@ -202,8 +217,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {
             // Convert some parameters to their raw counterpart
-            let ptr = (!data.is_empty()).then(|| data.as_ptr()).unwrap_or_else(null);
-            let levels = mipmaps.then(|| dimensions.levels()).unwrap_or(NonZeroU8::new_unchecked(1));
+            let ptr = (!data.is_empty())
+                .then(|| data.as_ptr())
+                .unwrap_or_else(null);
+            let levels = mipmaps
+                .then(|| dimensions.levels())
+                .unwrap_or(NonZeroU8::new_unchecked(1));
 
             // Create a new raw OpenGL texture object
             let tex = {
@@ -214,8 +233,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
-                TextureMode::Dynamic => Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _),
-                TextureMode::Resizable => Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _),
+                TextureMode::Dynamic => {
+                    Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _)
+                }
+                TextureMode::Resizable => {
+                    Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _)
+                }
             }
 
             // Create a bindless handle if needed
@@ -288,5 +311,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     }
 
     // Construct the texture object from it's raw parts
-    unsafe fn from_raw_parts(name: u32, dimensions: <Self::TexelRegion as Region>::E, mode: TextureMode, levels: NonZeroU8, bindless: Option<Rc<Bindless>>) -> Self;
+    unsafe fn from_raw_parts(
+        name: u32,
+        dimensions: <Self::TexelRegion as Region>::E,
+        mode: TextureMode,
+        levels: NonZeroU8,
+        bindless: Option<Rc<Bindless>>,
+    ) -> Self;
 }

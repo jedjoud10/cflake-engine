@@ -65,7 +65,12 @@ impl<'a> Processor<'a> {
     // Filter and process a single stage
     pub(super) fn filter<S: Stage>(&mut self, stage: S) -> Processed<S> {
         // We must filter infinitely until we find no more directives
-        let mut lines = stage.as_ref().to_string().lines().map(str::to_string).collect::<Vec<String>>();
+        let mut lines = stage
+            .as_ref()
+            .to_string()
+            .lines()
+            .map(str::to_string)
+            .collect::<Vec<String>>();
         loop {
             // Simply iterate through each line, and check if it starts with a directive that we must replace (whitespaces ignored)
             let mut skipped = 0usize;
@@ -79,7 +84,12 @@ impl<'a> Processor<'a> {
                 // Very funny indeed
                 if trimmed.contains("#const") {
                     // Split into words, and classify name and optional default value
-                    let words = trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let words = trimmed
+                        .split("#const")
+                        .next()
+                        .unwrap()
+                        .split_whitespace()
+                        .collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
                     let default = words.get(1).cloned();
 
@@ -88,7 +98,12 @@ impl<'a> Processor<'a> {
                     output = loaded.or(default).unwrap().to_string();
                 } else if trimmed.starts_with("#snip") {
                     // Split into words, and classify name
-                    let words = trimmed.split("#snip").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let words = trimmed
+                        .split("#snip")
+                        .next()
+                        .unwrap()
+                        .split_whitespace()
+                        .collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
 
                     // Try to get the snippet
@@ -113,7 +128,11 @@ impl<'a> Processor<'a> {
             }
 
             // Make sure we split the lines again
-            lines = lines.join("\n").lines().map(str::to_string).collect::<Vec<String>>();
+            lines = lines
+                .join("\n")
+                .lines()
+                .map(str::to_string)
+                .collect::<Vec<String>>();
 
             // If we skipped all the lines, it means that we did absolutely nothing, and we can exit
             if skipped == lines.len() {

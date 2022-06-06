@@ -71,7 +71,10 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     // Prepare the rasterizer by setting the global raster settings
     fn prepare(&mut self, settings: &RasterSettings) -> u32 {
-        self.context.bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe { gl::UseProgram(name) });
+        self.context
+            .bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe {
+                gl::UseProgram(name)
+            });
 
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
@@ -128,7 +131,12 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         unsafe {
             if let Some((origin, size)) = &settings.scissor_test {
                 gl::Enable(gl::SCISSOR_TEST);
-                gl::Scissor(origin.x, self.canvas.size().h as i32 - origin.y, size.w, size.h);
+                gl::Scissor(
+                    origin.x,
+                    self.canvas.size().h as i32 - origin.y,
+                    size.w,
+                    size.h,
+                );
             } else {
                 gl::Disable(gl::SCISSOR_TEST);
             }
@@ -147,7 +155,10 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
         unsafe {
             if let Some(mode) = settings.blend {
                 gl::Enable(gl::BLEND);
-                gl::BlendFunc(transmute::<Factor, u32>(mode.s_factor), transmute::<Factor, u32>(mode.d_factor));
+                gl::BlendFunc(
+                    transmute::<Factor, u32>(mode.s_factor),
+                    transmute::<Factor, u32>(mode.d_factor),
+                );
             } else {
                 gl::Disable(gl::BLEND)
             }
@@ -164,7 +175,13 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and a EBO using their raw OpenGL names directly
-    pub unsafe fn draw_unchecked(&mut self, vao: u32, ebo: u32, count: u32, settings: &RasterSettings) {
+    pub unsafe fn draw_unchecked(
+        &mut self,
+        vao: u32,
+        ebo: u32,
+        count: u32,
+        settings: &RasterSettings,
+    ) {
         let primitive = self.prepare(settings);
 
         // Draw the VAO and EBO

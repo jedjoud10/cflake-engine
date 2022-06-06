@@ -24,7 +24,6 @@ impl std::fmt::Debug for ResourceError {
             ResourceError::MissingResource(name) => write!(f, "Tried fetching resource with name '{}', but it currently does not exist in the world", name),
             ResourceError::Overlapping(name) => write!(f, "Cannot access resource {} multiple times in the same get_mut() call", name),
         }
-        
     }
 }
 
@@ -34,6 +33,4 @@ impl std::fmt::Display for ResourceError {
     }
 }
 
-impl std::error::Error for ResourceError {
-
-}
+impl std::error::Error for ResourceError {}

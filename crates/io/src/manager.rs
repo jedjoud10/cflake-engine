@@ -33,13 +33,20 @@ impl IOManager {
         }
     }
     // Load a file relative to the game's data folder
-    pub fn open_file(&self, file_path: impl AsRef<Path>, options: &OpenOptions) -> io::Result<File> {
+    pub fn open_file(
+        &self,
+        file_path: impl AsRef<Path>,
+        options: &OpenOptions,
+    ) -> io::Result<File> {
         let mut path = self.local_path.clone().unwrap();
         path.push(file_path);
         options.open(path)
     }
     // Load a struct from a file
-    pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(&self, file_path: impl AsRef<Path>) -> io::Result<T> {
+    pub fn load<T: serde::Serialize + serde::de::DeserializeOwned>(
+        &self,
+        file_path: impl AsRef<Path>,
+    ) -> io::Result<T> {
         // Load the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let reader = BufReader::new(OpenOptions::new().read(true).open(global_path)?);
@@ -47,7 +54,11 @@ impl IOManager {
         Ok(serde_json::from_reader(reader).unwrap())
     }
     // Save a struct to a file
-    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(&self, file_path: impl AsRef<Path>, struct_to_save: &T) {
+    pub fn save<T: serde::Serialize + serde::Deserialize<'static>>(
+        &self,
+        file_path: impl AsRef<Path>,
+        struct_to_save: &T,
+    ) {
         // Save the file
         let global_path = self.local_path.as_ref().unwrap().join(file_path);
         let mut writer = BufWriter::new(OpenOptions::new().write(true).open(global_path).unwrap());

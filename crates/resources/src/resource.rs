@@ -1,4 +1,7 @@
-use std::{any::{TypeId, Any}, cell::RefCell};
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+};
 
 use ahash::AHashMap;
 

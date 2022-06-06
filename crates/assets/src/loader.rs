@@ -36,7 +36,11 @@ impl AssetLoader {
     }
 
     // Load an asset using some explicit loading arguments
-    pub fn load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str, args: A::Args) -> Option<A> {
+    pub fn load_with<'loader, 'args, A: Asset<'args>>(
+        &'loader mut self,
+        path: &str,
+        args: A::Args,
+    ) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(path).unwrap();
         let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once(".")?;

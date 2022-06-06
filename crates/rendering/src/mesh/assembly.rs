@@ -47,7 +47,13 @@ impl VertexAssembly {
         }
 
         // Make sure all the lengths (that are valid) be equal to each other
-        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check

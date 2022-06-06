@@ -106,7 +106,12 @@ pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -
         // Create a string that will contain the error message
         let message = String::from_utf8({
             let mut vec = Vec::with_capacity(len as usize + 1);
-            gl::GetShaderInfoLog(shader, len, null_mut(), vec.spare_capacity_mut().as_mut_ptr() as _);
+            gl::GetShaderInfoLog(
+                shader,
+                len,
+                null_mut(),
+                vec.spare_capacity_mut().as_mut_ptr() as _,
+            );
             vec
         })
         .unwrap();

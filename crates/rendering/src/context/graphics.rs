@@ -1,4 +1,7 @@
-use glutin::{dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile, GlRequest};
+use glutin::{
+    dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile,
+    GlRequest,
+};
 
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
@@ -8,7 +11,9 @@ impl Graphics {
     // Create some new graphics given a glutin event loop
     pub fn new<T>(el: EventLoop<T>) -> (EventLoop<T>, Self) {
         // Build a valid window
-        let wb = WindowBuilder::new().with_resizable(true).with_inner_size(LogicalSize::new(1920u32, 1080));
+        let wb = WindowBuilder::new()
+            .with_resizable(true)
+            .with_inner_size(LogicalSize::new(1920u32, 1080));
 
         // Build a valid Glutin context
         let wc = ContextBuilder::new()
