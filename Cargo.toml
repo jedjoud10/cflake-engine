@@ -16,6 +16,7 @@ members = [
     "crates/app",
     "crates/gui",
     "crates/input",
+    "crates/resources",
     "crates/io",
     "crates/math",
     "crates/network",
