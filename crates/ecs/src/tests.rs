@@ -40,10 +40,10 @@ mod tests {
             });
 
             //let mut entry = manager.entry(entity).unwrap();
-            manager.modify(entity, |modifier| {});
+            manager.modify(entity, |_modifier| {});
         }
 
-        for i in 0..5 {
+        for _i in 0..5 {
             manager.prepare();
             let _i = std::time::Instant::now();
             type Layout<'a> = (&'a Tag, &'a SimpleValue);

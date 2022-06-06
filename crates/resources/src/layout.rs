@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 use std::{
-    any::TypeId,
+    any::{type_name, TypeId},
     borrow::Borrow,
     cell::{Ref, RefCell, RefMut},
     collections::HashMap,
@@ -14,14 +14,14 @@ pub trait ResHandle<'a>: Sized {
     type Inner: Resource;
 
     // Get the type ID of the iunner resource
-    fn id() -> TypeId {
-        TypeId::of::<Self::Inner>()
+    fn id() -> (TypeId, &'static str) {
+        (TypeId::of::<Self::Inner>(), type_name::<Self::Inner>())
     }
 
     // Get the underlying pointer for the raw data
     fn fetch_ptr(set: &mut ResourceSet) -> Result<NonNull<Self::Inner>, ResourceError> {
         let boxed = set
-            .get_mut(&Self::id())
+            .get_mut(&Self::id().0)
             .ok_or(ResourceError::missing::<Self::Inner>())?;
         let ptr = boxed.as_any_mut().downcast_mut::<Self::Inner>().unwrap() as *mut Self::Inner;
         Ok(NonNull::new(ptr).unwrap())
@@ -81,12 +81,20 @@ type Ptr<T> = Result<NonNull<T>, ResourceError>;
 // A layout simply multiple resource handles of different resources
 pub trait Layout<'a>: Sized {
     // Get a list of the TypeIDs of the underlying resources
-    fn types() -> Vec<TypeId>;
+    fn types() -> Vec<(TypeId, &'static str)>;
 
     // Check if the layout is valid (no intersecting handles)
-    fn is_valid() -> bool {
+    fn validate() -> Result<(), ResourceError> {
+        let types = Self::types();
         let mut map = AHashSet::new();
-        Self::types().into_iter().all(|t| map.insert(t))
+        let name = types.iter().find(|(t, _)| !map.insert(t));
+
+        // This is a certified inversion classic
+        if let Some((_, name)) = name {
+            Err(ResourceError::Overlapping(name))
+        } else {
+            Ok(())
+        }
     }
 
     // Get the layout tuple from the resource set without actually checking if the layout is valid
@@ -99,7 +107,7 @@ unsafe fn fetch<'a, A: ResHandle<'a>>(set: &mut ResourceSet) -> Result<A, Resour
 }
 
 impl<'a, A: ResHandle<'a>> Layout<'a> for A {
-    fn types() -> Vec<TypeId> {
+    fn types() -> Vec<(TypeId, &'static str)> {
         vec![A::id()]
     }
 
@@ -109,7 +117,7 @@ impl<'a, A: ResHandle<'a>> Layout<'a> for A {
 }
 
 impl<'a, A: ResHandle<'a>, B: ResHandle<'a>> Layout<'a> for (A, B) {
-    fn types() -> Vec<TypeId> {
+    fn types() -> Vec<(TypeId, &'static str)> {
         vec![A::id(), B::id()]
     }
 
@@ -119,7 +127,7 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>> Layout<'a> for (A, B) {
 }
 
 impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A, B, C) {
-    fn types() -> Vec<TypeId> {
+    fn types() -> Vec<(TypeId, &'static str)> {
         vec![A::id(), B::id(), C::id()]
     }
 
@@ -131,7 +139,7 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A
 impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>> Layout<'a>
     for (A, B, C, D)
 {
-    fn types() -> Vec<TypeId> {
+    fn types() -> Vec<(TypeId, &'static str)> {
         vec![A::id(), B::id(), C::id(), D::id()]
     }
 

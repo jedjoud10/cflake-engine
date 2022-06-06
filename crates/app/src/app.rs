@@ -8,8 +8,9 @@ pub struct App {
     screensize: vek::Extent2<u16>,
     vsync: bool,
 
-    // Systems
-    systems: Vec<System>,
+    // Systems that will be executed at the start/each frame
+    startup_systems: Vec<fn(&mut World)>,
+    update_systems: Vec<fn(&mut World)>,
 }
 
 impl App {
@@ -20,6 +21,8 @@ impl App {
             fullscreen: false,
             screensize: vek::Extent2::new(1920, 1080),
             vsync: false,
+            startup_systems: Vec::new(),
+            update_systems: Vec::new(),
         }
     }
 
@@ -42,10 +45,14 @@ impl App {
     }
 
     // Insert a startup system into the application that will execute once we begin
-    pub fn insert_startup(mut self, system: fn(&mut World)) {}
+    pub fn insert_startup(mut self, system: fn(&mut World)) -> Self {
+        self
+    }
 
     // Insert a normal system that will execute each frame
-    pub fn insert_update(mut self, system: fn(&mut World)) {}
+    pub fn insert_update(mut self, system: fn(&mut World)) -> Self {
+        self
+    }
 
     // Start the engine and consume the app
     pub fn execute(mut self) {}

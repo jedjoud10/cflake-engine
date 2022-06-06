@@ -101,6 +101,7 @@ dependencies = [
  "network",
  "physics",
  "rendering",
+ "resources",
  "spin_sleep",
  "terrain",
  "vek",

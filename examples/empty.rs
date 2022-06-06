@@ -2,8 +2,15 @@ use cflake_engine::*;
 
 // An empty game window
 fn main() {
-    //cflake_engine::("cflake-examples/empty", init)
+    App::new()
+        .set_window_title("cFlake-Engine example: 'Empty'")
+        .set_window_vsync(false)
+        .insert_startup(init)
+        .execute();
 }
+
+// Initialize the empty world
+fn init(world: &mut World) {}
 
 /*
 // Init the empty world
