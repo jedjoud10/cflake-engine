@@ -20,11 +20,7 @@ pub trait ResHandle<'a>: Sized {
 
     // Get the underlying pointer for the raw data
     fn fetch_ptr(set: &mut ResourceSet) -> Result<NonNull<Self::Inner>, ResourceError> {
-        let boxed = set
-            .get_mut(&Self::id().0)
-            .ok_or(ResourceError::missing::<Self::Inner>())?;
-        let ptr = boxed.as_any_mut().downcast_mut::<Self::Inner>().unwrap() as *mut Self::Inner;
-        Ok(NonNull::new(ptr).unwrap())
+        set.get_casted::<Self::Inner>().map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
     }
 
     // Convert the pointer into the proper handle
