@@ -16,7 +16,7 @@ physics = { path = "../physics" }
 network = { path = "../network" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
-resources = { path = "../resources" }
+world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 gui = { path = "../gui" }

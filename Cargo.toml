@@ -24,6 +24,7 @@ members = [
     "crates/rendering",
     "crates/terrain",
     "crates/opengl",
+    "crates/world",
 ]
 
 [profile.dev]

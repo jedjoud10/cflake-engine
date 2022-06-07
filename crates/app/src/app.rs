@@ -1,4 +1,4 @@
-use crate::World;
+use world::World;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {

@@ -101,10 +101,10 @@ dependencies = [
  "network",
  "physics",
  "rendering",
- "resources",
  "spin_sleep",
  "terrain",
  "vek",
+ "world",
 ]
 
 [[package]]
@@ -2571,6 +2571,7 @@ dependencies = [
  "slotmap",
  "smallvec",
  "vek",
+ "world",
 ]
 
 [[package]]
@@ -3427,6 +3428,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d107f8c6e916235c4c01cabb3e8acf7bea8ef6a63ca2e7fa0527c049badfc48c"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "world"
+version = "0.1.0"
+dependencies = [
+ "resources",
 ]
 
 [[package]]

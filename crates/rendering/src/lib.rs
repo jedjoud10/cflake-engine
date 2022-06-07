@@ -9,5 +9,5 @@ pub mod material;
 pub mod mesh;
 pub mod object;
 pub mod shader;
-mod tests;
+pub mod scene;
 pub mod texture;

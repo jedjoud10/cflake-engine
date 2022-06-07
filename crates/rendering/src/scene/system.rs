@@ -1,14 +1,16 @@
-use crate::components::{Camera, Light, Renderer, RendererFlags, Transform};
-use world::{
-    ecs::{added, always, modified, never, or},
-    math::bounds::aabb::AABB,
-    rendering::{
-        basics::lights::LightTransform,
-        pipeline::{FramebufferClearBits, RenderedModel, RenderingCamera, RenderingSettings, ShadowedModel},
-    },
-    World,
-};
+use world::World;
 
+// Init system for the renderer
+pub fn init(world: &mut World) {
+    // Insert the global renderer resource and shii
+}
+
+// Update system for the renderer
+pub fn update(world: &mut World) {
+    
+}
+
+/*
 // Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
 // TODO: Use the code from https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
 // For optimization reasons
@@ -158,3 +160,4 @@ fn run(world: &mut World) {
 pub fn system(world: &mut World) {
     world.events.insert(run);
 }
+*/
