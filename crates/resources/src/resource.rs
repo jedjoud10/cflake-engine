@@ -2,9 +2,7 @@ use std::{
     any::{Any, TypeId},
     cell::RefCell,
 };
-
 use ahash::AHashMap;
-
 use crate::{ResourceError, Layout};
 
 // A resource set simply contains multiple unique resources
@@ -32,6 +30,11 @@ impl ResourceSet {
     // Fetch a tuple of certain resource handles from the set
     pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
         L::validate().map(|_| unsafe { L::fetch_unchecked(self) })?
+    }
+
+    // This function should be called everyframe so it can update the internal resources
+    pub fn update(&mut self) {
+        
     }
 }
 
