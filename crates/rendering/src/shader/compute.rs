@@ -1,5 +1,4 @@
 use crate::context::Context;
-
 use super::{ComputeStage, Program};
 
 // A compute shader that has a specific set of "inputs" and "outputs"

@@ -895,6 +895,7 @@ dependencies = [
  "slotmap",
  "smallvec",
  "tinyvec",
+ "world",
 ]
 
 [[package]]
@@ -1365,7 +1366,6 @@ name = "input"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
- "getset",
  "glutin",
  "multimap",
  "vek",
@@ -2582,7 +2582,16 @@ name = "resources"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "resources-derive",
  "slotmap",
+]
+
+[[package]]
+name = "resources-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

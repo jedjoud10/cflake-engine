@@ -9,8 +9,12 @@ pub struct App {
     vsync: bool,
 
     // Systems that will be executed at the start/each frame
-    startup_systems: Vec<fn(&mut World)>,
-    update_systems: Vec<fn(&mut World)>,
+    startup_systems: Vec<(fn(&mut World), i32)>,
+    update_systems: Vec<(fn(&mut World), i32)>,
+
+    // System ordering
+    startup_idx: i32,
+    update_idx: i32,
 }
 
 impl App {
@@ -23,6 +27,8 @@ impl App {
             vsync: false,
             startup_systems: Vec::new(),
             update_systems: Vec::new(),
+            startup_idx: 0,
+            update_idx: 0,
         }
     }
 
@@ -46,16 +52,51 @@ impl App {
 
     // Insert a startup system into the application that will execute once we begin
     pub fn insert_startup(mut self, system: fn(&mut World)) -> Self {
+        self.startup_idx += 1;
+        let copy = self.startup_idx; 
+        self.insert_startup_with(system, copy)
+    }
+
+    // Insert a startup system with a specific ordering index
+    pub fn insert_startup_with(mut self, system: fn(&mut World), order: i32) -> Self {
+        self.startup_systems.push((system, order));
         self
     }
 
-    // Insert a normal system that will execute each frame
+    // Insert an update system that will execute each frame
     pub fn insert_update(mut self, system: fn(&mut World)) -> Self {
+        self.update_idx += 1;
+        let copy = self.update_idx;
+        self.insert_update_with(system, copy)
+    }
+
+    // Insert an update system with a specific ordering index
+    pub fn insert_update_with(mut self, system: fn(&mut World), order: i32) -> Self {
+        self.update_systems.push((system, order));
+        self
+    }
+
+    // Sort all the systems into their respective orders (startups and updates)
+    pub fn sort(mut self) -> Self {
+        // One sorting function that will be used twice
+        fn sort(vec: &mut Vec<(fn(&mut World), i32)>) {
+           vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
+        } 
+
+        // Don't care + L + ratio        
+        sort(&mut self.startup_systems);
+        sort(&mut self.update_systems);
         self
     }
 
     // Start the engine and consume the app
-    pub fn execute(mut self) {}
+    pub fn execute(mut self) {
+        // Prepare for execution
+        self = self.sort();
+        
+        // Create the world and ececute the event loop
+        let world = World::default();
+    }
 }
 
 /*

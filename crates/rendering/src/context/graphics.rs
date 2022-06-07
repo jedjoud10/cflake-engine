@@ -2,9 +2,11 @@ use glutin::{
     dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile,
     GlRequest,
 };
+use world::resources::Resource;
 
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
+#[derive(Resource)]
 pub struct Graphics(pub super::Device, pub super::Context);
 
 impl Graphics {
@@ -19,7 +21,7 @@ impl Graphics {
         let wc = ContextBuilder::new()
             .with_double_buffer(Some(true))
             .with_gl_profile(GlProfile::Core)
-            .with_gl_debug_flag(false)
+            .with_gl_debug_flag(true)
             .with_gl(GlRequest::Latest)
             .build_windowed(wb, &el)
             .unwrap();
@@ -40,6 +42,6 @@ impl Graphics {
 
     // Apply all the changes that we commited to the main framebuffer, and swap the front and back buffers
     pub fn draw(&mut self) {
-        self.1.raw().swap_buffers();
+        self.1.raw().swap_buffers().unwrap();
     }
 }

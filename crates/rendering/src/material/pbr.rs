@@ -1,3 +1,5 @@
+use world::resources::Handle;
+
 use crate::{
     shader::Uniforms,
     texture::{Ranged, Texture2D, R, RGB},
@@ -11,14 +13,14 @@ type MaskMap = Texture2D<RGB<Ranged<u8>>>;
 // A physically based material that will try to replicate the behavior of real light
 pub struct StandardMaterial {
     // Texture maps used for rendering
-    diffuse: Option<DiffuseMap>,
-    normal: Option<NormalMap>,
-    mask: Option<MaskMap>,
+    diffuse: Option<Handle<DiffuseMap>>,
+    normal: Option<Handle<NormalMap>>,
+    mask: Option<Handle<MaskMap>>,
 
     // Texture parameters
-    normal_map_strength: f32,
-    roughness_strength: f32,
-    metallic_strength: f32,
+    bumpiness: f32,
+    roughness: f32,
+    metallic: f32,
 }
 
 impl Default for StandardMaterial {
@@ -27,9 +29,10 @@ impl Default for StandardMaterial {
             diffuse: None,
             normal: None,
             mask: None,
-            normal_map_strength: 1.0,
-            roughness_strength: 1.0,
-            metallic_strength: 1.0,
+            
+            bumpiness: 1.0,
+            roughness: 1.0,
+            metallic: 1.0,
         }
     }
 }

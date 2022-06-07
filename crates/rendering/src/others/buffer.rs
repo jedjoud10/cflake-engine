@@ -185,6 +185,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.capacity = data.len();
     }
 
+    // Copy some data from another buffer into our buffer
+    pub fn copy_from<const OTHER: u32>(&mut self, other: &Buffer<T, OTHER>) {
+        todo!()
+    }
+
     // Read back the whole buffer, and store it inside output
     pub fn read(&self, output: &mut [T]) {
         // Make sure the lengths always match up

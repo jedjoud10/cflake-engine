@@ -1,9 +1,11 @@
 use resources::{Resource, ResourceError, ResourceSet, Layout};
 use std::any::TypeId;
+pub use resources;
 
 // The world is a container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
+#[derive(Default)]
 pub struct World(ResourceSet);
 
 impl World {

@@ -11,5 +11,4 @@ pub use manager::*;
 pub use mask::*;
 pub use query::*;
 pub use registry::*;
-
 mod tests;

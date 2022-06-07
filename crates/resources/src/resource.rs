@@ -6,6 +6,7 @@ use ahash::AHashMap;
 use crate::{ResourceError, Layout};
 
 // A resource set simply contains multiple unique resources
+#[derive(Default)]
 pub struct ResourceSet(AHashMap<TypeId, Box<dyn Resource>>);
 
 impl ResourceSet {

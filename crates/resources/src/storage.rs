@@ -31,6 +31,12 @@ impl<T: 'static> Storage<T> {
     }
 }
 
+impl<T:'static> Default for Storage<T> {
+    fn default() -> Self {
+        Self(Default::default(), Default::default())
+    }
+} 
+
 impl<T> Resource for Storage<T> {
     fn as_any(&self) -> &dyn std::any::Any {
         self

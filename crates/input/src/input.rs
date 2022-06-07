@@ -6,36 +6,21 @@ use super::{Keys, State};
 use crate::{ButtonState, MapState, ToggleState};
 
 // A simple input manager that reads keys from the keyboard and binds them to specific mappings
-// Get binding:
-// Using the name of the binding, get the scane code for each key and use that scan code to get the map state of that key
-#[derive(Getters, CopyGetters, Setters)]
 pub struct InputManager {
     // "debug_map" -> State: "Pressed"
-    #[getset(get = "pub")]
-    maps: AHashMap<String, (MapState, bool)>,
+    maps: AHashMap<&'static str, (MapState, bool)>,
 
     // "W" -> ["forward_map", "launch_map"]
-    #[getset(get = "pub")]
-    keys: MultiMap<Keys, String, RandomState>,
+    keys: MultiMap<Keys, &'static str, RandomState>,
 
     // Mouse
-    #[getset(get_copy = "pub")]
     mouse_pos: vek::Vec2<f32>,
-    #[getset(get_copy = "pub")]
-    mouse_pos_delta: vek::Vec2<f32>,
-    #[getset(get_copy = "pub")]
-    mouse_scroll_delta: f32,
-    #[getset(get_copy = "pub")]
     mouse_scroll: f32,
-
-    // Do we currently accept input
-    #[getset(get_copy = "pub", set = "pub")]
-    is_accepting_input: bool,
 }
 
 impl Default for InputManager {
     fn default() -> Self {
-        let multimap = MultiMap::<Keys, String, RandomState>::with_capacity_and_hasher(
+        let multimap = MultiMap::<Keys, &'static str, RandomState>::with_capacity_and_hasher(
             180,
             RandomState::new(),
         );
@@ -43,10 +28,7 @@ impl Default for InputManager {
             maps: Default::default(),
             keys: multimap,
             mouse_pos: Default::default(),
-            mouse_pos_delta: Default::default(),
             mouse_scroll: Default::default(),
-            mouse_scroll_delta: Default::default(),
-            is_accepting_input: true,
         }
     }
 }
@@ -55,12 +37,10 @@ impl InputManager {
     // Called whenever the mouse position changes
     pub fn receive_mouse_position_event(&mut self, delta: vek::Vec2<f32>) {
         self.mouse_pos += delta;
-        self.mouse_pos_delta = delta;
     }
     // Called whenever the mous scroll changes
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f32) {
         self.mouse_scroll += scroll_delta;
-        self.mouse_scroll_delta = scroll_delta;
     }
     // This should be ran at the end of every frame
     pub fn late_update(&mut self) {
@@ -107,29 +87,25 @@ impl InputManager {
         Some(())
     }
     // Binds a key to a specific mapping, making it a button
-    pub fn bind(&mut self, key: Keys, map_name: &str) {
-        // Check if the binding exists
-        if !self.maps.contains_key(map_name) {
-            // The binding does not exist yet, so create a new one
-            let map_name = map_name.to_string();
-            self.maps.insert(
-                map_name.clone(),
-                (MapState::Button(ButtonState::default()), false),
-            );
-            self.keys.insert(key, map_name);
-        }
+    pub fn bind(&mut self, key: Keys, name: &'static str) {
+        // Insert the new map
+        self.maps.insert(
+            name,
+            (MapState::Button(ButtonState::default()), false),
+        );
+
+        // And the new key -> map link
+        self.keys.insert(key, name);
     }
-    pub fn bind_toggle(&mut self, key: Keys, map_name: &str) {
-        // Check if the binding exists
-        if !self.maps.contains_key(map_name) {
-            // The binding does not exist yet, so create a new one
-            let map_name = map_name.to_string();
-            self.maps.insert(
-                map_name.clone(),
-                (MapState::Toggle(ToggleState::default()), false),
-            );
-            self.keys.insert(key, map_name);
-        }
+    pub fn bind_toggle(&mut self, key: Keys, name: &'static str) {
+        // Insert the new map
+        self.maps.insert(
+            name,
+            (MapState::Toggle(ToggleState::default()), false),
+        );
+
+        // And the new key -> map link
+        self.keys.insert(key, name);
     }
 }
 

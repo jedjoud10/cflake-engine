@@ -1,12 +1,12 @@
 [package]
-name = "input"
+name = "resources-derive"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-glutin = "0.28.0"
-multimap = "0.8.3"
-ahash = "0.7.6"
-vek = "0.15.6"
+syn = "1.0.88"
+quote = "1.0.15"
+
+[lib]
+proc-macro = true

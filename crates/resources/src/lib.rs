@@ -2,6 +2,7 @@ mod error;
 mod layout;
 mod resource;
 mod storage;
+pub use resources_derive::*;
 pub use storage::*;
 pub use error::*;
 pub use layout::*;
