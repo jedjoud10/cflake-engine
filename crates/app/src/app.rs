@@ -1,3 +1,5 @@
+use glutin::event_loop::EventLoop;
+use rendering::context::Graphics;
 use world::World;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
@@ -77,7 +79,7 @@ impl App {
     }
 
     // Sort all the systems into their respective orders (startups and updates)
-    pub fn sort(mut self) -> Self {
+    fn sort(&mut self) -> Self {
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) {
            vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
@@ -91,11 +93,17 @@ impl App {
 
     // Start the engine and consume the app
     pub fn execute(mut self) {
-        // Prepare for execution
-        self = self.sort();
-        
-        // Create the world and ececute the event loop
-        let world = World::default();
+        // Prepare the world and the even loop
+        self.sort();
+        let el = EventLoop::new();
+        let mut world = World::default();
+
+        // Inser the default resources
+        let (el, graphics) = Graphics::new(el);
+        world.insert(graphics);
+        world.insert(Storage::<rendering::mesh::Mesh>)
+
+
     }
 }
 
