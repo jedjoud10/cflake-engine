@@ -19,7 +19,9 @@ impl ResourceSet {
 
     // Insert a new resource into the set
     pub fn insert<R: Resource>(&mut self, resource: R) {
-        self.0.insert(TypeId::of::<R>(), Box::new(resource));
+        let mut boxed = Box::new(resource);
+        boxed.added();
+        self.0.insert(TypeId::of::<R>(), boxed);
     }
 
     // Remove a resouce from the set
@@ -34,12 +36,21 @@ impl ResourceSet {
 
     // This function should be called everyframe so it can update the internal resources
     pub fn update(&mut self) {
-        
+        for (_, resource) in self.0.iter_mut() {
+            resource.update()
+        }
     }
 }
 
 // A resource is some shared data that will be accessed by multiple systems
 pub trait Resource: 'static {
+    // Bruh conversions
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+
+    // Some resources can have a init function that gets ran when the resource gets added onto the set
+    fn added(&mut self) {}
+
+    // And an update function that runs every frame the resource is stored in the set
+    fn update(&mut self) {}
 }

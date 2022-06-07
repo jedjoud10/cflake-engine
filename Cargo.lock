@@ -2579,6 +2579,7 @@ name = "resources"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "slotmap",
 ]
 
 [[package]]
