@@ -1,14 +1,13 @@
 use world::resources::Handle;
-
 use crate::material::Material;
 use super::SubMesh;
 
 // A surface is just a simple submesh that is linked with a handle
-pub struct Surface<M: Material>(Handle<SubMesh>, Handle<M>);
+pub struct Surface(Handle<SubMesh>, Handle<Material>);
 
-impl<M: Material> Surface<M> {
+impl Surface {
     // Create a new surface with the valid handles
-    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>) -> Self {
+    pub fn new(submesh: Handle<SubMesh>, material: Handle<Material>) -> Self {
         Self(submesh, material)
     }
     
@@ -16,5 +15,5 @@ impl<M: Material> Surface<M> {
     pub fn submesh(&self) -> Handle<SubMesh> { self.0.clone() }
 
     // Get the material handle
-    pub fn material(&self) -> Handle<M> { self.1.clone() }
+    pub fn material(&self) -> Handle<Material> { self.1.clone() }
 }
