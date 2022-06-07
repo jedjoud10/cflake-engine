@@ -1,4 +1,4 @@
-use cflake_engine::*;
+use cflake_engine::prelude::*;
 
 // An empty game window
 fn main() {
@@ -10,7 +10,8 @@ fn main() {
 }
 
 // Initialize the empty world
-fn init(world: &mut World) {}
+fn init(world: &mut World) {
+}
 
 /*
 // Init the empty world

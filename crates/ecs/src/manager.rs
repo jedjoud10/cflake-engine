@@ -1,3 +1,4 @@
+use resources::Resource;
 use slotmap::SlotMap;
 
 use crate::{
@@ -5,7 +6,7 @@ use crate::{
     Mask, MaskMap, QueryLayout, StorageVec,
 };
 
-// Type aliases
+// Type aliases because I have gone insane
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
@@ -41,9 +42,23 @@ impl Default for EcsManager {
     }
 }
 
+impl Resource for EcsManager {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn update(&mut self) {
+        self.prepare();
+    }
+}
+
 impl EcsManager {
     // Prepare the ecs for one frame of execution
-    pub fn prepare(&mut self) {
+    pub(crate) fn prepare(&mut self) {
         if !self.executed {
             for (_, a) in self.archetypes.iter_mut() {
                 a.states().reset();
@@ -155,5 +170,6 @@ impl EcsManager {
     /* #endregion */
 
     /* #region Parallel thread queries (with the help of rayon) */
+    // TODO: Actually write this
     /* #endregion */
 }

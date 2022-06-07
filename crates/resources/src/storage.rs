@@ -59,6 +59,12 @@ pub struct Handle<T> {
     phantom_: PhantomData<T>,
 }
 
+impl<T> Clone for Handle<T> {
+    fn clone(&self) -> Self {
+        Self { key: self.key.clone(), tracker: self.tracker.clone(), phantom_: self.phantom_.clone() }
+    }
+}
+
 impl<T> Drop for Handle<T> {
     fn drop(&mut self) {
         // Decrement the handle counter
