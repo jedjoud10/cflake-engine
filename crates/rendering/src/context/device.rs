@@ -50,7 +50,11 @@ impl Device {
 
     // Get the name of the monitor
     pub fn monitor(&self) -> Option<&str> {
-        self.window().current_monitor()?.name().as_ref().map(String::as_str)
+        self.window()
+            .current_monitor()?
+            .name()
+            .as_ref()
+            .map(String::as_str)
     }
 
     // Get the default window canvas mutably

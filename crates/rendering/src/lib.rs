@@ -8,6 +8,6 @@ pub mod context;
 pub mod material;
 pub mod mesh;
 pub mod object;
-pub mod shader;
 pub mod scene;
+pub mod shader;
 pub mod texture;

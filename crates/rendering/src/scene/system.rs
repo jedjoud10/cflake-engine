@@ -6,9 +6,7 @@ pub fn init(world: &mut World) {
 }
 
 // Update system for the renderer
-pub fn update(world: &mut World) {
-    
-}
+pub fn update(world: &mut World) {}
 
 /*
 // Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
