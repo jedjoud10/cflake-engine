@@ -37,19 +37,9 @@ pub trait PropertyBlock<'a>: Sized {
     fn set_uniforms(&self, uniforms: &mut Uniforms, res: Self::Resources);
 }
 
-// This struct will act like a bridge between the MaterialRenderer trait and the Context
-// These settings will be saved as a Box<dyn MaterialRenderer> within the context, since we need it to render the material surfaces
-pub struct RenderDescriptor<M: Material> {
-    handle: Handle<Shader>,
-    _phantom: PhantomData<Handle<M>>,
-}
-
 // A match renderer will simply take all the renderers that use this specific material type and render all of them at the same time
 // This trait will be simply implemented for structs that contain the render settings for their material
 pub trait MaterialRenderer: 'static {
-    // Get the shader that we will use to render the material
-    fn shader(&self) -> &Handle<Shader>;
-
     // Render all the objects that use this material type
     // Get all the renderers that use this material type
     //   Fetch their material instances, per object

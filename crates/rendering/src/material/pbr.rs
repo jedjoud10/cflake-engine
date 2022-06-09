@@ -9,7 +9,7 @@ use crate::{
     texture::{Ranged, Sampler, Texture, Texture2D, R, RGB},
 };
 
-use super::{Material, PropertyBlock, RenderDescriptor};
+use super::{Material, PropertyBlock, MaterialRenderer};
 
 // Type aliases for texture maps
 type DiffuseMap = Texture2D<RGB<Ranged<u8>>>;
@@ -51,6 +51,7 @@ impl<'a> PropertyBlock<'a> for Standard {
         &'a Storage<NormalMap>,
         &'a Storage<MaskMap>,
     );
+
     fn set_uniforms(&self, uniforms: &mut Uniforms, res: Self::Resources) {
         // Scalar parameters
         uniforms.set_scalar("_bumpiness", self.bumpiness);
@@ -102,13 +103,8 @@ impl<'a> PropertyBlock<'a> for Standard {
         )
     }
 }
-
-// A material builder for the standard PBR material
-pub struct Builder {
-    material: Standard,
-}
-
-impl Builder {
+/*
+impl MaterialBuilder<Standard> {
     // Set the albedo texture
     pub fn albedo(mut self, albedo: Handle<DiffuseMap>) -> Self {
         self.material.albedo = Some(albedo);
@@ -146,8 +142,11 @@ impl Builder {
     }
 }
 
-/*
-impl MaterialRenderer for PhantomData<Standard> {
+impl MaterialRenderer for RenderDescriptor<Standard> {
+    fn shader(&self) -> &Handle<Shader> {
+        &self.shader
+    }
+
     fn render(&self, resources: &mut world::resources::ResourceSet) {
         let (ecs, graphics, storage) = resources.get_mut::<(&EcsManager, &Graphics, &Storage<Standard>)>().unwrap();
     }
