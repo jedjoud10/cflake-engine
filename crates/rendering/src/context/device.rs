@@ -38,11 +38,6 @@ impl Device {
         &self.canvas
     }
 
-    // Get the size of the device window
-    pub fn size(&self) -> vek::Extent2<u16> {
-        self.size
-    }
-
     // Get the raw glutin window
     pub fn window(&self) -> &glutin::window::Window {
         &self.glutin

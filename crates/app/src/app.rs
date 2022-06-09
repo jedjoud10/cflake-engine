@@ -55,7 +55,7 @@ impl App {
     // Insert a startup system into the application that will execute once we begin
     pub fn insert_startup(mut self, system: fn(&mut World)) -> Self {
         self.startup_idx += 1;
-        let copy = self.startup_idx; 
+        let copy = self.startup_idx;
         self.insert_startup_with(system, copy)
     }
 
@@ -82,10 +82,10 @@ impl App {
     fn sort(&mut self) -> Self {
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) {
-           vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-        } 
+            vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
+        }
 
-        // Don't care + L + ratio        
+        // Don't care + L + ratio
         sort(&mut self.startup_systems);
         sort(&mut self.update_systems);
         self
@@ -102,8 +102,6 @@ impl App {
         let (el, graphics) = Graphics::new(el);
         world.insert(graphics);
         world.insert(Storage::<rendering::mesh::Mesh>)
-
-
     }
 }
 

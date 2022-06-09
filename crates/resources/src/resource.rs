@@ -1,9 +1,9 @@
+use crate::{Layout, ResourceError};
+use ahash::AHashMap;
 use std::{
     any::{Any, TypeId},
     cell::RefCell,
 };
-use ahash::AHashMap;
-use crate::{ResourceError, Layout};
 
 // A resource set simply contains multiple unique resources
 #[derive(Default)]
@@ -12,7 +12,8 @@ pub struct ResourceSet(AHashMap<TypeId, Box<dyn Resource>>);
 impl ResourceSet {
     // Get a mutable reference to the boxed resource from the set by casting it first
     pub(crate) fn get_casted<T: Resource>(&mut self) -> Result<&mut T, ResourceError> {
-        let boxed = self.0
+        let boxed = self
+            .0
             .get_mut(&TypeId::of::<T>())
             .ok_or(ResourceError::missing::<T>())?;
         Ok(boxed.as_any_mut().downcast_mut::<T>().unwrap())

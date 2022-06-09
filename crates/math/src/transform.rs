@@ -83,7 +83,6 @@ impl Transform {
         self.rotation().mul_point(vek::Vec3::unit_x())
     }
 
-
     // Construct a transform using an X rotation (radians)
     pub fn rotation_x(angle_radians: f32) -> Self {
         Self {

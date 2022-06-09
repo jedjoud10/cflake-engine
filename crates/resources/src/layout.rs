@@ -20,7 +20,8 @@ pub trait ResHandle<'a>: Sized {
 
     // Get the underlying pointer for the raw data
     fn fetch_ptr(set: &mut ResourceSet) -> Result<NonNull<Self::Inner>, ResourceError> {
-        set.get_casted::<Self::Inner>().map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
+        set.get_casted::<Self::Inner>()
+            .map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
     }
 
     // Convert the pointer into the proper handle
@@ -145,6 +146,92 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>>
             fetch::<B>(set)?,
             fetch::<C>(set)?,
             fetch::<D>(set)?,
+        ))
+    }
+}
+
+impl<
+        'a,
+        A: ResHandle<'a>,
+        B: ResHandle<'a>,
+        C: ResHandle<'a>,
+        D: ResHandle<'a>,
+        E: ResHandle<'a>,
+    > Layout<'a> for (A, B, C, D, E)
+{
+    fn types() -> Vec<(TypeId, &'static str)> {
+        vec![A::id(), B::id(), C::id(), D::id(), E::id()]
+    }
+
+    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+        Ok((
+            fetch::<A>(set)?,
+            fetch::<B>(set)?,
+            fetch::<C>(set)?,
+            fetch::<D>(set)?,
+            fetch::<E>(set)?,
+        ))
+    }
+}
+
+impl<
+        'a,
+        A: ResHandle<'a>,
+        B: ResHandle<'a>,
+        C: ResHandle<'a>,
+        D: ResHandle<'a>,
+        E: ResHandle<'a>,
+        F: ResHandle<'a>,
+    > Layout<'a> for (A, B, C, D, E, F)
+{
+    fn types() -> Vec<(TypeId, &'static str)> {
+        vec![A::id(), B::id(), C::id(), D::id(), E::id(), F::id()]
+    }
+
+    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+        Ok((
+            fetch::<A>(set)?,
+            fetch::<B>(set)?,
+            fetch::<C>(set)?,
+            fetch::<D>(set)?,
+            fetch::<E>(set)?,
+            fetch::<F>(set)?,
+        ))
+    }
+}
+
+impl<
+        'a,
+        A: ResHandle<'a>,
+        B: ResHandle<'a>,
+        C: ResHandle<'a>,
+        D: ResHandle<'a>,
+        E: ResHandle<'a>,
+        F: ResHandle<'a>,
+        G: ResHandle<'a>,
+    > Layout<'a> for (A, B, C, D, E, F, G)
+{
+    fn types() -> Vec<(TypeId, &'static str)> {
+        vec![
+            A::id(),
+            B::id(),
+            C::id(),
+            D::id(),
+            E::id(),
+            F::id(),
+            G::id(),
+        ]
+    }
+
+    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+        Ok((
+            fetch::<A>(set)?,
+            fetch::<B>(set)?,
+            fetch::<C>(set)?,
+            fetch::<D>(set)?,
+            fetch::<E>(set)?,
+            fetch::<F>(set)?,
+            fetch::<G>(set)?,
         ))
     }
 }

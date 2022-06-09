@@ -2,6 +2,7 @@ use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{
+    any::TypeId,
     cell::{Cell, RefCell},
     collections::HashMap,
     hash::BuildHasherDefault,
@@ -13,6 +14,7 @@ use std::{
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
+    material::{Material, MaterialRenderer},
     texture::Bindless,
 };
 
@@ -26,6 +28,9 @@ pub struct Context {
 
     // The currently bound objects (since OpenGL uses a state machine)
     pub(crate) bound: BindingHashMap,
+
+    // A list of material surface renderers that we will use
+    renderers: AHashMap<TypeId, Rc<dyn MaterialRenderer>>,
 }
 
 impl Context {
@@ -34,6 +39,7 @@ impl Context {
         Self {
             ctx,
             bound: Default::default(),
+            renderers: Default::default(),
         }
     }
 
@@ -52,6 +58,23 @@ impl Context {
         (!self.is_bound(target, object)).then(|| update(object));
 
         *self.bound.entry(target).or_insert(object) = object;
+    }
+
+    // Insert a new material renderer
+    pub(crate) fn register_material_renderer<R: MaterialRenderer, M: Material>(
+        &mut self,
+        renderer: R,
+    ) {
+        self.renderers.insert(TypeId::of::<M>(), Rc::new(renderer));
+    }
+
+    // Clone all the material renderers outside the context
+    // This is going to be executed every frame, but the number of unique material types is low so we shall'n't worry about it
+    pub(crate) fn extract_material_renderers(&self) -> Vec<Rc<dyn MaterialRenderer>> {
+        self.renderers
+            .iter()
+            .map(|(key, value)| value.clone())
+            .collect::<_>()
     }
 
     // Get the raw Glutin OpenGL context wrapper

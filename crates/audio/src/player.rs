@@ -1,4 +1,4 @@
-use crate::{source::AudioSource};
+use crate::source::AudioSource;
 use rodio::{
     source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink,
 };

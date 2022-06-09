@@ -6,8 +6,7 @@ fn main() {
 }
 
 // Initialize the empty world
-fn init(world: &mut World) {
-}
+fn init(world: &mut World) {}
 
 /*
 // Init the empty world

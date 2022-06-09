@@ -1,9 +1,8 @@
-use std::{marker::PhantomData, cell::RefCell, rc::Rc};
 use ahash::AHashMap;
-use slotmap::{DefaultKey, SlotMap, SecondaryMap};
+use slotmap::{DefaultKey, SecondaryMap, SlotMap};
+use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
 use crate::Resource;
-
 
 // Keeps track of the number of handles per element
 type Tracker = RefCell<AHashMap<DefaultKey, u32>>;
@@ -17,25 +16,39 @@ impl<T: 'static> Storage<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         let key = self.0.insert(value);
         self.1.borrow_mut().insert(key, 1);
-        Handle { key: key, phantom_: Default::default(), tracker: self.1.clone() }        
+        Handle {
+            key: key,
+            phantom_: Default::default(),
+            tracker: self.1.clone(),
+        }
     }
 
     // Get a value immutably
     pub fn get(&self, handle: &Handle<T>) -> &T {
         self.0.get(handle.key).unwrap()
     }
-    
+
     // Get a value mutably
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         self.0.get_mut(handle.key).unwrap()
     }
+
+    // Try to get a value immutably (this will return None if the input is None)
+    pub fn try_get(&self, handle: Option<&Handle<T>>) -> Option<&T> {
+        handle.map(|h| self.get(h))
+    }
+
+    // Try to get a value mutably (this will return None if the input is None)
+    pub fn try_get_mut(&mut self, handle: Option<&Handle<T>>) -> Option<&mut T> {
+        handle.map(|h| self.get_mut(h))
+    }
 }
 
-impl<T:'static> Default for Storage<T> {
+impl<T: 'static> Default for Storage<T> {
     fn default() -> Self {
         Self(Default::default(), Default::default())
     }
-} 
+}
 
 impl<T> Resource for Storage<T> {
     fn as_any(&self) -> &dyn std::any::Any {
@@ -52,7 +65,9 @@ impl<T> Resource for Storage<T> {
             if *count == 0 {
                 self.0.remove(*key).unwrap();
                 false
-            } else { true }
+            } else {
+                true
+            }
         });
     }
 }
@@ -67,7 +82,11 @@ pub struct Handle<T> {
 
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        Self { key: self.key.clone(), tracker: self.tracker.clone(), phantom_: self.phantom_.clone() }
+        Self {
+            key: self.key.clone(),
+            tracker: self.tracker.clone(),
+            phantom_: self.phantom_.clone(),
+        }
     }
 }
 

@@ -1,5 +1,5 @@
-use crate::context::Context;
 use super::{ComputeStage, Program};
+use crate::context::Context;
 
 // A compute shader that has a specific set of "inputs" and "outputs"
 // This shall execute code on the GPU efficiently, in parallel
