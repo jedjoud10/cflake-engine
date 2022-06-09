@@ -1,4 +1,5 @@
 use assets::loader::AssetLoader;
+use world::resources::{Handle, Storage};
 
 use crate::{
     context::{Context, Device},
@@ -7,16 +8,8 @@ use crate::{
 };
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
+// Each material contains a properity block and a unique shader
+// Currently, we cannot modify the values of materials after they have been created since it would require some boxing magic fuckery and such 
 pub struct Material {
-    shader: Handle<Shader>,
-}
-
-
-// A material decriptor simply gives us the correct values to create a given material
-pub trait Descriptor: Sized {
-    // Get the underlying shader stored in the material
-    fn shader(&self) -> &Shader;
-
-    // Create a new generic material
-    fn to_material(self) -> Material; 
+    shader: Shader,
 }
