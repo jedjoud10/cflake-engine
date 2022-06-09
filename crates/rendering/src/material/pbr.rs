@@ -76,13 +76,3 @@ impl Default for PhysicallyBased {
         }
     }
 }
-
-impl Descriptor for PhysicallyBased {
-    fn shader(&self) -> &crate::shader::Shader {
-        todo!()
-    }
-
-    fn to_material(self) -> Material {
-        todo!()
-    }
-}

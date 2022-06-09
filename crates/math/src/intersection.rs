@@ -5,7 +5,7 @@ use crate::{
     octrees::{Node, Octree},
     shapes::{ShapeType, Sphere},
 };
-
+/*
 /* #region AABB stuff */
 // Check if an AABB intersects another AABB
 pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {
@@ -59,3 +59,4 @@ pub fn shapes_octree<'a>(shapes: &[ShapeType], octree: &'a Octree) -> Vec<&'a No
     intersected_nodes
 }
 /* #endregion */
+*/

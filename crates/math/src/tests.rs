@@ -6,43 +6,4 @@ mod tests {
         octrees::{HeuristicSettings, Octree},
         shapes::Sphere,
     };
-
-    // AABB sphere
-    #[test]
-    pub fn aabb_sphere() {
-        let sphere = Sphere {
-            center: vek::Vec3::unit_x() * 2.0,
-            radius: 1.0,
-        };
-        let aabb = AABB {
-            min: -vek::Vec3::one(),
-            max: vek::Vec3::one(),
-        };
-        assert!(!crate::intersection::aabb_sphere(&aabb, &sphere));
-        let sphere = Sphere {
-            center: vek::Vec3::unit_x() * 1.9,
-            radius: 1.0,
-        };
-        let aabb = AABB {
-            min: -vek::Vec3::one(),
-            max: vek::Vec3::one(),
-        };
-        assert!(crate::intersection::aabb_sphere(&aabb, &sphere));
-        let sphere = Sphere {
-            center: vek::Vec3::one() * 19.0,
-            radius: 1.0,
-        };
-        let aabb = AABB {
-            min: -vek::Vec3::one() * 20.0,
-            max: vek::Vec3::one() * 20.0,
-        };
-        assert!(crate::intersection::aabb_sphere(&aabb, &sphere));
-    }
-    // Octree
-    #[test]
-    pub fn octree() {
-        let mut octree = Octree::new(5, 32, HeuristicSettings::default());
-        octree.update(vek::Vec3::zero());
-        assert_eq!(octree.nodes().len(), 33);
-    }
 }

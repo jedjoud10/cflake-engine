@@ -1,7 +1,7 @@
 use world::resources::Handle;
 use crate::material::Material;
 use super::SubMesh;
-
+/*
 // A surface is just a simple submesh that is linked with a handle
 pub struct Surface(Handle<SubMesh>, Handle<Material>);
 
@@ -17,3 +17,4 @@ impl Surface {
     // Get the material handle
     pub fn material(&self) -> Handle<Material> { self.1.clone() }
 }
+*/

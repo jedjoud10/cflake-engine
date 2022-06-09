@@ -21,7 +21,10 @@ type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
+    // Raw Glutin context
     ctx: RawContext<PossiblyCurrent>,
+
+    // The currently bound objects (since OpenGL uses a state machine)
     pub(crate) bound: BindingHashMap,
 }
 

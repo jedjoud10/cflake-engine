@@ -1584,6 +1584,7 @@ name = "math"
 version = "0.0.1"
 dependencies = [
  "ahash 0.7.6",
+ "ecs",
  "enum-as-inner",
  "getset",
  "slotmap",

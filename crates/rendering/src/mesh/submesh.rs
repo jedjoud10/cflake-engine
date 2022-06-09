@@ -5,7 +5,6 @@ use crate::{
     object::ToGlName,
 };
 use assets::Asset;
-use math::bounds::aabb::AABB;
 use obj::TexturedVertex;
 use std::{mem::ManuallyDrop, num::NonZeroU32, ptr::null};
 
