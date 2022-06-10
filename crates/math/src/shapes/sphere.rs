@@ -17,12 +17,12 @@ impl Sphere {
     }
 
     // Create a new unit sphere at a specific location
-    pub fn unit(center: vek::Vec3<f32>) -> Self {
+    pub fn new_unit(center: vek::Vec3<f32>) -> Self {
         Self { center, radius: 1.0 }
     }
 
     // Create a point (a sphere with radius of 0)
-    pub fn point(center: vek::Vec3<f32>) -> Self {
+    pub fn new_point(center: vek::Vec3<f32>) -> Self {
         Self { center, radius: 0.0 }
     }
 }
@@ -30,6 +30,6 @@ impl Sphere {
 // Create an AABB from a sphere
 impl Into<AABB> for Sphere {
     fn into(self) -> AABB {
-        AABB::new(pos, hw)
+        AABB::new(self.center, vek::Extent3::broadcast(self.radius))
     }
 }

@@ -11,11 +11,11 @@ pub struct AABB {
 }
 
 impl AABB {
-    // Create an AABB at a specified position and half-extent scale
-    pub fn new(pos: vek::Vec3<f32>, half_extent: vek::Extent3<f32>) -> Self {
+    // Create an AABB at a specified center position and half-extent scale
+    pub fn new(center: vek::Vec3<f32>, half_extent: vek::Extent3<f32>) -> Self {
         Self {
-            min: pos - vek::Vec3::from(half_extent),
-            max: pos + vek::Vec3::from(half_extent),
+            min: center - vek::Vec3::from(half_extent),
+            max: center + vek::Vec3::from(half_extent),
         }
     }
 
@@ -35,8 +35,20 @@ impl AABB {
     }
 
     // Calculate the center of the AABB
-    // Calculate the half-extent of the AABB
-    // Calculate the extent of the AABB
+    pub fn get_center(&self) -> vek::Vec3<f32> {
+        (self.min + self.max) / 2.0
+    }
+    
+    // Calculate the full extent of the AABB
+    pub fn get_extent(&self) -> vek::Extent3<f32> {
+        vek::Extent3::from(self.max - self.min) 
+    }
+
+    // Check if the AABB is valid (it's max point is indeed bigger than min)
+    pub fn is_valid(&self) -> bool {
+        let mask = self.max.partial_cmpgt(&self.min);
+        mask.x & mask.y & mask.z
+    }
 }
 
 // Fetch the min/max vertices using an index

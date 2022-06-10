@@ -1,12 +1,11 @@
-// Export
 mod bounds;
-mod intersection;
+mod intersect;
 mod octrees;
 mod shapes;
 mod tests;
 mod transform;
 pub use bounds::*;
-pub use intersection::*;
+pub use intersect::*;
 pub use octrees::*;
 pub use shapes::*;
 pub use transform::*;

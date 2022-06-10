@@ -1,4 +1,4 @@
-use crate::bounds::aabb::{AABB};
+use crate::{bounds::aabb::{AABB}, Shape};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone)]
@@ -22,7 +22,12 @@ impl Cuboid {
     } 
 }
 
-// Create an AABB from a cuboid
+impl Shape for Cuboid {
+    fn center(&self) -> vek::Vec3<f32> {
+        self.center
+    }
+}
+
 impl Into<AABB> for Cuboid {
     fn into(self) -> AABB {
         let half_extent = vek::Vec3::<f32>::from(self.extent) / 2.0;

@@ -89,9 +89,7 @@ pub trait MaterialRenderer: 'static {
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
 pub struct BatchRenderer<M: Material> {
-    // Batch renderers use one unique shader per material type
-    shader: Handle<Shader>,
-    
+    shader: Handle<Shader>,    
     material: PhantomData<M>,
 }
 
