@@ -137,6 +137,9 @@ pub fn modified<T: Component>() -> Modified<T> {
 pub fn added<T: Component>() -> Added<T> {
     Added(PhantomData::default())
 }
+pub fn contains<T: Component>() -> Contains<T> {
+    Contains(PhantomData::default())
+}
 
 // Constant sources
 pub const fn always() -> Always {

@@ -69,6 +69,16 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 }
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
+    // Get a mutable reference to the shader 
+    pub fn shader_mut(&mut self) -> &mut Shader {
+        &mut self.shader
+    }
+    
+    // Get an immutable reference to the shader
+    pub fn shader(&self) -> &Shader {
+        &self.shader
+    }
+
     // Prepare the rasterizer by setting the global raster settings
     fn prepare(&mut self, settings: &RasterSettings) -> u32 {
         self.context

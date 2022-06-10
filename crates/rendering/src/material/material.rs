@@ -8,7 +8,7 @@ use world::{resources::{Handle, ResourceSet, Storage}, World};
 use crate::{
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    shader::{Shader, Uniforms},
+    shader::{Shader, Uniforms}, scene::Renderer,
 };
 
 // Instance builder that will take a unique material and construct a new instance for it
@@ -36,7 +36,7 @@ impl<M: Material> InstanceBuilder<M> {
     // Build the underlying material instance
     pub fn build(self, ctx: &mut Context) -> M {
         // Add the material type renderer to the context
-        //ctx.register_batch_renderer(todo!());
+        //ctx.register_material_renderer(todo!());
 
         // Simply return the built material
         self.0
@@ -73,7 +73,7 @@ pub trait PropertyBlock<'world>: Sized {
     type PropertyBlockResources: 'world;
 
     // Fetch the default rendering resources and the material property block resources as well
-    fn fetch(world: &'world mut World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Graphics, Self::PropertyBlockResources);
+    fn fetch(world: &'world mut World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources);
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: Self::PropertyBlockResources);
@@ -90,32 +90,27 @@ pub trait MaterialRenderer: 'static {
 // A batch renderer will use a single shader use pass to render the materialized surfaces
 pub struct BatchRenderer<M: Material> {
     // Batch renderers use one unique shader per material type
-    shader: Shader,
+    shader: Handle<Shader>,
     
     material: PhantomData<M>,
 }
 
-impl<M: Material> From<Shader> for BatchRenderer<M> {
-    fn from(shader: Shader) -> Self {
+impl<M: Material> From<Handle<Shader>> for BatchRenderer<M> {
+    fn from(shader: Handle<Shader>) -> Self {
         Self { material: Default::default(), shader }
     }
 }
 
 impl<M: Material> BatchRenderer<M> {
-    // Get an immutable reference to the underlying unique shader that we use
-    pub fn shader(&self) -> &Shader {
+    // Get a reference to the shader handle
+    pub fn shader(&self) -> &Handle<Shader> {
         &self.shader
-    }
-    
-    // Get a mutable reference to the underlying unique shader that we use
-    pub fn shader_mut(&mut self) -> &mut Shader {
-        &mut self.shader
     }
 
 
     // This method will batch render a ton of surfaces using one material instance only
     // This method can be called within the implementation of render()
-    pub fn render_batched_surfaces<'a>(world: &'a mut World) where M: PropertyBlock<'a> {
+    pub fn render_batched_surfaces<'a>(&mut self, world: &'a mut World) where M: PropertyBlock<'a> {
         // Get all the surfaces that use this material type:
         //   Fetch their material instances, per surface
         //   Set the required uniforms (transform, matrices)
@@ -126,7 +121,32 @@ impl<M: Material> BatchRenderer<M> {
         // Fetch the rendering resources to batch render the surfaces
         let (ecs, materials, graphics, property_block_resources) = M::fetch(world);
 
-        // Find all the surfaces that use this material type
-        //let query = ecs.try_view_with().unwrap();
+        // Get a valid rasterizer from the graphics
+        let Graphics(device, ctx) = graphics;
+        let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
+
+        // Find all the surfaces that use this material type (and that have a valid renderer component)
+        let old: Option<Handle<M>> = None;
+        for (renderer, surface) in ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap() {
+            // Get the shader uniforms since we have to set them for each surface
+            let mut uniforms = rasterizer.shader_mut().as_mut().uniforms();
+
+            // Set the default surface uniforms
+
+            // Check if we changed material instances 
+            let new = Some(surface.material().clone()); 
+            if old != new {
+                // We changed instances, so we must re-set the uniform property
+                old = new;
+                let instance = materials.get(new.as_ref().unwrap());
+                
+                // Set the material property block uniforms (only if the instance changes)
+                M::set_instance_properties(instance, &mut uniforms, property_block_resources)
+            }
+
+            // Render the surface
+
+            
+        }
     }
 }

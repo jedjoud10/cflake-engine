@@ -108,13 +108,13 @@ impl InstanceBuilder<Standard> {
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (&'world Storage<AlbedoMap>, &'world Storage<NormalMap>, &'world Storage<MaskMap>);
 
-    fn fetch(world: &'world mut world::World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Graphics, Self::PropertyBlockResources) {
-        let (ecs_manager, materials, graphics, albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&EcsManager, &Storage<Self>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>)>().unwrap();
-        (ecs_manager, materials, graphics, (albedo_maps, normal_maps, mask_maps))
-    }
-
     fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: Self::PropertyBlockResources) {
         todo!()
+    }
+
+    fn fetch(world: &'world mut world::World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources) {
+        let (ecs_manager, materials, shaders, graphics, albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&EcsManager, &Storage<Self>, &mut Storage<Shader>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>)>().unwrap();
+        (ecs_manager, materials, shaders, graphics, (albedo_maps, normal_maps, mask_maps))
     }
 }
 

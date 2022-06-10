@@ -80,6 +80,14 @@ pub struct Handle<T> {
     phantom_: PhantomData<T>,
 }
 
+impl<T> PartialEq for Handle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+
+impl<T> Eq for Handle<T> {}
+
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
         Self {
