@@ -14,7 +14,7 @@ use std::{
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
-    material::{Material, MaterialRenderer},
+    material::{Material, BatchRenderer, MaterialRenderer},
     texture::Bindless,
 };
 
@@ -70,7 +70,7 @@ impl Context {
 
     // Clone all the material renderers outside the context
     // This is going to be executed every frame, but the number of unique material types is low so we shall'n't worry about it
-    pub(crate) fn extract_material_renderers(&self) -> Vec<Rc<dyn MaterialRenderer>> {
+    pub(crate) fn extract_material_renderer(&self) -> Vec<Rc<dyn MaterialRenderer>> {
         self.renderers
             .iter()
             .map(|(key, value)| value.clone())

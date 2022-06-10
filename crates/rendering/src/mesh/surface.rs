@@ -39,14 +39,7 @@ pub(crate) fn render<'a, M: Material + PropertyBlock<'a>>(
     shaders: &'a Storage<Shader>,
     resources: M::Resources,
 ) {
-    // Fetch all the entities that contain a surface with this material
-    let query = ecs.try_view::<(&Transform, &Surface<M>)>().unwrap();
-
-    // Get the device canvas and the scene rasterizer
-    let Graphics(device, context) = graphics;
-    let canvas = device.canvas_mut();
-    let rasterizer = canvas.rasterizer(todo!(), context);
-
+    
     /*
     for (transform, surface) in query {
         // Fetch the material instance for this surface

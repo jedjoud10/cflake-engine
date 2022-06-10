@@ -9,7 +9,7 @@ use crate::{
     texture::{Ranged, Sampler, Texture, Texture2D, R, RGB},
 };
 
-use super::{Material, PropertyBlock, MaterialRenderer};
+use super::{Material, PropertyBlock, InstanceID, InstanceBuilder, BatchRenderer};
 
 // Type aliases for texture maps
 type DiffuseMap = Texture2D<RGB<Ranged<u8>>>;
@@ -28,9 +28,20 @@ pub struct Standard {
     bumpiness: f32,
     roughness: f32,
     metallic: f32,
+
+    // Current instance
+    instance: InstanceID<Self>,
 }
 
 impl Material for Standard {
+    fn default(id: InstanceID<Self>) -> Self {
+        Self { albedo: None, normal: None, mask: None, bumpiness: 1.0, roughness: 1.0, metallic: 0.0, instance: id }
+    }
+
+    fn instance(&self) -> &InstanceID<Self> {
+        &self.instance
+    }
+
     fn load_shader(
         ctx: &mut Context,
         loader: &mut assets::loader::AssetLoader,
@@ -42,6 +53,51 @@ impl Material for Standard {
             .load::<FragmentStage>("defaults/shaders/rendering/pbr.frsh")
             .unwrap();
         ShaderCompiler::link((vs, fs), Processor::new(loader), ctx)
+    }
+
+    type Render = BatchRenderer<Self>;
+
+    fn renderer() -> Self::Render {
+        todo!()
+        //BatchRenderer::default()
+    }
+}
+
+impl InstanceBuilder<Standard> {
+    // Set the albedo texture
+    pub fn albedo(mut self, albedo: Handle<DiffuseMap>) -> Self {
+        self.material_mut().albedo = Some(albedo);
+        self
+    }
+
+    // Set the normal texture
+    pub fn normal(mut self, normal: Handle<NormalMap>) -> Self {
+        self.material_mut().normal = Some(normal);
+        self
+    }
+
+    // Set the mask texture
+    pub fn mask(mut self, mask: Handle<MaskMap>) -> Self {
+        self.material_mut().mask = Some(mask);
+        self
+    }
+
+    // Set the bumpiness parameter
+    pub fn bumpiness(mut self, bumpiness: f32) -> Self {
+        self.material_mut().bumpiness = bumpiness;
+        self
+    }
+
+    // Set the roughness parameter
+    pub fn roughness(mut self, roughness: f32) -> Self {
+        self.material_mut().roughness = roughness;
+        self
+    }
+
+    // Set the metallic parameter
+    pub fn metallic(mut self, metallic: f32) -> Self {
+        self.material_mut().metallic = metallic;
+        self
     }
 }
 
@@ -75,7 +131,7 @@ impl<'a> PropertyBlock<'a> for Standard {
     }
 
     fn fetch_resources(
-        set: &'a mut world::resources::ResourceSet,
+        set: &'a mut world::World,
     ) -> (
         &'a EcsManager,
         &'a mut Graphics,
@@ -105,41 +161,7 @@ impl<'a> PropertyBlock<'a> for Standard {
 }
 /*
 impl MaterialBuilder<Standard> {
-    // Set the albedo texture
-    pub fn albedo(mut self, albedo: Handle<DiffuseMap>) -> Self {
-        self.material.albedo = Some(albedo);
-        self
-    }
-
-    // Set the normal texture
-    pub fn normal(mut self, normal: Handle<NormalMap>) -> Self {
-        self.material.normal = Some(normal);
-        self
-    }
-
-    // Set the mask texture
-    pub fn mask(mut self, mask: Handle<MaskMap>) -> Self {
-        self.material.mask = Some(mask);
-        self
-    }
-
-    // Set the bumpiness parameter
-    pub fn bumpiness(mut self, bumpiness: f32) -> Self {
-        self.material.bumpiness = bumpiness;
-        self
-    }
-
-    // Set the roughness parameter
-    pub fn roughness(mut self, roughness: f32) -> Self {
-        self.material.roughness = roughness;
-        self
-    }
-
-    // Set the metallic parameter
-    pub fn metallic(mut self, metallic: f32) -> Self {
-        self.material.metallic = metallic;
-        self
-    }
+    
 }
 
 impl MaterialRenderer for RenderDescriptor<Standard> {

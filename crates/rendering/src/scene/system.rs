@@ -1,12 +1,21 @@
+use ecs::EcsManager;
 use world::World;
+
+use crate::context::Graphics;
 
 // Init system for the renderer
 pub fn init(world: &mut World) {
-    // Insert the global renderer resource and shii
 }
 
 // Update system for the renderer
-pub fn update(world: &mut World) {}
+pub fn update(world: &mut World) {
+    // Get the entities and graphics resource
+    let (graphics, ecs) = world.get_mut::<(&mut Graphics, &mut EcsManager)>().unwrap();
+    let Graphics(device, context) = graphics;
+
+    // Update all the renderer components
+
+}
 
 /*
 // Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
