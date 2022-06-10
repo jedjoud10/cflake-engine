@@ -6,7 +6,7 @@ use world::resources::{Handle, Storage};
 use crate::{
     context::{Context, Graphics},
     shader::{FragmentStage, Matrix, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Sampler, Texture2D, R, RGB, RGBA, RG},
+    texture::{Ranged, Sampler, Texture2D, R, RGB, RGBA, RG, Texture}, mesh::SubMesh,
 };
 
 use super::{Material, InstanceID, InstanceBuilder, BatchRenderer, MaterialRenderer, PropertyBlock};
@@ -48,7 +48,7 @@ impl Material for Standard {
         &self.instance
     }
 
-    fn renderer(ctx: &mut Context, loader: &mut assets::loader::AssetLoader) -> Self::Render {
+    fn renderer(ctx: &mut Context, loader: &mut assets::loader::AssetLoader, storage: &mut Storage<Shader>) -> Self::Render {
         // Load the vertex shader stage
         let vs = loader
             .load::<VertexStage>("defaults/shaders/rendering/pbr.vrsh")
@@ -62,8 +62,11 @@ impl Material for Standard {
         // Link the two stages and compile the shader
         let shader = ShaderCompiler::link((vs, fs), Processor::new(loader), ctx);
 
-        // Create the batch renderer from this unique shader
-        BatchRenderer::from(shader)
+        // Cache the shader (even though it's unique)
+        let handle = storage.insert(shader);
+
+        // Create the batch renderer from this shader handle
+        BatchRenderer::from(handle)
     }
 }
 
@@ -108,18 +111,36 @@ impl InstanceBuilder<Standard> {
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (&'world Storage<AlbedoMap>, &'world Storage<NormalMap>, &'world Storage<MaskMap>);
 
-    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: Self::PropertyBlockResources) {
-        todo!()
+    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: &Self::PropertyBlockResources) {
+        // Scalar parameters
+        uniforms.set_scalar("_bumpiness", self.bumpiness);
+        uniforms.set_scalar("_roughness", self.roughness);
+        uniforms.set_scalar("_metallic", self.metallic);
+
+        // Try to fetch the textures
+        let albedo_map = resources.0.try_get(self.albedo.as_ref()).unwrap();
+        let normal_map = resources.1.try_get(self.normal.as_ref()).unwrap();
+        let mask_map = resources.2.try_get(self.mask.as_ref()).unwrap();
+
+        // Get their corresponding samplers
+        let albedo_map_sampler = Texture::sampler(albedo_map);
+        let normal_map_sampler = Texture::sampler(normal_map);
+        let mask_map_sampler = Texture::sampler(mask_map);
+
+        // And set their uniform values
+        uniforms.set_sampler("_albedo", albedo_map_sampler);
+        uniforms.set_sampler("_normal", normal_map_sampler);
+        uniforms.set_sampler("_mask", mask_map_sampler);
     }
 
-    fn fetch(world: &'world mut world::World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources) {
-        let (ecs_manager, materials, shaders, graphics, albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&EcsManager, &Storage<Self>, &mut Storage<Shader>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>)>().unwrap();
-        (ecs_manager, materials, shaders, graphics, (albedo_maps, normal_maps, mask_maps))
+    fn fetch(world: &'world mut world::World) -> (&'world EcsManager, &'world Storage<Self>, &'world Storage<SubMesh>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources) {
+        let (ecs_manager, materials, submesh, shaders, graphics, albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>)>().unwrap();
+        (ecs_manager, materials, submesh, shaders, graphics, (albedo_maps, normal_maps, mask_maps))
     }
 }
 
 impl MaterialRenderer for BatchRenderer<Standard> {
     fn render(&self, world: &mut world::World) {
-        Self::render_batched_surfaces(world)
+        self.render_batched_surfaces(world)
     }
 }

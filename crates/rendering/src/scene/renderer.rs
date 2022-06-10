@@ -8,3 +8,15 @@ pub struct Renderer {
     visible: bool,
     //bounds: math::AABB,
 }
+
+impl Renderer {
+    // Get the current mesh matrix that we will use for rendering
+    pub fn matrix(&self) -> &vek::Mat4<f32> {
+        &self.matrix
+    }
+
+    // Get the current visibility state of the renderer
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+}

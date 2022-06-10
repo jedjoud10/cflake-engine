@@ -8,7 +8,7 @@ use world::{resources::{Handle, ResourceSet, Storage}, World};
 use crate::{
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    shader::{Shader, Uniforms}, scene::Renderer,
+    shader::{Shader, Uniforms}, scene::Renderer, canvas::rasterizer::{RasterSettings, PrimitiveMode, FaceCullMode}, commons::Comparison,
 };
 
 // Instance builder that will take a unique material and construct a new instance for it
@@ -56,7 +56,7 @@ pub trait Material: 'static + Sized {
     fn default(id: InstanceID<Self>) -> Self; 
 
     // Create a new material renderer for this material type (PS: this will only be called once)
-    fn renderer(ctx: &mut Context, loader: &mut AssetLoader) -> Self::Render;
+    fn renderer(ctx: &mut Context, loader: &mut AssetLoader, storage: &mut Storage<Shader>) -> Self::Render;
 
     // Create a new instance builder for this material type
     fn builder() -> InstanceBuilder<Self> {
@@ -73,10 +73,10 @@ pub trait PropertyBlock<'world>: Sized {
     type PropertyBlockResources: 'world;
 
     // Fetch the default rendering resources and the material property block resources as well
-    fn fetch(world: &'world mut World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources);
+    fn fetch(world: &'world mut World) -> (&'world EcsManager, &'world Storage<Self>, &'world Storage<SubMesh>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources);
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
-    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: Self::PropertyBlockResources);
+    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: &Self::PropertyBlockResources);
 }
 
 // A material renderer will simply take the world and try to render all the surface that make up the render objects
@@ -89,7 +89,9 @@ pub trait MaterialRenderer: 'static {
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
 pub struct BatchRenderer<M: Material> {
-    shader: Shader,
+    // Batch renderers use one unique shader per material type
+    shader: Handle<Shader>,
+    
     material: PhantomData<M>,
 }
 
@@ -108,7 +110,7 @@ impl<M: Material> BatchRenderer<M> {
 
     // This method will batch render a ton of surfaces using one material instance only
     // This method can be called within the implementation of render()
-    pub fn render_batched_surfaces<'a>(&mut self, world: &'a mut World) where M: PropertyBlock<'a> {
+    pub fn render_batched_surfaces<'a>(&self, world: &'a mut World) where M: PropertyBlock<'a> {
         // Get all the surfaces that use this material type:
         //   Fetch their material instances, per surface
         //   Set the required uniforms (transform, matrices)
@@ -117,34 +119,51 @@ impl<M: Material> BatchRenderer<M> {
         //   Render the object
 
         // Fetch the rendering resources to batch render the surfaces
-        let (ecs, materials, graphics, property_block_resources) = M::fetch(world);
+        let (ecs, materials, submeshes, shaders, graphics, property_block_resources) = M::fetch(world);
 
         // Get a valid rasterizer from the graphics
         let Graphics(device, ctx) = graphics;
+        let shader = shaders.get_mut(self.shader());
         let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
 
+        // How exactly we should rasterize the surfaces
+        const SETTINGS: RasterSettings = RasterSettings {
+            depth_test: Some(Comparison::Less),
+            scissor_test: None,
+            primitive: PrimitiveMode::Triangles { cull: FaceCullMode::Back(true) },
+            srgb: false,
+            blend: None,
+        };
+
         // Find all the surfaces that use this material type (and that have a valid renderer component)
-        let old: Option<Handle<M>> = None;
-        for (renderer, surface) in ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap() {
+        let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
+        
+        // Ignore invisible surfaces
+        let query = query.filter(|(renderer, _)| renderer.is_visible());       
+        
+        // Render the valid surfaces
+        let mut old: Option<Handle<M>> = None;
+        for (renderer, surface) in query {
             // Get the shader uniforms since we have to set them for each surface
             let mut uniforms = rasterizer.shader_mut().as_mut().uniforms();
 
             // Set the default surface uniforms
+            uniforms.set_mat4x4("_world_matrix", renderer.matrix());
 
             // Check if we changed material instances 
             let new = Some(surface.material().clone()); 
             if old != new {
                 // We changed instances, so we must re-set the uniform property
                 old = new;
-                let instance = materials.get(new.as_ref().unwrap());
+                let instance = materials.get(old.as_ref().unwrap());
                 
                 // Set the material property block uniforms (only if the instance changes)
-                M::set_instance_properties(instance, &mut uniforms, property_block_resources)
+                M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
             }
 
-            // Render the surface
-
-            
+            // Render the surface object
+            let submesh = submeshes.get(surface.submesh());
+            rasterizer.draw(submesh, &SETTINGS);            
         }
     }
 }

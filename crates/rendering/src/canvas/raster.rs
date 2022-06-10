@@ -199,7 +199,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
     }
 
     // Draw a single VAO and EBO
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: T, settings: &RasterSettings) {
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, settings: &RasterSettings) {
         let primitive = self.prepare(settings);
 
         let vao = obj.vao();

@@ -2,7 +2,7 @@ use super::{attributes::AttributeSet, GeometryBuilder};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     context::Context,
-    object::ToGlName,
+    object::ToGlName, canvas::rasterizer::ToRasterBuffers,
 };
 use assets::Asset;
 use obj::TexturedVertex;
@@ -70,5 +70,15 @@ impl SubMesh {
     // Get the underlying index buffer mutably
     pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
         &mut self.indices
+    }
+}
+
+impl ToRasterBuffers for SubMesh {
+    fn vao(&self) -> &AttributeSet {
+        self.attributes()
+    }
+
+    fn ebo(&self) -> &ElementBuffer<u32> {
+        self.indices()
     }
 }

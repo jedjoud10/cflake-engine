@@ -243,3 +243,42 @@ impl<
         ))
     }
 }
+
+impl<
+        'a,
+        A: ResHandle<'a>,
+        B: ResHandle<'a>,
+        C: ResHandle<'a>,
+        D: ResHandle<'a>,
+        E: ResHandle<'a>,
+        F: ResHandle<'a>,
+        G: ResHandle<'a>,
+        H: ResHandle<'a>
+    > Layout<'a> for (A, B, C, D, E, F, G, H)
+{
+    fn types() -> Vec<HandleID> {
+        vec![
+            A::id(),
+            B::id(),
+            C::id(),
+            D::id(),
+            E::id(),
+            F::id(),
+            G::id(),
+            H::id()
+        ]
+    }
+
+    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+        Ok((
+            fetch::<A>(set)?,
+            fetch::<B>(set)?,
+            fetch::<C>(set)?,
+            fetch::<D>(set)?,
+            fetch::<E>(set)?,
+            fetch::<F>(set)?,
+            fetch::<G>(set)?,
+            fetch::<H>(set)?,
+        ))
+    }
+}
