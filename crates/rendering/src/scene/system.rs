@@ -14,7 +14,10 @@ pub fn update(world: &mut World) {
     let Graphics(device, context) = graphics;
 
     // Update all the renderer components
-
+    let renderers = context.extract_material_renderer();
+    for elem in renderers {
+        elem.render(world);
+    }
 }
 
 /*

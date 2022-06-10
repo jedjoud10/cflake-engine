@@ -17,6 +17,7 @@ pub trait StorageVec {
     fn get_storage_ptr(&self) -> NonNull<c_void>;
 
     // Create a new boxed vector (empty)
+    // TODO: Remove this whole unique storage shit since it makes it confusing
     fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
 }
 

@@ -7,7 +7,7 @@ use world::{resources::{Handle, ResourceSet, Storage}, World};
 
 use crate::{
     context::{Context, Device, Graphics},
-    mesh::SubMesh,
+    mesh::{SubMesh, Surface},
     shader::{Shader, Uniforms},
 };
 
@@ -55,8 +55,8 @@ pub trait Material: 'static + Sized {
     // Create a default material instance
     fn default(id: InstanceID<Self>) -> Self; 
 
-    // Create a new material renderer for this material type
-    fn renderer() -> Self::Render;
+    // Create a new material renderer for this material type (PS: this will only be called once)
+    fn renderer(ctx: &mut Context, loader: &mut AssetLoader) -> Self::Render;
 
     // Create a new instance builder for this material type
     fn builder() -> InstanceBuilder<Self> {
@@ -65,53 +65,68 @@ pub trait Material: 'static + Sized {
 
     // Get the current material instance ID
     fn instance(&self) -> &InstanceID<Self>;
-
-    // Load a new instance of the shader that we will use for this material
-    fn load_shader(ctx: &mut Context, loader: &mut AssetLoader) -> Shader;
 }
 
-// Uniforms setter. I have to separate Material and UniformsSetter because it will cause weird lifetime fuckery if I don't
-pub trait PropertyBlock<'a>: Sized {
-    // The resources that we might need from the world to set the uniforms
-    type Resources: 'a;
+// A property block is an interface that tells us exactly we should set the material properties
+pub trait PropertyBlock<'world>: Sized {
+    // The resources that we need to fetch from the world to set the uniforms
+    type PropertyBlockResources: 'world;
 
-    // Load the valid resources from the resource set, whilst also fetching the necessary values for rendering
-    fn fetch_resources(
-        world: &'a mut World,
-    ) -> (
-        &'a EcsManager,
-        &'a mut Graphics,
-        &'a Storage<Self>,
-        &'a Storage<Shader>,
-        Self::Resources,
-    );
+    // Fetch the default rendering resources and the material property block resources as well
+    fn fetch(world: &'world mut World) -> (&'world EcsManager, &'world Storage<Self>, &'world mut Graphics, Self::PropertyBlockResources);
 
-    // Set the corresponding uniforms for this block using the resources that we loaded in
-    fn set_uniforms(&self, uniforms: &mut Uniforms, res: Self::Resources);
+    // With the help of the fetched resources, set the uniform properties for a unique material instance
+    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: Self::PropertyBlockResources);
 }
 
 // A material renderer will simply take the world and try to render all the surface that make up the render objects
 // This trait will be automatically implemented for BatchRenderer (since we can batch all the surface into one shader use pass)
 pub trait MaterialRenderer: 'static {
     // Render all the objects that use this material type
-    // Get all the renderers that use this material type
-    //   Fetch their material instances, per object
-    //   Set the required uniforms (transform, matrices)
-    //   Set the material uniforms (M::set)
-    //   Render the object
+    // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here 
     fn render(&self, world: &mut World);
 }
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
 pub struct BatchRenderer<M: Material> {
+    // Batch renderers use one unique shader per material type
+    shader: Shader,
+    
     material: PhantomData<M>,
-    shader: Handle<Shader>,
-    layer: i32,
-} 
+}
+
+impl<M: Material> From<Shader> for BatchRenderer<M> {
+    fn from(shader: Shader) -> Self {
+        Self { material: Default::default(), shader }
+    }
+}
+
+impl<M: Material> BatchRenderer<M> {
+    // Get an immutable reference to the underlying unique shader that we use
+    pub fn shader(&self) -> &Shader {
+        &self.shader
+    }
+    
+    // Get a mutable reference to the underlying unique shader that we use
+    pub fn shader_mut(&mut self) -> &mut Shader {
+        &mut self.shader
+    }
 
 
-impl<'a, M: Material + PropertyBlock<'a>> MaterialRenderer for BatchRenderer<M> {
-    fn render(&self, world: &mut World) {
-        let (ecs, graphics, materials, shader, prop_block_resources) = M::fetch_resources(world);
+    // This method will batch render a ton of surfaces using one material instance only
+    // This method can be called within the implementation of render()
+    pub fn render_batched_surfaces<'a>(world: &'a mut World) where M: PropertyBlock<'a> {
+        // Get all the surfaces that use this material type:
+        //   Fetch their material instances, per surface
+        //   Set the required uniforms (transform, matrices)
+        //   If material instance changes:
+        //     Set the material uniforms (M::set)
+        //   Render the object
+
+        // Fetch the rendering resources to batch render the surfaces
+        let (ecs, materials, graphics, property_block_resources) = M::fetch(world);
+
+        // Find all the surfaces that use this material type
+        //let query = ecs.try_view_with().unwrap();
     }
 }

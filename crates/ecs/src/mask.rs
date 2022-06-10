@@ -62,6 +62,11 @@ impl Mask {
     pub const fn get(&self, offset: usize) -> bool {
         (self.0 >> offset) & 1 == 1
     }
+
+    // Check if we have at least one corresponding bit with Other
+    pub fn one_corresponding_bit(&self, other: Self) -> bool {
+        *self & other != Mask::zero()
+    }
 }
 
 // NoHash hasher that works with Mask

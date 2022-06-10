@@ -1,7 +1,7 @@
 use super::SubMesh;
 use crate::{
     context::Graphics,
-    material::{Material, PropertyBlock},
+    material::{Material},
     shader::Shader,
 };
 use ecs::{Component, EcsManager};
@@ -28,28 +28,4 @@ impl<M: Material> Surface<M> {
     pub fn material(&self) -> &Handle<M> {
         &self.1
     }
-}
-
-// This will render all the surfaces of a unique material type that exist currently
-// This function will be internally called by the MaterialRenderer::draw() method each frame
-pub(crate) fn render<'a, M: Material + PropertyBlock<'a>>(
-    ecs: &'a EcsManager,
-    graphics: &'a mut Graphics,
-    materials: &'a Storage<M>,
-    shaders: &'a Storage<Shader>,
-    resources: M::Resources,
-) {
-    
-    /*
-    for (transform, surface) in query {
-        // Fetch the material instance for this surface
-        let material = storage.get(surface.material());
-
-        // Calculate world mesh matrix
-        let matrix = transform.matrix();
-
-        // Render
-
-    }
-    */
 }
