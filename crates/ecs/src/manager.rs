@@ -55,6 +55,12 @@ impl Resource for EcsManager {
     fn start_frame(&mut self) {
         self.prepare();
     }
+
+    fn can_remove() -> bool
+        where
+            Self: Sized, {
+        false
+    }
 }
 
 impl EcsManager {

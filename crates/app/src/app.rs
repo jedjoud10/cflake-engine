@@ -120,6 +120,7 @@ impl App {
         world.insert(ecs::EcsManager::default());
         world.insert(input::Input::default());
         world.insert(assets::Assets::new(self.user_assets_folder));
+        world.insert(time::Time::default());
 
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) -> Vec<fn(&mut World)> {

@@ -66,7 +66,7 @@ impl Resource for Input {
 
     fn end_frame(&mut self) {
         // Convert all the State::Pressed keys to State::Held and all the State::Released to State::None
-        for (key, state) in self.keys.iter_mut() {
+        for (_, state) in self.keys.iter_mut() {
             *state = match state {
                 State::Pressed => State::Held,
                 State::Released => State::None,
@@ -74,6 +74,12 @@ impl Resource for Input {
                 State::None => State::None,
             };
         }
+    }
+
+    fn can_remove() -> bool
+        where
+            Self: Sized, {
+        false
     }
 }
 

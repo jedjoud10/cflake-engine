@@ -20,6 +20,7 @@ impl<'loader> AsRef<[u8]> for CachedSlice<'loader> {
 
 // Asset manager that will cache all the assets and help us load them in
 #[derive(Resource)]
+#[Locked]
 pub struct Assets {
     // Byte caching (the key is the relative path of the asset)
     cached: AHashMap<PathBuf, Vec<u8>>,

@@ -9,6 +9,7 @@ use world::resources::Resource;
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
 #[derive(Resource)]
+#[Locked]
 pub struct Graphics(pub super::Device, pub super::Context);
 
 impl Graphics {
