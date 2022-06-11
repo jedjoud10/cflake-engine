@@ -112,12 +112,15 @@ impl App {
         // Create the graphics pipeline
         let (el, graphics) = Graphics::new(el);
 
-        // Insert the default main resources
+        // Insert the default main resources 
         world.insert(graphics);
         world.insert(ecs::EcsManager::default());
         world.insert(input::Input::default());
-        world.insert(assets::Assets::new(self.user_assets_folder))
+        world.insert(assets::Assets::new(self.user_assets_folder));
 
+        // Now to load the rest of resources we will simply load in their systems
+        rendering::scene::init(&mut world);
+        
     }
 }
 

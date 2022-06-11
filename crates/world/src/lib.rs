@@ -20,7 +20,7 @@ impl World {
     }
 
     // Fetch a tuple of certain resource handles from the world
-    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
+    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L::Output, ResourceError> {
         self.0.get_mut::<'a, L>()
     }
 }

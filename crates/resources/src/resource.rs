@@ -32,8 +32,13 @@ impl ResourceSet {
     }
 
     // Fetch a tuple of certain resource handles from the set
-    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
+    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L::Output, ResourceError> {
         L::validate().map(|_| unsafe { L::fetch_unchecked(self) })?
+    }
+
+    // Check if a resource is contained within the set
+    pub fn contains<R: Resource>(&self) -> bool {
+        self.0.contains_key(&TypeId::of::<R>())
     }
 
     // Method that is called before any systems are executed
