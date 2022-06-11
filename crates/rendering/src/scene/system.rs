@@ -4,8 +4,7 @@ use world::World;
 use crate::context::Graphics;
 
 // Init system for the renderer
-pub fn init(world: &mut World) {
-}
+pub fn init(world: &mut World) {}
 
 // Update system for the renderer
 pub fn update(world: &mut World) {

@@ -1,9 +1,5 @@
 use super::SubMesh;
-use crate::{
-    context::Graphics,
-    material::{Material},
-    shader::Shader,
-};
+use crate::{context::Graphics, material::Material, shader::Shader};
 use ecs::{Component, EcsManager};
 use math::Transform;
 use world::resources::{Handle, Storage};

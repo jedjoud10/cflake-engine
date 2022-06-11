@@ -38,10 +38,10 @@ impl AABB {
     pub fn get_center(&self) -> vek::Vec3<f32> {
         (self.min + self.max) / 2.0
     }
-    
+
     // Calculate the full extent of the AABB
     pub fn get_extent(&self) -> vek::Extent3<f32> {
-        vek::Extent3::from(self.max - self.min) 
+        vek::Extent3::from(self.max - self.min)
     }
 
     // Check if the AABB is valid (it's max point is indeed bigger than min)

@@ -14,7 +14,7 @@ use std::{
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
-    material::{Material, BatchRenderer, MaterialRenderer},
+    material::{BatchRenderer, Material, MaterialRenderer},
     texture::Bindless,
 };
 
@@ -60,12 +60,23 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
-    // Insert a new material renderer
-    pub(crate) fn register_material_renderer<R: MaterialRenderer, M: Material>(
+    // Try to register a material renderer with a callback
+    // We use callback since we need to register the renderer only once, and it would be a waste to create it multiple times
+    pub(crate) fn register_material_renderer<M: Material, F>(
         &mut self,
-        renderer: R,
-    ) {
-        self.renderers.insert(TypeId::of::<M>(), Rc::new(renderer));
+        callback: F,
+    ) where F: FnOnce(&mut Context) -> M::Renderer {
+        // Material renderers are defined by their material type, so we can only have one material renderer per material type
+        let key = TypeId::of::<M>();
+
+        // Only register the renderer once
+        if !self.renderers.contains_key(&key) {
+            // Create the RC and call the callback
+            let renderer = Rc::new(callback(self));
+            
+            // Insert the renderer into the context
+            self.renderers.insert(key, renderer);
+        }
     }
 
     // Clone all the material renderers outside the context

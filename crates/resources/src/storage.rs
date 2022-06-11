@@ -59,7 +59,7 @@ impl<T> Resource for Storage<T> {
         self
     }
 
-    fn update(&mut self) {
+    fn end_frame(&mut self) {
         let mut borrow = self.1.borrow_mut();
         borrow.retain(|key, count| {
             if *count == 0 {

@@ -1,7 +1,7 @@
 use super::{FragmentStage, Processed, Stage, VertexStage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::{loader::AssetLoader, Asset};
+use assets::{Assets, Asset};
 
 // This is just a wrapper for String. It can be loaded from any file really, but we will only load it from shader files
 struct RawText(String);
@@ -13,7 +13,7 @@ impl Asset<'static> for RawText {
         &[]
     }
 
-    fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
+    fn deserialize(bytes: assets::CachedSlice, args: Self::Args) -> Self {
         Self(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
     }
 }
@@ -24,7 +24,7 @@ pub struct Constant<T: ToString>(T);
 // A processor is something that will take some raw GLSL text and expand/process each directive
 pub struct Processor<'a> {
     // This is the asset loader that we will use to load include files
-    loader: &'a mut AssetLoader,
+    loader: &'a mut Assets,
 
     // A hashmap containing the constant values that we must replace
     // #const [name] [opt<default>]
@@ -36,15 +36,15 @@ pub struct Processor<'a> {
     snippets: AHashMap<String, String>,
 }
 
-impl<'a> From<&'a mut AssetLoader> for Processor<'a> {
-    fn from(loader: &'a mut AssetLoader) -> Self {
+impl<'a> From<&'a mut Assets> for Processor<'a> {
+    fn from(loader: &'a mut Assets) -> Self {
         Self::new(loader)
     }
 }
 
 impl<'a> Processor<'a> {
     // Create a processor from an asset loader
-    pub fn new(loader: &'a mut AssetLoader) -> Self {
+    pub fn new(loader: &'a mut Assets) -> Self {
         Self {
             loader,
             constants: Default::default(),

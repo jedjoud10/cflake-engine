@@ -19,7 +19,11 @@ pub trait ResHandle<'a>: Sized {
 
     // Get the type ID of the iunner resource
     fn id() -> HandleID {
-        (TypeId::of::<Self::Inner>(), type_name::<Self::Inner>(), Self::MUTABLE)
+        (
+            TypeId::of::<Self::Inner>(),
+            type_name::<Self::Inner>(),
+            Self::MUTABLE,
+        )
     }
 
     // Get the underlying pointer for the raw data
@@ -92,7 +96,9 @@ pub trait Layout<'a>: Sized {
     fn validate() -> Result<(), ResourceError> {
         let types = Self::types();
         let mut map = AHashSet::new();
-        let name = types.iter().find(|(t, _, mutable)| !map.insert(t) && *mutable);
+        let name = types
+            .iter()
+            .find(|(t, _, mutable)| !map.insert(t) && *mutable);
 
         // This is a certified inversion classic
         if let Some((_, name, _)) = name {
@@ -253,7 +259,7 @@ impl<
         E: ResHandle<'a>,
         F: ResHandle<'a>,
         G: ResHandle<'a>,
-        H: ResHandle<'a>
+        H: ResHandle<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G, H)
 {
     fn types() -> Vec<HandleID> {
@@ -265,7 +271,7 @@ impl<
             E::id(),
             F::id(),
             G::id(),
-            H::id()
+            H::id(),
         ]
     }
 

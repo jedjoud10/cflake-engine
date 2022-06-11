@@ -1,8 +1,9 @@
 use super::{attributes::AttributeSet, GeometryBuilder};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
+    canvas::rasterizer::ToRasterBuffers,
     context::Context,
-    object::ToGlName, canvas::rasterizer::ToRasterBuffers,
+    object::ToGlName,
 };
 use assets::Asset;
 use obj::TexturedVertex;

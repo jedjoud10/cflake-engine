@@ -36,10 +36,17 @@ impl ResourceSet {
         L::validate().map(|_| unsafe { L::fetch_unchecked(self) })?
     }
 
-    // This function should be called everyframe so it can update the internal resources
-    pub fn update(&mut self) {
+    // Method that is called before any systems are executed
+    pub fn start_frame(&mut self) {
         for (_, resource) in self.0.iter_mut() {
-            resource.update()
+            resource.start_frame()
+        }
+    }
+    
+    // Method that is called after all the systems have executed
+    pub fn end_frame(&mut self) {
+        for (_, resource) in self.0.iter_mut() {
+            resource.end_frame()
         }
     }
 }
@@ -54,5 +61,8 @@ pub trait Resource: 'static {
     fn added(&mut self) {}
 
     // And an update function that runs every frame the resource is stored in the set
-    fn update(&mut self) {}
+    fn start_frame(&mut self) {}
+
+    // Update function that runs after all the systems execute
+    fn end_frame(&mut self) {}
 }

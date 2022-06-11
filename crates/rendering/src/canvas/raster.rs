@@ -69,11 +69,11 @@ pub struct Rasterizer<'canvas, 'shader, 'context> {
 }
 
 impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
-    // Get a mutable reference to the shader 
+    // Get a mutable reference to the shader
     pub fn shader_mut(&mut self) -> &mut Shader {
         &mut self.shader
     }
-    
+
     // Get an immutable reference to the shader
     pub fn shader(&self) -> &Shader {
         &self.shader

@@ -1,4 +1,4 @@
-use crate::loader::{AssetLoader, CachedSlice};
+use crate::loader::{Assets, CachedSlice};
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},

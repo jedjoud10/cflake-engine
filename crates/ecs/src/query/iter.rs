@@ -147,6 +147,13 @@ pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
     let cache = Filter::setup();
 
     QueryIter::new(archetypes).filter_map(move |item| {
-        Filter::eval(&cache, &Input { state_row: item.state, mask: item.archetype.mask() }).then_some(item.tuple)
+        Filter::eval(
+            &cache,
+            &Input {
+                state_row: item.state,
+                mask: item.archetype.mask(),
+            },
+        )
+        .then_some(item.tuple)
     })
 }

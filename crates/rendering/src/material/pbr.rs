@@ -1,15 +1,19 @@
 use std::marker::PhantomData;
 
+use assets::Assets;
 use ecs::EcsManager;
 use world::resources::{Handle, Storage};
 
 use crate::{
     context::{Context, Graphics},
+    mesh::SubMesh,
     shader::{FragmentStage, Matrix, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Sampler, Texture2D, R, RGB, RGBA, RG, Texture}, mesh::SubMesh,
+    texture::{Ranged, Sampler, Texture, Texture2D, R, RG, RGB, RGBA},
 };
 
-use super::{Material, InstanceID, InstanceBuilder, BatchRenderer, MaterialRenderer, PropertyBlock};
+use super::{
+    BatchRenderer, InstanceBuilder, InstanceID, Material, MaterialRenderer, PropertyBlock,
+};
 
 // Albedo map (color data), rgba
 type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
@@ -38,22 +42,34 @@ pub struct Standard {
 }
 
 impl Material for Standard {
-    type Render = BatchRenderer<Self>;
+    type Renderer = BatchRenderer<Self>;
 
     fn default(id: InstanceID<Self>) -> Self {
-        Self { albedo: None, normal: None, mask: None, bumpiness: 1.0, roughness: 1.0, metallic: 0.0, instance: id }
+        Self {
+            albedo: None,
+            normal: None,
+            mask: None,
+            bumpiness: 1.0,
+            roughness: 1.0,
+            metallic: 0.0,
+            instance: id,
+        }
     }
 
     fn instance(&self) -> &InstanceID<Self> {
         &self.instance
     }
 
-    fn renderer(ctx: &mut Context, loader: &mut assets::loader::AssetLoader, storage: &mut Storage<Shader>) -> Self::Render {
+    fn renderer(
+        ctx: &mut Context,
+        loader: &mut Assets,
+        storage: &mut Storage<Shader>,
+    ) -> Self::Renderer {
         // Load the vertex shader stage
         let vs = loader
             .load::<VertexStage>("defaults/shaders/rendering/pbr.vrsh")
             .unwrap();
-        
+
         // Load the fragment shader stage
         let fs = loader
             .load::<FragmentStage>("defaults/shaders/rendering/pbr.frsh")
@@ -109,9 +125,17 @@ impl InstanceBuilder<Standard> {
 }
 
 impl<'world> PropertyBlock<'world> for Standard {
-    type PropertyBlockResources = (&'world Storage<AlbedoMap>, &'world Storage<NormalMap>, &'world Storage<MaskMap>);
+    type PropertyBlockResources = (
+        &'world Storage<AlbedoMap>,
+        &'world Storage<NormalMap>,
+        &'world Storage<MaskMap>,
+    );
 
-    fn set_instance_properties(&'world self, uniforms: &mut Uniforms, resources: &Self::PropertyBlockResources) {
+    fn set_instance_properties(
+        &'world self,
+        uniforms: &mut Uniforms,
+        resources: &Self::PropertyBlockResources,
+    ) {
         // Scalar parameters
         uniforms.set_scalar("_bumpiness", self.bumpiness);
         uniforms.set_scalar("_roughness", self.roughness);
@@ -133,9 +157,45 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms.set_sampler("_mask", mask_map_sampler);
     }
 
-    fn fetch(world: &'world mut world::World) -> (&'world EcsManager, &'world Storage<Self>, &'world Storage<SubMesh>, &'world mut Storage<Shader>, &'world mut Graphics, Self::PropertyBlockResources) {
-        let (ecs_manager, materials, submesh, shaders, graphics, albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>)>().unwrap();
-        (ecs_manager, materials, submesh, shaders, graphics, (albedo_maps, normal_maps, mask_maps))
+    fn fetch(
+        world: &'world mut world::World,
+    ) -> (
+        &'world EcsManager,
+        &'world Storage<Self>,
+        &'world Storage<SubMesh>,
+        &'world mut Storage<Shader>,
+        &'world mut Graphics,
+        Self::PropertyBlockResources,
+    ) {
+        let (
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+        ) = world
+            .get_mut::<(
+                &EcsManager,
+                &Storage<Self>,
+                &Storage<SubMesh>,
+                &mut Storage<Shader>,
+                &mut Graphics,
+                &Storage<AlbedoMap>,
+                &Storage<NormalMap>,
+                &Storage<MaskMap>,
+            )>()
+            .unwrap();
+        (
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            (albedo_maps, normal_maps, mask_maps),
+        )
     }
 }
 

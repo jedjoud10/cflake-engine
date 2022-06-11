@@ -56,7 +56,7 @@ macro_rules! impl_stage_traits {
                 &[$ext]
             }
 
-            fn deserialize(bytes: assets::loader::CachedSlice, _args: Self::Args) -> Self {
+            fn deserialize(bytes: assets::CachedSlice, _args: Self::Args) -> Self {
                 Self::from(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
             }
         }

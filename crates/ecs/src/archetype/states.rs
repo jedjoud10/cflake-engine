@@ -15,7 +15,7 @@ impl StateRow {
     pub fn added(&self, offset: usize) -> bool {
         self.1.get(offset)
     }
-    
+
     // Check if a component was mutated since the start of the current frame
     pub fn mutated(&self, offset: usize) -> bool {
         self.0.get(offset)

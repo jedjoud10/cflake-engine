@@ -139,6 +139,7 @@ dependencies = [
  "ahash 0.7.6",
  "lazy_static",
  "parking_lot 0.12.1",
+ "world",
 ]
 
 [[package]]
@@ -1369,6 +1370,7 @@ dependencies = [
  "glutin",
  "multimap",
  "vek",
+ "world",
 ]
 
 [[package]]

@@ -1,6 +1,7 @@
 use crate::Asset;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
+use world::resources::Resource;
 use std::{
     cell::{Ref, RefCell, RefMut},
     ffi::{OsStr, OsString},
@@ -18,20 +19,21 @@ impl<'loader> AsRef<[u8]> for CachedSlice<'loader> {
 }
 
 // Asset manager that will cache all the assets and help us load them in
-pub struct AssetLoader {
+#[derive(Resource)]
+pub struct Assets {
     // Byte caching (the key is the relative path of the asset)
     cached: AHashMap<PathBuf, Vec<u8>>,
 
-    // Global assets path
-    global: PathBuf,
+    // GLobal path to the user defined assets folder
+    user: Option<PathBuf>,
 }
 
-impl AssetLoader {
-    // Create a new asset loader using a path to an asset folder
-    pub fn new(path: &str) -> Self {
+impl Assets {
+    // Create a new asset loader using a path to the user defined asset folder (if there is one)
+    pub fn new(user: Option<PathBuf>) -> Self {
         Self {
             cached: Default::default(),
-            global: PathBuf::from_str(path).unwrap(),
+            user,
         }
     }
 
@@ -50,7 +52,7 @@ impl AssetLoader {
 
         // If we have no bytes currently cached, try to load and cache them
         if self.cached.get(&path).is_none() {
-            let bytes = super::raw::read(&path, &self.global)?;
+            let bytes = super::raw::read(&path, self.user.as_ref()?)?;
             self.cached.insert(path.clone(), bytes);
         };
 

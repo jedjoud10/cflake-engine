@@ -1,4 +1,4 @@
-use crate::{bounds::aabb::{AABB}, Shape};
+use crate::{bounds::aabb::AABB, Shape};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone)]
@@ -13,13 +13,19 @@ pub struct Cuboid {
 impl Cuboid {
     // Create a new cuboid using a center and it's extent
     pub fn new(center: vek::Vec3<f32>, size: vek::Extent3<f32>) -> Self {
-        Self { center, extent: size }
+        Self {
+            center,
+            extent: size,
+        }
     }
 
     // Create a new cuboid using a center and a half-extent
     pub fn from_half_extent(center: vek::Vec3<f32>, half_extent: vek::Extent3<f32>) -> Self {
-        Self { center, extent: half_extent * 2.0 }
-    } 
+        Self {
+            center,
+            extent: half_extent * 2.0,
+        }
+    }
 }
 
 impl Shape for Cuboid {

@@ -1,5 +1,5 @@
 use crate::painter::Painter;
-use assets::loader::AssetLoader;
+use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
 use rendering::{
     context::{Context, Device},
@@ -15,7 +15,7 @@ pub struct UserInterface {
 
 impl UserInterface {
     // Create a new GUI manager using an asset loader and OpenGL context
-    pub fn new(loader: &mut AssetLoader, ctx: &mut Context) -> Self {
+    pub fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Get the maximum texture size from OpenGL (idk why egui needs this tbh)
         let max_texture_size = unsafe {
             let mut max: i32 = 0;

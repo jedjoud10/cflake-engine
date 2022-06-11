@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
 use world::World;
@@ -9,6 +11,9 @@ pub struct App {
     fullscreen: bool,
     screensize: vek::Extent2<u16>,
     vsync: bool,
+
+    // Asset and IO
+    user_assets_folder: Option<PathBuf>,
 
     // Systems that will be executed at the start/each frame
     startup_systems: Vec<(fn(&mut World), i32)>,
@@ -27,6 +32,7 @@ impl App {
             fullscreen: false,
             screensize: vek::Extent2::new(1920, 1080),
             vsync: false,
+            user_assets_folder: None,
             startup_systems: Vec::new(),
             update_systems: Vec::new(),
             startup_idx: 0,
@@ -50,6 +56,12 @@ impl App {
     pub fn set_window_vsync(mut self, enabled: bool) -> Self {
         self.vsync = enabled;
         self
+    }
+
+    // Set the assets folder for the user defined assets
+    pub fn set_user_assets_folder_path(mut self, path: impl TryInto<PathBuf>) -> Self {
+        self.user_assets_folder = Some(path.try_into().ok().expect("Input path failed to convert into PathBuf"));
+        self 
     }
 
     // Insert a startup system into the application that will execute once we begin
@@ -79,7 +91,7 @@ impl App {
     }
 
     // Sort all the systems into their respective orders (startups and updates)
-    fn sort(&mut self) -> Self {
+    fn sort(&mut self) {
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) {
             vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
@@ -88,7 +100,6 @@ impl App {
         // Don't care + L + ratio
         sort(&mut self.startup_systems);
         sort(&mut self.update_systems);
-        self
     }
 
     // Start the engine and consume the app
@@ -98,10 +109,15 @@ impl App {
         let el = EventLoop::new();
         let mut world = World::default();
 
-        // Inser the default resources
+        // Create the graphics pipeline
         let (el, graphics) = Graphics::new(el);
+
+        // Insert the default main resources
         world.insert(graphics);
-        world.insert(Storage::<rendering::mesh::Mesh>)
+        world.insert(ecs::EcsManager::default());
+        world.insert(input::Input::default());
+        world.insert(assets::Assets::new(self.user_assets_folder))
+
     }
 }
 

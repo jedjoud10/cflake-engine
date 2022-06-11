@@ -1,4 +1,4 @@
-use assets::loader::AssetLoader;
+use assets::Assets;
 use egui::{epaint::Mesh, ClippedMesh, Rect};
 use egui::{Color32, ImageData, TextureId, TexturesDelta};
 use nohash_hasher::NoHashHasher;
@@ -65,7 +65,7 @@ pub struct Painter {
 
 impl Painter {
     // Create a new painter using an asset loader an OpenGL context
-    pub(super) fn new(loader: &mut AssetLoader, ctx: &mut Context) -> Self {
+    pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
         let vert = loader
             .load::<VertexStage>("defaults/shaders/gui/vert.vrsh.glsl")

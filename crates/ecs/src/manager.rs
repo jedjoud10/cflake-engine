@@ -11,6 +11,7 @@ pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
+// TODO: Find a better name for this bozo
 pub struct EcsManager {
     // Entities are just objects that contain an ID and some component masks
     // Entities are linked to multiple components, but they don't store the component data by themselves
@@ -51,7 +52,7 @@ impl Resource for EcsManager {
         self
     }
 
-    fn update(&mut self) {
+    fn start_frame(&mut self) {
         self.prepare();
     }
 }
