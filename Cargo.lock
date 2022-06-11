@@ -104,6 +104,7 @@ dependencies = [
  "resources",
  "spin_sleep",
  "terrain",
+ "time",
  "vek",
  "world",
 ]
@@ -2967,6 +2968,13 @@ dependencies = [
  "flate2",
  "jpeg-decoder",
  "weezl",
+]
+
+[[package]]
+name = "time"
+version = "0.1.0"
+dependencies = [
+ "world",
 ]
 
 [[package]]

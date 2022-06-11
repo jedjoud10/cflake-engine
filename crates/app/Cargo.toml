@@ -24,3 +24,4 @@ gui = { path = "../gui" }
 io = { path = "../io" }
 terrain = { path = "../terrain" }
 audio = { path = "../audio" }
+time = { path = "../time" }
