@@ -1,5 +1,5 @@
 use glutin::{
-    dpi::LogicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder, GlProfile,
+    dpi::LogicalSize, event_loop::EventLoop, window::{WindowBuilder, Fullscreen}, ContextBuilder, GlProfile,
     GlRequest,
 };
 use world::resources::Resource;
@@ -11,17 +11,20 @@ pub struct Graphics(pub super::Device, pub super::Context);
 
 impl Graphics {
     // Create some new graphics given a glutin event loop
-    pub fn new<T>(el: EventLoop<T>) -> (EventLoop<T>, Self) {
+    pub fn new<T>(el: EventLoop<T>, title: String, size: vek::Extent2<u16>, fullscreen: bool, vsync: bool) -> (EventLoop<T>, Self) {
         // Build a valid window
         let wb = WindowBuilder::new()
             .with_resizable(true)
-            .with_inner_size(LogicalSize::new(1920u32, 1080));
+            .with_title(title)
+            .with_fullscreen(fullscreen.then_some(Fullscreen::Borderless(None)))
+            .with_inner_size(LogicalSize::new(size.w as u32, size.h as u32));
 
         // Build a valid Glutin context
         let wc = ContextBuilder::new()
             .with_double_buffer(Some(true))
             .with_gl_profile(GlProfile::Core)
             .with_gl_debug_flag(true)
+            .with_vsync(vsync)
             .with_gl(GlRequest::Latest)
             .build_windowed(wb, &el)
             .unwrap();
@@ -38,10 +41,5 @@ impl Graphics {
 
         // Return the event loop along side the graphics pipeline
         (el, Self(device, ctx))
-    }
-
-    // Apply all the changes that we commited to the main framebuffer, and swap the front and back buffers
-    pub fn draw(&mut self) {
-        self.1.raw().swap_buffers().unwrap();
     }
 }

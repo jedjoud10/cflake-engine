@@ -73,8 +73,7 @@ impl Canvas {
     // Clear the whole framebuffer using the proper flags
     pub fn clear(
         &mut self,
-        ctx: &mut Context,
-        color: Option<vek::Rgba<f32>>,
+        color: Option<vek::Rgb<f32>>,
         depth: Option<f32>,
         stencil: Option<i32>,
     ) {
@@ -84,7 +83,7 @@ impl Canvas {
         // Set the background color values
         if let Some(color) = color {
             unsafe {
-                gl::ClearColor(color.r, color.g, color.g, color.a);
+                gl::ClearColor(color.r, color.g, color.b, 1.0);
                 flags |= gl::COLOR_BUFFER_BIT
             }
         }

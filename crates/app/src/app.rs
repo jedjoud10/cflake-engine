@@ -4,12 +4,14 @@ use glutin::{event_loop::{EventLoop, ControlFlow}, event::{Event, WindowEvent, D
 use rendering::context::Graphics;
 use world::World;
 
+use crate::handler;
+
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
     // Window settings for the graphics
     title: String,
-    fullscreen: bool,
     screensize: vek::Extent2<u16>,
+    fullscreen: bool,
     vsync: bool,
 
     // Asset and IO
@@ -29,8 +31,8 @@ impl App {
     pub fn new() -> Self {
         Self {
             title: "Default title".to_string(),
+            screensize: vek::Extent2::new(1280, 720),
             fullscreen: false,
-            screensize: vek::Extent2::new(1920, 1080),
             vsync: false,
             user_assets_folder: None,
             startup_systems: Vec::new(),
@@ -49,6 +51,12 @@ impl App {
     // Set the window starting screensize
     pub fn set_window_size(mut self, size: vek::Extent2<u16>) -> Self {
         self.screensize = size;
+        self
+    }
+
+    // Set window fullscreen mode
+    pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
+        self.fullscreen = toggled;
         self
     }
 
@@ -94,27 +102,14 @@ impl App {
         self
     }
 
-    // Sort all the systems into their respective orders (startups and updates)
-    fn sort(&mut self) {
-        // One sorting function that will be used twice
-        fn sort(vec: &mut Vec<(fn(&mut World), i32)>) {
-            vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-        }
-
-        // Don't care + L + ratio
-        sort(&mut self.startup_systems);
-        sort(&mut self.update_systems);
-    }
-
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Prepare the world and the even loop
-        self.sort();
         let el = EventLoop::new();
         let mut world = World::default();
 
         // Create the graphics pipeline
-        let (el, graphics) = Graphics::new(el);
+        let (el, graphics) = Graphics::new(el, self.title, self.screensize, self.fullscreen, self.vsync);
 
         // Insert the default main resources
         world.insert(graphics);
@@ -122,35 +117,23 @@ impl App {
         world.insert(input::Input::default());
         world.insert(assets::Assets::new(self.user_assets_folder));
 
+        // One sorting function that will be used twice
+        fn sort(vec: &mut Vec<(fn(&mut World), i32)>) -> Vec<fn(&mut World)> {
+            vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
+            vec.into_iter().map(|(system, _)| system.clone()).collect::<Vec<_>>()
+        }
+
+        // Don't care + L + ratio
+        let startups = sort(&mut self.startup_systems);
+        let updates = sort(&mut self.update_systems);
+
+        // Run the init systems before starting the engine window
+        for system in startups {
+            system(&mut world);
+        }
+
         // Run le game engine
-        run(el, world);        
+        handler::run(el, updates, world);        
     }
 }
 
-// Run the event loop, and start displaying the game engine window
-fn run(el: EventLoop<()>, mut world: World) {
-    el.run(move |event, _, control_flow| {
-        match event {
-            Event::WindowEvent { window_id: _, event } => window(&mut world, event),
-            Event::DeviceEvent { device_id: _, event } => device(&mut world, event),
-            Event::MainEventsCleared => update(&mut world),
-            _ => (),
-        }
-    })
-}
-
-// Handle new window events
-fn window(world: &mut World, event: WindowEvent) {
-
-}
-
-// Handle new device events
-fn device(world: &mut World, device: DeviceEvent) {
-
-}
-
-
-// Execute one step-frame of the engine
-fn update(world: &mut World) {
-
-}
