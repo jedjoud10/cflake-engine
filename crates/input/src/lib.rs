@@ -2,14 +2,16 @@ use ahash::AHashMap;
 use glutin::event::ElementState;
 use world::resources::Resource;
 
-
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = glutin::event::VirtualKeyCode;
 
 // The current state of any key
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum State {
-    Pressed, Released, Held, None
+    Pressed,
+    Released,
+    Held,
+    None,
 }
 
 impl State {
@@ -17,7 +19,7 @@ impl State {
     fn pressed(&self) -> bool {
         match self {
             State::Pressed => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -25,7 +27,7 @@ impl State {
     fn released(&self) -> bool {
         match self {
             State::Released => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -33,7 +35,7 @@ impl State {
     fn held(&self) -> bool {
         match self {
             State::Held => todo!(),
-            _ => false    
+            _ => false,
         }
     }
 }
@@ -48,7 +50,7 @@ pub struct Input {
     // Key::W -> State::Pressed
     keys: AHashMap<Key, State>,
 
-    // Mouse position and mouse scroll values 
+    // Mouse position and mouse scroll values
     position: vek::Vec2<f32>,
     scroll: f32,
 }
@@ -97,16 +99,16 @@ impl Input {
 
     // Check if a keybind was pressed in the current frame
     pub fn pressed(&self, name: &'static str) -> bool {
-        self.state(name).map(State::pressed).unwrap_or_default()        
+        self.state(name).map(State::pressed).unwrap_or_default()
     }
 
     // Check if a keybind is being held (a held key is just a key that has been pressed for more than 2 frames)
     pub fn held(&self, name: &'static str) -> bool {
-        self.state(name).map(State::held).unwrap_or_default()   
+        self.state(name).map(State::held).unwrap_or_default()
     }
 
     // Check if a keybind was released in the current frame
     pub fn released(&self, name: &'static str) -> bool {
-        self.state(name).map(State::released).unwrap_or_default()   
+        self.state(name).map(State::released).unwrap_or_default()
     }
 }

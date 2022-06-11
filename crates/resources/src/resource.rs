@@ -26,13 +26,18 @@ impl ResourceSet {
         self.0.insert(TypeId::of::<R>(), boxed);
     }
 
-    // Remove a resouce from the set
-    pub fn remove<R: Resource>(&mut self) {
-        self.0.remove(&TypeId::of::<R>());
+    // Remove a resouce from the set (if possible)
+    // This returns true if we successfully deleted the resource
+    pub fn remove<R: Resource>(&mut self) -> bool {
+        if R::can_remove() {
+            self.0.remove(&TypeId::of::<R>()).is_some()
+        } else {
+            false
+        }
     }
 
     // Fetch a tuple of certain resource handles from the set
-    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L::Output, ResourceError> {
+    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
         L::validate().map(|_| unsafe { L::fetch_unchecked(self) })?
     }
 
@@ -47,7 +52,7 @@ impl ResourceSet {
             resource.start_frame()
         }
     }
-    
+
     // Method that is called after all the systems have executed
     pub fn end_frame(&mut self) {
         for (_, resource) in self.0.iter_mut() {
@@ -64,6 +69,21 @@ pub trait Resource: 'static {
 
     // Some resources can have a init function that gets ran when the resource gets added onto the set
     fn added(&mut self) {}
+
+    // A function that will be called right before the resource gets fetch
+    fn pre_fetch(set: &mut ResourceSet)
+    where
+        Self: Sized + 'static,
+    {
+    }
+
+    // A function that enables/disables removal for this specific resource
+    fn can_remove() -> bool
+    where
+        Self: Sized,
+    {
+        true
+    }
 
     // And an update function that runs every frame the resource is stored in the set
     fn start_frame(&mut self) {}

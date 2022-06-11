@@ -1,15 +1,6 @@
-use ecs::EcsManager;
-use world::{World, resources::Storage};
-
 use crate::{context::Graphics, mesh::SubMesh, shader::Shader};
-
-// Init system for the renderer
-// This will allow use to load in the default rendering resources
-pub fn init(world: &mut World) {
-    world.insert(Storage::<SubMesh>::default());
-    world.insert(Storage::<Shader>::default());
-    world.insert(Storage::<SubMesh>::default());
-}
+use ecs::EcsManager;
+use world::{resources::Storage, World};
 
 // Update system for the renderer
 pub fn update(world: &mut World) {

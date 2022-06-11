@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use assets::Assets;
 use ecs::EcsManager;
-use world::resources::{Handle, Storage, AutoInsert};
+use world::resources::{Handle, Storage};
 
 use crate::{
     context::{Context, Graphics},
@@ -179,13 +179,13 @@ impl<'world> PropertyBlock<'world> for Standard {
         ) = world
             .get_mut::<(
                 &EcsManager,
-                AutoInsert<&Storage<Self>>,
+                &Storage<Self>,
                 &Storage<SubMesh>,
                 &mut Storage<Shader>,
                 &mut Graphics,
-                AutoInsert<&Storage<AlbedoMap>>,
-                AutoInsert<&Storage<NormalMap>>,
-                AutoInsert<&Storage<MaskMap>>,
+                &Storage<AlbedoMap>,
+                &Storage<NormalMap>,
+                &Storage<MaskMap>,
             )>()
             .unwrap();
         (

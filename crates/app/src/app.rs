@@ -60,8 +60,12 @@ impl App {
 
     // Set the assets folder for the user defined assets
     pub fn set_user_assets_folder_path(mut self, path: impl TryInto<PathBuf>) -> Self {
-        self.user_assets_folder = Some(path.try_into().ok().expect("Input path failed to convert into PathBuf"));
-        self 
+        self.user_assets_folder = Some(
+            path.try_into()
+                .ok()
+                .expect("Input path failed to convert into PathBuf"),
+        );
+        self
     }
 
     // Insert a startup system into the application that will execute once we begin
@@ -112,15 +116,11 @@ impl App {
         // Create the graphics pipeline
         let (el, graphics) = Graphics::new(el);
 
-        // Insert the default main resources 
+        // Insert the default main resources
         world.insert(graphics);
         world.insert(ecs::EcsManager::default());
         world.insert(input::Input::default());
         world.insert(assets::Assets::new(self.user_assets_folder));
-
-        // Now to load the rest of resources we will simply load in their systems
-        rendering::scene::init(&mut world);
-        
     }
 }
 

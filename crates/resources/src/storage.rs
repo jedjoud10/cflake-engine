@@ -59,6 +59,20 @@ impl<T> Resource for Storage<T> {
         self
     }
 
+    fn pre_fetch(set: &mut crate::ResourceSet)
+    where
+        Self: Sized + 'static,
+    {
+        // Insert a default empty storage if it is non-existant
+        if !set.contains::<Self>() {
+            set.insert(Self::default())
+        }
+    }
+
+    fn can_remove() -> bool {
+        false
+    }
+
     fn end_frame(&mut self) {
         let mut borrow = self.1.borrow_mut();
         borrow.retain(|key, count| {

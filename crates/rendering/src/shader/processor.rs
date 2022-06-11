@@ -1,7 +1,7 @@
 use super::{FragmentStage, Processed, Stage, VertexStage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::{Assets, Asset};
+use assets::{Asset, Assets};
 
 // This is just a wrapper for String. It can be loaded from any file really, but we will only load it from shader files
 struct RawText(String);

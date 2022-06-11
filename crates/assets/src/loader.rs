@@ -1,13 +1,13 @@
 use crate::Asset;
 use ahash::AHashMap;
 use lazy_static::lazy_static;
-use world::resources::Resource;
 use std::{
     cell::{Ref, RefCell, RefMut},
     ffi::{OsStr, OsString},
     path::{Path, PathBuf},
     str::FromStr,
 };
+use world::resources::Resource;
 
 // Idk how many times I've rewritten this. Help my sanity. 12:16am on the 14th may 2022
 pub struct CachedSlice<'loader>(&'loader [u8]);
