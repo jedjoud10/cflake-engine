@@ -3,6 +3,7 @@ use std::{any::TypeId, marker::PhantomData, rc::Rc};
 use ahash::AHashMap;
 use assets::Assets;
 use ecs::EcsManager;
+use math::Transform;
 use world::{
     resources::{Handle, ResourceSet, Storage},
     World,
@@ -13,7 +14,7 @@ use crate::{
     commons::Comparison,
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    scene::Renderer,
+    scene::{Renderer, Camera},
     shader::{Shader, Uniforms},
 };
 
@@ -102,12 +103,15 @@ pub trait PropertyBlock<'world>: Sized {
     );
 }
 
+// Statistics that tell us what exactly happened when we rendered the material surfaces
+pub struct Stats {}
+
 // A material renderer will simply take the world and try to render all the surface that make up the render objects
 // This trait will be automatically implemented for BatchRenderer (since we can batch all the surface into one shader use pass)
 pub trait MaterialRenderer: 'static {
     // Render all the objects that use this material type
     // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
-    fn render(&self, world: &mut World);
+    fn render(&self, world: &mut World) -> Option<Stats>;
 }
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
@@ -133,17 +137,10 @@ impl<M: Material> BatchRenderer<M> {
 
     // This method will batch render a ton of surfaces using one material instance only
     // This method can be called within the implementation of render()
-    pub fn render_batched_surfaces<'a>(&self, world: &'a mut World)
+    pub fn render_batched_surfaces<'a>(&self, world: &'a mut World) -> Option<Stats>
     where
         M: PropertyBlock<'a>,
     {
-        // Get all the surfaces that use this material type:
-        //   Fetch their material instances, per surface
-        //   Set the required uniforms (transform, matrices)
-        //   If material instance changes:
-        //     Set the material uniforms (M::set)
-        //   Render the object
-
         // Fetch the rendering resources to batch render the surfaces
         let (ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             M::fetch(world);
@@ -154,7 +151,7 @@ impl<M: Material> BatchRenderer<M> {
         let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
 
         // How exactly we should rasterize the surfaces
-        const SETTINGS: RasterSettings = RasterSettings {
+        let settings: RasterSettings = RasterSettings {
             depth_test: Some(Comparison::Less),
             scissor_test: None,
             primitive: PrimitiveMode::Triangles {
@@ -167,6 +164,9 @@ impl<M: Material> BatchRenderer<M> {
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
 
+        // Get the main camera component (if there is none, just don't render)
+        let (_, camera) = ecs.try_view::<(&Transform, &Camera)>().unwrap().next()?;
+
         // Ignore invisible surfaces
         let query = query.filter(|(renderer, _)| renderer.is_visible());
 
@@ -178,12 +178,13 @@ impl<M: Material> BatchRenderer<M> {
 
             // Set the default surface uniforms
             uniforms.set_mat4x4("_world_matrix", renderer.matrix());
+            uniforms.set_mat4x4("_view_matrix", camera.view());
+            uniforms.set_mat4x4("_proj_matrix", camera.projection());
 
             // Check if we changed material instances
-            let new = Some(surface.material().clone());
-            if old != new {
+            if old != Some(surface.material().clone()) {
                 // We changed instances, so we must re-set the uniform property
-                old = new;
+                old = Some(surface.material().clone());
                 let instance = materials.get(old.as_ref().unwrap());
                 let _ = instance.instance();
 
@@ -193,7 +194,9 @@ impl<M: Material> BatchRenderer<M> {
 
             // Render the surface object
             let submesh = submeshes.get(surface.submesh());
-            rasterizer.draw(submesh, &SETTINGS);
+            rasterizer.draw(submesh, &settings);
         }
+
+        None
     }
 }

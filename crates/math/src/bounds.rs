@@ -1,1 +1,2 @@
-pub mod aabb;
+mod aabb;
+pub use aabb::*;

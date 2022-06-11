@@ -3,7 +3,7 @@ mod sphere;
 pub use cuboid::*;
 pub use sphere::*;
 
-use crate::aabb::AABB;
+use crate::AABB;
 
 // This trait will be implemented for well... shapes
 // Shapes are defined by their geometry

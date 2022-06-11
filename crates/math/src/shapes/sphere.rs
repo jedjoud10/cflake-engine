@@ -1,4 +1,4 @@
-use crate::aabb::AABB;
+use crate::AABB;
 
 // A simple sphere that is represented by it's center and radius
 #[derive(Clone)]

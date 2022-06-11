@@ -1,12 +1,18 @@
 use ecs::Component;
+use math::AABB;
 
 // This is the main render component that we will add to entities that contain the surface components
 // This render component simply tells us how exactly we should render the mesh, and if it should be culled or not
 #[derive(Component)]
 pub struct Renderer {
+    // Model matrix (translation, rotation, scale) that defines this renderer
     matrix: vek::Mat4<f32>,
+
+    // Will the renderer's surfaces be rasterized?
     visible: bool,
-    //bounds: math::AABB,
+    
+    // The current AABB bounds that this renderer will use for culling
+    bounds: AABB,
 }
 
 impl Renderer {
@@ -20,3 +26,11 @@ impl Renderer {
         self.visible
     }
 }
+
+/*
+impl From<math::Transform> for Renderer {
+    fn from(_: math::Transform) -> Self {
+        Self { matrix: transform.matrix(), visible: true, bounds: math::AABB::default() }
+    }
+}
+*/

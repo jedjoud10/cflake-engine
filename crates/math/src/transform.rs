@@ -18,17 +18,6 @@ impl From<vek::Transform<f32, f32, f32>> for Transform {
     }
 }
 
-// Default transform
-impl Default for Transform {
-    fn default() -> Self {
-        Self {
-            position: vek::Vec3::zero(),
-            rotation: vek::Quaternion::identity(),
-            scale: vek::Vec3::one(),
-        }
-    }
-}
-
 impl From<vek::Vec3<f32>> for Transform {
     fn from(vec: vek::Vec3<f32>) -> Self {
         Self {
@@ -43,6 +32,23 @@ impl From<(f32, f32, f32)> for Transform {
         Self {
             position: vec.into(),
             ..Default::default()
+        }
+    }
+}
+
+impl From<vek::Quaternion<f32>> for Transform {
+    fn from(quat: vek::Quaternion<f32>) -> Self {
+        Self { rotation: quat, ..Default::default() }
+    }
+}
+
+// Default transform
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            position: vek::Vec3::zero(),
+            rotation: vek::Quaternion::identity(),
+            scale: vek::Vec3::one(),
         }
     }
 }

@@ -2,18 +2,20 @@ use crate::{context::Graphics, mesh::SubMesh, shader::Shader};
 use ecs::EcsManager;
 use world::{resources::Storage, World};
 
-// Update system for the renderer
-pub fn update(world: &mut World) {
+// Main rendering system
+pub fn rendering(world: &mut World) {
     // Get the entities and graphics resource
     let (graphics, ecs) = world.get_mut::<(&mut Graphics, &mut EcsManager)>().unwrap();
     let Graphics(device, context) = graphics;
 
     // Update all the renderer components
     let renderers = context.extract_material_renderer();
-    for elem in renderers {
-        elem.render(world);
-    }
+    
+    // Render all the material surfaces
+    let stats = renderers.into_iter().map(|elem| elem.render(world)).collect::<Vec<_>>();
 }
+
+// Main camera system that will update the camera matrices
 
 /*
 // Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)

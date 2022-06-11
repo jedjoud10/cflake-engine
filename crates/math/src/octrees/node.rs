@@ -72,16 +72,18 @@ impl Node {
         }
     }
     // Get the AABB from this octee node
-    pub fn aabb(&self) -> crate::bounds::aabb::AABB {
-        crate::bounds::aabb::AABB {
+    pub fn aabb(&self) -> crate::AABB {
+        crate::AABB {
             min: self.position.as_(),
             max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0),
         }
     }
+
     // Get the center of this octree node
     pub fn center(&self) -> vek::Vec3<i64> {
         self.position + self.half_extent as i64
     }
+
     // Check if we can subdivide this node
     pub fn can_subdivide(
         &self,
@@ -92,6 +94,7 @@ impl Node {
         let test = (settings.function)(self, target);
         test && self.depth < (max_depth - 1)
     }
+
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide<'a>(&mut self) -> [Node; 8] {
         let half_extent = self.half_extent;
