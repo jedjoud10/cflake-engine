@@ -1,35 +1,59 @@
+use ahash::AHashMap;
+use glutin::event::ElementState;
+
 
 // The virtual keycodes that the window will receive (as a form of events)
-pub type Keys = glutin::event::VirtualKeyCode;
+pub type Key = glutin::event::VirtualKeyCode;
 
-// An input manager takes keyboard and mouse inputs from the Glutin window and maps them to specific key binds
-pub struct InputManager {
-    // Keyboard
-    // "forward_key_bind" -> Key::W
-
-    // Key::W -> State::Pressed
-
-    // Mouse position and mouse scroll values 
-    mouse_pos: vek::Vec2<f32>,
-    mouse_scroll: f32,
+// The current state of any key
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum State {
+    Pressed, Released, Held, None
 }
 
-impl Default for InputManager {
-    fn default() -> Self {
-        let multimap = MultiMap::<Keys, &'static str, RandomState>::with_capacity_and_hasher(
-            180,
-            RandomState::new(),
-        );
-        Self {
-            maps: Default::default(),
-            keys: multimap,
-            mouse_pos: Default::default(),
-            mouse_scroll: Default::default(),
+impl State {
+    // This checks if the state is equal to State::Pressed
+    fn pressed(&self) -> bool {
+        match self {
+            State::Pressed => true,
+            _ => false
+        }
+    }
+
+    // This checks if the state is equal to State::Released
+    fn released(&self) -> bool {
+        match self {
+            State::Released => true,
+            _ => false
+        }
+    }
+
+    // This checks if the State is equal to State::Held
+    fn held(&self) -> bool {
+        match self {
+            State::Held => todo!(),
+            _ => false    
         }
     }
 }
 
+// An input manager takes keyboard and mouse inputs from the Glutin window and maps them to specific key binds
+#[derive(Default)]
+pub struct InputManager {
+    // Keyboard
+    // "forward_key_bind" -> Key::W
+    binds: AHashMap<&'static str, Key>,
+
+    // Key::W -> State::Pressed
+    keys: AHashMap<Key, State>,
+
+    // Mouse position and mouse scroll values 
+    position: vek::Vec2<f32>,
+    scroll: f32,
+}
+
 impl InputManager {
+    /*
     // Called whenever the mouse position changes
     pub fn receive_mouse_position_event(&mut self, delta: vek::Vec2<f32>) {
         self.mouse_pos += delta;
@@ -38,6 +62,7 @@ impl InputManager {
     pub fn receive_mouse_scroll_event(&mut self, scroll_delta: f32) {
         self.mouse_scroll += scroll_delta;
     }
+    */
     // This should be ran at the end of every frame
     pub fn late_update(&mut self) {
         for (_map_name, (map_state, changed)) in self.maps.iter_mut() {
@@ -52,57 +77,33 @@ impl InputManager {
             }
         }
     }
-    // When we receive a key event from winit
-    pub fn receive_key_event(&mut self, key: Keys, state: State) -> Option<()> {
-        let maps_to_update = self.keys.get_vec(&key)?;
-        // Update each map now
-        for map_name in maps_to_update {
-            let (map, changed) = self.maps.get_mut(map_name)?;
-            *changed = true;
-            match state {
-                State::Pressed => {
-                    // We pressed the key
-                    match map {
-                        MapState::Button(button_state) => match &button_state {
-                            ButtonState::Released | ButtonState::Nothing => {
-                                *button_state = ButtonState::Pressed
-                            }
-                            _ => {}
-                        },
-                        MapState::Toggle(toggle_state) => toggle_state.toggle(),
-                    }
-                }
-                State::Released => {
-                    // We released the key
-                    if let MapState::Button(button_state) = map {
-                        *button_state = ButtonState::Released
-                    }
-                }
-            }
-        }
-        Some(())
-    }
-    // Binds a key to a specific mapping, making it a button
-    pub fn bind(&mut self, key: Keys, name: &'static str) {
-        // Insert the new map
-        self.maps.insert(
-            name,
-            (MapState::Button(ButtonState::default()), false),
-        );
 
-        // And the new key -> map link
-        self.keys.insert(key, name);
+    // This is called whene we receive a new key event from Glutin
+    pub fn receive(&mut self, key: Key, state: ElementState) {
+        // Update the state for this specific key, and add it if it does not exist
+        *self.keys.entry(key).or_insert(State::Pressed) = match state {
+            ElementState::Pressed => State::Pressed,
+            ElementState::Released => State::Released,
+        };
     }
-    pub fn bind_toggle(&mut self, key: Keys, name: &'static str) {
-        // Insert the new map
-        self.maps.insert(
-            name,
-            (MapState::Toggle(ToggleState::default()), false),
-        );
 
-        // And the new key -> map link
-        self.keys.insert(key, name);
+    // Create a new key binding using a name and a unique key
+    pub fn bind(&mut self, name: &'static str, key: Key) {
+        self.binds.insert(name, key);
     }
+
+    // Get the raw state of a key bind (map)
+    pub fn state(&self, name: &'static str) -> Option<State> {
+        self.binds.get(name).map(|key| self.keys.get(key).cloned()).flatten()
+    }
+
+    // Check if a key was pressed in the current frame
+    pub fn pressed(&self, name: &'static str) -> bool {
+        self.state(name).map(State::pressed).unwrap_or_default()        
+    }
+
+    // Check if a key is being held (a held key is just a key that has been pressed for more than 2 frames)
+    pub fn 
 }
 
 // The get-map events
