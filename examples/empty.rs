@@ -2,9 +2,7 @@ use cflake_engine::prelude::*;
 
 // An empty game window
 fn main() {
-    App::new()
-        .insert_startup(init)
-        .execute();
+    App::new().insert_startup(init).execute();
 }
 
 // Initialize the empty world

@@ -1,6 +1,8 @@
 use glutin::{
-    dpi::LogicalSize, event_loop::EventLoop, window::{WindowBuilder, Fullscreen}, ContextBuilder, GlProfile,
-    GlRequest,
+    dpi::LogicalSize,
+    event_loop::EventLoop,
+    window::{Fullscreen, WindowBuilder},
+    ContextBuilder, GlProfile, GlRequest,
 };
 use world::resources::Resource;
 
@@ -11,7 +13,13 @@ pub struct Graphics(pub super::Device, pub super::Context);
 
 impl Graphics {
     // Create some new graphics given a glutin event loop
-    pub fn new<T>(el: EventLoop<T>, title: String, size: vek::Extent2<u16>, fullscreen: bool, vsync: bool) -> (EventLoop<T>, Self) {
+    pub fn new<T>(
+        el: EventLoop<T>,
+        title: String,
+        size: vek::Extent2<u16>,
+        fullscreen: bool,
+        vsync: bool,
+    ) -> (EventLoop<T>, Self) {
         // Build a valid window
         let wb = WindowBuilder::new()
             .with_resizable(true)

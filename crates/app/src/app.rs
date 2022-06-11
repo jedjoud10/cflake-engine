@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use glutin::{event_loop::{EventLoop, ControlFlow}, event::{Event, WindowEvent, DeviceEvent}};
+use glutin::{
+    event::{DeviceEvent, Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+};
 use rendering::context::Graphics;
 use world::World;
 
@@ -109,7 +112,8 @@ impl App {
         let mut world = World::default();
 
         // Create the graphics pipeline
-        let (el, graphics) = Graphics::new(el, self.title, self.screensize, self.fullscreen, self.vsync);
+        let (el, graphics) =
+            Graphics::new(el, self.title, self.screensize, self.fullscreen, self.vsync);
 
         // Insert the default main resources
         world.insert(graphics);
@@ -120,7 +124,9 @@ impl App {
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) -> Vec<fn(&mut World)> {
             vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-            vec.into_iter().map(|(system, _)| system.clone()).collect::<Vec<_>>()
+            vec.into_iter()
+                .map(|(system, _)| system.clone())
+                .collect::<Vec<_>>()
         }
 
         // Don't care + L + ratio
@@ -133,7 +139,6 @@ impl App {
         }
 
         // Run le game engine
-        handler::run(el, updates, world);        
+        handler::run(el, updates, world);
     }
 }
-
