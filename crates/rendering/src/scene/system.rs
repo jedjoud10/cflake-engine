@@ -1,18 +1,42 @@
-use crate::{context::Graphics, mesh::SubMesh, shader::Shader};
+use crate::{context::Graphics, mesh::SubMesh, shader::Shader, material::{AlbedoMap, NormalMap, MaskMap}, prelude::{Texture2D, RGBA, Ranged, Texture, TextureMode, Sampling, Filter, Wrap}};
 use ecs::EcsManager;
 use world::{resources::Storage, World};
+use super::SceneSettings;
 
-// Main rendering system
+// Initialization system that will setup the default textures and objects
+pub fn init(world: &mut World) {
+    // Get the storages and graphical context
+    let (graphics, rgba, normal_maps, mask_maps) = world.get_mut::<(&mut Graphics, &mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
+    let Graphics(device, ctx) = graphics;
+
+    // RGBA 8 bits per channel texture
+    type Tex = Texture2D<RGBA<Ranged<u8>>>;
+    let sampling = Sampling::new(Filter::Nearest, Wrap::Repeat);
+
+    // Create the default black texture
+    let black = Texture2D::new(ctx, TextureMode::Dynamic, vek::Extent2::one(), sampling, false, &[RGBA])
+
+    // Create the default white texture
+}
+
+
+// Update system that will execute each frame to try to render the scene
 pub fn rendering(world: &mut World) {
-    // Get the entities and graphics resource
-    let (graphics, ecs) = world.get_mut::<(&mut Graphics, &mut EcsManager)>().unwrap();
+    // Get the graphics context, ecs, and the main scene renderer
+    let (graphics, ecs, settings) = world.get_mut::<(&mut Graphics, &mut EcsManager, &SceneSettings)>().unwrap();
     let Graphics(device, context) = graphics;
+
+    // Can we render the scene?
+    if !settings.can_render() {
+        return;
+    }
+    let settings = settings.clone();
 
     // Update all the renderer components
     let renderers = context.extract_material_renderer();
     
     // Render all the material surfaces
-    let stats = renderers.into_iter().map(|elem| elem.render(world)).collect::<Vec<_>>();
+    let stats = renderers.into_iter().map(|elem| elem.render(world, &settings)).collect::<Vec<_>>();
 }
 
 // Main camera system that will update the camera matrices
