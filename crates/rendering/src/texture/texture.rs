@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TexelLayout, TextureAllocator};
+use super::{Bindless, Sampler, Texel, TextureAllocator, TexelAdapter};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -193,7 +193,7 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     // Output texel layout
-    type Layout: TexelLayout;
+    type Layout: Texel + TexelAdapter;
 
     // Create a new texutre that contains some data
     fn new(

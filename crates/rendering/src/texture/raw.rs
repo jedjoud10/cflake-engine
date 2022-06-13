@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{Extent, Region, TexelLayout, Texture};
+use super::{Extent, Region, Texel, Texture};
 
 // A raw texture allocator that will simply call the unique OpenGL functions for each texture type
 pub trait TextureAllocator {

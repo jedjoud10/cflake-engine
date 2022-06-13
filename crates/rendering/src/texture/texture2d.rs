@@ -1,4 +1,4 @@
-use super::{Bindless, Region, TexelLayout, Texture, TextureAllocator, TextureMode};
+use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, TexelAdapter};
 use crate::object::{ToGlName, ToGlTarget};
 use std::{
     marker::PhantomData,
@@ -8,7 +8,7 @@ use std::{
 };
 
 // A 2D texture that will be used for rendering objects
-pub struct Texture2D<T: TexelLayout> {
+pub struct Texture2D<T: Texel> {
     // Internal OpenGL shit
     name: u32,
 
@@ -22,19 +22,19 @@ pub struct Texture2D<T: TexelLayout> {
     _phantom: PhantomData<*const T>,
 }
 
-impl<T: TexelLayout> ToGlName for Texture2D<T> {
+impl<T: Texel> ToGlName for Texture2D<T> {
     fn name(&self) -> u32 {
         self.name
     }
 }
 
-impl<T: TexelLayout> ToGlTarget for Texture2D<T> {
+impl<T: Texel> ToGlTarget for Texture2D<T> {
     fn target() -> u32 {
         gl::TEXTURE_2D
     }
 }
 
-impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
+impl<T: Texel> TextureAllocator for Texture2D<T> {
     type TexelRegion = (vek::Vec2<u16>, vek::Extent2<u16>);
 
     unsafe fn alloc_immutable_storage(
@@ -101,7 +101,7 @@ impl<T: TexelLayout> TextureAllocator for Texture2D<T> {
     }
 }
 
-impl<T: TexelLayout> Texture for Texture2D<T> {
+impl<T: Texel + TexelAdapter> Texture for Texture2D<T> {
     type Layout = T;
 
     fn dimensions(&self) -> <Self::TexelRegion as super::Region>::E {

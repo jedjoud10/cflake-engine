@@ -4,7 +4,7 @@ use super::Program;
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
-    texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
+    texture::{Bindless, Sampler, Texel, Texture, Texture2D, R},
 };
 
 // IMplement the scalar trait for single, scalar uniform types

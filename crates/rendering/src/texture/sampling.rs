@@ -12,7 +12,7 @@ use crate::{
     object::{ToGlName, ToGlTarget},
 };
 
-use super::{Bindless, TexelLayout, Texture, TextureMode};
+use super::{Bindless, Texel, Texture, TextureMode};
 
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[repr(u32)]
