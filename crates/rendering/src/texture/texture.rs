@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, Texel, TextureAllocator, TexelAdapter};
+use super::{Bindless, Sampler, TextureAllocator, Texel};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -57,13 +57,13 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
         &mut self,
         ctx: &mut Context,
         region: T::TexelRegion,
-        data: &[T::Layout],
+        data: &[<T::T as Texel>::Storage],
     ) {
         T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
     }
 
     // Update a sub-region of the mip-layer using a data slice
-    fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[T::Layout]) {
+    fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[<T::T as Texel>::Storage]) {
         // The length of the buffer should be equal to the surface area of the region
         assert!(
             (data.len() as u32) == region.area(),
@@ -192,8 +192,8 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
-    // Output texel layout
-    type Layout: Texel + TexelAdapter;
+    // Texel layout that we will use internally
+    type T: Texel;
 
     // Create a new texutre that contains some data
     fn new(
@@ -202,14 +202,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
         dimensions: <Self::TexelRegion as Region>::E,
         sampling: super::Sampling,
         mipmaps: bool,
-        data: &[Self::Layout],
+        data: &[<Self::T as Texel>::Storage],
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
 
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
-            data.len() as u64 == (dimensions.area() as u64) * (Self::Layout::bytes() as u64)
+            data.len() as u64 == (dimensions.area() as u64) * (Self::T::bytes() as u64)
         } else {
             true
         };
@@ -287,7 +287,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
 
     // Calculate the uncompressed size of the texture
     fn byte_count(&self) -> u64 {
-        u64::from(Self::Layout::bytes()) * u64::from(self.texel_count())
+        u64::from(Self::T::bytes()) * u64::from(self.texel_count())
     }
 
     // Force this texture to be stored within system memory (if it is a bindless texture)

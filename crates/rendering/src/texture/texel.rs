@@ -1,6 +1,8 @@
+use crate::object::Shared;
 use super::channels::{R, RG, RGB, RGBA};
 use super::{Normalized, Ranged};
 use std::mem::size_of;
+use vek::{Vec2, Vec3, Vec4};
 
 // This trait defines the layout for a single texel that will be stored within textures1
 pub trait Texel: 'static {
@@ -19,6 +21,9 @@ pub trait Texel: 'static {
     // The number of bytes per channel
     const BYTES_PER_CHANNEL: u32;
 
+    // Raw texel type that we store internally and that the user will interact with
+    type Storage: Shared; 
+
     // Count the number of bytes that make each texel
     fn bytes() -> u32 {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
@@ -28,7 +33,7 @@ pub trait Texel: 'static {
 
 // Macro that will automatically implement the texel layout trait
 macro_rules! impl_texel_layout {
-    ($t:ident, $count:expr, $f: ident) => {
+    ($t:ident, $count:expr, $f: ident, $vec: ident) => {
         paste::paste! {
             impl Texel for $t<u32> {
                 const FORMAT: u32 = gl::[<$f>];
@@ -36,6 +41,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_INT;
                 const BYTES_PER_CHANNEL: u32 = u32::BITS * 8;
+                type Storage = $vec<u32>;
             }
 
             impl Texel for $t<i32> {
@@ -44,6 +50,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::INT;
                 const BYTES_PER_CHANNEL: u32 = i32::BITS * 8;
+                type Storage = $vec<i32>;
             }
 
             impl Texel for $t<u16> {
@@ -52,7 +59,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS * 8;
-                
+                type Storage = $vec<u16>;
             }
 
             impl Texel for $t<i16> {
@@ -61,7 +68,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::SHORT;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS * 8;
-                
+                type Storage = $vec<i16>;                
             }
 
             impl Texel for $t<u8> {
@@ -70,7 +77,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS * 8;
-                
+                type Storage = $vec<u8>;
             }
 
             impl Texel for $t<i8> {
@@ -79,7 +86,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::BYTE;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS * 8;
-                
+                type Storage = $vec<i8>;
             }
 
             impl Texel for $t<f32> {
@@ -88,7 +95,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::FLOAT;
                 const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
-                
+                type Storage = $vec<f32>;
             }
 
             impl Texel for $t<Ranged<u16>> {
@@ -97,7 +104,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS * 8;
-                
+                type Storage = $vec<u16>;
             }
 
             impl Texel for $t<Normalized<i16>> {
@@ -106,7 +113,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::SHORT;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS * 8;
-                
+                type Storage = $vec<i16>;
             }
 
             impl Texel for $t<Ranged<u8>> {
@@ -115,7 +122,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS * 8;
-                
+                type Storage = $vec<u8>;
             }
 
             impl Texel for $t<Normalized<i8>> {
@@ -124,14 +131,17 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::BYTE;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS * 8;
-                
+                type Storage = $vec<i8>;
             }
         }
     };
 }
 
+// Need this for the macro to work
+type Scalar<T> = T;
+
 // Implement main texel layout trait
-impl_texel_layout!(R, 1, RED);
-impl_texel_layout!(RG, 2, RG);
-impl_texel_layout!(RGB, 3, RGB);
-impl_texel_layout!(RGBA, 4, RGBA);
+impl_texel_layout!(R, 1, RED, Scalar);
+impl_texel_layout!(RG, 2, RG, Vec2);
+impl_texel_layout!(RGB, 3, RGB, Vec3);
+impl_texel_layout!(RGBA, 4, RGBA, Vec4);

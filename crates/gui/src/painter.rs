@@ -17,30 +17,26 @@ use std::mem::{size_of, ManuallyDrop};
 use std::ptr::null;
 use vek::Clamp;
 
-// The texel that will be stored within the main eGUI texture
+// Texel type that will be used to describe the inner raw texel that the texture will use
 type Texel = RGBA<Ranged<u8>>;
 
 // Convert some image data into the RGBA texels
-fn image_data_to_texels(image: &ImageData) -> Vec<Texel> {
+fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
     match image {
         // I don't like this but I have to cope
-        ImageData::Color(color) => unsafe {
+        ImageData::Color(color) => {
             color
                 .pixels
                 .iter()
-                .map(|pixel| {
-                    let vec = vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a());
-                    let ranged = vec.map(Ranged);
-                    RGBA(ranged)
-                })
-                .collect::<Vec<Texel>>()
+                .map(|pixel| vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a()))
+                .collect::<Vec<vek::Vec4<u8>>>()
         },
 
         // Iterate through each alpha pixel and create a full color from it
         ImageData::Alpha(alpha) => {
-            let mut texels = Vec::<Texel>::with_capacity(alpha.pixels.len() * 4);
+            let mut texels = Vec::<vek::Vec4<u8>>::with_capacity(alpha.pixels.len() * 4);
             for alpha in alpha.pixels.iter() {
-                texels.push(RGBA(vek::Vec4::broadcast(Ranged(*alpha))));
+                texels.push(vek::Vec4::broadcast(*alpha));
             }
             texels
         }
@@ -133,7 +129,7 @@ impl Painter {
         meshes: Vec<ClippedMesh>,
         deltas: TexturesDelta,
     ) {
-        // Update the main texture
+        // Update the main  fonttexture
         if let Some((tid, delta)) = deltas
             .set
             .iter()
@@ -143,6 +139,8 @@ impl Painter {
             self.texture.get_or_insert_with(|| {
                 let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
                 let texels = image_data_to_texels(&delta.image);
+                
+                // Create the main font texture since it is missing
                 Texture2D::new(
                     ctx,
                     TextureMode::Resizable,

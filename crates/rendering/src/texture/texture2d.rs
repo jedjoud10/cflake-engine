@@ -1,4 +1,4 @@
-use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, TexelAdapter};
+use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode};
 use crate::object::{ToGlName, ToGlTarget};
 use std::{
     marker::PhantomData,
@@ -101,8 +101,8 @@ impl<T: Texel> TextureAllocator for Texture2D<T> {
     }
 }
 
-impl<T: Texel + TexelAdapter> Texture for Texture2D<T> {
-    type Layout = T;
+impl<T: Texel> Texture for Texture2D<T> {
+    type T = T;
 
     fn dimensions(&self) -> <Self::TexelRegion as super::Region>::E {
         self.dimensions
