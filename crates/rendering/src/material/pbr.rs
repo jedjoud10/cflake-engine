@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use assets::Assets;
 use ecs::EcsManager;
 use world::resources::{Handle, Storage};
@@ -7,8 +5,8 @@ use world::resources::{Handle, Storage};
 use crate::{
     context::{Context, Graphics},
     mesh::SubMesh,
-    shader::{FragmentStage, Matrix, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Sampler, Texture, Texture2D, R, RG, RGB, RGBA},
+    shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
 
 use super::{

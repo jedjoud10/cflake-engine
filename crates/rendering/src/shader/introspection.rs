@@ -1,12 +1,6 @@
-use std::{
-    ffi::CString,
-    num::NonZeroU32,
-    ptr::{null, null_mut},
-};
+use std::ptr::null_mut;
 
-use crate::{context::Context, object::ToGlName};
-
-use super::Program;
+use crate::object::ToGlName;
 
 // The type of block that we have stored
 pub enum Index {

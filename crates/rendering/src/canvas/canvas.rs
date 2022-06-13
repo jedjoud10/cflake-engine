@@ -14,7 +14,7 @@ pub struct Canvas {
 }
 impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
-    pub unsafe fn from_raw_parts(ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
+    pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
         Self {
             name,
             size,
@@ -23,7 +23,7 @@ impl Canvas {
     }
 
     // Create a new canvas with a specific size (size must be valid)
-    pub fn new(ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         // Validate size first
         assert_ne!(
             size,

@@ -3,11 +3,7 @@ use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     canvas::rasterizer::ToRasterBuffers,
     context::Context,
-    object::ToGlName,
 };
-use assets::Asset;
-use obj::TexturedVertex;
-use std::{mem::ManuallyDrop, num::NonZeroU32, ptr::null};
 
 // Specified what attributes are enabled in a vertex set
 bitflags::bitflags! {

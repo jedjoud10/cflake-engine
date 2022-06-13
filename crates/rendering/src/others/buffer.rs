@@ -1,13 +1,6 @@
-use crate::object::{self, ToGlName, ToGlTarget};
+use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
-use std::{
-    ffi::c_void,
-    marker::PhantomData,
-    mem::{size_of, ManuallyDrop},
-    num::NonZeroU32,
-    ops::Range,
-    ptr::null,
-};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -60,7 +53,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
     unsafe fn from_raw_parts(
-        ctx: &mut Context,
+        _ctx: &mut Context,
         mode: BufferMode,
         capacity: usize,
         length: usize,
@@ -186,7 +179,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Copy some data from another buffer into our buffer
-    pub fn copy_from<const OTHER: u32>(&mut self, other: &Buffer<T, OTHER>) {
+    pub fn copy_from<const OTHER: u32>(&mut self, _other: &Buffer<T, OTHER>) {
         todo!()
     }
 

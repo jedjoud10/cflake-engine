@@ -57,7 +57,7 @@ impl VertexAssembly {
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check
-        let valid = arr.into_iter().filter_map(|a| a).all(|len| len == first);
+        let valid = arr.into_iter().flatten().all(|len| len == first);
 
         // Trollinnggggg
         valid.then(|| first)

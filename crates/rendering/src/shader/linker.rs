@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, ptr::null_mut};
+use std::ptr::null_mut;
 
 use super::{
     introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage,
@@ -55,7 +55,7 @@ unsafe fn compile(names: &[u32]) -> Program {
         .collect();
 
     Program {
-        name: u32::from(program),
+        name: program,
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),

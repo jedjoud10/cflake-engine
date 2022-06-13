@@ -1,6 +1,5 @@
 use std::{
     cell::Cell,
-    num::NonZeroU32,
     rc::Rc,
     time::{Duration, Instant},
 };
@@ -58,24 +57,23 @@ impl Bindless {
 
 // Create a new bindless handle for a texture
 pub(super) unsafe fn create_bindless(
-    ctx: &mut Context,
+    _ctx: &mut Context,
     name: u32,
     timeout: u64,
     mode: TextureMode,
 ) -> Option<Rc<Bindless>> {
     (mode == TextureMode::Dynamic).then(|| {
         // Create the RC first
-        let rc = Rc::new(Bindless {
-            handle: gl::GetTextureHandleARB(name),
-            resident: Cell::new(false),
-            timeout: Duration::from_millis(timeout),
-            last_shader_usage: Cell::new(Instant::now()),
-        });
 
         // Then clone it to be able to store it within the context
         //ctx.bindless.push(rc.clone());
 
         // Boink
-        rc
+        Rc::new(Bindless {
+            handle: gl::GetTextureHandleARB(name),
+            resident: Cell::new(false),
+            timeout: Duration::from_millis(timeout),
+            last_shader_usage: Cell::new(Instant::now()),
+        })
     })
 }

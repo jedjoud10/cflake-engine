@@ -1,18 +1,17 @@
-use std::{any::TypeId, marker::PhantomData, rc::Rc};
+use std::marker::PhantomData;
 
-use ahash::AHashMap;
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
 use world::{
-    resources::{Handle, ResourceSet, Storage},
+    resources::{Handle, Storage},
     World,
 };
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
     commons::Comparison,
-    context::{Context, Device, Graphics},
+    context::{Context, Graphics},
     mesh::{SubMesh, Surface},
     scene::{Camera, Model, SceneRenderer},
     shader::{Shader, Uniforms},
@@ -140,7 +139,7 @@ impl<M: Material> BatchRenderer<M> {
     pub fn render_batched_surfaces<'a>(
         &self,
         world: &'a mut World,
-        settings: &SceneRenderer,
+        _settings: &SceneRenderer,
     ) -> Option<Stats>
     where
         M: PropertyBlock<'a>,

@@ -1,4 +1,4 @@
-use super::{FragmentStage, Program, VertexStage};
+use super::Program;
 
 // A shader that will render our objects onto the screen
 // This will make use of two shader stages, the vertex stage, and fragment stage

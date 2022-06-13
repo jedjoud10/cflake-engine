@@ -1,8 +1,8 @@
 use super::SubMesh;
-use crate::{context::Graphics, material::Material, shader::Shader};
-use ecs::{Component, EcsManager};
-use math::Transform;
-use world::resources::{Handle, Storage};
+use crate::material::Material;
+use ecs::Component;
+
+use world::resources::Handle;
 
 // A surface is a combination of a sub mesh and a specific material handle
 // A renderable entity will have multiple surface sets

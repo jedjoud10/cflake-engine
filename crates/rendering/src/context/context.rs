@@ -1,22 +1,9 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{
-    any::TypeId,
-    cell::{Cell, RefCell},
-    collections::HashMap,
-    hash::BuildHasherDefault,
-    marker::PhantomData,
-    num::{NonZeroU32, NonZeroU64},
-    rc::Rc,
-    time::{Duration, Instant},
-};
+use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc};
 
-use crate::{
-    canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
-    material::{BatchRenderer, Material, MaterialRenderer},
-    texture::Bindless,
-};
+use crate::material::{Material, MaterialRenderer};
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
@@ -84,7 +71,7 @@ impl Context {
     pub(crate) fn extract_material_renderer(&self) -> Vec<Rc<dyn MaterialRenderer>> {
         self.renderers
             .iter()
-            .map(|(key, value)| value.clone())
+            .map(|(_key, value)| value.clone())
             .collect::<_>()
     }
 

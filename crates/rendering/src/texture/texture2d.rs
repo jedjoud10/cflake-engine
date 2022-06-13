@@ -1,11 +1,6 @@
 use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode};
 use crate::object::{ToGlName, ToGlTarget};
-use std::{
-    marker::PhantomData,
-    num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull},
-    rc::Rc,
-};
+use std::{marker::PhantomData, num::NonZeroU8, rc::Rc};
 
 // A 2D texture that contains multiple pixels that have their own channels
 // Each pixel can be either a single value, RG, RGB, or even RGBA
@@ -138,7 +133,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         bindless: Option<Rc<Bindless>>,
     ) -> Self {
         Self {
-            name: u32::from(name),
+            name,
             dimensions,
             mode,
             levels,

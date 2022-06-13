@@ -1,18 +1,4 @@
-use std::{
-    cell::{Cell, RefCell},
-    collections::HashSet,
-    marker::PhantomData,
-    num::NonZeroU32,
-    rc::Rc,
-    time::{Duration, Instant},
-};
-
-use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
-};
-
-use super::{Bindless, Texel, Texture, TextureMode};
+use super::{Texture, TextureMode};
 
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[repr(u32)]
@@ -52,7 +38,7 @@ impl Sampling {
 }
 
 // Apply some sampling parameters to a specific texture
-pub(super) unsafe fn apply(name: u32, target: u32, mode: TextureMode, sampling: Sampling) {
+pub(super) unsafe fn apply(name: u32, _target: u32, _mode: TextureMode, sampling: Sampling) {
     // We do a bit of enum fetching (this is safe) (trust)
     let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
 

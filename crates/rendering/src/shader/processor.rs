@@ -1,4 +1,4 @@
-use super::{FragmentStage, Processed, Stage, VertexStage};
+use super::{Processed, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{Asset, Assets};
@@ -13,7 +13,7 @@ impl Asset<'static> for RawText {
         &[]
     }
 
-    fn deserialize(bytes: assets::CachedSlice, args: Self::Args) -> Self {
+    fn deserialize(bytes: assets::CachedSlice, _args: Self::Args) -> Self {
         Self(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
     }
 }

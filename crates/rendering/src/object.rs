@@ -1,5 +1,3 @@
-use crate::context::Context;
-use std::{num::NonZeroU32, ops::Deref, rc::Rc};
 // This trait will be implemented on objects that contain a raw OpenGL name
 pub trait ToGlName {
     fn name(&self) -> u32;

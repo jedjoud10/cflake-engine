@@ -6,7 +6,6 @@ use assets::Asset;
 use std::{
     ffi::CString,
     marker::PhantomData,
-    num::NonZeroU32,
     ptr::{null, null_mut},
 };
 
@@ -87,7 +86,7 @@ impl<T: Stage> Drop for Compiled<T> {
 }
 
 // Compile a single shader stage, and handle errors
-pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
+pub(super) unsafe fn compile<U: Stage>(_ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
     // Create the stage source
     let stage = stage.0;
     let shader = gl::CreateShader(U::target());

@@ -1,10 +1,9 @@
-use std::{cell::Cell, num::NonZeroU32, time::Instant};
+use std::time::Instant;
 
 use super::Program;
 use crate::{
-    context::Context,
     object::{ToGlName, ToGlTarget},
-    texture::{Bindless, Sampler, Texel, Texture, Texture2D, R},
+    texture::{Bindless, Sampler, Texture},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -210,7 +209,7 @@ pub struct Uniforms<'uniforms>(pub(super) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Get the uniform location of a uniform using it's name
-    fn location(&self, name: &'static str) -> Option<i32> {
+    fn location(&self, _name: &'static str) -> Option<i32> {
         None
     }
 

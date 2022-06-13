@@ -1,23 +1,17 @@
-use std::any::Any;
-
 use super::SceneRenderer;
 use crate::{
     context::{Context, Graphics},
-    material::{AlbedoMap, MaskMap, NormalMap},
-    mesh::SubMesh,
-    object::ToGlName,
     prelude::{
         Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA,
     },
-    shader::Shader,
 };
-use ecs::EcsManager;
-use world::{resources::Storage, World};
+
+use world::World;
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
     // Get the storages and graphical context
-    let Graphics(device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+    let Graphics(_device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
 
     // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -59,10 +53,8 @@ pub fn init(world: &mut World) {
 // Update system that will execute each frame to try to render the scene
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, renderer) = world
-        .get_mut::<(&mut Graphics, &SceneRenderer)>()
-        .unwrap();
-    let Graphics(device, context) = graphics;
+    let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
+    let Graphics(_device, context) = graphics;
 
     // Can we render the scene? (cause if we can't then we have a big problemo)
     if !renderer.can_render() {
@@ -74,7 +66,7 @@ pub fn rendering(world: &mut World) {
     let renderers = context.extract_material_renderer();
 
     // Render all the material surfaces
-    let stats = renderers
+    let _stats = renderers
         .into_iter()
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();

@@ -4,14 +4,13 @@ use crate::{
     canvas::Canvas,
     commons::Comparison,
     context::Context,
-    mesh::{attributes::AttributeSet, SubMesh},
+    mesh::attributes::AttributeSet,
     object::ToGlName,
     shader::Shader,
 };
 use std::{
     mem::{transmute, transmute_copy},
     ptr::null,
-    rc::Rc,
 };
 
 // How rasterized triangles should be culled
@@ -76,7 +75,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
 
     // Get an immutable reference to the shader
     pub fn shader(&self) -> &Shader {
-        &self.shader
+        self.shader
     }
 
     // Prepare the rasterizer by setting the global raster settings

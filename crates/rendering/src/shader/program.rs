@@ -1,11 +1,8 @@
-use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
-};
+use crate::object::{ToGlName, ToGlTarget};
 use ahash::AHashMap;
-use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
+use std::marker::PhantomData;
 
-use super::{Introspection, Uniforms};
+use super::Uniforms;
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {

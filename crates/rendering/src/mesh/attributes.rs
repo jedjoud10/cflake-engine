@@ -271,7 +271,7 @@ struct AuxBufGen<'a> {
 fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
     aux.builder.get_attribute_vec::<T>().map(|vec| unsafe {
         // Create the array buffer
-        let buffer = ArrayBuffer::new(aux.ctx, aux.mode, &vec).unwrap();
+        let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
 
         // Bind the buffer to bind the attributes
         gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
@@ -354,7 +354,7 @@ impl AttributeSet {
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check
-        let valid = arr.into_iter().filter_map(|a| a).all(|len| len == first);
+        let valid = arr.into_iter().flatten().all(|len| len == first);
 
         // Trollinnggggg
         valid.then(|| first)

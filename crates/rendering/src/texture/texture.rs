@@ -3,13 +3,7 @@ use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{
-    ffi::c_void,
-    marker::PhantomData,
-    num::{NonZeroU32, NonZeroU8},
-    ptr::{null, NonNull},
-    rc::Rc,
-};
+use std::{num::NonZeroU8, ptr::null, rc::Rc};
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -55,7 +49,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     // Update a sub-region of the mip-layer, but without checking for safety
     unsafe fn update_unchecked(
         &mut self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         region: T::TexelRegion,
         data: &[<T::T as Texel>::Storage],
     ) {
