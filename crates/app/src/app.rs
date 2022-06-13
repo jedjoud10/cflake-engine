@@ -107,6 +107,12 @@ impl App {
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
+        // Insert the default startup systems
+        self = self.insert_update_with(rendering::scene::init, i32::MAX - 10);
+
+        // Insert the default update systems
+        self = self.insert_update_with(rendering::scene::rendering, i32::MAX - 10);
+        
         // Prepare the world and the even loop
         let el = EventLoop::new();
         let mut world = World::default();

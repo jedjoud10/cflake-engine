@@ -1,6 +1,8 @@
-mod renderer;
+mod model;
 mod system;
 mod camera;
-pub use camera::*;
+mod renderer;
 pub use renderer::*;
+pub use camera::*;
+pub use model::*;
 pub use system::*;

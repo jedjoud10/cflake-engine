@@ -94,7 +94,7 @@ impl EcsManager {
     }
 
     // Get a single entity entry, if possible
-    pub fn entry(&mut self, entity: Entity) -> Option<Entry> {
+    pub fn try_entry(&mut self, entity: Entity) -> Option<Entry> {
         Entry::new(self, entity)
     }
 

@@ -1,36 +1,70 @@
-use ecs::Component;
-use math::AABB;
+use ecs::Entity;
+use world::resources::{Resource, Handle};
 
-// This is the main render component that we will add to entities that contain the surface components
-// This render component simply tells us how exactly we should render the mesh, and if it should be culled or not
-#[derive(Component)]
-pub struct Renderer {
-    // Model matrix (translation, rotation, scale) that defines this renderer
-    matrix: vek::Mat4<f32>,
+use crate::{prelude::{Texture2D, RGBA, Ranged}, material::{AlbedoMap, NormalMap, MaskMap}};
 
-    // Will the renderer's surfaces be rasterized?
-    visible: bool,
+// The global scene renderer that specifies how we should render the surfaces
+// This resource will contain the handles to the default PBR textures
+// This resource will contain the entity ID of the main camera and the main directional light
+#[derive(Resource, Clone)]
+#[Locked]
+pub struct SceneSettings {
+    // Main camera entity that we will use for rendering
+    camera: Option<Entity>,
+
+    // Main directional light (sun)
+    light: Option<Entity>,
+
+    // Default black and white textures
+    /*
+    black: Handle<Texture2D<RGBA<Ranged<u8>>>,
+    white: Handle<Texture2D<RGBA<Ranged<u8>>>,
+    */
     
-    // The current AABB bounds that this renderer will use for culling
-    bounds: AABB,
+    // Default albedo, normal, and mask maps for PBR rendering
+    albedo_map: Handle<AlbedoMap>,
+    normal_map: Handle<NormalMap>,
+    mask_map: Handle<MaskMap>,
 }
 
-impl Renderer {
-    // Get the current mesh matrix that we will use for rendering
-    pub fn matrix(&self) -> &vek::Mat4<f32> {
-        &self.matrix
+impl SceneSettings {
+    // Are we allowed to render the scene (check if the SceneRenderer is valid)
+    pub fn can_render(&self) -> bool {
+        self.camera.is_some() && self.light.is_some()
     }
 
-    // Get the current visibility state of the renderer
-    pub fn is_visible(&self) -> bool {
-        self.visible
+    // Get the main camera entity ID
+    pub fn main_camera(&self) -> Option<Entity> {
+        self.camera
     }
-}
 
-/*
-impl From<math::Transform> for Renderer {
-    fn from(_: math::Transform) -> Self {
-        Self { matrix: transform.matrix(), visible: true, bounds: math::AABB::default() }
+    // Set the main camera entity ID
+    pub fn set_main_camera(&mut self, entity: Entity) {
+        self.camera = Some(entity);
     }
+
+    // Get the main light entity ID
+    pub fn main_directional_light(&self) -> Option<Entity> {
+        self.light
+    }
+
+    // Set the main directional light entity ID
+    pub fn set_main_directional_light(&mut self, entity: Entity) {
+        self.light = Some(entity);
+    }
+
+    // Get the handle for the default albedo map
+    pub fn albedo_map(&self) -> Handle<AlbedoMap> {
+        self.albedo_map.clone()
+    }
+    
+    // Get the handle for the default normal map
+    pub fn normal_map(&self) -> Handle<NormalMap> {
+        self.normal_map.clone()
+    }
+    
+    // Get the handle for the default mask map
+    pub fn mask_map(&self) -> Handle<MaskMap> {
+        self.mask_map.clone()
+    } 
 }
-*/

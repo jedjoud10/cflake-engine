@@ -5,6 +5,7 @@ use super::SceneSettings;
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
+    /*
     // Get the storages and graphical context
     let (graphics, rgba, normal_maps, mask_maps) = world.get_mut::<(&mut Graphics, &mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
     let Graphics(device, ctx) = graphics;
@@ -17,6 +18,7 @@ pub fn init(world: &mut World) {
     let black = Texture2D::new(ctx, TextureMode::Dynamic, vek::Extent2::one(), sampling, false, &[RGBA])
 
     // Create the default white texture
+    */
 }
 
 

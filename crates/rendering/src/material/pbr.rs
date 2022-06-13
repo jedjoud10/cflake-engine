@@ -16,13 +16,13 @@ use super::{
 };
 
 // Albedo map (color data), rgba
-type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
+pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
 
 // Normal map (bumps), rgb
-type NormalMap = Texture2D<RGB<Ranged<u8>>>;
+pub type NormalMap = Texture2D<RGB<Ranged<u8>>>;
 
 // Mask map (r = roughness, g = metallic), rg
-type MaskMap = Texture2D<RG<Ranged<u8>>>;
+pub type MaskMap = Texture2D<RG<Ranged<u8>>>;
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
@@ -200,7 +200,7 @@ impl<'world> PropertyBlock<'world> for Standard {
 }
 
 impl MaterialRenderer for BatchRenderer<Standard> {
-    fn render(&self, world: &mut world::World) -> Option<super::Stats> {
-        self.render_batched_surfaces(world)
+    fn render(&self, world: &mut world::World, settings: &crate::scene::SceneSettings) -> Option<super::Stats> {
+        self.render_batched_surfaces(world, settings)
     }
 }

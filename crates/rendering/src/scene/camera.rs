@@ -1,10 +1,9 @@
 use ecs::Component;
 use math::Transform;
 
-
 // A perspective camera component that will be used to render the main scene
 // The camera entity does not *need* to have a transform to render, since we can set the matrices directly
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Camera {
     // The view matrix handles translation and rotation
     view: vek::Mat4<f32>,

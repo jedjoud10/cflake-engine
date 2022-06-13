@@ -78,7 +78,7 @@ impl<'a> LinkModifier<'a> {
                 self.locals.push((mask, Box::new(component)));
             } else {
                 // Overwrite the component
-                let mut entry = self.manager.entry(self.entity).unwrap();
+                let mut entry = self.manager.try_entry(self.entity).unwrap();
                 *entry.get_mut::<T>().unwrap() = component;
             }
         }
