@@ -1,4 +1,4 @@
-use crate::{Layout, ResourceError};
+use crate::{Layout, ResourceError, StorageSet};
 use ahash::AHashMap;
 use std::{
     any::{Any, TypeId},
@@ -44,6 +44,11 @@ impl ResourceSet {
     // Check if a resource is contained within the set
     pub fn contains<R: Resource>(&self) -> bool {
         self.0.contains_key(&TypeId::of::<R>())
+    }
+
+    // Get a set of all the inner storage resources
+    pub fn storages<'a>(&'a mut self) -> StorageSet<'a> {
+        StorageSet(self)
     }
 
     // Method that is called before any systems are executed

@@ -1,9 +1,14 @@
+use std::any::Any;
+
 use super::SceneRenderer;
 use crate::{
-    context::{Graphics, Context},
+    context::{Context, Graphics},
     material::{AlbedoMap, MaskMap, NormalMap},
     mesh::SubMesh,
-    prelude::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA, Texel},
+    object::ToGlName,
+    prelude::{
+        Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA,
+    },
     shader::Shader,
 };
 use ecs::EcsManager;
@@ -12,12 +17,19 @@ use world::{resources::Storage, World};
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
     // Get the storages and graphical context
-    let (graphics) = world.get_mut::<(&mut Graphics, &mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
-    let Graphics(device, ctx) = graphics;
-    
+    let Graphics(device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+
     // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
-        Texture2D::<T>::new(ctx, TextureMode::Dynamic, vek::Extent2::one(), Sampling::new(Filter::Nearest, Wrap::Repeat), false, &[texel]).unwrap()
+        Texture2D::<T>::new(
+            ctx,
+            TextureMode::Dynamic,
+            vek::Extent2::one(),
+            Sampling::new(Filter::Nearest, Wrap::Repeat),
+            false,
+            &[texel],
+        )
+        .unwrap()
     }
 
     // Create the default black texture
@@ -26,12 +38,18 @@ pub fn init(world: &mut World) {
     // Create the default white texture
     let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::one());
 
-    // Create the default PBR textures (albedo map, normal map, mask map) 
-    let albedo_map = create::<<AlbedoMap as Texture>::T>(ctx, vek::Vec4::zero());
-    let normal_map = create::<<NormalMap as Texture>::T>(ctx, vek::Vec3::new(128, 128, 255));
-    let mask_map = create::<<MaskMap as Texture>::T>(ctx, vek::Vec2::new(255, 51));
+    // Create the default PBR textures (albedo map, normal map, mask map)
+    let albedo_map = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
+    let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
+    let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
     // Insert all of the textures into their corresponding storages
+    let mut set = world.storages();
+    let black = set.insert(black);
+    let white = set.insert(white);
+    let albedo_map = set.insert(albedo_map);
+    let normal_map = set.insert(normal_map);
+    let mask_map = set.insert(mask_map);
 
     // Create the new scene renderer from these values and insert it into the world
     let renderer = SceneRenderer::new(black, white, albedo_map, normal_map, mask_map);
@@ -41,16 +59,16 @@ pub fn init(world: &mut World) {
 // Update system that will execute each frame to try to render the scene
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, ecs, settings) = world
-        .get_mut::<(&mut Graphics, &mut EcsManager, &SceneRenderer)>()
+    let (graphics, renderer) = world
+        .get_mut::<(&mut Graphics, &SceneRenderer)>()
         .unwrap();
     let Graphics(device, context) = graphics;
 
-    // Can we render the scene?
-    if !settings.can_render() {
+    // Can we render the scene? (cause if we can't then we have a big problemo)
+    if !renderer.can_render() {
         return;
     }
-    let settings = settings.clone();
+    let settings = renderer.clone();
 
     // Update all the renderer components
     let renderers = context.extract_material_renderer();
@@ -61,157 +79,3 @@ pub fn rendering(world: &mut World) {
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();
 }
-
-// Main camera system that will update the camera matrices
-
-/*
-// Recalculate the AABB of a given renderer using a 4x4 translation and rotation matrix (model matrix)
-// TODO: Use the code from https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
-// For optimization reasons
-fn project_aabb(aabb: &AABB, m: vek::Mat4<f32>) -> AABB {
-    // Keep track of the min/max positions
-    let mut max = vek::Vec3::broadcast(f32::MIN);
-    let mut min = vek::Vec3::broadcast(f32::MAX);
-
-    for point in aabb.points() {
-        // Iterate for each element in the current point and update the min/max values
-        let proj = m.mul_point(point);
-        proj.iter().enumerate().for_each(|(i, e)| {
-            max[i] = e.max(max[i]);
-            min[i] = e.min(min[i]);
-        })
-    }
-
-    AABB { min, max }
-}
-
-// The 3D scene renderer
-fn run(world: &mut World) {
-    let global = world.resources.get::<crate::resources::WorldData>().unwrap();
-    // Get the camera if possible, and stop rendering if we are unable to
-    let entry = world.ecs.entry(global.camera);
-    // If we have the camera, update it in the pipeline
-    // If we do not, stop rendering
-    if let Some(mut entry) = entry {
-        // Get the components and build a RenderingCamera out of them
-        let (position, rotation, forward, up) = {
-            let transform = entry.get::<Transform>().unwrap();
-            (transform.position, transform.rotation, transform.forward(), transform.up())
-        };
-
-        // Update the camera's view matrix if needed
-        let update = entry.was_mutated::<Transform>().unwrap();
-        let camera = entry.get_mut::<Camera>().unwrap();
-        if update | world.pipeline.window().changed() {
-            camera.update_projection_matrix(world.pipeline.window().dimensions().w as f32, world.pipeline.window().dimensions().h as f32);
-            camera.update_view_matrix(position, forward, up);
-        }
-
-        // Rendering camera settings
-        let camera = RenderingCamera {
-            position,
-            rotation,
-            forward,
-            view: camera.view,
-            proj: camera.projection,
-            clips: camera.clips,
-
-            // Math moment
-            proj_view: camera.projection * camera.view,
-        };
-        *world.pipeline.camera_mut() = camera;
-    }
-
-    // A bit of trolling yea?
-    let query = world.ecs.try_query::<(&mut Transform, &Light)>();
-    for (transform, _) in query {
-        transform.rotation.rotate_x(-0.2 * world.time.delta() * 0.4);
-        transform.rotation.rotate_y(0.3 * world.time.delta() * 0.8);
-    }
-
-    // Update the matrices of renderers (and bounds), only if the transforms os said renderers were externally modified
-    let a = or(modified::<Transform>(), added::<Transform>());
-    let b = or(modified::<Renderer>(), added::<Renderer>());
-    let query = world.ecs.try_query_with::<(&Transform, &mut Renderer), _>(or(a, b));
-    for (transform, renderer) in query {
-        // Update the matrix if we need to
-        renderer.matrix = transform.transform_matrix();
-        renderer.flags.insert(RendererFlags::MATRIX_UPDATE);
-
-        // Update the AABB bounds by using the mesh bounds
-        let mesh = world.pipeline.get(&renderer.mesh);
-        renderer.bounds = mesh.map(|mesh| project_aabb(mesh.bounds(), renderer.matrix)).unwrap_or_default();
-    }
-
-    // Get all the visible objects in the world, first of all
-    let query = world.ecs.try_view::<&Renderer>().unwrap();
-    let models: Vec<RenderedModel> = Vec::from_iter(query.filter_map(|renderer| {
-        // No need to render an invisible entity
-        if renderer.flags.contains(RendererFlags::VISIBLE) {
-            Some(RenderedModel {
-                mesh: &renderer.mesh,
-                matrix: &renderer.matrix,
-                material: &renderer.material,
-                aabb: &renderer.bounds,
-            })
-        } else {
-            None
-        }
-    }));
-
-    // Next, get all the shadowed models (used for shadow-mapping)
-    let query = world.ecs.try_view::<&Renderer>().unwrap();
-    let mut redraw_shadows = false;
-    let shadowed: Vec<ShadowedModel> = Vec::from_iter(query.filter_map(|renderer| {
-        // No need to draw shadows for invisible renderers
-        let f = renderer.flags;
-        if f.contains(RendererFlags::VISIBLE) {
-            // We must only redraw shadows if at least one of the shadow caster objects needs to be redrawn
-            redraw_shadows |= f.contains(RendererFlags::MATRIX_UPDATE);
-            Some(ShadowedModel {
-                mesh: &renderer.mesh,
-                matrix: &renderer.matrix,
-            })
-        } else {
-            None
-        }
-    }));
-
-    // Get all the lights that are in the scene
-    let query = world.ecs.try_view::<(&Transform, &Light)>().unwrap();
-    let lights = query
-        .map(|(transform, light)| {
-            // Convert into rendering structs
-            let _type = &light.0;
-            let transform = LightTransform {
-                position: &transform.position,
-                rotation: &transform.rotation,
-            };
-
-            // And pack into a tuple
-            (_type, transform)
-        })
-        .collect::<Vec<_>>();
-
-    // Detect if we need to redraw shadows because of the light source updating
-    redraw_shadows |= world.ecs.try_view_with::<(&Transform, &Light), _>(modified::<Transform>()).unwrap().count() > 0;
-
-    // Rendering settings
-    let settings = RenderingSettings {
-        normal: models,
-        shadowed: shadowed,
-        lights: lights,
-        redraw_shadows,
-    };
-
-    // Render
-    let renderer = &mut world.renderer;
-    let pipeline = &world.pipeline;
-    renderer.render(pipeline, settings);
-}
-
-// Create the rendering system
-pub fn system(world: &mut World) {
-    world.events.insert(run);
-}
-*/

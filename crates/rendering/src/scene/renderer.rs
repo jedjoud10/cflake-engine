@@ -23,7 +23,7 @@ pub struct SceneRenderer {
     // Default black and white textures
     black: Handle<Image>,
     white: Handle<Image>,
-    
+
     // Default albedo, normal, and mask maps for PBR rendering
     albedo_map: Handle<AlbedoMap>,
     normal_map: Handle<NormalMap>,
@@ -32,7 +32,13 @@ pub struct SceneRenderer {
 
 impl SceneRenderer {
     // This creates a new scene renderer from just the default texture handles
-    pub(super) fn new(black: Handle<Image>, white: Handle<Image>, albedo_map: Handle<AlbedoMap>, normal_map: Handle<NormalMap>, mask_map: Handle<MaskMap>) -> Self {
+    pub(super) fn new(
+        black: Handle<Image>,
+        white: Handle<Image>,
+        albedo_map: Handle<AlbedoMap>,
+        normal_map: Handle<NormalMap>,
+        mask_map: Handle<MaskMap>,
+    ) -> Self {
         Self {
             camera: None,
             light: None,
