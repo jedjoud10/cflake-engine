@@ -1,9 +1,8 @@
 use crate::Asset;
 use ahash::AHashMap;
-use lazy_static::lazy_static;
+
 use std::{
-    cell::{Ref, RefCell, RefMut},
-    ffi::{OsStr, OsString},
+    ffi::OsStr,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -46,7 +45,7 @@ impl Assets {
     ) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(path).unwrap();
-        let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once(".")?;
+        let (_name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
 
         // If the asset has no extensions, we shall not check
         ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then(|| ())?;

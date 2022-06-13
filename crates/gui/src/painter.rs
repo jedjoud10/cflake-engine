@@ -1,21 +1,19 @@
 use assets::Assets;
-use egui::{epaint::Mesh, ClippedMesh, Rect};
-use egui::{Color32, ImageData, TextureId, TexturesDelta};
-use nohash_hasher::NoHashHasher;
-use rendering::buffer::{ArrayBuffer, Buffer, BufferMode, ElementBuffer};
+use egui::ClippedMesh;
+use egui::{ImageData, TextureId, TexturesDelta};
+
+use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
 use rendering::canvas::rasterizer::{
     BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings,
 };
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage};
+use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use std::mem::{size_of, ManuallyDrop};
+
+use std::mem::size_of;
 use std::ptr::null;
-use vek::Clamp;
 
 // Texel type that will be used to describe the inner raw texel that the texture will use
 type Texel = RGBA<Ranged<u8>>;
@@ -128,7 +126,7 @@ impl Painter {
         deltas: TexturesDelta,
     ) {
         // Update the main  fonttexture
-        if let Some((tid, delta)) = deltas
+        if let Some((_tid, delta)) = deltas
             .set
             .iter()
             .find(|(&tid, _)| tid == TextureId::Managed(0))

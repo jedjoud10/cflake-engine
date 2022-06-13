@@ -10,7 +10,7 @@ pub mod tests {
             &["txt"]
         }
 
-        fn deserialize(bytes: crate::loader::CachedSlice, args: Self::Args) -> Self {
+        fn deserialize(bytes: crate::loader::CachedSlice, _args: Self::Args) -> Self {
             String::from_utf8(bytes.as_ref().to_vec()).unwrap()
         }
     }

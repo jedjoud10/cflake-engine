@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use glutin::{
-    event::{DeviceEvent, Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-};
+use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
 use world::World;
 
@@ -131,8 +128,8 @@ impl App {
         // One sorting function that will be used twice
         fn sort(vec: &mut Vec<(fn(&mut World), i32)>) -> Vec<fn(&mut World)> {
             vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-            vec.into_iter()
-                .map(|(system, _)| system.clone())
+            vec.iter_mut()
+                .map(|(system, _)| *system)
                 .collect::<Vec<_>>()
         }
 

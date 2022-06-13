@@ -1,8 +1,5 @@
-use crate::source::AudioSource;
-use rodio::{
-    source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink,
-};
-use std::{cell::RefCell, fmt::Debug, io::Cursor, sync::Arc};
+use rodio::{OutputStream, OutputStreamHandle};
+
 // A playback cache that contains all the loaded sources
 pub struct AudioPlayer {
     _stream: OutputStream,

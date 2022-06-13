@@ -1,6 +1,5 @@
 pub use resources;
 use resources::{Layout, Resource, ResourceError, ResourceSet, StorageSet};
-use std::any::TypeId;
 
 // The world is a container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management

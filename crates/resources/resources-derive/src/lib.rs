@@ -11,7 +11,7 @@ pub fn derive_resources(input: TokenStream) -> TokenStream {
         ..
     } = parse_macro_input!(input);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    let removable = attrs.len() == 0;
+    let removable = attrs.is_empty();
     let output = quote! {
         impl #impl_generics Resource for #ident #ty_generics #where_clause {
             fn as_any(&self) -> &dyn std::any::Any {

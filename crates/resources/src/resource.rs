@@ -1,9 +1,6 @@
 use crate::{Layout, ResourceError, StorageSet};
 use ahash::AHashMap;
-use std::{
-    any::{Any, TypeId},
-    cell::RefCell,
-};
+use std::any::{Any, TypeId};
 
 // A resource set simply contains multiple unique resources
 #[derive(Default)]
@@ -76,7 +73,7 @@ pub trait Resource: 'static {
     fn added(&mut self) {}
 
     // A function that will be called right before the resource gets fetch
-    fn pre_fetch(set: &mut ResourceSet)
+    fn pre_fetch(_set: &mut ResourceSet)
     where
         Self: Sized + 'static,
     {

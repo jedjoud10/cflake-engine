@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 // If we are in Debug, we read the bytes directly from the file system
 #[cfg(debug_assertions)]
 pub fn read(path: &Path, asset_dir_path: &PathBuf) -> Option<Vec<u8>> {
-    use std::{fs::File, io::Read, path::Path};
+    use std::{fs::File, io::Read};
 
     // Get the path of the file (global)
     let file_path = {

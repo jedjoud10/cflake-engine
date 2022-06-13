@@ -6,7 +6,7 @@ fn main() {
 }
 
 // Initialize the empty world
-fn init(world: &mut World) {
+fn init(_world: &mut World) {
     println!("Start!")
 }
 

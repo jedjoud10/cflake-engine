@@ -1,5 +1,5 @@
 use ahash::AHashMap;
-use slotmap::{DefaultKey, SecondaryMap, SlotMap};
+use slotmap::{DefaultKey, SlotMap};
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
 use crate::{Resource, ResourceSet};
@@ -17,7 +17,7 @@ impl<T: 'static> Storage<T> {
         let key = self.0.insert(element);
         self.1.borrow_mut().insert(key, 1);
         Handle {
-            key: key,
+            key,
             phantom_: Default::default(),
             tracker: self.1.clone(),
         }
@@ -105,9 +105,9 @@ impl<T> Eq for Handle<T> {}
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
         Self {
-            key: self.key.clone(),
+            key: self.key,
             tracker: self.tracker.clone(),
-            phantom_: self.phantom_.clone(),
+            phantom_: self.phantom_,
         }
     }
 }

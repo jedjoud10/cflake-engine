@@ -36,10 +36,10 @@ fn window(world: &mut World, event: WindowEvent, cf: &mut ControlFlow) {
 }
 
 // Handle new device events
-fn device(world: &mut World, device: DeviceEvent, cf: &mut ControlFlow) {}
+fn device(_world: &mut World, _device: DeviceEvent, _cf: &mut ControlFlow) {}
 
 // Execute one step-frame of the engine
-fn update(world: &mut World, systems: &[fn(&mut World)], cf: &mut ControlFlow) {
+fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) {
     // We clear the screen at the start of every frame
     let graphics = world.get_mut::<&mut Graphics>().unwrap();
     graphics

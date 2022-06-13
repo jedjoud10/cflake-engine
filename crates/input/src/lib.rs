@@ -101,7 +101,7 @@ impl Input {
 
     // Get the raw state of a key bind (map)
     pub fn state(&self, name: &'static str) -> Option<&State> {
-        self.binds.get(name).map(|key| self.keys.get(key)).flatten()
+        self.binds.get(name).and_then(|key| self.keys.get(key))
     }
 
     // Check if a keybind was pressed in the current frame
