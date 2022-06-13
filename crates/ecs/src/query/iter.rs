@@ -12,7 +12,7 @@ struct Chunk<'a, Layout: QueryLayout<'a>> {
 impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
     fn clone(&self) -> Self {
         Self {
-            archetype: self.archetype.clone(),
+            archetype: self.archetype,
             ptrs: self.ptrs,
         }
     }
