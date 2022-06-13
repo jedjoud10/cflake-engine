@@ -8,11 +8,11 @@ pub struct Model {
     // Model matrix (translation, rotation, scale) that defines this renderer
     matrix: vek::Mat4<f32>,
 
-    // Will the renderer's surfaces be rasterized?
-    visible: bool,
-
     // The current AABB bounds that this renderer will use for culling
     bounds: AABB,
+
+    // Is the model currently enabled for rendering (this ignores if the model is culled or not)
+    enabled: bool,
 }
 
 impl Model {
@@ -21,16 +21,13 @@ impl Model {
         &self.matrix
     }
 
-    // Get the current visibility state of the renderer
-    pub fn is_visible(&self) -> bool {
-        self.visible
+    // Get the current bounds of the model
+    pub fn bounds(&self) -> &AABB {
+        &self.bounds
     }
-}
 
-/*
-impl From<math::Transform> for Renderer {
-    fn from(_: math::Transform) -> Self {
-        Self { matrix: transform.matrix(), visible: true, bounds: math::AABB::default() }
+    // Check if we should render the model
+    pub fn enabled(&self) -> bool {
+        self.enabled
     }
 }
-*/

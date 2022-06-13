@@ -203,7 +203,7 @@ impl MaterialRenderer for BatchRenderer<Standard> {
     fn render(
         &self,
         world: &mut world::World,
-        settings: &crate::scene::SceneSettings,
+        settings: &crate::scene::SceneRenderer,
     ) -> Option<super::Stats> {
         self.render_batched_surfaces(world, settings)
     }

@@ -140,6 +140,9 @@ pub trait Region {
     type O: Default + Copy;
     type E: Copy + Extent;
 
+    // Create a texel region of one singular unit (so we can store a singular texel)
+    fn unit() -> Self;
+
     // Get the region's origin
     fn origin(&self) -> &Self::O;
 
@@ -172,6 +175,10 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
     fn area(&self) -> u32 {
         self.extent().area()
     }
+
+    fn unit() -> Self {
+        (vek::Vec2::zero(), vek::Extent2::one())
+    }
 }
 
 impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
@@ -192,6 +199,10 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 
     fn area(&self) -> u32 {
         self.extent().area()
+    }
+
+    fn unit() -> Self {
+        (vek::Vec3::zero(), vek::Extent3::one())
     }
 }
 

@@ -14,7 +14,7 @@ use crate::{
     commons::Comparison,
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    scene::{Camera, Model, SceneSettings},
+    scene::{Camera, Model, SceneRenderer},
     shader::{Shader, Uniforms},
 };
 
@@ -111,7 +111,7 @@ pub struct Stats {}
 pub trait MaterialRenderer: 'static {
     // Render all the objects that use this material type
     // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
-    fn render(&self, world: &mut World, settings: &SceneSettings) -> Option<Stats>;
+    fn render(&self, world: &mut World, settings: &SceneRenderer) -> Option<Stats>;
 }
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
@@ -140,7 +140,7 @@ impl<M: Material> BatchRenderer<M> {
     pub fn render_batched_surfaces<'a>(
         &self,
         world: &'a mut World,
-        settings: &SceneSettings,
+        settings: &SceneRenderer,
     ) -> Option<Stats>
     where
         M: PropertyBlock<'a>,
@@ -172,7 +172,7 @@ impl<M: Material> BatchRenderer<M> {
         let (_, camera) = ecs.try_view::<(&Transform, &Camera)>().unwrap().next()?;
 
         // Ignore invisible surfaces
-        let query = query.filter(|(renderer, _)| renderer.is_visible());
+        let query = query.filter(|(renderer, _)| renderer.enabled());
 
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;

@@ -23,4 +23,9 @@ impl World {
     pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
         self.0.get_mut::<'a, L>()
     }
+
+    // Get a set of the inner storages for easier insertions/removal of storage handles
+    pub fn storages(&mut self) -> StorageSet<'a> {
+        StorageSet::new(self.0)
+    }
 }

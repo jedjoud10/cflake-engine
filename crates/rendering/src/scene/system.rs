@@ -1,9 +1,9 @@
-use super::SceneSettings;
+use super::SceneRenderer;
 use crate::{
-    context::Graphics,
+    context::{Graphics, Context},
     material::{AlbedoMap, MaskMap, NormalMap},
     mesh::SubMesh,
-    prelude::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA},
+    prelude::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA, Texel},
     shader::Shader,
 };
 use ecs::EcsManager;
@@ -11,27 +11,38 @@ use world::{resources::Storage, World};
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
-    /*
     // Get the storages and graphical context
-    let (graphics, rgba, normal_maps, mask_maps) = world.get_mut::<(&mut Graphics, &mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
+    let (graphics) = world.get_mut::<(&mut Graphics, &mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
     let Graphics(device, ctx) = graphics;
-
-    // RGBA 8 bits per channel texture
-    type Tex = Texture2D<RGBA<Ranged<u8>>>;
-    let sampling = Sampling::new(Filter::Nearest, Wrap::Repeat);
+    
+    // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
+    fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
+        Texture2D::<T>::new(ctx, TextureMode::Dynamic, vek::Extent2::one(), Sampling::new(Filter::Nearest, Wrap::Repeat), false, &[texel]).unwrap()
+    }
 
     // Create the default black texture
-    let black = Texture2D::new(ctx, TextureMode::Dynamic, vek::Extent2::one(), sampling, false, &[RGBA])
+    let black = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
 
     // Create the default white texture
-    */
+    let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::one());
+
+    // Create the default PBR textures (albedo map, normal map, mask map) 
+    let albedo_map = create::<<AlbedoMap as Texture>::T>(ctx, vek::Vec4::zero());
+    let normal_map = create::<<NormalMap as Texture>::T>(ctx, vek::Vec3::new(128, 128, 255));
+    let mask_map = create::<<MaskMap as Texture>::T>(ctx, vek::Vec2::new(255, 51));
+
+    // Insert all of the textures into their corresponding storages
+
+    // Create the new scene renderer from these values and insert it into the world
+    let renderer = SceneRenderer::new(black, white, albedo_map, normal_map, mask_map);
+    world.insert(renderer);
 }
 
 // Update system that will execute each frame to try to render the scene
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
     let (graphics, ecs, settings) = world
-        .get_mut::<(&mut Graphics, &mut EcsManager, &SceneSettings)>()
+        .get_mut::<(&mut Graphics, &mut EcsManager, &SceneRenderer)>()
         .unwrap();
     let Graphics(device, context) = graphics;
 

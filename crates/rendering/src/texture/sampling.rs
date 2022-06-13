@@ -16,6 +16,7 @@ use super::{Bindless, Texel, Texture, TextureMode};
 
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[repr(u32)]
+#[derive(Clone, Copy)]
 pub enum Filter {
     // Filtering for any texture
     Nearest = gl::NEAREST,
@@ -27,6 +28,7 @@ pub enum Filter {
 }
 
 // Wrapping mode utilised by TEXTURE_WRAP_R and TEXTURE_WRAP_T
+#[derive(Clone, Copy)]
 pub enum Wrap {
     // Oop sorry no more custom discriminent :(
     ClampToEdge,
@@ -36,6 +38,7 @@ pub enum Wrap {
 }
 
 // Some special sampling parameters for textures
+#[derive(Clone, Copy)]
 pub struct Sampling {
     filter: Filter,
     wrap: Wrap,
