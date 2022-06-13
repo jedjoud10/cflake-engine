@@ -106,7 +106,7 @@ impl Extent for vek::Extent2<u16> {
     }
 
     fn is_valid(&self) -> bool {
-        *self == vek::Extent2::zero()
+        *self != vek::Extent2::zero()
     }
 
     fn max(&self) -> u16 {
@@ -120,7 +120,7 @@ impl Extent for vek::Extent3<u16> {
     }
 
     fn is_valid(&self) -> bool {
-        *self == vek::Extent3::zero()
+        *self != vek::Extent3::zero()
     }
 
     fn max(&self) -> u16 {
@@ -216,10 +216,10 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
-
+        
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
-            data.len() as u64 == (dimensions.area() as u64) * (Self::T::bytes() as u64)
+            data.len() as u64 == (dimensions.area() as u64)
         } else {
             true
         };
@@ -303,20 +303,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     // Force this texture to be stored within system memory (if it is a bindless texture)
     fn try_make_non_resident(&mut self) {
         if let Some(bindless) = self.bindless() {
-            unsafe {
-                gl::MakeImageHandleNonResidentARB(bindless.handle);
-                bindless.resident.set(false);
-            }
+            bindless.set_residency(false);
         }
     }
 
     // Force this texture to be stored within vram (if it is a bindless texture)
     fn try_make_resident(&mut self) {
         if let Some(bindless) = self.bindless() {
-            unsafe {
-                gl::MakeTextureHandleResidentARB(bindless.handle);
-                bindless.resident.set(true);
-            }
+            bindless.set_residency(true);
         }
     }
 

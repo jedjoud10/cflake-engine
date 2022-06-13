@@ -45,7 +45,7 @@ fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) 
     graphics
         .0
         .canvas_mut()
-        .clear(Some(vek::Rgb::black()), None, None);
+        .clear(Some(vek::Rgb::blue()), None, None);
 
     // Execute the ECS systems in order
     for system in systems {

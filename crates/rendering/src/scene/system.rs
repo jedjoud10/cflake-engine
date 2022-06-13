@@ -1,4 +1,4 @@
-use super::SceneRenderer;
+use super::{SceneRenderer, Camera};
 use crate::{
     context::{Context, Graphics},
     prelude::{
@@ -6,6 +6,8 @@ use crate::{
     },
 };
 
+use ecs::{EcsManager, modified, or, added};
+use math::Transform;
 use world::World;
 
 // Initialization system that will setup the default textures and objects
@@ -50,7 +52,7 @@ pub fn init(world: &mut World) {
     world.insert(renderer);
 }
 
-// Update system that will execute each frame to try to render the scene
+// Rendering system that will try to render the scene each frame
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
     let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
@@ -70,4 +72,14 @@ pub fn rendering(world: &mut World) {
         .into_iter()
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();
+}
+
+// Camera update system that will update the view matrix of perspective cameras
+pub fn cameras(world: &mut World) {
+    let (ecs, Graphics(device, _)) = world.get_mut::<(&mut EcsManager, &Graphics)>().unwrap(); 
+    let filter = or(modified::<Camera>(), modified::<Transform>());
+    let query = ecs.try_query_with::<(&mut Camera, &Transform), _>(filter).unwrap();
+    for (camera, transform) in query {
+        camera.update(transform);
+    }
 }

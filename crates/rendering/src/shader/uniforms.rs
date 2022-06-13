@@ -282,11 +282,10 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Set a texture sampler, assuming that it uses bindless textures
     unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: &Bindless) {
         // If the texture isn't resident, we have to make it resident
-        bindless.last_shader_usage.set(Instant::now());
+        bindless.last_residency_instant.set(Instant::now());
         if !bindless.resident.get() {
             // Make the bindless texture a resident bindless texture
-            bindless.resident.set(true);
-            gl::MakeTextureHandleResidentARB(bindless.handle);
+            bindless.set_residency(true);
         } else {
             // The bindless texture handle is already resident, we just need to set the uniform
             if let Some(loc) = self.location(name) {
@@ -296,7 +295,6 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a texture sampler, switching between the bindless and normal methods
-    // TODO: Handle texture samplers that might outlive the program
     pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(
         &'me mut self,
         name: &'static str,

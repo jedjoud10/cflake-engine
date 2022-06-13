@@ -16,8 +16,8 @@ pub struct Bindless {
     // Is the handle resident (does the texutre live on the GPU)?
     pub(crate) resident: Cell<bool>,
 
-    // The last time the bindless texture was used inside a shader
-    pub(crate) last_shader_usage: Cell<Instant>,
+    // The last time the bindless texture was made resident
+    pub(crate) last_residency_instant: Cell<Instant>,
 
     // How much time it takes for a texture to become non-resident
     pub(crate) timeout: Duration,
@@ -49,9 +49,23 @@ impl Bindless {
         self.timeout
     }
 
-    // Get the last time the bindless texture was used inside a shader
-    pub fn last_shader_usage(&self) -> Instant {
-        self.last_shader_usage.get()
+    // Get the last time the bindless texture was made resident
+    pub fn last_residency_instant(&self) -> Instant {
+        self.last_residency_instant.get()
+    }
+
+    // Store the new residency state (either stored within system memory or within ram)
+    pub fn set_residency(&self, resident: bool) {
+        unsafe {
+            if resident {
+                gl::MakeTextureHandleResidentARB(self.handle);
+                self.last_residency_instant.set(Instant::now());
+            } else {
+                gl::MakeTextureHandleNonResidentARB(self.handle);
+            }
+        }
+
+        self.resident.set(resident);
     }
 }
 
@@ -63,17 +77,11 @@ pub(super) unsafe fn create_bindless(
     mode: TextureMode,
 ) -> Option<Rc<Bindless>> {
     (mode == TextureMode::Dynamic).then(|| {
-        // Create the RC first
-
-        // Then clone it to be able to store it within the context
-        //ctx.bindless.push(rc.clone());
-
-        // Boink
         Rc::new(Bindless {
             handle: gl::GetTextureHandleARB(name),
             resident: Cell::new(false),
             timeout: Duration::from_millis(timeout),
-            last_shader_usage: Cell::new(Instant::now()),
+            last_residency_instant: Cell::new(Instant::now()),
         })
     })
 }
