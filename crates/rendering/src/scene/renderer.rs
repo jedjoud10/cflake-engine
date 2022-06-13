@@ -1,7 +1,10 @@
 use ecs::Entity;
-use world::resources::{Resource, Handle};
+use world::resources::{Handle, Resource};
 
-use crate::{prelude::{Texture2D, RGBA, Ranged}, material::{AlbedoMap, NormalMap, MaskMap}};
+use crate::{
+    material::{AlbedoMap, MaskMap, NormalMap},
+    prelude::{Ranged, Texture2D, RGBA},
+};
 
 // The global scene renderer that specifies how we should render the surfaces
 // This resource will contain the handles to the default PBR textures
@@ -20,7 +23,6 @@ pub struct SceneSettings {
     black: Handle<Texture2D<RGBA<Ranged<u8>>>,
     white: Handle<Texture2D<RGBA<Ranged<u8>>>,
     */
-    
     // Default albedo, normal, and mask maps for PBR rendering
     albedo_map: Handle<AlbedoMap>,
     normal_map: Handle<NormalMap>,
@@ -57,14 +59,14 @@ impl SceneSettings {
     pub fn albedo_map(&self) -> Handle<AlbedoMap> {
         self.albedo_map.clone()
     }
-    
+
     // Get the handle for the default normal map
     pub fn normal_map(&self) -> Handle<NormalMap> {
         self.normal_map.clone()
     }
-    
+
     // Get the handle for the default mask map
     pub fn mask_map(&self) -> Handle<MaskMap> {
         self.mask_map.clone()
-    } 
+    }
 }

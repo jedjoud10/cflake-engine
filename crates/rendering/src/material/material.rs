@@ -14,7 +14,7 @@ use crate::{
     commons::Comparison,
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    scene::{Model, Camera, SceneSettings},
+    scene::{Camera, Model, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
@@ -137,7 +137,11 @@ impl<M: Material> BatchRenderer<M> {
 
     // This method will batch render a ton of surfaces using one material instance only
     // This method can be called within the implementation of render()
-    pub fn render_batched_surfaces<'a>(&self, world: &'a mut World, settings: &SceneSettings) -> Option<Stats>
+    pub fn render_batched_surfaces<'a>(
+        &self,
+        world: &'a mut World,
+        settings: &SceneSettings,
+    ) -> Option<Stats>
     where
         M: PropertyBlock<'a>,
     {

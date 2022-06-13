@@ -7,7 +7,9 @@ use std::{
     rc::Rc,
 };
 
-// A 2D texture that will be used for rendering objects
+// A 2D texture that contains multiple pixels that have their own channels
+// Each pixel can be either a single value, RG, RGB, or even RGBA
+// These individual pixels are called texels, since they are used within the texture
 pub struct Texture2D<T: Texel> {
     // Internal OpenGL shit
     name: u32,

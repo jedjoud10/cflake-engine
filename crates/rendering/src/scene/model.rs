@@ -10,7 +10,7 @@ pub struct Model {
 
     // Will the renderer's surfaces be rasterized?
     visible: bool,
-    
+
     // The current AABB bounds that this renderer will use for culling
     bounds: AABB,
 }

@@ -77,8 +77,9 @@ impl Resource for Input {
     }
 
     fn can_remove() -> bool
-        where
-            Self: Sized, {
+    where
+        Self: Sized,
+    {
         false
     }
 }

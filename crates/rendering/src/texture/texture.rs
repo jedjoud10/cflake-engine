@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, TextureAllocator, Texel};
+use super::{Bindless, Sampler, Texel, TextureAllocator};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -63,7 +63,12 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Update a sub-region of the mip-layer using a data slice
-    fn update(&mut self, ctx: &mut Context, region: T::TexelRegion, data: &[<T::T as Texel>::Storage]) {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        region: T::TexelRegion,
+        data: &[<T::T as Texel>::Storage],
+    ) {
         // The length of the buffer should be equal to the surface area of the region
         assert!(
             (data.len() as u32) == region.area(),

@@ -1,8 +1,32 @@
 use crate::object::Shared;
-use super::channels::{R, RG, RGB, RGBA};
-use super::{Normalized, Ranged};
 use std::mem::size_of;
 use vek::{Vec2, Vec3, Vec4};
+
+use std::marker::PhantomData;
+
+// Base numbers that are used to store the inner raw values of texture texels
+pub trait Base {}
+impl Base for i8 {}
+impl Base for u8 {}
+impl Base for i16 {}
+impl Base for u16 {}
+impl Base for i32 {}
+impl Base for u32 {}
+impl Base for f32 {}
+
+// Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
+pub trait Element {}
+impl<T: Base> Element for T {}
+
+// The channels that represent the texels
+pub struct R<T: Element>(PhantomData<T>);
+pub struct RG<T: Element>(PhantomData<Vec2<T>>);
+pub struct RGB<T: Element>(PhantomData<Vec3<T>>);
+pub struct RGBA<T: Element>(PhantomData<Vec4<T>>);
+
+// Unique depth and stencil channels for depth render textures and stencil render textures
+pub struct Depth<T: Element>(PhantomData<T>);
+pub struct Stencil<T: Element>(PhantomData<T>);
 
 // This trait defines the layout for a single texel that will be stored within textures1
 pub trait Texel: 'static {
@@ -22,14 +46,22 @@ pub trait Texel: 'static {
     const BYTES_PER_CHANNEL: u32;
 
     // Raw texel type that we store internally and that the user will interact with
-    type Storage: Shared; 
+    type Storage: Shared;
 
     // Count the number of bytes that make each texel
     fn bytes() -> u32 {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
-    }   
+    }
 }
 
+// A range texel limiter that will hint the texture that the integer must be accessed as a floating point value, and that it must be in the 0-1 range
+pub struct Ranged<T: Base>(PhantomData<T>);
+
+// A normalized texel limiter that will the texture that the integer must be accessed as a floating point value, and that it must be in the -1 - 1 range
+pub struct Normalized<T: Base>(PhantomData<T>);
+
+impl<T: Base> Element for Ranged<T> {}
+impl<T: Base> Element for Normalized<T> {}
 
 // Macro that will automatically implement the texel layout trait
 macro_rules! impl_texel_layout {
@@ -68,7 +100,7 @@ macro_rules! impl_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::SHORT;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS * 8;
-                type Storage = $vec<i16>;                
+                type Storage = $vec<i16>;
             }
 
             impl Texel for $t<u8> {

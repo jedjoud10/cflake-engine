@@ -36,10 +36,14 @@ fn new_projection_matrix(hfov: f32, aspect_ratio: f32, near: f32, far: f32) -> v
 
 // Create a new view matrix using a transform
 fn new_view_matrix(transform: &Transform) -> vek::Mat4<f32> {
-    vek::Mat4::<f32>::look_at_rh(transform.position, transform.forward() + transform.position, transform.up())
+    vek::Mat4::<f32>::look_at_rh(
+        transform.position,
+        transform.forward() + transform.position,
+        transform.up(),
+    )
 }
 
-impl Camera {   
+impl Camera {
     // Create a new camera with it's horizontal fov, the clip planes, and an aspect ratio
     pub fn new(hfov: f32, near_plane: f32, far_plane: f32, aspect_ratio: f32) -> Self {
         Self {
@@ -56,7 +60,7 @@ impl Camera {
     pub fn update_view(&mut self, transform: &Transform) {
         self.view = new_view_matrix(transform);
     }
-    
+
     // Update the projection matrix using the currently stored values
     pub fn update_projection(&mut self) {
         self.projection = new_projection_matrix(self.hfov, self.aspect_ratio, self.near, self.far);
@@ -97,7 +101,7 @@ impl Camera {
     pub fn set_projection(&mut self, projection: vek::Mat4<f32>) {
         self.projection = projection;
     }
-    
+
     // Set the horizontal fov
     pub fn set_hfov(&mut self, hfov: f32) {
         self.hfov = hfov;
@@ -116,7 +120,6 @@ impl Camera {
         self.far = far_plane;
         self.update_projection();
     }
-
 }
 
 impl Default for Camera {

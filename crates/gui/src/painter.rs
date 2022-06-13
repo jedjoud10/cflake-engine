@@ -24,13 +24,11 @@ type Texel = RGBA<Ranged<u8>>;
 fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
     match image {
         // I don't like this but I have to cope
-        ImageData::Color(color) => {
-            color
-                .pixels
-                .iter()
-                .map(|pixel| vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a()))
-                .collect::<Vec<vek::Vec4<u8>>>()
-        },
+        ImageData::Color(color) => color
+            .pixels
+            .iter()
+            .map(|pixel| vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a()))
+            .collect::<Vec<vek::Vec4<u8>>>(),
 
         // Iterate through each alpha pixel and create a full color from it
         ImageData::Alpha(alpha) => {
@@ -139,7 +137,7 @@ impl Painter {
             self.texture.get_or_insert_with(|| {
                 let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
                 let texels = image_data_to_texels(&delta.image);
-                
+
                 // Create the main font texture since it is missing
                 Texture2D::new(
                     ctx,

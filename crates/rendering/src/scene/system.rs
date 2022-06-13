@@ -1,7 +1,13 @@
-use crate::{context::Graphics, mesh::SubMesh, shader::Shader, material::{AlbedoMap, NormalMap, MaskMap}, prelude::{Texture2D, RGBA, Ranged, Texture, TextureMode, Sampling, Filter, Wrap}};
+use super::SceneSettings;
+use crate::{
+    context::Graphics,
+    material::{AlbedoMap, MaskMap, NormalMap},
+    mesh::SubMesh,
+    prelude::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA},
+    shader::Shader,
+};
 use ecs::EcsManager;
 use world::{resources::Storage, World};
-use super::SceneSettings;
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
@@ -21,11 +27,12 @@ pub fn init(world: &mut World) {
     */
 }
 
-
 // Update system that will execute each frame to try to render the scene
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, ecs, settings) = world.get_mut::<(&mut Graphics, &mut EcsManager, &SceneSettings)>().unwrap();
+    let (graphics, ecs, settings) = world
+        .get_mut::<(&mut Graphics, &mut EcsManager, &SceneSettings)>()
+        .unwrap();
     let Graphics(device, context) = graphics;
 
     // Can we render the scene?
@@ -36,9 +43,12 @@ pub fn rendering(world: &mut World) {
 
     // Update all the renderer components
     let renderers = context.extract_material_renderer();
-    
+
     // Render all the material surfaces
-    let stats = renderers.into_iter().map(|elem| elem.render(world, &settings)).collect::<Vec<_>>();
+    let stats = renderers
+        .into_iter()
+        .map(|elem| elem.render(world, &settings))
+        .collect::<Vec<_>>();
 }
 
 // Main camera system that will update the camera matrices

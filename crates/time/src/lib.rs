@@ -1,4 +1,4 @@
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use world::resources::Resource;
 
@@ -7,7 +7,7 @@ use world::resources::Resource;
 #[Locked]
 pub struct Time {
     // The difference in seconds between the last frame and the current frame
-    delta: f32, 
+    delta: f32,
 
     // How many frames has the engine been running for?
     frame_count: u128,

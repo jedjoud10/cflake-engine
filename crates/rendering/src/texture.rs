@@ -1,16 +1,12 @@
 mod bindless;
 mod raw;
 mod sampling;
+mod texel;
 mod texture;
 mod texture2d;
-mod channels;
-mod texel;
-mod limiters;
-pub use limiters::*;
-pub use texel::*;
-pub use channels::*;
 pub use bindless::*;
 pub use raw::*;
 pub use sampling::*;
+pub use texel::*;
 pub use texture::*;
 pub use texture2d::*;

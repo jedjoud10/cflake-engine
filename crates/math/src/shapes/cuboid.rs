@@ -1,4 +1,4 @@
-use crate::{AABB, Shape};
+use crate::{Shape, AABB};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone)]

@@ -1,6 +1,6 @@
 use vek::Clamp;
 
-use crate::{AABB, Sphere};
+use crate::{Sphere, AABB};
 
 // Check if an AABB intersects another AABB
 pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {

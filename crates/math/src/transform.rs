@@ -38,7 +38,10 @@ impl From<(f32, f32, f32)> for Transform {
 
 impl From<vek::Quaternion<f32>> for Transform {
     fn from(quat: vek::Quaternion<f32>) -> Self {
-        Self { rotation: quat, ..Default::default() }
+        Self {
+            rotation: quat,
+            ..Default::default()
+        }
     }
 }
 

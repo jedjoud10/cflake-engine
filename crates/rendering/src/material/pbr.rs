@@ -200,7 +200,11 @@ impl<'world> PropertyBlock<'world> for Standard {
 }
 
 impl MaterialRenderer for BatchRenderer<Standard> {
-    fn render(&self, world: &mut world::World, settings: &crate::scene::SceneSettings) -> Option<super::Stats> {
+    fn render(
+        &self,
+        world: &mut world::World,
+        settings: &crate::scene::SceneSettings,
+    ) -> Option<super::Stats> {
         self.render_batched_surfaces(world, settings)
     }
 }
