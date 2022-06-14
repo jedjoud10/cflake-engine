@@ -1,4 +1,6 @@
-use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode};
+use assets::Asset;
+
+use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA};
 use crate::object::{ToGlName, ToGlTarget};
 use std::{marker::PhantomData, num::NonZeroU8, rc::Rc};
 

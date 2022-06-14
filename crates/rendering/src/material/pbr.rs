@@ -65,12 +65,12 @@ impl Material for Standard {
     ) -> Self::Renderer {
         // Load the vertex shader stage
         let vs = loader
-            .load::<VertexStage>("defaults/shaders/rendering/pbr.vrsh")
+            .load::<VertexStage>("engine/shaders/pbr.vrsh")
             .unwrap();
 
         // Load the fragment shader stage
         let fs = loader
-            .load::<FragmentStage>("defaults/shaders/rendering/pbr.frsh")
+            .load::<FragmentStage>("engine/shaders/pbr.frsh")
             .unwrap();
 
         // Link the two stages and compile the shader

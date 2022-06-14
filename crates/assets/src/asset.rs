@@ -17,7 +17,7 @@ impl Asset<'static> for String {
     type Args = ();
 
     fn extensions() -> &'static [&'static str] {
-        &[".txt"]
+        &["txt"]
     }
 
     fn deserialize(bytes: CachedSlice, args: Self::Args) -> Self {

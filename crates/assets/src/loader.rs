@@ -17,7 +17,8 @@ impl<'loader> AsRef<[u8]> for CachedSlice<'loader> {
     }
 }
 
-// Asset manager that will cache all the assets and help us load them in
+// This is the main asset manager resource that will load & cache newly loaded assets
+// This asset manager will also contain the persistent assets that are included by default into the engine executable
 #[derive(Resource)]
 #[Locked]
 pub struct Assets {
@@ -73,7 +74,7 @@ impl Assets {
 
     // Import a persistant asset using it's global asset path and it's raw bytes
     pub fn import(&mut self, path: impl AsRef<Path>, bytes: Vec<u8>) {
-        let path = path.as_ref().strip_prefix("assets/").unwrap().to_path_buf();
+        let path = path.as_ref().strip_prefix("./assets/").unwrap().to_path_buf();
         self.cached.entry(path).or_insert(bytes);
     }
 }
