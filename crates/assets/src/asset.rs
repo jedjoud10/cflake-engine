@@ -12,3 +12,15 @@ pub trait Asset<'args>: Sized {
     // Deserialize asset bytes, assuming that the given bytes are already in the valid format to deserialize
     fn deserialize(bytes: CachedSlice, args: Self::Args) -> Self;
 }
+
+impl Asset<'static> for String {
+    type Args = ();
+
+    fn extensions() -> &'static [&'static str] {
+        &[".txt"]
+    }
+
+    fn deserialize(bytes: CachedSlice, args: Self::Args) -> Self {
+        String::from_utf8(bytes.as_ref().to_vec()).unwrap()
+    }
+}

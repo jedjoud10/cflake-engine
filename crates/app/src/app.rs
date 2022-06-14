@@ -105,11 +105,12 @@ impl App {
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
         // Insert the default startup systems
-        self = self.insert_startup_with(rendering::scene::init, i32::MAX - 10);
+        self = self.insert_startup_with(assets::pre_load_defaults, i32::MIN);
+        self = self.insert_startup_with(rendering::scene::init, i32::MIN);
 
         // Insert the default update systems
-        self = self.insert_update_with(rendering::scene::cameras, i32::MAX - 11);
-        self = self.insert_update_with(rendering::scene::rendering, i32::MAX - 10);
+        self = self.insert_update_with(rendering::scene::cameras, i32::MAX);
+        self = self.insert_update_with(rendering::scene::rendering, i32::MAX);
 
         // Prepare the world and the even loop
         let el = EventLoop::new();
