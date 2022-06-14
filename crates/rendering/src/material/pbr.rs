@@ -6,7 +6,7 @@ use crate::{
     context::{Context, Graphics},
     mesh::SubMesh,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, scene::SceneRenderer,
 };
 
 use super::{
@@ -86,20 +86,20 @@ impl Material for Standard {
 
 impl InstanceBuilder<Standard> {
     // Set the albedo map
-    pub fn albedo(mut self, albedo: Handle<AlbedoMap>) -> Self {
-        self.material_mut().albedo = Some(albedo);
+    pub fn albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
+        self.material_mut().albedo = Some(albedo.clone());
         self
     }
 
     // Set the normal map
-    pub fn normal(mut self, normal: Handle<NormalMap>) -> Self {
-        self.material_mut().normal = Some(normal);
+    pub fn normal(mut self, normal: &Handle<NormalMap>) -> Self {
+        self.material_mut().normal = Some(normal.clone());
         self
     }
 
     // Set the mask map
-    pub fn mask(mut self, mask: Handle<MaskMap>) -> Self {
-        self.material_mut().mask = Some(mask);
+    pub fn mask(mut self, mask: &Handle<MaskMap>) -> Self {
+        self.material_mut().mask = Some(mask.clone());
         self
     }
 
@@ -124,6 +124,7 @@ impl InstanceBuilder<Standard> {
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (
+        &'world SceneRenderer,
         &'world Storage<AlbedoMap>,
         &'world Storage<NormalMap>,
         &'world Storage<MaskMap>,
@@ -134,15 +135,23 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms: &mut Uniforms,
         resources: &Self::PropertyBlockResources,
     ) {
+        // Decompose the fetched resource references
+        let (renderer, albedo_maps, normal_maps, mask_maps) = resources; 
+
+        // Fallback to the given handle if the first handle is missing
+        fn fallback<'a, T: 'static>(storage: &'a Storage<T>, opt: &Option<Handle<T>>, fallback: &Handle<T>) -> &'a T {
+            opt.as_ref().map(|handle| storage.get(handle)).unwrap_or_else(|| storage.get(fallback))
+        }
+
         // Scalar parameters
         uniforms.set_scalar("_bumpiness", self.bumpiness);
         uniforms.set_scalar("_roughness", self.roughness);
         uniforms.set_scalar("_metallic", self.metallic);
 
         // Try to fetch the textures
-        let albedo_map = resources.0.try_get(self.albedo.as_ref()).unwrap();
-        let normal_map = resources.1.try_get(self.normal.as_ref()).unwrap();
-        let mask_map = resources.2.try_get(self.mask.as_ref()).unwrap();
+        let albedo_map = fallback(albedo_maps, &self.albedo, &renderer.albedo_map());
+        let normal_map = fallback(normal_maps, &self.normal, &renderer.normal_map());
+        let mask_map = fallback(mask_maps, &self.mask, &renderer.mask_map());
 
         // Get their corresponding samplers
         let albedo_map_sampler = Texture::sampler(albedo_map);
@@ -174,6 +183,7 @@ impl<'world> PropertyBlock<'world> for Standard {
             albedo_maps,
             normal_maps,
             mask_maps,
+            scene_renderer,
         ) = world
             .get_mut::<(
                 &EcsManager,
@@ -184,6 +194,7 @@ impl<'world> PropertyBlock<'world> for Standard {
                 &Storage<AlbedoMap>,
                 &Storage<NormalMap>,
                 &Storage<MaskMap>,
+                &SceneRenderer,
             )>()
             .unwrap();
         (
@@ -192,7 +203,7 @@ impl<'world> PropertyBlock<'world> for Standard {
             submesh,
             shaders,
             graphics,
-            (albedo_maps, normal_maps, mask_maps),
+            (scene_renderer, albedo_maps, normal_maps, mask_maps),
         )
     }
 }

@@ -9,12 +9,6 @@ fn main() {
 fn init(world: &mut World) {
     // ---- Initialize the world ---- \\
     let (ecs, graphic, assets) = world.get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>().unwrap();
-
-    // Create a simple perspective camera entity
-    ecs.insert(|_, linker| {
-        linker.insert(Camera::new(90.0, 0.2, 1000.0, 16f / 9f));
-        linker.insert(Transform)
-    })
 }
 /*
 // Init the simple camera and simple mesh

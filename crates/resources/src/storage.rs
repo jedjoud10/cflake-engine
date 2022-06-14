@@ -32,16 +32,6 @@ impl<T: 'static> Storage<T> {
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         self.0.get_mut(handle.key).unwrap()
     }
-
-    // Try to get a element immutably (this will return None if the input is None)
-    pub fn try_get(&self, handle: Option<&Handle<T>>) -> Option<&T> {
-        handle.map(|h| self.get(h))
-    }
-
-    // Try to get a element mutably (this will return None if the input is None)
-    pub fn try_get_mut(&mut self, handle: Option<&Handle<T>>) -> Option<&mut T> {
-        handle.map(|h| self.get_mut(h))
-    }
 }
 
 impl<T: 'static> Default for Storage<T> {

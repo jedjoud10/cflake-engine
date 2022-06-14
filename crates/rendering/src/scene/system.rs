@@ -3,16 +3,17 @@ use crate::{
     context::{Context, Graphics},
     prelude::{
         Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA,
-    },
+    }, material::{Standard, Material}, shader::Shader,
 };
 
+use assets::Assets;
 use ecs::{EcsManager, modified, or, added};
 use math::Transform;
-use world::World;
+use world::{World, resources::Storage};
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
-    // Get the storages and graphical context
+    // Get the graphics context
     let Graphics(_device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
 
     // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
@@ -34,8 +35,7 @@ pub fn init(world: &mut World) {
     // Create the default white texture
     let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::one());
 
-    // Create the default PBR textures (albedo map, normal map, mask map)
-    let albedo_map = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
+    // Create the default PBR textures (normal map, mask map)
     let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
@@ -43,18 +43,32 @@ pub fn init(world: &mut World) {
     let mut set = world.storages();
     let black = set.insert(black);
     let white = set.insert(white);
-    let albedo_map = set.insert(albedo_map);
     let normal_map = set.insert(normal_map);
     let mask_map = set.insert(mask_map);
 
+    // Load the default PBR material (refetch the resources since we need storage and asset loader)
+    /*
+    let (Graphics(_, ctx), assets, storage) = world.get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>().unwrap();
+    let material = Standard::builder()
+        .albedo(&white)
+        .normal(&normal_map)
+        .mask(&mask_map)
+        .metallic(0.2)
+        .roughness(1.0).build(ctx, assets, storage);
+    
+    // Insert el material and get it's handle
+    let material = world.storages().insert(material);    
+
     // Create the new scene renderer from these values and insert it into the world
-    let renderer = SceneRenderer::new(black, white, albedo_map, normal_map, mask_map);
+    let renderer = SceneRenderer::new(black, white.clone(), white.clone(), normal_map, mask_map, material);
     world.insert(renderer);
+    */
 }
 
 // Rendering system that will try to render the scene each frame
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
+    /*
     let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
     let Graphics(_device, context) = graphics;
 
@@ -72,6 +86,7 @@ pub fn rendering(world: &mut World) {
         .into_iter()
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();
+    */
 }
 
 // Camera update system that will update the view matrix of perspective cameras
