@@ -8,7 +8,8 @@ use crate::context::Context;
 
 use super::TextureMode;
 
-// Some unique data that will be specifically valid for bindless textures
+// Wrapper over the raw bindless texture handles that some texture can use for better performance
+// Only dynamic textures can become bindless, since they must be stored within immutable storage
 pub struct Bindless {
     // The GPU handle for the texture
     pub(crate) handle: u64,

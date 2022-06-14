@@ -251,11 +251,15 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
                 }
             }
 
-            // Create a bindless handle if needed
-            let bindless = super::create_bindless(ctx, tex, 200, mode);
+            // Create a bindless handle for dynamic textures only (since dealing with resizable textures would be an absolute pain)
+            let bindless = if mode == TextureMode::Dynamic {
+                super::create_bindless(ctx, tex, 200, mode)
+            } else { 
+                None
+            };
 
             // Appply the sampling parameters for this texture
-            super::apply(tex, gl::TEXTURE_2D, mode, sampling);
+            super::apply(tex, Self::target(), mode, sampling);
 
             // Apply mipmapping automatically
             if levels.get() > 1 {
@@ -281,7 +285,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     // Create an immutable texture sampler
     fn sampler(&self) -> Sampler<Self>;
 
-    // Get the bindless state for this texture
+    // Get the bindless handle that is stored within this texture
     fn bindless(&self) -> Option<&Bindless>;
 
     // Calculate the number of texels that make up this texture

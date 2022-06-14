@@ -41,11 +41,8 @@ fn device(_world: &mut World, _device: DeviceEvent, _cf: &mut ControlFlow) {}
 // Execute one step-frame of the engine
 fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) {
     // We clear the screen at the start of every frame
-    let graphics = world.get_mut::<&mut Graphics>().unwrap();
-    graphics
-        .0
-        .canvas_mut()
-        .clear(Some(vek::Rgb::blue()), None, None);
+    let Graphics(device, context) = world.get_mut::<&mut Graphics>().unwrap();
+    device.canvas_mut().clear(Some(vek::Rgb::black()), None, None);
 
     // Execute the ECS systems in order
     for system in systems {

@@ -48,6 +48,12 @@ impl Graphics {
         let mut ctx = super::Context::new(context);
         let device = super::Device::new(&mut ctx, window);
 
+        // Print the default init message
+        println!("OpenGL Version: {}", ctx.gl_version());
+        println!("GLSL Version: {}", ctx.glsl_version());
+        println!("Graphics Renderer: {}", device.name());
+        println!("Vendor: {}", device.vendor());
+
         // Return the event loop along side the graphics pipeline
         (el, Self(device, ctx))
     }

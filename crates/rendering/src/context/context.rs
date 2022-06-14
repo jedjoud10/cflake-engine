@@ -1,9 +1,11 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc};
+use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc, ffi::{CString, CStr}};
 
 use crate::material::{Material, MaterialRenderer};
+
+use super::get_static_str;
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
@@ -78,5 +80,15 @@ impl Context {
     // Get the raw Glutin OpenGL context wrapper
     pub fn raw(&self) -> &RawContext<PossiblyCurrent> {
         &self.ctx
+    }
+
+    // Get the OpenGL version that we are currently using
+    pub fn gl_version(&self) -> &'static str {
+        unsafe { get_static_str(gl::VERSION) }
+    }
+    
+    // Get the GLSL version that we shall use
+    pub fn glsl_version(&self) -> &'static str {
+        unsafe { get_static_str(gl::SHADING_LANGUAGE_VERSION) }
     }
 }

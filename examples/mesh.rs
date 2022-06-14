@@ -1,17 +1,22 @@
-/*
-use cflake_engine::{
-    assets, defaults,
-    defaults::components::{Camera, Light, Renderer, Transform},
-    rendering::basics::{
-        lights::LightType,
-        texture::{Texture2D, TextureFilter, TextureParams},
-    },
-    vek, World,
-};
-// An example with a test mesh
+use cflake_engine::prelude::*;
+
+// Example that will try to render a simple 3D cube
 fn main() {
-    cflake_engine::start("cflake-examples/mesh", init)
+    App::new().insert_startup(init).execute();
 }
+
+// Initialize the world
+fn init(world: &mut World) {
+    // ---- Initialize the world ---- \\
+    let (ecs, graphic, assets) = world.get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>().unwrap();
+
+    // Create a simple perspective camera entity
+    ecs.insert(|_, linker| {
+        linker.insert(Camera::new(90.0, 0.2, 1000.0, 16f / 9f));
+        linker.insert(Transform)
+    })
+}
+/*
 // Init the simple camera and simple mesh
 fn init(world: &mut World) {
     // ----Start the world----
@@ -47,4 +52,3 @@ fn init(world: &mut World) {
     });
 }
 */
-fn main() {}
