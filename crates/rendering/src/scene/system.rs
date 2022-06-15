@@ -76,7 +76,7 @@ pub fn rendering(world: &mut World) {
     let settings = renderer.clone();
 
     // Update all the renderer components
-    let renderers = context.extract_material_renderer();
+    let renderers = context.extract_material_renderers();
 
     // Render all the material surfaces
     let _stats = renderers

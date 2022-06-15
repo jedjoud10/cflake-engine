@@ -92,8 +92,10 @@ impl<T> PartialEq for Handle<T> {
 
 impl<T> Eq for Handle<T> {}
 
+// Cloning the handle increments the reference count
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
+        *self.tracker.borrow_mut().get_mut(&self.key).unwrap() += 1;
         Self {
             key: self.key,
             tracker: self.tracker.clone(),
@@ -102,6 +104,7 @@ impl<T> Clone for Handle<T> {
     }
 }
 
+// Dropping the handle decreases the reference count
 impl<T> Drop for Handle<T> {
     fn drop(&mut self) {
         let mut tracker = self.tracker.borrow_mut();

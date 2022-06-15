@@ -5,7 +5,7 @@ use resources::{Layout, Resource, ResourceError, ResourceSet, StorageSet};
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
 #[derive(Default)]
-pub struct World(ResourceSet);
+pub struct World(pub ResourceSet);
 
 impl World {
     // Insert a new resource into the world

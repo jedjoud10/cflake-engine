@@ -62,7 +62,7 @@ impl Canvas {
     }
 
     // Bind the underlying framebuffer if it isn't bound already
-    fn bind(&mut self, ctx: &mut Context) {
+    fn bind_once(&mut self, ctx: &mut Context) {
         // Make sure the framebuffer is bound, and that the viewport is valid
         ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
@@ -115,6 +115,7 @@ impl Canvas {
         shader: &'shader mut Shader,
         ctx: &'context mut Context,
     ) -> Rasterizer<'canvas, 'shader, 'context> {
+        self.bind_once(ctx);
         Rasterizer {
             canvas: self,
             shader,

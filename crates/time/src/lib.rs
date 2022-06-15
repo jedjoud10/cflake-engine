@@ -3,11 +3,9 @@ use std::time::Instant;
 use world::resources::Resource;
 
 // Global resource that defines the time since the start of the engine and the current frame data
-#[derive(Resource)]
-#[Locked]
 pub struct Time {
     // The difference in seconds between the last frame and the current frame
-    delta: f32,
+    delta: f64,
 
     // How many frames has the engine been running for?
     frame_count: u128,
@@ -17,6 +15,23 @@ pub struct Time {
 
     // The start of the current frame
     frame_start: Instant,
+}
+
+impl Resource for Time {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn start_frame(&mut self) {
+        let now = Instant::now();
+        self.delta = (now - self.frame_start).as_secs_f64();
+        self.frame_start = now;
+        self.frame_count += 1;
+    }
 }
 
 impl Default for Time {
@@ -31,20 +46,12 @@ impl Default for Time {
 }
 
 impl Time {
-    // Update the time with the specified delta
-    // This should only be called by the default engine, at the start of each frame
-    pub fn update(&mut self, delta: f32) {
-        self.delta = delta;
-        self.frame_count += 1;
-        self.frame_start = Instant::now();
-    }
-
-    // Get the delta time
-    pub fn delta(&self) -> f32 {
+    // Get the time it took to complete one frame
+    pub fn delta(&self) -> f64 {
         self.delta
     }
 
-    // Get the frame count
+    // Get the total frame count 
     pub fn frame_count(&self) -> u128 {
         self.frame_count
     }

@@ -32,6 +32,7 @@ impl Context {
             gl::Enable(gl::DEBUG_OUTPUT);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(super::callback), null());
+            gl::DebugMessageControl(gl::DONT_CARE, gl::DONT_CARE, gl::DONT_CARE, 0, null(), gl::FALSE);
         }
 
         // Create el safe wrapper

@@ -27,9 +27,13 @@ fn window(world: &mut World, event: WindowEvent, cf: &mut ControlFlow) {
         WindowEvent::CloseRequested => *cf = ControlFlow::Exit,
         WindowEvent::Resized(size) => {
             let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-            device
+
+            // If we resize to a null size, just don't do anything
+            if size.width > 0 && size.height > 0 {
+                device
                 .canvas_mut()
                 .resize(vek::Extent2::new(size.width as u16, size.height as u16));
+            }
         }
         _ => {}
     }
@@ -40,9 +44,12 @@ fn device(_world: &mut World, _device: DeviceEvent, _cf: &mut ControlFlow) {}
 
 // Execute one step-frame of the engine
 fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) {
+    // Le world is bruh funnier
+    world.0.start_frame();
+
     // We clear the screen at the start of every frame
-    let Graphics(device, context) = world.get_mut::<&mut Graphics>().unwrap();
-    device.canvas_mut().clear(Some(vek::Rgb::black()), None, None);
+    let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
+    device.canvas_mut().clear(Some(vek::Rgb::green()), None, None);
 
     // Execute the ECS systems in order
     for system in systems {
@@ -52,4 +59,7 @@ fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) 
     // Swap the front and back buffers (OpenGL) so we can actually render something to the screen
     let Graphics(_, ctx) = world.get_mut::<&mut Graphics>().unwrap();
     ctx.raw().swap_buffers().unwrap();
+
+    // Indeed funny
+    world.0.end_frame();
 }
