@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{Bindless, ImageTexel, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA};
+use super::{Bindless, ImageTexel, Region, Texel, Texture, TextureMode, RGBA};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -36,77 +36,12 @@ impl<T: Texel> ToGlTarget for Texture2D<T> {
     }
 }
 
-impl<T: Texel> TextureAllocator for Texture2D<T> {
-    type TexelRegion = (vek::Vec2<u16>, vek::Extent2<u16>);
-
-    unsafe fn alloc_immutable_storage(
-        name: u32,
-        extent: <Self::TexelRegion as Region>::E,
-        levels: u8,
-        ptr: *const std::ffi::c_void,
-    ) {
-        gl::TextureStorage2D(
-            name,
-            levels as i32,
-            T::INTERNAL_FORMAT,
-            extent.w as i32,
-            extent.h as i32,
-        );
-        gl::TextureSubImage2D(
-            name,
-            0,
-            0,
-            0,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
-    }
-
-    unsafe fn alloc_resizable_storage(
-        name: u32,
-        extent: <Self::TexelRegion as Region>::E,
-        unique_level: u8,
-        ptr: *const std::ffi::c_void,
-    ) {
-        gl::BindTexture(gl::TEXTURE_2D, name);
-        gl::TexImage2D(
-            gl::TEXTURE_2D,
-            unique_level as i32,
-            T::INTERNAL_FORMAT as i32,
-            extent.w as i32,
-            extent.h as i32,
-            0,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
-        gl::BindTexture(gl::TEXTURE_2D, 0);
-    }
-
-    unsafe fn update_subregion(name: u32, region: Self::TexelRegion, ptr: *const std::ffi::c_void) {
-        let origin = region.origin();
-        let extent = region.extent();
-        gl::TextureSubImage2D(
-            name,
-            0,
-            origin.x as i32,
-            origin.y as i32,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
-    }
-}
-
 impl<T: Texel> Texture for Texture2D<T> {
     type T = T;
+    type Region = (vek::Vec2<u16>, vek::Extent2<u16>);
+    type Settings = (Aniso, MipMap);
 
-    fn dimensions(&self) -> <Self::TexelRegion as super::Region>::E {
+    fn dimensions(&self) -> <Self::Region as super::Region>::E {
         self.dimensions
     }
 
@@ -132,7 +67,7 @@ impl<T: Texel> Texture for Texture2D<T> {
 
     unsafe fn from_raw_parts(
         name: u32,
-        dimensions: <Self::TexelRegion as super::Region>::E,
+        dimensions: <Self::Region as super::Region>::E,
         mode: TextureMode,
         levels: NonZeroU8,
         bindless: Option<Rc<Bindless>>,
@@ -145,6 +80,69 @@ impl<T: Texel> Texture for Texture2D<T> {
             bindless,
             _phantom: Default::default(),
         }
+    }
+
+    unsafe fn alloc_immutable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        levels: u8,
+        ptr: *const std::ffi::c_void,
+    ) {
+        gl::TextureStorage2D(
+            name,
+            levels as i32,
+            T::INTERNAL_FORMAT,
+            extent.w as i32,
+            extent.h as i32,
+        );
+        gl::TextureSubImage2D(
+            name,
+            0,
+            0,
+            0,
+            extent.w as i32,
+            extent.h as i32,
+            T::FORMAT,
+            T::TYPE,
+            ptr,
+        );
+    }
+
+    unsafe fn alloc_resizable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        unique_level: u8,
+        ptr: *const std::ffi::c_void,
+    ) {
+        gl::BindTexture(gl::TEXTURE_2D, name);
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            unique_level as i32,
+            T::INTERNAL_FORMAT as i32,
+            extent.w as i32,
+            extent.h as i32,
+            0,
+            T::FORMAT,
+            T::TYPE,
+            ptr,
+        );
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+    }
+
+    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const std::ffi::c_void) {
+        let origin = region.origin();
+        let extent = region.extent();
+        gl::TextureSubImage2D(
+            name,
+            0,
+            origin.x as i32,
+            origin.y as i32,
+            extent.w as i32,
+            extent.h as i32,
+            T::FORMAT,
+            T::TYPE,
+            ptr,
+        );
     }
 }
 
