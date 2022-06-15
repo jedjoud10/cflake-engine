@@ -51,8 +51,8 @@ impl Graphics {
         // Print the default init message
         println!("OpenGL Version: {}", ctx.gl_version());
         println!("GLSL Version: {}", ctx.glsl_version());
-        println!("Graphics Renderer: {}", device.name());
-        println!("Vendor: {}", device.vendor());
+        println!("GPU Name: {}", device.name());
+        println!("GPU Vendor: {}", device.vendor());
 
         // Return the event loop along side the graphics pipeline
         (el, Self(device, ctx))

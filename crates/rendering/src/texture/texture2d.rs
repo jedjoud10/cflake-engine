@@ -1,7 +1,7 @@
 use assets::Asset;
 
-use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA};
-use crate::object::{ToGlName, ToGlTarget};
+use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA, ImageTexel};
+use crate::{object::{ToGlName, ToGlTarget}, context::Context};
 use std::{marker::PhantomData, num::NonZeroU8, rc::Rc};
 
 // A 2D texture that contains multiple pixels that have their own channels
@@ -144,3 +144,19 @@ impl<T: Texel> Texture for Texture2D<T> {
         }
     }
 }
+
+/*
+impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
+    type Args = (&'a mut Context, TextureSettings);
+
+    fn extensions() -> &'static [&'static str] {
+        &["png", "jpg"]
+    }
+
+    fn deserialize(bytes: assets::CachedSlice, args: Self::Args) -> Self {
+        let image = image::load_from_memory(bytes.as_ref()).unwrap();
+        let texels = T::to_image_texels(image);
+        Self::new(args, Texture, dimensions, sampling, mipmaps, data)
+    }
+}
+*/

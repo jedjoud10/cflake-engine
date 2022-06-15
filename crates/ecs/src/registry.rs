@@ -40,7 +40,6 @@ pub fn register<T: Component>() -> Mask {
     let copy = *bit;
     locked.insert(TypeId::of::<T>(), copy);
     *bit = *bit << 1;
-    println!("Register component {} with mask {:?}", name::<T>(), copy);
     copy
 }
 // Get the name of a component
