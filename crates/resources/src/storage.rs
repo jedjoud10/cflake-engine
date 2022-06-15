@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use slotmap::{DefaultKey, SlotMap};
-use std::{cell::RefCell, marker::PhantomData, rc::Rc, any::type_name};
+use std::{any::type_name, cell::RefCell, marker::PhantomData, rc::Rc};
 
 use crate::{Resource, ResourceSet};
 

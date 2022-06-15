@@ -2,10 +2,10 @@ use crate::{
     buffer::ElementBuffer,
     canvas::blend::{BlendMode, Factor},
     canvas::Canvas,
-    others::Comparison,
     context::Context,
     mesh::attributes::AttributeSet,
     object::ToGlName,
+    others::Comparison,
     shader::Shader,
 };
 use std::{

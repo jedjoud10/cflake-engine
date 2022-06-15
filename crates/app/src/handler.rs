@@ -31,8 +31,8 @@ fn window(world: &mut World, event: WindowEvent, cf: &mut ControlFlow) {
             // If we resize to a null size, just don't do anything
             if size.width > 0 && size.height > 0 {
                 device
-                .canvas_mut()
-                .resize(vek::Extent2::new(size.width as u16, size.height as u16));
+                    .canvas_mut()
+                    .resize(vek::Extent2::new(size.width as u16, size.height as u16));
             }
         }
         _ => {}
@@ -49,7 +49,9 @@ fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) 
 
     // We clear the screen at the start of every frame
     let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-    device.canvas_mut().clear(Some(vek::Rgb::green()), None, None);
+    device
+        .canvas_mut()
+        .clear(Some(vek::Rgb::green()), None, None);
 
     // Execute the ECS systems in order
     for system in systems {

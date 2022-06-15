@@ -1,7 +1,14 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc, ffi::{CString, CStr}, ptr::null};
+use std::{
+    any::TypeId,
+    collections::HashMap,
+    ffi::{CStr, CString},
+    hash::BuildHasherDefault,
+    ptr::null,
+    rc::Rc,
+};
 
 use crate::material::{Material, MaterialRenderer};
 
@@ -32,7 +39,14 @@ impl Context {
             gl::Enable(gl::DEBUG_OUTPUT);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(super::callback), null());
-            gl::DebugMessageControl(gl::DONT_CARE, gl::DONT_CARE, gl::DONT_CARE, 0, null(), gl::FALSE);
+            gl::DebugMessageControl(
+                gl::DONT_CARE,
+                gl::DONT_CARE,
+                gl::DONT_CARE,
+                0,
+                null(),
+                gl::FALSE,
+            );
         }
 
         // Create el safe wrapper
@@ -97,7 +111,7 @@ impl Context {
     pub fn gl_version(&self) -> &'static str {
         unsafe { get_static_str(gl::VERSION) }
     }
-    
+
     // Get the GLSL version that we shall use
     pub fn glsl_version(&self) -> &'static str {
         unsafe { get_static_str(gl::SHADING_LANGUAGE_VERSION) }

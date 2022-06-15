@@ -2,11 +2,11 @@ use vek::Vec2;
 use vek::Vec3;
 use vek::Vec4;
 
-use crate::object::Shared;
 use super::channels::*;
 use super::element::*;
-use std::mem::size_of;
+use crate::object::Shared;
 use paste::paste;
+use std::mem::size_of;
 
 // This trait defines the layout for a single texel that will be stored within textures1
 pub trait Texel: 'static {
@@ -36,8 +36,6 @@ pub trait Texel: 'static {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
     }
 }
-
-
 
 // Macro that will automatically implement the texel layout trait
 macro_rules! impl_texel_layout {

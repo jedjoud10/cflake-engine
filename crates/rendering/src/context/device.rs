@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 
-use super::{Context, get_static_str};
+use super::{get_static_str, Context};
 
 // A device is just some sort of wrapper around glutin windows
 pub struct Device {

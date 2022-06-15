@@ -1,5 +1,5 @@
-use std::ffi::{CStr, c_void, CString};
 use gl::types;
+use std::ffi::{c_void, CStr, CString};
 
 // Get a static string that calls the glGetString function with the input value "symbolic"
 // This must be called on the main thread (I think)
@@ -11,7 +11,15 @@ pub(crate) unsafe fn get_static_str(symbolic: u32) -> &'static str {
 
 // Callback function for OpenGl debugging output
 // This might log the newly fed message to a log or the console
-pub(crate) extern "system" fn callback(source: types::GLenum, _type: types::GLenum, id: types::GLuint, severity: types::GLenum, length: types::GLsizei, ptr: *const types::GLchar, user: *mut c_void) {
+pub(crate) extern "system" fn callback(
+    source: types::GLenum,
+    _type: types::GLenum,
+    id: types::GLuint,
+    severity: types::GLenum,
+    length: types::GLsizei,
+    ptr: *const types::GLchar,
+    user: *mut c_void,
+) {
     // Convert the source type to a user safe name
     let source = match source {
         gl::DEBUG_SOURCE_API => "API",
@@ -19,7 +27,7 @@ pub(crate) extern "system" fn callback(source: types::GLenum, _type: types::GLen
         gl::DEBUG_SOURCE_APPLICATION => "App",
         gl::DEBUG_SOURCE_SHADER_COMPILER => "Shader Compiler",
         gl::DEBUG_SOURCE_THIRD_PARTY => "Third Party",
-        _ => "Don't care"
+        _ => "Don't care",
     };
 
     // Convert the unsafe message pointer to a safe string
@@ -40,5 +48,3 @@ pub(crate) extern "system" fn callback(source: types::GLenum, _type: types::GLen
     // Print el messsage
     println!("{source}, {severity} severity, {message}");
 }
-
-

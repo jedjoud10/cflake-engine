@@ -10,48 +10,14 @@ use world::{
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
-    others::Comparison,
     context::{Context, Graphics},
     mesh::{SubMesh, Surface},
+    others::Comparison,
     scene::{Camera, Model, SceneRenderer},
     shader::{Shader, Uniforms},
 };
 
-// Instance builder that will take a unique material and construct a new instance for it
-// You can implement the instance builder for your specic material to write some methods that use the builder pattern
-pub struct InstanceBuilder<M: Material>(M);
-
-impl<M: Material> Default for InstanceBuilder<M> {
-    // Create a default instance builder by creating a new material from it's instance
-    fn default() -> Self {
-        Self(M::default(InstanceID(Default::default())))
-    }
-}
-
-impl<M: Material> InstanceBuilder<M> {
-    // Get an immutable reference to the underlying material
-    pub fn material(&self) -> &M {
-        &self.0
-    }
-
-    // Get a mutable reference to the underlying material
-    pub fn material_mut(&mut self) -> &mut M {
-        &mut self.0
-    }
-
-    // Build the underlying material instance
-    pub fn build(self, ctx: &mut Context, loader: &mut Assets, storage: &mut Storage<Shader>) -> M {
-        // Add the material type renderer to the context
-        ctx.register_material_renderer::<M, _>(|ctx| M::renderer(ctx, loader, storage));
-
-        // Simply return the built material
-        self.0
-    }
-}
-
-// This is an Instance ID that will be stored within the materials
-// By itself it does nothing, but we have to store it since the only way we can generate an instance ID is by using the descriptor
-pub struct InstanceID<M: Material>(PhantomData<M>);
+use super::{InstanceID, MaterialBuilder};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material: 'static + Sized {
@@ -69,8 +35,8 @@ pub trait Material: 'static + Sized {
     ) -> Self::Renderer;
 
     // Create a new instance builder for this material type
-    fn builder() -> InstanceBuilder<Self> {
-        InstanceBuilder::default()
+    fn builder() -> MaterialBuilder<Self> {
+        MaterialBuilder::default()
     }
 
     // Get the current material instance ID

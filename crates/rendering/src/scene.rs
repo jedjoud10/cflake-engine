@@ -1,10 +1,10 @@
 mod camera;
+mod light;
 mod model;
 mod renderer;
 mod system;
-mod light;
-pub use light::*;
 pub use camera::*;
+pub use light::*;
 pub use model::*;
 pub use renderer::*;
 pub use system::*;

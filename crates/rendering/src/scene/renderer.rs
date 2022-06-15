@@ -3,7 +3,8 @@ use world::resources::{Handle, Resource};
 
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
-    prelude::{Ranged, Texture2D, RGBA}, shader::Shader,
+    prelude::{Ranged, Texture2D, RGBA},
+    shader::Shader,
 };
 
 type Image = Texture2D<RGBA<Ranged<u8>>>;
@@ -23,7 +24,7 @@ pub struct SceneRenderer {
     // Default black and white textures
     black: Handle<Image>,
     white: Handle<Image>,
-    
+
     // Default albedo, normal, and mask maps for PBR rendering
     albedo_map: Handle<AlbedoMap>,
     normal_map: Handle<NormalMap>,
@@ -51,7 +52,7 @@ impl SceneRenderer {
             albedo_map,
             normal_map,
             mask_map,
-            material
+            material,
         }
     }
 

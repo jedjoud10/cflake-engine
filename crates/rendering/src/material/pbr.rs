@@ -5,12 +5,13 @@ use world::resources::{Handle, Storage};
 use crate::{
     context::{Context, Graphics},
     mesh::SubMesh,
+    scene::SceneRenderer,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, scene::SceneRenderer,
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
 
 use super::{
-    BatchRenderer, InstanceBuilder, InstanceID, Material, MaterialRenderer, PropertyBlock,
+    BatchRenderer, InstanceID, Material, MaterialBuilder, MaterialRenderer, PropertyBlock,
 };
 
 // Albedo map (color data), rgba
@@ -84,7 +85,7 @@ impl Material for Standard {
     }
 }
 
-impl InstanceBuilder<Standard> {
+impl MaterialBuilder<Standard> {
     // Set the albedo map
     pub fn albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
         self.material_mut().albedo = Some(albedo.clone());
@@ -136,11 +137,17 @@ impl<'world> PropertyBlock<'world> for Standard {
         resources: &Self::PropertyBlockResources,
     ) {
         // Decompose the fetched resource references
-        let (renderer, albedo_maps, normal_maps, mask_maps) = resources; 
+        let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
 
         // Fallback to the given handle if the first handle is missing
-        fn fallback<'a, T: 'static>(storage: &'a Storage<T>, opt: &Option<Handle<T>>, fallback: &Handle<T>) -> &'a T {
-            opt.as_ref().map(|handle| storage.get(handle)).unwrap_or_else(|| storage.get(fallback))
+        fn fallback<'a, T: 'static>(
+            storage: &'a Storage<T>,
+            opt: &Option<Handle<T>>,
+            fallback: &Handle<T>,
+        ) -> &'a T {
+            opt.as_ref()
+                .map(|handle| storage.get(handle))
+                .unwrap_or_else(|| storage.get(fallback))
         }
 
         // Scalar parameters

@@ -16,7 +16,11 @@ fn main() {
         (4, 6),
         Profile::Core,
         Fallbacks::All,
-        ["GL_ARB_bindless_texture", "GL_KHR_parallel_shader_compile", "GL_EXT_texture_filter_anisotropic"],
+        [
+            "GL_ARB_bindless_texture",
+            "GL_KHR_parallel_shader_compile",
+            "GL_EXT_texture_filter_anisotropic",
+        ],
     )
     .write_bindings(GlobalGenerator, &mut file)
     .unwrap();

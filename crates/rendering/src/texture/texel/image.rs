@@ -1,4 +1,4 @@
-use super::{Texel, R, Ranged, RG, RGB, RGBA};
+use super::{Ranged, Texel, R, RG, RGB, RGBA};
 
 // Image texels are texels that can be loaded from a .png file, like when loading a Texture2D<RGBA<Ranged<u8>>>
 pub trait ImageTexel: Texel {

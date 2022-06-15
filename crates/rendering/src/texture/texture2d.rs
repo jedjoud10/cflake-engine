@@ -1,7 +1,10 @@
 use assets::Asset;
 
-use super::{Bindless, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA, ImageTexel};
-use crate::{object::{ToGlName, ToGlTarget}, context::Context};
+use super::{Bindless, ImageTexel, Region, Texel, Texture, TextureAllocator, TextureMode, RGBA};
+use crate::{
+    context::Context,
+    object::{ToGlName, ToGlTarget},
+};
 use std::{marker::PhantomData, num::NonZeroU8, rc::Rc};
 
 // A 2D texture that contains multiple pixels that have their own channels

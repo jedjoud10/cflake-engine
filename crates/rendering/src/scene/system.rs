@@ -1,15 +1,17 @@
-use super::{SceneRenderer, Camera};
+use super::{Camera, SceneRenderer};
 use crate::{
     context::{Context, Graphics},
+    material::{Material, Standard},
     prelude::{
         Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA,
-    }, material::{Standard, Material}, shader::Shader,
+    },
+    shader::Shader,
 };
 
 use assets::Assets;
-use ecs::{EcsManager, modified, or, added};
+use ecs::{added, modified, or, EcsManager};
 use math::Transform;
-use world::{World, resources::Storage};
+use world::{resources::Storage, World};
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {
@@ -47,19 +49,29 @@ pub fn init(world: &mut World) {
     let mask_map = set.insert(mask_map);
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
-    let (Graphics(_, ctx), assets, storage) = world.get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>().unwrap();
+    let (Graphics(_, ctx), assets, storage) = world
+        .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>()
+        .unwrap();
     let material = Standard::builder()
         .albedo(&white)
         .normal(&normal_map)
         .mask(&mask_map)
         .metallic(0.2)
-        .roughness(1.0).build(ctx, assets, storage);
-    
+        .roughness(1.0)
+        .build(ctx, assets, storage);
+
     // Insert el material and get it's handle
-    let material = world.storages().insert(material);    
+    let material = world.storages().insert(material);
 
     // Create the new scene renderer from these values and insert it into the world
-    let renderer = SceneRenderer::new(black, white.clone(), white.clone(), normal_map, mask_map, material);
+    let renderer = SceneRenderer::new(
+        black,
+        white.clone(),
+        white.clone(),
+        normal_map,
+        mask_map,
+        material,
+    );
     world.insert(renderer);
 }
 
@@ -87,9 +99,11 @@ pub fn rendering(world: &mut World) {
 
 // Camera update system that will update the view matrix of perspective cameras
 pub fn cameras(world: &mut World) {
-    let (ecs, Graphics(device, _)) = world.get_mut::<(&mut EcsManager, &Graphics)>().unwrap(); 
+    let (ecs, Graphics(device, _)) = world.get_mut::<(&mut EcsManager, &Graphics)>().unwrap();
     let filter = or(modified::<Camera>(), modified::<Transform>());
-    let query = ecs.try_query_with::<(&mut Camera, &Transform), _>(filter).unwrap();
+    let query = ecs
+        .try_query_with::<(&mut Camera, &Transform), _>(filter)
+        .unwrap();
     for (camera, transform) in query {
         camera.update(transform);
     }

@@ -216,7 +216,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
-        
+
         // Validate length (make sure the data slice matches up with dimensions)
         let len_valid = if !data.is_empty() {
             data.len() as u64 == (dimensions.area() as u64)
@@ -255,7 +255,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
             let bindless = if mode == TextureMode::Dynamic {
                 //super::create_bindless(ctx, tex, 200, mode)
                 None
-            } else { 
+            } else {
                 None
             };
 

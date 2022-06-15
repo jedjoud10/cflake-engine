@@ -21,5 +21,5 @@ pub struct Point {
     strength: f32,
 
     // The sphere of influence of the light
-    radius: f32
+    radius: f32,
 }

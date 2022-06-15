@@ -297,7 +297,7 @@ impl<
         F: ResHandle<'a>,
         G: ResHandle<'a>,
         H: ResHandle<'a>,
-        I: ResHandle<'a>
+        I: ResHandle<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G, H, I)
 {
     fn types() -> Vec<HandleID> {
@@ -310,7 +310,7 @@ impl<
             F::id(),
             G::id(),
             H::id(),
-            I::id()
+            I::id(),
         ]
     }
 

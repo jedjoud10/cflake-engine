@@ -1,10 +1,12 @@
 mod bindless;
+mod builder;
 mod raw;
 mod sampling;
 mod texel;
 mod texture;
 mod texture2d;
 pub use bindless::*;
+pub use builder::*;
 pub use raw::*;
 pub use sampling::*;
 pub use texel::*;

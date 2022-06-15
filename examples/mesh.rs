@@ -8,7 +8,9 @@ fn main() {
 // Initialize the world
 fn init(world: &mut World) {
     // ---- Initialize the world ---- \\
-    let (ecs, graphic, assets) = world.get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>().unwrap();
+    let (ecs, graphic, assets) = world
+        .get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>()
+        .unwrap();
 }
 /*
 // Init the simple camera and simple mesh

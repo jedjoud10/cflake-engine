@@ -1,6 +1,6 @@
+use super::Element;
 use std::marker::PhantomData;
 use vek::{Vec2, Vec3, Vec4};
-use super::Element;
 
 // The channels that represent the texels
 pub struct R<T: Element>(PhantomData<T>);

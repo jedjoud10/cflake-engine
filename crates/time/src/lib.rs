@@ -51,7 +51,7 @@ impl Time {
         self.delta
     }
 
-    // Get the total frame count 
+    // Get the total frame count
     pub fn frame_count(&self) -> u128 {
         self.frame_count
     }
