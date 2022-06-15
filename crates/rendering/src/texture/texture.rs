@@ -1,13 +1,16 @@
-use super::{Bindless, Sampler, Texel, TextureAllocator};
+use super::{Bindless, Sampler, Texel, Sampling};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{num::NonZeroU8, ptr::null, rc::Rc};
+use std::{num::NonZeroU8, ptr::null, rc::Rc, ffi::c_void};
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TextureMode {
+    // Static textures cannot be modified, they can only be read
+    Static,
+
     // Dynamic textures can be modified throughout their lifetime, but they cannot change size
     Dynamic,
 
@@ -50,7 +53,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     unsafe fn update_unchecked(
         &mut self,
         _ctx: &mut Context,
-        region: T::TexelRegion,
+        region: T::Region,
         data: &[<T::T as Texel>::Storage],
     ) {
         T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
@@ -60,7 +63,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     fn update(
         &mut self,
         ctx: &mut Context,
-        region: T::TexelRegion,
+        region: T::Region,
         data: &[<T::T as Texel>::Storage],
     ) {
         // The length of the buffer should be equal to the surface area of the region
@@ -201,17 +204,19 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
-pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
+pub trait Texture: ToGlName + ToGlTarget + Sized {
+    // Texel region (position + extent)
+    type Region: Region;
+
     // Texel layout that we will use internally
     type T: Texel;
-
-    // Create a new texutre that contains some data
+    // Create a new texture that contains some data
     fn new(
         ctx: &mut Context,
+        dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
-        dimensions: <Self::TexelRegion as Region>::E,
-        sampling: super::Sampling,
-        mipmaps: bool,
+        mipmaps: bool, 
+        sampling: Sampling,
         data: &[<Self::T as Texel>::Storage],
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
@@ -230,9 +235,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
             let ptr = (!data.is_empty())
                 .then(|| data.as_ptr())
                 .unwrap_or_else(null);
+
             let levels = mipmaps
                 .then(|| dimensions.levels())
                 .unwrap_or(NonZeroU8::new_unchecked(1));
+            
 
             // Create a new raw OpenGL texture object
             let tex = {
@@ -243,7 +250,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
-                TextureMode::Dynamic => {
+                TextureMode::Dynamic | TextureMode::Static => {
                     Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _)
                 }
                 TextureMode::Resizable => {
@@ -267,18 +274,18 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
                 gl::GenerateTextureMipmap(tex);
             }
 
-            // Create the object
+            // Create the texture object
             Self::from_raw_parts(tex, dimensions, mode, levels, bindless)
         })
     }
 
     // Get the texture's region (origin state is default)
-    fn region(&self) -> Self::TexelRegion {
-        Self::TexelRegion::with_extent(self.dimensions())
+    fn region(&self) -> Self::Region {
+        Self::Region::with_extent(self.dimensions())
     }
 
     // Get the texture's dimensions
-    fn dimensions(&self) -> <Self::TexelRegion as Region>::E;
+    fn dimensions(&self) -> <Self::Region as Region>::E;
 
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
@@ -293,6 +300,9 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     fn texel_count(&self) -> u32 {
         self.dimensions().area()
     }
+
+    // Get the number of mipmap layers that we are using internally
+    fn levels(&self) -> NonZeroU8;
 
     // Get a single mip level from the texture, immutably
     fn get_layer(&self, level: u8) -> Option<MipLayerRef<Self>>;
@@ -322,9 +332,29 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
     // Construct the texture object from it's raw parts
     unsafe fn from_raw_parts(
         name: u32,
-        dimensions: <Self::TexelRegion as Region>::E,
+        dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
         levels: NonZeroU8,
         bindless: Option<Rc<Bindless>>,
     ) -> Self;
+
+    // Allocate some immutable texture storage during texture initialization
+    unsafe fn alloc_immutable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        levels: u8,
+        ptr: *const c_void,
+    );
+
+    // Allocate some mutable(resizable) texture during texture initialization
+    // PS: This will allocate the texture storage for only one level
+    unsafe fn alloc_resizable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        unique_level: u8,
+        ptr: *const c_void,
+    );
+
+    // Update a sub-region of the raw texture
+    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);
 }

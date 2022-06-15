@@ -37,9 +37,8 @@ impl<T: Texel> ToGlTarget for Texture2D<T> {
 }
 
 impl<T: Texel> Texture for Texture2D<T> {
-    type T = T;
     type Region = (vek::Vec2<u16>, vek::Extent2<u16>);
-    type Settings = (Aniso, MipMap);
+    type T = T;
 
     fn dimensions(&self) -> <Self::Region as super::Region>::E {
         self.dimensions
@@ -55,6 +54,10 @@ impl<T: Texel> Texture for Texture2D<T> {
 
     fn bindless(&self) -> Option<&Bindless> {
         self.bindless.as_ref().map(Rc::as_ref)
+    }
+
+    fn levels(&self) -> NonZeroU8 {
+        self.levels
     }
 
     fn get_layer(&self, level: u8) -> Option<super::MipLayerRef<Self>> {
