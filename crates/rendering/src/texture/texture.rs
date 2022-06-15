@@ -237,7 +237,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
             // Create a new raw OpenGL texture object
             let tex = {
                 let mut tex = 0u32;
-                gl::GenTextures(1, &mut tex);
+                gl::CreateTextures(Self::target(), 1, &mut tex);
                 tex
             };
 
@@ -253,7 +253,8 @@ pub trait Texture: ToGlName + ToGlTarget + Sized + TextureAllocator {
 
             // Create a bindless handle for dynamic textures only (since dealing with resizable textures would be an absolute pain)
             let bindless = if mode == TextureMode::Dynamic {
-                super::create_bindless(ctx, tex, 200, mode)
+                //super::create_bindless(ctx, tex, 200, mode)
+                None
             } else { 
                 None
             };

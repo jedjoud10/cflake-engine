@@ -2,7 +2,7 @@ use crate::{
     buffer::ElementBuffer,
     canvas::blend::{BlendMode, Factor},
     canvas::Canvas,
-    commons::Comparison,
+    others::Comparison,
     context::Context,
     mesh::attributes::AttributeSet,
     object::ToGlName,

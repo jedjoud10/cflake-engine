@@ -5,7 +5,7 @@ macro_rules! asset {
         #[cfg(not(debug_assertions))]
         {
             let bytes = include_bytes!(concat!("./assets/", $file));
-            $assets.import($file, bytes.to_vec());
+            $assets.import(concat!("./assets/", $file), bytes.to_vec());
         }
         // Don't do anything in debug since it'll read it from the file system
     };
@@ -15,6 +15,6 @@ macro_rules! asset {
 macro_rules! persistent {
     ($assets:expr, $file:expr) => {
         let bytes = include_bytes!(concat!("./assets/", $file));
-        $assets.import($file, bytes.to_vec());
+        $assets.import(concat!("./assets/", $file), bytes.to_vec());
     };
 }

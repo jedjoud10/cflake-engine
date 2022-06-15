@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use slotmap::{DefaultKey, SlotMap};
-use std::{cell::RefCell, marker::PhantomData, rc::Rc};
+use std::{cell::RefCell, marker::PhantomData, rc::Rc, any::type_name};
 
 use crate::{Resource, ResourceSet};
 
@@ -104,9 +104,9 @@ impl<T> Clone for Handle<T> {
 
 impl<T> Drop for Handle<T> {
     fn drop(&mut self) {
-        // Decrement the handle counter
         let mut tracker = self.tracker.borrow_mut();
-        *tracker.get_mut(&self.key).unwrap() -= 1;
+        let value = tracker.get_mut(&self.key).unwrap().saturating_sub(1);
+        *tracker.get_mut(&self.key).unwrap() = value;
     }
 }
 

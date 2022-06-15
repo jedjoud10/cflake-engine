@@ -62,9 +62,9 @@ macro_rules! impl_stage_traits {
     };
 }
 
-impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, ".vrsh.glsl");
-impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, ".frsh.glsl");
-impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, ".cmpt.glsl");
+impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, "vrsh.glsl");
+impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, "frsh.glsl");
+impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, "cmpt.glsl");
 
 // This implies that the source code for the underlying stage has been filtered and is ready for compliation
 pub(super) struct Processed<T: Stage>(pub(super) T);

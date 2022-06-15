@@ -10,7 +10,7 @@ use world::{
 
 use crate::{
     canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
-    commons::Comparison,
+    others::Comparison,
     context::{Context, Graphics},
     mesh::{SubMesh, Surface},
     scene::{Camera, Model, SceneRenderer},

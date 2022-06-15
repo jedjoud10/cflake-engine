@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc, ffi::{CString, CStr}};
+use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, rc::Rc, ffi::{CString, CStr}, ptr::null};
 
 use crate::material::{Material, MaterialRenderer};
 
@@ -24,7 +24,17 @@ pub struct Context {
 
 impl Context {
     // Create a context wrapper using a Glutin context
+    // This will also enable the default OpenGL settings
     pub(crate) fn new(ctx: ContextWrapper<PossiblyCurrent, ()>) -> Self {
+        // Set default OpenGL settings
+        unsafe {
+            // Always have OpenGL debugging enabled
+            gl::Enable(gl::DEBUG_OUTPUT);
+            gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+            gl::DebugMessageCallback(Some(super::callback), null());
+        }
+
+        // Create el safe wrapper
         Self {
             ctx,
             bound: Default::default(),
@@ -70,7 +80,7 @@ impl Context {
 
     // Clone all the material renderers outside the context
     // This is going to be executed every frame, but the number of unique material types is low so we shall'n't worry about it
-    pub(crate) fn extract_material_renderer(&self) -> Vec<Rc<dyn MaterialRenderer>> {
+    pub(crate) fn extract_material_renderers(&self) -> Vec<Rc<dyn MaterialRenderer>> {
         self.renderers
             .iter()
             .map(|(_key, value)| value.clone())

@@ -47,7 +47,6 @@ pub fn init(world: &mut World) {
     let mask_map = set.insert(mask_map);
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
-    /*
     let (Graphics(_, ctx), assets, storage) = world.get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>().unwrap();
     let material = Standard::builder()
         .albedo(&white)
@@ -62,13 +61,11 @@ pub fn init(world: &mut World) {
     // Create the new scene renderer from these values and insert it into the world
     let renderer = SceneRenderer::new(black, white.clone(), white.clone(), normal_map, mask_map, material);
     world.insert(renderer);
-    */
 }
 
 // Rendering system that will try to render the scene each frame
 pub fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    /*
     let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
     let Graphics(_device, context) = graphics;
 
@@ -86,7 +83,6 @@ pub fn rendering(world: &mut World) {
         .into_iter()
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();
-    */
 }
 
 // Camera update system that will update the view matrix of perspective cameras
