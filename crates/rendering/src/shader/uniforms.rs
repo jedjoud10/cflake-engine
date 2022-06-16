@@ -260,6 +260,8 @@ impl<'uniforms> Uniforms<'uniforms> {
         self.set_raw(name, mat);
     }
 
+    /*
+
     // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
     unsafe fn set_normal_sampler_unchecked(
         &mut self,
@@ -293,18 +295,21 @@ impl<'uniforms> Uniforms<'uniforms> {
             }
         }
     }
+    */
 
-    // Set a texture sampler, switching between the bindless and normal methods
-    pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(
-        &'me mut self,
+    // Set a whole texture sampler, along side the texture that it
+    pub fn set_sampler<'sampler: 'uniforms, T: Texture>(
+        &mut self,
         name: &'static str,
         sampler: Sampler<'sampler, T>,
     ) {
+        /*
         unsafe {
             match sampler.0.bindless() {
                 Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
                 None => self.set_normal_sampler_unchecked(name, T::target(), sampler.0.name()),
             }
         }
+        */
     }
 }

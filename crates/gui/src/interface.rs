@@ -56,6 +56,6 @@ impl UserInterface {
         let meshes = self.egui.tessellate(clipped_shapes);
 
         // Handle the parts and rasterize the elements
-        self.painter.draw(device, ctx, meshes, deltas);
+        self.painter.draw(device, ctx, meshes, todo!(), deltas);
     }
 }

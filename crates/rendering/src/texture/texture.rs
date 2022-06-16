@@ -1,4 +1,4 @@
-use super::{Bindless, Sampler, Texel, Sampling};
+use super::{Bindless, Sampler, Texel, Sampling, Wrap, Filter};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -203,6 +203,43 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     }
 }
 
+// This enum tells the texture how exactly it should create it's mipmaps
+// Default mode for mipmap generation is MipMaps::AutomaticAniso
+pub enum MipMaps {
+    // Disable mipmap generation for the texture
+    Disabled,
+
+    // Automatic mipmap generation based on the texture dimensions
+    Automatic,
+
+    // Manual mipmap generation with specific levels.
+    // This will be clamped to the maximum number of levels allowed for the given texture dimensions
+    // If levels is less than 2, then mipmapping will be disabled
+    Manual {
+        levels: NonZeroU8
+    },
+
+    // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
+    // If samples is less than 2m then anisotropic filtering will be disabled
+    AutomaticAniso {
+        samples: NonZeroU8,
+    },
+
+    // Manual mipmap generation, but with a specified number of anisotropy sampler
+    // If levels is less than 2, then mipmapping will be disabled
+    // If samples is less than 2m then anisotropic filtering will be disabled
+    ManualAniso {
+        levels: NonZeroU8,
+        samples: NonZeroU8,
+    }
+}
+
+impl Default for MipMaps {
+    fn default() -> Self {
+        Self::AutomaticAniso { samples: NonZeroU8::new(16).unwrap() }
+    }
+}
+
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
@@ -213,10 +250,10 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Create a new texture that contains some data
     fn new(
         ctx: &mut Context,
-        dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
-        mipmaps: bool, 
+        dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
+        mipmaps: MipMaps, 
         data: &[<Self::T as Texel>::Storage],
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
@@ -236,10 +273,15 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 .then(|| data.as_ptr())
                 .unwrap_or_else(null);
 
-            let levels = mipmaps
-                .then(|| dimensions.levels())
-                .unwrap_or(NonZeroU8::new_unchecked(1));
-            
+            // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
+            let auto = dimensions.levels();
+            let (levels, anisotropy_samples) = match mipmaps {
+                MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
+                MipMaps::Automatic => (auto, None),
+                MipMaps::Manual { levels } => (levels.min(auto), None),
+                MipMaps::AutomaticAniso { samples } => (auto, Some(samples)),
+                MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
+            };            
 
             // Create a new raw OpenGL texture object
             let tex = {
@@ -267,11 +309,42 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             };
 
             // Appply the sampling parameters for this texture
-            super::apply(tex, Self::target(), mode, sampling);
+            // We do a bit of enum fetching (this is safe) (trust)
+            let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
 
-            // Apply mipmapping automatically
+            // Min and mag filters conversion cause OpenGL suxs
+            let min = filter as i32;
+            let mag = filter as i32;
+                
+            // Set the filters
+            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, min);
+            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, mag);
+                
+            // Convert the wrapping mode enum to the raw opengl type
+            let (wrap, border) = match sampling.wrap {
+                Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
+                Wrap::ClampToBorder(b) => (gl::CLAMP_TO_BORDER, Some(b)),
+                Wrap::Repeat => (gl::REPEAT, None),
+                Wrap::MirroredRepeat => (gl::MIRRORED_REPEAT, None),
+            };
+        
+            // Set the wrapping mode (for all 3 axii)
+            gl::TextureParameteri(tex, gl::TEXTURE_WRAP_S, wrap as i32);
+            gl::TextureParameteri(tex, gl::TEXTURE_WRAP_T, wrap as i32);
+            gl::TextureParameteri(tex, gl::TEXTURE_WRAP_R, wrap as i32);
+        
+            // Set the border color (if needed)
+            if let Some(border) = border {
+                gl::TextureParameterfv(tex, gl::TEXTURE_BORDER_COLOR, border.as_ptr());
+            }
+
+            // Apply the mipmapping settings (and anisostropic filtering)
+            // This will automatically generate the 
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
+                if let Some(samples) = anisotropy_samples {
+                    gl::TextureParameterf(tex, gl::TEXTURE_MAX_ANISOTROPY_EXT, samples.get() as f32);
+                }
             }
 
             // Create the texture object
@@ -301,7 +374,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         self.dimensions().area()
     }
 
-    // Get the number of mipmap layers that we are using internally
+    // Get the number of mipmap layers that this texture uses
     fn levels(&self) -> NonZeroU8;
 
     // Get a single mip level from the texture, immutably

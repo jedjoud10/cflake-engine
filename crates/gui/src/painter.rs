@@ -9,6 +9,7 @@ use rendering::canvas::rasterizer::{
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
+use rendering::prelude::{MipMaps, Sampler};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -123,6 +124,7 @@ impl Painter {
         device: &mut Device,
         ctx: &mut Context,
         meshes: Vec<ClippedMesh>,
+        loader: &mut Assets,
         deltas: TexturesDelta,
     ) {
         // Update the main  fonttexture
@@ -142,7 +144,7 @@ impl Painter {
                     TextureMode::Resizable,
                     dimensions,
                     Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
-                    false,
+                    MipMaps::Disabled,
                     &texels,
                 )
                 .unwrap()
@@ -151,7 +153,16 @@ impl Painter {
 
         // Setup shader uniforms
         let mut uniforms = self.shader.as_mut().uniforms();
-        let sampler = self.texture.as_ref().unwrap().sampler();
+        let sampler: Texture2D<RGBA<Ranged<u8>>> = Texture2D::new(
+            ctx,
+            TextureMode::Resizable,
+            vek::Extent2::one(),
+            Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
+            MipMaps::Disabled,
+            &[],
+        )
+        .unwrap();
+        let sampler = sampler.sampler();
         uniforms.set_sampler("u_sampler", sampler);
 
         // Setup OpenGL settings like blending settings and all

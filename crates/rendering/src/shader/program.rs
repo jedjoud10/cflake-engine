@@ -1,5 +1,6 @@
-use crate::object::{ToGlName, ToGlTarget};
+use crate::{object::{ToGlName, ToGlTarget}, prelude::Sampler};
 use ahash::AHashMap;
+use world::resources::Storage;
 use std::marker::PhantomData;
 
 use super::Uniforms;

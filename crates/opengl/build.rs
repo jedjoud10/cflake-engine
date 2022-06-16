@@ -20,6 +20,7 @@ fn main() {
             "GL_ARB_bindless_texture",
             "GL_KHR_parallel_shader_compile",
             "GL_EXT_texture_filter_anisotropic",
+            "GL_ARB_seamless_cubemap_per_texture",
         ],
     )
     .write_bindings(GlobalGenerator, &mut file)

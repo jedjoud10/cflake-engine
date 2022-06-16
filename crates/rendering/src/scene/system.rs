@@ -3,7 +3,7 @@ use crate::{
     context::{Context, Graphics},
     material::{Material, Standard},
     prelude::{
-        Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA,
+        Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA, MipMaps,
     },
     shader::Shader,
 };
@@ -22,10 +22,10 @@ pub fn init(world: &mut World) {
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
         Texture2D::<T>::new(
             ctx,
-            TextureMode::Dynamic,
+            TextureMode::Static,
             vek::Extent2::one(),
             Sampling::new(Filter::Nearest, Wrap::Repeat),
-            false,
+            MipMaps::Disabled,
             &[texel],
         )
         .unwrap()

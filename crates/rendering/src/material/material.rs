@@ -63,7 +63,7 @@ pub trait PropertyBlock<'world>: Sized {
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     fn set_instance_properties(
         &'world self,
-        uniforms: &mut Uniforms,
+        uniforms: &mut Uniforms<'world>,
         resources: &Self::PropertyBlockResources,
     );
 }
@@ -118,6 +118,9 @@ impl<M: Material> BatchRenderer<M> {
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
         let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
+        let shader = rasterizer.shader_mut().as_mut();
+        let mut uniforms = shader.uniforms();
+        //let mut uniforms = shader;
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
@@ -143,7 +146,7 @@ impl<M: Material> BatchRenderer<M> {
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
             // Get the shader uniforms since we have to set them for each surface
-            let mut uniforms = rasterizer.shader_mut().as_mut().uniforms();
+            
 
             // Set the default surface uniforms
             uniforms.set_mat4x4("_world_matrix", renderer.matrix());
@@ -158,12 +161,12 @@ impl<M: Material> BatchRenderer<M> {
                 let _ = instance.instance();
 
                 // Set the material property block uniforms (only if the instance changes)
-                M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
+                //M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
             }
 
             // Render the surface object
             let submesh = submeshes.get(surface.submesh());
-            rasterizer.draw(submesh, &settings);
+            //rasterizer.draw(submesh, &settings);
         }
 
         None
