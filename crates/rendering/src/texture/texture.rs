@@ -1,9 +1,9 @@
-use super::{Bindless, Sampler, Texel, Sampling, Wrap, Filter};
+use super::{Bindless, Filter, Sampler, Sampling, Texel, Wrap};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{num::NonZeroU8, ptr::null, rc::Rc, ffi::c_void};
+use std::{ffi::c_void, num::NonZeroU8, ptr::null, rc::Rc};
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -60,12 +60,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Update a sub-region of the mip-layer using a data slice
-    fn update(
-        &mut self,
-        ctx: &mut Context,
-        region: T::Region,
-        data: &[<T::T as Texel>::Storage],
-    ) {
+    fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[<T::T as Texel>::Storage]) {
         // The length of the buffer should be equal to the surface area of the region
         assert!(
             (data.len() as u32) == region.area(),
@@ -216,7 +211,7 @@ pub enum MipMaps {
     // This will be clamped to the maximum number of levels allowed for the given texture dimensions
     // If levels is less than 2, then mipmapping will be disabled
     Manual {
-        levels: NonZeroU8
+        levels: NonZeroU8,
     },
 
     // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
@@ -231,12 +226,14 @@ pub enum MipMaps {
     ManualAniso {
         levels: NonZeroU8,
         samples: NonZeroU8,
-    }
+    },
 }
 
 impl Default for MipMaps {
     fn default() -> Self {
-        Self::AutomaticAniso { samples: NonZeroU8::new(16).unwrap() }
+        Self::AutomaticAniso {
+            samples: NonZeroU8::new(16).unwrap(),
+        }
     }
 }
 
@@ -253,7 +250,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         mode: TextureMode,
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
-        mipmaps: MipMaps, 
+        mipmaps: MipMaps,
         data: &[<Self::T as Texel>::Storage],
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
@@ -281,7 +278,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 MipMaps::Manual { levels } => (levels.min(auto), None),
                 MipMaps::AutomaticAniso { samples } => (auto, Some(samples)),
                 MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
-            };            
+            };
 
             // Create a new raw OpenGL texture object
             let tex = {
@@ -315,11 +312,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             // Min and mag filters conversion cause OpenGL suxs
             let min = filter as i32;
             let mag = filter as i32;
-                
+
             // Set the filters
             gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, min);
             gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, mag);
-                
+
             // Convert the wrapping mode enum to the raw opengl type
             let (wrap, border) = match sampling.wrap {
                 Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
@@ -327,23 +324,27 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 Wrap::Repeat => (gl::REPEAT, None),
                 Wrap::MirroredRepeat => (gl::MIRRORED_REPEAT, None),
             };
-        
+
             // Set the wrapping mode (for all 3 axii)
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_S, wrap as i32);
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_T, wrap as i32);
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_R, wrap as i32);
-        
+
             // Set the border color (if needed)
             if let Some(border) = border {
                 gl::TextureParameterfv(tex, gl::TEXTURE_BORDER_COLOR, border.as_ptr());
             }
 
             // Apply the mipmapping settings (and anisostropic filtering)
-            // This will automatically generate the 
+            // This will automatically generate the
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
                 if let Some(samples) = anisotropy_samples {
-                    gl::TextureParameterf(tex, gl::TEXTURE_MAX_ANISOTROPY_EXT, samples.get() as f32);
+                    gl::TextureParameterf(
+                        tex,
+                        gl::TEXTURE_MAX_ANISOTROPY_EXT,
+                        samples.get() as f32,
+                    );
                 }
             }
 

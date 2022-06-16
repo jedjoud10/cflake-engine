@@ -3,9 +3,7 @@ use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::canvas::rasterizer::{
-    BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings,
-};
+use rendering::canvas::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
@@ -151,20 +149,6 @@ impl Painter {
             });
         }
 
-        // Setup shader uniforms
-        let mut uniforms = self.shader.as_mut().uniforms();
-        let sampler: Texture2D<RGBA<Ranged<u8>>> = Texture2D::new(
-            ctx,
-            TextureMode::Resizable,
-            vek::Extent2::one(),
-            Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
-            MipMaps::Disabled,
-            &[],
-        )
-        .unwrap();
-        let sampler = sampler.sampler();
-        uniforms.set_sampler("u_sampler", sampler);
-
         // Setup OpenGL settings like blending settings and all
         let settings = RasterSettings {
             depth_test: None,
@@ -176,8 +160,14 @@ impl Painter {
             blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
         };
 
-        // Bind the canvas and rasterize the meshes
-        let mut rasterizer = device.canvas_mut().rasterizer(&mut self.shader, ctx);
+        // Create a new canvas painter and a new canvas rasterizer
+        let mut painter = device.canvas_mut().paint(&mut self.shader, ctx, settings);
+
+        // Set the uniforms
+        let raster = painter.pass(|uniforms| {
+            let sampler = self.texture.as_ref().unwrap().sampler();
+            uniforms.set_sampler("u_sampler", sampler);
+        });
 
         // Draw the meshes
         for mesh in meshes {
@@ -186,11 +176,10 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                rasterizer.draw_unchecked(
+                raster.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
                     self.indices.len() as u32,
-                    &settings,
                 );
             }
         }

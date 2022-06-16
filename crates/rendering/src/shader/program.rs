@@ -1,7 +1,10 @@
-use crate::{object::{ToGlName, ToGlTarget}, prelude::Sampler};
+use crate::{
+    object::{ToGlName, ToGlTarget},
+    prelude::Sampler,
+};
 use ahash::AHashMap;
-use world::resources::Storage;
 use std::marker::PhantomData;
+use world::resources::Storage;
 
 use super::Uniforms;
 
@@ -23,8 +26,7 @@ pub struct Program {
     pub(super) _phantom: PhantomData<*const ()>,
 }
 
-impl Program {
-}
+impl Program {}
 
 impl ToGlName for Program {
     fn name(&self) -> u32 {

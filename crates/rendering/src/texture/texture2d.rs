@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{Bindless, ImageTexel, Region, Texel, Texture, TextureMode, RGBA, Sampling, MipMaps};
+use super::{Bindless, ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode, RGBA};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -160,6 +160,14 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
         let image = image::load_from_memory(bytes.as_ref()).unwrap();
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
         let texels = T::to_image_texels(image);
-        Self::new(args.0, args.3, dimensions, args.1, args.2, texels.as_slice()).unwrap()
+        Self::new(
+            args.0,
+            args.3,
+            dimensions,
+            args.1,
+            args.2,
+            texels.as_slice(),
+        )
+        .unwrap()
     }
 }

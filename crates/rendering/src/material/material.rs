@@ -114,13 +114,6 @@ impl<M: Material> BatchRenderer<M> {
         let (ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             M::fetch(world);
 
-        // Get a valid rasterizer from the graphics
-        let Graphics(device, ctx) = graphics;
-        let shader = shaders.get_mut(self.shader());
-        let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
-        let shader = rasterizer.shader_mut().as_mut();
-        //let mut uniforms = shader;
-
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
             depth_test: Some(Comparison::Less),
@@ -131,6 +124,11 @@ impl<M: Material> BatchRenderer<M> {
             srgb: false,
             blend: None,
         };
+
+        // Create a valid painter, then a rasterizer, then start doing the funny
+        let Graphics(device, ctx) = graphics;
+        let shader = shaders.get_mut(self.shader());
+        let mut painter = device.canvas_mut().paint(shader, ctx, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
@@ -144,28 +142,28 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
-            // Get the shader uniforms since we have to set them for each surface
-            
+            // Set the painter's shader's uniforms
+            let raster = painter.pass(|uniforms| {
+                // Set the default surface uniforms
+                uniforms.set_mat4x4("_world_matrix", renderer.matrix());
+                uniforms.set_mat4x4("_view_matrix", camera.view());
+                uniforms.set_mat4x4("_proj_matrix", camera.projection());
 
-            // Set the default surface uniforms
-            uniforms.set_mat4x4("_world_matrix", renderer.matrix());
-            uniforms.set_mat4x4("_view_matrix", camera.view());
-            uniforms.set_mat4x4("_proj_matrix", camera.projection());
+                // Check if we changed material instances
+                if old != Some(surface.material().clone()) {
+                    // We changed instances, so we must re-set the uniform property
+                    old = Some(surface.material().clone());
+                    let instance = materials.get(old.as_ref().unwrap());
+                    let _ = instance.instance();
 
-            // Check if we changed material instances
-            if old != Some(surface.material().clone()) {
-                // We changed instances, so we must re-set the uniform property
-                old = Some(surface.material().clone());
-                let instance = materials.get(old.as_ref().unwrap());
-                let _ = instance.instance();
+                    // Set the material property block uniforms (only if the instance changes)
+                    M::set_instance_properties(instance, uniforms, &property_block_resources)
+                }
+            });
 
-                // Set the material property block uniforms (only if the instance changes)
-                //M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
-            }
-
-            // Render the surface object
+            // Render the surface object using el rasterizer
             let submesh = submeshes.get(surface.submesh());
-            //rasterizer.draw(submesh, &settings);
+            raster.draw(submesh);
         }
 
         None

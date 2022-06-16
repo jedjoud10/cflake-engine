@@ -3,7 +3,8 @@ use crate::{
     context::{Context, Graphics},
     material::{Material, Standard},
     prelude::{
-        Filter, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA, MipMaps,
+        Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
+        RGBA,
     },
     shader::Shader,
 };

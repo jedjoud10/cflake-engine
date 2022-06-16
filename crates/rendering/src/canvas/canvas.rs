@@ -1,7 +1,9 @@
-use crate::{canvas::Rasterizer, context::Context, shader::Shader, prelude::Uniforms};
+use crate::{
+    canvas::Rasterizer, context::Context, object::ToGlName, prelude::Uniforms, shader::Shader,
+};
 use std::marker::PhantomData;
 
-use super::{RasterSettings, Painter};
+use super::{Painter, RasterSettings};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the device using the canvas() function
@@ -63,15 +65,6 @@ impl Canvas {
         self.size
     }
 
-    // Bind the underlying framebuffer if it isn't bound already
-    fn bind_once(&mut self, ctx: &mut Context) {
-        // Make sure the framebuffer is bound, and that the viewport is valid
-        ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
-            gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
-        });
-    }
-
     // Clear the whole framebuffer using the proper flags
     pub fn clear(
         &mut self,
@@ -111,19 +104,28 @@ impl Canvas {
             gl::Clear(flags);
         }
     }
-    
+
     // Gets the screen painter that we must use to render and shade the soon to be rendered objects
     pub fn paint<'canvas, 'shader, 'context>(
         &'canvas mut self,
         shader: &'shader mut Shader,
         ctx: &'context mut Context,
-        uniforms: impl Fn(Uniforms),
+        settings: RasterSettings,
     ) -> Painter<'canvas, 'shader, 'context> {
-        self.bind_once(ctx);
+        // Make sure the framebuffer is bound, and that the viewport is valid
+        ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
+            gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
+        });
+
+        // Make sure the shader is bound as well
+        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |name| unsafe {
+            gl::UseProgram(name)
+        });
+
         Painter {
-            canvas: self,
-            shader,
-            context: ctx,
+            rasterizer: Rasterizer::new(self, ctx, settings),
+            uniforms: Uniforms(shader.as_mut()),
         }
     }
 }

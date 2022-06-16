@@ -72,7 +72,11 @@ pub struct Rasterizer<'canvas, 'context> {
 impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // Create a new rasterizer with the given raw fields
     // This has to be a function since we run the "apply settings" shit here
-    pub(super) fn new(canvas: &'canvas mut Canvas, context: &'context mut Context, settings: RasterSettings) -> Self {
+    pub(super) fn new(
+        canvas: &'canvas mut Canvas,
+        context: &'context mut Context,
+        settings: RasterSettings,
+    ) -> Self {
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
@@ -128,12 +132,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         unsafe {
             if let Some((origin, size)) = &settings.scissor_test {
                 gl::Enable(gl::SCISSOR_TEST);
-                gl::Scissor(
-                    origin.x,
-                    canvas.size().h as i32 - origin.y,
-                    size.w,
-                    size.h,
-                );
+                gl::Scissor(origin.x, canvas.size().h as i32 - origin.y, size.w, size.h);
             } else {
                 gl::Disable(gl::SCISSOR_TEST);
             }
@@ -162,18 +161,25 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         }
 
         // Create the rasterizer object
-        Self { canvas, context, settings, primitive }
+        Self {
+            canvas,
+            context,
+            settings,
+            primitive,
+        }
     }
 
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
-    unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32) {
+    pub unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32) {
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
         gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
     }
 
     // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and render them.
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, settings: &RasterSettings) {
-        unsafe { self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32) }
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T) {
+        unsafe {
+            self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32)
+        }
     }
 }
