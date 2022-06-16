@@ -1,7 +1,7 @@
 use super::{attributes::AttributeSet, GeometryBuilder};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
-    canvas::rasterizer::ToRasterBuffers,
+    canvas::ToRasterBuffers,
     context::Context,
 };
 

@@ -9,7 +9,7 @@ use world::{
 };
 
 use crate::{
-    canvas::rasterizer::{FaceCullMode, PrimitiveMode, RasterSettings},
+    canvas::{FaceCullMode, PrimitiveMode, RasterSettings},
     context::{Context, Graphics},
     mesh::{SubMesh, Surface},
     others::Comparison,
@@ -119,7 +119,6 @@ impl<M: Material> BatchRenderer<M> {
         let shader = shaders.get_mut(self.shader());
         let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx);
         let shader = rasterizer.shader_mut().as_mut();
-        let mut uniforms = shader.uniforms();
         //let mut uniforms = shader;
 
         // How exactly we should rasterize the surfaces

@@ -6,7 +6,7 @@ use crate::{
     mesh::attributes::AttributeSet,
     object::ToGlName,
     others::Comparison,
-    shader::Shader,
+    shader::{Shader, Uniforms},
 };
 use std::{
     mem::{transmute, transmute_copy},
@@ -59,32 +59,20 @@ pub trait ToRasterBuffers {
     fn ebo(&self) -> &ElementBuffer<u32>;
 }
 
-// A rasterizer is what will draw our vertices and triangles onto the screen, so we can actually see them as lit pixels
-// Each rasterizer will use a unique shared shader
-pub struct Rasterizer<'canvas, 'shader, 'context> {
-    pub(super) canvas: &'canvas mut Canvas,
-    pub(super) shader: &'shader mut Shader,
-    pub(super) context: &'context mut Context,
+// A rasterizer takes a set of multiple objects / VAOs and renders them onto the screen
+// A rasterizer has no notion of shader or anything like that, it just render directly to the screen with what shader is currently bound
+// Rasterizers can be fetched from any painter using the .rasterize(settings) method.
+pub struct Rasterizer<'canvas, 'context> {
+    canvas: &'canvas mut Canvas,
+    context: &'context mut Context,
+    settings: RasterSettings,
+    primitive: u32,
 }
 
-impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
-    // Get a mutable reference to the shader
-    pub fn shader_mut(&mut self) -> &mut Shader {
-        &mut self.shader
-    }
-
-    // Get an immutable reference to the shader
-    pub fn shader(&self) -> &Shader {
-        self.shader
-    }
-
-    // Prepare the rasterizer by setting the global raster settings
-    fn prepare(&mut self, settings: &RasterSettings) -> u32 {
-        self.context
-            .bind(gl::PROGRAM, self.shader.as_ref().name(), |name| unsafe {
-                gl::UseProgram(name)
-            });
-
+impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
+    // Create a new rasterizer with the given raw fields
+    // This has to be a function since we run the "apply settings" shit here
+    pub(super) fn new(canvas: &'canvas mut Canvas, context: &'context mut Context, settings: RasterSettings) -> Self {
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
@@ -142,7 +130,7 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
                 gl::Enable(gl::SCISSOR_TEST);
                 gl::Scissor(
                     origin.x,
-                    self.canvas.size().h as i32 - origin.y,
+                    canvas.size().h as i32 - origin.y,
                     size.w,
                     size.h,
                 );
@@ -173,51 +161,19 @@ impl<'canvas, 'shader, 'context> Rasterizer<'canvas, 'shader, 'context> {
             }
         }
 
-        primitive
+        // Create the rasterizer object
+        Self { canvas, context, settings, primitive }
     }
 
-    // Rasterize the raw VAO an EBO without setting the mode or binding the shader
-    unsafe fn draw_from_raw_parts(&mut self, primitive: u32, vao: u32, ebo: u32, count: u32) {
+    // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
+    unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32) {
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-        gl::DrawElements(primitive, count as i32, gl::UNSIGNED_INT, null());
+        gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
     }
 
-    // Draw a single VAO and a EBO using their raw OpenGL names directly
-    pub unsafe fn draw_unchecked(
-        &mut self,
-        vao: u32,
-        ebo: u32,
-        count: u32,
-        settings: &RasterSettings,
-    ) {
-        let primitive = self.prepare(settings);
-
-        // Draw the VAO and EBO
-        self.draw_from_raw_parts(primitive, vao, ebo, count);
-    }
-
-    // Draw a single VAO and EBO
+    // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and render them.
     pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, settings: &RasterSettings) {
-        let primitive = self.prepare(settings);
-
-        let vao = obj.vao();
-        let ebo = obj.ebo();
-
-        unsafe { self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32) }
-    }
-
-    // This will draw a set of VAOs and EBOs directly onto the screen
-    pub fn draw_batch<T: ToRasterBuffers>(&mut self, objects: &[&T], settings: &RasterSettings) {
-        let primitive = self.prepare(settings);
-
-        // Iterate through each object and draw it
-        for object in objects {
-            // Get the raw OpenGL names
-            let vao = object.vao();
-            let ebo = object.ebo();
-
-            unsafe { self.draw_from_raw_parts(primitive, vao.name(), ebo.name(), ebo.len() as u32) }
-        }
+        unsafe { self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32) }
     }
 }

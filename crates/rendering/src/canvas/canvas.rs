@@ -1,5 +1,7 @@
-use crate::{canvas::rasterizer::Rasterizer, context::Context, shader::Shader};
+use crate::{canvas::Rasterizer, context::Context, shader::Shader, prelude::Uniforms};
 use std::marker::PhantomData;
+
+use super::{RasterSettings, Painter};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the device using the canvas() function
@@ -109,14 +111,16 @@ impl Canvas {
             gl::Clear(flags);
         }
     }
-    // Get the canvas' rasterizer so we can draw stuff onto the canvas using a specific shader
-    pub fn rasterizer<'canvas, 'shader, 'context>(
+    
+    // Gets the screen painter that we must use to render and shade the soon to be rendered objects
+    pub fn paint<'canvas, 'shader, 'context>(
         &'canvas mut self,
         shader: &'shader mut Shader,
         ctx: &'context mut Context,
-    ) -> Rasterizer<'canvas, 'shader, 'context> {
+        uniforms: impl Fn(Uniforms),
+    ) -> Painter<'canvas, 'shader, 'context> {
         self.bind_once(ctx);
-        Rasterizer {
+        Painter {
             canvas: self,
             shader,
             context: ctx,

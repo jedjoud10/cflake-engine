@@ -24,10 +24,6 @@ pub struct Program {
 }
 
 impl Program {
-    // Get the uniforms of the currently bound program so we can modify them
-    pub fn uniforms(&mut self) -> Uniforms {
-        Uniforms(self)
-    }
 }
 
 impl ToGlName for Program {

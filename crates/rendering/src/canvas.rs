@@ -1,8 +1,8 @@
 mod blend;
 mod canvas;
-mod raster;
-pub mod rasterizer {
-    pub use super::blend::*;
-    pub use super::raster::*;
-}
+mod rasterizer;
+mod painter;
+pub use painter::*;
+pub use blend::*;
+pub use rasterizer::*;
 pub use canvas::*;

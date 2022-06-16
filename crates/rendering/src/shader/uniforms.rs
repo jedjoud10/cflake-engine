@@ -165,15 +165,10 @@ macro_rules! impl_matrices {
         }
     };
 }
-
-// Insanity
-mod raw {
-    // A uniform variable trait that will set a unique uniform within a shader
-    pub trait SetRawUniform {
-        unsafe fn set(self, loc: i32, program: u32);
-    }
+// A uniform variable trait that will set a unique uniform within a shader
+pub trait SetRawUniform {
+    unsafe fn set(self, loc: i32, program: u32);
 }
-use raw::SetRawUniform;
 
 // Wrapper traits
 pub trait Scalar: SetRawUniform {}
@@ -204,8 +199,10 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
-// The main struct that will allow us to set the uniforms
-pub struct Uniforms<'uniforms>(pub(super) &'uniforms mut Program);
+// The main struct that will allow us to set the shader uniforms
+// This must be created whenever we will execute the shader, and nothing else
+// Since we cannot be 100% sure that the given textures might outlive the shader, we have to cope with that limitation 
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Get the uniform location of a uniform using it's name
@@ -297,11 +294,12 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
     */
 
-    // Set a whole texture sampler, along side the texture that it
-    pub fn set_sampler<'sampler: 'uniforms, T: Texture>(
+    // Set a texture sampler uniform
+    // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that 
+    pub fn set_sampler<T: Texture>(
         &mut self,
         name: &'static str,
-        sampler: Sampler<'sampler, T>,
+        sampler: Sampler<T>,
     ) {
         /*
         unsafe {
