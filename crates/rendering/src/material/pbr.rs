@@ -133,7 +133,7 @@ impl<'world> PropertyBlock<'world> for Standard {
 
     fn set_instance_properties(
         &'world self,
-        uniforms: &mut Uniforms<'world>,
+        mut uniforms: Uniforms<'world>,
         resources: &Self::PropertyBlockResources,
     ) {
         // Decompose the fetched resource references

@@ -26,7 +26,12 @@ pub struct Program {
     pub(super) _phantom: PhantomData<*const ()>,
 }
 
-impl Program {}
+impl Program {
+    // Get the uniforms of the currently bound program so we can modify them
+    pub fn uniforms(&self) -> Uniforms {
+        Uniforms(self)
+    }
+}
 
 impl ToGlName for Program {
     fn name(&self) -> u32 {

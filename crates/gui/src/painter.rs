@@ -161,15 +161,25 @@ impl Painter {
         };
 
         // Create a new canvas painter and a new canvas rasterizer
+        let texture: Texture2D<RGBA<Ranged<u8>>> = Texture2D::new(
+            ctx,
+            TextureMode::Resizable,
+            vek::Extent2::one(),
+            Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
+            MipMaps::Disabled,
+            &[],
+        ).unwrap();
         let mut painter = device.canvas_mut().paint(&mut self.shader, ctx, settings);
 
         // Set the uniforms
+
         let raster = painter.pass(|uniforms| {
-            let sampler = self.texture.as_ref().unwrap().sampler();
+            let sampler = texture.sampler();
             uniforms.set_sampler("u_sampler", sampler);
-        });
+        }, |aa| {});
 
         // Draw the meshes
+        /*
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
             self.vertices.write(mesh.1.vertices.as_slice());
@@ -183,5 +193,6 @@ impl Painter {
                 );
             }
         }
+        */
     }
 }

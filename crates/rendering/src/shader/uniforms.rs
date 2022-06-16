@@ -202,7 +202,7 @@ impl_matrices!();
 // The main struct that will allow us to set the shader uniforms
 // This must be created whenever we will execute the shader, and nothing else
 // Since we cannot be 100% sure that the given textures might outlive the shader, we have to cope with that limitation
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Get the uniform location of a uniform using it's name
@@ -296,7 +296,7 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a texture sampler uniform
     // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
-    pub fn set_sampler<T: Texture>(&mut self, name: &'static str, sampler: Sampler<T>) {
+    pub fn set_sampler<T: Texture>(&mut self, name: &'static str, sampler: Sampler<'uniforms, T>) {
         /*
         unsafe {
             match sampler.0.bindless() {

@@ -62,19 +62,29 @@ pub trait ToRasterBuffers {
 // A rasterizer takes a set of multiple objects / VAOs and renders them onto the screen
 // A rasterizer has no notion of shader or anything like that, it just render directly to the screen with what shader is currently bound
 // Rasterizers can be fetched from any painter using the .rasterize(settings) method.
-pub struct Rasterizer<'canvas, 'context> {
-    canvas: &'canvas mut Canvas,
-    context: &'context mut Context,
+pub struct Rasterizer<'shader> {
     settings: RasterSettings,
+    shader: &'shader mut Shader, 
     primitive: u32,
 }
 
-impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
+impl<'shader> Rasterizer<'shader> {
+    // Get a mutable reference to the shader
+    pub fn shader_mut(&mut self) -> &mut Shader {
+        &mut self.shader
+    }
+
+    // Get an immutable reference to the shader
+    pub fn shader(&self) -> &Shader {
+        self.shader
+    }
+
     // Create a new rasterizer with the given raw fields
     // This has to be a function since we run the "apply settings" shit here
     pub(super) fn new(
-        canvas: &'canvas mut Canvas,
-        context: &'context mut Context,
+        canvas: &Canvas,
+        context: &Context,
+        shader: &'shader mut Shader,
         settings: RasterSettings,
     ) -> Self {
         // Get the OpenGL primitive type
@@ -162,10 +172,9 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
 
         // Create the rasterizer object
         Self {
-            canvas,
-            context,
             settings,
             primitive,
+            shader,
         }
     }
 

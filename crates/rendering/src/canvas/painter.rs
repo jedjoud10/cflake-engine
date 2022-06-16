@@ -20,9 +20,10 @@ impl<'canvas, 'shader, 'context> Painter<'canvas, 'shader, 'context> {
     // After we set the uniforms, we can use it to render the objects using the rasterizer
     pub fn pass(
         &mut self,
-        callback: impl FnOnce(&mut Uniforms<'shader>),
-    ) -> &mut Rasterizer<'canvas, 'context> {
-        callback(&mut self.uniforms);
-        &mut self.rasterizer
+        populate: impl FnOnce(&mut Uniforms<'shader>),
+        rasterize: impl FnOnce(&mut Rasterizer<'canvas, 'context>),
+    ) {
+        populate(&mut self.uniforms);
+        rasterize(&mut self.rasterizer);        
     }
 }
