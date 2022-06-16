@@ -7,7 +7,7 @@ use rendering::canvas::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSe
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::{MipMaps, Sampler};
+use rendering::prelude::{MipMaps, Sampler, Uniforms};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -161,6 +161,11 @@ impl Painter {
         };
 
         // Create a new canvas painter and a new canvas rasterizer
+
+        let mut raster = device.canvas_mut().rasterizer(ctx, settings);
+        let mut uniforms = raster.shader_mut().as_mut().uniforms();
+
+        // Set the uniforms
         let texture: Texture2D<RGBA<Ranged<u8>>> = Texture2D::new(
             ctx,
             TextureMode::Resizable,
@@ -169,13 +174,11 @@ impl Painter {
             MipMaps::Disabled,
             &[],
         ).unwrap();
-        let mut raster = device.canvas_mut().rasterizer(&mut self.shader, ctx, settings);
-
-        // Set the uniforms
-        let mut uniforms = raster.shader_mut().as_mut().uniforms();
         let sampler = texture.sampler();
+        
         uniforms.set_sampler("u_sampler", sampler);
         drop(texture);
+        test(uniforms);
         // Draw the meshes
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
@@ -183,7 +186,12 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                raster.draw_from_raw_parts(
+                // Shader use pass
+                let pass = raster.pass(shader, |uniforms| {
+
+                });
+
+                pass.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
                     self.indices.len() as u32,
@@ -191,4 +199,8 @@ impl Painter {
             }
         }
     }
+}
+
+fn test(uni: Uniforms) {
+
 }

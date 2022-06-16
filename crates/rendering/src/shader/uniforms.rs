@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant, marker::PhantomData};
 
 use super::Program;
 use crate::{
@@ -199,12 +199,8 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
-// The main struct that will allow us to set the shader uniforms
-// This must be created whenever we will execute the shader, and nothing else
-// Since we cannot be 100% sure that the given textures might outlive the shader, we have to cope with that limitation
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
-
-impl<'uniforms> Uniforms<'uniforms> {
+// Default uniforms setting methods for programs
+impl Program {
     // Get the uniform location of a uniform using it's name
     fn location(&self, _name: &'static str) -> Option<i32> {
         None
@@ -256,6 +252,54 @@ impl<'uniforms> Uniforms<'uniforms> {
     pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &'static str, mat: M) {
         self.set_raw(name, mat);
     }
+}
+
+// The main struct that will allow us to set the shader uniforms before it's execution
+// This must be created whenever we will execute the shader, and nothing else
+// If you wish to set the uniforms of a shader at any given moment, you should just call the method directly on the program, like program.set_vec3("_test")
+// These
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
+
+impl<'uniforms> Uniforms<'uniforms> {
+    // Set a single scalar type using the Scalar trait
+    pub fn set_scalar<S: Scalar>(&mut self, name: &'static str, scalar: S) {
+        self.0.set_raw(name, scalar);
+    }
+
+    // Set an array of values values
+    pub fn set_array<S: Array>(&mut self, name: &'static str, array: S) {
+        self.0.set_raw(name, array);
+    }
+
+    // Set a 2D vector that consists of scalar values
+    pub fn set_vec2<V: Vector<2>>(&mut self, name: &'static str, vec: V) {
+        self.0.set_raw(name, vec);
+    }
+
+    // Set a 3D vector that consists of scalar values
+    pub fn set_vec3<V: Vector<3>>(&mut self, name: &'static str, vec: V) {
+        self.0.set_raw(name, vec);
+    }
+
+    // Set a 4D vector that consists of scalar values
+    pub fn set_vec4<V: Vector<4>>(&mut self, name: &'static str, vec: V) {
+        self.0.set_raw(name, vec);
+    }
+
+    // Set a 4x4 matrix
+    pub fn set_mat4x4<M: Matrix<4, 4>>(&mut self, name: &'static str, mat: M) {
+        self.set_raw(name, mat);
+    }
+
+    // Set a 3x3 matrix
+    pub fn set_mat3x3<M: Matrix<3, 3>>(&mut self, name: &'static str, mat: M) {
+        self.0.set_raw(name, mat);
+    }
+
+    // Set a 2x2 matrix
+    pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &'static str, mat: M) {
+        self.0.set_raw(name, mat);
+    }
 
     /*
 
@@ -296,7 +340,7 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a texture sampler uniform
     // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
-    pub fn set_sampler<T: Texture>(&mut self, name: &'static str, sampler: Sampler<'uniforms, T>) {
+    pub fn set_sampler<T: Texture>(&mut self, name: &'static str, sampler: Sampler<'unifroms, T>) {
         /*
         unsafe {
             match sampler.0.bindless() {
