@@ -202,7 +202,7 @@ impl_matrices!();
 // The main struct that will allow us to set the shader uniforms
 // This must be created whenever we will execute the shader, and nothing else
 // Since we cannot be 100% sure that the given textures might outlive the shader, we have to cope with that limitation
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms Program);
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Get the uniform location of a uniform using it's name

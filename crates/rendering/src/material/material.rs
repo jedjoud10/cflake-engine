@@ -61,11 +61,12 @@ pub trait PropertyBlock<'world>: Sized {
     );
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
-    fn set_instance_properties(
+    // Remember, the shader must never outlive the world reference, so we can set the shader uniforms properly
+    fn set_instance_properties<'u>(
         &'world self,
-        uniforms: Uniforms<'world>,
+        uniforms: Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-    );
+    ) where 'world: 'u;
 }
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces
@@ -128,7 +129,8 @@ impl<M: Material> BatchRenderer<M> {
         // Create a valid rasterizer and start rendering
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
-        //let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx, settings);
+        // Get the shader uniforms since we have to set them for each surface
+        let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
@@ -142,10 +144,8 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
-            // Get the shader uniforms since we have to set them for each surface
-            let mut uniforms = shader.as_ref().uniforms();
-
             // Set the default surface uniforms
+            let mut uniforms = rasterizer.shader_mut().as_mut().uniforms();
             uniforms.set_mat4x4("_world_matrix", renderer.matrix());
             uniforms.set_mat4x4("_view_matrix", camera.view());
             uniforms.set_mat4x4("_proj_matrix", camera.projection());
@@ -163,7 +163,7 @@ impl<M: Material> BatchRenderer<M> {
             
             // Render the surface object using el rasterizer
             let submesh = submeshes.get(surface.submesh());
-            //rasterizer.draw(submesh);
+            rasterizer.draw(submesh);
         }
         drop(property_block_resources);
 
