@@ -79,6 +79,8 @@ impl<'shader> Rasterizer<'shader> {
         self.shader
     }
 
+    
+
     // Create a new rasterizer with the given raw fields
     // This has to be a function since we run the "apply settings" shit here
     pub(super) fn new(

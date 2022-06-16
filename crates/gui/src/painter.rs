@@ -169,17 +169,14 @@ impl Painter {
             MipMaps::Disabled,
             &[],
         ).unwrap();
-        let mut painter = device.canvas_mut().paint(&mut self.shader, ctx, settings);
+        let mut raster = device.canvas_mut().rasterizer(&mut self.shader, ctx, settings);
 
         // Set the uniforms
-
-        let raster = painter.pass(|uniforms| {
-            let sampler = texture.sampler();
-            uniforms.set_sampler("u_sampler", sampler);
-        }, |aa| {});
-
+        let mut uniforms = raster.shader_mut().as_mut().uniforms();
+        let sampler = texture.sampler();
+        uniforms.set_sampler("u_sampler", sampler);
+        drop(texture);
         // Draw the meshes
-        /*
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
             self.vertices.write(mesh.1.vertices.as_slice());
@@ -193,6 +190,5 @@ impl Painter {
                 );
             }
         }
-        */
     }
 }

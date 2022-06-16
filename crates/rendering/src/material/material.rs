@@ -64,7 +64,7 @@ pub trait PropertyBlock<'world>: Sized {
     // Remember, the shader must never outlive the world reference, so we can set the shader uniforms properly
     fn set_instance_properties<'u>(
         &'world self,
-        uniforms: Uniforms<'u>,
+        uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
     ) where 'world: 'u;
 }
@@ -158,7 +158,7 @@ impl<M: Material> BatchRenderer<M> {
                 let _ = instance.instance();
 
                 // Set the material property block uniforms (only if the instance changes)
-                M::set_instance_properties(instance, uniforms, &property_block_resources)
+                M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
             }
             
             // Render the surface object using el rasterizer
