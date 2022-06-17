@@ -105,30 +105,14 @@ impl Canvas {
     }
 
     // Create a new canvas painter that we can use to draw some 3D or 2D objects
-    pub fn painter(&mut self, ctx: &mut Context, settings: RasterSettings) -> Painter {
+    pub fn painter<'canvas, 'context>(&'canvas mut self, ctx: &'context mut Context, settings: RasterSettings) -> Painter<'canvas, 'context> {
         // Make sure the framebuffer is bound, and that the viewport is valid
         ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
         });
 
-        Painter::new()
-    }
-
-    // Gets the screen rasterizer that we must use to render the object geometry
-    pub fn rasterizer<'shader>(
-        &mut self,
-        shader: &'shader mut Shader,
-        ctx: &mut Context,
-        settings: RasterSettings,
-    ) -> Rasterizer<'shader> {
-        
-
-        // Make sure the shader is bound as well
-        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |name| unsafe {
-            gl::UseProgram(name)
-        });
-
-        Rasterizer::new(self, ctx, shader, settings)
+        // Create the new painter
+        Painter::new(self, ctx, settings)
     }
 }

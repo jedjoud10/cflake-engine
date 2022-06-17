@@ -1,5 +1,7 @@
 use std::ptr::null_mut;
 
+use ahash::AHashMap;
+
 use super::{
     introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage,
 };
@@ -48,18 +50,23 @@ unsafe fn compile(names: &[u32]) -> Program {
     let introspection = introspect(program);
 
     // Fetch all the uniform locations
-    let uniform_locations = introspection
+    let uniform_locations: AHashMap<String, u32> = introspection
         .uniforms()
         .iter()
         .map(|uniform| (uniform.name().to_string(), uniform.location()))
         .collect();
 
+    // Count the number of user defined inputs (uniforms, samplers, buffers)
+    let inputs = uniform_locations.len() as u32;
+
     Program {
         name: program,
+        introspection,
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),
         uniform_locations,
+        inputs,
     }
 }
 

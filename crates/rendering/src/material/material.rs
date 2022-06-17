@@ -129,8 +129,9 @@ impl<M: Material> BatchRenderer<M> {
         // Create a valid rasterizer and start rendering
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
-        // Get the shader uniforms since we have to set them for each surface
-        let mut rasterizer = device.canvas_mut().rasterizer(shader, ctx, settings);
+
+        // Create a new painter so we can draw the objects onto the world
+        let mut painter = device.canvas_mut().painter(ctx, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
@@ -144,29 +145,30 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
-            // Set the default surface uniforms
-            let mut uniforms = rasterizer.shader_mut().as_mut().uniforms();
-            uniforms.set_mat4x4("_world_matrix", renderer.matrix());
-            uniforms.set_mat4x4("_view_matrix", camera.view());
-            uniforms.set_mat4x4("_proj_matrix", camera.projection());
+            // For each object, make a new painter pass
+            let mut pass = painter.pass(shader, |uniforms| {
+                // Set the default surface uniforms
+                uniforms.set_mat4x4("_world_matrix", renderer.matrix());
+                uniforms.set_mat4x4("_view_matrix", camera.view());
+                uniforms.set_mat4x4("_proj_matrix", camera.projection());
 
-            // Check if we changed material instances
-            if old != Some(surface.material().clone()) {
-                // We changed instances, so we must re-set the uniform property
-                old = Some(surface.material().clone());
-                let instance = materials.get(old.as_ref().unwrap());
-                let _ = instance.instance();
+                // Check if we changed material instances
+                if old != Some(surface.material().clone()) {
+                    // We changed instances, so we must re-set the uniform property
+                    old = Some(surface.material().clone());
+                    let instance = materials.get(old.as_ref().unwrap());
+                    let _ = instance.instance();
 
-                // Set the material property block uniforms (only if the instance changes)
-                M::set_instance_properties(instance, &mut uniforms, &property_block_resources)
-            }
+                    // Set the material property block uniforms (only if the instance changes)
+                    M::set_instance_properties(instance, uniforms, &property_block_resources)
+                }
+            });
             
-            // Render the surface object using el rasterizer
+            
+            // Render the surface object using the current painter pass
             let submesh = submeshes.get(surface.submesh());
-            rasterizer.draw(submesh);
+            pass.draw(submesh);
         }
-        drop(property_block_resources);
-
         None
     }
 }

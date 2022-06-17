@@ -162,23 +162,14 @@ impl Painter {
 
         // Create a new canvas painter and a new canvas rasterizer
 
-        let mut raster = device.canvas_mut().rasterizer(ctx, settings);
-        let mut uniforms = raster.shader_mut().as_mut().uniforms();
+        let mut painter = device.canvas_mut().painter(ctx, settings);
 
-        // Set the uniforms
-        let texture: Texture2D<RGBA<Ranged<u8>>> = Texture2D::new(
-            ctx,
-            TextureMode::Resizable,
-            vek::Extent2::one(),
-            Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
-            MipMaps::Disabled,
-            &[],
-        ).unwrap();
-        let sampler = texture.sampler();
-        
-        uniforms.set_sampler("u_sampler", sampler);
-        drop(texture);
-        test(uniforms);
+        // Create a new painter pass that we will use to draw the object
+        let mut pass = painter.pass(&mut self.shader, |uniform| {
+            let sampler = self.texture.as_ref().unwrap().sampler();
+            uniform.set_sampler("u_sampler", sampler);
+        });
+
         // Draw the meshes
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
@@ -186,11 +177,6 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                // Shader use pass
-                let pass = raster.pass(shader, |uniforms| {
-
-                });
-
                 pass.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
@@ -199,8 +185,4 @@ impl Painter {
             }
         }
     }
-}
-
-fn test(uni: Uniforms) {
-
 }

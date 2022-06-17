@@ -3,7 +3,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 use super::{Canvas};
 use crate::{
     context::Context,
-    prelude::{Program, Shader, Uniforms}, others::Comparison, mesh::attributes::AttributeSet, buffer::ElementBuffer,
+    prelude::{Program, Shader, Uniforms, Populated}, others::Comparison, mesh::attributes::AttributeSet, buffer::ElementBuffer, object::ToGlName,
 };
 
 // Blend mode factor source
@@ -182,21 +182,20 @@ impl<'canvas, 'context> Painter<'canvas, 'context> {
     }
 
     // Create a new painter pass that uses a shader and some uniforms
-    pub fn pass(&mut self, shader: &mut Shader, populate: impl FnOnce(&mut Uniforms)) -> Pass<'shader> {
-
+    pub fn pass<'shader>(&mut self, shader: &'shader mut Shader, populate: impl FnOnce(&mut Uniforms<'shader>)) -> Pass<'shader> {
+        let populated = unsafe { crate::prelude::populate(self.ctx, shader.as_mut(), populate) };
+        Pass { populated, primitive: self.primitive }
     }
 }
 
 // Painters use multiple "passes" to render different batches of object with different shaders / uniforms
 // We can actually call the .draw() methods on passes, but not on painters directly
-pub struct Pass<'canvas, 'context, 'shader> {
-    canvas: &'canvas mut Canvas,
-    ctx: &'context mut Context,
-    shader: &'shader Shader,
+pub struct Pass<'shader> {
+    populated: Populated<'shader>,
     primitive: u32,
 }
 
-impl<'canvas, 'context, 'shader> Pass<'canvas, 'context, 'shader> {
+impl<'shader> Pass<'shader> {
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
     pub unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32) {
         gl::BindVertexArray(vao);
