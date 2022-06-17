@@ -131,11 +131,11 @@ impl<'world> PropertyBlock<'world> for Standard {
         &'world Storage<MaskMap>,
     );
 
-    fn set_instance_properties(
+    fn set_instance_properties<'u>(
         &'world self,
-        uniforms: &mut Uniforms<'world>,
+        uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-    ) {
+    ) where 'world: 'u {
         // Decompose the fetched resource references
         let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
 

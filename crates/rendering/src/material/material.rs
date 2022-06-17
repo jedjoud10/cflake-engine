@@ -46,7 +46,7 @@ pub trait Material: 'static + Sized {
 // A property block is an interface that tells us exactly we should set the material properties
 pub trait PropertyBlock<'world>: Sized {
     // The resources that we need to fetch from the world to set the uniforms
-    type PropertyBlockResources: 'world;
+    type PropertyBlockResources;
 
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
@@ -61,11 +61,12 @@ pub trait PropertyBlock<'world>: Sized {
     );
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
-    fn set_instance_properties(
+    // Remember, the shader must never outlive the world reference, so we can set the shader uniforms properly
+    fn set_instance_properties<'u>(
         &'world self,
-        uniforms: &mut Uniforms<'world>,
+        uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-    );
+    ) where 'world: 'u;
 }
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces
@@ -125,10 +126,12 @@ impl<M: Material> BatchRenderer<M> {
             blend: None,
         };
 
-        // Create a valid painter, then a rasterizer, then start doing the funny
+        // Create a valid rasterizer and start rendering
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
-        let mut painter = device.canvas_mut().paint(shader, ctx, settings);
+
+        // Create a new painter so we can draw the objects onto the world
+        let mut painter = device.canvas_mut().painter(ctx, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
@@ -142,8 +145,8 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
-            // Set the painter's shader's uniforms
-            let raster = painter.pass(|uniforms| {
+            // For each object, make a new painter pass
+            let mut pass = painter.pass(shader, |uniforms| {
                 // Set the default surface uniforms
                 uniforms.set_mat4x4("_world_matrix", renderer.matrix());
                 uniforms.set_mat4x4("_view_matrix", camera.view());
@@ -160,12 +163,12 @@ impl<M: Material> BatchRenderer<M> {
                     M::set_instance_properties(instance, uniforms, &property_block_resources)
                 }
             });
-
-            // Render the surface object using el rasterizer
+            
+            
+            // Render the surface object using the current painter pass
             let submesh = submeshes.get(surface.submesh());
-            raster.draw(submesh);
+            pass.draw(submesh);
         }
-
         None
     }
 }

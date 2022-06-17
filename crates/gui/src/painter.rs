@@ -7,7 +7,7 @@ use rendering::canvas::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSe
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::{MipMaps, Sampler};
+use rendering::prelude::{MipMaps, Sampler, Uniforms};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -161,12 +161,13 @@ impl Painter {
         };
 
         // Create a new canvas painter and a new canvas rasterizer
-        let mut painter = device.canvas_mut().paint(&mut self.shader, ctx, settings);
 
-        // Set the uniforms
-        let raster = painter.pass(|uniforms| {
+        let mut painter = device.canvas_mut().painter(ctx, settings);
+
+        // Create a new painter pass that we will use to draw the object
+        let mut pass = painter.pass(&mut self.shader, |uniform| {
             let sampler = self.texture.as_ref().unwrap().sampler();
-            uniforms.set_sampler("u_sampler", sampler);
+            uniform.set_sampler("u_sampler", sampler);
         });
 
         // Draw the meshes
@@ -176,7 +177,7 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                raster.draw_from_raw_parts(
+                pass.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
                     self.indices.len() as u32,

@@ -1,9 +1,7 @@
-use crate::{
-    canvas::Rasterizer, context::Context, object::ToGlName, prelude::Uniforms, shader::Shader,
-};
+use crate::{context::Context, object::ToGlName, prelude::Uniforms, shader::Shader};
 use std::marker::PhantomData;
 
-use super::{Painter, RasterSettings};
+use super::{RasterSettings, Painter};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the device using the canvas() function
@@ -14,6 +12,7 @@ pub struct Canvas {
     // The size of the framebuffer, in pixels
     size: vek::Extent2<u16>,
 
+    // Unsend + Unsync
     _phantom: PhantomData<*const ()>,
 }
 impl Canvas {
@@ -105,27 +104,15 @@ impl Canvas {
         }
     }
 
-    // Gets the screen painter that we must use to render and shade the soon to be rendered objects
-    pub fn paint<'canvas, 'shader, 'context>(
-        &'canvas mut self,
-        shader: &'shader mut Shader,
-        ctx: &'context mut Context,
-        settings: RasterSettings,
-    ) -> Painter<'canvas, 'shader, 'context> {
+    // Create a new canvas painter that we can use to draw some 3D or 2D objects
+    pub fn painter<'canvas, 'context>(&'canvas mut self, ctx: &'context mut Context, settings: RasterSettings) -> Painter<'canvas, 'context> {
         // Make sure the framebuffer is bound, and that the viewport is valid
         ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
         });
 
-        // Make sure the shader is bound as well
-        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |name| unsafe {
-            gl::UseProgram(name)
-        });
-
-        Painter {
-            rasterizer: Rasterizer::new(self, ctx, settings),
-            uniforms: Uniforms(shader.as_mut()),
-        }
+        // Create the new painter
+        Painter::new(self, ctx, settings)
     }
 }
