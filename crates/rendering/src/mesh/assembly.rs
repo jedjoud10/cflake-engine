@@ -4,7 +4,6 @@ use super::{
 };
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
-#[derive(Default)]
 pub struct VertexAssembly {
     // Rust vectors of vertex attributes
     pub(super) positions: Option<Vec<out::VePos>>,
@@ -17,7 +16,18 @@ pub struct VertexAssembly {
     layout: VertexLayout,
 }
 
+impl Default for VertexAssembly {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl VertexAssembly {
+    // Create an empty vertex assembly that contains no attributes what so ever
+    pub fn empty() -> Self {
+        Self { positions: None, normals: None, tangents: None, colors: None, tex_coord_0: None, layout: VertexLayout::default() }
+    }
+
     // Insert an attribute vector into the assembly
     pub fn insert<U: Attribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);

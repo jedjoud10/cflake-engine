@@ -269,7 +269,7 @@ struct AuxBufGen<'a> {
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
 fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
-    aux.builder.get_attribute_vec::<T>().map(|vec| unsafe {
+    aux.builder.attribute_vec::<T>().map(|vec| unsafe {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
 

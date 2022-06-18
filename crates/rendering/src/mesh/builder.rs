@@ -5,7 +5,6 @@ use obj::TexturedVertex;
 
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
-#[derive(Default)]
 pub struct GeometryBuilder {
     // Vertices and their attributes
     vertices: VertexAssembly,
@@ -14,14 +13,26 @@ pub struct GeometryBuilder {
     indices: Vec<u32>,
 }
 
+impl Default for GeometryBuilder {
+    fn default() -> Self {
+        Self::empty()
+    }
+} 
+
 impl GeometryBuilder {
+    // Create a new empty procedular geometry builder
+    // It contains no attributes or indices, just an empty one
+    pub fn empty() -> Self {
+        Self { vertices: VertexAssembly::empty(), indices: Vec::new() }
+    }
+
     // Set a single unique vertex attribute
     pub fn set_attribute_vec<U: Attribute>(&mut self, vec: Vec<U::Out>) {
         self.vertices.insert::<U>(vec);
     }
 
     // Get a vertex attribute immutably
-    pub fn get_attribute_vec<U: Attribute>(&self) -> Option<&Vec<U::Out>> {
+    pub fn attribute_vec<U: Attribute>(&self) -> Option<&Vec<U::Out>> {
         self.vertices.get::<U>()
     }
 
@@ -31,7 +42,7 @@ impl GeometryBuilder {
     }
 
     // Get an attribute vector mutably
-    pub fn get_attribute_vec_mut<U: Attribute>(&mut self) -> Option<&mut Vec<U::Out>> {
+    pub fn attribute_vec_mut<U: Attribute>(&mut self) -> Option<&mut Vec<U::Out>> {
         self.vertices.get_mut::<U>()
     }
 
@@ -46,12 +57,12 @@ impl GeometryBuilder {
     }
 
     // Get the indices immutably
-    pub fn get_indices(&self) -> &IndexAssembly {
+    pub fn indices(&self) -> &IndexAssembly {
         &self.indices
     }
 
     // Get the indices mutably
-    pub fn get_indices_mut(&mut self) -> &mut IndexAssembly {
+    pub fn indices_mut(&mut self) -> &mut IndexAssembly {
         &mut self.indices
     }
 
@@ -85,7 +96,7 @@ impl Asset<'static> for GeometryBuilder {
     fn deserialize(bytes: assets::CachedSlice, _ctx: Self::Args) -> Self {
         // Parse the OBJ mesh into an geoemtry builder
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
-        let mut builder = GeometryBuilder::default();
+        let mut builder = GeometryBuilder::empty();
         let capacity = parsed.vertices.len();
 
         // Create all the buffers at once

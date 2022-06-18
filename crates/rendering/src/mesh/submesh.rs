@@ -40,7 +40,7 @@ impl SubMesh {
     pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
         Self {
             attributes: AttributeSet::new(ctx, BufferMode::Static, &builder),
-            indices: Buffer::new(ctx, BufferMode::Static, builder.get_indices()).unwrap(),
+            indices: Buffer::new(ctx, BufferMode::Static, builder.indices()).unwrap(),
         }
     }
 

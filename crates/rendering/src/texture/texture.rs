@@ -136,10 +136,10 @@ pub trait Region {
     fn unit() -> Self;
 
     // Get the region's origin
-    fn origin(&self) -> &Self::O;
+    fn origin(&self) -> Self::O;
 
     // Get the region's extent
-    fn extent(&self) -> &Self::E;
+    fn extent(&self) -> Self::E;
 
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;
@@ -152,12 +152,12 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
     type O = vek::Vec2<u16>;
     type E = vek::Extent2<u16>;
 
-    fn origin(&self) -> &Self::O {
-        &self.0
+    fn origin(&self) -> Self::O {
+        self.0
     }
 
-    fn extent(&self) -> &Self::E {
-        &self.1
+    fn extent(&self) -> Self::E {
+        self.1
     }
 
     fn with_extent(extent: Self::E) -> Self {
@@ -177,12 +177,12 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     type O = vek::Vec3<u16>;
     type E = vek::Extent3<u16>;
 
-    fn origin(&self) -> &Self::O {
-        &self.0
+    fn origin(&self) -> Self::O {
+        self.0
     }
 
-    fn extent(&self) -> &Self::E {
-        &self.1
+    fn extent(&self) -> Self::E {
+        self.1
     }
 
     fn with_extent(extent: Self::E) -> Self {

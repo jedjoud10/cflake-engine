@@ -51,7 +51,7 @@ fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) 
     let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
     device
         .canvas_mut()
-        .clear(Some(vek::Rgb::green()), None, None);
+        .clear(Some(vek::Rgb::white()), Some(1.0), None);
 
     // Execute the ECS systems in order
     for system in systems {

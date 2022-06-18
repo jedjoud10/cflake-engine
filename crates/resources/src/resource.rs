@@ -56,6 +56,7 @@ impl ResourceSet {
     }
 
     // Method that is called after all the systems have executed
+    // TODO: Hide this from the external API
     pub fn end_frame(&mut self) {
         for (_, resource) in self.0.iter_mut() {
             resource.end_frame()
