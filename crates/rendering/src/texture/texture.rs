@@ -93,7 +93,7 @@ pub trait Extent: Copy {
             cur /= 2.0;
             num += 1;
         }
-        NonZeroU8::new(u8::try_from(num).unwrap()).unwrap()
+        NonZeroU8::new(u8::try_from(num+1).unwrap()).unwrap()
     }
 }
 

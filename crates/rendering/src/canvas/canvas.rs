@@ -105,14 +105,19 @@ impl Canvas {
     }
 
     // Create a new canvas painter that we can use to draw some 3D or 2D objects
-    pub fn painter<'canvas, 'context>(&'canvas mut self, ctx: &'context mut Context, settings: RasterSettings) -> Painter<'canvas, 'context> {
+    pub fn painter<'canvas, 'context, 'shader>(&'canvas mut self, ctx: &'context mut Context, shader: &'shader mut Shader, settings: RasterSettings) -> (Painter<'canvas, 'context>, Uniforms<'shader>) {
         // Make sure the framebuffer is bound, and that the viewport is valid
         ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
         });
 
+        // Bind the program, and set it's uniforms
+        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe {
+            gl::UseProgram(obj)
+        });
+
         // Create the new painter
-        Painter::new(self, ctx, settings)
+        (Painter::new(self, ctx, settings), Uniforms(shader.as_mut()))
     }
 }

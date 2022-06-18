@@ -3,7 +3,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 use super::{Canvas};
 use crate::{
     context::Context,
-    prelude::{Program, Shader, Uniforms, Populated}, others::Comparison, mesh::attributes::AttributeSet, buffer::ElementBuffer, object::ToGlName,
+    prelude::{Program, Shader, Uniforms}, others::Comparison, mesh::attributes::AttributeSet, buffer::ElementBuffer, object::ToGlName,
 };
 
 // Blend mode factor source
@@ -84,7 +84,7 @@ pub trait ToRasterBuffers {
 }
 
 // A painter will help us render specific shaded / colored objects onto the screen
-// Painters can be fetched from any canvas using the .paint() method to be able to draw onto that canvas
+// Painters can be fetched from any mutable reference to a canvas
 pub struct Painter<'canvas, 'context> {
     canvas: &'canvas mut Canvas,
     ctx: &'context mut Context,
@@ -181,32 +181,20 @@ impl<'canvas, 'context> Painter<'canvas, 'context> {
         Self { canvas, ctx, primitive }
     }
 
-    // Create a new painter pass that uses a shader and some uniforms
-    pub fn pass<'shader>(&mut self, shader: &'shader mut Shader, populate: impl FnOnce(&mut Uniforms<'shader>)) -> Pass<'shader> {
-        let populated = unsafe { crate::prelude::populate(self.ctx, shader.as_mut(), populate) };
-        Pass { populated, primitive: self.primitive }
-    }
-}
-
-// Painters use multiple "passes" to render different batches of object with different shaders / uniforms
-// We can actually call the .draw() methods on passes, but not on painters directly
-pub struct Pass<'shader> {
-    populated: Populated<'shader>,
-    primitive: u32,
-}
-
-impl<'shader> Pass<'shader> {
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
-    pub unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32) {
+    // This will use the currently bound shader uniforms to draw the object
+    pub unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32, uniforms: &Uniforms) {
+        uniforms.validate();
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
         gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
     }
 
-    // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and render them.
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T) {
+    // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and draw them.
+    // This will use the currently bound shader uniforms to draw the object
+    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, uniforms: &Uniforms) {
         unsafe {
-            self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32)
+            self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32, uniforms)
         }
     }
 }

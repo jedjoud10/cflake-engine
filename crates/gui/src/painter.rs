@@ -160,27 +160,25 @@ impl Painter {
             blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
         };
 
-        // Create a new canvas painter and a new canvas rasterizer
+        // Create a new canvas painter and fetch it's uniforms
+        let (mut painter, mut uniforms) = device.canvas_mut().painter(ctx, &mut self.shader, settings);
+        
+        // Set the global static uniforms at the start
+        let sampler = self.texture.as_ref().unwrap().sampler();
+        uniforms.set_sampler("u_sampler", sampler);
 
-        let mut painter = device.canvas_mut().painter(ctx, settings);
-
-        // Create a new painter pass that we will use to draw the object
-        let mut pass = painter.pass(&mut self.shader, |uniform| {
-            let sampler = self.texture.as_ref().unwrap().sampler();
-            uniform.set_sampler("u_sampler", sampler);
-        });
-
-        // Draw the meshes
+        // Draw the clipped meshes
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
             self.vertices.write(mesh.1.vertices.as_slice());
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                pass.draw_from_raw_parts(
+                painter.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
                     self.indices.len() as u32,
+                    &uniforms,
                 );
             }
         }
