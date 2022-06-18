@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use world::resources::Resource;
+use world::Resource;
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {

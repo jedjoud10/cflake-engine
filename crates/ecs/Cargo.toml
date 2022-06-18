@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-resources = { path = "../resources" }
 world = { path = "../world" }
 lazy_static = "1.4.0"
 slotmap = "1.0.6"

@@ -6,4 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-resources = { path = "../resources" }
+slotmap = "1.0.6"
+ahash = "0.7.6"
+resources-derive = { path = "./resources-derive" }

@@ -3,10 +3,7 @@ use std::marker::PhantomData;
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use world::{
-    resources::{Handle, Storage},
-    World,
-};
+use world::{Handle, Storage, World};
 
 use crate::{
     canvas::{FaceCullMode, PrimitiveMode, RasterSettings},

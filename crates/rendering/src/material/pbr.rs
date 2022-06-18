@@ -1,6 +1,6 @@
 use assets::Assets;
 use ecs::EcsManager;
-use world::resources::{Handle, Storage};
+use world::{Handle, Storage};
 
 use crate::{
     context::{Context, Graphics},

@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use world::resources::Resource;
+use world::Resource;
 
 // Idk how many times I've rewritten this. Help my sanity. 12:16am on the 14th may 2022
 pub struct CachedSlice<'loader>(&'loader [u8]);

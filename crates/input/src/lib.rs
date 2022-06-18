@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use glutin::event::ElementState;
-use world::resources::Resource;
+use world::Resource;
 
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = glutin::event::VirtualKeyCode;

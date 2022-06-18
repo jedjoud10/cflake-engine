@@ -23,6 +23,10 @@ pub(super) fn run(el: EventLoop<()>, systems: Vec<fn(&mut World)>, mut world: Wo
 
 // Handle new window events
 fn window(world: &mut World, event: WindowEvent, cf: &mut ControlFlow) {
+    // Handle GUI window event
+    let ui = world.get_mut::<&mut UserInterface>().unwrap();
+    ui.receive_event(&event);
+
     match event {
         WindowEvent::CloseRequested => *cf = ControlFlow::Exit,
         WindowEvent::Resized(size) => {

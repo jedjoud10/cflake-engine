@@ -1,4 +1,4 @@
-use resources::Resource;
+use world::Resource;
 use slotmap::SlotMap;
 
 use crate::{

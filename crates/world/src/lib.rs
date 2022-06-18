@@ -1,5 +1,13 @@
-pub use resources;
-use resources::{Layout, Resource, ResourceError, ResourceSet, StorageSet};
+mod error;
+mod layout;
+mod resource;
+mod storage;
+pub use error::*;
+pub use layout::*;
+pub use resource::*;
+pub use resources_derive::*;
+pub use storage::*;
+
 
 // The world is a container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management

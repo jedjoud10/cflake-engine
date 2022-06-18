@@ -1,4 +1,4 @@
-use world::resources::Resource;
+use world::Resource;
 
 // Physics global that contains some simulation settings
 #[derive(Default, Resource)]

@@ -5,8 +5,11 @@ use rendering::{
     context::{Context, Device},
     gl,
 };
+use world::Resource;
 
 // A simple manager that will encapsulate everything that is related to GUI
+#[derive(Resource)]
+#[Locked]
 pub struct UserInterface {
     egui: egui::Context,
     state: egui_winit::State,

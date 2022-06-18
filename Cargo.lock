@@ -101,7 +101,6 @@ dependencies = [
  "network",
  "physics",
  "rendering",
- "resources",
  "spin_sleep",
  "terrain",
  "time",
@@ -893,7 +892,6 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.12.1",
  "rayon",
- "resources",
  "slotmap",
  "smallvec",
  "tinyvec",
@@ -1267,6 +1265,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "rendering",
  "vek",
+ "world",
 ]
 
 [[package]]
@@ -2582,15 +2581,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "resources"
-version = "0.1.0"
-dependencies = [
- "ahash 0.7.6",
- "resources-derive",
- "slotmap",
-]
-
-[[package]]
 name = "resources-derive"
 version = "0.1.0"
 dependencies = [
@@ -3452,7 +3442,9 @@ dependencies = [
 name = "world"
 version = "0.1.0"
 dependencies = [
- "resources",
+ "ahash 0.7.6",
+ "resources-derive",
+ "slotmap",
 ]
 
 [[package]]

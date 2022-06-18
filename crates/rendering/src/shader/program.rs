@@ -4,7 +4,7 @@ use crate::{
 };
 use ahash::AHashMap;
 use std::marker::PhantomData;
-use world::resources::Storage;
+use world::Storage;
 
 use super::{Uniforms, Introspection};
 

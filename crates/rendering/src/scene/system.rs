@@ -12,7 +12,7 @@ use crate::{
 use assets::Assets;
 use ecs::{added, modified, or, EcsManager};
 use math::Transform;
-use world::{resources::Storage, World};
+use world::{Storage, World};
 
 // Initialization system that will setup the default textures and objects
 pub fn init(world: &mut World) {

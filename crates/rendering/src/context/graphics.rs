@@ -4,7 +4,7 @@ use glutin::{
     window::{Fullscreen, WindowBuilder},
     ContextBuilder, GlProfile, GlRequest,
 };
-use world::resources::Resource;
+use world::Resource;
 
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline

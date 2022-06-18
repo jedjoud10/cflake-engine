@@ -1,5 +1,5 @@
 use ecs::Entity;
-use world::resources::{Handle, Resource};
+use world::{Handle, Resource};
 
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},

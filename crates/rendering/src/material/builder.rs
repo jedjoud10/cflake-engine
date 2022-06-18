@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use assets::Assets;
-use world::resources::Storage;
+use world::Storage;
 
 use crate::{context::Context, prelude::Shader};
 
