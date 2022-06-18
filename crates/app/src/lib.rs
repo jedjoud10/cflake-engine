@@ -8,7 +8,6 @@ pub use audio;
 pub use ecs;
 pub use gui;
 pub use rendering;
-pub use resources;
 pub use terrain;
 pub use time;
 pub use world;
@@ -21,8 +20,16 @@ pub mod prelude {
     pub use crate::ecs::*;
     pub use crate::gui::*;
     pub use crate::rendering::prelude::*;
-    pub use crate::resources::*;
     pub use crate::terrain::*;
     pub use crate::time::*;
     pub use crate::world::*;
+}
+
+fn eve(world: &mut World, event: &WindowEvent) {
+
+}
+
+
+fn begin(world: &mut World) {
+    Events::register(eve);
 }
