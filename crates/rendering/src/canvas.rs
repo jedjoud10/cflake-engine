@@ -1,4 +1,4 @@
 mod canvas;
-mod painter;
-pub use painter::*;
+mod rasterizer;
+pub use rasterizer::*;
 pub use canvas::*;

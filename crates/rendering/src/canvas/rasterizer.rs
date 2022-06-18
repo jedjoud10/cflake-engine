@@ -83,16 +83,16 @@ pub trait ToRasterBuffers {
     fn ebo(&self) -> &ElementBuffer<u32>;
 }
 
-// A painter will help us render specific shaded / colored objects onto the screen
+// A rasterizer will help us render specific shaded / colored objects onto the screen
 // Painters can be fetched from any mutable reference to a canvas
-pub struct Painter<'canvas, 'context> {
+pub struct Rasterizer<'canvas, 'context> {
     canvas: &'canvas mut Canvas,
     ctx: &'context mut Context,
     primitive: u32, 
 }
 
-impl<'canvas, 'context> Painter<'canvas, 'context> {
-    // Create a new painter with the specified raster settings
+impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
+    // Create a new rasterizer with the specified raster settings
     pub(crate) fn new(canvas: &'canvas mut Canvas, ctx: &'context mut Context, settings: RasterSettings) -> Self {
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
@@ -177,7 +177,7 @@ impl<'canvas, 'context> Painter<'canvas, 'context> {
             }
         }
 
-        // Create the painter object
+        // Create the rasterizer object
         Self { canvas, ctx, primitive }
     }
 

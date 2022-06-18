@@ -38,7 +38,7 @@ fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
     }
 }
 
-// A global painter that will draw the eGUI elements onto the screen canvas
+// A global rasterizer that will draw the eGUI elements onto the screen canvas
 pub struct Painter {
     // A simple 2D shader that will draw the shapes
     shader: Shader,
@@ -46,7 +46,7 @@ pub struct Painter {
     // Main font texture
     texture: Option<Texture2D<Texel>>,
 
-    // The VAO for the whole painter mesh
+    // The VAO for the whole rasterizer mesh
     vao: u32,
 
     // Dynamic buffers that we will update each frame
@@ -55,7 +55,7 @@ pub struct Painter {
 }
 
 impl Painter {
-    // Create a new painter using an asset loader an OpenGL context
+    // Create a new rasterizer using an asset loader an OpenGL context
     pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
         let vert = loader
@@ -160,8 +160,8 @@ impl Painter {
             blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
         };
 
-        // Create a new canvas painter and fetch it's uniforms
-        let (mut painter, mut uniforms) = device.canvas_mut().painter(ctx, &mut self.shader, settings);
+        // Create a new canvas rasterizer and fetch it's uniforms
+        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, &mut self.shader, settings);
         
         // Set the global static uniforms at the start
         let sampler = self.texture.as_ref().unwrap().sampler();
@@ -174,7 +174,7 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                painter.draw_from_raw_parts(
+                rasterizer.draw_from_raw_parts(
                     self.vao,
                     self.indices.name(),
                     self.indices.len() as u32,

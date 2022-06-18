@@ -130,8 +130,8 @@ impl<M: Material> BatchRenderer<M> {
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
 
-        // Create a new painter so we can draw the objects onto the world
-        let (mut painter, mut uniforms) = device.canvas_mut().painter(ctx, shader, settings);
+        // Create a new rasterizer so we can draw the objects onto the world
+        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
@@ -165,9 +165,9 @@ impl<M: Material> BatchRenderer<M> {
                 M::set_instance_properties(instance, &mut uniforms, &property_block_resources);
             }
             
-            // Draw the surface object using the current painter pass
+            // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(surface.submesh());
-            painter.draw(submesh, &uniforms);
+            rasterizer.draw(submesh, &uniforms);
         }
         None
     }
