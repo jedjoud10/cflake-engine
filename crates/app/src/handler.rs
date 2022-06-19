@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use events::Events;
 use glutin::{
     event::{DeviceEvent, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -6,7 +7,7 @@ use glutin::{
 use world::World;
 
 // Run the event loop, and start displaying the game engine window
-pub(super) fn run(el: EventLoop<()>, systems: Vec<fn(&mut World)>, mut world: World) {
+pub(super) fn run(el: EventLoop<()>, systems: Events<fn(&mut World)>, mut world: World) {
     el.run(move |event, _, cf| match event {
         Event::WindowEvent {
             window_id: _,
@@ -16,7 +17,7 @@ pub(super) fn run(el: EventLoop<()>, systems: Vec<fn(&mut World)>, mut world: Wo
             device_id: _,
             event,
         } => device(&mut world, event, cf),
-        Event::MainEventsCleared => update(&mut world, systems.as_ref(), cf),
+        Event::MainEventsCleared => update(&mut world, &systems, cf),
         _ => (),
     })
 }
@@ -47,7 +48,7 @@ fn window(world: &mut World, event: WindowEvent, cf: &mut ControlFlow) {
 fn device(_world: &mut World, _device: DeviceEvent, _cf: &mut ControlFlow) {}
 
 // Execute one step-frame of the engine
-fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) {
+fn update(world: &mut World, systems: &Events<fn(&mut World)>, _cf: &mut ControlFlow) {
     // Le world is bruh funnier
     world.0.start_frame();
 
@@ -57,10 +58,8 @@ fn update(world: &mut World, systems: &[fn(&mut World)], _cf: &mut ControlFlow) 
         .canvas_mut()
         .clear(Some(vek::Rgb::white()), Some(1.0), None);
 
-    // Execute the ECS systems in order
-    for system in systems {
-        system(world)
-    }
+    // Execute the update systems sequentially
+    systems.execute(world);
 
     // Swap the front and back buffers (OpenGL) so we can actually render something to the screen
     let Graphics(_, ctx) = world.get_mut::<&mut Graphics>().unwrap();

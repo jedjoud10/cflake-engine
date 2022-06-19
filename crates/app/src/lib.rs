@@ -24,12 +24,3 @@ pub mod prelude {
     pub use crate::time::*;
     pub use crate::world::*;
 }
-
-fn eve(world: &mut World, event: &WindowEvent) {
-
-}
-
-
-fn begin(world: &mut World) {
-    Events::register(eve);
-}

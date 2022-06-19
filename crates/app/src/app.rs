@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use events::Events;
 use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
 use world::World;
@@ -17,31 +18,28 @@ pub struct App {
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
 
-    // Systems that will be executed at the start/each frame
-    startup_systems: Vec<(fn(&mut World), i32)>,
-    update_systems: Vec<(fn(&mut World), i32)>,
+    // Systems that will be executed at the start of the engine
+    startups: Events<fn(&mut World)>,
 
-    // System ordering
-    startup_idx: i32,
-    update_idx: i32,
+    // Systems that will be executed at each frame
+    updates: Events<fn(&mut World)>,
 }
 
-impl App {
-    // Create a new world builder
-    pub fn new() -> Self {
+impl Default for App {
+    fn default() -> Self {
         Self {
             title: "Default title".to_string(),
             screensize: vek::Extent2::new(1280, 720),
             fullscreen: false,
             vsync: false,
             user_assets_folder: None,
-            startup_systems: Vec::new(),
-            update_systems: Vec::new(),
-            startup_idx: 0,
-            update_idx: 0,
+            startups: Default::default(),
+            updates: Default::default(),
         }
     }
+}
 
+impl App {
     // Set the window title
     pub fn set_window_title(mut self, title: impl ToString) -> Self {
         self.title = title.to_string();
@@ -78,27 +76,25 @@ impl App {
 
     // Insert a startup system into the application that will execute once we begin
     pub fn insert_startup(mut self, system: fn(&mut World)) -> Self {
-        self.startup_idx += 1;
-        let copy = self.startup_idx;
-        self.insert_startup_with(system, copy)
+        self.startups.register(system);
+        self
     }
 
     // Insert a startup system with a specific ordering index
     pub fn insert_startup_with(mut self, system: fn(&mut World), order: i32) -> Self {
-        self.startup_systems.push((system, order));
+        self.startups.register_with(system, order);
         self
     }
 
     // Insert an update system that will execute each frame
     pub fn insert_update(mut self, system: fn(&mut World)) -> Self {
-        self.update_idx += 1;
-        let copy = self.update_idx;
-        self.insert_update_with(system, copy)
+        self.updates.register(system);
+        self
     }
 
     // Insert an update system with a specific ordering index
     pub fn insert_update_with(mut self, system: fn(&mut World), order: i32) -> Self {
-        self.update_systems.push((system, order));
+        self.updates.register_with(system, order);
         self
     }
 
@@ -112,7 +108,7 @@ impl App {
         self = self.insert_update_with(rendering::scene::cameras, i32::MAX);
         self = self.insert_update_with(rendering::scene::rendering, i32::MAX);
 
-        // Prepare the world and the even loop
+        // Prepare the world and the event loop
         let el = EventLoop::new();
         let mut world = World::default();
 
@@ -127,24 +123,14 @@ impl App {
         world.insert(assets::Assets::new(self.user_assets_folder));
         world.insert(time::Time::default());
 
-        // One sorting function that will be used twice
-        fn sort(vec: &mut Vec<(fn(&mut World), i32)>) -> Vec<fn(&mut World)> {
-            vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-            vec.iter_mut()
-                .map(|(system, _)| *system)
-                .collect::<Vec<_>>()
-        }
-
         // Don't care + L + ratio
-        let startups = sort(&mut self.startup_systems);
-        let updates = sort(&mut self.update_systems);
+        self.startups.sort();
+        self.updates.sort();
 
         // Run the init systems before starting the engine window
-        for system in startups {
-            system(&mut world);
-        }
+        self.startups.execute(&mut world);
 
         // Run le game engine
-        handler::run(el, updates, world);
+        handler::run(el, self.updates, world);
     }
 }
