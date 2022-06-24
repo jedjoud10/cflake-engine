@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell, any::{TypeId, Any}, marker::PhantomData};
+use std::{rc::Rc, cell::{RefCell, RefMut}, any::{TypeId, Any}, marker::PhantomData};
 
 use ahash::AHashMap;
 
@@ -7,49 +7,49 @@ use crate::World;
 struct Init;
 struct Update;
 
-pub trait Descriptor<'a>: 'static {
-    type Params: 'a;
+pub trait Descriptor: 'static {
+    type Params: 'static + ArgsTuple;
 }
 
-impl<'a> Descriptor<'a> for Init {
-    type Params = &'a mut World;
+impl Descriptor for Init {
+    type Params = EvWrite<World>;
 }
 
-impl<'a> Descriptor<'a> for Update {
-    type Params = &'a mut World;
+impl Descriptor for Update {
+    type Params = EvWrite<World>;
 }
 
 pub trait Event<Params> {
-    fn call(&self, params: &mut Params);
+    fn call<'a>(&self, params: &mut <Params as ArgsTupleConverter<'a>>::Inner) where Params: ArgsTupleConverter<'a>;
 }
 
-impl<F> Event<&mut World> for F where F: Fn(&mut World) + 'static {
-    fn call(&self, params: &mut &mut World) {
-        self(params)
+impl<F> Event<EvWrite<World>> for F where F: Fn(&mut World) + 'static {
+    fn call<'a>(&self, params: &mut <EvWrite<World> as ArgsTupleConverter<'a>>::Inner) where EvWrite<World>: ArgsTupleConverter<'a> {
+        todo!()
     }
 }
 
-trait ArgsTuple {
+pub trait ArgsTuple {
 }
-trait Handler<'a> {
+pub trait ArgsTupleConverter<'a> {
+    type Inner: 'a;
+}
+trait Handler {
+}
+pub trait HandlerConverter<'a> {
     type Inner: 'a;
 }
 struct EvWrite<T>(PhantomData<*mut T>);
 struct EvRead<T>(PhantomData<*const T>);
-impl<'a, T: 'static> Handler<'a> for EvWrite<T> {
-    type Inner = &'a mut T;
+impl<T: 'static> Handler for EvWrite<T> {}
+impl<T: 'static> Handler for EvRead<T> {}
+impl<T: Handler> ArgsTuple for T {}
+impl<A: Handler, B: Handler> ArgsTuple for (A, B) {}
+impl<'a, T: HandlerConverter<'a>> ArgsTupleConverter<'a> for T {
+    type Inner = T::Inner;
 }
-impl<'a, T: 'static> Handler<'a> for EvRead<T> {
-    type Inner = &'a T;
-}
-impl<'a, T: Handler<'a>> ArgsTuple for T {
-
-}
-impl<'a, A: Handler<'a>, B: Handler<'a>> ArgsTuple for (A, B) {
-
-}
-impl<'a, A: Handler<'a>, B: Handler<'a>, C: Handler<'a>> ArgsTuple for (A, B, C) {
-
+impl<'a, A: HandlerConverter<'a>, B: HandlerConverter<'a>> ArgsTupleConverter<'a> for (A, B) {
+    type Inner = (A::Inner, B::Inner);
 }
 
 // These are specialized events that can be executed with any parameter type
@@ -68,7 +68,7 @@ impl<P: 'static + ArgsTuple> SpecializedEvents<P> {
     }
 
     // Call each boxed event with the appropriate given parameters
-    fn call(&mut self, mut params: P) {
+    fn call<'a>(&mut self, mut params: P::Inner) where P: ArgsTupleConverter<'a> {
         for (event, _) in self.0.iter_mut() {
             event.call(&mut params);
         }
@@ -91,22 +91,29 @@ type SharedMap = Rc<RefCell<EventMap>>;
 pub struct Events(SharedMap);
 
 impl Events {
-    // Register a new event using it's marker descriptor and it's priority index
-    pub fn register_with<'a, D: Descriptor<'a>>(&self, event: impl Event<D::Params> + 'static, priority: i32) {
+    // This will get an interior reference to a specialized event set that uses the parameters from a specific descriptor
+    fn fetch<D: Descriptor>(&self) -> RefMut<SpecializedEvents<D::Params>> {
+        RefMut::map(self.0.borrow_mut(), |hashmap| {
+            let boxed = hashmap.entry(TypeId::of::<D>()).or_insert_with(|| Box::new(SpecializedEvents::<D::Params>(Vec::default(), 0)));
+            let specialized = boxed.downcast_mut::<SpecializedEvents<D::Params>>().unwrap();
+            specialized            
+        })
+    }
 
+    // Register a new event using it's marker descriptor and it's priority index
+    pub fn register_with<D: Descriptor>(&self, event: impl Event<D::Params> + 'static, priority: i32) {
+        self.fetch::<D>().register_with(event, priority);
     }
 
     // Register a new event using it's marker descriptor and an automatic priority index
-    pub fn register<'a, D: Descriptor<'a>>(&self, event: impl Event<D::Params> + 'static) {
-        let bruh = SpecializedEvents::<D::Params>(Vec::default(), 0);
-        let boxed: Box<dyn Any> = Box::new(bruh);
+    pub fn register<D: Descriptor>(&self, event: impl Event<D::Params> + 'static) {
+        self.fetch::<D>().register(event);
     }
 
     // Execute all the events using a specific marker descriptor type
     // This will return the number of events that were successfully executed
-    pub fn execute<'a, D: Descriptor<'a>>(&self, params: D::Params) -> Option<usize> {
-        let mut hashmap = self.0.borrow_mut();
-        let boxed = hashmap.get_mut(&TypeId::of::<D>())?;
+    pub fn execute<'a, D: Descriptor>(&self, params: <D::Params as ArgsTupleConverter<'a>>::Inner) -> Option<usize> where D::Params: ArgsTupleConverter<'a> {
+        self.fetch::<D>().call(params);
         None
     }
 }
