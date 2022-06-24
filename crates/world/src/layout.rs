@@ -4,7 +4,7 @@ use std::{
     ptr::NonNull,
 };
 
-use crate::{Resource, ResourceError, ResourceSet};
+use crate::{Resource, ResourceError, World};
 
 // We store the type ID and name in their own struct since the handle might not even be mutable
 pub type HandleID = (TypeId, &'static str, bool);
@@ -24,9 +24,9 @@ pub trait ResHandle<'a>: Sized {
     }
 
     // Get the underlying pointer for the raw data
-    fn fetch_ptr(set: &mut ResourceSet) -> Result<NonNull<Self::Inner>, ResourceError> {
-        Self::Inner::pre_fetch(set);
-        set.get_casted::<Self::Inner>()
+    fn fetch_ptr(world: &mut World) -> Result<NonNull<Self::Inner>, ResourceError> {
+        Self::Inner::pre_fetch(world);
+        world.fetch::<Self::Inner>()
             .map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
     }
 
@@ -106,13 +106,13 @@ pub trait Layout<'a>: Sized {
         }
     }
 
-    // Get the layout tuple from the resource set without actually checking if the layout is valid
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError>;
+    // Get the layout tuple from the resource world without actually checking if the layout is valid
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError>;
 }
 
-// Simple wrapping function that just gets the handle from the set, and makes it so the lifetime of the handle is different than the one of the set
-unsafe fn fetch<'a, A: ResHandle<'a>>(set: &mut ResourceSet) -> Result<A, ResourceError> {
-    A::cast_unchecked(A::fetch_ptr(set))
+// Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
+unsafe fn fetch<'a, A: ResHandle<'a>>(world: &mut World) -> Result<A, ResourceError> {
+    A::cast_unchecked(A::fetch_ptr(world))
 }
 
 impl<'a, A: ResHandle<'a>> Layout<'a> for A {
@@ -120,8 +120,8 @@ impl<'a, A: ResHandle<'a>> Layout<'a> for A {
         vec![A::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
-        fetch(set)
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
+        fetch(world)
     }
 }
 
@@ -130,8 +130,8 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>> Layout<'a> for (A, B) {
         vec![A::id(), B::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
-        Ok((fetch::<A>(set)?, fetch::<B>(set)?))
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
+        Ok((fetch::<A>(world)?, fetch::<B>(world)?))
     }
 }
 
@@ -140,8 +140,8 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A
         vec![A::id(), B::id(), C::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
-        Ok((fetch::<A>(set)?, fetch::<B>(set)?, fetch::<C>(set)?))
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
+        Ok((fetch::<A>(world)?, fetch::<B>(world)?, fetch::<C>(world)?))
     }
 }
 
@@ -152,12 +152,12 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>>
         vec![A::id(), B::id(), C::id(), D::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
         ))
     }
 }
@@ -175,13 +175,13 @@ impl<
         vec![A::id(), B::id(), C::id(), D::id(), E::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
-            fetch::<E>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
         ))
     }
 }
@@ -200,14 +200,14 @@ impl<
         vec![A::id(), B::id(), C::id(), D::id(), E::id(), F::id()]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
-            fetch::<E>(set)?,
-            fetch::<F>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
+            fetch::<F>(world)?,
         ))
     }
 }
@@ -235,15 +235,15 @@ impl<
         ]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
-            fetch::<E>(set)?,
-            fetch::<F>(set)?,
-            fetch::<G>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
+            fetch::<F>(world)?,
+            fetch::<G>(world)?,
         ))
     }
 }
@@ -273,16 +273,16 @@ impl<
         ]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
-            fetch::<E>(set)?,
-            fetch::<F>(set)?,
-            fetch::<G>(set)?,
-            fetch::<H>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
+            fetch::<F>(world)?,
+            fetch::<G>(world)?,
+            fetch::<H>(world)?,
         ))
     }
 }
@@ -314,17 +314,17 @@ impl<
         ]
     }
 
-    unsafe fn fetch_unchecked(set: &'a mut ResourceSet) -> Result<Self, ResourceError> {
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
         Ok((
-            fetch::<A>(set)?,
-            fetch::<B>(set)?,
-            fetch::<C>(set)?,
-            fetch::<D>(set)?,
-            fetch::<E>(set)?,
-            fetch::<F>(set)?,
-            fetch::<G>(set)?,
-            fetch::<H>(set)?,
-            fetch::<I>(set)?,
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
+            fetch::<F>(world)?,
+            fetch::<G>(world)?,
+            fetch::<H>(world)?,
+            fetch::<I>(world)?,
         ))
     }
 }

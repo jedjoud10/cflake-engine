@@ -1,65 +1,100 @@
-use world::World;
+use std::{any::{TypeId, Any}, rc::Rc, cell::{RefCell, RefMut}};
+use ahash::AHashMap;
+use glutin::event::WindowEvent;
+use crate::World;
 
-// This is an event set that contains multiple events that will get executed at some point later in time
-// These events are sorted by their "priority", since they are executed sequentially
-pub struct Events<E: Event> {
-    // The main vector that contains all the event function pointers and their current priority
-    vec: Vec<(E, i32)>,
-
-    // The next priority index that we will use when running the register() method
-    next: i32,
+pub trait Callable<'a, Marker: MarkerDescriptor<'a>> {
+    fn call(&self, data: Marker::Inner);
 }
 
-impl<E: Event> Default for Events<E> {
-    fn default() -> Self {
-        Self { vec: Default::default(), next: Default::default() }
+
+pub trait MarkerDescriptor<'a> {
+    type Inner: 'a;
+}
+
+struct Init;
+struct Update;
+
+
+impl<'a> MarkerDescriptor<'a> for Init {
+    type Inner = ();
+}
+
+impl<'a> MarkerDescriptor<'a> for Update {
+    type Inner = ();
+}
+
+
+impl<'a, F> Callable<'a, Init> for F where F: FnOnce(&mut World) {
+    fn call(&self, data: <Init as MarkerDescriptor>::Inner) {
+        todo!()
     }
 }
 
-// Main marker trait so we can't add random types into the Event set
-pub trait Event: Clone + Sized + 'static {
-}
-
-impl<'a, T: Callable<'a> + Clone + Sized + 'static> Event for T {}
-
-// Main callable event trait
-// This is the trait that we must implement for our function pointers
-pub trait Callable<'a> {
-    type Data: 'a;
-    fn execute(self, data: &mut Self::Data);
-}
-
-// Generalized world event
-impl<'a> Callable<'a> for fn(&mut World) {
-    type Data = World;
-    fn execute(self, data: &mut Self::Data) {
-        (self)(data);
+impl<'a, F> Callable<'a, Update> for F where F: Fn(&mut World) {
+    fn call(&self, data: <Init as MarkerDescriptor>::Inner) {
+        todo!()
     }
 }
 
-impl<E: Event> Events<E> {  
-    // Register a new event into the current thread local event handler
-    // This will place the event as the last element in the queue 
-    pub fn register(&mut self, event: E) {
-        self.register_with(event, self.next);
-        self.next += 1;
+// Type aliases
+pub(crate) type EventMap = AHashMap<TypeId, (Vec<(Box<dyn Any>, i32)>, i32)>;
+pub(crate) type SharedEventMap = Rc<RefCell<EventMap>>;
+
+// This is the main event handler that will be cloned (shared)
+// We can clone this safely without paining ourselves since the inner data can be simply just cloned and extracted when needed
+#[derive(Default)]
+pub struct Events(pub(crate) SharedEventMap);
+
+impl Events {
+    // Register a new event with an automatic priority index
+    pub fn register<'a, M: MarkerDescriptor<'a>>(&self, event: impl Callable<'a, M>) {
+        let mut hashmap = self.0.borrow_mut();
+
+        // Get the vector and fetch the old next index
+        let (vec, next) = hashmap.entry(TypeId::of::<M>()).or_default();
+        
+        // Box the function event and insert it into the vector
+        let boxed: Box<dyn Any> = Box::new(event);
+        vec.push((boxed, *next));
+        
+        // Increment the automatic priority index
+        *next += 1;
     }
 
-    // This is like the register() method, but it places the event with a specific priority compared to other events
-    // This will be useful if some events must be executed before others
-    pub fn register_with(&mut self, event: E, priority: i32) {
-        self.vec.push((event, priority));
+    // Register a new event with a given priority index
+    pub fn register_with<'a, M: MarkerDescriptor<'a>>(&self, event: impl Callable<'a, M>, priority: i32) {
+        let mut hashmap = self.0.borrow_mut();
+
+        // Get the vector or insert it if missing
+        let (vec, _) = hashmap.entry(TypeId::of::<M>()).or_default();
+
+        // Box the functio event and insert it into the vector
+        let boxed: Box<dyn Any> = Box::new(event);
+        vec.push((boxed, priority));
     }
 
-    // This will sort all the events based on their priority
-    pub fn sort(&mut self) {
-        self.vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-    } 
+    // Sort the events that are created using a specific marker type
+    pub fn sort<'a, M: MarkerDescriptor<'a>>(&self) {
+        let mut hashmap = self.0.borrow_mut();
 
-    // Execute all the events using it's proper input data
-    pub fn execute<'a>(&self, data: &mut E::Data) where E: Callable<'a> {
-        for (event, _) in self.vec.iter().cloned() {
-            event.execute(data);
+        // Get the vector or insert it if missing
+        let (vec, next) = hashmap.entry(TypeId::of::<M>()).or_default();
+
+        // Sort the vector using the priorities
+        vec.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
+    }
+
+    // Execute all the events of a specific marker type, using it's given data
+    pub fn execute<'a, M: MarkerDescriptor<'a>>(&self, data: &mut M::Inner) {
+        let mut hashmap = self.0.borrow_mut();
+
+        // Get the vector or insert it if missing (kinda useless in this case but eh)
+        let (vec, _) = hashmap.entry(TypeId::of::<M>()).or_default();
+
+        // Iterate through the vector and execute the events
+        for (event, _) in vec.iter_mut() {
+            event.
         }
     }
 }

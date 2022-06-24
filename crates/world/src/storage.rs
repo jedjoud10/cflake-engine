@@ -1,8 +1,7 @@
 use ahash::AHashMap;
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::type_name, cell::RefCell, marker::PhantomData, rc::Rc};
-
-use crate::{Resource, ResourceSet};
+use crate::{Resource, World};
 
 // Keeps track of the number of handles per element
 type Tracker = RefCell<AHashMap<DefaultKey, u32>>;
@@ -49,30 +48,30 @@ impl<T> Resource for Storage<T> {
         self
     }
 
-    fn pre_fetch(set: &mut crate::ResourceSet)
+    fn inserted(&mut self, events: &crate::Events) {   
+        fn test(w: &mut World) {
+
+        }
+        let test = 0;
+        let byref = move |world: &mut World| {
+            dbg!(&test);
+        };
+        
+        events.register(byref);
+    }
+
+    fn pre_fetch(world: &mut crate::World)
     where
         Self: Sized + 'static,
     {
         // Insert a default empty storage if it is non-existant
-        if !set.contains::<Self>() {
-            set.insert(Self::default())
+        if !world.contains::<Self>() {
+            world.insert(Self::default())
         }
     }
 
     fn can_remove() -> bool {
         false
-    }
-
-    fn end_frame(&mut self) {
-        let mut borrow = self.1.borrow_mut();
-        borrow.retain(|key, count| {
-            if *count == 0 {
-                self.0.remove(*key).unwrap();
-                false
-            } else {
-                true
-            }
-        });
     }
 }
 
@@ -114,7 +113,7 @@ impl<T> Drop for Handle<T> {
 }
 
 // A storage set is an abstraction over the resource set to allow for easier access to storages and their handles
-pub struct StorageSet<'a>(pub(super) &'a mut ResourceSet);
+pub struct StorageSet<'a>(pub(super) &'a mut World);
 
 impl<'a> StorageSet<'a> {
     // Insert a new element into it's corresponding storage

@@ -3443,6 +3443,7 @@ name = "world"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "glutin",
  "resources-derive",
  "slotmap",
 ]
