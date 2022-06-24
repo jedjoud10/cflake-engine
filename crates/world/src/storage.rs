@@ -57,7 +57,7 @@ impl<T> Resource for Storage<T> {
             dbg!(&test);
         };
         
-        events.register(byref);
+        //events.register(byref);
     }
 
     fn pre_fetch(world: &mut crate::World)
