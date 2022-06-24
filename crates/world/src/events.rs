@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell, any::{TypeId, Any}};
+use std::{rc::Rc, cell::RefCell, any::{TypeId, Any}, marker::PhantomData};
 
 use ahash::AHashMap;
 
@@ -7,7 +7,7 @@ use crate::World;
 struct Init;
 struct Update;
 
-pub trait Descriptor<'a> {
+pub trait Descriptor<'a>: 'static {
     type Params: 'a;
 }
 
@@ -29,10 +29,33 @@ impl<F> Event<&mut World> for F where F: Fn(&mut World) + 'static {
     }
 }
 
-// These are specialized events that can be executed with any parameter type
-struct SpecializedEvents<Params>(Vec<(Box<dyn Event<Params>>, i32)>, i32);
+trait ArgsTuple {
+}
+trait Handler<'a> {
+    type Inner: 'a;
+}
+struct EvWrite<T>(PhantomData<*mut T>);
+struct EvRead<T>(PhantomData<*const T>);
+impl<'a, T: 'static> Handler<'a> for EvWrite<T> {
+    type Inner = &'a mut T;
+}
+impl<'a, T: 'static> Handler<'a> for EvRead<T> {
+    type Inner = &'a T;
+}
+impl<'a, T: Handler<'a>> ArgsTuple for T {
 
-impl<P> SpecializedEvents<P> {
+}
+impl<'a, A: Handler<'a>, B: Handler<'a>> ArgsTuple for (A, B) {
+
+}
+impl<'a, A: Handler<'a>, B: Handler<'a>, C: Handler<'a>> ArgsTuple for (A, B, C) {
+
+}
+
+// These are specialized events that can be executed with any parameter type
+struct SpecializedEvents<Params: 'static + ArgsTuple>(Vec<(Box<dyn Event<Params>>, i32)>, i32);
+
+impl<P: 'static + ArgsTuple> SpecializedEvents<P> {
     // Register a new specialized event with a specific priority index
     fn register_with(&mut self, event: impl Event<P> + 'static, priority: i32) {
         self.0.push((Box::new(event), priority));
@@ -75,6 +98,15 @@ impl Events {
 
     // Register a new event using it's marker descriptor and an automatic priority index
     pub fn register<'a, D: Descriptor<'a>>(&self, event: impl Event<D::Params> + 'static) {
-        
+        let bruh = SpecializedEvents::<D::Params>(Vec::default(), 0);
+        let boxed: Box<dyn Any> = Box::new(bruh);
+    }
+
+    // Execute all the events using a specific marker descriptor type
+    // This will return the number of events that were successfully executed
+    pub fn execute<'a, D: Descriptor<'a>>(&self, params: D::Params) -> Option<usize> {
+        let mut hashmap = self.0.borrow_mut();
+        let boxed = hashmap.get_mut(&TypeId::of::<D>())?;
+        None
     }
 }

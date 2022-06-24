@@ -8,6 +8,7 @@ use crate::{Events, Resource, ResourceError, StorageSet, Layout};
 // The world is a container for multiple resources and events
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
+#[derive(Default)]
 pub struct World {
     resources: AHashMap<TypeId, Box<dyn Resource>>,
     events: Events,
