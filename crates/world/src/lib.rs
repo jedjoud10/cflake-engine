@@ -5,6 +5,8 @@ mod resource;
 mod storage;
 mod system;
 mod world;
+mod stages;
+pub use stages::*;
 pub use error::*;
 pub use world::*;
 pub use system::*;

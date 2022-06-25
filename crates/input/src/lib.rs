@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use glutin::event::ElementState;
-use world::Resource;
+use world::{Resource, World, Update, DeviceEvent};
 
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = glutin::event::VirtualKeyCode;
@@ -64,36 +64,53 @@ impl Resource for Input {
         self
     }
 
-    fn end_frame(&mut self) {
-        // Convert all the State::Pressed keys to State::Held and all the State::Released to State::None
-        for (_, state) in self.keys.iter_mut() {
-            *state = match state {
-                State::Pressed => State::Held,
-                State::Released => State::None,
-                State::Held => State::Held,
-                State::None => State::None,
-            };
-        }
+    fn removable(world: &mut World) -> bool where Self: Sized {
+        false
     }
 
-    fn can_remove() -> bool
-    where
-        Self: Sized,
-    {
-        false
+    fn inserted(&mut self, world: &mut World) {
+        // Late update event
+        world.events().register_with::<Update>(|world: &mut World| {
+            // Convert all the State::Pressed keys to State::Held and all the State::Released to State::None
+            let input = world.get_mut::<&mut Input>().unwrap();
+            for (_, state) in input.keys.iter_mut() {
+                *state = match state {
+                    State::Pressed => State::Held,
+                    State::Released => State::None,
+                    State::Held => State::Held,
+                    State::None => State::None,
+                };
+            }
+        }, i32::MAX);
+        
+        // Device input event for keyboard / mouse input
+        world.events().register::<DeviceEvent>(|world: &mut World, event: &glutin::event::DeviceEvent| {
+            let res = world.get_mut::<&mut Input>().unwrap();
+            match event {
+                glutin::event::DeviceEvent::MouseMotion { delta } => {
+                    // Update the mouse position delta value
+
+                },
+                glutin::event::DeviceEvent::MouseWheel { delta } => {
+                    // Update the mouse wheel delta value
+                    
+                },
+                glutin::event::DeviceEvent::Key(input) => {
+                    // Update the state of the pressed key (only if it is valid)
+                    if let Some(keycode) = input.virtual_keycode {
+                        *res.keys.entry(keycode).or_insert(State::Pressed) = match input.state {
+                            ElementState::Pressed => State::Pressed,
+                            ElementState::Released => State::Released,
+                        };
+                    }
+                },
+                _ => {}
+            }
+        });
     }
 }
 
 impl Input {
-    // This is called whene we receive a new key event from Glutin
-    pub fn receive(&mut self, key: Key, state: ElementState) {
-        // Update the state for this specific key, and add it if it does not exist
-        *self.keys.entry(key).or_insert(State::Pressed) = match state {
-            ElementState::Pressed => State::Pressed,
-            ElementState::Released => State::Released,
-        };
-    }
-
     // Create a new key binding using a name and a unique key
     pub fn bind(&mut self, name: &'static str, key: Key) {
         self.binds.insert(name, key);
@@ -118,4 +135,7 @@ impl Input {
     pub fn released(&self, name: &'static str) -> bool {
         self.state(name).map(State::released).unwrap_or_default()
     }
+
+    // Get the current mouse position delta
+    pub fn mouse()
 }

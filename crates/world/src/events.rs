@@ -1,41 +1,21 @@
 use std::{rc::Rc, cell::{RefCell, RefMut}, any::{TypeId, Any}, marker::PhantomData};
-
 use ahash::AHashMap;
-
 use crate::World;
 
-struct Init;
-struct Update;
-
+// Descriptors describe what parameters we will use when calling some specific events
 pub trait Descriptor<'a>: Sized + 'static {
     type Params: 'a;
 }
 
+// Main event trait (this trait cannot be boxed, so we have to call the execute() method within the boxed impl)
 pub trait Event<'a, F>: Descriptor<'a> {
     fn execute(func: &F, params: &mut Self::Params);
 }
 
+// Main event trait that will be boxed and stored within the world
 pub trait BoxedEvent<Marker> {
     fn execute<'a>(&self, params: &mut <Marker as Descriptor<'a>>::Params) where Marker: Descriptor<'a>;
 }
-
-impl<'a> Descriptor<'a> for Init {
-    type Params = &'a mut World;
-}
-
-impl<'a, F: Fn(&mut World) + 'static> Event<'a, F> for Init {
-    fn execute(func: &F, params: &mut Self::Params) {
-        let world: &mut World = params;
-        func(world);
-    }
-}
-
-impl<F> BoxedEvent<Init> for F where F: Fn(&mut World) + 'static {
-    fn execute<'a>(&self, params: &mut <Init as Descriptor<'a>>::Params) where Init: Descriptor<'a> {
-        <Init as Event<'a, F>>::execute(self, params)
-    }
-}
-
 
 // These are specialized events that can be executed with any parameter type
 struct SpecializedEvents<Marker: 'static>(Vec<(Box<dyn BoxedEvent<Marker>>, i32)>, i32);

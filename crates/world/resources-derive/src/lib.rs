@@ -21,7 +21,7 @@ pub fn derive_resources(input: TokenStream) -> TokenStream {
                 self
             }
 
-            fn can_remove() -> bool {
+            fn removable(world: &mut world::World) -> bool where Self: Sized {
                 #removable
             }
         }

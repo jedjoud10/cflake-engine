@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::type_name, cell::RefCell, marker::PhantomData, rc::Rc};
-use crate::{Resource, World};
+use crate::{Resource, World, Update};
 
 // Keeps track of the number of handles per element
 type Tracker = RefCell<AHashMap<DefaultKey, u32>>;
@@ -39,7 +39,7 @@ impl<T: 'static> Default for Storage<T> {
     }
 }
 
-impl<T> Resource for Storage<T> {
+impl<T: 'static> Resource for Storage<T> {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -48,30 +48,27 @@ impl<T> Resource for Storage<T> {
         self
     }
 
-    fn inserted(&mut self, events: &crate::Events) {   
-        fn test(w: &mut World) {
-
-        }
-        let test = 0;
-        let byref = move |world: &mut World| {
-            dbg!(&test);
-        };
-        
-        //events.register(byref);
+    fn inserted(&mut self, world: &mut World) {
+        world.events().register_with::<Update>(|world: &mut World| {
+            let storage = world.get_mut::<&mut Self>().unwrap();
+            let mut borrow = storage.1.borrow_mut();
+            borrow.retain(|key, count| {
+                if *count == 0 {
+                    storage.0.remove(*key).unwrap();
+                    false
+                } else {
+                    true
+                }
+            });
+        }, i32::MAX)
     }
 
-    fn pre_fetch(world: &mut crate::World)
-    where
-        Self: Sized + 'static,
-    {
-        // Insert a default empty storage if it is non-existant
+    fn removable(world: &mut World) -> bool where Self: Sized { false }
+
+    fn fetch(world: &mut World) where Self: Sized {
         if !world.contains::<Self>() {
-            world.insert(Self::default())
+            world.insert(Self::default());
         }
-    }
-
-    fn can_remove() -> bool {
-        false
     }
 }
 

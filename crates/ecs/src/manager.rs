@@ -52,16 +52,11 @@ impl Resource for EcsManager {
         self
     }
 
-    fn start_frame(&mut self) {
-        self.prepare();
-    }
+    fn fetch(world: &mut world::World) where Self: Sized { }
 
-    fn can_remove() -> bool
-    where
-        Self: Sized,
-    {
-        false
-    }
+    fn inserted(&mut self, world: &mut world::World) {}
+
+    fn removable(world: &mut world::World) -> bool where Self: Sized { true }
 }
 
 impl EcsManager {
