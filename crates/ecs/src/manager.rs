@@ -1,5 +1,5 @@
-use world::Resource;
 use slotmap::SlotMap;
+use world::Resource;
 
 use crate::{
     entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
@@ -52,11 +52,20 @@ impl Resource for EcsManager {
         self
     }
 
-    fn fetch(world: &mut world::World) where Self: Sized { }
+    fn fetch(world: &mut world::World)
+    where
+        Self: Sized,
+    {
+    }
 
     fn inserted(&mut self, world: &mut world::World) {}
 
-    fn removable(world: &mut world::World) -> bool where Self: Sized { true }
+    fn removable(world: &mut world::World) -> bool
+    where
+        Self: Sized,
+    {
+        true
+    }
 }
 
 impl EcsManager {

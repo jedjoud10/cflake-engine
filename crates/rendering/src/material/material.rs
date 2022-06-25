@@ -63,7 +63,8 @@ pub trait PropertyBlock<'world>: Sized {
         &'world self,
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-    ) where 'world: 'u;
+    ) where
+        'world: 'u;
 }
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces
@@ -142,7 +143,7 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
 
-        // Set the global static uniforms once 
+        // Set the global static uniforms once
         uniforms.set_mat4x4("_view_matrix", camera.view());
         uniforms.set_mat4x4("_proj_matrix", camera.projection());
 
@@ -161,7 +162,7 @@ impl<M: Material> BatchRenderer<M> {
                 // Set the material property block uniforms (only if the instance changes)
                 M::set_instance_properties(instance, &mut uniforms, &property_block_resources);
             }
-            
+
             // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(surface.submesh());
             rasterizer.draw(submesh, &uniforms);

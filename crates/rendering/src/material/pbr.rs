@@ -135,7 +135,9 @@ impl<'world> PropertyBlock<'world> for Standard {
         &'world self,
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-    ) where 'world: 'u {
+    ) where
+        'world: 'u,
+    {
         // Decompose the fetched resource references
         let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
 

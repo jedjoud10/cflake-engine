@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use world::{Resource, World, Update};
+use world::{Resource, Update, World};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
@@ -26,18 +26,24 @@ impl Resource for Time {
         self
     }
 
-    fn removable(world: &mut World) -> bool where Self: Sized {
+    fn removable(world: &mut World) -> bool
+    where
+        Self: Sized,
+    {
         false
     }
 
     fn inserted(&mut self, world: &mut World) {
-        world.events().register_with::<Update>(|world: &mut World| {
-            let time = world.get_mut::<&mut Self>().unwrap();
-            time.frame_count += 1;
-            let now = Instant::now();
-            time.delta = (now - time.frame_start).as_secs_f64();
-            time.frame_start = now;
-        }, i32::MIN)
+        world.events().register_with::<Update>(
+            |world: &mut World| {
+                let time = world.get_mut::<&mut Self>().unwrap();
+                time.frame_count += 1;
+                let now = Instant::now();
+                time.delta = (now - time.frame_start).as_secs_f64();
+                time.frame_start = now;
+            },
+            i32::MIN,
+        )
     }
 }
 

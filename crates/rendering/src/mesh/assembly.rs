@@ -25,7 +25,14 @@ impl Default for VertexAssembly {
 impl VertexAssembly {
     // Create an empty vertex assembly that contains no attributes what so ever
     pub fn empty() -> Self {
-        Self { positions: None, normals: None, tangents: None, colors: None, tex_coord_0: None, layout: VertexLayout::default() }
+        Self {
+            positions: None,
+            normals: None,
+            tangents: None,
+            colors: None,
+            tex_coord_0: None,
+            layout: VertexLayout::default(),
+        }
     }
 
     // Insert an attribute vector into the assembly

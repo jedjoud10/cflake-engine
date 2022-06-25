@@ -105,7 +105,12 @@ impl Canvas {
     }
 
     // Create a new canvas rasterizer that we can use to draw some 3D or 2D objects
-    pub fn rasterizer<'canvas, 'context, 'shader>(&'canvas mut self, ctx: &'context mut Context, shader: &'shader mut Shader, settings: RasterSettings) -> (Rasterizer<'canvas, 'context>, Uniforms<'shader>) {
+    pub fn rasterizer<'canvas, 'context, 'shader>(
+        &'canvas mut self,
+        ctx: &'context mut Context,
+        shader: &'shader mut Shader,
+        settings: RasterSettings,
+    ) -> (Rasterizer<'canvas, 'context>, Uniforms<'shader>) {
         // Make sure the framebuffer is bound, and that the viewport is valid
         ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
@@ -118,6 +123,9 @@ impl Canvas {
         });
 
         // Create the new rasterizer
-        (Rasterizer::new(self, ctx, settings), Uniforms(shader.as_mut()))
+        (
+            Rasterizer::new(self, ctx, settings),
+            Uniforms(shader.as_mut()),
+        )
     }
 }

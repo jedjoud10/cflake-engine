@@ -1,9 +1,13 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{Canvas};
+use super::Canvas;
 use crate::{
+    buffer::ElementBuffer,
     context::Context,
-    prelude::{Program, Shader, Uniforms}, others::Comparison, mesh::attributes::AttributeSet, buffer::ElementBuffer, object::ToGlName,
+    mesh::attributes::AttributeSet,
+    object::ToGlName,
+    others::Comparison,
+    prelude::{Program, Shader, Uniforms},
 };
 
 // Blend mode factor source
@@ -35,7 +39,6 @@ impl BlendMode {
         Self { s_factor, d_factor }
     }
 }
-
 
 // How rasterized triangles should be culled
 #[derive(Clone)]
@@ -88,12 +91,16 @@ pub trait ToRasterBuffers {
 pub struct Rasterizer<'canvas, 'context> {
     canvas: &'canvas mut Canvas,
     ctx: &'context mut Context,
-    primitive: u32, 
+    primitive: u32,
 }
 
 impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // Create a new rasterizer with the specified raster settings
-    pub(crate) fn new(canvas: &'canvas mut Canvas, ctx: &'context mut Context, settings: RasterSettings) -> Self {
+    pub(crate) fn new(
+        canvas: &'canvas mut Canvas,
+        ctx: &'context mut Context,
+        settings: RasterSettings,
+    ) -> Self {
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
@@ -178,12 +185,22 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         }
 
         // Create the rasterizer object
-        Self { canvas, ctx, primitive }
+        Self {
+            canvas,
+            ctx,
+            primitive,
+        }
     }
 
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
     // This will use the currently bound shader uniforms to draw the object
-    pub unsafe fn draw_from_raw_parts(&mut self, vao: u32, ebo: u32, count: u32, uniforms: &Uniforms) {
+    pub unsafe fn draw_from_raw_parts(
+        &mut self,
+        vao: u32,
+        ebo: u32,
+        count: u32,
+        uniforms: &Uniforms,
+    ) {
         uniforms.validate();
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
@@ -194,7 +211,12 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // This will use the currently bound shader uniforms to draw the object
     pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, uniforms: &Uniforms) {
         unsafe {
-            self.draw_from_raw_parts(obj.vao().name(), obj.ebo().name(), obj.ebo().len() as u32, uniforms)
+            self.draw_from_raw_parts(
+                obj.vao().name(),
+                obj.ebo().name(),
+                obj.ebo().len() as u32,
+                uniforms,
+            )
         }
     }
 }

@@ -26,7 +26,8 @@ pub trait ResHandle<'a>: Sized {
     // Get the underlying pointer for the resource that is stored in the world
     fn fetch_ptr(world: &mut World) -> Result<NonNull<Self::Inner>, ResourceError> {
         <Self::Inner as Resource>::fetch(world);
-        world.get_mut_unique::<Self::Inner>()
+        world
+            .get_mut_unique::<Self::Inner>()
             .map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
     }
 

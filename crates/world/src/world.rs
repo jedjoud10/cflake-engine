@@ -2,8 +2,7 @@ use std::any::TypeId;
 
 use ahash::AHashMap;
 
-use crate::{Events, Resource, ResourceError, StorageSet, Layout};
-
+use crate::{Events, Layout, Resource, ResourceError, StorageSet};
 
 // The world is a container for multiple resources and events
 // All the game engine logic is stored within the world, like ECS and Asset management
@@ -33,7 +32,7 @@ impl World {
     // Insert a new resource into the set (this requires the event set that we fetch from the world)
     pub fn insert<R: Resource>(&mut self, mut resource: R) {
         resource.inserted(self);
-        let mut boxed = Box::new(resource);
+        let boxed = Box::new(resource);
         self.resources.insert(TypeId::of::<R>(), boxed);
     }
 
@@ -57,8 +56,8 @@ impl World {
         self.resources.contains_key(&TypeId::of::<R>())
     }
 
-    // Get a set of all the inner storage resources
-    pub(crate) fn storages<'a>(&'a mut self) -> StorageSet<'a> {
+    // Get a set of all the inner storage resources for accessibility
+    pub fn storages<'a>(&'a mut self) -> StorageSet<'a> {
         StorageSet(self)
     }
 }

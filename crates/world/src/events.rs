@@ -1,6 +1,11 @@
-use std::{rc::Rc, cell::{RefCell, RefMut}, any::{TypeId, Any}, marker::PhantomData};
-use ahash::AHashMap;
 use crate::World;
+use ahash::AHashMap;
+use std::{
+    any::{Any, TypeId},
+    cell::{RefCell, RefMut},
+    marker::PhantomData,
+    rc::Rc,
+};
 
 // Descriptors describe what parameters we will use when calling some specific events
 pub trait Descriptor<'a>: Sized + 'static {
@@ -14,7 +19,9 @@ pub trait Event<'a, F>: Descriptor<'a> {
 
 // Main event trait that will be boxed and stored within the world
 pub trait BoxedEvent<Marker> {
-    fn execute<'a>(&self, params: &mut <Marker as Descriptor<'a>>::Params) where Marker: Descriptor<'a>;
+    fn execute<'a>(&self, params: &mut <Marker as Descriptor<'a>>::Params)
+    where
+        Marker: Descriptor<'a>;
 }
 
 // These are specialized events that can be executed with any parameter type
@@ -33,7 +40,10 @@ impl<Marker: 'static> SpecializedEvents<Marker> {
     }
 
     // Execute all the events that are stored within this set
-    fn execute<'a>(&self, mut params: Marker::Params) where Marker: Descriptor<'a> {
+    fn execute<'a>(&self, mut params: Marker::Params)
+    where
+        Marker: Descriptor<'a>,
+    {
         for (event, _) in self.0.iter() {
             event.execute(&mut params);
         }
@@ -59,14 +69,20 @@ impl Events {
     // This will get an interior reference to a specialized event set that uses the parameters from a specific descriptor
     fn fetch<'a, Marker: Descriptor<'a>>(&self) -> RefMut<SpecializedEvents<Marker>> {
         RefMut::map(self.0.borrow_mut(), |hashmap| {
-            let boxed = hashmap.entry(TypeId::of::<Marker>()).or_insert_with(|| Box::new(SpecializedEvents::<Marker>(Vec::default(), 0)));
+            let boxed = hashmap
+                .entry(TypeId::of::<Marker>())
+                .or_insert_with(|| Box::new(SpecializedEvents::<Marker>(Vec::default(), 0)));
             let specialized = boxed.downcast_mut::<SpecializedEvents<Marker>>().unwrap();
-            specialized            
+            specialized
         })
     }
 
     // Register a new event using it's marker descriptor and it's priority index
-    pub fn register_with<'a, Marker: Descriptor<'a>>(&self, event: impl BoxedEvent<Marker> + 'static, priority: i32) {
+    pub fn register_with<'a, Marker: Descriptor<'a>>(
+        &self,
+        event: impl BoxedEvent<Marker> + 'static,
+        priority: i32,
+    ) {
         self.fetch::<Marker>().register_with(event, priority);
     }
 

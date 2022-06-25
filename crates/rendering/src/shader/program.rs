@@ -6,7 +6,7 @@ use ahash::AHashMap;
 use std::marker::PhantomData;
 use world::Storage;
 
-use super::{Uniforms, Introspection};
+use super::{Introspection, Uniforms};
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {

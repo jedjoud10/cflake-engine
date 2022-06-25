@@ -1,11 +1,12 @@
-use std::{time::Instant, marker::PhantomData};
+use std::{marker::PhantomData, time::Instant};
 
 use ahash::{AHashMap, AHashSet};
 
 use super::Program;
 use crate::{
+    context::Context,
     object::{ToGlName, ToGlTarget},
-    texture::{Bindless, Sampler, Texture}, context::Context,
+    texture::{Bindless, Sampler, Texture},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -210,9 +211,7 @@ pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Make sure the user set all the proper uniform values, and that there are no missing values
-    pub(crate) fn validate(&self) {
-
-    }
+    pub(crate) fn validate(&self) {}
 
     // Get the uniform location of a uniform using it's name
     fn location(&self, _name: &'static str) -> Option<i32> {

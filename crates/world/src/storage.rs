@@ -1,7 +1,7 @@
+use crate::{Resource, Update, World};
 use ahash::AHashMap;
 use slotmap::{DefaultKey, SlotMap};
 use std::{any::type_name, cell::RefCell, marker::PhantomData, rc::Rc};
-use crate::{Resource, World, Update};
 
 // Keeps track of the number of handles per element
 type Tracker = RefCell<AHashMap<DefaultKey, u32>>;
@@ -49,23 +49,34 @@ impl<T: 'static> Resource for Storage<T> {
     }
 
     fn inserted(&mut self, world: &mut World) {
-        world.events().register_with::<Update>(|world: &mut World| {
-            let storage = world.get_mut::<&mut Self>().unwrap();
-            let mut borrow = storage.1.borrow_mut();
-            borrow.retain(|key, count| {
-                if *count == 0 {
-                    storage.0.remove(*key).unwrap();
-                    false
-                } else {
-                    true
-                }
-            });
-        }, i32::MAX)
+        world.events().register_with::<Update>(
+            |world: &mut World| {
+                let storage = world.get_mut::<&mut Self>().unwrap();
+                let mut borrow = storage.1.borrow_mut();
+                borrow.retain(|key, count| {
+                    if *count == 0 {
+                        storage.0.remove(*key).unwrap();
+                        false
+                    } else {
+                        true
+                    }
+                });
+            },
+            i32::MAX,
+        )
     }
 
-    fn removable(world: &mut World) -> bool where Self: Sized { false }
+    fn removable(world: &mut World) -> bool
+    where
+        Self: Sized,
+    {
+        false
+    }
 
-    fn fetch(world: &mut World) where Self: Sized {
+    fn fetch(world: &mut World)
+    where
+        Self: Sized,
+    {
         if !world.contains::<Self>() {
             world.insert(Self::default());
         }

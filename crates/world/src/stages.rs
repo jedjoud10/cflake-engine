@@ -1,6 +1,4 @@
-use crate::{Descriptor, BoxedEvent, World, Event
-};
-
+use crate::{BoxedEvent, Descriptor, Event, World};
 
 // This event is called only at the start of the engine
 pub struct Init(());
@@ -16,8 +14,14 @@ impl<'a, F: Fn(&mut World) + 'static> Event<'a, F> for Init {
     }
 }
 
-impl<F> BoxedEvent<Init> for F where F: Fn(&mut World) + 'static {
-    fn execute<'a>(&self, params: &mut <Init as Descriptor<'a>>::Params) where Init: Descriptor<'a> {
+impl<F> BoxedEvent<Init> for F
+where
+    F: Fn(&mut World) + 'static,
+{
+    fn execute<'a>(&self, params: &mut <Init as Descriptor<'a>>::Params)
+    where
+        Init: Descriptor<'a>,
+    {
         <Init as Event<'a, F>>::execute(self, params)
     }
 }
@@ -36,8 +40,14 @@ impl<'a, F: Fn(&mut World) + 'static> Event<'a, F> for Update {
     }
 }
 
-impl<F> BoxedEvent<Update> for F where F: Fn(&mut World) + 'static {
-    fn execute<'a>(&self, params: &mut <Update as Descriptor<'a>>::Params) where Update: Descriptor<'a> {
+impl<F> BoxedEvent<Update> for F
+where
+    F: Fn(&mut World) + 'static,
+{
+    fn execute<'a>(&self, params: &mut <Update as Descriptor<'a>>::Params)
+    where
+        Update: Descriptor<'a>,
+    {
         <Update as Event<'a, F>>::execute(self, params)
     }
 }
@@ -57,8 +67,14 @@ impl<'a, F: Fn(&mut World, &glutin::event::WindowEvent) + 'static> Event<'a, F> 
     }
 }
 
-impl<F> BoxedEvent<WindowEvent> for F where F: Fn(&mut World, &glutin::event::WindowEvent) + 'static {
-    fn execute<'a>(&self, params: &mut <WindowEvent as Descriptor<'a>>::Params) where WindowEvent: Descriptor<'a> {
+impl<F> BoxedEvent<WindowEvent> for F
+where
+    F: Fn(&mut World, &glutin::event::WindowEvent) + 'static,
+{
+    fn execute<'a>(&self, params: &mut <WindowEvent as Descriptor<'a>>::Params)
+    where
+        WindowEvent: Descriptor<'a>,
+    {
         <WindowEvent as Event<'a, F>>::execute(self, params)
     }
 }
@@ -78,8 +94,14 @@ impl<'a, F: Fn(&mut World, &glutin::event::DeviceEvent) + 'static> Event<'a, F> 
     }
 }
 
-impl<F> BoxedEvent<DeviceEvent> for F where F: Fn(&mut World, &glutin::event::DeviceEvent) + 'static {
-    fn execute<'a>(&self, params: &mut <DeviceEvent as Descriptor<'a>>::Params) where DeviceEvent: Descriptor<'a> {
+impl<F> BoxedEvent<DeviceEvent> for F
+where
+    F: Fn(&mut World, &glutin::event::DeviceEvent) + 'static,
+{
+    fn execute<'a>(&self, params: &mut <DeviceEvent as Descriptor<'a>>::Params)
+    where
+        DeviceEvent: Descriptor<'a>,
+    {
         <DeviceEvent as Event<'a, F>>::execute(self, params)
     }
 }

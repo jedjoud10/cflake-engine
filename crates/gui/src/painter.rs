@@ -161,8 +161,11 @@ impl Painter {
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
-        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, &mut self.shader, settings);
-        
+        let (mut rasterizer, mut uniforms) =
+            device
+                .canvas_mut()
+                .rasterizer(ctx, &mut self.shader, settings);
+
         // Set the global static uniforms at the start
         let sampler = self.texture.as_ref().unwrap().sampler();
         uniforms.set_sampler("u_sampler", sampler);

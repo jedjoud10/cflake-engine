@@ -17,13 +17,16 @@ impl Default for GeometryBuilder {
     fn default() -> Self {
         Self::empty()
     }
-} 
+}
 
 impl GeometryBuilder {
     // Create a new empty procedular geometry builder
     // It contains no attributes or indices, just an empty one
     pub fn empty() -> Self {
-        Self { vertices: VertexAssembly::empty(), indices: Vec::new() }
+        Self {
+            vertices: VertexAssembly::empty(),
+            indices: Vec::new(),
+        }
     }
 
     // Set a single unique vertex attribute
