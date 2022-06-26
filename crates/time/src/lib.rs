@@ -1,11 +1,12 @@
-use std::time::Instant;
-
-use world::{Resource, Update, World};
+use std::time::{Instant, Duration};
+use world::{Resource, Update, World, Events, Init};
 
 // Global resource that defines the time since the start of the engine and the current frame data
+#[derive(Resource)]
+#[Locked]
 pub struct Time {
     // The difference in seconds between the last frame and the current frame
-    delta: f64,
+    delta: Duration,
 
     // How many frames has the engine been running for?
     frame_count: u128,
@@ -15,36 +16,6 @@ pub struct Time {
 
     // The start of the current frame
     frame_start: Instant,
-}
-
-impl Resource for Time {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
-    fn removable(world: &mut World) -> bool
-    where
-        Self: Sized,
-    {
-        false
-    }
-
-    fn inserted(&mut self, world: &mut World) {
-        world.events().register_with::<Update>(
-            |world: &mut World| {
-                let time = world.get_mut::<&mut Self>().unwrap();
-                time.frame_count += 1;
-                let now = Instant::now();
-                time.delta = (now - time.frame_start).as_secs_f64();
-                time.frame_start = now;
-            },
-            i32::MIN,
-        )
-    }
 }
 
 impl Default for Time {
@@ -60,7 +31,7 @@ impl Default for Time {
 
 impl Time {
     // Get the time it took to complete one frame
-    pub fn delta(&self) -> f64 {
+    pub fn delta(&self) -> Duration {
         self.delta
     }
 
@@ -78,4 +49,25 @@ impl Time {
     pub fn frame_start(&self) -> Instant {
         self.frame_start
     }
+}
+
+// The timer system will automatically insert the Time resource and will update it at the start of each frame
+pub fn system(events: &mut Events) {
+    // Init event (called during world init)
+    events.register_with::<Init>(|world: &mut World| {
+        world.insert(Time {
+            delta: Duration::ZERO,
+            frame_count: 0,
+            startup: Instant::now(),
+            frame_start: Instant::now(),
+        })
+    }, i32::MIN);
+
+    // Update event (called per frame)
+    events.register_with::<Update>(|world: &mut World| {
+        let time = world.get_mut::<&mut Time>().unwrap();
+        let now = Instant::now();
+        time.delta = now - time.frame_start;
+        time.frame_start = now;
+    }, i32::MIN)
 }
