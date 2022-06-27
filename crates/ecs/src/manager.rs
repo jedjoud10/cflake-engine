@@ -23,9 +23,6 @@ pub struct EcsManager {
 
     // The unique storage set serves as a base where we can store empty versions of the vectors that are stored within the archetypes
     pub(crate) uniques: UniqueStoragesSet,
-
-    // Was the ecs manager executed already?
-    executed: bool,
 }
 
 impl Default for EcsManager {
@@ -38,7 +35,6 @@ impl Default for EcsManager {
             entities: Default::default(),
             archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
             uniques,
-            executed: false,
         }
     }
 }
@@ -52,14 +48,6 @@ impl Resource for EcsManager {
         self
     }
 
-    fn fetch(world: &mut world::World)
-    where
-        Self: Sized,
-    {
-    }
-
-    fn inserted(&mut self, world: &mut world::World) {}
-
     fn removable(world: &mut world::World) -> bool
     where
         Self: Sized,
@@ -69,16 +57,6 @@ impl Resource for EcsManager {
 }
 
 impl EcsManager {
-    // Prepare the ecs for one frame of execution
-    pub(crate) fn prepare(&mut self) {
-        if !self.executed {
-            for (_, a) in self.archetypes.iter_mut() {
-                a.states().reset();
-            }
-        }
-        self.executed = true;
-    }
-
     // Modify an entity's component layout
     pub fn modify(
         &mut self,

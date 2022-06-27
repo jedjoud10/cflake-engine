@@ -1,12 +1,5 @@
-use crate::prelude::*;
-use events::Events;
-use glutin::{
-    event::{DeviceEvent, Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-};
-use world::World;
-
 // Run the event loop, and start displaying the game engine window
+/*
 pub(super) fn run(el: EventLoop<()>, systems: Events<fn(&mut World)>, mut world: World) {
     el.run(move |event, _, cf| match event {
         Event::WindowEvent {
@@ -68,3 +61,4 @@ fn update(world: &mut World, systems: &Events<fn(&mut World)>, _cf: &mut Control
     // Indeed funny
     world.0.end_frame();
 }
+*/

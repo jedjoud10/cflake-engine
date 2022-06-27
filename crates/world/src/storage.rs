@@ -1,145 +1,140 @@
-use crate::{Resource, Update, World};
-use ahash::AHashMap;
-use slotmap::{DefaultKey, SlotMap};
-use std::{any::type_name, cell::RefCell, marker::PhantomData, rc::Rc};
+use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::ManuallyDrop, rc::Rc};
+use crate::Resource;
+use crate as world;
+ 
 
-// Keeps track of the number of handles per element
-type Tracker = RefCell<AHashMap<DefaultKey, u32>>;
-
-// A storage simply contains multiple elements of the same type
-// These elements can then be acessed using handles. If a element has no handles, it will automatically get removed from the storage
-pub struct Storage<T: 'static>(SlotMap<DefaultKey, T>, Rc<Tracker>);
-
-impl<T: 'static> Storage<T> {
-    // Insert a new element into the shared storage
-    pub fn insert(&mut self, element: T) -> Handle<T> {
-        let key = self.0.insert(element);
-        self.1.borrow_mut().insert(key, 1);
-        Handle {
-            key,
-            phantom_: Default::default(),
-            tracker: self.1.clone(),
-        }
-    }
-
-    // Get a element immutably
-    pub fn get(&self, handle: &Handle<T>) -> &T {
-        self.0.get(handle.key).unwrap()
-    }
-
-    // Get a element mutably
-    pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
-        self.0.get_mut(handle.key).unwrap()
-    }
+// A storage is a way to keep certain values stored in memory without dropping them
+// When inserting a new value into a storage, we receive a Handle to that value
+// Handles can be cloned around to be able to share values and save memory,
+// though if the last handle of a specific value gets dropped, the value will also get dropped
+#[derive(Resource)]
+#[Locked]
+#[AutoInsertDefault]
+pub struct Storage<T: 'static> {
+    slots: ManuallyDrop<Vec<UnsafeCell<(T, u32)>>>,
+    empty: Rc<RefCell<Vec<usize>>>,
 }
 
 impl<T: 'static> Default for Storage<T> {
     fn default() -> Self {
-        Self(Default::default(), Default::default())
+        Self { slots: Default::default(), empty: Default::default() }
     }
 }
 
-impl<T: 'static> Resource for Storage<T> {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
+impl<T: 'static> Storage<T> {
+    // Insert a new value into the storage, and return it's tracker handle
+    // This value will stay stored within the storage as long as it has a single valid handle
+    pub fn insert(&mut self, value: T) -> Handle<T> {
+        let (ptr, idx) = if self.empty.borrow().is_empty() {
+            // We have no free slots, we have to make a new slot and fill it in
+            self.slots.push(UnsafeCell::new((value, 1)));
+
+            // Return the pointer and value index
+            let index = self.slots.len() - 1; 
+            let ptr = self.slots[index].get();
+            (ptr, index)
+        } else {
+            // We have at least one free slot, so we must overwrite the values stored within it (without dropping them!)
+            let empty = self.empty.borrow_mut().pop().unwrap();
+            let cell = &mut self.slots[empty];
+
+            // Overwrite the values. This is actually safe since the empty slot was dropped beforehand
+            unsafe {
+                std::ptr::write(cell.get(), (value, 1));
+            }
+
+            // Return the pointer and value index
+            (cell.get(), empty)
+        };
+
+        // Create the new handle object
+        Handle { _phantom: Default::default(), ptr, idx, empty: self.empty.clone() }
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
+    // Get an immutable reference to a value stored within the stored using it's handle
+    // The handle must outlive the returned reference, since dropping the handle before then might cause UB
+    pub fn get<'s, 'h: 's>(&'s self, handle: &'h Handle<T>) -> &'s T {
+        &unsafe { &*self.slots[handle.idx as usize].get() }.0
     }
 
-    fn inserted(&mut self, world: &mut World) {
-        world.events().register_with::<Update>(
-            |world: &mut World| {
-                let storage = world.get_mut::<&mut Self>().unwrap();
-                let mut borrow = storage.1.borrow_mut();
-                borrow.retain(|key, count| {
-                    if *count == 0 {
-                        storage.0.remove(*key).unwrap();
-                        false
-                    } else {
-                        true
-                    }
-                });
-            },
-            i32::MAX,
-        )
-    }
-
-    fn removable(world: &mut World) -> bool
-    where
-        Self: Sized,
-    {
-        false
-    }
-
-    fn fetch(world: &mut World)
-    where
-        Self: Sized,
-    {
-        if !world.contains::<Self>() {
-            world.insert(Self::default());
-        }
+    // Get an mutable reference to a value stored within the stored using it's handle
+    // The handle must outlive the returned reference, since dropping the handle before then might cause UB
+    pub fn get_mut<'s, 'h: 's>(&'s mut self, handle: &'h Handle<T>) -> &'s mut T {
+        &mut unsafe { &mut *self.slots[handle.idx as usize].get() }.0
     }
 }
 
-// A handle that will keep a certain element alive
-// Handles can be cloned since we can share certain elements
-pub struct Handle<T> {
-    key: DefaultKey,
-    tracker: Rc<Tracker>,
-    phantom_: PhantomData<T>,
+// A handle is what keeps the values within Storage<T> alive
+// If we drop the last Handle<T> to a value T, then the value will be removed from the storage and dropped
+pub struct Handle<T: 'static> {
+    _phantom: PhantomData<*mut T>,
+    ptr: *mut (T, u32),
+    empty: Rc<RefCell<Vec<usize>>>,
+    idx: usize,
 }
 
-impl<T> PartialEq for Handle<T> {
+impl<T: 'static> PartialEq for Handle<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.key == other.key
+        self.idx == other.idx
     }
 }
 
-impl<T> Eq for Handle<T> {}
+impl<T: 'static> Eq for Handle<T> {
+}
 
-// Cloning the handle increments the reference count
-impl<T> Clone for Handle<T> {
+impl<T: 'static> Handle<T> {
+    // Get the current reference count for this handle
+    // This tells us how many valid handles exist for the current value (including the current handle)
+    pub fn count(&self) -> u32 {
+        unsafe {
+            &*self.ptr
+        }.1
+    }
+
+    // This will manually incremememnt the underlying reference counter
+    // This is pretty unsafe, since it will mess up how the handles work
+    pub unsafe fn increment_count(&self) -> u32 {
+        let (_, counter) = &mut *self.ptr;
+        *counter += 1;
+        *counter
+    }
+
+    // This will manually decrement the underlying reference counter
+    // This is pretty unsafe, since it will mess up how the handles work
+    pub unsafe fn decrement_count(&self) -> u32 {
+        let (_, counter) = &mut *self.ptr;
+        *counter -= 1;
+        *counter
+    }
+}
+
+// Cloning the handle will increase the reference count of that handle
+impl<T: 'static> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        *self.tracker.borrow_mut().get_mut(&self.key).unwrap() += 1;
-        Self {
-            key: self.key,
-            tracker: self.tracker.clone(),
-            phantom_: self.phantom_,
+        unsafe { self.increment_count(); }        
+        Self { 
+            _phantom: self._phantom.clone(),
+            ptr: self.ptr.clone(),
+            empty: self.empty.clone(),
+            idx: self.idx.clone()
         }
     }
-}
+} 
 
-// Dropping the handle decreases the reference count
-impl<T> Drop for Handle<T> {
+// Dropping the handle will decrease the reference count of that handle
+// If we drop the last valid handle, then the stored value will get dropped
+impl<T: 'static> Drop for Handle<T> {
     fn drop(&mut self) {
-        let mut tracker = self.tracker.borrow_mut();
-        let value = tracker.get_mut(&self.key).unwrap().saturating_sub(1);
-        *tracker.get_mut(&self.key).unwrap() = value;
-    }
-}
-
-// A storage set is an abstraction over the resource set to allow for easier access to storages and their handles
-pub struct StorageSet<'a>(pub(super) &'a mut World);
-
-impl<'a> StorageSet<'a> {
-    // Insert a new element into it's corresponding storage
-    // This will automatically insert the storage resource if it does not exist yet
-    pub fn insert<T: 'static>(&mut self, element: T) -> Handle<T> {
-        let storage = self.0.get_mut::<&mut Storage<T>>().unwrap();
-        storage.insert(element)
-    }
-
-    // This will get a reference to an element using it's handle
-    pub fn get<T: 'static>(&mut self, handle: &Handle<T>) -> &T {
-        let storage = self.0.get_mut::<&Storage<T>>().unwrap();
-        storage.get(handle)
-    }
-
-    // This will get a mutable reference to an element using it's handle
-    pub fn get_mut<T: 'static>(&mut self, handle: &Handle<T>) -> &mut T {
-        let storage = self.0.get_mut::<&mut Storage<T>>().unwrap();
-        storage.get_mut(handle)
+        // Drop if this is the last handle
+        if unsafe { self.decrement_count() } == 0 {
+            // Convert the slot into an empty slot
+            let mut empty = self.empty.borrow_mut();
+            empty.push(self.idx);
+            
+            // Drop the value
+            unsafe {
+                std::ptr::drop_in_place(self.ptr);
+            }
+        }
     }
 }

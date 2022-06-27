@@ -1,8 +1,7 @@
-use std::any::TypeId;
-
+use std::{any::TypeId, sync::Once};
 use ahash::AHashMap;
-
-use crate::{Events, Layout, Resource, ResourceError, StorageSet};
+use glutin::event_loop::EventLoop;
+use crate::{Events, Layout, Resource, ResourceError, System};
 
 // The world is a container for multiple resources and events
 // All the game engine logic is stored within the world, like ECS and Asset management
@@ -14,10 +13,9 @@ pub struct World {
 }
 
 impl World {
-    // Get an immutable reference to the inner event handler
-    // Even though this reference is immutable, we can still modify the events since it uses inner mutability
-    pub fn events(&self) -> &Events {
-        &self.events
+    // Get a mutable reference to the inner events
+    pub fn events(&mut self) -> &mut Events {
+        &mut self.events
     }
 
     // Get a mutable reference to a unique boxed resource from the set by casting it first
@@ -31,7 +29,6 @@ impl World {
 
     // Insert a new resource into the set (this requires the event set that we fetch from the world)
     pub fn insert<R: Resource>(&mut self, mut resource: R) {
-        resource.inserted(self);
         let boxed = Box::new(resource);
         self.resources.insert(TypeId::of::<R>(), boxed);
     }
@@ -54,10 +51,5 @@ impl World {
     // Check if a resource is contained within the set
     pub fn contains<R: Resource>(&self) -> bool {
         self.resources.contains_key(&TypeId::of::<R>())
-    }
-
-    // Get a set of all the inner storage resources for accessibility
-    pub fn storages<'a>(&'a mut self) -> StorageSet<'a> {
-        StorageSet(self)
     }
 }

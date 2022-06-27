@@ -1,10 +1,7 @@
 use std::path::PathBuf;
-
-use events::Events;
 use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
-use world::World;
-
+use world::{World, Events, System, Init, Update, WindowEvent, DeviceEvent, Descriptor, BoxedEvent};
 use crate::handler;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
@@ -18,11 +15,8 @@ pub struct App {
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
 
-    // Systems that will be executed at the start of the engine
-    startups: Events<fn(&mut World)>,
-
-    // Systems that will be executed at each frame
-    updates: Events<fn(&mut World)>,
+    // These are the events that will contained within the world
+    events: Events,
 }
 
 impl Default for App {
@@ -33,8 +27,7 @@ impl Default for App {
             fullscreen: false,
             vsync: false,
             user_assets_folder: None,
-            startups: Default::default(),
-            updates: Default::default(),
+            events: Default::default()
         }
     }
 }
@@ -74,63 +67,51 @@ impl App {
         self
     }
 
-    // Insert a startup system into the application that will execute once we begin
-    pub fn insert_startup(mut self, system: fn(&mut World)) -> Self {
-        self.startups.register(system);
+    // Register a new event using it's marker descriptor and it's priority index
+    pub fn register_with<'a, Marker: Descriptor<'a>>(
+        mut self,
+        event: impl BoxedEvent<Marker> + 'static,
+        priority: i32,
+    ) -> Self {
+        self.events.register_with(event, priority);
+        self
+    }
+    
+    // Register a new event using it's marker descriptor and an automatic priority index
+    pub fn register<'a, Marker: Descriptor<'a>>(mut self, event: impl BoxedEvent<Marker> + 'static) -> Self {
+        self.events.register(event);
         self
     }
 
-    // Insert a startup system with a specific ordering index
-    pub fn insert_startup_with(mut self, system: fn(&mut World), order: i32) -> Self {
-        self.startups.register_with(system, order);
-        self
-    }
-
-    // Insert an update system that will execute each frame
-    pub fn insert_update(mut self, system: fn(&mut World)) -> Self {
-        self.updates.register(system);
-        self
-    }
-
-    // Insert an update system with a specific ordering index
-    pub fn insert_update_with(mut self, system: fn(&mut World), order: i32) -> Self {
-        self.updates.register_with(system, order);
+    // Insert a new system into the application and execute it immediately
+    // Systems are subsests of events that allow to organize them more specifically, like RenderSystem or InputSystem (even though they are just closures)
+    pub fn insert_system(mut self, system: impl System) -> Self {
+        system.insert(&mut self.events);
         self
     }
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
-        // Insert the default startup systems
-        self = self.insert_startup_with(assets::pre_load_defaults, i32::MIN);
-        self = self.insert_startup_with(rendering::scene::init, i32::MIN);
-
-        // Insert the default update systems
-        self = self.insert_update_with(rendering::scene::cameras, i32::MAX);
-        self = self.insert_update_with(rendering::scene::rendering, i32::MAX);
-
-        // Prepare the world and the event loop
+        // Prepare the event loop and create the main world
         let el = EventLoop::new();
         let mut world = World::default();
+        *world.events() = self.events;
 
-        // Create the graphics pipeline
-        let (el, graphics) =
-            Graphics::new(el, self.title, self.screensize, self.fullscreen, self.vsync);
+        // Insert all the builtin systems
+        self.insert_system(input::system);
+        //assets::system(world.events(), user)
 
-        // Insert the default main resources
-        world.insert(graphics);
-        world.insert(ecs::EcsManager::default());
-        world.insert(input::Input::default());
-        world.insert(assets::Assets::new(self.user_assets_folder));
-        world.insert(time::Time::default());
+        // Sort all the builtint events
+        let events = world.events();
+        events.sort::<Init>();
+        events.sort::<Update>();
+        events.sort::<WindowEvent>();
+        events.sort::<DeviceEvent>();
 
-        // Don't care + L + ratio
-        self.startups.sort();
-        self.updates.sort();
-
-        // Run the init systems before starting the engine window
-        self.startups.execute(&mut world);
+        // Execute the init events
+        events.execute::<Init>(world);
 
         // Run le game engine
-        handler::run(el, self.updates, world);
+        //handler::run(el, self.updates, world);
     }
 }

@@ -2,7 +2,11 @@ use cflake_engine::prelude::*;
 
 // Example that will try to render a simple 3D cube
 fn main() {
-    App::default().insert_startup(init).execute();
+    App::default().insert_system(system).execute();
+}
+
+fn system(events: &Events) {
+    events.register::<Init>(init);
 }
 
 // Initialize the world
