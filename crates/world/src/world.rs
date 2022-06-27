@@ -1,7 +1,7 @@
 use std::{any::TypeId, sync::Once};
 use ahash::AHashMap;
 use glutin::event_loop::EventLoop;
-use crate::{Events, Layout, Resource, ResourceError, System};
+use crate::{Events, Layout, Resource, ResourceError, System, Entry};
 
 // The world is a container for multiple resources and events
 // All the game engine logic is stored within the world, like ECS and Asset management
@@ -48,4 +48,16 @@ impl World {
     pub fn contains<R: Resource>(&self) -> bool {
         self.resources.contains_key(&TypeId::of::<R>())
     }
+
+    // Get a resource entry that we can use to overwrite or insert missing resources with
+    pub fn entry<'a, T: Resource>(&'a mut self) -> Entry<'a, T> {
+        Entry { world: self, _phantom: Default::default() }
+    }
 }
+
+
+// This trait will be implemented for types that can be instantiated from the world
+// An example of this would be the storage resources, since we require the world to create them and insert them
+pub trait FromWorld {
+    fn from_world(world: &mut World) -> Self;
+} 
