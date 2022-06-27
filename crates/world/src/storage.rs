@@ -1,4 +1,4 @@
-use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::ManuallyDrop, rc::Rc};
+use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::ManuallyDrop, rc::Rc, ptr::NonNull, ops::Deref};
 use crate::Resource;
 use crate as world;
  
@@ -7,9 +7,6 @@ use crate as world;
 // When inserting a new value into a storage, we receive a Handle to that value
 // Handles can be cloned around to be able to share values and save memory,
 // though if the last handle of a specific value gets dropped, the value will also get dropped
-#[derive(Resource)]
-#[Locked]
-#[AutoInsertDefault]
 pub struct Storage<T: 'static> {
     slots: ManuallyDrop<Vec<UnsafeCell<(T, u32)>>>,
     empty: Rc<RefCell<Vec<usize>>>,
@@ -18,6 +15,26 @@ pub struct Storage<T: 'static> {
 impl<T: 'static> Default for Storage<T> {
     fn default() -> Self {
         Self { slots: Default::default(), empty: Default::default() }
+    }
+}
+
+// Storages automatically get inserted into the world when we try to access them, so we must write that custom logic when implementing the resource trait
+impl<T: 'static> Resource for Storage<T> {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn fetch_ptr(world: &mut world::World) -> Result<std::ptr::NonNull<Self>, world::ResourceError> where Self: Sized {
+        if !world.contains::<Self>() {
+            world.insert(Self::default());
+        }
+
+        let res = world.get_mut_unique::<Self>().unwrap();
+        Ok(NonNull::new(res as *mut Self).unwrap())
     }
 }
 
@@ -53,13 +70,13 @@ impl<T: 'static> Storage<T> {
 
     // Get an immutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
-    pub fn get<'s, 'h: 's>(&'s self, handle: &'h Handle<T>) -> &'s T {
+    pub fn get<'s, 'c, 'h: 'c>(&'s self, handle: &'h Handle<T>) -> &'c T {
         &unsafe { &*self.slots[handle.idx as usize].get() }.0
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
-    pub fn get_mut<'s, 'h: 's>(&'s mut self, handle: &'h Handle<T>) -> &'s mut T {
+    pub fn get_mut<'s, 'c, 'h: 'c>(&'s mut self, handle: &'h Handle<T>) -> &'c mut T {
         &mut unsafe { &mut *self.slots[handle.idx as usize].get() }.0
     }
 }

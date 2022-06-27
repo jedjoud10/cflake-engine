@@ -1,7 +1,7 @@
 use super::{Camera, SceneRenderer};
 use crate::{
     context::{Context, Graphics},
-    material::{Material, Standard},
+    material::{Material, Standard, AlbedoMap, NormalMap, MaskMap},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
@@ -43,11 +43,11 @@ pub fn init(world: &mut World) {
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
     // Insert all of the textures into their corresponding storages
-    let mut set = world.storages();
-    let black = set.insert(black);
-    let white = set.insert(white);
-    let normal_map = set.insert(normal_map);
-    let mask_map = set.insert(mask_map);
+    let (albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
+    let black = albedo_maps.insert(black);
+    let white = albedo_maps.insert(white);
+    let normal_map = normal_maps.insert(normal_map);
+    let mask_map = mask_maps.insert(mask_map);
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, storage) = world
@@ -62,7 +62,8 @@ pub fn init(world: &mut World) {
         .build(ctx, assets, storage);
 
     // Insert el material and get it's handle
-    let material = world.storages().insert(material);
+    let storage = world.get_mut::<&mut Storage<Standard>>().unwrap();
+    let material = storage.insert(material);
 
     // Create the new scene renderer from these values and insert it into the world
     let renderer = SceneRenderer::new(

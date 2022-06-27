@@ -18,8 +18,8 @@ impl World {
         &mut self.events
     }
 
-    // Get a mutable reference to a unique boxed resource from the set by casting it first
-    pub(crate) fn get_mut_unique<T: Resource>(&mut self) -> Result<&mut T, ResourceError> {
+    // Get a mutable reference to a singleboxed resource from the set by casting it first
+    pub fn get_mut_unique<T: Resource>(&mut self) -> Result<&mut T, ResourceError> {
         let boxed = self
             .resources
             .get_mut(&TypeId::of::<T>())
@@ -28,7 +28,7 @@ impl World {
     }
 
     // Insert a new resource into the set (this requires the event set that we fetch from the world)
-    pub fn insert<R: Resource>(&mut self, mut resource: R) {
+    pub fn insert<R: Resource>(&mut self, resource: R) {
         let boxed = Box::new(resource);
         self.resources.insert(TypeId::of::<R>(), boxed);
     }
@@ -36,11 +36,7 @@ impl World {
     // Remove a resouce from the set (if possible)
     // This returns true if we successfully deleted the resource
     pub fn remove<R: Resource>(&mut self) -> bool {
-        if R::removable(self) {
-            self.resources.remove(&TypeId::of::<R>()).is_some()
-        } else {
-            false
-        }
+        self.resources.remove(&TypeId::of::<R>()).is_some()
     }
 
     // Fetch a tuple of certain resource handles from the set

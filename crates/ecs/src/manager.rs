@@ -12,6 +12,7 @@ pub type ArchetypeSet = MaskMap<Archetype>;
 pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
 // TODO: Find a better name for this bozo
+#[derive(Resource)]
 pub struct EcsManager {
     // Entities are just objects that contain an ID and some component masks
     // Entities are linked to multiple components, but they don't store the component data by themselves
@@ -36,23 +37,6 @@ impl Default for EcsManager {
             archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
             uniques,
         }
-    }
-}
-
-impl Resource for EcsManager {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
-    fn removable(world: &mut world::World) -> bool
-    where
-        Self: Sized,
-    {
-        true
     }
 }
 

@@ -3,7 +3,6 @@ use world::{Resource, Update, World, Events, Init};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 #[derive(Resource)]
-#[Locked]
 pub struct Time {
     // The difference in seconds between the last frame and the current frame
     delta: Duration,

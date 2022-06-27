@@ -20,7 +20,6 @@ impl<'loader> AsRef<[u8]> for CachedSlice<'loader> {
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
 #[derive(Resource)]
-#[Locked]
 pub struct Assets {
     // Byte caching (the key is the relative path of the asset)
     cached: AHashMap<PathBuf, Vec<u8>>,

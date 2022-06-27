@@ -4,7 +4,6 @@ use world::{Events, Resource, World, Init, DeviceEvent};
 // This is the main input resource that will be stored persistently withint the world
 // It allows us to get and modify it's underlying Keyboard and Mouse values
 #[derive(Resource)]
-#[Locked]
 pub struct Input(Keyboard, Mouse);
 
 // This system will automatically insert the input resource and update it each frame using the device events

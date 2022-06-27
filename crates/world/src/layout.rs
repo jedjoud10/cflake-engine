@@ -23,13 +23,6 @@ pub trait ResHandle<'a>: Sized {
         )
     }
 
-    // Get the underlying pointer for the resource that is stored in the world
-    fn fetch_ptr(world: &mut World) -> Result<NonNull<Self::Inner>, ResourceError> {
-        world
-            .get_mut_unique::<Self::Inner>()
-            .map(|r| NonNull::new(r as *mut Self::Inner).unwrap())
-    }
-
     // Convert the pointer into the proper handle
     unsafe fn cast_unchecked(
         ptr: Result<NonNull<Self::Inner>, ResourceError>,
@@ -82,9 +75,6 @@ impl<'a, T: Resource> ResHandle<'a> for Option<&'a mut T> {
     }
 }
 
-// Bwuh
-type Ptr<T> = Result<NonNull<T>, ResourceError>;
-
 // A layout simply multiple resource handles of different resources
 pub trait Layout<'a>: Sized {
     // Get a list of the Handle IDs of the underlying resources
@@ -112,7 +102,7 @@ pub trait Layout<'a>: Sized {
 
 // Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
 unsafe fn fetch<'a, A: ResHandle<'a>>(world: &mut World) -> Result<A, ResourceError> {
-    A::cast_unchecked(A::fetch_ptr(world))
+    A::cast_unchecked(A::Inner::fetch_ptr(world))
 }
 
 impl<'a, A: ResHandle<'a>> Layout<'a> for A {
