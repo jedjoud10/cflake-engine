@@ -1,5 +1,5 @@
-use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::{ManuallyDrop, MaybeUninit}, rc::Rc, ptr::NonNull, ops::Deref};
-use crate::{Resource, World};
+use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::{ManuallyDrop, MaybeUninit}, rc::Rc, ptr::NonNull, ops::Deref, num::NonZeroU32};
+use crate::{Resource, World, FromWorld};
 use crate as world;
 
 // A FIFO queue that doesn't take a mutable reference to itself
@@ -31,10 +31,12 @@ trait Cleanse {
     fn remove_dangling(&mut self);
 }
  
+// A slot contains some raw data and the amount of references (aka strong handles) exist for it
+type Slot<T> = UnsafeCell<(MaybeUninit<T>, Option<NonZeroU32>)>;
 
 // This the inner storage that will be shared around using the Rc and RefCell
 pub struct InnerStorage<T> {
-    slots: RefCell<Vec<UnsafeCell<(MaybeUninit<T>, u32)>>>,
+    slots: RefCell<Vec<Slot<T>>>,
     empty: Queue<usize>,
 }
 
@@ -59,15 +61,15 @@ pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 
 // Create a new default storage using the world
 // This will also register the storage's cleanse function automatically
-impl<T> From<&mut World> for Storage<T> {
-    fn from(world: &mut world::World) -> Self {
+impl<T> FromWorld for Storage<T> {
+    fn from_world(world: &mut world::World) -> Self {
         let rc = Rc::new(InnerStorage { slots: Default::default(), empty: Default::default() });
         let descriptor = world.entry::<StorageSetDescriptor>().or_insert_with(|_| StorageSetDescriptor { storages: Default::default() });
         descriptor.storages.push(rc.clone() as Rc<dyn Cleanse>);
         Self(rc)
     }
 }
-/*
+
 // Storages automatically get inserted into the world when we try to access them, so we must write that custom logic when implementing the resource trait
 // Also, we update the main StorageDescriptors resource, since we must update this storage when we can
 impl<T: 'static> Resource for Storage<T> {
@@ -80,11 +82,7 @@ impl<T: 'static> Resource for Storage<T> {
     }
 
     fn fetch_ptr(world: &mut world::World) -> Result<std::ptr::NonNull<Self>, world::ResourceError> where Self: Sized {
-        if !world.contains::<Self>() {
-            world.insert(Self::from_world());
-        }
-
-        let res = world.get_mut_unique::<Self>().unwrap();
+        let res = world.entry::<Self>().or_insert_from_world();
         Ok(NonNull::new(res as *mut Self).unwrap())
     }
 }
@@ -93,42 +91,47 @@ impl<T: 'static> Storage<T> {
     // Insert a new value into the storage, and return it's tracker handle
     // This value will stay stored within the storage as long as it has a single valid handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
-        let (ptr, idx) = if self.empty.borrow().is_empty() {
-            // We have no free slots, we have to make a new slot and fill it in
-            self.slots.push(UnsafeCell::new((value, 1)));
+        // Check if we have any free slots that we can use
+        let idx = if let Some(idx) = self.0.empty.pop() {
+            // Overwrite the existing cell, but make sure we don't cause a second drop by any chance
+            let mut slots = self.0.slots.borrow_mut();
+            let ptr = slots[idx].get();
 
-            // Return the pointer and value index
-            let index = self.slots.len() - 1; 
-            let ptr = self.slots[index].get();
-            (ptr, index)
-        } else {
-            // We have at least one free slot, so we must overwrite the values stored within it (without dropping them!)
-            let empty = self.empty.borrow_mut().pop().unwrap();
-            let cell = &mut self.slots[empty];
+            // If we already dropped the value, don't drop it again
+            let (maybe, references) = unsafe { &mut *ptr };
 
-            // Overwrite the values. This is actually safe since the empty slot was dropped beforehand
-            unsafe {
-                std::ptr::write(cell.get(), (value, 1));
+            if references.is_none() {
+                // Overwrite the old value with the new values without dropping
+            } else {
+                // Overwrite the value (which will also drop the old value)
+                unsafe {
+                    std::ptr::write(maybe.as_mut_ptr(), value);
+                    *references = Some(NonZeroU32::new(1).unwrap());
+                }
             }
+            
+        } else {
+            // We have no free slots, so we must make a new one
+            let mut slots = self.0.slots.borrow_mut();
+            
+            // Create the values that we will insert
+            let maybe = MaybeUninit::new(value);
+            let count = Some(NonZeroU32::new(1).unwrap());
 
-            // Return the pointer and value index
-            (cell.get(), empty)
-        };
-
-        // Create the new handle object
-        Handle { _phantom: Default::default(), ptr, idx, empty: self.empty.clone() }
+            // Create the cell and insert it
+            let cell = UnsafeCell::new((maybe, count));
+            slots.push(cell);
+        }
     }
 
     // Get an immutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
-    pub fn get<'s, 'c, 'h: 'c>(&'s self, handle: &'h Handle<T>) -> &'c T {
-        &unsafe { &*self.slots[handle.idx as usize].get() }.0
+    pub fn get(&self, handle: &Handle<T>) -> &T {
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
-    pub fn get_mut<'s, 'c, 'h: 'c>(&'s mut self, handle: &'h Handle<T>) -> &'c mut T {
-        &mut unsafe { &mut *self.slots[handle.idx as usize].get() }.0
+    pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
     }
 }
 
@@ -136,8 +139,7 @@ impl<T: 'static> Storage<T> {
 // If we drop the last Handle<T> to a value T, then the value will be removed from the storage and dropped
 pub struct Handle<T: 'static> {
     _phantom: PhantomData<*mut T>,
-    storage: Rc<InnerStorage<T>>,
-    empty: Rc<RefCell<Vec<usize>>>,
+    inner: Rc<InnerStorage<T>>,
     idx: usize,
 }
 
@@ -206,4 +208,3 @@ impl<T: 'static> Drop for Handle<T> {
         }
     }
 }
-*/
