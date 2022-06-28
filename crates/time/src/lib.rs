@@ -72,5 +72,5 @@ pub fn system(events: &mut Events) {
 
     // Register the events
     events.register_with::<Init>(init, i32::MIN);
-    events.register_with::<Update>(update,i32::MIN);
+    events.register_with::<Update>(update, i32::MIN);
 }

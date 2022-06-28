@@ -1,8 +1,11 @@
-use glutin::{event::{WindowEvent, DeviceEvent}, window::Window};
 use crate::World;
+use glutin::{
+    event::{DeviceEvent, WindowEvent},
+    window::Window,
+};
 
 // These event markers are only used to make things a bit prettier when inserting / sorting events
-// This trait will be implemented for Init, Update, glutin::WindowEvent, glutin::DeviceEvent 
+// This trait will be implemented for Init, Update, glutin::WindowEvent, glutin::DeviceEvent
 pub trait Marker {
     // Dyn Fn or FnOnce
     type F: ?Sized;
@@ -17,7 +20,7 @@ pub trait Descriptor<'a>: Marker {
     type Params: 'a;
 
     // Execute all the boxed events/functions using the proper given parameters
-    fn call_all(events: &mut Events, params: Self::Params); 
+    fn call_all(events: &mut Events, params: Self::Params);
 }
 
 // Events also contain a priority index that we will use to sort them
@@ -51,7 +54,11 @@ impl Events {
     }
 
     // Register a new event with a specific priority index
-    pub fn register_with<'a, M: Marker + Descriptor<'a>>(&mut self, event: impl IntoSlot<M::F>, priority: i32) {
+    pub fn register_with<'a, M: Marker + Descriptor<'a>>(
+        &mut self,
+        event: impl IntoSlot<M::F>,
+        priority: i32,
+    ) {
         M::insert(event.into_slot(priority), self)
     }
 
@@ -67,20 +74,25 @@ impl Events {
         sort(&mut self.window);
         sort(&mut self.device)
     }
-    
+
     // This will execute all the events of a specific type
     pub fn execute<'a, M: Marker + Descriptor<'a>>(&mut self, params: M::Params) {
         M::call_all(self, params);
     }
 }
 
-
 // Init marker event
 pub struct Init(());
 
-impl<F> IntoSlot<dyn FnOnce(&mut World)> for F where F: FnOnce(&mut World) + 'static {
+impl<F> IntoSlot<dyn FnOnce(&mut World)> for F
+where
+    F: FnOnce(&mut World) + 'static,
+{
     fn into_slot(self, priority: i32) -> Slot<dyn FnOnce(&mut World)> {
-        Slot { boxed: Box::new(self), priority }
+        Slot {
+            boxed: Box::new(self),
+            priority,
+        }
     }
 }
 
@@ -107,9 +119,15 @@ impl<'a> Descriptor<'a> for Init {
 // Update marker event
 pub struct Update(());
 
-impl<F> IntoSlot<dyn Fn(&mut World)> for F where F: Fn(&mut World) + 'static {
+impl<F> IntoSlot<dyn Fn(&mut World)> for F
+where
+    F: Fn(&mut World) + 'static,
+{
     fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World)> {
-        Slot { boxed: Box::new(self), priority }
+        Slot {
+            boxed: Box::new(self),
+            priority,
+        }
     }
 }
 
@@ -132,9 +150,15 @@ impl<'a> Descriptor<'a> for Update {
 }
 
 // Window marker event
-impl<F> IntoSlot<dyn Fn(&mut World, &WindowEvent)> for F where F: Fn(&mut World, &WindowEvent) + 'static {
+impl<F> IntoSlot<dyn Fn(&mut World, &WindowEvent)> for F
+where
+    F: Fn(&mut World, &WindowEvent) + 'static,
+{
     fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World, &WindowEvent)> {
-        Slot { boxed: Box::new(self), priority }
+        Slot {
+            boxed: Box::new(self),
+            priority,
+        }
     }
 }
 
@@ -146,7 +170,10 @@ impl<'a> Marker for WindowEvent<'a> {
     }
 }
 
-impl<'a, 'b> Descriptor<'a> for WindowEvent<'b> where 'b: 'a {
+impl<'a, 'b> Descriptor<'a> for WindowEvent<'b>
+where
+    'b: 'a,
+{
     type Params = (&'a mut World, &'a WindowEvent<'b>);
 
     fn call_all(events: &mut Events, params: Self::Params) {
@@ -160,9 +187,15 @@ impl<'a, 'b> Descriptor<'a> for WindowEvent<'b> where 'b: 'a {
 }
 
 // Device marker event
-impl<F> IntoSlot<dyn Fn(&mut World, &DeviceEvent)> for F where F: Fn(&mut World, &DeviceEvent) + 'static {
+impl<F> IntoSlot<dyn Fn(&mut World, &DeviceEvent)> for F
+where
+    F: Fn(&mut World, &DeviceEvent) + 'static,
+{
     fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World, &DeviceEvent)> {
-        Slot { boxed: Box::new(self), priority }
+        Slot {
+            boxed: Box::new(self),
+            priority,
+        }
     }
 }
 
@@ -180,7 +213,7 @@ impl<'a> Descriptor<'a> for DeviceEvent {
     fn call_all(events: &mut Events, params: Self::Params) {
         let world = params.0;
         let event = params.1;
-        
+
         for Slot { boxed, .. } in events.device.iter() {
             boxed(world, event)
         }

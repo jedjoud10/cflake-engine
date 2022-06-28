@@ -1,14 +1,14 @@
 mod error;
 mod events;
+mod global;
 mod layout;
 mod resource;
 mod storage;
 mod system;
 mod world;
-mod global;
-pub use global::*;
 pub use error::*;
 pub use events::*;
+pub use global::*;
 pub use layout::*;
 pub use resource::*;
 pub use resources_derive::*;

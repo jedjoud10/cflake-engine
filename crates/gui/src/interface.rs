@@ -3,9 +3,10 @@ use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
 use rendering::{
     context::{Context, Device},
-    gl, prelude::Graphics,
+    gl,
+    prelude::Graphics,
 };
-use world::{Resource, Events, World, Init, Update};
+use world::{Events, Init, Resource, Update, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
@@ -38,7 +39,8 @@ impl AsRef<egui::Context> for UserInterface {
 pub fn system(events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
-        let (Graphics(_, context), assets) = world.get_mut::<(&mut Graphics, &mut Assets)>().unwrap();
+        let (Graphics(_, context), assets) =
+            world.get_mut::<(&mut Graphics, &mut Assets)>().unwrap();
 
         // Get the maximum texture size from OpenGL (idk why egui needs this tbh)
         let max_texture_size = unsafe {
@@ -64,14 +66,18 @@ pub fn system(events: &mut Events) {
 
     // This is called at the start of each frame to tell egui that we must register the upcoming draw commands
     pub fn begin(world: &mut World) {
-        let (ui, Graphics(device, _)) = world.get_mut::<(&mut UserInterface, &mut Graphics)>().unwrap();
+        let (ui, Graphics(device, _)) = world
+            .get_mut::<(&mut UserInterface, &mut Graphics)>()
+            .unwrap();
         let raw_input = ui.state.take_egui_input(device.window());
         ui.egui.begin_frame(raw_input);
     }
 
     // This is called at the end of each frame (after we render the main 3D scene)
     pub fn draw(world: &mut World) {
-        let (ui, Graphics(device, ctx), assets) = world.get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>().unwrap();
+        let (ui, Graphics(device, ctx), assets) = world
+            .get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>()
+            .unwrap();
 
         // Stop the eGUi frame handler
         let output = ui.egui.end_frame();

@@ -8,7 +8,6 @@ pub trait System: 'static {
     fn insert(self, events: &mut Events);
 }
 
-
 // Implementations of system for fnonce closures and function pointers
 impl<F> System for F
 where
