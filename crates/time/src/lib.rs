@@ -52,7 +52,7 @@ impl Time {
 
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
 pub fn system(events: &mut Events) {
-    // Init event (called during world init)
+    // Init event (called once at the start of program)
     fn init(world: &mut World) {
         world.insert(Time {
             delta: Duration::ZERO,

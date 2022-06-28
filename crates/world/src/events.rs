@@ -46,7 +46,7 @@ pub struct Events {
 
 impl Events {
     // Register a new event with an automatic priority index
-    pub fn insert<'a, M: Marker + Descriptor<'a>>(&mut self, event: impl IntoSlot<M::F>) {
+    pub fn register<'a, M: Marker + Descriptor<'a>>(&mut self, event: impl IntoSlot<M::F>) {
         M::insert(event.into_slot(0), self)
     }
 

@@ -2,8 +2,7 @@ use crate::handler;
 use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
 use std::path::PathBuf;
-use world::{
-    BoxedEvent, Descriptor, DeviceEvent, Events, Init, System, Update, WindowEvent, World,
+use world::{Descriptor, Events, Init, System, Update, World,
 };
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
@@ -19,17 +18,24 @@ pub struct App {
 
     // These are the events that will contained within the world
     events: Events,
+    
+    // This is the main world that is instantiated once
+    world: World,
 }
 
 impl Default for App {
     fn default() -> Self {
+        // Only called once
+        let (world, events) = world::setup();
+        
         Self {
             title: "Default title".to_string(),
             screensize: vek::Extent2::new(1280, 720),
             fullscreen: false,
             vsync: false,
             user_assets_folder: None,
-            events: Default::default(),
+            events,
+            world,
         }
     }
 }

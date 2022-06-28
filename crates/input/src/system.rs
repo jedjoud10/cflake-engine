@@ -1,5 +1,6 @@
 use crate::{Keyboard, Mouse};
-use world::{DeviceEvent, Events, Init, Resource, World};
+use glutin::event::DeviceEvent;
+use world::{Events, Init, Resource, World};
 
 // This is the main input resource that will be stored persistently withint the world
 // It allows us to get and modify it's underlying Keyboard and Mouse values
@@ -8,8 +9,8 @@ pub struct Input(Keyboard, Mouse);
 
 // This system will automatically insert the input resource and update it each frame using the device events
 pub fn system(events: &mut Events) {
-    // Init event (called during world init)
-    events.register::<Init>(|world: &mut World| {
+    // Init event (called once at the start of program)
+    fn init(world: &mut World) {
         world.insert(Input(
             Keyboard {
                 binds: Default::default(),
@@ -22,8 +23,14 @@ pub fn system(events: &mut Events) {
                 pos: Default::default(),
             },
         ))
-    });
+    }
 
-    // Device event (called when we receive a new device event from glutin)
-    events.register::<DeviceEvent>(|world: &mut World, ev: &glutin::event::DeviceEvent| {});
+    // Glutin device event (called by handler when needed)
+    fn event(world: &mut World, data: &DeviceEvent) {
+        
+    }
+
+    // Register the events
+    events.register::<Init>(init);
+    events.register::<DeviceEvent>(event);
 }

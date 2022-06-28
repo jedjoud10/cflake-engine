@@ -6,6 +6,7 @@ mod storage;
 mod system;
 mod world;
 mod global;
+pub use global::*;
 pub use error::*;
 pub use events::*;
 pub use layout::*;
