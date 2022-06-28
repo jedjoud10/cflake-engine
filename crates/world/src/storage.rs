@@ -1,4 +1,4 @@
-use std::{cell::{UnsafeCell, RefCell}, marker::PhantomData, mem::{ManuallyDrop, MaybeUninit}, rc::Rc, ptr::NonNull, ops::Deref, num::NonZeroU32};
+use std::{cell::{UnsafeCell, RefCell, Cell}, marker::PhantomData, mem::{ManuallyDrop, MaybeUninit}, rc::Rc, ptr::NonNull, ops::Deref, num::NonZeroU32};
 use crate::{Resource, World, FromWorld};
 use crate as world;
 
@@ -30,9 +30,9 @@ impl<T> Queue<T> {
 trait Cleanse {
     fn remove_dangling(&mut self);
 }
- 
+
 // A slot contains some raw data and the amount of references (aka strong handles) exist for it
-type Slot<T> = UnsafeCell<(MaybeUninit<T>, Option<NonZeroU32>)>;
+type Slot<T> = (UnsafeCell<MaybeUninit<T>>, Cell<(u32, bool)>);
 
 // This the inner storage that will be shared around using the Rc and RefCell
 pub struct InnerStorage<T> {
@@ -42,7 +42,7 @@ pub struct InnerStorage<T> {
 
 impl<T> Cleanse for InnerStorage<T> {
     fn remove_dangling(&mut self) {
-        todo!()
+        // Just drop 
     }
 }
 
@@ -52,6 +52,11 @@ impl<T> Cleanse for InnerStorage<T> {
 pub struct StorageSetDescriptor {
     storages: Vec<Rc<dyn Cleanse>>,
 } 
+
+// This is the main system that will "cleanse" the stored storages
+pub fn cleanse(world: &mut World) {
+
+}
 
 // A storage is a way to keep certain values stored in memory without dropping them
 // When inserting a new value into a storage, we receive a Handle to that value
@@ -95,43 +100,59 @@ impl<T: 'static> Storage<T> {
         let idx = if let Some(idx) = self.0.empty.pop() {
             // Overwrite the existing cell, but make sure we don't cause a second drop by any chance
             let mut slots = self.0.slots.borrow_mut();
-            let ptr = slots[idx].get();
+            let (cell, counter) = &mut slots[idx];
 
             // If we already dropped the value, don't drop it again
-            let (maybe, references) = unsafe { &mut *ptr };
-
-            if references.is_none() {
-                // Overwrite the old value with the new values without dropping
+            let old = unsafe { &mut *cell.get() }; 
+            if counter.get().is_some() {
+                // Overwrite the old value with the new values without dropping them again
+                unsafe {
+                    std::ptr::write(old.as_mut_ptr(), value);
+                }
             } else {
                 // Overwrite the value (which will also drop the old value)
-                unsafe {
-                    std::ptr::write(maybe.as_mut_ptr(), value);
-                    *references = Some(NonZeroU32::new(1).unwrap());
-                }
+                *old = MaybeUninit::new(value);
+                counter.set(Some(NonZeroU32::new(1).unwrap()));
             }
             
+            // Return the index of the new value
+            idx
         } else {
-            // We have no free slots, so we must make a new one
+            // We have no free empty slots, so we must make a new one
             let mut slots = self.0.slots.borrow_mut();
-            
-            // Create the values that we will insert
-            let maybe = MaybeUninit::new(value);
-            let count = Some(NonZeroU32::new(1).unwrap());
+            let idx = slots.len();
 
-            // Create the cell and insert it
-            let cell = UnsafeCell::new((maybe, count));
-            slots.push(cell);
+            // Create the values that we will insert
+            let cell = UnsafeCell::new(MaybeUninit::new(value));
+            let count = Cell::new(Some(NonZeroU32::new(1).unwrap()));
+            
+            // Insert the slot and return it's index
+            slots.push((cell, count));
+            idx
+        };
+
+        // Create the handle object
+        Handle {
+            _phantom: Default::default(),
+            inner: self.0.clone(),
+            idx,
         }
     }
 
     // Get an immutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get(&self, handle: &Handle<T>) -> &T {
+        let slots = self.0.slots.borrow();
+        let ptr = unsafe { &*slots[handle.idx].0.get() };
+        unsafe { ptr.assume_init_ref() }
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
+        let slots = self.0.slots.borrow_mut();
+        let ptr = unsafe { &mut *slots[handle.idx].0.get() };
+        unsafe { ptr.assume_init_mut() }
     }
 }
 
@@ -156,25 +177,35 @@ impl<T: 'static> Handle<T> {
     // Get the current reference count for this handle
     // This tells us how many valid handles exist for the current value (including the current handle)
     pub fn count(&self) -> u32 {
-        unsafe {
-            &*self.ptr
-        }.1
+        let slots = self.inner.slots.borrow();
+        slots[self.idx].1.get().unwrap().get()
     }
 
     // This will manually incremememnt the underlying reference counter
-    // This is pretty unsafe, since it will mess up how the handles work
-    pub unsafe fn increment_count(&self) -> u32 {
-        let (_, counter) = &mut *self.ptr;
-        *counter += 1;
-        *counter
+    // This is pretty unsafe, since it will mess up how the handles work internally
+    // This will return the new reference counter value after we incremented it
+    pub unsafe fn increment_count(&self) -> NonZeroU32 {
+        // Calculate new counter value (this can never be None, since it is impossible to become 0)
+        let value = NonZeroU32::new_unchecked(self.count().saturating_add(1)); 
+
+        // Set the new counter value
+        let slots = self.inner.slots.borrow();
+        slots[self.idx].1.set(Some(value));
+        value
     }
 
     // This will manually decrement the underlying reference counter
-    // This is pretty unsafe, since it will mess up how the handles work
-    pub unsafe fn decrement_count(&self) -> u32 {
-        let (_, counter) = &mut *self.ptr;
-        *counter -= 1;
-        *counter
+    // This is pretty unsafe, since it will mess up how the handles work internally
+    // This will return the new reference counter alue after we decremented it
+    // If the counter reaches 0 references (meaning that the value should be dropped), this will return None
+    pub unsafe fn decrement_count(&self) -> Option<NonZeroU32> {
+        // We don't unwrap since we want it to become None if it reaches 0
+        let value = NonZeroU32::new(self.count().saturating_sub(1));
+
+        // Set the new counter value
+        let slots = self.inner.slots.borrow();
+        slots[self.idx].1.set(value);
+        value
     }
 }
 
@@ -182,11 +213,10 @@ impl<T: 'static> Handle<T> {
 impl<T: 'static> Clone for Handle<T> {
     fn clone(&self) -> Self {
         unsafe { self.increment_count(); }        
-        Self { 
-            _phantom: self._phantom.clone(),
-            ptr: self.ptr.clone(),
-            empty: self.empty.clone(),
-            idx: self.idx.clone()
+        Self {
+            _phantom: Default::default(),
+            inner: self.inner.clone(),
+            idx: self.idx,
         }
     }
 } 
@@ -194,17 +224,8 @@ impl<T: 'static> Clone for Handle<T> {
 // Dropping the handle will decrease the reference count of that handle
 // If we drop the last valid handle, then the stored value will get dropped
 impl<T: 'static> Drop for Handle<T> {
-    fn drop(&mut self) {
-        // Drop if this is the last handle
-        if unsafe { self.decrement_count() } == 0 {
-            // Convert the slot into an empty slot
-            let mut empty = self.empty.borrow_mut();
-            empty.push(self.idx);
-            
-            // Drop the value
-            unsafe {
-                std::ptr::drop_in_place(self.ptr);
-            }
-        }
+    fn drop(&mut self) {        
+        // The cleansing system will automatically get rid of danlging values for us
+        unsafe { self.decrement_count(); }
     }
 }
