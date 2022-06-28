@@ -1,4 +1,4 @@
-use crate::{Events, FromWorld, Layout, ResourceError, World};
+use crate::{FromWorld, Layout, ResourceError, World};
 use ahash::AHashMap;
 use std::{
     any::{Any, TypeId},

@@ -1,14 +1,13 @@
-use crate::{Entry, Events, Layout, Resource, ResourceError, System};
+use crate::{Entry, Layout, Resource, ResourceError, System};
 use ahash::AHashMap;
 use glutin::event_loop::EventLoop;
 use std::{any::TypeId, sync::Once};
 
-// The world is a container for multiple resources and events
+// The world is a unique container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
-#[derive(Default)]
 pub struct World {
-    resources: AHashMap<TypeId, Box<dyn Resource>>,
+    pub(crate) resources: AHashMap<TypeId, Box<dyn Resource>>,
 }
 
 impl World {

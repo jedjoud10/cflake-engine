@@ -53,26 +53,24 @@ impl Time {
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
 pub fn system(events: &mut Events) {
     // Init event (called during world init)
-    events.register_with::<Init>(
-        |world: &mut World| {
-            world.insert(Time {
-                delta: Duration::ZERO,
-                frame_count: 0,
-                startup: Instant::now(),
-                frame_start: Instant::now(),
-            })
-        },
-        i32::MIN,
-    );
+    fn init(world: &mut World) {
+        world.insert(Time {
+            delta: Duration::ZERO,
+            frame_count: 0,
+            startup: Instant::now(),
+            frame_start: Instant::now(),
+        })
+    }
 
     // Update event (called per frame)
-    events.register_with::<Update>(
-        |world: &mut World| {
-            let time = world.get_mut::<&mut Time>().unwrap();
-            let now = Instant::now();
-            time.delta = now - time.frame_start;
-            time.frame_start = now;
-        },
-        i32::MIN,
-    )
+    fn update(world: &mut World) {
+        let time = world.get_mut::<&mut Time>().unwrap();
+        let now = Instant::now();
+        time.delta = now - time.frame_start;
+        time.frame_start = now;
+    }
+
+    // Register the events
+    events.register_with::<Init>(init, i32::MIN);
+    events.register_with::<Update>(update,i32::MIN);
 }

@@ -1,99 +1,188 @@
+use glutin::{event::{WindowEvent, DeviceEvent}, window::Window};
 use crate::World;
-use ahash::AHashMap;
-use std::{
-    any::{Any, TypeId},
-    cell::{RefCell, RefMut},
-    marker::PhantomData,
-    rc::Rc,
-};
 
-// Descriptors describe what parameters we will use when calling some specific events
-pub trait Descriptor<'a>: Sized + 'static {
+// These event markers are only used to make things a bit prettier when inserting / sorting events
+// This trait will be implemented for Init, Update, glutin::WindowEvent, glutin::DeviceEvent 
+pub trait Marker {
+    // Dyn Fn or FnOnce
+    type F: ?Sized;
+
+    // Insert the boxed slot into the event manager
+    fn insert(slot: Slot<Self::F>, events: &mut Events);
+}
+
+// Descriptors are also implemented for markers, but they have a different purpose
+// Descriptors simply specify what parameters will be needed to execute the inner event, and how to execute em
+pub trait Descriptor<'a>: Marker {
     type Params: 'a;
+
+    // Execute all the boxed events/functions using the proper given parameters
+    fn call_all(events: &mut Events, params: Self::Params); 
 }
 
-// Main event trait (this trait cannot be boxed, so we have to call the execute() method within the boxed impl)
-pub trait Event<'a, F>: Descriptor<'a> {
-    fn execute(func: &F, params: &mut Self::Params);
+// Events also contain a priority index that we will use to sort them
+// Each slot contains a single event with it's priority index
+// F will be the trait object, like dyn FnOnce or dyn Fn
+pub struct Slot<F: ?Sized> {
+    boxed: Box<F>,
+    priority: i32,
 }
 
-// Main event trait that will be boxed and stored within the world
-pub trait BoxedEvent<Marker> {
-    fn execute<'a>(&self, params: &mut <Marker as Descriptor<'a>>::Params)
-    where
-        Marker: Descriptor<'a>;
+// Convert any function closure or function event into a proper slot
+// This will be implemented for the function closures and it will box them into their corresponding slot type
+pub trait IntoSlot<F: ?Sized> {
+    fn into_slot(self, priority: i32) -> Slot<F>;
 }
 
-// These are specialized events that can be executed with any parameter type
-struct SpecializedEvents<Marker: 'static>(Vec<(Box<dyn BoxedEvent<Marker>>, i32)>, i32);
-
-impl<Marker: 'static> SpecializedEvents<Marker> {
-    // Register a new specialized event with a specific priority index
-    fn register_with(&mut self, event: impl BoxedEvent<Marker> + 'static, priority: i32) {
-        self.0.push((Box::new(event), priority));
-    }
-
-    // Register a new specialized event with an automatic priority index
-    fn register(&mut self, event: impl BoxedEvent<Marker> + 'static) {
-        self.0.push((Box::new(event), self.1));
-        self.1 += 1;
-    }
-
-    // Execute all the events that are stored within this set
-    fn execute<'a>(&self, mut params: Marker::Params)
-    where
-        Marker: Descriptor<'a>,
-    {
-        for (event, _) in self.0.iter() {
-            event.execute(&mut params);
-        }
-    }
-
-    // Sort the specialized events based on their priority index
-    fn sort(&mut self) {
-        self.0.sort_by(|(_, a), (_, b)| i32::cmp(a, b));
-    }
+// Events are anything that can be called, like function pointers, or closures
+// This main struct will help us define, read, and fetch events to be able to execute them
+// Events are only defined internally, and the user cannot create implementations of their own events
+pub struct Events {
+    pub(crate) init: Vec<Slot<dyn FnOnce(&mut World)>>,
+    pub(crate) update: Vec<Slot<dyn Fn(&mut World)>>,
+    pub(crate) window: Vec<Slot<dyn Fn(&mut World, &WindowEvent)>>,
+    pub(crate) device: Vec<Slot<dyn Fn(&mut World, &DeviceEvent)>>,
 }
-
-// These are the global events interface that we will be accessing. This allows us to register, sort, and execute specific events given their descriptor
-#[derive(Default)]
-pub struct Events(AHashMap<TypeId, Box<dyn Any>>);
 
 impl Events {
-    // This will get a mutable reference to a specialized event set that uses the parameters from a specific descriptor
-    fn fetch<'a, Marker: Descriptor<'a>>(&mut self) -> &mut SpecializedEvents<Marker> {
-        let boxed = self
-            .0
-            .entry(TypeId::of::<Marker>())
-            .or_insert_with(|| Box::new(SpecializedEvents::<Marker>(Vec::default(), 0)));
-        let specialized = boxed.downcast_mut::<SpecializedEvents<Marker>>().unwrap();
-        specialized
+    // Register a new event with an automatic priority index
+    pub fn insert<'a, M: Marker + Descriptor<'a>>(&mut self, event: impl IntoSlot<M::F>) {
+        M::insert(event.into_slot(0), self)
     }
 
-    // Register a new event using it's marker descriptor and it's priority index
-    pub fn register_with<'a, Marker: Descriptor<'a>>(
-        &mut self,
-        event: impl BoxedEvent<Marker> + 'static,
-        priority: i32,
-    ) {
-        self.fetch::<Marker>().register_with(event, priority);
+    // Register a new event with a specific priority index
+    pub fn register_with<'a, M: Marker + Descriptor<'a>>(&mut self, event: impl IntoSlot<M::F>, priority: i32) {
+        M::insert(event.into_slot(priority), self)
     }
 
-    // Register a new event using it's marker descriptor and an automatic priority index
-    pub fn register<'a, Marker: Descriptor<'a>>(
-        &mut self,
-        event: impl BoxedEvent<Marker> + 'static,
-    ) {
-        self.fetch::<Marker>().register(event);
-    }
+    // This will sort all the events of all types
+    pub fn sort(&mut self) {
+        fn sort<T: ?Sized>(vec: &mut Vec<Slot<T>>) {
+            vec.sort_by(|a: &Slot<T>, b: &Slot<T>| i32::cmp(&a.priority, &b.priority))
+        }
 
-    // Sort the events based on their priority for a specific marker descriptor type
-    pub fn sort<'a, Marker: Descriptor<'a>>(&mut self) {
-        self.fetch::<Marker>().sort();
+        // Sort all of the vectors
+        sort(&mut self.init);
+        sort(&mut self.update);
+        sort(&mut self.window);
+        sort(&mut self.device)
     }
+    
+    // This will execute all the events of a specific type
+    pub fn execute<'a, M: Marker + Descriptor<'a>>(&mut self, params: M::Params) {
+        M::call_all(self, params);
+    }
+}
 
-    // Execute all the events using a specific marker descriptor type
-    pub fn execute<'a, Marker: Descriptor<'a>>(&mut self, params: Marker::Params) {
-        self.fetch::<Marker>().execute(params);
+
+// Init marker event
+pub struct Init(());
+
+impl<F> IntoSlot<dyn FnOnce(&mut World)> for F where F: FnOnce(&mut World) + 'static {
+    fn into_slot(self, priority: i32) -> Slot<dyn FnOnce(&mut World)> {
+        Slot { boxed: Box::new(self), priority }
+    }
+}
+
+impl Marker for Init {
+    type F = dyn FnOnce(&mut World);
+
+    fn insert(slot: Slot<Self::F>, events: &mut Events) {
+        events.init.push(slot);
+    }
+}
+
+impl<'a> Descriptor<'a> for Init {
+    type Params = &'a mut World;
+
+    fn call_all(events: &mut Events, params: Self::Params) {
+        let vec = std::mem::take(&mut events.init);
+
+        for Slot { boxed, .. } in vec {
+            boxed(params);
+        }
+    }
+}
+
+// Update marker event
+pub struct Update(());
+
+impl<F> IntoSlot<dyn Fn(&mut World)> for F where F: Fn(&mut World) + 'static {
+    fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World)> {
+        Slot { boxed: Box::new(self), priority }
+    }
+}
+
+impl Marker for Update {
+    type F = dyn Fn(&mut World);
+
+    fn insert(slot: Slot<Self::F>, events: &mut Events) {
+        events.update.push(slot);
+    }
+}
+
+impl<'a> Descriptor<'a> for Update {
+    type Params = &'a mut World;
+
+    fn call_all(events: &mut Events, params: Self::Params) {
+        for Slot { boxed, .. } in events.update.iter() {
+            boxed(params)
+        }
+    }
+}
+
+// Window marker event
+impl<F> IntoSlot<dyn Fn(&mut World, &WindowEvent)> for F where F: Fn(&mut World, &WindowEvent) + 'static {
+    fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World, &WindowEvent)> {
+        Slot { boxed: Box::new(self), priority }
+    }
+}
+
+impl<'a> Marker for WindowEvent<'a> {
+    type F = dyn Fn(&mut World, &WindowEvent);
+
+    fn insert(slot: Slot<Self::F>, events: &mut Events) {
+        events.window.push(slot);
+    }
+}
+
+impl<'a, 'b> Descriptor<'a> for WindowEvent<'b> where 'b: 'a {
+    type Params = (&'a mut World, &'a WindowEvent<'b>);
+
+    fn call_all(events: &mut Events, params: Self::Params) {
+        let world = params.0;
+        let window = params.1;
+
+        for Slot { boxed, .. } in events.window.iter() {
+            boxed(world, window);
+        }
+    }
+}
+
+// Device marker event
+impl<F> IntoSlot<dyn Fn(&mut World, &DeviceEvent)> for F where F: Fn(&mut World, &DeviceEvent) + 'static {
+    fn into_slot(self, priority: i32) -> Slot<dyn Fn(&mut World, &DeviceEvent)> {
+        Slot { boxed: Box::new(self), priority }
+    }
+}
+
+impl Marker for DeviceEvent {
+    type F = dyn Fn(&mut World, &DeviceEvent);
+
+    fn insert(slot: Slot<Self::F>, events: &mut Events) {
+        events.device.push(slot);
+    }
+}
+
+impl<'a> Descriptor<'a> for DeviceEvent {
+    type Params = (&'a mut World, &'a DeviceEvent);
+
+    fn call_all(events: &mut Events, params: Self::Params) {
+        let world = params.0;
+        let event = params.1;
+        
+        for Slot { boxed, .. } in events.device.iter() {
+            boxed(world, event)
+        }
     }
 }

@@ -74,15 +74,6 @@ impl Archetype {
         Some(())
     }
 
-    // Reserve enough space to fit "n" number of new entities into this archetype
-    pub(crate) fn reserve(&mut self, additional: usize) {
-        self.states.reserve(additional);
-        self.entities.reserve(additional);
-        for (_, vec) in self.vectors.iter_mut() {
-            vec.reserve(additional)
-        }
-    }
-
     // Get the number of entities that reference this archetype
     pub fn len(&self) -> usize {
         self.entities.len()
