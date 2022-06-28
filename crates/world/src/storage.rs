@@ -1,6 +1,14 @@
-use std::{cell::{UnsafeCell, RefCell, Cell}, marker::PhantomData, mem::{ManuallyDrop, MaybeUninit}, rc::Rc, ptr::NonNull, ops::Deref, num::NonZeroU32};
-use crate::{Resource, World, FromWorld};
 use crate as world;
+use crate::{FromWorld, Resource, World};
+use std::{
+    cell::{Cell, RefCell, UnsafeCell},
+    marker::PhantomData,
+    mem::{ManuallyDrop, MaybeUninit},
+    num::NonZeroU32,
+    ops::Deref,
+    ptr::NonNull,
+    rc::Rc,
+};
 
 // A FIFO queue that doesn't take a mutable reference to itself
 // Only used internally for the InnerStorage that will be shared around
@@ -28,34 +36,67 @@ impl<T> Queue<T> {
 // This will automatically be called at the very very end of each frame, automatically, to cleanse all the storages of any dangling values that might be stored within them
 // It's like a garbage collector, but type safe and in rust
 trait Cleanse {
-    fn remove_dangling(&mut self);
+    fn remove_dangling(&self);
 }
 
 // A slot contains some raw data and the amount of references (aka strong handles) exist for it
-type Slot<T> = (UnsafeCell<MaybeUninit<T>>, Cell<(u32, bool)>);
+struct Slot<T> {
+    // The unsafe cell value
+    cell: UnsafeCell<ManuallyDrop<T>>,
+
+    // This cell contains the current counter reference value for this slot
+    // This tells us how many current handles exist at the moment
+    counter: Cell<u32>,
+}
 
 // This the inner storage that will be shared around using the Rc and RefCell
 pub struct InnerStorage<T> {
+    // These are the slots that are stored consecutively
+    // This is contained within a refcell since I wish to share the vector around, whilst keeping it safe
     slots: RefCell<Vec<Slot<T>>>,
+
+    // This queue indicates what slots are specifically empty
+    // This allows us to conserve memory and simply overwrite the state of the slots
     empty: Queue<usize>,
+
+    // This queue will get chonkier whenever we drop the final handles to certain values
+    // This indicates that at the end of the current frame, we must call the destructor for those values
+    must_drop: Queue<usize>,
 }
 
 impl<T> Cleanse for InnerStorage<T> {
-    fn remove_dangling(&mut self) {
-        // Just drop 
+    // This method will simply drop all the values that have their counter values equal to 0 and their dropped state to false (since we must only drop once)
+    // This will convert all the slots that must be dropped into slots that are empty
+    fn remove_dangling(&self) {
+        let mut slots = self.slots.borrow_mut();
+        while let Some(must_drop) = self.must_drop.pop() {
+            // Get a mutable reference to the value, then drop their values
+            let value = slots[must_drop].cell.get_mut();
+
+            // This should be called only internally, right here
+            unsafe {
+                ManuallyDrop::drop(value);
+            }
+
+            // Each value that gets dropped can then get replaced by another value
+            self.empty.push(must_drop);
+        }
     }
 }
 
-// A storage set descriptor contains multiple reference to multiple InnerStorage<T>s 
+// A storage set descriptor contains multiple reference to multiple InnerStorage<T>s
 // This allows us to cleanse each storage of any dangling values automatically using a specific system
 #[derive(Resource)]
 pub struct StorageSetDescriptor {
     storages: Vec<Rc<dyn Cleanse>>,
-} 
+}
 
 // This is the main system that will "cleanse" the stored storages
 pub fn cleanse(world: &mut World) {
-
+    let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
+    for obj in descriptor.storages.iter() {
+        obj.remove_dangling();
+    }
 }
 
 // A storage is a way to keep certain values stored in memory without dropping them
@@ -68,8 +109,17 @@ pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 // This will also register the storage's cleanse function automatically
 impl<T> FromWorld for Storage<T> {
     fn from_world(world: &mut world::World) -> Self {
-        let rc = Rc::new(InnerStorage { slots: Default::default(), empty: Default::default() });
-        let descriptor = world.entry::<StorageSetDescriptor>().or_insert_with(|_| StorageSetDescriptor { storages: Default::default() });
+        let rc = Rc::new(InnerStorage {
+            slots: Default::default(),
+            empty: Default::default(),
+            must_drop: Default::default(),
+        });
+        let descriptor =
+            world
+                .entry::<StorageSetDescriptor>()
+                .or_insert_with(|_| StorageSetDescriptor {
+                    storages: Default::default(),
+                });
         descriptor.storages.push(rc.clone() as Rc<dyn Cleanse>);
         Self(rc)
     }
@@ -86,7 +136,10 @@ impl<T: 'static> Resource for Storage<T> {
         self
     }
 
-    fn fetch_ptr(world: &mut world::World) -> Result<std::ptr::NonNull<Self>, world::ResourceError> where Self: Sized {
+    fn fetch_ptr(world: &mut world::World) -> Result<std::ptr::NonNull<Self>, world::ResourceError>
+    where
+        Self: Sized,
+    {
         let res = world.entry::<Self>().or_insert_from_world();
         Ok(NonNull::new(res as *mut Self).unwrap())
     }
@@ -98,23 +151,15 @@ impl<T: 'static> Storage<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         // Check if we have any free slots that we can use
         let idx = if let Some(idx) = self.0.empty.pop() {
-            // Overwrite the existing cell, but make sure we don't cause a second drop by any chance
+            // Overwrite the existing cell, but make sure we don't cause a second drop
             let mut slots = self.0.slots.borrow_mut();
-            let (cell, counter) = &mut slots[idx];
+            let Slot { cell, .. } = &mut slots[idx];
 
-            // If we already dropped the value, don't drop it again
-            let old = unsafe { &mut *cell.get() }; 
-            if counter.get().is_some() {
-                // Overwrite the old value with the new values without dropping them again
-                unsafe {
-                    std::ptr::write(old.as_mut_ptr(), value);
-                }
-            } else {
-                // Overwrite the value (which will also drop the old value)
-                *old = MaybeUninit::new(value);
-                counter.set(Some(NonZeroU32::new(1).unwrap()));
+            // Overwrite the old value with the new values without dropping them again
+            unsafe {
+                std::ptr::write(cell.get(), ManuallyDrop::new(value));
             }
-            
+
             // Return the index of the new value
             idx
         } else {
@@ -123,11 +168,11 @@ impl<T: 'static> Storage<T> {
             let idx = slots.len();
 
             // Create the values that we will insert
-            let cell = UnsafeCell::new(MaybeUninit::new(value));
-            let count = Cell::new(Some(NonZeroU32::new(1).unwrap()));
-            
+            let cell = UnsafeCell::new(ManuallyDrop::new(value));
+            let counter = Cell::new(1);
+
             // Insert the slot and return it's index
-            slots.push((cell, count));
+            slots.push(Slot { cell, counter });
             idx
         };
 
@@ -143,16 +188,16 @@ impl<T: 'static> Storage<T> {
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get(&self, handle: &Handle<T>) -> &T {
         let slots = self.0.slots.borrow();
-        let ptr = unsafe { &*slots[handle.idx].0.get() };
-        unsafe { ptr.assume_init_ref() }
+        let ptr = unsafe { &*slots[handle.idx].cell.get() };
+        &**ptr
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         let slots = self.0.slots.borrow_mut();
-        let ptr = unsafe { &mut *slots[handle.idx].0.get() };
-        unsafe { ptr.assume_init_mut() }
+        let ptr = unsafe { &mut *slots[handle.idx].cell.get() };
+        &mut **ptr
     }
 }
 
@@ -170,41 +215,38 @@ impl<T: 'static> PartialEq for Handle<T> {
     }
 }
 
-impl<T: 'static> Eq for Handle<T> {
-}
+impl<T: 'static> Eq for Handle<T> {}
 
 impl<T: 'static> Handle<T> {
     // Get the current reference count for this handle
     // This tells us how many valid handles exist for the current value (including the current handle)
     pub fn count(&self) -> u32 {
         let slots = self.inner.slots.borrow();
-        slots[self.idx].1.get().unwrap().get()
+        slots[self.idx].counter.get()
+    }
+
+    // Overwrite the current reference counted value directly
+    // I love anime girls. Yes. I am a degenerate
+    pub unsafe fn set_count(&self, count: u32) {
+        let slots = self.inner.slots.borrow();
+        slots[self.idx].counter.set(count);
     }
 
     // This will manually incremememnt the underlying reference counter
     // This is pretty unsafe, since it will mess up how the handles work internally
     // This will return the new reference counter value after we incremented it
-    pub unsafe fn increment_count(&self) -> NonZeroU32 {
-        // Calculate new counter value (this can never be None, since it is impossible to become 0)
-        let value = NonZeroU32::new_unchecked(self.count().saturating_add(1)); 
-
-        // Set the new counter value
-        let slots = self.inner.slots.borrow();
-        slots[self.idx].1.set(Some(value));
+    pub unsafe fn increment_count(&self) -> u32 {
+        let value = self.count().saturating_add(1);
+        self.set_count(value);
         value
     }
 
     // This will manually decrement the underlying reference counter
     // This is pretty unsafe, since it will mess up how the handles work internally
     // This will return the new reference counter alue after we decremented it
-    // If the counter reaches 0 references (meaning that the value should be dropped), this will return None
-    pub unsafe fn decrement_count(&self) -> Option<NonZeroU32> {
-        // We don't unwrap since we want it to become None if it reaches 0
-        let value = NonZeroU32::new(self.count().saturating_sub(1));
-
-        // Set the new counter value
-        let slots = self.inner.slots.borrow();
-        slots[self.idx].1.set(value);
+    pub unsafe fn decrement_count(&self) -> u32 {
+        let value = self.count().saturating_sub(1);
+        self.set_count(value);
         value
     }
 }
@@ -212,20 +254,24 @@ impl<T: 'static> Handle<T> {
 // Cloning the handle will increase the reference count of that handle
 impl<T: 'static> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        unsafe { self.increment_count(); }        
+        unsafe {
+            self.increment_count();
+        }
         Self {
             _phantom: Default::default(),
             inner: self.inner.clone(),
             idx: self.idx,
         }
     }
-} 
+}
 
 // Dropping the handle will decrease the reference count of that handle
 // If we drop the last valid handle, then the stored value will get dropped
 impl<T: 'static> Drop for Handle<T> {
-    fn drop(&mut self) {        
-        // The cleansing system will automatically get rid of danlging values for us
-        unsafe { self.decrement_count(); }
+    fn drop(&mut self) {
+        // If the counter reaches 0, it means that we must drop the inner value
+        if unsafe { self.decrement_count() } == 0 {
+            self.inner.must_drop.push(self.idx);
+        }
     }
 }

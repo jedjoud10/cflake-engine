@@ -1,7 +1,7 @@
-use std::{any::TypeId, sync::Once};
+use crate::{Entry, Events, Layout, Resource, ResourceError, System};
 use ahash::AHashMap;
 use glutin::event_loop::EventLoop;
-use crate::{Events, Layout, Resource, ResourceError, System, Entry};
+use std::{any::TypeId, sync::Once};
 
 // The world is a container for multiple resources and events
 // All the game engine logic is stored within the world, like ECS and Asset management
@@ -9,15 +9,9 @@ use crate::{Events, Layout, Resource, ResourceError, System, Entry};
 #[derive(Default)]
 pub struct World {
     resources: AHashMap<TypeId, Box<dyn Resource>>,
-    events: Events,
 }
 
 impl World {
-    // Get a mutable reference to the inner events
-    pub fn events(&mut self) -> &mut Events {
-        &mut self.events
-    }
-
     // Get a mutable reference to a singleboxed resource from the set by casting it first
     pub fn get_mut_unique<T: Resource>(&mut self) -> Result<&mut T, ResourceError> {
         let boxed = self
@@ -51,13 +45,15 @@ impl World {
 
     // Get a resource entry that we can use to overwrite or insert missing resources with
     pub fn entry<'a, T: Resource>(&'a mut self) -> Entry<'a, T> {
-        Entry { world: self, _phantom: Default::default() }
+        Entry {
+            world: self,
+            _phantom: Default::default(),
+        }
     }
 }
-
 
 // This trait will be implemented for types that can be instantiated from the world
 // An example of this would be the storage resources, since we require the world to create them and insert them
 pub trait FromWorld {
     fn from_world(world: &mut World) -> Self;
-} 
+}

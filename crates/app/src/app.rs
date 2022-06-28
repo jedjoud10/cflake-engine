@@ -1,8 +1,10 @@
-use std::path::PathBuf;
+use crate::handler;
 use glutin::event_loop::EventLoop;
 use rendering::context::Graphics;
-use world::{World, Events, System, Init, Update, WindowEvent, DeviceEvent, Descriptor, BoxedEvent};
-use crate::handler;
+use std::path::PathBuf;
+use world::{
+    BoxedEvent, Descriptor, DeviceEvent, Events, Init, System, Update, WindowEvent, World,
+};
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
@@ -27,7 +29,7 @@ impl Default for App {
             fullscreen: false,
             vsync: false,
             user_assets_folder: None,
-            events: Default::default()
+            events: Default::default(),
         }
     }
 }
@@ -76,9 +78,12 @@ impl App {
         self.events.register_with(event, priority);
         self
     }
-    
+
     // Register a new event using it's marker descriptor and an automatic priority index
-    pub fn register<'a, Marker: Descriptor<'a>>(mut self, event: impl BoxedEvent<Marker> + 'static) -> Self {
+    pub fn register<'a, Marker: Descriptor<'a>>(
+        mut self,
+        event: impl BoxedEvent<Marker> + 'static,
+    ) -> Self {
         self.events.register(event);
         self
     }

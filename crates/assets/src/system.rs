@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-use world::{World, Events, Init};
 use crate::{asset, persistent, Assets};
+use std::path::PathBuf;
+use world::{Events, Init, World};
 
 // This system will add the asset loader resource into the world and automatically pre-load the default assets as well
 pub fn system(events: &mut Events, user: Option<PathBuf>) {

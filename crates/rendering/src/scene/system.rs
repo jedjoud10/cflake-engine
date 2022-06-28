@@ -1,7 +1,7 @@
 use super::{Camera, SceneRenderer};
 use crate::{
     context::{Context, Graphics},
-    material::{Material, Standard, AlbedoMap, NormalMap, MaskMap},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
@@ -43,7 +43,13 @@ pub fn init(world: &mut World) {
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
     // Insert all of the textures into their corresponding storages
-    let (albedo_maps, normal_maps, mask_maps) = world.get_mut::<(&mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>)>().unwrap();
+    let (albedo_maps, normal_maps, mask_maps) = world
+        .get_mut::<(
+            &mut Storage<AlbedoMap>,
+            &mut Storage<NormalMap>,
+            &mut Storage<MaskMap>,
+        )>()
+        .unwrap();
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
     let normal_map = normal_maps.insert(normal_map);

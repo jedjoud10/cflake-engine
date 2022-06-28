@@ -62,9 +62,10 @@ pub struct Events(AHashMap<TypeId, Box<dyn Any>>);
 impl Events {
     // This will get a mutable reference to a specialized event set that uses the parameters from a specific descriptor
     fn fetch<'a, Marker: Descriptor<'a>>(&mut self) -> &mut SpecializedEvents<Marker> {
-        let boxed = self.0
-                .entry(TypeId::of::<Marker>())
-                .or_insert_with(|| Box::new(SpecializedEvents::<Marker>(Vec::default(), 0)));
+        let boxed = self
+            .0
+            .entry(TypeId::of::<Marker>())
+            .or_insert_with(|| Box::new(SpecializedEvents::<Marker>(Vec::default(), 0)));
         let specialized = boxed.downcast_mut::<SpecializedEvents<Marker>>().unwrap();
         specialized
     }
@@ -79,7 +80,10 @@ impl Events {
     }
 
     // Register a new event using it's marker descriptor and an automatic priority index
-    pub fn register<'a, Marker: Descriptor<'a>>(&mut self, event: impl BoxedEvent<Marker> + 'static) {
+    pub fn register<'a, Marker: Descriptor<'a>>(
+        &mut self,
+        event: impl BoxedEvent<Marker> + 'static,
+    ) {
         self.fetch::<Marker>().register(event);
     }
 

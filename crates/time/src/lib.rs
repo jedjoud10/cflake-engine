@@ -1,5 +1,5 @@
-use std::time::{Instant, Duration};
-use world::{Resource, Update, World, Events, Init};
+use std::time::{Duration, Instant};
+use world::{Events, Init, Resource, Update, World};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 #[derive(Resource)]
@@ -53,20 +53,26 @@ impl Time {
 // The timer system will automatically insert the Time resource and will update it at the start of each frame
 pub fn system(events: &mut Events) {
     // Init event (called during world init)
-    events.register_with::<Init>(|world: &mut World| {
-        world.insert(Time {
-            delta: Duration::ZERO,
-            frame_count: 0,
-            startup: Instant::now(),
-            frame_start: Instant::now(),
-        })
-    }, i32::MIN);
+    events.register_with::<Init>(
+        |world: &mut World| {
+            world.insert(Time {
+                delta: Duration::ZERO,
+                frame_count: 0,
+                startup: Instant::now(),
+                frame_start: Instant::now(),
+            })
+        },
+        i32::MIN,
+    );
 
     // Update event (called per frame)
-    events.register_with::<Update>(|world: &mut World| {
-        let time = world.get_mut::<&mut Time>().unwrap();
-        let now = Instant::now();
-        time.delta = now - time.frame_start;
-        time.frame_start = now;
-    }, i32::MIN)
+    events.register_with::<Update>(
+        |world: &mut World| {
+            let time = world.get_mut::<&mut Time>().unwrap();
+            let now = Instant::now();
+            time.delta = now - time.frame_start;
+            time.frame_start = now;
+        },
+        i32::MIN,
+    )
 }
