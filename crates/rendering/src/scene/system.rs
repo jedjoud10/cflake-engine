@@ -1,6 +1,6 @@
 use super::{Camera, SceneRenderer};
 use crate::{
-    context::{Context, Graphics},
+    context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
@@ -17,7 +17,7 @@ use world::{Storage, World, Events, Init};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
-fn init(world: &mut World) {
+fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
     // During initialization, the world always contains the Init resource
     // This resource contains the global event loop and all informations that are needed for 
 
@@ -130,5 +130,5 @@ fn main_camera(world: &mut World) {
 
 // Main rendering system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
-    events.register_with::<Init>(|world: &mut World| { init(world, el, settings) }, i32::MIN);
+    events.register_with::<Init>(|world: &mut World, el: &EventLoop<()>| { init(world, settings, el) }, i32::MIN);
 }

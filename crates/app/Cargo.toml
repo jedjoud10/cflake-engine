@@ -20,7 +20,6 @@ world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
 gui = { path = "../gui" }
-io = { path = "../io" }
 terrain = { path = "../terrain" }
 audio = { path = "../audio" }
 time = { path = "../time" }
