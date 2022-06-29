@@ -1,7 +1,7 @@
 use crate::World;
 use glutin::{
     event::{DeviceEvent, WindowEvent},
-    window::Window,
+    window::Window, event_loop::EventLoop,
 };
 
 // These event markers are only used to make things a bit prettier when inserting / sorting events

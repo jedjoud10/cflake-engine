@@ -1,4 +1,4 @@
-use crate as world;
+use crate::{self as world, Events, Update};
 use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
@@ -92,11 +92,17 @@ pub struct StorageSetDescriptor {
 }
 
 // This is the main system that will "cleanse" the stored storages
-pub fn cleanse(world: &mut World) {
-    let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
-    for obj in descriptor.storages.iter() {
-        obj.remove_dangling();
+pub fn system(events: &mut Events) {
+    // At the end of every frame, we cleanse ALL the storages
+    fn cleanse(world: &mut World) {
+        let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
+        for obj in descriptor.storages.iter() {
+            obj.remove_dangling();
+        }
     }
+
+    // Register the cleansing event
+    events.register_with::<Update>(cleanse, i32::MAX);
 }
 
 // A storage is a way to keep certain values stored in memory without dropping them

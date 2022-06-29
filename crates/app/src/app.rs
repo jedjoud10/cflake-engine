@@ -74,27 +74,8 @@ impl App {
         self
     }
 
-    // Register a new event using it's marker descriptor and it's priority index
-    pub fn register_with<'a, Marker: Descriptor<'a>>(
-        mut self,
-        event: impl BoxedEvent<Marker> + 'static,
-        priority: i32,
-    ) -> Self {
-        self.events.register_with(event, priority);
-        self
-    }
-
-    // Register a new event using it's marker descriptor and an automatic priority index
-    pub fn register<'a, Marker: Descriptor<'a>>(
-        mut self,
-        event: impl BoxedEvent<Marker> + 'static,
-    ) -> Self {
-        self.events.register(event);
-        self
-    }
-
-    // Insert a new system into the application and execute it immediately
-    // Systems are subsests of events that allow to organize them more specifically, like RenderSystem or InputSystem (even though they are just closures)
+    // Insert a new system into the app and execute it immediately
+    // This will register all the necessary events automatically
     pub fn insert_system(mut self, system: impl System) -> Self {
         system.insert(&mut self.events);
         self
@@ -102,24 +83,16 @@ impl App {
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
-        // Prepare the event loop and create the main world
+        // Prepare the event loop
         let el = EventLoop::new();
-        let mut world = World::default();
-        *world.events() = self.events;
 
         // Insert all the builtin systems
-        self.insert_system(input::system);
+        self = self.insert_system(input::system);
+        self = self.insert_system(gui::system);
+        self = self.insert_system(ecs::system);
+        self = self.insert_system(world::system);
+        self = self.insert_system(|world| assets::system(world, user));        
         //assets::system(world.events(), user)
-
-        // Sort all the builtint events
-        let events = world.events();
-        events.sort::<Init>();
-        events.sort::<Update>();
-        events.sort::<WindowEvent>();
-        events.sort::<DeviceEvent>();
-
-        // Execute the init events
-        events.execute::<Init>(world);
 
         // Run le game engine
         //handler::run(el, self.updates, world);

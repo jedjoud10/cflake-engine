@@ -11,15 +11,22 @@ use world::Resource;
 #[derive(Resource)]
 pub struct Graphics(pub super::Device, pub super::Context);
 
+// These settings will be needed to be able to create the underlying graphics pipeline
+// This is a resource that will be automatically added onto the world by our main app
+pub struct GraphicsSetupSettings {
+    title: String,
+    size: vek::Extent2<u16>,
+    fullscreen: bool,
+    vsync: bool,
+}
+
 impl Graphics {
-    // Create some new graphics given a glutin event loop
-    pub fn new<T>(
-        el: EventLoop<T>,
-        title: String,
-        size: vek::Extent2<u16>,
-        fullscreen: bool,
-        vsync: bool,
-    ) -> (EventLoop<T>, Self) {
+    // Create a new graphics pipeline using the approriate settings
+    // This will be called internally by the system, and the system will simply pass the settings from the app
+    pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> Self {
+        // Decompose le struct
+        let GraphicsSetupSettings { title, size, fullscreen, vsync } = settings;
+
         // Build a valid window
         let wb = WindowBuilder::new()
             .with_resizable(true)
@@ -53,7 +60,7 @@ impl Graphics {
         println!("GPU Name: {}", device.name());
         println!("GPU Vendor: {}", device.vendor());
 
-        // Return the event loop along side the graphics pipeline
-        (el, Self(device, ctx))
+        // Return the new graphics pipeline
+        Self(device, ctx)
     }
 }
