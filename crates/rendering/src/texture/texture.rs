@@ -298,12 +298,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // Create a bindless handle for dynamic textures only (since dealing with resizable textures would be an absolute pain)
-            let bindless = if mode == TextureMode::Dynamic {
-                //super::create_bindless(ctx, tex, 200, mode)
-                None
-            } else {
-                None
-            };
+            let bindless = None;
 
             // Appply the sampling parameters for this texture
             // We do a bit of enum fetching (this is safe) (trust)

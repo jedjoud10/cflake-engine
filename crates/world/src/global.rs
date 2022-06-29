@@ -11,7 +11,7 @@ static INITIALIZED: AtomicBool = AtomicBool::new(false);
 // This global function will be used to initialize the Events and the World
 // This will be called by the main glutin handler, but it can only be called once
 pub fn setup() -> (World, Events) {
-    if INITIALIZED.load(Ordering::Relaxed) {
+    if !INITIALIZED.fetch_or(true, Ordering::Relaxed) {
         (
             // Create a single instance of the world
             World {
