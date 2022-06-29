@@ -1,7 +1,10 @@
-use std::any::{Any, TypeId};
-use ahash::AHashMap;
-use glutin::{event_loop::EventLoop, event::{WindowEvent, DeviceEvent}};
 use crate::World;
+use ahash::AHashMap;
+use glutin::{
+    event::{DeviceEvent, WindowEvent},
+    event_loop::EventLoop,
+};
+use std::any::{Any, TypeId};
 
 // I wrote this code at 2:42 am.
 // It looks like ass, I know, but it works
@@ -16,16 +19,12 @@ impl<M: Descriptor<'static>> Default for Container<M> {
     }
 }
 
-
-
 // This registry is a way for us to interface the internally stored boxed events without having to match the 'static lifetime
 pub struct Registry<'b, 'd, M: Descriptor<'d>>(&'b mut Vec<(Box<M::DynFunc>, i32)>);
 
 impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
     // Insert a new event with a stage offset
-    pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {
-
-    }
+    pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {}
 
     // Insert a new event with a specific raw offset
     pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, offset: i32) {
@@ -34,7 +33,10 @@ impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
     }
 
     // Execute all the events that are stored inside this registry
-    pub fn execute<'a>(self, params: <M as Caller<'d, 'a>>::Params) where M: Caller<'d, 'a> {
+    pub fn execute<'a>(self, params: <M as Caller<'d, 'a>>::Params)
+    where
+        M: Caller<'d, 'a>,
+    {
         M::call(self, params);
     }
 }
@@ -69,7 +71,7 @@ pub trait Event<'d, M: Descriptor<'d>, P> {
 pub struct Events {
     pub(crate) init: Container<Init>,
     pub(crate) update: Container<Update>,
-    pub(crate) window: Container<WindowEvent<'static>>,    
+    pub(crate) window: Container<WindowEvent<'static>>,
     pub(crate) device: Container<DeviceEvent>,
 }
 
@@ -113,7 +115,9 @@ impl<F: FnOnce(&mut World) + 'static> Event<'static, Init, &mut World> for F {
     }
 }
 
-impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static> Event<'static, Init, (&mut World, &EventLoop<()>)> for F {
+impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static>
+    Event<'static, Init, (&mut World, &EventLoop<()>)> for F
+{
     fn boxed(self) -> Box<<Init as Descriptor<'static>>::DynFunc> {
         Box::new(self)
     }
@@ -155,7 +159,10 @@ impl<'d> Descriptor<'d> for WindowEvent<'d> {
     }
 }
 
-impl<'d, 'p> Caller<'d, 'p> for WindowEvent<'d> where 'd: 'p {
+impl<'d, 'p> Caller<'d, 'p> for WindowEvent<'d>
+where
+    'd: 'p,
+{
     type Params = (&'p mut World, &'p mut WindowEvent<'d>);
 
     fn call(registry: Registry<'_, 'd, Self>, params: Self::Params) {
@@ -168,11 +175,13 @@ impl<'d, 'p> Caller<'d, 'p> for WindowEvent<'d> where 'd: 'p {
     }
 }
 
-impl<'d, F: Fn(&mut World, &WindowEvent<'_>) + 'static> Event<'d, WindowEvent<'d>, (&mut World, &WindowEvent<'_>)> for F {
+impl<'d, F: Fn(&mut World, &WindowEvent<'_>) + 'static>
+    Event<'d, WindowEvent<'d>, (&mut World, &WindowEvent<'_>)> for F
+{
     fn boxed(self) -> Box<<WindowEvent<'d> as Descriptor<'d>>::DynFunc> {
         Box::new(self)
     }
-} 
+}
 
 // Device event marker (called by glutin handler)
 impl Descriptor<'static> for DeviceEvent {
@@ -196,7 +205,9 @@ impl<'p> Caller<'static, 'p> for DeviceEvent {
     }
 }
 
-impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<'static, DeviceEvent, (&mut World, &DeviceEvent)> for F {
+impl<F: Fn(&mut World, &DeviceEvent) + 'static>
+    Event<'static, DeviceEvent, (&mut World, &DeviceEvent)> for F
+{
     fn boxed(self) -> Box<<DeviceEvent as Descriptor<'static>>::DynFunc> {
         Box::new(move |world, event| self(world, event))
     }

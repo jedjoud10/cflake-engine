@@ -17,7 +17,6 @@ pub fn setup() -> (World, Events) {
             World {
                 resources: Default::default(),
             },
-
             // Create a single instance of the events
             Events {
                 init: Default::default(),

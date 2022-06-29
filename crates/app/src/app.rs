@@ -93,7 +93,7 @@ impl App {
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
-        self = self.insert_system(|e: &mut Events| assets::system(e, user));        
+        self = self.insert_system(|e: &mut Events| assets::system(e, user));
 
         // Insert the graphics pipeline and everything rendering related
         let settings = GraphicsSetupSettings {

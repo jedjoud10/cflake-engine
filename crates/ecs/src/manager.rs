@@ -1,5 +1,5 @@
 use slotmap::SlotMap;
-use world::{Resource, Events, Update, World};
+use world::{Events, Resource, Update, World};
 
 use crate::{
     entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
@@ -143,7 +143,6 @@ impl EcsManager {
     }
     /* #endregion */
 }
-
 
 // Main system that will reset all the components states before we use the ECS manager
 pub fn system(event: &mut Events) {
