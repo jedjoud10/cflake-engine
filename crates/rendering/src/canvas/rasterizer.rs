@@ -2,12 +2,8 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
 use super::Canvas;
 use crate::{
-    buffer::ElementBuffer,
-    context::Context,
-    mesh::attributes::AttributeSet,
-    object::ToGlName,
-    others::Comparison,
-    prelude::{Uniforms},
+    buffer::ElementBuffer, context::Context, mesh::attributes::AttributeSet, object::ToGlName,
+    others::Comparison, prelude::Uniforms,
 };
 
 // Blend mode factor source

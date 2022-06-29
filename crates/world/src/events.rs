@@ -5,7 +5,6 @@ use glutin::{
     event_loop::EventLoop,
 };
 
-
 // I wrote this code at 2:42 am.
 // It looks like ass, I know, but it works
 // I sold my sold my soul to the devil

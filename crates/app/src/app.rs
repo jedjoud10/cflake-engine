@@ -1,6 +1,5 @@
-
 use glutin::event_loop::EventLoop;
-use rendering::{prelude::GraphicsSetupSettings};
+use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;
 use world::{Events, System, World};
 

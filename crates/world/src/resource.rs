@@ -1,10 +1,6 @@
 use crate::{FromWorld, ResourceError, World};
 
-use std::{
-    any::{Any},
-    marker::PhantomData,
-    ptr::NonNull,
-};
+use std::{any::Any, marker::PhantomData, ptr::NonNull};
 
 // A resource is some shared data that will be accessed by multiple systems
 // This resource cannot be removed from the systems. To be able to remove resources, we must implement the Removable trait as well

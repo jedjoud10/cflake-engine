@@ -10,7 +10,7 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{EcsManager};
+use ecs::EcsManager;
 use glutin::event_loop::EventLoop;
 use math::Transform;
 use world::{Events, Init, Storage, World};
@@ -77,14 +77,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let material = storage.insert(material);
 
     // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneRenderer::new(
-        black,
-        white.clone(),
-        white,
-        normal_map,
-        mask_map,
-        material,
-    );
+    let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material);
     world.insert(scene);
 }
 

@@ -3,7 +3,7 @@ use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
     marker::PhantomData,
-    mem::{ManuallyDrop},
+    mem::ManuallyDrop,
     ptr::NonNull,
     rc::Rc,
 };

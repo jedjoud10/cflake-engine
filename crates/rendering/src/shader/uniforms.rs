@@ -1,10 +1,6 @@
-
-
-
-
 use super::Program;
 use crate::{
-    object::{ToGlName},
+    object::ToGlName,
     texture::{Sampler, Texture},
 };
 
@@ -305,7 +301,11 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a texture sampler uniform
     // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
-    pub fn set_sampler<T: Texture>(&mut self, _name: &'static str, _sampler: Sampler<'uniforms, T>) {
+    pub fn set_sampler<T: Texture>(
+        &mut self,
+        _name: &'static str,
+        _sampler: Sampler<'uniforms, T>,
+    ) {
         /*
         unsafe {
             match sampler.0.bindless() {

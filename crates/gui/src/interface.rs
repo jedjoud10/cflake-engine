@@ -1,10 +1,7 @@
 use crate::painter::Painter;
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{
-    gl,
-    prelude::Graphics,
-};
+use rendering::{gl, prelude::Graphics};
 use world::{Events, Resource, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw

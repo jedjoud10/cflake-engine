@@ -1,7 +1,7 @@
 use crate::{Entry, Layout, Resource, ResourceError, System};
 use ahash::AHashMap;
 
-use std::{any::TypeId};
+use std::any::TypeId;
 
 // The world is a unique container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management

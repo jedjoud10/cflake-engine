@@ -1,13 +1,7 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{
-    any::TypeId,
-    collections::HashMap,
-    hash::BuildHasherDefault,
-    ptr::null,
-    rc::Rc,
-};
+use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
 
 use crate::material::{Material, MaterialRenderer};
 
