@@ -1,4 +1,4 @@
-use crate::{self as world, Events, Update};
+use crate::{self as world, Events};
 use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
@@ -102,7 +102,7 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the cleansing event
-    events.register_with::<Update>(cleanse, i32::MAX);
+    //events.register_with::<Update>(cleanse, i32::MAX);
 }
 
 // A storage is a way to keep certain values stored in memory without dropping them
