@@ -1,6 +1,6 @@
 use super::{Camera, SceneRenderer};
 use crate::{
-    context::{Context, Graphics},
+    context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
@@ -11,13 +11,18 @@ use crate::{
 
 use assets::Assets;
 use ecs::{added, modified, or, EcsManager};
+use glutin::event_loop::EventLoop;
 use math::Transform;
-use world::{Storage, World};
+use world::{Storage, World, Events, Init};
 
-// Initialization system that will setup the default textures and objects
-pub fn init(world: &mut World) {
-    // Get the graphics context
-    let Graphics(_device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+// This event will initialize a new graphics context and create the valid window
+// This will be called at the very start of the init of the engine
+fn init(world: &mut World, settings: GraphicsSetupSettings) {
+    // During initialization, the world always contains the Init resource
+    // This resource contains the global event loop and all informations that are needed for 
+
+    // Create a new graphics pipeline and insert it
+    let Graphics(device, ctx) = world.entry().or_insert(Graphics::new(settings, el));
 
     // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -72,7 +77,7 @@ pub fn init(world: &mut World) {
     let material = storage.insert(material);
 
     // Create the new scene renderer from these values and insert it into the world
-    let renderer = SceneRenderer::new(
+    let scene = SceneRenderer::new(
         black,
         white.clone(),
         white.clone(),
@@ -80,11 +85,12 @@ pub fn init(world: &mut World) {
         mask_map,
         material,
     );
-    world.insert(renderer);
+    world.insert(scene);
 }
 
-// Rendering system that will try to render the scene each frame
-pub fn rendering(world: &mut World) {
+// Rendering system that will try to render the 3D scene each frame
+// I am pretty proud of my material system tbh. Sick as hell fr fr
+fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
     let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
     let Graphics(_device, context) = graphics;
@@ -105,9 +111,14 @@ pub fn rendering(world: &mut World) {
         .collect::<Vec<_>>();
 }
 
-// Camera update system that will update the view matrix of perspective cameras
-pub fn cameras(world: &mut World) {
-    let (ecs, Graphics(device, _)) = world.get_mut::<(&mut EcsManager, &Graphics)>().unwrap();
+// Update system that will update the view matrix of the main perspective camera
+// The main camera entity is stored in the Scene renderer
+fn main_camera(world: &mut World) {
+    // Get the ecs, window, and scene renderer
+    let (ecs, Graphics(device, _), scene) = world.get_mut::<(&mut EcsManager, &Graphics, &SceneRenderer)>().unwrap();
+
+    // Fetch the main perspective camera
+
     let filter = or(modified::<Camera>(), modified::<Transform>());
     let query = ecs
         .try_query_with::<(&mut Camera, &Transform), _>(filter)
@@ -115,4 +126,9 @@ pub fn cameras(world: &mut World) {
     for (camera, transform) in query {
         camera.update(transform);
     }
+}
+
+// Main rendering system that will register the appropriate events
+pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
+    events.register_with::<Init>(|world: &mut World| { init(world, el, settings) }, i32::MIN);
 }
