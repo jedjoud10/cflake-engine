@@ -20,7 +20,7 @@ impl Asset<'static> for String {
         &["txt"]
     }
 
-    fn deserialize(bytes: CachedSlice, args: Self::Args) -> Self {
+    fn deserialize(bytes: CachedSlice, _args: Self::Args) -> Self {
         String::from_utf8(bytes.as_ref().to_vec()).unwrap()
     }
 }

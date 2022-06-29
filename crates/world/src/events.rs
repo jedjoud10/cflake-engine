@@ -1,10 +1,10 @@
 use crate::World;
-use ahash::AHashMap;
+
 use glutin::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
 };
-use std::any::{Any, TypeId};
+
 
 // I wrote this code at 2:42 am.
 // It looks like ass, I know, but it works
@@ -24,7 +24,7 @@ pub struct Registry<'b, 'd, M: Descriptor<'d>>(&'b mut Vec<(Box<M::DynFunc>, i32
 
 impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
     // Insert a new event with a stage offset
-    pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {}
+    pub fn insert<P>(&mut self, _event: impl Event<'d, M, P>) {}
 
     // Insert a new event with a specific raw offset
     pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, offset: i32) {

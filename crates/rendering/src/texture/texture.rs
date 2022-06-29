@@ -246,7 +246,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     type T: Texel;
     // Create a new texture that contains some data
     fn new(
-        ctx: &mut Context,
+        _ctx: &mut Context,
         mode: TextureMode,
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,

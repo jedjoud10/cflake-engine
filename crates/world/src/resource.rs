@@ -1,7 +1,7 @@
-use crate::{FromWorld, Layout, ResourceError, World};
-use ahash::AHashMap;
+use crate::{FromWorld, ResourceError, World};
+
 use std::{
-    any::{Any, TypeId},
+    any::{Any},
     marker::PhantomData,
     ptr::NonNull,
 };

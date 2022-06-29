@@ -26,7 +26,7 @@ pub fn system(events: &mut Events) {
     }
 
     // Glutin device event (called by handler when needed)
-    fn event(world: &mut World, data: &DeviceEvent) {}
+    fn event(_world: &mut World, _data: &DeviceEvent) {}
 
     // Register the events
     events.registry::<Init>().insert(init);

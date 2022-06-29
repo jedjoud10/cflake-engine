@@ -160,7 +160,7 @@ impl<M: Material> BatchRenderer<M> {
                 let _ = instance.instance();
 
                 // Set the material property block uniforms (only if the instance changes)
-                M::set_instance_properties(&instance, &mut uniforms, &property_block_resources);
+                M::set_instance_properties(instance, &mut uniforms, &property_block_resources);
             }
 
             // Draw the surface object using the current rasterizer pass

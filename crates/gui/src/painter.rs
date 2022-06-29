@@ -7,7 +7,7 @@ use rendering::canvas::{BlendMode, FaceCullMode, Factor, PrimitiveMode, RasterSe
 use rendering::context::{Context, Device};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::{MipMaps, Sampler, Uniforms};
+use rendering::prelude::{MipMaps};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -122,7 +122,7 @@ impl Painter {
         device: &mut Device,
         ctx: &mut Context,
         meshes: Vec<ClippedMesh>,
-        loader: &mut Assets,
+        _loader: &mut Assets,
         deltas: TexturesDelta,
     ) {
         // Update the main  fonttexture

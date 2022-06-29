@@ -4,7 +4,6 @@ use nohash_hasher::NoHashHasher;
 use std::{
     any::TypeId,
     collections::HashMap,
-    ffi::{CStr, CString},
     hash::BuildHasherDefault,
     ptr::null,
     rc::Rc,

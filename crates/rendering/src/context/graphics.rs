@@ -46,7 +46,7 @@ impl Graphics {
             .with_gl_debug_flag(true)
             .with_vsync(vsync)
             .with_gl(GlRequest::Latest)
-            .build_windowed(wb, &el)
+            .build_windowed(wb, el)
             .unwrap();
 
         // Split the context wrapper into the window and the raw OpenGL context

@@ -10,10 +10,10 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{added, modified, or, EcsManager};
+use ecs::{EcsManager};
 use glutin::event_loop::EventLoop;
 use math::Transform;
-use world::{Events, Init, Storage, Update, World};
+use world::{Events, Init, Storage, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -22,7 +22,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // This resource contains the global event loop and all informations that are needed for
 
     // Create a new graphics pipeline and insert it
-    let Graphics(device, ctx) = world.entry().or_insert(Graphics::new(settings, el));
+    let Graphics(_device, ctx) = world.entry().or_insert(Graphics::new(settings, el));
 
     // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -80,7 +80,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let scene = SceneRenderer::new(
         black,
         white.clone(),
-        white.clone(),
+        white,
         normal_map,
         mask_map,
         material,
@@ -115,7 +115,7 @@ fn rendering(world: &mut World) {
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
-    let (ecs, Graphics(device, _), scene) = world
+    let (ecs, Graphics(_device, _), scene) = world
         .get_mut::<(&mut EcsManager, &Graphics, &SceneRenderer)>()
         .unwrap();
 

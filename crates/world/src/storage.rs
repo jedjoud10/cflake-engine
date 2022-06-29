@@ -3,9 +3,7 @@ use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
     marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
-    num::NonZeroU32,
-    ops::Deref,
+    mem::{ManuallyDrop},
     ptr::NonNull,
     rc::Rc,
 };
@@ -92,7 +90,7 @@ pub struct StorageSetDescriptor {
 }
 
 // This is the main system that will "cleanse" the stored storages
-pub fn system(events: &mut Events) {
+pub fn system(_events: &mut Events) {
     // At the end of every frame, we cleanse ALL the storages
     fn cleanse(world: &mut World) {
         let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();

@@ -133,13 +133,13 @@ impl<'world> PropertyBlock<'world> for Standard {
 
     fn set_instance_properties<'u>(
         &'world self,
-        uniforms: &mut Uniforms<'u>,
+        _uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
     ) where
         'world: 'u,
     {
         // Decompose the fetched resource references
-        let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
+        let (_renderer, _albedo_maps, _normal_maps, _mask_maps) = resources;
         /*
         // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(

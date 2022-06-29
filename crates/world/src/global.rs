@@ -1,6 +1,5 @@
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Mutex,
 };
 
 use crate::{Events, World};

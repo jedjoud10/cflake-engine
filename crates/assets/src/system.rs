@@ -1,4 +1,4 @@
-use crate::{asset, persistent, Assets};
+use crate::{persistent, Assets};
 use std::path::PathBuf;
 use world::{Events, Init, World};
 

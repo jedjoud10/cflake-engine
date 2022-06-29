@@ -1,4 +1,4 @@
-use crate::{Events, World};
+use crate::{Events};
 
 // Systems are collections of multiple events that we insert onto the world
 // Systems can be added onto the current app using the insert_system method

@@ -1,7 +1,7 @@
 use crate::{Entry, Layout, Resource, ResourceError, System};
 use ahash::AHashMap;
-use glutin::event_loop::EventLoop;
-use std::{any::TypeId, sync::Once};
+
+use std::{any::TypeId};
 
 // The world is a unique container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management

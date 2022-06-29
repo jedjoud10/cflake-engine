@@ -4,7 +4,6 @@ use world::{Handle, Resource};
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
     prelude::{Ranged, Texture2D, RGBA},
-    shader::Shader,
 };
 
 type Image = Texture2D<RGBA<Ranged<u8>>>;

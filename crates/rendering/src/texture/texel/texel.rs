@@ -5,7 +5,7 @@ use vek::Vec4;
 use super::channels::*;
 use super::element::*;
 use crate::object::Shared;
-use paste::paste;
+
 use std::mem::size_of;
 
 // This trait defines the layout for a single texel that will be stored within textures1

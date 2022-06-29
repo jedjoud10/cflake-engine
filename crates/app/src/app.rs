@@ -1,8 +1,8 @@
-use crate::handler;
+
 use glutin::event_loop::EventLoop;
-use rendering::{context::Graphics, prelude::GraphicsSetupSettings};
+use rendering::{prelude::GraphicsSetupSettings};
 use std::path::PathBuf;
-use world::{Descriptor, Events, Init, System, Update, World};
+use world::{Events, System, World};
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {

@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{Bindless, ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode, RGBA};
+use super::{Bindless, ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},

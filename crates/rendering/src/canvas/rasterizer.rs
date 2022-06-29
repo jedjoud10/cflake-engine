@@ -7,7 +7,7 @@ use crate::{
     mesh::attributes::AttributeSet,
     object::ToGlName,
     others::Comparison,
-    prelude::{Program, Shader, Uniforms},
+    prelude::{Uniforms},
 };
 
 // Blend mode factor source

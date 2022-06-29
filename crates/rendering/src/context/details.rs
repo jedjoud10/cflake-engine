@@ -1,5 +1,5 @@
 use gl::types;
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{c_void, CStr};
 
 // Get a static string that calls the glGetString function with the input value "symbolic"
 // This must be called on the main thread (I think)
@@ -14,11 +14,11 @@ pub(crate) unsafe fn get_static_str(symbolic: u32) -> &'static str {
 pub(crate) extern "system" fn callback(
     source: types::GLenum,
     _type: types::GLenum,
-    id: types::GLuint,
+    _id: types::GLuint,
     severity: types::GLenum,
     length: types::GLsizei,
     ptr: *const types::GLchar,
-    user: *mut c_void,
+    _user: *mut c_void,
 ) {
     // Convert the source type to a user safe name
     let source = match source {
