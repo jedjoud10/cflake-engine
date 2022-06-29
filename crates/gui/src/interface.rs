@@ -94,8 +94,10 @@ pub fn system(events: &mut Events) {
     }
 
     // Register all the events
+    /*
     events.register::<Init>(init);
     events.register::<Update>(begin);
     events.register_with::<Update>(draw, i32::MAX);
     events.register::<WindowEvent>(window);
+    */
 }

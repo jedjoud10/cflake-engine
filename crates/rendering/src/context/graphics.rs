@@ -14,10 +14,10 @@ pub struct Graphics(pub super::Device, pub super::Context);
 // These settings will be needed to be able to create the underlying graphics pipeline
 // This is a resource that will be automatically added onto the world by our main app
 pub struct GraphicsSetupSettings {
-    title: String,
-    size: vek::Extent2<u16>,
-    fullscreen: bool,
-    vsync: bool,
+    pub title: String,
+    pub size: vek::Extent2<u16>,
+    pub fullscreen: bool,
+    pub vsync: bool,
 }
 
 impl Graphics {

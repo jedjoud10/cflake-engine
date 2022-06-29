@@ -7,20 +7,34 @@ use crate::World;
 // It looks like ass, I know, but it works
 // I sold my sold my soul to the devil
 
-// A registry is a specialized container that contains boxed functions/closures
-// Registries are categorized by their marker type's dynamic type (that is also a descriptor)
-pub struct Registry<'b, 'd, M: Descriptor<'d>>(&'b mut Vec<Box<M::DynFunc>>);
+// This is a simple container that will store all the boxed events that match a specific layout (the layout of the marker)
+pub(crate) struct Container<M: Descriptor<'static>>(Vec<(Box<M::DynFunc>, i32)>);
+
+impl<M: Descriptor<'static>> Default for Container<M> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
+
+
+// This registry is a way for us to interface the internally stored boxed events without having to match the 'static lifetime
+pub struct Registry<'b, 'd, M: Descriptor<'d>>(&'b mut Vec<(Box<M::DynFunc>, i32)>);
 
 impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
-    // Insert a new event closure/function into the registry
+    // Insert a new event with a stage offset
     pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {
-        // We do a massive amount of trolling
+
+    }
+
+    // Insert a new event with a specific raw offset
+    pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, offset: i32) {
         let boxed = event.boxed();
-        self.0.push(boxed);
+        self.0.push((boxed, offset));
     }
 
     // Execute all the events that are stored inside this registry
-    fn execute<'a>(self, params: <M as Caller<'d, 'a>>::Params) where M: Caller<'d, 'a> {
+    pub fn execute<'a>(self, params: <M as Caller<'d, 'a>>::Params) where M: Caller<'d, 'a> {
         M::call(self, params);
     }
 }
@@ -53,10 +67,10 @@ pub trait Event<'d, M: Descriptor<'d>, P> {
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
-    pub(crate) init: Vec<Box<<Init as Descriptor<'static>>::DynFunc>>,
-    pub(crate) update: Vec<Box<<Update as Descriptor<'static>>::DynFunc>>,
-    pub(crate) window: Vec<Box<<WindowEvent<'static> as Descriptor<'static>>::DynFunc>>,    
-    pub(crate) device: Vec<Box<<DeviceEvent as Descriptor<'static>>::DynFunc>>, 
+    pub(crate) init: Container<Init>,
+    pub(crate) update: Container<Update>,
+    pub(crate) window: Container<WindowEvent<'static>>,    
+    pub(crate) device: Container<DeviceEvent>,
 }
 
 impl Events {
@@ -74,7 +88,7 @@ impl Descriptor<'static> for Init {
     type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.init)
+        Registry(&mut events.init.0)
     }
 }
 
@@ -87,7 +101,7 @@ impl<'p> Caller<'static, 'p> for Init {
 
         let vec = std::mem::take(registry.0);
 
-        for boxed in vec {
+        for (boxed, _) in vec {
             boxed(world, el);
         }
     }
@@ -112,7 +126,7 @@ impl Descriptor<'static> for Update {
     type DynFunc = dyn Fn(&mut World);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.update)
+        Registry(&mut events.update.0)
     }
 }
 
@@ -120,7 +134,7 @@ impl<'p> Caller<'static, 'p> for Update {
     type Params = &'p mut World;
 
     fn call(registry: Registry<'_, 'static, Self>, params: Self::Params) {
-        for boxed in registry.0.iter() {
+        for (boxed, _) in registry.0.iter() {
             boxed(params);
         }
     }
@@ -137,18 +151,18 @@ impl<'d> Descriptor<'d> for WindowEvent<'d> {
     type DynFunc = dyn Fn(&mut World, &WindowEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'd, Self> {
-        Registry(&mut events.window)
+        Registry(&mut events.window.0)
     }
 }
 
 impl<'d, 'p> Caller<'d, 'p> for WindowEvent<'d> where 'd: 'p {
-    type Params = (&'p mut World, &'p WindowEvent<'d>);
+    type Params = (&'p mut World, &'p mut WindowEvent<'d>);
 
     fn call(registry: Registry<'_, 'd, Self>, params: Self::Params) {
         let world = params.0;
         let ev = params.1;
 
-        for event in registry.0.iter() {
+        for (event, _) in registry.0.iter() {
             event(world, ev);
         }
     }
@@ -165,7 +179,7 @@ impl Descriptor<'static> for DeviceEvent {
     type DynFunc = dyn Fn(&mut World, &DeviceEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.device)
+        Registry(&mut events.device.0)
     }
 }
 
@@ -176,7 +190,7 @@ impl<'p> Caller<'static, 'p> for DeviceEvent {
         let world = params.0;
         let event = params.1;
 
-        for boxed in registry.0.iter() {
+        for (boxed, _) in registry.0.iter() {
             boxed(world, event);
         }
     }

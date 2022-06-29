@@ -2,9 +2,9 @@ use cflake_engine::prelude::*;
 
 // Example that will try to render a simple 3D cube
 fn main() {
-    App::default().insert_system(system).execute();
+//    App::default().insert_system(system).execute();
 }
-
+/*
 fn system(events: &Events) {
     events.register::<Init>(init);
 }
@@ -16,6 +16,7 @@ fn init(world: &mut World) {
         .get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>()
         .unwrap();
 }
+*/
 /*
 // Init the simple camera and simple mesh
 fn init(world: &mut World) {

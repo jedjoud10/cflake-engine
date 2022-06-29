@@ -1,6 +1,6 @@
 use crate::handler;
 use glutin::event_loop::EventLoop;
-use rendering::context::Graphics;
+use rendering::{context::Graphics, prelude::GraphicsSetupSettings};
 use std::path::PathBuf;
 use world::{Descriptor, Events, Init, System, Update, World};
 
@@ -15,11 +15,10 @@ pub struct App {
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
 
-    // These are the events that will contained within the world
+    // Main app resources
     events: Events,
-
-    // This is the main world that is instantiated once
     world: World,
+    el: EventLoop<()>,
 }
 
 impl Default for App {
@@ -34,6 +33,7 @@ impl Default for App {
             vsync: false,
             user_assets_folder: None,
             events,
+            el: EventLoop::new(),
             world,
         }
     }
@@ -83,15 +83,26 @@ impl App {
 
     // Consume the App builder, and start the engine window
     pub fn execute(mut self) {
-        // Prepare the event loop
-        let el = EventLoop::new();
+        // Insert all the builtin systems dataless
+        self = self
+            .insert_system(input::system)
+            .insert_system(gui::system)
+            .insert_system(ecs::system)
+            .insert_system(time::system)
+            .insert_system(world::system);
 
-        // Insert all the builtin systems
-        self = self.insert_system(input::system);
-        self = self.insert_system(gui::system);
-        self = self.insert_system(ecs::system);
-        self = self.insert_system(world::system);
-        self = self.insert_system(|world| assets::system(world, user));        
+        // Insert the asset loader
+        let user = self.user_assets_folder.take();
+        self = self.insert_system(|e: &mut Events| assets::system(e, user));        
+
+        // Insert the graphics pipeline and everything rendering related
+        let settings = GraphicsSetupSettings {
+            title: self.title.clone(),
+            size: self.screensize,
+            fullscreen: self.fullscreen,
+            vsync: self.vsync,
+        };
+        self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
         //assets::system(world.events(), user)
 
         // Run le game engine

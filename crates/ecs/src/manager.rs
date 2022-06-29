@@ -1,5 +1,5 @@
 use slotmap::SlotMap;
-use world::Resource;
+use world::{Resource, Events, Update, World};
 
 use crate::{
     entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
@@ -142,4 +142,19 @@ impl EcsManager {
         valid.then(|| filtered(&self.archetypes, filter))
     }
     /* #endregion */
+}
+
+
+// Main system that will reset all the components states before we use the ECS manager
+pub fn system(event: &mut Events) {
+    fn clear(world: &mut World) {
+        let ecs = world.get_mut::<&mut EcsManager>().unwrap();
+        for (_, archetype) in ecs.archetypes() {
+            archetype.states().reset();
+        }
+    }
+
+    /*
+    event.registry::<Update>().insert_with(clear, 0);
+    */
 }
