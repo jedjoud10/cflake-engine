@@ -120,20 +120,15 @@ fn main_camera(world: &mut World) {
     // Fetch the main perspective camera from the scene renderer
     let entity = scene.main_camera().unwrap();
     let entry = ecs.try_entry(entity).unwrap();
+
+    // Fetch it's components, and update them
     let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &Transform)>().unwrap();
-
-
-    let filter = or(modified::<Camera>(), modified::<Transform>());
-    let query = ecs
-        .try_query_with::<(&mut Camera, &Transform), _>(filter)
-        .unwrap();
-    for (camera, transform) in query {
-        camera.update(transform);
-    }
+    camera.update(transform);
 }
 
 // Main rendering system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     events.register_with::<GlutinInit>(|world: &mut World, el: &EventLoop<()>| { init(world, settings, el) }, i32::MIN);
-    events.register::<Update>()
+    events.register::<Update>(main_camera);
+    events.register_with::<Update>(rendering, Stage::after("rendering"))
 }
