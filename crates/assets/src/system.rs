@@ -6,7 +6,7 @@ use world::{Events, Init, World};
 // This system will also insert the GlobalPaths resource into the world
 pub fn system(events: &mut Events, user: Option<PathBuf>) {
     // Insert the asset loader and load the default assets
-    events.register::<Init>(move |world: &mut World| {
+    events.registry::<Init>().insert(move |world: &mut World| {
         // Create a new asset loader / cacher
         let mut loader = Assets::new(user.clone());
 

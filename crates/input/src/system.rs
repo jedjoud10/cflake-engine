@@ -29,6 +29,6 @@ pub fn system(events: &mut Events) {
     fn event(world: &mut World, data: &DeviceEvent) {}
 
     // Register the events
-    events.register::<Init>(init);
-    events.register::<DeviceEvent>(event);
+    events.registry::<Init>().insert(init);
+    events.registry::<DeviceEvent>().insert(event);
 }
