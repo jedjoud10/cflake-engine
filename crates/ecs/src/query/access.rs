@@ -18,9 +18,15 @@ impl LayoutAccess {
     pub fn reading(&self) -> Mask {
         self.0
     }
+
     // Get the writing mask
     pub fn writing(&self) -> Mask {
         self.1
+    }
+
+    // Reading AND writing masks combined
+    pub fn both(&self) -> Mask {
+        self.reading() | self.writing()
     }
 }
 

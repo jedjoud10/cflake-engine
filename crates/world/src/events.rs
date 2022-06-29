@@ -42,6 +42,8 @@ pub trait IntoSlot<F: ?Sized> {
 // Events are only defined internally, and the user cannot create implementations of their own events
 pub struct Events {
     pub(crate) init: Vec<Slot<dyn FnOnce(&mut World)>>,
+    // TODO: Fix traits so we can describe this closure directly
+    pub(crate) glutin_init: Vec<Slot<dyn FnOnce(&mut World, &EventLoop<()>)>>,
     pub(crate) update: Vec<Slot<dyn Fn(&mut World)>>,
     pub(crate) window: Vec<Slot<dyn Fn(&mut World, &WindowEvent)>>,
     pub(crate) device: Vec<Slot<dyn Fn(&mut World, &DeviceEvent)>>,
@@ -70,9 +72,10 @@ impl Events {
 
         // Sort all of the vectors
         sort(&mut self.init);
+        sort(&mut self.glutin_init);
         sort(&mut self.update);
         sort(&mut self.window);
-        sort(&mut self.device)
+        sort(&mut self.device);
     }
 
     // This will execute all the events of a specific type
@@ -112,6 +115,44 @@ impl<'a> Descriptor<'a> for Init {
 
         for Slot { boxed, .. } in vec {
             boxed(params);
+        }
+    }
+}
+
+// Glutin init (takes event loop as well)
+pub struct GlutinInit(());
+
+impl<F> IntoSlot<dyn FnOnce(&mut World, &EventLoop<()>)> for F
+where
+    F: FnOnce(&mut World, &EventLoop<()>) + 'static,
+{
+    fn into_slot(self, priority: i32) -> Slot<dyn FnOnce(&mut World, &EventLoop<()>)> {
+        Slot {
+            boxed: Box::new(self),
+            priority,
+        }
+    }
+}
+
+impl Marker for GlutinInit {
+    type F = dyn FnOnce(&mut World, &EventLoop<()>);
+
+    fn insert(slot: Slot<Self::F>, events: &mut Events) {
+        events.glutin_init.push(slot);
+    }
+}
+
+impl<'a> Descriptor<'a> for GlutinInit {
+    type Params = (&'a mut World, &'a EventLoop<()>);
+
+    fn call_all(events: &mut Events, params: Self::Params) {
+        let world = params.0;
+        let el = params.1;
+
+        let vec = std::mem::take(&mut events.glutin_init);
+
+        for Slot { boxed, .. } in vec {
+            boxed(world, el);
         }
     }
 }

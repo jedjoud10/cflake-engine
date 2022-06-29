@@ -13,7 +13,7 @@ use assets::Assets;
 use ecs::{added, modified, or, EcsManager};
 use glutin::event_loop::EventLoop;
 use math::Transform;
-use world::{Storage, World, Events, Init};
+use world::{Storage, World, Events, Init, GlutinInit, Update};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -117,7 +117,11 @@ fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let (ecs, Graphics(device, _), scene) = world.get_mut::<(&mut EcsManager, &Graphics, &SceneRenderer)>().unwrap();
 
-    // Fetch the main perspective camera
+    // Fetch the main perspective camera from the scene renderer
+    let entity = scene.main_camera().unwrap();
+    let entry = ecs.try_entry(entity).unwrap();
+    let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &Transform)>().unwrap();
+
 
     let filter = or(modified::<Camera>(), modified::<Transform>());
     let query = ecs
@@ -130,5 +134,6 @@ fn main_camera(world: &mut World) {
 
 // Main rendering system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
-    events.register_with::<Init>(|world: &mut World, el: &EventLoop<()>| { init(world, settings, el) }, i32::MIN);
+    events.register_with::<GlutinInit>(|world: &mut World, el: &EventLoop<()>| { init(world, settings, el) }, i32::MIN);
+    events.register::<Update>()
 }

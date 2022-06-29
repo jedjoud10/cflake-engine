@@ -142,8 +142,4 @@ impl EcsManager {
         valid.then(|| filtered(&self.archetypes, filter))
     }
     /* #endregion */
-
-    /* #region Parallel thread queries (with the help of rayon) */
-    // TODO: Actually write this
-    /* #endregion */
 }

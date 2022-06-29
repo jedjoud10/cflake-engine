@@ -12,16 +12,19 @@ static INITIALIZED: AtomicBool = AtomicBool::new(false);
 // This will be called by the main glutin handler, but it can only be called once
 pub fn setup() -> (World, Events) {
     if INITIALIZED.load(Ordering::Relaxed) {
-        // Create the world and event manager
         (
+            // Create a single instance of the world
             World {
                 resources: Default::default(),
             },
+
+            // Create a single instance of the events
             Events {
                 init: Default::default(),
                 update: Default::default(),
                 window: Default::default(),
                 device: Default::default(),
+                glutin_init: Default::default(),
             },
         )
     } else {

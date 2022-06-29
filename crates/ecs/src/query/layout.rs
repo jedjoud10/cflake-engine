@@ -16,6 +16,7 @@ where
     type Tuple: 'static;
 
     // Get the pointer tuple from an archetype
+    // This assumes that the archetype contains said pointers
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple;
 
     // Get the final layout access masks
