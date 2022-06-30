@@ -6,6 +6,7 @@ use ahash::{AHashMap, AHashSet};
 type Key = &'static str;
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
+#[derive(Debug, Clone, Copy)]
 enum Rule {
     Before(Key),
     After(Key)
@@ -18,28 +19,23 @@ pub struct Stage {
 
     // Rules that apply to this stage
     rules: Vec<Rule>,
-
-    // Current stage group. Becomes None if we have any rules
-    level: Option<usize>,
 }
 
 impl Stage {
     // Create a stage that will execute anytime, since it has no rules
     pub fn new(name: impl Into<Key>) -> Self {
-        Self { name: name.into(), rules: Default::default(), level: Some(0) }
+        Self { name: name.into(), rules: Default::default()}
     }
 
     // Add a rule to this stage hinting it that it should execute before other
     pub fn before(mut self, other: impl Into<Key>) -> Self {
         self.rules.push(Rule::Before(other.into()));
-        self.level = None;
         self
     }
 
     // Add a rule to this stage hinting it that it should execute after other
     pub fn after(mut self, other: impl Into<Key>) -> Self {
         self.rules.push(Rule::After(other.into()));
-        self.level = None;
         self
     }
 
@@ -52,16 +48,67 @@ impl Stage {
 
 // Calculate all the priority indices of the stages and sort them automatically
 fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
-    // Make sure there are no duplicates, and index by name 
-    let map: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|stage| (stage.name, stage)));
+    // A node is each element inside the tree
+    // Each node can have a parent, and some Rule that links it to it
+    struct Node {
+        // The user defined name for this stage (node)
+        name: Key,
+
+        // Current rules that depict how this node is connected to it's parent
+        rules: Vec<Rule>,
+
+        // The children nodes that might be connected to this node
+        children: Vec<Key>,
+    }
+
+    impl Node {
+        // Create a default node with a name
+        fn new(name: Key) -> Self {
+            Self { name, rules: Vec::new(), children: Vec::new()  }
+        }
+    }
+
+    // Check if we have any duplicate stages
+    let dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
+    let vec = dedupped.into_iter().map(|(_, stage)| stage).collect::<Vec<_>>();
+
+    // We must first convert all the stages into a tree like structure with nodes
+    let mut nodes: AHashMap<Key, Node> = AHashMap::new();
+
+    // Convert all the nodes, going in arbitrary order
+    for stage in vec {
+        // Insert the node into the tree once, but keep updating it
+        let node = nodes.entry(stage.name).or_insert_with(|| Node::new(stage.name));
+        node.rules = stage.rules.clone();
+
+        // For each rule, insert it's respective parent node
+        for rule in stage.rules {
+            // Get the parent name
+            let parent = match rule {
+                Rule::Before(p) => p,
+                Rule::After(p) => p,
+            };
+
+            // Insert the parent node with placeholder data for now
+            let entry = nodes.entry(parent).or_insert_with(|| Node::new(parent));
+            entry.children.push(stage.name);
+        }
+    }  
+
+
+    for (name, node) in nodes.iter() {
+        dbg!(name);
+        dbg!(&node.children);
+        dbg!(&node.rules);
+    }
+    
+
+    /*
+
 
     // This is the list of nodes that we must evaluate
     let mut eval: Vec<Key> = Vec::new();
 
-    // Evaluate the nodes that don't have any rules first
-    for node in map.values().filter(|s| Stage::free(s)) {
-        eval.push(node.name);
-    }
 
     // A multidimensional registry to contain all the levels and nodes
     let mut levels: Vec<Vec<Key>> = Vec::new();
@@ -88,7 +135,7 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
 
                 // We must now evaluate the nodes that use the current node, aka the children
             } else {
-                //insert_key(node.name, )
+                insert_key(node.name, )
 
                 // We have multiple rules, so we must restrict our node
                 for rule in node.rules.iter() {
@@ -107,6 +154,16 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
 
         }
     }
+    */
 
     Vec::new()
+}
+
+
+#[test]
+fn test() {
+    let node1 = Stage::new("main").after("mycock");
+    let node2 = Stage::new("substage").after("main");
+    let node3 = Stage::new("sub-substage").before("main");
+    evaluate(vec![node1, node2, node3]);
 }
