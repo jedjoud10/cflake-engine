@@ -10,6 +10,7 @@ type Key = &'static str;
 enum Rule {
     Before(Key),
     After(Key)
+    Between(Key, Key),
 }
 
 // Stages are are a way for us to sort and prioritize certain events before others
@@ -48,113 +49,9 @@ impl Stage {
 
 // Calculate all the priority indices of the stages and sort them automatically
 fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
-    // A node is each element inside the tree
-    // Each node can have a parent, and some Rule that links it to it
-    struct Node {
-        // The user defined name for this stage (node)
-        name: Key,
-
-        // Current rules that depict how this node is connected to it's parent
-        rules: Vec<Rule>,
-
-        // The children nodes that might be connected to this node
-        children: Vec<Key>,
-    }
-
-    impl Node {
-        // Create a default node with a name
-        fn new(name: Key) -> Self {
-            Self { name, rules: Vec::new(), children: Vec::new()  }
-        }
-    }
-
     // Check if we have any duplicate stages
     let dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
     let vec = dedupped.into_iter().map(|(_, stage)| stage).collect::<Vec<_>>();
-
-    // We must first convert all the stages into a tree like structure with nodes
-    let mut nodes: AHashMap<Key, Node> = AHashMap::new();
-
-    // Convert all the nodes, going in arbitrary order
-    for stage in vec {
-        // Insert the node into the tree once, but keep updating it
-        let node = nodes.entry(stage.name).or_insert_with(|| Node::new(stage.name));
-        node.rules = stage.rules.clone();
-
-        // For each rule, insert it's respective parent node
-        for rule in stage.rules {
-            // Get the parent name
-            let parent = match rule {
-                Rule::Before(p) => p,
-                Rule::After(p) => p,
-            };
-
-            // Insert the parent node with placeholder data for now
-            let entry = nodes.entry(parent).or_insert_with(|| Node::new(parent));
-            entry.children.push(stage.name);
-        }
-    }  
-
-
-    for (name, node) in nodes.iter() {
-        dbg!(name);
-        dbg!(&node.children);
-        dbg!(&node.rules);
-    }
-    
-
-    /*
-
-
-    // This is the list of nodes that we must evaluate
-    let mut eval: Vec<Key> = Vec::new();
-
-
-    // A multidimensional registry to contain all the levels and nodes
-    let mut levels: Vec<Vec<Key>> = Vec::new();
-
-    // Push a new key into the levels
-    fn insert_key(key: Key, idx: usize, levels: &mut Vec<Vec<Key>>) {
-        if levels.len() < (idx + 1) {
-            levels.push(Vec::new());
-        } else {
-            let level = &mut levels[idx];
-            level.push(key);
-        }
-    }
-
-    // Recursively evaluate the nodes
-    loop {
-        for name in eval.drain(..) {
-            // Try to insert the node into the proper levels
-            let node = &map[name];
-
-            // Check if the node has rules
-            if node.free() {
-                insert_key(node.name, 0, &mut levels);
-
-                // We must now evaluate the nodes that use the current node, aka the children
-            } else {
-                insert_key(node.name, )
-
-                // We have multiple rules, so we must restrict our node
-                for rule in node.rules.iter() {
-                    match rule {
-                        Rule::Before(other) => {
-                            // Check if the current node position is on the same level as other
-                            //    if it is, then make a new level before the leve of other and swap
-                            // Move the node before other                            
-                        },
-                        Rule::After(other) => {
-
-                        },
-                    }
-                }
-            }
-
-        }
-    }
-    */
 
     Vec::new()
 }
