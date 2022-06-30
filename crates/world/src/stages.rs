@@ -7,36 +7,12 @@ type Key = &'static str;
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
 #[derive(Debug, Clone, Copy)]
-pub enum Rule {
+enum Rule {
     // This hints that the stage should be executed before other
     Before(Key),
 
     // This hints that the stage should be executed after other
     After(Key),
-
-    // This hints that the stage should be executed after A but before B
-    Bounded(Key, Key),
-}
-
-impl Rule {
-    // Create the before rule
-    pub fn before(other: Key) -> Self {
-        Self::Before(other)
-    }
-    
-    // Create the after rule
-    pub fn after(other: Key) -> Self {
-        Self::After(other)
-    }
-
-    // Check if the rules contain any of these names
-    fn contains(&self, name: Key) -> bool {
-        match *self {
-            Rule::Before(p) => p == name,
-            Rule::After(p) => p == name,
-            Rule::Bounded(a, b) => a == name || b == name,
-        }
-    }
 }
 
 // Stages are are a way for us to sort and prioritize certain events before others
@@ -44,23 +20,26 @@ pub struct Stage {
     // The user defined name of the current stage
     name: Key,
 
-    // Stages can only have one rule (max)
-    rule: Option<Rule>,
+    // Rules that restrict this stage
+    rules: Vec<Rule>,
 }
 
 impl Stage {
-    // Create a stage with no rules whatsoever
+    // Create a stage with no rules. It is a free stage
     pub fn new(name: impl Into<Key>) -> Self {
-        Self { name: name.into(), rule: None }
+        Self { name: name.into(), rules: Vec::default() }
     }
 
-    // Create a stage with a single rule (before or after)
-    pub fn strict(name: impl Into<Key> + Clone, rule: Rule) -> Self {
-        if rule.contains(name.clone().into()) {
-            panic!()
-        }
+    // Add a "before" rule to the current stage
+    pub fn before(mut self, other: impl Into<Key>) -> Self {
+        self.rules.push(Rule::Before(other.into()));
+        self
+    }
 
-        Self { name: name.into(), rule: Some(rule) }
+    // Add a "after" rule to the current stage
+    pub fn after(mut self, other: impl Into<Key>) -> Self {
+        self.rules.push(Rule::After(other.into()));
+        self
     }
 }
 
@@ -70,6 +49,9 @@ const GAP: i32 = 4096;
 // Number of maximum calculations allowed before we detect a cyclic references
 const CYCLIC_REFERENCE_THRESHOLD: usize = 8;
 
+// Number of maximum iterations allowed before we detect a cyclic reference from within the rules
+const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
+
 // Calculate all the priority indices of the stages and sort them automatically
 fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
     // Convert the vector into a hashmap (this removes any duplicates)
@@ -77,87 +59,78 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
     
     // This map contains all the priority indices that we will need for sorting
     let mut priorities: AHashMap<Key, i32> = AHashMap::default();
-    let mut depths: AHashMap<Key, u32> = AHashMap::default();
 
     // Calculate the priority index and the depth level for a single node
-    fn calc(key: Key, dedupped: &AHashMap<Key, Stage>, priorities: &mut AHashMap<Key, i32>, depths: &mut AHashMap<Key, u32>, iterdepth: usize) -> (i32, u32) {
+    fn calc(key: Key, dedupped: &AHashMap<Key, Stage>, priorities: &mut AHashMap<Key, i32>, iterdepth: usize) -> i32 {
         // Check for cyclic references, and panic if found
         if iterdepth > CYCLIC_REFERENCE_THRESHOLD {
-            panic!("Cyclic reference found")
+            panic!("Cyclic reference detected")
         }
 
         // Check if it has any rules associated with it
         let stage = &dedupped[key];
-        let rule = stage.rule.as_ref();
+        let rules = stage.rules.as_slice();
 
         // Get the cached priorities if needed
         if priorities.contains_key(key) {
-            println!("Fetching cached priority. {}", priorities[key]);
-            return (priorities[key], depths[key]);
+            println!("Fetching cached priority. {key} {}", priorities[key]);
+            return priorities[key];
         } else {            
             println!("Calculating priority for stage: {}", key);
+
             // Caclulate the stage priority manually now
-            if let Some(rule) = rule {
-                // Parent data rules
-                // I32 indicates the priority
-                // U32 indicates the depth
-                enum RuleData {
-                    Before((i32, u32)),
-                    After((i32, u32)),
-                    Bounded {
-                        parent_a: (i32, u32),
-                        parent_b: (i32, u32),
-                    },
+            if !rules.is_empty() {
+                // Restrict the current node priority using the rules
+                let mut priority = 0;
+                let mut changed = true;
+                let mut i = 0;
+                let mut count = 0;
+
+                while changed {
+                    changed = false;
+                    match rules[i] {
+                        Rule::Before(parent) => {
+                            let pp = calc(parent, dedupped, priorities, iterdepth + 1);
+                            println!("parent: {parent}, pp: {pp}");
+                            if priority >= pp {
+                                priority = pp - GAP;
+                                changed = true;
+                            }
+                        },
+                        Rule::After(parent) => {
+                            let pp = calc(parent, dedupped, priorities, iterdepth + 1);
+                            if priority <= pp {
+                                priority = pp + GAP;
+                                changed = true;
+                            }
+                        },
+                    }
+
+                    i = (i + 1) % rules.len();
+                    count += 1;
+
+                    if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
+                        panic!("Rule cyclic reference detected");
+                    }
                 }
 
-                // Fetch the priorities of the parents
-                let pp = match rule {
-                    Rule::Before(p) => RuleData::Before(calc(p, dedupped, priorities, depths, iterdepth+1)),
-                    Rule::After(p) => RuleData::After(calc(p, dedupped, priorities, depths, iterdepth+1)),
-                    Rule::Bounded(a, b) => RuleData::Bounded {
-                        parent_a: calc(a, dedupped, priorities, depths, iterdepth+1),
-                        parent_b: calc(b, dedupped, priorities, depths, iterdepth+1),
-                    },
-                };
-
-                // Check if the RuleData::Bounded is valid (B > A)
-                if let RuleData::Bounded { parent_a, parent_b } = pp {
-                    assert!(parent_b.0 > parent_a.0, "Bounds not valid");
-                }
-                
-                // Calcualte priority AND depth at the same time for the current node
-                let (priority, depth) = match pp {
-                    RuleData::Before((priority, depth)) => {
-                        (priority - (GAP / (depth + 1) as i32), depth + 1)
-                    },
-                    RuleData::After((priority, depth)) => {
-                        (priority + (GAP / (depth + 1) as i32), depth + 1)
-                    },
-                    RuleData::Bounded { parent_a: (pa, da), parent_b: (pb, db) } => {
-                        ((pa + pb) / 2, db.max(da) + 1)
-                    },
-                };
-
-                // Update the values internally
+                // Update the priority and depth values
                 priorities.insert(key, priority);
-                depths.insert(key, depth);
             } else {
                 println!("Current stage is a free stage, priority = 0");
                 // Free nodes have a priority of zero
                 priorities.insert(key, 0);
-                depths.insert(key, 0);
             }
 
-            // Fetch the new priority and updated depth again
+            // Fetch the new priority again
             println!("p[{key}] = {}", priorities[key]);
-            println!("d[{key}] = {}", depths[key]);
-            (priorities[key], depths[key])
+            priorities[key]
         }
     }
 
     // Calculate the priorities of all stages
     for stage in dedupped.values() {
-        calc(stage.name, &dedupped, &mut priorities, &mut depths, 0);
+        calc(stage.name, &dedupped, &mut priorities, 0);
     }
 
     // Convert all the maps to a singular vector, and sort them
@@ -179,10 +152,11 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
 #[test]
 fn test() {
     let node1 = Stage::new("main");
-    let input = Stage::strict("input", Rule::Before("main"));
-    let rendering = Stage::strict("rendering", Rule::After("input"));
-    let inject = Stage::strict("injected", Rule::Bounded("input", "rendering"));
-    let sorted = evaluate(vec![node1, input, rendering, inject]);
+    let input = Stage::new("input").before("main");
+    let rendering = Stage::new("rendering").after("input");
+    let inject = Stage::new("injected").before("rendering").after("input");
+    let after = Stage::new("after").after("injected");
+    let sorted = evaluate(vec![after, node1, input, rendering, inject]);
 
     for stage in sorted {
         dbg!(stage.name);
