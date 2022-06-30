@@ -108,7 +108,6 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
 
                     i = (i + 1) % rules.len();
                     count += 1;
-
                     if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
                         panic!("Rule cyclic reference detected");
                     }
