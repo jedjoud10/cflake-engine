@@ -1,4 +1,4 @@
-use std::{ops::{Bound, RangeBounds, RangeFull, Range}, collections::HashMap, rc::Rc};
+use std::ops::{Bound, RangeBounds, RangeFull};
 
 use ahash::{AHashMap, AHashSet};
 
@@ -42,32 +42,26 @@ impl Stage {
         self
     }
 }
-// Number of maximum calculations allowed before we detect a cyclic references
-const CYCLIC_REFERENCE_THRESHOLD: usize = 8;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 
-// This will sort the stages based on their rules 
+// Calculate all the priority indices of the stages and sort them automatically
 fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
-    enum BoxedRule {
-        Before(Rc<Node>),
-        After(Rc<Node>),
-    }
-    
-    struct Node {
-        name: Key,
-        rules: Vec<BoxedRule>,
-    }
+    // Convert the vector into a hashmap (this removes any duplicates)
+    let dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
+
 }
+
 
 #[test]
 fn test() {
-    let other = Stage::new("test").before("input");
     let node1 = Stage::new("main");
     let input = Stage::new("input").before("main");
-    let rendering = Stage::new("renering").after("input").after("main");
-    let sorted = evaluate(vec![other, node1, input, rendering]);
+    let rendering = Stage::new("rendering").after("input");
+    let inject = Stage::new("injected").before("rendering").after("input");
+    let after = Stage::new("after").after("injected").after("rendering");
+    let sorted = evaluate(vec![after, node1, input, rendering, inject]);
 
     for stage in sorted {
         dbg!(stage.name);
