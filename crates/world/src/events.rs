@@ -1,4 +1,4 @@
-use crate::World;
+use crate::{World, Stage, StageError};
 
 use glutin::{
     event::{DeviceEvent, WindowEvent},
@@ -10,25 +10,49 @@ use glutin::{
 // I sold my sold my soul to the devil
 
 // This is a simple container that will store all the boxed events that match a specific layout (the layout of the marker)
-pub(crate) struct Container<M: Descriptor<'static>>(Vec<(Box<M::DynFunc>, i32)>);
+// Events can be sorted or unsorted. Unsorted events will be executed first
+pub(crate) struct Container<M: Descriptor<'static>> {
+    sorted: Vec<(Box<M::DynFunc>, Stage)>,
+    unsorted: Vec<Box<M::DynFunc>>
+}
 
 impl<M: Descriptor<'static>> Default for Container<M> {
     fn default() -> Self {
-        Self(Default::default())
+        Self {
+            sorted: Default::default(),
+            unsorted: Default::default(),
+        }
     }
 }
 
 // This registry is a way for us to interface the internally stored boxed events without having to match the 'static lifetime
-pub struct Registry<'b, 'd, M: Descriptor<'d>>(&'b mut Vec<(Box<M::DynFunc>, i32)>);
+pub struct Registry<'b, 'd, M: Descriptor<'d>> {
+    sorted: &'b mut Vec<(Box<M::DynFunc>, Stage)>,
+    unsorted: &'b mut Vec<Box<M::DynFunc>>,
+}
 
-impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
-    // Insert a new event with a stage offset
-    pub fn insert<P>(&mut self, _event: impl Event<'d, M, P>) {}
-
-    // Insert a new event with a specific raw offset
-    pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, offset: i32) {
+impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {    
+    // Insert a new event without sorting it whatsoever
+    pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {
         let boxed = event.boxed();
-        self.0.push((boxed, offset));
+        self.unsorted.push(boxed);
+    }    
+
+    // Insert a new event with a stage that will sort it later
+    pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, stage: Stage) {
+        let boxed = event.boxed();
+        self.sorted.push((boxed, stage))
+    }
+
+    // Sort the vector that must sorted using the current inputted stages
+    pub fn sort(&mut self) -> Result<(), StageError> {
+        let indices = crate::sort(self.sorted.iter().map(|(_, stage)| stage.clone()).collect())?;
+
+        // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
+        self.sorted.sort_unstable_by(|(_, a), (_, b)| usize::cmp(&indices[a.name()],& indices[b.name()]));
+
+        // 3x POUNCES ON YOU UWU YOU'RE SO WARM
+        Ok(())
     }
 
     // Execute all the events that are stored inside this registry
@@ -89,7 +113,7 @@ impl Descriptor<'static> for Init {
     type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.init.0)
+        Registry { sorted: &mut events.init.sorted, unsorted: &mut events.init.unsorted }
     }
 }
 
@@ -100,7 +124,13 @@ impl<'p> Caller<'static, 'p> for Init {
         let world = params.0;
         let el = params.1;
 
-        let vec = std::mem::take(registry.0);
+        let vec = std::mem::take(registry.unsorted);
+
+        for boxed in vec {
+            boxed(world, el);
+        }
+
+        let vec = std::mem::take(registry.sorted);
 
         for (boxed, _) in vec {
             boxed(world, el);
@@ -129,7 +159,7 @@ impl Descriptor<'static> for Update {
     type DynFunc = dyn Fn(&mut World);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.update.0)
+        Registry { sorted: &mut events.update.sorted, unsorted: &mut events.update.unsorted }
     }
 }
 
@@ -137,7 +167,11 @@ impl<'p> Caller<'static, 'p> for Update {
     type Params = &'p mut World;
 
     fn call(registry: Registry<'_, 'static, Self>, params: Self::Params) {
-        for (boxed, _) in registry.0.iter() {
+        for boxed in registry.unsorted.iter() {
+            boxed(params);
+        }
+
+        for (boxed, _) in registry.sorted.iter() {
             boxed(params);
         }
     }
@@ -154,7 +188,7 @@ impl<'d> Descriptor<'d> for WindowEvent<'d> {
     type DynFunc = dyn Fn(&mut World, &WindowEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'd, Self> {
-        Registry(&mut events.window.0)
+        Registry { sorted: &mut events.window.sorted, unsorted: &mut events.window.unsorted }
     }
 }
 
@@ -168,8 +202,12 @@ where
         let world = params.0;
         let ev = params.1;
 
-        for (event, _) in registry.0.iter() {
-            event(world, ev);
+        for boxed in registry.unsorted.iter() {
+            boxed(world, ev);
+        }
+
+        for (boxed, _) in registry.sorted.iter() {
+            boxed(world, ev);
         }
     }
 }
@@ -187,7 +225,7 @@ impl Descriptor<'static> for DeviceEvent {
     type DynFunc = dyn Fn(&mut World, &DeviceEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry(&mut events.device.0)
+        Registry { sorted: &mut events.device.sorted, unsorted: &mut events.device.unsorted }
     }
 }
 
@@ -198,7 +236,11 @@ impl<'p> Caller<'static, 'p> for DeviceEvent {
         let world = params.0;
         let event = params.1;
 
-        for (boxed, _) in registry.0.iter() {
+        for boxed in registry.unsorted.iter() {
+            boxed(world, event);
+        }
+
+        for (boxed, _) in registry.sorted.iter() {
             boxed(world, event);
         }
     }

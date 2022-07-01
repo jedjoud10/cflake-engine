@@ -2,12 +2,14 @@ use std::ops::{Bound, RangeBounds, RangeFull};
 
 use ahash::{AHashMap, AHashSet};
 
+use crate::StageError;
+
 // Name key type
 type Key = &'static str;
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
 #[derive(Debug, Clone, Copy)]
-enum Rule {
+pub enum Rule {
     // This hints that the stage should be executed before other
     Before(Key),
 
@@ -26,6 +28,7 @@ impl Rule {
 }
 
 // Stages are are a way for us to sort and prioritize certain events before others
+#[derive(Clone)]
 pub struct Stage {
     // The user defined name of the current stage
     name: Key,
@@ -35,21 +38,54 @@ pub struct Stage {
 }
 
 impl Stage {
-    // Create a stage that has no rules associated with it
-    pub fn new(name: impl Into<Key>) -> Self {
-        Self { name: name.into(), rules: Vec::new() }
-    } 
+    // This creates a stage builder so we can link some rules to the newly made stage
+    pub fn builder() -> StageBuilder {
+        StageBuilder(Stage {
+            name: "",
+            rules: Vec::default(),
+        })
+    }
+
+    // Get the name of the current stage
+    pub fn name(&self) -> Key {
+        self.name
+    }
+    
+    // Get the rules of the current stage
+    pub fn rules(&self) -> &[Rule] {
+        &self.rules
+    }
+}
+
+// A stage builder will help us create stages that have AT LEAST one rule associated with them
+pub struct StageBuilder(Stage);
+
+impl StageBuilder {
+    // Update the name of the inner stage
+    pub fn set_name(mut self, name: impl Into<Key>) -> Self {
+        self.0.name = name.into();
+        self
+    }
 
     // Add a "before" rule to the current stage
-    pub fn before(mut self, other: impl Into<Key>) -> Self {
-        self.rules.push(Rule::Before(other.into()));
+    pub fn set_before(mut self, other: impl Into<Key>) -> Self {
+        self.0.rules.push(Rule::Before(other.into()));
         self
     }
 
     // Add a "after" rule to the current stage
-    pub fn after(mut self, other: impl Into<Key>) -> Self {
-        self.rules.push(Rule::After(other.into()));
+    pub fn set_after(mut self, other: impl Into<Key>) -> Self {
+        self.0.rules.push(Rule::After(other.into()));
         self
+    }
+
+    // Try to build the inner stage. If we have zero rules or if the name is empty, this will return None
+    pub fn build(mut self) -> Option<Stage> {
+        if self.0.name.is_empty() || self.0.rules.is_empty() {
+            None
+        } else {
+            Some(self.0)
+        }
     }
 }
 
@@ -60,20 +96,14 @@ const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
 // The name of the main execution start stage
-const EXEC_STAGE_NAME: &str = "exec";
+const EXEC_STAGE_NAME: &str = "main";
 
 // Calculate all the priority indices of the stages and sort them automatically
-fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
+// This returns a hashmap containing the new indices of the sorted stages
+pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> {
     // Convert the vector into a hashmap (this removes any duplicates)
     let mut dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
     let keys: Vec<Key> = dedupped.keys().cloned().collect();
-
-    // We must abort if we find any stages that have no rules
-    for stage in dedupped.values() {
-        if stage.rules.is_empty() {
-            panic!()
-        }
-    }
 
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages
     let mut indices = AHashMap::<Key, usize>::default();
@@ -85,16 +115,16 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
     indices.insert(EXEC_STAGE_NAME, 0);
 
     // This function will add a current stage into the main vector and sort it according to it's rules
-    fn calc(key: Key, indices: &mut AHashMap<Key, usize>, dedupped: &mut AHashMap<Key, Stage>, vec: &mut Vec<Stage>, iter: usize) -> usize {
+    fn calc(key: Key, indices: &mut AHashMap<Key, usize>, dedupped: &mut AHashMap<Key, Stage>, vec: &mut Vec<Stage>, iter: usize, caller: Option<Key>) -> Result<usize, StageError> {
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
-            panic!();
+            return Err(StageError::CyclicReference);
         }
         
         if dedupped.contains_key(key) {
             // We must insert the stage into the main vector
             let stage = dedupped.remove(key).unwrap();
-            let rules = stage.rules.as_slice();
+            let rules = stage.rules();
 
             // Restrict the index of the stage based on it's rules
             let mut changed = true;
@@ -108,12 +138,12 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
                 // Restrict the current node using it's rules
                 for rule in rules {
                     // Get the location of the parent stage
-                    let parent = rule.parent();
-                    let parent_location = calc(parent, indices, dedupped, vec, iter + 1);
+                    let mut parent = rule.parent();
+                    let parent_location = calc(parent, indices, dedupped, vec, iter + 1, Some(key))?;
 
                     match rule {                        
                         // Move the current stage BEFORE the parent stage
-                        Rule::Before(p) => {
+                        Rule::Before(_) => {
                             if location > parent_location {
                                 location = parent_location - 1;
                                 changed = true;
@@ -121,7 +151,7 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
                         },
 
                         // Move the current stage AFTER the parent stage
-                        Rule::After(p) => {
+                        Rule::After(_) => {
                             if location <= parent_location {
                                 location = parent_location + 1;
                                 changed = true;
@@ -133,7 +163,7 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
                 // Check for a cyclic reference when constraining the stage
                 count += 1;
                 if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
-                    panic!()
+                    return Err(StageError::CyclicRuleReference(key));
                 }
             }
 
@@ -146,37 +176,26 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
                 *indices.get_mut(stage.name).unwrap() = i;
             }
 
-            location
+            Ok(location)
         } else {
+            // We must check if the stage referenced by "called" is even valid
+            if !indices.contains_key(key) {
+                return Err(StageError::MissingStage(caller.unwrap(), key));
+            }
+
             // Fetch the cached location instead
-            indices[key]
+            Ok(indices[key])
         }
     }
 
     // Add the stages into the vector and start sorting them
     for key in keys {
-        calc(key, &mut indices, &mut dedupped, &mut vec, 0);
+        calc(key, &mut indices, &mut dedupped, &mut vec, 0, None)?;
     }
 
     // Remove the "exec" stage since it was just there to act as a reference point
     vec.remove(indices[EXEC_STAGE_NAME]);
+    indices.remove(EXEC_STAGE_NAME);
 
-    vec
-}
-
-
-#[test]
-fn test() {
-    let input = Stage::new("input").after("exec");
-    let rendering = Stage::new("rendering").after("input");
-    //let post_input = Stage::new("post input").after("input").after("rendering");
-    let inject = Stage::new("inject").before("rendering").after("input");
-    //let inject = Stage::new("injected").before("rendering").after("input");
-    let after = Stage::new("after").after("inject").after("rendering");
-    let test = Stage::new("test").before("after").after("input");
-    let sorted = evaluate(vec![rendering, input, inject, after, test]);
-
-    for stage in sorted {
-        dbg!(stage.name);
-    }
+    Ok(indices)
 }
