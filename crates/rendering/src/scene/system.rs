@@ -11,9 +11,9 @@ use crate::{
 
 use assets::Assets;
 use ecs::EcsManager;
-use glutin::{event_loop::EventLoop, event::WindowEvent};
+use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
-use world::{Events, Init, Storage, World, Update, Stage};
+use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -46,7 +46,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the default PBR textures (normal map, mask map)
     let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
-    
+
     // Insert all of the textures into their corresponding storages
     let (albedo_maps, normal_maps, mask_maps) = world
         .get_mut::<(
@@ -55,7 +55,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             &mut Storage<MaskMap>,
         )>()
         .unwrap();
-    /*
+
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
     let normal_map = normal_maps.insert(normal_map);
@@ -79,7 +79,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material);
     world.insert(scene);
-    */
 }
 
 // Rendering event that will try to render the 3D scene each frame
@@ -106,8 +105,7 @@ fn rendering(world: &mut World) {
 }
 
 // Window resizing event for updating the current main canvas when the main window changes size
-fn window_resize(world: &mut World, event: &mut WindowEvent) {
-}
+fn window_resize(world: &mut World, event: &mut WindowEvent) {}
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
@@ -124,12 +122,13 @@ fn main_camera(world: &mut World) {
         .unwrap();
 
     // Fetch the main perspective camera from the scene renderer
-    let entity = scene.main_camera().unwrap();
-    let mut entry = ecs.try_entry(entity).unwrap();
+    if let Some(entity) = scene.main_camera() {
+        let mut entry = ecs.try_entry(entity).unwrap();
 
-    // Fetch it's components, and update them
-    let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &Transform)>().unwrap();
-    camera.update(transform);
+        // Fetch it's components, and update them
+        let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &Transform)>().unwrap();
+        camera.update(transform);
+    }
 }
 
 // Main rendering/graphics system that will register the appropriate events
@@ -142,13 +141,31 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert update events
     events
         .registry::<Update>()
-        .insert_with(main_camera, Stage::builder().set_name("main camera update").set_after("input").build().unwrap())
-        .insert_with(rendering, Stage::builder().set_name("scene rendering").set_after("main camera update").build().unwrap())
-        .insert_with(swap, Stage::builder().set_name("swap").set_after("scene rendering").build().unwrap());
+        .insert_with(
+            main_camera,
+            Stage::builder()
+                .set_name("main camera update")
+                .set_after("main")
+                .build()
+                .unwrap(),
+        )
+        .insert_with(
+            rendering,
+            Stage::builder()
+                .set_name("scene rendering")
+                .set_after("main camera update")
+                .build()
+                .unwrap(),
+        )
+        .insert_with(
+            swap,
+            Stage::builder()
+                .set_name("swap")
+                .set_after("scene rendering")
+                .build()
+                .unwrap(),
+        );
 
     // Insert window events
     events.registry::<WindowEvent>().insert(window_resize);
-
-    //events.register::<Update>(main_camera);
-    //events.register_with::<Update>(rendering, Stage::after("rendering"))
 }

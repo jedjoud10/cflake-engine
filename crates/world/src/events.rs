@@ -1,4 +1,4 @@
-use crate::{World, Stage, StageError};
+use crate::{Stage, StageError, World};
 
 use glutin::{
     event::{DeviceEvent, WindowEvent},
@@ -13,7 +13,7 @@ use glutin::{
 // Events can be sorted or unsorted. Unsorted events will be executed first
 pub(crate) struct Container<M: Descriptor<'static>> {
     sorted: Vec<(Box<M::DynFunc>, Stage)>,
-    unsorted: Vec<Box<M::DynFunc>>
+    unsorted: Vec<Box<M::DynFunc>>,
 }
 
 impl<M: Descriptor<'static>> Default for Container<M> {
@@ -31,13 +31,13 @@ pub struct Registry<'b, 'd, M: Descriptor<'d>> {
     unsorted: &'b mut Vec<Box<M::DynFunc>>,
 }
 
-impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {    
+impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
     // Insert a new event without sorting it whatsoever
     pub fn insert<P>(self, event: impl Event<'d, M, P>) -> Self {
         let boxed = event.boxed();
         self.unsorted.push(boxed);
         self
-    }    
+    }
 
     // Insert a new event with a stage that will sort it later
     pub fn insert_with<P>(self, event: impl Event<'d, M, P>, stage: Stage) -> Self {
@@ -51,7 +51,8 @@ impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
         let indices = crate::sort(self.sorted.iter().map(|(_, stage)| stage.clone()).collect())?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.sorted.sort_unstable_by(|(_, a), (_, b)| usize::cmp(&indices[a.name()],& indices[b.name()]));
+        self.sorted
+            .sort_unstable_by(|(_, a), (_, b)| usize::cmp(&indices[a.name()], &indices[b.name()]));
 
         for _ in self.unsorted.iter() {
             println!("unnamed");
@@ -123,7 +124,10 @@ impl Descriptor<'static> for Init {
     type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry { sorted: &mut events.init.sorted, unsorted: &mut events.init.unsorted }
+        Registry {
+            sorted: &mut events.init.sorted,
+            unsorted: &mut events.init.unsorted,
+        }
     }
 }
 
@@ -169,7 +173,10 @@ impl Descriptor<'static> for Update {
     type DynFunc = dyn Fn(&mut World);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry { sorted: &mut events.update.sorted, unsorted: &mut events.update.unsorted }
+        Registry {
+            sorted: &mut events.update.sorted,
+            unsorted: &mut events.update.unsorted,
+        }
     }
 }
 
@@ -198,7 +205,10 @@ impl<'d> Descriptor<'d> for WindowEvent<'d> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'd, Self> {
-        Registry { sorted: &mut events.window.sorted, unsorted: &mut events.window.unsorted }
+        Registry {
+            sorted: &mut events.window.sorted,
+            unsorted: &mut events.window.unsorted,
+        }
     }
 }
 
@@ -235,7 +245,10 @@ impl Descriptor<'static> for DeviceEvent {
     type DynFunc = dyn Fn(&mut World, &DeviceEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry { sorted: &mut events.device.sorted, unsorted: &mut events.device.unsorted }
+        Registry {
+            sorted: &mut events.device.sorted,
+            unsorted: &mut events.device.unsorted,
+        }
     }
 }
 

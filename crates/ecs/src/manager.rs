@@ -1,5 +1,6 @@
 use slotmap::SlotMap;
-use world::{Events, Resource, World};
+use time::Time;
+use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
@@ -144,16 +145,43 @@ impl EcsManager {
     /* #endregion */
 }
 
-// Main system that will reset all the components states before we use the ECS manager
-pub fn system(_event: &mut Events) {
-    fn clear(world: &mut World) {
-        let ecs = world.get_mut::<&mut EcsManager>().unwrap();
+// The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
+pub fn system(events: &mut Events) {
+    // Update event that will cleanup the ECS manager states
+    fn cleanup(world: &mut World) {
+        let (ecs, time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
+
+        // Ignore the first frame
+        if time.frame_count() == 0 {
+            return;
+        }
+
+        // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {
             archetype.states().reset();
         }
     }
 
-    /*
-    event.registry::<Update>().insert_with(clear, 0);
-    */
+    // Init event that will insert the ECS resource
+    fn init(world: &mut World) {
+        world.insert(EcsManager::default());
+    }
+
+    // Register the events
+    events.registry::<Init>().insert_with(
+        init,
+        Stage::builder()
+            .set_name("ecs insert")
+            .set_before("main")
+            .build()
+            .unwrap(),
+    );
+    events.registry::<Update>().insert_with(
+        cleanup,
+        Stage::builder()
+            .set_name("ecs cleanup")
+            .set_before("main")
+            .build()
+            .unwrap(),
+    );
 }

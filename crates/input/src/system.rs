@@ -1,6 +1,6 @@
 use crate::{Keyboard, Mouse};
 use glutin::event::DeviceEvent;
-use world::{Events, Init, Resource, World};
+use world::{Events, Init, Resource, Stage, World};
 
 // This is the main input resource that will be stored persistently withint the world
 // It allows us to get and modify it's underlying Keyboard and Mouse values
@@ -30,5 +30,12 @@ pub fn system(events: &mut Events) {
 
     // Register the events
     events.registry::<Init>().insert(init);
-    events.registry::<DeviceEvent>().insert(event);
+    events.registry::<DeviceEvent>().insert_with(
+        event,
+        Stage::builder()
+            .set_name("input")
+            .set_after("main")
+            .build()
+            .unwrap(),
+    );
 }

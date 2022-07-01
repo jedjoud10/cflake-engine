@@ -1,4 +1,4 @@
-use ahash::{AHashMap};
+use ahash::AHashMap;
 
 use crate::StageError;
 
@@ -48,7 +48,7 @@ impl Stage {
     pub fn name(&self) -> Key {
         self.name
     }
-    
+
     // Get the rules of the current stage
     pub fn rules(&self) -> &[Rule] {
         &self.rules
@@ -100,7 +100,8 @@ const EXEC_STAGE_NAME: &str = "main";
 // This returns a hashmap containing the new indices of the sorted stages
 pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> {
     // Convert the vector into a hashmap (this removes any duplicates)
-    let mut dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
+    let mut dedupped: AHashMap<Key, Stage> =
+        AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
     let keys: Vec<Key> = dedupped.keys().cloned().collect();
 
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages
@@ -109,16 +110,26 @@ pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> 
 
     // Insert the startup Exec stage that will be the base of everything
     // Other stages can derive off of this by using multiple rules
-    vec.push(Stage { name: EXEC_STAGE_NAME, rules: Vec::default() });
+    vec.push(Stage {
+        name: EXEC_STAGE_NAME,
+        rules: Vec::default(),
+    });
     indices.insert(EXEC_STAGE_NAME, 0);
 
     // This function will add a current stage into the main vector and sort it according to it's rules
-    fn calc(key: Key, indices: &mut AHashMap<Key, usize>, dedupped: &mut AHashMap<Key, Stage>, vec: &mut Vec<Stage>, iter: usize, caller: Option<Key>) -> Result<usize, StageError> {
+    fn calc(
+        key: Key,
+        indices: &mut AHashMap<Key, usize>,
+        dedupped: &mut AHashMap<Key, Stage>,
+        vec: &mut Vec<Stage>,
+        iter: usize,
+        caller: Option<Key>,
+    ) -> Result<usize, StageError> {
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
             return Err(StageError::CyclicReference);
         }
-        
+
         if dedupped.contains_key(key) {
             // We must insert the stage into the main vector
             let stage = dedupped.remove(key).unwrap();
@@ -137,16 +148,17 @@ pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> 
                 for rule in rules {
                     // Get the location of the parent stage
                     let parent = rule.parent();
-                    let parent_location = calc(parent, indices, dedupped, vec, iter + 1, Some(key))?;
+                    let parent_location =
+                        calc(parent, indices, dedupped, vec, iter + 1, Some(key))?;
 
-                    match rule {                        
+                    match rule {
                         // Move the current stage BEFORE the parent stage
                         Rule::Before(_) => {
                             if location > parent_location {
                                 location = parent_location - 1;
                                 changed = true;
                             }
-                        },
+                        }
 
                         // Move the current stage AFTER the parent stage
                         Rule::After(_) => {
@@ -154,10 +166,10 @@ pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> 
                                 location = parent_location + 1;
                                 changed = true;
                             }
-                        },
+                        }
                     }
                 }
-                
+
                 // Check for a cyclic reference when constraining the stage
                 count += 1;
                 if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
