@@ -144,8 +144,15 @@ impl<T: 'static> Resource for Storage<T> {
     where
         Self: Sized,
     {
-        let res = world.entry::<Self>().or_insert_from_world();
-        Ok(NonNull::new(res as *mut Self).unwrap())
+        let mutref = if world.contains::<Self>() {
+            world.get_mut_unique::<Self>().unwrap()
+        } else {
+            let storage = Self::from_world(world);
+            world.insert(storage);
+            world.get_mut_unique::<Self>().unwrap()
+        };
+
+        Ok(NonNull::new(mutref as *mut Self).unwrap())
     }
 }
 

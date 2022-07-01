@@ -46,7 +46,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the default PBR textures (normal map, mask map)
     let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
-
+    
     // Insert all of the textures into their corresponding storages
     let (albedo_maps, normal_maps, mask_maps) = world
         .get_mut::<(
@@ -55,11 +55,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             &mut Storage<MaskMap>,
         )>()
         .unwrap();
+    /*
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
     let normal_map = normal_maps.insert(normal_map);
     let mask_map = mask_maps.insert(mask_map);
-
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, storage) = world
         .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>()
@@ -79,6 +79,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material);
     world.insert(scene);
+    */
 }
 
 // Rendering event that will try to render the 3D scene each frame
