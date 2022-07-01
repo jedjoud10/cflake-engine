@@ -15,6 +15,16 @@ enum Rule {
     After(Key),
 }
 
+impl Rule {
+    // Get the current parent of the current strict node
+    fn parent(&self) -> Key {
+        match self {
+            Rule::Before(p) => p,
+            Rule::After(p) => p,
+        }
+    }
+}
+
 // Stages are are a way for us to sort and prioritize certain events before others
 pub struct Stage {
     // The user defined name of the current stage
@@ -46,6 +56,9 @@ impl Stage {
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 
+// Number of maximum iterations allowed before we detect a cyclic reference when recursing through the calc function
+const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
+
 // The name of the main execution start stage
 const EXEC_STAGE_NAME: &str = "exec";
 
@@ -55,21 +68,29 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
     let mut dedupped: AHashMap<Key, Stage> = AHashMap::from_iter(vec.into_iter().map(|s| (s.name, s)));
     let keys: Vec<Key> = dedupped.keys().cloned().collect();
 
-    // We must panic if we find any stages that have no rules
+    // We must abort if we find any stages that have no rules
     for stage in dedupped.values() {
         if stage.rules.is_empty() {
             panic!()
         }
     }
 
+    // Keep a hashmap containing the key -> indices and the global vector for our sorted stages
     let mut indices = AHashMap::<Key, usize>::default();
     let mut vec = Vec::<Stage>::default();
 
+    // Insert the startup Exec stage that will be the base of everything
+    // Other stages can derive off of this by using multiple rules
     vec.push(Stage { name: EXEC_STAGE_NAME, rules: Vec::default() });
     indices.insert(EXEC_STAGE_NAME, 0);
 
     // This function will add a current stage into the main vector and sort it according to it's rules
-    fn calc(key: Key, indices: &mut AHashMap<Key, usize>, dedupped: &mut AHashMap<Key, Stage>, vec: &mut Vec<Stage>) -> usize {
+    fn calc(key: Key, indices: &mut AHashMap<Key, usize>, dedupped: &mut AHashMap<Key, Stage>, vec: &mut Vec<Stage>, iter: usize) -> usize {
+        // Check for a cyclic reference that might be caused when sorting the stages
+        if iter > CYCLIC_REFERENCE_THRESHOLD {
+            panic!();
+        }
+        
         if dedupped.contains_key(key) {
             // We must insert the stage into the main vector
             let stage = dedupped.remove(key).unwrap();
@@ -78,40 +99,49 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
             // Restrict the index of the stage based on it's rules
             let mut changed = true;
             let mut location = 0;
+            let mut count = 0;
 
+            // Check if we need to keep updating the location
             while changed {
                 changed = false;
 
+                // Restrict the current node using it's rules
                 for rule in rules {
-                    match rule {
+                    // Get the location of the parent stage
+                    let parent = rule.parent();
+                    let parent_location = calc(parent, indices, dedupped, vec, iter + 1);
+
+                    match rule {                        
+                        // Move the current stage BEFORE the parent stage
                         Rule::Before(p) => {
-                            if *p == EXEC_STAGE_NAME {
-                                panic!()
-                            }
-
-                            let pl = calc(p, indices, dedupped, vec);
-
-                            if location > pl {
-                                location = pl - 1;
+                            if location > parent_location {
+                                location = parent_location - 1;
                                 changed = true;
                             }
                         },
-                        Rule::After(p) => {
-                            let pl = calc(p, indices, dedupped, vec);
 
-                            if location <= pl {
-                                location = pl + 1;
+                        // Move the current stage AFTER the parent stage
+                        Rule::After(p) => {
+                            if location <= parent_location {
+                                location = parent_location + 1;
                                 changed = true;
                             }
                         },
                     }
                 }
+                
+                // Check for a cyclic reference when constraining the stage
+                count += 1;
+                if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
+                    panic!()
+                }
             }
 
+            // Insert the new updated stage at it's correct location
             indices.insert(stage.name, vec.len());
-            println!("key {key}, loc: {location}");
             vec.insert(location, stage);
 
+            // Updated indices (slow!)
             for (i, stage) in vec.iter_mut().enumerate() {
                 *indices.get_mut(stage.name).unwrap() = i;
             }
@@ -123,10 +153,13 @@ fn evaluate(vec: Vec<Stage>) -> Vec<Stage> {
         }
     }
 
-    // Add the stages into a vector and start sorting them
+    // Add the stages into the vector and start sorting them
     for key in keys {
-        calc(key, &mut indices, &mut dedupped, &mut vec);
+        calc(key, &mut indices, &mut dedupped, &mut vec, 0);
     }
+
+    // Remove the "exec" stage since it was just there to act as a reference point
+    vec.remove(indices[EXEC_STAGE_NAME]);
 
     vec
 }
@@ -140,7 +173,8 @@ fn test() {
     let inject = Stage::new("inject").before("rendering").after("input");
     //let inject = Stage::new("injected").before("rendering").after("input");
     let after = Stage::new("after").after("inject").after("rendering");
-    let sorted = evaluate(vec![rendering, input, inject, after]);
+    let test = Stage::new("test").before("after").after("input");
+    let sorted = evaluate(vec![rendering, input, inject, after, test]);
 
     for stage in sorted {
         dbg!(stage.name);
