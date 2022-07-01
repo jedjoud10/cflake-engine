@@ -33,15 +33,17 @@ pub struct Registry<'b, 'd, M: Descriptor<'d>> {
 
 impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {    
     // Insert a new event without sorting it whatsoever
-    pub fn insert<P>(&mut self, event: impl Event<'d, M, P>) {
+    pub fn insert<P>(mut self, event: impl Event<'d, M, P>) -> Self {
         let boxed = event.boxed();
         self.unsorted.push(boxed);
+        self
     }    
 
     // Insert a new event with a stage that will sort it later
-    pub fn insert_with<P>(&mut self, event: impl Event<'d, M, P>, stage: Stage) {
+    pub fn insert_with<P>(mut self, event: impl Event<'d, M, P>, stage: Stage) -> Self {
         let boxed = event.boxed();
-        self.sorted.push((boxed, stage))
+        self.sorted.push((boxed, stage));
+        self
     }
 
     // Sort the vector that must sorted using the current inputted stages
@@ -50,6 +52,14 @@ impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.sorted.sort_unstable_by(|(_, a), (_, b)| usize::cmp(&indices[a.name()],& indices[b.name()]));
+
+        for _ in self.unsorted.iter() {
+            println!("unnamed");
+        }
+
+        for (_, stage) in self.sorted.iter() {
+            println!("sorted: {}", stage.name());
+        }
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
@@ -185,7 +195,7 @@ impl<F: Fn(&mut World) + 'static> Event<'static, Update, &mut World> for F {
 
 // Window event marker (called by glutin handler) (this makes it extremely pain since the window event contains a lifetime)
 impl<'d> Descriptor<'d> for WindowEvent<'d> {
-    type DynFunc = dyn Fn(&mut World, &WindowEvent);
+    type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
 
     fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'd, Self> {
         Registry { sorted: &mut events.window.sorted, unsorted: &mut events.window.unsorted }
@@ -212,8 +222,8 @@ where
     }
 }
 
-impl<'d, F: Fn(&mut World, &WindowEvent<'_>) + 'static>
-    Event<'d, WindowEvent<'d>, (&mut World, &WindowEvent<'_>)> for F
+impl<'d, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
+    Event<'d, WindowEvent<'d>, (&mut World, &mut WindowEvent<'_>)> for F
 {
     fn boxed(self) -> Box<<WindowEvent<'d> as Descriptor<'d>>::DynFunc> {
         Box::new(self)

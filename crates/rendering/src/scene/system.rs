@@ -11,9 +11,9 @@ use crate::{
 
 use assets::Assets;
 use ecs::EcsManager;
-use glutin::event_loop::EventLoop;
+use glutin::{event_loop::EventLoop, event::WindowEvent};
 use math::Transform;
-use world::{Events, Init, Storage, World};
+use world::{Events, Init, Storage, World, Update, Stage};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -81,7 +81,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(scene);
 }
 
-// Rendering system that will try to render the 3D scene each frame
+// Rendering event that will try to render the 3D scene each frame
 // I am pretty proud of my material system tbh. Sick as hell fr fr
 fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
@@ -104,7 +104,17 @@ fn rendering(world: &mut World) {
         .collect::<Vec<_>>();
 }
 
-// Update system that will update the view matrix of the main perspective camera
+// Window resizing event for updating the current main canvas when the main window changes size
+fn window_resize(world: &mut World, event: &mut WindowEvent) {
+}
+
+// Frame cleanup event that will just swap the front and back buffers of the current context
+fn swap(world: &mut World) {
+    let Graphics(device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+    ctx.raw().swap_buffers().unwrap();
+}
+
+// Update event that will update the view matrix of the main perspective camera
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
@@ -121,11 +131,23 @@ fn main_camera(world: &mut World) {
     camera.update(transform);
 }
 
-// Main rendering system that will register the appropriate events
+// Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
+    // Insert init events
     events
         .registry::<Init>()
         .insert(|world: &mut World, el: &EventLoop<()>| init(world, settings, el));
+
+    // Insert update events
+    events
+        .registry::<Update>()
+        .insert_with(main_camera, Stage::builder().set_name("main camera update").set_after("input").build().unwrap())
+        .insert_with(rendering, Stage::builder().set_name("scene rendering").set_after("main camera update").build().unwrap())
+        .insert_with(swap, Stage::builder().set_name("swap").set_after("scene rendering").build().unwrap());
+
+    // Insert window events
+    events.registry::<WindowEvent>().insert(window_resize);
+
     //events.register::<Update>(main_camera);
     //events.register_with::<Update>(rendering, Stage::after("rendering"))
 }

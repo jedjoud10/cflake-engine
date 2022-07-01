@@ -1,6 +1,5 @@
 // Export
 pub mod app;
-mod handler;
 
 // Re-rexport
 pub use assets;
