@@ -1,6 +1,4 @@
-use std::ops::{Bound, RangeBounds, RangeFull};
-
-use ahash::{AHashMap, AHashSet};
+use ahash::{AHashMap};
 
 use crate::StageError;
 
@@ -80,7 +78,7 @@ impl StageBuilder {
     }
 
     // Try to build the inner stage. If we have zero rules or if the name is empty, this will return None
-    pub fn build(mut self) -> Option<Stage> {
+    pub fn build(self) -> Option<Stage> {
         if self.0.name.is_empty() || self.0.rules.is_empty() {
             None
         } else {
@@ -138,7 +136,7 @@ pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> 
                 // Restrict the current node using it's rules
                 for rule in rules {
                     // Get the location of the parent stage
-                    let mut parent = rule.parent();
+                    let parent = rule.parent();
                     let parent_location = calc(parent, indices, dedupped, vec, iter + 1, Some(key))?;
 
                     match rule {                        

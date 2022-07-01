@@ -92,7 +92,7 @@ impl App {
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
-        self = self.insert_system(|e: &mut Events| assets::system(e, user));
+        //self = self.insert_system(|e: &mut Events| assets::system(e, user));
 
         // Insert the graphics pipeline and everything rendering related
         let settings = GraphicsSetupSettings {
@@ -106,7 +106,9 @@ impl App {
         // Sort & execute the init events
         let mut reg = self.events.registry::<Init>();
         reg.sort().unwrap();
+        dbg!("Executing init events...");
         reg.execute((&mut self.world, &mut self.el));
+        dbg!("FINISHED");
 
         // Decompose the app
         let mut events = self.events;
@@ -114,9 +116,14 @@ impl App {
         let el = self.el;
 
         // Sort the remaining events registries
+        dbg!("Sorting update events...");
         events.registry::<Update>().sort().unwrap();
+        dbg!("Sorting Window events...");
         events.registry::<WindowEvent>().sort().unwrap();
+        dbg!("Sorting Device events...");
         events.registry::<DeviceEvent>().sort().unwrap();
+
+        println!("Starting Gluting Event Loop...");
 
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {

@@ -33,14 +33,14 @@ pub struct Registry<'b, 'd, M: Descriptor<'d>> {
 
 impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {    
     // Insert a new event without sorting it whatsoever
-    pub fn insert<P>(mut self, event: impl Event<'d, M, P>) -> Self {
+    pub fn insert<P>(self, event: impl Event<'d, M, P>) -> Self {
         let boxed = event.boxed();
         self.unsorted.push(boxed);
         self
     }    
 
     // Insert a new event with a stage that will sort it later
-    pub fn insert_with<P>(mut self, event: impl Event<'d, M, P>, stage: Stage) -> Self {
+    pub fn insert_with<P>(self, event: impl Event<'d, M, P>, stage: Stage) -> Self {
         let boxed = event.boxed();
         self.sorted.push((boxed, stage));
         self
