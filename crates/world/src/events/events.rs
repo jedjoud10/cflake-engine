@@ -1,10 +1,10 @@
+/*
 use crate::{Stage, StageError, World};
 
 use glutin::{
     event::{DeviceEvent, WindowEvent},
     event_loop::EventLoop,
 };
-
 // This registry is a way for us to interface the internally stored boxed events without having to match the 'static lifetime
 pub struct Registry<'b, 'd, M: Descriptor<'d>> {
     scheduler: &'b mut Scheduler<M::DynFunc>,
@@ -46,7 +46,9 @@ impl<'b, 'd, M: Descriptor<'d>> Registry<'b, 'd, M> {
         M::call(self, params);
     }
 }
+*/
 
+/*
 // Descriptors simply tell us how we should box the function
 pub trait Descriptor<'d>: Sized + 'd {
     // DynFunc which is the dynamic unsized value that we will box
@@ -226,3 +228,4 @@ impl<F: Fn(&mut World, &DeviceEvent) + 'static>
         Box::new(move |world, event| self(world, event))
     }
 }
+*/

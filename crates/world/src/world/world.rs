@@ -1,3 +1,4 @@
+/*
 use crate::{Entry, Layout, Resource, ResourceError, System};
 use ahash::AHashMap;
 
@@ -56,3 +57,5 @@ impl World {
 pub trait FromWorld {
     fn from_world(world: &mut World) -> Self;
 }
+
+*/
