@@ -1,6 +1,6 @@
 mod events;
-mod stages;
+mod stage;
 mod system;
 pub use events::*;
-pub use stages::*;
+pub use stage::*;
 pub use system::*;
