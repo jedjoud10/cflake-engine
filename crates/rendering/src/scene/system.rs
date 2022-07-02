@@ -157,5 +157,5 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     .unwrap();
 
     // Insert window events
-    events.registry::<WindowEvent>().insert(window_resize);
+    //events.registry::<WindowEvent>().insert(window_resize);
 }

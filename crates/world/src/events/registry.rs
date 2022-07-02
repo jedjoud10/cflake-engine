@@ -18,7 +18,7 @@ pub struct Registry<M: Descriptor + 'static> {
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event
-    pub(super) events: Vec<(StageKey, Box<M::DynFunc>)>,
+    pub events: Vec<(StageKey, Box<M::DynFunc>)>,
 
     // Incremented procedural name
     counter: u64,
@@ -84,11 +84,11 @@ impl<M: Descriptor> Registry<M> {
     }
 
     // Execute all the event sequentially using the proper caller parameters
-    pub fn execute<'a>(&mut self, params: <M as Caller<'a>>::Params)
+    pub fn execute<'p>(&mut self, params: <M as Caller<'p>>::Params)
     where
-        M: Caller<'a>,
+        M: Caller<'p>,
     {
-        M::call(&mut self.events, params);
+        //M::call(&mut self.events, params);
     }
 }
 
