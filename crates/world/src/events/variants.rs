@@ -6,28 +6,32 @@ use glutin::{
 
 // Window event marker (called by glutin handler)
 impl<'a> Descriptor for WindowEvent<'a> {
-    type DynFunc = dyn Fn(&mut World, &WindowEvent);
+    type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
 
     fn registry(events: &mut Events) -> &mut Registry<Self> {
         &mut events.window
     }
 }
 
-/*
+impl<'b, 'p> Caller<'p> for WindowEvent<'b> where 'b: 'p
+{
+    type Params = (&'p mut World, &'p mut WindowEvent<'b>);
+
+    fn call(events: &mut Events, params: Self::Params) {
         let world = params.0;
         let event = params.1;
 
         for (_, func) in events.window.events.iter() {
             func(world, event);
         }
-*/
+    }
+}
 
-impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p
+impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
+    Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F
 {
-    type Params = (&'p mut World, &'p WindowEvent<'a>);
-
-    fn call<'b>(events: &'b mut Events, params: Self::Params) where 'p: 'b {
-        
+    fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
+        Box::new(self)
     }
 }
 
@@ -35,7 +39,7 @@ impl<'a, F: Fn(&mut World, &WindowEvent<'_>) + 'static>
     Event<WindowEvent<'a>, (&mut World, &WindowEvent<'_>)> for F
 {
     fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
-        Box::new(self)
+        Box::new(move |world, event| self(world, event))
     }
 }
 
@@ -48,20 +52,18 @@ impl Descriptor for DeviceEvent {
     }
 }
 
-/*
 impl<'p> Caller<'p> for DeviceEvent {
     type Params = (&'p mut World, &'p DeviceEvent);
 
-    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+    fn call(events: &mut Events, params: Self::Params) {
         let world = params.0;
         let event = params.1;
 
-        for (_, func) in vec {
+        for (_, func) in events.device.events.iter() {
             func(world, event);
         }
     }
 }
-*/
 
 impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)>
     for F
@@ -82,22 +84,20 @@ impl Descriptor for Init {
     }
 }
 
-/*
 impl<'p> Caller<'p> for Init {
     type Params = (&'p mut World, &'p EventLoop<()>);
 
-    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+    fn call(events: &mut Events, params: Self::Params) {
         let world = params.0;
         let el = params.1;
 
-        let take = std::mem::take(vec);
+        let take = std::mem::take(&mut events.init.events);
 
         for (_, func) in take {
             func(world, el)
         }
     }
 }
-*/
 
 impl<F: FnOnce(&mut World) + 'static> Event<Init, &mut World> for F {
     fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
@@ -123,17 +123,17 @@ impl Descriptor for Update {
         &mut events.update
     }
 }
-/*
+
 impl<'p> Caller<'p> for Update {
     type Params = &'p mut World;
 
-    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
-        for (_, func) in vec {
-            func(params);
+    fn call(events: &mut Events, params: Self::Params) {
+        for (_, func) in events.update.events.iter() {
+            func(params)
         }
     }
 }
-*/
+
 impl<F: Fn(&mut World) + 'static> Event<Update, &mut World> for F {
     fn boxed(self) -> Box<<Update as Descriptor>::DynFunc> {
         Box::new(self)

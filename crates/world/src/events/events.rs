@@ -18,7 +18,7 @@ pub trait Caller<'p>: Descriptor {
 
     // Execute all the events that are contained from within the registry
     //fn call(registry: Registry<'d, Self>, params: Self::Params);
-    fn call<'b>(events: &'b mut Events, params: Self::Params) where 'p: 'b;
+    fn call(events: &mut Events, params: Self::Params);
 }
 
 // This trat will be implemented for closures that take in "P" arguments and that are used by the "M" marker descriptor
@@ -30,7 +30,7 @@ pub trait Event<M: Descriptor, P> {
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
-    pub window: Registry<WindowEvent<'static>>,
+    pub(crate) window: Registry<WindowEvent<'static>>,
     pub(crate) device: Registry<DeviceEvent>,
     pub(crate) init: Registry<Init>,
     pub(crate) update: Registry<Update>,

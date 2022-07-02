@@ -122,27 +122,23 @@ impl App {
         el.run(move |event, _, _cf| match event {
             glutin::event::Event::MainEventsCleared => {
                 // Call the update events
-                //events.registry::<Update>().execute(&mut world);
+                events.execute::<Update>(&mut world);
 
                 // Update the current control flow based on the world state
             }
             glutin::event::Event::WindowEvent {
                 window_id: _,
-                event: wevent,
+                mut event,
             } => {
                 // Call the window events
-                let test = &events.window.events;
-                for (_, func) in test.iter() {
-                    func(&mut world, &wevent)
-                }
-                //events.execute::<WindowEvent>((&mut world, &event));
+                events.execute::<WindowEvent>((&mut world, &mut event));
             }
             glutin::event::Event::DeviceEvent {
                 device_id: _,
                 event,
             } => {
                 // Call the device events
-                //events.registry::<DeviceEvent>().execute((&mut world, &event));
+                events.execute::<DeviceEvent>((&mut world, &event));
                 /*events
                 .registry::<DeviceEvent>()
                 .execute((&mut world, &event));*/
