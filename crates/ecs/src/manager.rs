@@ -168,6 +168,7 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the events
+    /*
     events.registry::<Init>().insert_with(
         init,
         Stage::new("ecs insert").before("user begin")
@@ -184,4 +185,5 @@ pub fn system(events: &mut Events) {
             .build()
             .unwrap(),
     );
+    */
 }

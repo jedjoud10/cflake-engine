@@ -1,11 +1,10 @@
-use std::{rc::Rc, marker::PhantomData};
+use std::{rc::Rc, marker::PhantomData, cell::{RefCell, RefMut}};
 
 use ahash::AHashMap;
 use glutin::event::WindowEvent;
-use crate::{Pipeline, StageKey};
-
-pub trait IntoEntry<'d>: Descriptor + 'd {
-    fn into_registry<'b>(events: &'b mut Events) -> RegistryEntry<'b, 'd, Self>;
+use crate::{Pipeline, StageKey, StageError, Stage, World};
+pub trait FuckYou: Descriptor {
+    fn test(events: &mut Events) -> RegistryEntry<Self>;
 }
 
 // Descriptors simply tell us how we should box the function
@@ -33,18 +32,40 @@ pub trait Event<M: Descriptor, P> {
 
 // Registries are a way for us to interract with the events that are stored in the main event struct
 // There is a fixed set of registries that are stored from within the main event set
-pub struct RegistryEntry<'b, 'd, D: Descriptor + 'd + IntoEntry<'d>> {
-    pub(crate) container: &'b mut AHashMap<&'static str, Pipeline<D>>,
-    pub(crate) _phantom: PhantomData<&'d D>,
-}
+pub struct RegistryEntry<'b, D: Descriptor>(pub(crate) &'b mut AHashMap<&'static str, Pipeline<D>>);
 
-pub struct Container<D: Descriptor + IntoEntry<'static>> {
-    pub(crate) map: AHashMap<&'static str, Pipeline<D>>,
+impl<'b, D: Descriptor> RegistryEntry<'b, D> {
+    // Try to get a pipeline using it's name. If the pipeline does not exist, this will create it automatically
+    pub fn pipeline(&mut self, name: &'static str) -> &mut Pipeline<D> {
+        self.0.entry(name).or_insert_with(|| Pipeline {
+            map: Default::default(),
+            events: Default::default(),
+        })
+    }
 }
-
 
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
-    pub(crate) window: Container<WindowEvent<'static>>,
+    pub(crate) window: AHashMap<&'static str, Pipeline<WindowEvent<'static>>>,
+}
+
+impl Events {
+    // Get the registry of a specific descriptor from within the global events
+    // This is the only way we can interface with the values stored within the event manager
+    pub fn registry<'b, M: Descriptor + FuckYou>(&'b mut self) -> RegistryEntry<'b, M> {
+        M::test(self)
+    }
+}
+
+fn test() {
+    let mut events = Events {
+        window: Default::default(),
+    };
+
+    let mut reg = events.registry::<WindowEvent>();
+    let pipe = reg.pipeline("fagfs");
+    let mut test = WindowEvent::CloseRequested;
+    let mut world = World::default();
+    pipe.execute((&mut world, &mut test));
 }

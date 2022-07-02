@@ -133,6 +133,7 @@ fn main_camera(world: &mut World) {
 
 // Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
+    /*
     // Insert init events
     events
         .registry::<Init>()
@@ -168,4 +169,5 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert window events
     events.registry::<WindowEvent>().insert(window_resize);
+    */
 }

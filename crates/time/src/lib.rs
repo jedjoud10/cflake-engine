@@ -71,6 +71,8 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the events
+    /*
     events.registry::<Init>().insert(init);
     events.registry::<Update>().insert(update);
+    */
 }

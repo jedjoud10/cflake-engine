@@ -1,5 +1,4 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-/*
 use crate::{Events, World};
 
 // The setup function can only be called once
@@ -16,10 +15,7 @@ pub fn setup() -> (World, Events) {
             },
             // Create a single instance of the events
             Events {
-                init: Default::default(),
-                update: Default::default(),
-                window: Default::default(),
-                device: Default::default(),
+                window: todo!(),
             },
         )
     } else {
@@ -27,5 +23,3 @@ pub fn setup() -> (World, Events) {
         panic!("Cannot create more than one world and one event manager per program instance!");
     }
 }
-
-*/

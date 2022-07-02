@@ -90,8 +90,8 @@ impl App {
             .insert_system(input::system)
             .insert_system(gui::system)
             .insert_system(ecs::system)
-            .insert_system(time::system)
-            .insert_system(world::system);
+            .insert_system(time::system);
+            //.insert_system(world::system);
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
@@ -107,9 +107,9 @@ impl App {
         self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
 
         // Sort & execute the init events
-        let mut reg = self.events.registry::<Init>();
-        reg.sort().unwrap();
-        reg.execute((&mut self.world, &mut self.el));
+        //let mut reg = self.events.registry::<Init>();
+        //reg.sort().unwrap();
+        //reg.execute((&mut self.world, &mut self.el));
 
         // Decompose the app
         let mut events = self.events;
@@ -117,15 +117,15 @@ impl App {
         let el = self.el;
 
         // Sort the remaining events registries
-        events.registry::<Update>().sort().unwrap();
-        events.registry::<WindowEvent>().sort().unwrap();
-        events.registry::<DeviceEvent>().sort().unwrap();
+        //events.registry::<Update>().sort().unwrap();
+        //events.registry::<WindowEvent>().sort().unwrap();
+        //events.registry::<DeviceEvent>().sort().unwrap();
 
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {
             glutin::event::Event::MainEventsCleared => {
                 // Call the update events
-                events.registry::<Update>().execute(&mut world);
+                //events.registry::<Update>().execute(&mut world);
 
                 // Update the current control flow based on the world state
             }
@@ -134,15 +134,15 @@ impl App {
                 mut event,
             } => {
                 // Call the window events
-                events
-                    .registry::<WindowEvent>()
-                    .execute((&mut world, &mut event));
+                let mut reg = events.registry::<WindowEvent>();
+                let pipe = reg.pipeline("ff");
+                pipe.execute((&mut world, &mut event));
             }
             glutin::event::Event::DeviceEvent { device_id, event } => {
                 // Call the device events
-                events
-                    .registry::<DeviceEvent>()
-                    .execute((&mut world, &event));
+                //events
+                //    .registry::<DeviceEvent>()
+                //    .execute((&mut world, &event));
             }
             _ => {}
         });

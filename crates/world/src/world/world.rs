@@ -5,6 +5,7 @@ use std::any::TypeId;
 // The world is a unique container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
+#[derive(Default)]
 pub struct World {
     pub(crate) resources: AHashMap<TypeId, Box<dyn Resource>>,
 }

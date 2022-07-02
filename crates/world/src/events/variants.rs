@@ -1,14 +1,13 @@
-use std::rc::Rc;
+use std::{rc::Rc, cell::RefCell};
 use glutin::event::{WindowEvent, DeviceEvent};
-use crate::{Descriptor, World, Caller, Event, IntoEntry};
+use crate::{Descriptor, World, Caller, Event, Events, FuckYou};
 
-impl<'a> IntoEntry<'a> for WindowEvent<'a> {
-    fn into_registry<'b>(events: &'b mut crate::Events) -> crate::RegistryEntry<'b, 'a, Self> {
-        let events = &mut events.window.map;
-        crate::RegistryEntry {
-            container: events,
-            _phantom: Default::default(),
-        }
+pub struct Init;
+pub struct Update;
+
+impl FuckYou for WindowEvent<'static> {
+    fn test(events: &mut Events) -> crate::RegistryEntry<Self> {
+        crate::RegistryEntry(&mut events.window)
     }
 }
 
