@@ -1,7 +1,7 @@
 use std::{rc::Rc, marker::PhantomData, cell::{RefCell, RefMut}};
 use ahash::AHashMap;
-use glutin::event::WindowEvent;
-use crate::{Pipeline, StageKey, StageError, Stage, World};
+use glutin::event::{WindowEvent, DeviceEvent};
+use crate::{Pipeline, StageKey, StageError, Stage, World, Init, Update};
 
 // Descriptors simply tell us how we should box the function
 pub trait Descriptor: Sized {
@@ -9,7 +9,8 @@ pub trait Descriptor: Sized {
     // Ex. dyn FnOnce()
     type DynFunc: ?Sized;
 
-    fn get_registry(events: &mut Events) -> &mut Registry<Self>;
+    // This will fetch the appropriate registry for this specific marker from the main events
+    fn registry(events: &mut Events) -> &mut Registry<Self>;
 }
 
 // Callers will be implemented for all marker types. This is what will execute the events specifically
@@ -19,7 +20,7 @@ pub trait Caller<'p>: Descriptor {
 
     // Execute all the events that are contained from within the registry
     //fn call(registry: Registry<'d, Self>, params: Self::Params);
-    fn call(ptrs: &mut Vec<(StageKey, Box<Self::DynFunc>)>, params: Self::Params);
+    fn call(vec: &mut Vec<(StageKey, Box<Self::DynFunc>)>, params: Self::Params);
 }
 
 // This trat will be implemented for closures that take in "P" arguments and that are used by the "M" marker descriptor
@@ -44,25 +45,15 @@ impl<D: Descriptor> Registry<D> {
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
     pub(crate) window: Registry<WindowEvent<'static>>,
+    pub(crate) device: Registry<DeviceEvent>,
+    pub(crate) init: Registry<Init>,
+    pub(crate) update: Registry<Update>,
 }
 
 impl Events {
     // Get the registry of a specific descriptor from within the global events
     // This is the only way we can interface with the values stored within the event manager
     pub fn registry<M: Descriptor>(&mut self) -> &mut Registry<M> {
-        M::get_registry(self)
+        M::registry(self)
     }
-}
-
-fn test() {
-    /*
-    let mut events = Events {
-        window: Default::default(),
-    };
-    let mut reg = events.registry::<WindowEvent>();
-    let pipe = reg.pipeline("fagfs");
-    let mut test = WindowEvent::CloseRequested;
-    let mut world = World::default();
-    */
-    //pipe.execute((&mut world, &mut test));
 }

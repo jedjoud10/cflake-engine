@@ -1,14 +1,13 @@
 use std::{rc::Rc, cell::RefCell};
-use glutin::event::{WindowEvent, DeviceEvent};
+use glutin::{event::{WindowEvent, DeviceEvent}, event_loop::EventLoop};
 use crate::{Descriptor, World, Caller, Event, Events, Pipeline};
 
-pub struct Init;
-pub struct Update;
 
+// Window event marker (called by glutin handler)
 impl<'a> Descriptor for WindowEvent<'a> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
 
-    fn get_registry(events: &mut Events) -> &mut crate::Registry<Self> {
+    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
         &mut events.window
     }
 }
@@ -16,85 +15,85 @@ impl<'a> Descriptor for WindowEvent<'a> {
 impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {
     type Params = (&'p mut World, &'p mut WindowEvent<'a>);
 
-    fn call(ptrs: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
-        todo!()
+    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+        let world = params.0;
+        let event = params.1;
+
+        for (_, func) in vec {
+            func(world, event);
+        }
     }
 }
 
 impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F {
     fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
-        todo!()
+        Box::new(self)
     }
 }  
 
-/*
 // Device event marker (called by glutin handler)
 impl Descriptor for DeviceEvent {
     type DynFunc = dyn Fn(&mut World, &DeviceEvent);
 
     fn registry(events: &mut crate::Events) -> &mut crate::Registry<Self> {
-        todo!()
+        &mut events.device
     }
 }
 
 impl<'p> Caller<'p> for DeviceEvent {
     type Params = (&'p mut World, &'p DeviceEvent);
 
-    fn call(ptrs: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
-        todo!()
+    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+        let world = params.0;
+        let event = params.1;
+
+        for (_, func) in vec {
+            func(world, event);
+        }
     }
 }
 
 impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)> for F {
     fn boxed(self) -> Box<<DeviceEvent as Descriptor>::DynFunc> {
-        todo!()
+        Box::new(self)
     }
 }
-*/
-
-
-/*
-
 
 
 // Init event marker(FnOnce, called at the start of the engine)
 pub struct Init(());
 
-impl Descriptor<'static> for Init {
+impl Descriptor for Init {
     type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
 
-    fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry {
-            sorted: &mut events.init.sorted,
-        }
+    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
+        &mut events.init
     }
 }
 
-impl<'p> Caller<'static, 'p> for Init {
+impl<'p> Caller<'p> for Init {
     type Params = (&'p mut World, &'p EventLoop<()>);
 
-    fn call(registry: Registry<'_, 'static, Self>, params: Self::Params) {
+    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
         let world = params.0;
         let el = params.1;
 
-        let vec = std::mem::take(registry.sorted);
-
-        for (boxed, _) in vec {
-            boxed(world, el);
+        for (_, func) in vec {
+            func(world, el)
         }
     }
 }
 
-impl<F: FnOnce(&mut World) + 'static> Event<'static, Init, &mut World> for F {
-    fn boxed(self) -> Box<<Init as Descriptor<'static>>::DynFunc> {
+impl<F: FnOnce(&mut World) + 'static> Event<Init, &mut World> for F {
+    fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
         Box::new(|world, _| self(world))
     }
 }
 
 impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static>
-    Event<'static, Init, (&mut World, &EventLoop<()>)> for F
+    Event<Init, (&mut World, &EventLoop<()>)> for F
 {
-    fn boxed(self) -> Box<<Init as Descriptor<'static>>::DynFunc> {
+    fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
         Box::new(self)
     }
 }
@@ -102,96 +101,26 @@ impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static>
 // Update event marker (called each frame)
 pub struct Update(());
 
-impl Descriptor<'static> for Update {
+impl Descriptor for Update {
     type DynFunc = dyn Fn(&mut World);
 
-    fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry {
-            sorted: &mut events.update.sorted,
-        }
+    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
+        &mut events.update
     }
 }
 
-impl<'p> Caller<'static, 'p> for Update {
+impl<'p> Caller<'p> for Update {
     type Params = &'p mut World;
 
-    fn call(registry: Registry<'_, 'static, Self>, params: Self::Params) {
-        for (boxed, _) in registry.sorted.iter() {
-            boxed(params);
+    fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+        for (_, func) in vec {
+            func(params);
         }
     }
 }
 
-impl<F: Fn(&mut World) + 'static> Event<'static, Update, &mut World> for F {
-    fn boxed(self) -> Box<<Update as Descriptor<'static>>::DynFunc> {
-        Box::new(move |world| self(world))
-    }
-}
-
-// Window event marker (called by glutin handler) (this makes it extremely pain since the window event contains a lifetime)
-impl<'d> Descriptor<'d> for WindowEvent<'d> {
-    type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
-
-    fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'd, Self> {
-        Registry {
-            sorted: &mut events.window.sorted,
-        }
-    }
-}
-
-impl<'d, 'p> Caller<'d, 'p> for WindowEvent<'d>
-where
-    'd: 'p,
-{
-    type Params = (&'p mut World, &'p mut WindowEvent<'d>);
-
-    fn call(registry: Registry<'_, 'd, Self>, params: Self::Params) {
-        let world = params.0;
-        let ev = params.1;
-
-        for (boxed, _) in registry.sorted.iter() {
-            boxed(world, ev);
-        }
-    }
-}
-
-impl<'d, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
-    Event<'d, WindowEvent<'d>, (&mut World, &mut WindowEvent<'_>)> for F
-{
-    fn boxed(self) -> Box<<WindowEvent<'d> as Descriptor<'d>>::DynFunc> {
+impl<F: Fn(&mut World) + 'static> Event<Update, &mut World> for F {
+    fn boxed(self) -> Box<<Update as Descriptor>::DynFunc> {
         Box::new(self)
     }
 }
-
-// Device event marker (called by glutin handler)
-impl Descriptor<'static> for DeviceEvent {
-    type DynFunc = dyn Fn(&mut World, &DeviceEvent);
-
-    fn registry<'b>(events: &'b mut Events) -> Registry<'b, 'static, Self> {
-        Registry {
-            sorted: &mut events.device.sorted,
-        }
-    }
-}
-
-impl<'p> Caller<'static, 'p> for DeviceEvent {
-    type Params = (&'p mut World, &'p DeviceEvent);
-
-    fn call(registry: Registry<'_, 'static, Self>, params: Self::Params) {
-        let world = params.0;
-        let event = params.1;
-
-        for (boxed, _) in registry.sorted.iter() {
-            boxed(world, event);
-        }
-    }
-}
-
-impl<F: Fn(&mut World, &DeviceEvent) + 'static>
-    Event<'static, DeviceEvent, (&mut World, &DeviceEvent)> for F
-{
-    fn boxed(self) -> Box<<DeviceEvent as Descriptor<'static>>::DynFunc> {
-        Box::new(move |world, event| self(world, event))
-    }
-}
-*/

@@ -58,7 +58,6 @@ impl<M: Descriptor> Pipeline<M> {
         Ok(())
     }
 
-    /*
     // Execute all the event sequentially using the proper caller parameters
     pub fn execute<'a>(&mut self, params: <M as Caller<'a>>::Params)
     where
@@ -66,7 +65,6 @@ impl<M: Descriptor> Pipeline<M> {
     {
         M::call(&mut self.events, params);
     }
-    */
 }
 
 // Sort a hashmap containing multiple stage rules that depend upon each other

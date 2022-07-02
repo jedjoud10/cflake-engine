@@ -67,7 +67,7 @@ impl Stage {
     pub(super) fn validate(self) -> Result<Self, StageError> {
         if self.rules.is_empty() {
             return Err(StageError::MissingRules);
-        } else if self.name.is_empty() {
+        } else if self.name.is_empty() || RESERVED_NAMES.contains(&self.name.as_ref()) {
             return Err(StageError::InvalidName);
         }
 
