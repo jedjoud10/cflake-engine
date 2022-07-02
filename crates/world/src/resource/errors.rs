@@ -1,3 +1,5 @@
+use crate::Resource;
+
 
 // Error that gets thrown whenever we try to fetch a resource that doesn't exist or if we have overlapping handles
 pub enum ResourceError {

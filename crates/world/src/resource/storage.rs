@@ -1,4 +1,4 @@
-use crate::{self as world, Events};
+use crate::{self as world};
 use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
@@ -88,7 +88,7 @@ impl<T> Cleanse for InnerStorage<T> {
 pub struct StorageSetDescriptor {
     storages: Vec<Rc<dyn Cleanse>>,
 }
-
+/*
 // This is the main system that will "cleanse" the stored storages
 pub fn system(_events: &mut Events) {
     // At the end of every frame, we cleanse ALL the storages
@@ -102,6 +102,7 @@ pub fn system(_events: &mut Events) {
     // Register the cleansing event
     //events.register_with::<Update>(cleanse, i32::MAX);
 }
+*/
 
 // A storage is a way to keep certain values stored in memory without dropping them
 // When inserting a new value into a storage, we receive a Handle to that value

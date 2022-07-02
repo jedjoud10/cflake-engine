@@ -1,7 +1,5 @@
-/*
-use crate::{Entry, Layout, Resource, ResourceError, System};
+use crate::{Entry, Layout, Resource, ResourceError};
 use ahash::AHashMap;
-
 use std::any::TypeId;
 
 // The world is a unique container for multiple resources
@@ -57,5 +55,3 @@ impl World {
 pub trait FromWorld {
     fn from_world(world: &mut World) -> Self;
 }
-
-*/

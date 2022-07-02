@@ -1,10 +1,7 @@
 use std::marker::PhantomData;
-
 use assets::Assets;
 use world::Storage;
-
 use crate::{context::Context, prelude::Shader};
-
 use super::Material;
 
 // Instance builder that will take a unique material and construct a new instance for it

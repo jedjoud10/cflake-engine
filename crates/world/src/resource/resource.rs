@@ -1,5 +1,5 @@
 use crate::{FromWorld, ResourceError, World};
-
+pub use resources_derive::Resource;
 use std::{any::Any, marker::PhantomData, ptr::NonNull};
 
 // A resource is some shared data that will be accessed by multiple systems
