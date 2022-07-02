@@ -1,13 +1,13 @@
 use std::{rc::Rc, cell::RefCell};
 use glutin::{event::{WindowEvent, DeviceEvent}, event_loop::EventLoop};
-use crate::{Descriptor, World, Caller, Event, Events, Pipeline};
+use crate::{Descriptor, World, Caller, Event, Events, Registry};
 
 
 // Window event marker (called by glutin handler)
 impl<'a> Descriptor for WindowEvent<'a> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
 
-    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
+    fn registry(events: &mut Events) -> &mut Registry<Self> {
         &mut events.window
     }
 }
@@ -35,7 +35,7 @@ impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'a
 impl Descriptor for DeviceEvent {
     type DynFunc = dyn Fn(&mut World, &DeviceEvent);
 
-    fn registry(events: &mut crate::Events) -> &mut crate::Registry<Self> {
+    fn registry(events: &mut Events) -> &mut Registry<Self> {
         &mut events.device
     }
 }
@@ -66,7 +66,7 @@ pub struct Init(());
 impl Descriptor for Init {
     type DynFunc = dyn FnOnce(&mut World, &EventLoop<()>);
 
-    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
+    fn registry(events: &mut Events) -> &mut Registry<Self> {
         &mut events.init
     }
 }
@@ -78,7 +78,9 @@ impl<'p> Caller<'p> for Init {
         let world = params.0;
         let el = params.1;
 
-        for (_, func) in vec {
+        let take = std::mem::take(vec);
+
+        for (_, func) in take {
             func(world, el)
         }
     }
@@ -104,7 +106,7 @@ pub struct Update(());
 impl Descriptor for Update {
     type DynFunc = dyn Fn(&mut World);
 
-    fn registry(events: &mut Events) -> &mut crate::Registry<Self> {
+    fn registry(events: &mut Events) -> &mut Registry<Self> {
         &mut events.update
     }
 }

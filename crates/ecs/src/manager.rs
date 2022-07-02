@@ -147,14 +147,9 @@ impl EcsManager {
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(events: &mut Events) {
-    // Update event that will cleanup the ECS manager states
+    // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let (ecs, time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
-
-        // Ignore the first frame
-        if time.frame_count() == 0 {
-            return;
-        }
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {
@@ -168,22 +163,6 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the events
-    /*
-    events.registry::<Init>().insert_with(
-        init,
-        Stage::new("ecs insert").before("user begin")
-            .set_name("ecs insert")
-            .set_before("main")
-            .build()
-            .unwrap(),
-    );
-    events.registry::<Update>().insert_with(
-        cleanup,
-        Stage::builder()
-            .set_name("ecs cleanup")
-            .set_before("main")
-            .build()
-            .unwrap(),
-    );
-    */
+    events.registry::<Init>().insert_with(init, Stage::new("ecs insert").before("user")).unwrap();
+    events.registry::<Update>().insert_with(cleanup, Stage::new("ecs cleanup").after("time update").after("post user")).unwrap();
 }

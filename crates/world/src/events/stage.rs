@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use ahash::AHashMap;
 
-use crate::StageError;
+use crate::{StageError, RESERVED};
 
 // Names are shared around since we clone them frequently
 pub type StageKey = Rc<str>;
@@ -26,9 +26,6 @@ impl Rule {
     }
 }
 
-// This is a list of reserved names for internal stages that we cannot reproduce
-const RESERVED_NAMES: &[&str] = &[super::pipeline::EXEC_STAGE_NAME];
-
 // Stages are are a way for us to sort and prioritize certain events before others
 // Stages will be converted to Nodes whenever they get inserted into a pipeline
 #[derive(Clone)]
@@ -52,13 +49,13 @@ impl Stage {
     }
 
     // Add a "before" rule to the current stage
-    pub fn set_before(mut self, other: impl Into<StageKey>) -> Self {
+    pub fn before(mut self, other: impl Into<StageKey>) -> Self {
         self.rules.push(Rule::Before(other.into()));
         self
     }
 
     // Add a "after" rule to the current stage
-    pub fn set_after(mut self, other: impl Into<StageKey>) -> Self {
+    pub fn after(mut self, other: impl Into<StageKey>) -> Self {
         self.rules.push(Rule::After(other.into()));
         self
     }
@@ -67,7 +64,7 @@ impl Stage {
     pub(super) fn validate(self) -> Result<Self, StageError> {
         if self.rules.is_empty() {
             return Err(StageError::MissingRules);
-        } else if self.name.is_empty() || RESERVED_NAMES.contains(&self.name.as_ref()) {
+        } else if self.name.is_empty() || RESERVED.contains(&self.name.as_ref()) {
             return Err(StageError::InvalidName);
         }
 

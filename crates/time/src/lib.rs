@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use world::{Events, Init, Resource, Update, World};
+use world::{Events, Init, Resource, Update, World, Stage};
 
 // Global resource that defines the time since the start of the engine and the current frame data
 #[derive(Resource)]
@@ -71,6 +71,8 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the events
+    events.registry::<Init>().insert_with(init, Stage::new("time insert").before("user")).unwrap();
+    events.registry::<Update>().insert_with(update, Stage::new("time update")).unwrap();
     /*
     events.registry::<Init>().insert(init);
     events.registry::<Update>().insert(update);

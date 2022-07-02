@@ -8,23 +8,39 @@ pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 // Number of maximum iterations allowed before we detect a cyclic reference when recursing through the calc event
 pub const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 
-// The name of the main execution start stage
-pub const EXEC_STAGE_NAME: &str = "main";
+// Reference point stages that we will use to insert more events into the registry
+pub const RESERVED: &[&str] = &["user", "post user"];
 
-// A pipeline is what will contain all the different stages, alongside the events
-// Multiple types of events can have different pipelines, however, we must assume that the pipelines have no dependencies upon each other
-#[derive(Default)]
-pub struct Pipeline<M: Descriptor + 'static> {
+// A registry is what will contain all the different stages, alongside the events
+// Each type of event contains one registry associated with it
+pub struct Registry<M: Descriptor + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
     // Name of the stage -> underlying event
     pub(super) events: Vec<(StageKey, Box<M::DynFunc>)>,
+
+    // Incremented procedural name
+    counter: u64,
 }
 
-impl<M: Descriptor> Pipeline<M> {
-    // Insert a new stage-event tuple into the pipeline (faillible)
-    pub fn insert<P>(&mut self, event: impl Event<M, P>, stage: Stage) -> Result<(), StageError> {
+impl<D: Descriptor + 'static> Default for Registry<D> {
+    fn default() -> Self {
+        Self { map: Default::default(), events: Default::default(), counter: 0 }
+    }
+}
+
+impl<M: Descriptor> Registry<M> {
+    // Insert a new event that will be executed after the "user" stage and before the "post user" stage
+    pub fn insert<P>(&mut self, event: impl Event<M, P>) {
+        let name = Rc::from(format!("event-{}", self.counter));
+        let stage = Stage::new(name).before("user").after("post user");
+        self.counter += 1;
+        self.insert_with::<P>(event, stage).unwrap();
+    }
+
+    // Insert a new stage-event tuple into the registry (faillible)
+    pub fn insert_with<P>(&mut self, event: impl Event<M, P>, stage: Stage) -> Result<(), StageError> {
         // We can only have one event per stage and one stage per event
         if self.map.contains_key(stage.name().as_ref()) {
             return Err(StageError::Overlapping);
@@ -43,14 +59,14 @@ impl<M: Descriptor> Pipeline<M> {
         }
     }
 
-    // Sort all the events stored in the pipeline using the stages
+    // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), PipelineSortingError> {
         let indices = sort(&mut self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.events.sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a],&indices[b]));
 
-        for (name, _) in self.events.iter() {
+        for (name, _) in indices.iter() {
             println!("sorted: {}", &name);
         }
 
@@ -75,10 +91,11 @@ fn sort(map: &mut AHashMap<StageKey, Vec<Rule>>) -> Result<AHashMap<StageKey, us
     let mut indices = AHashMap::<StageKey, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
 
-    // Insert the startup main stage that will be the base of everything
-    // Other stages can derive off of this by using multiple rules
-    vec.push(Vec::default());
-    indices.insert(EXEC_STAGE_NAME.into(), 0);
+    // Insert the reserved stages, since we use them as reference points
+    for reserved in RESERVED.iter() {
+        vec.push(Vec::default());
+        indices.insert(Rc::from(*reserved), 0);
+    }
 
     // This event will add a current stage into the main vector and sort it according to it's rules
     fn calc(
@@ -167,10 +184,6 @@ fn sort(map: &mut AHashMap<StageKey, Vec<Rule>>) -> Result<AHashMap<StageKey, us
     for key in keys {
         calc(key, &mut indices, map, &mut vec, 0, None)?;
     }
-    
-    // Remove the "exec" stage since it was just there to act as a reference point
-    vec.remove(indices[EXEC_STAGE_NAME]);
-    indices.remove(EXEC_STAGE_NAME);
 
     Ok(indices)
 }

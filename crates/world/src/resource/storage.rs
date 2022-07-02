@@ -1,4 +1,4 @@
-use crate::{self as world};
+use crate::{self as world, Events, Update, Stage};
 use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
@@ -31,9 +31,9 @@ impl<T> Queue<T> {
 }
 
 // This trait will implemented for all InnerStorage<T> types
-// This will automatically be called at the very very end of each frame, automatically, to cleanse all the storages of any dangling values that might be stored within them
+// This will automatically be called at the very very end of each frame, automatically, to clean all the storages of any dangling values that might be stored within them
 // It's like a garbage collector, but type safe and in rust
-trait Cleanse {
+trait Clean {
     fn remove_dangling(&self);
 }
 
@@ -62,7 +62,7 @@ pub struct InnerStorage<T> {
     must_drop: Queue<usize>,
 }
 
-impl<T> Cleanse for InnerStorage<T> {
+impl<T> Clean for InnerStorage<T> {
     // This method will simply drop all the values that have their counter values equal to 0 and their dropped state to false (since we must only drop once)
     // This will convert all the slots that must be dropped into slots that are empty
     fn remove_dangling(&self) {
@@ -83,26 +83,27 @@ impl<T> Cleanse for InnerStorage<T> {
 }
 
 // A storage set descriptor contains multiple reference to multiple InnerStorage<T>s
-// This allows us to cleanse each storage of any dangling values automatically using a specific system
+// This allows us to clean each storage of any dangling values automatically using a specific system
 #[derive(Resource)]
 pub struct StorageSetDescriptor {
-    storages: Vec<Rc<dyn Cleanse>>,
+    storages: Vec<Rc<dyn Clean>>,
 }
-/*
-// This is the main system that will "cleanse" the stored storages
-pub fn system(_events: &mut Events) {
-    // At the end of every frame, we cleanse ALL the storages
-    fn cleanse(world: &mut World) {
+
+// This is the main system that will "clean" the stored storages
+pub fn system(events: &mut Events) {
+    // At the end of every frame, we clean ALL the storages
+    fn clean(world: &mut World) {
         let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
         for obj in descriptor.storages.iter() {
             obj.remove_dangling();
         }
     }
 
-    // Register the cleansing event
-    //events.register_with::<Update>(cleanse, i32::MAX);
+    // Register the cleaning event (doesn't really matter *when* we execute it really)
+    events.registry::<Update>().insert_with(clean, Stage::new("storage clean").after("post user")).unwrap();
+    //events.register_with::<Update>(clean, i32::MAX);
+
 }
-*/
 
 // A storage is a way to keep certain values stored in memory without dropping them
 // When inserting a new value into a storage, we receive a Handle to that value
@@ -111,7 +112,7 @@ pub fn system(_events: &mut Events) {
 pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 
 // Create a new default storage using the world
-// This will also register the storage's cleanse function automatically
+// This will also register the storage's clean function automatically
 impl<T> FromWorld for Storage<T> {
     fn from_world(world: &mut world::World) -> Self {
         let rc = Rc::new(InnerStorage {
@@ -125,7 +126,7 @@ impl<T> FromWorld for Storage<T> {
                 .or_insert_with(|_| StorageSetDescriptor {
                     storages: Default::default(),
                 });
-        descriptor.storages.push(rc.clone() as Rc<dyn Cleanse>);
+        descriptor.storages.push(rc.clone() as Rc<dyn Clean>);
         Self(rc)
     }
 }

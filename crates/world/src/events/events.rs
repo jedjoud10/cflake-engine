@@ -1,7 +1,7 @@
 use std::{rc::Rc, marker::PhantomData, cell::{RefCell, RefMut}};
 use ahash::AHashMap;
 use glutin::event::{WindowEvent, DeviceEvent};
-use crate::{Pipeline, StageKey, StageError, Stage, World, Init, Update};
+use crate::{Registry, StageKey, StageError, Stage, World, Init, Update};
 
 // Descriptors simply tell us how we should box the function
 pub trait Descriptor: Sized {
@@ -28,18 +28,6 @@ pub trait Event<M: Descriptor, P> {
     // Box the underlying event into it's proper DynFn dynamic trait object
     fn boxed(self) -> Box<M::DynFunc>;
 }
-
-pub struct Registry<D: Descriptor + 'static>(AHashMap<&'static str, Pipeline<D>>);
-impl<D: Descriptor> Registry<D> {
-    // Try to get a pipeline using it's name. If the pipeline does not exist, this will create it automatically
-    pub fn pipeline(&mut self, name: &'static str) -> &mut Pipeline<D> {
-        self.0.entry(name).or_insert_with(|| Pipeline {
-            map: Default::default(),
-            events: Default::default(),
-        })
-    }
-}
-
 
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any

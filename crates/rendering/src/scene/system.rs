@@ -133,41 +133,17 @@ fn main_camera(world: &mut World) {
 
 // Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
-    /*
     // Insert init events
     events
         .registry::<Init>()
-        .insert(|world: &mut World, el: &EventLoop<()>| init(world, settings, el));
+        .insert_with(|world: &mut World, el: &EventLoop<()>| init(world, settings, el), Stage::new("graphics insert").after("asset loader insert")).unwrap();
 
-    // Insert update events
-    events
-        .registry::<Update>()
-        .insert_with(
-            main_camera,
-            Stage::builder()
-                .set_name("main camera update")
-                .set_after("main")
-                .build()
-                .unwrap(),
-        )
-        .insert_with(
-            rendering,
-            Stage::builder()
-                .set_name("scene rendering")
-                .set_after("main camera update")
-                .build()
-                .unwrap(),
-        )
-        .insert_with(
-            swap,
-            Stage::builder()
-                .set_name("swap")
-                .set_after("scene rendering")
-                .build()
-                .unwrap(),
-        );
+    // Insert update events (fetch the registry)
+    let reg = events.registry::<Update>();
+    reg.insert(main_camera);
+    reg.insert_with(rendering, Stage::new("scene rendering").after("main camera update")).unwrap();
+    reg.insert_with(swap, Stage::new("window back buffer swap").after("scene renderin")).unwrap();
 
     // Insert window events
     events.registry::<WindowEvent>().insert(window_resize);
-    */
 }

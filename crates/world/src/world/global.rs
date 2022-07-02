@@ -15,7 +15,10 @@ pub fn setup() -> (World, Events) {
             },
             // Create a single instance of the events
             Events {
-                window: todo!(),
+                window: Default::default(),
+                device: Default::default(),
+                init: Default::default(),
+                update: Default::default(),
             },
         )
     } else {

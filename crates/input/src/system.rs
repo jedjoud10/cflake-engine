@@ -29,11 +29,9 @@ pub fn system(events: &mut Events) {
     fn event(_world: &mut World, _data: &DeviceEvent) {}
 
     // Register the events
-    /*
-    events.registry::<Init>().insert(init);
+    events.registry::<Init>().insert_with(init, Stage::new("input insert").before("earliest")).unwrap();
     events.registry::<DeviceEvent>().insert_with(
         event,
-        Stage::new("input").before("internal begin"),
+        Stage::new("input").before("internal"),
     );
-    */
 }
