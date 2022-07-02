@@ -65,11 +65,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>()
         .unwrap();
     let material = Standard::builder()
-        .albedo(&white)
-        .normal(&normal_map)
-        .mask(&mask_map)
-        .metallic(0.2)
-        .roughness(1.0)
+        .with_albedo(&white)
+        .with_normal(&normal_map)
+        .with_mask(&mask_map)
+        .with_metallic(0.2)
+        .with_roughness(1.0)
         .build(ctx, assets, storage);
 
     // Insert el material and get it's handle

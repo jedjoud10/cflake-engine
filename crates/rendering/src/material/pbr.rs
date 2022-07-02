@@ -87,19 +87,19 @@ impl Material for Standard {
 
 impl MaterialBuilder<Standard> {
     // Set the albedo map
-    pub fn albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
+    pub fn with_albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
         self.material_mut().albedo = Some(albedo.clone());
         self
     }
 
     // Set the normal map
-    pub fn normal(mut self, normal: &Handle<NormalMap>) -> Self {
+    pub fn with_normal(mut self, normal: &Handle<NormalMap>) -> Self {
         self.material_mut().normal = Some(normal.clone());
         self
     }
 
     // Set the mask map
-    pub fn mask(mut self, mask: &Handle<MaskMap>) -> Self {
+    pub fn with_mask(mut self, mask: &Handle<MaskMap>) -> Self {
         self.material_mut().mask = Some(mask.clone());
         self
     }
@@ -111,13 +111,13 @@ impl MaterialBuilder<Standard> {
     }
 
     // Set the roughness parameter
-    pub fn roughness(mut self, roughness: f32) -> Self {
+    pub fn with_roughness(mut self, roughness: f32) -> Self {
         self.material_mut().roughness = roughness;
         self
     }
 
     // Set the metallic parameter
-    pub fn metallic(mut self, metallic: f32) -> Self {
+    pub fn with_metallic(mut self, metallic: f32) -> Self {
         self.material_mut().metallic = metallic;
         self
     }

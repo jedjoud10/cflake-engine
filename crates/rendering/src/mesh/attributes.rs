@@ -262,14 +262,14 @@ pub struct AttributeSet {
 struct AuxBufGen<'a> {
     vao: u32,
     index: &'a mut u32,
-    builder: &'a GeometryBuilder,
+    vertices: &'a mut VertexAssembly,
     ctx: &'a mut Context,
     mode: BufferMode,
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
 fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
-    aux.builder.attribute_vec::<T>().map(|vec| unsafe {
+    aux.vertices.get_mut::<T>().map(|vec| unsafe {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
 
@@ -296,7 +296,7 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
 
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
-    pub fn new(ctx: &mut Context, mode: BufferMode, builder: &GeometryBuilder) -> Self {
+    pub fn new(ctx: &mut Context, mode: BufferMode, mut vertices: VertexAssembly) -> Self {
         // Create and bind the VAO, then create a safe VAO wrapper
         let vao = unsafe {
             let mut name = 0;
@@ -306,14 +306,14 @@ impl AttributeSet {
         };
 
         // We do a bit of copying
-        let layout = builder.layout();
+        let layout = vertices.layout();
 
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
         let mut aux = AuxBufGen {
             vao,
             index: &mut index,
-            builder,
+            vertices: &mut vertices,
             ctx,
             mode,
         };

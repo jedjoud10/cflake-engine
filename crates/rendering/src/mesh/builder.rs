@@ -30,48 +30,20 @@ impl GeometryBuilder {
     }
 
     // Set a single unique vertex attribute
-    pub fn set_attribute_vec<U: Attribute>(&mut self, vec: Vec<U::Out>) {
+    pub fn with_attribute_vec<U: Attribute>(mut self, vec: Vec<U::Out>) -> Self {
         self.vertices.insert::<U>(vec);
-    }
-
-    // Get a vertex attribute immutably
-    pub fn attribute_vec<U: Attribute>(&self) -> Option<&Vec<U::Out>> {
-        self.vertices.get::<U>()
-    }
-
-    // Get the vertex count
-    pub fn vertex_count(&self) -> Option<usize> {
-        self.vertices.len()
-    }
-
-    // Get an attribute vector mutably
-    pub fn attribute_vec_mut<U: Attribute>(&mut self) -> Option<&mut Vec<U::Out>> {
-        self.vertices.get_mut::<U>()
-    }
-
-    // Get the vertex layout that we have created
-    pub fn layout(&self) -> VertexLayout {
-        self.vertices.layout()
+        self
     }
 
     // Set the indices
-    pub fn set_indices(&mut self, assembly: IndexAssembly) {
+    pub fn with_indices(mut self, assembly: IndexAssembly) -> Self {
         self.indices = assembly;
-    }
-
-    // Get the indices immutably
-    pub fn indices(&self) -> &IndexAssembly {
-        &self.indices
-    }
-
-    // Get the indices mutably
-    pub fn indices_mut(&mut self) -> &mut IndexAssembly {
-        &mut self.indices
+        self
     }
 
     // Check if the builder can be used to generate a submesh
     pub fn valid(&self) -> bool {
-        // We must have at least 1 vertex and at least 1 triangle
+        // We must have at least 1 vertex and at least 1 triangle and the underlying vertex assembly is valid
         let tri = self.indices.len() % 3 == 0;
         let vert = self.vertices.len().map(|len| len > 1).unwrap_or_default();
         vert && tri
@@ -79,13 +51,13 @@ impl GeometryBuilder {
 
     // Build the final submesh without checking for validity or anything
     pub unsafe fn build_unchecked(self, ctx: &mut Context) -> SubMesh {
-        SubMesh::new_unchecked(ctx, self)
+        SubMesh::new_unchecked(ctx, self.vertices, self.indices)
     }
 
     // Build the final submesh, and make sure the attribute vectors are valid
     pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {
         self.valid()
-            .then(|| unsafe { SubMesh::new_unchecked(ctx, self) })
+            .then(|| unsafe { SubMesh::new_unchecked(ctx, self.vertices, self.indices) })
     }
 }
 
@@ -99,7 +71,6 @@ impl Asset<'static> for GeometryBuilder {
     fn deserialize(bytes: assets::CachedSlice, _ctx: Self::Args) -> Self {
         // Parse the OBJ mesh into an geoemtry builder
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
-        let mut builder = GeometryBuilder::empty();
         let capacity = parsed.vertices.len();
 
         // Create all the buffers at once
@@ -117,10 +88,11 @@ impl Asset<'static> for GeometryBuilder {
         }
 
         // Set the very sussy bakas (POV: You are slowly going insane)
-        builder.set_attribute_vec::<Position>(positions);
-        builder.set_attribute_vec::<Normal>(normals);
-        builder.set_attribute_vec::<TexCoord0>(tex_coords_0);
-        builder.set_indices(parsed.indices);
+        let builder = GeometryBuilder::empty()
+            .with_attribute_vec::<Position>(positions)
+            .with_attribute_vec::<Normal>(normals)
+            .with_attribute_vec::<TexCoord0>(tex_coords_0)
+            .with_indices(parsed.indices);
 
         builder
     }

@@ -1,4 +1,4 @@
-use super::{attributes::AttributeSet, GeometryBuilder};
+use super::{attributes::AttributeSet, GeometryBuilder, VertexAssembly};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
     canvas::ToRasterBuffers,
@@ -33,14 +33,13 @@ pub struct SubMesh {
 }
 
 impl SubMesh {
-    // Construct a submesh using a geometry builder
-    // This creates a new submesh with attribute layout defined by the builder itself
+    // Construct a unsafe submesh using a vertex assembly and a index set
+    // This will not check if the vertex assembly and index set are valid
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
-    // PS: This doesn't check if the builder contains different length-vectors
-    pub(super) unsafe fn new_unchecked(ctx: &mut Context, builder: GeometryBuilder) -> Self {
+    pub unsafe fn new_unchecked(ctx: &mut Context, vertices: VertexAssembly, indices: Vec<u32>) -> Self {
         Self {
-            attributes: AttributeSet::new(ctx, BufferMode::Static, &builder),
-            indices: Buffer::new(ctx, BufferMode::Static, builder.indices()).unwrap(),
+            attributes: AttributeSet::new(ctx, BufferMode::Static, vertices),
+            indices: Buffer::new(ctx, BufferMode::Static, &indices).unwrap(),
         }
     }
 
