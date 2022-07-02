@@ -170,7 +170,7 @@ pub fn system(events: &mut Events) {
     // Register the events
     events.registry::<Init>().insert_with(
         init,
-        Stage::builder()
+        Stage::new("ecs insert").before("user begin")
             .set_name("ecs insert")
             .set_before("main")
             .build()
