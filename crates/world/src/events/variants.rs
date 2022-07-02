@@ -1,36 +1,58 @@
+use glutin::event::{WindowEvent, DeviceEvent};
+use crate::{Descriptor, World, Caller, Event};
 
-/*
-
-
-
+// Window event marker (called by glutin handler)
 impl<'a> Descriptor for WindowEvent<'a> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
+
+    fn registry<'b>(events: &'b mut crate::Events) -> &'b mut crate::Registry<Self> where 'a: 'b {
+        &mut events.window
+    }
 }
 
 impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {
     type Params = (&'p mut World, &'p mut WindowEvent<'a>);
 
-    fn call(ptrs: &Vec<Box<Self::DynFunc>>, params: Self::Params) {
+    fn call(ptrs: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
         todo!()
     }
 }
 
-impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
-    Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F
-{
+impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F {
     fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
-        Box::new(self)
+        todo!()
+    }
+}  
+
+/*
+// Device event marker (called by glutin handler)
+impl Descriptor for DeviceEvent {
+    type DynFunc = dyn Fn(&mut World, &DeviceEvent);
+
+    fn registry(events: &mut crate::Events) -> &mut crate::Registry<Self> {
+        todo!()
     }
 }
 
+impl<'p> Caller<'p> for DeviceEvent {
+    type Params = (&'p mut World, &'p DeviceEvent);
 
-impl Events {
-    // Get the registry of a specific descriptor from within the global events
-    // This is the only way we can interface with the values stored within the event manager
-    pub fn registry<'b, 'd, M: Descriptor<'d>>(&'b mut self) -> Registry<'b, 'd, M> {
-        Descriptor::registry(self)
+    fn call(ptrs: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
+        todo!()
     }
 }
+
+impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)> for F {
+    fn boxed(self) -> Box<<DeviceEvent as Descriptor>::DynFunc> {
+        todo!()
+    }
+}
+*/
+
+
+/*
+
+
 
 // Init event marker(FnOnce, called at the start of the engine)
 pub struct Init(());

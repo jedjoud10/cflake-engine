@@ -1,10 +1,6 @@
 use ahash::AHashMap;
-use glutin::{
-    event::{DeviceEvent, WindowEvent},
-    event_loop::EventLoop,
-};
-
-use crate::{World, Pipeline, StageKey};
+use glutin::event::WindowEvent;
+use crate::{Pipeline, StageKey};
 
 // Descriptors simply tell us how we should box the function
 pub trait Descriptor: Sized {
@@ -13,7 +9,7 @@ pub trait Descriptor: Sized {
     type DynFunc: ?Sized;
 
     // Get the appropirate registry from the main events
-    fn registry(events: &mut Events) -> &mut Registry<Self>;
+    fn registry<'b>(events: &'b mut Events) -> &'b mut Registry<Self>;
 }
 
 // Callers will be implemented for all marker types. This is what will execute the events specifically
@@ -49,5 +45,5 @@ impl<D: Descriptor> Registry<D> {
 // This is the main event struct that contains all the registries
 // We store all the registries in their own boxed type, but they can be casted to using Any
 pub struct Events {
-
+    pub(crate) window: Registry<WindowEvent<'static>>,
 }
