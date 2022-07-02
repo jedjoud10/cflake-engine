@@ -106,7 +106,7 @@ impl App {
         // Sort & execute the init events
         let reg = self.events.registry::<Init>();
         reg.sort().unwrap();
-        //reg.execute((&mut self.world, &mut self.el));
+        self.events.execute::<Init>((&mut self.world, &self.el));
 
         // Decompose the app
         let mut events = self.events;

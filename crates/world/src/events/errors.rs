@@ -15,11 +15,11 @@ impl std::fmt::Debug for PipelineSortingError {
                 "Detected a cyclic reference when trying to sort stages; aborting"
             ),
             PipelineSortingError::CyclicRuleReference(name) => {
-                write!(f, "Detcted a cyclic reference for rules of stage {name}")
+                write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
             }
             PipelineSortingError::MissingStage(current, name) => write!(
                 f,
-                "Stage {current} tried to reference stage {name}, but the latter does not exist"
+                "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"
             ),
         }
     }

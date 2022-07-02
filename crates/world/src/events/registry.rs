@@ -38,7 +38,7 @@ impl<M: Descriptor> Registry<M> {
     // Insert a new event that will be executed after the "user" stage and before the "post user" stage
     pub fn insert<P>(&mut self, event: impl Event<M, P>) {
         let name = Rc::from(format!("event-{}", self.counter));
-        let stage = Stage::new(name).before("user").after("post user");
+        let stage = Stage::new(name).after("user").before("post user");
         self.counter += 1;
         self.insert_with::<P>(event, stage).unwrap();
     }
@@ -75,8 +75,8 @@ impl<M: Descriptor> Registry<M> {
         self.events
             .sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
 
-        for (name, _) in indices.iter() {
-            println!("sorted: {}", &name);
+        for (name, idx) in indices.iter() {
+            println!("sorted: {} {idx}", &name);
         }
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
@@ -84,20 +84,41 @@ impl<M: Descriptor> Registry<M> {
     }
 }
 
+
+#[test]
+fn test() {
+    let mut map = AHashMap::default();
+    map.insert(Rc::from("test"), vec![Rule::Before(Rc::from("user"))]);
+    let new = sort(&map).unwrap();
+
+    for (name, i) in new {
+        println!("{} {}", name, i);
+    }
+}
+
 // Sort a hashmap containing multiple stage rules that depend upon each other
-// This returns a hashmap containing the new indices of the sorted stages, but it will also update the old hashmap if needed
+// This returns a hashmap containing the new indices of the sorted stages
 fn sort(
-    map: &mut AHashMap<StageKey, Vec<Rule>>,
+    map: &AHashMap<StageKey, Vec<Rule>>,
 ) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
-    let keys = map.keys().cloned().collect::<Vec<_>>();
+    let mut map: AHashMap<StageKey, Vec<Rule>> = map.clone();
+    
+    // We might need to sort the keys to make sure they are deterministic
+    let mut keys = map.keys().cloned().collect::<Vec<_>>();
+    keys.sort();
+
+    for key in &keys {
+        dbg!(key);
+    }
+
     let mut indices = AHashMap::<StageKey, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
     for reserved in RESERVED.iter() {
         vec.push(Vec::default());
-        indices.insert(Rc::from(*reserved), 0);
+        indices.insert(Rc::from(*reserved), vec.len());
     }
 
     // This event will add a current stage into the main vector and sort it according to it's rules
@@ -137,7 +158,7 @@ fn sort(
                         // Move the current stage BEFORE the parent stage
                         Rule::Before(_) => {
                             if location > l {
-                                location = l - 1;
+                                location = l.saturating_sub(1);
                                 changed = true;
                             }
                         }
@@ -159,14 +180,21 @@ fn sort(
                 }
             }
 
+            // Insert the name -> index reference
+            indices.insert(key.clone(), location);
+            
             // Insert the new updated stage at it's correct location
-            let index = vec.len();
-            indices.insert(key.clone(), index);
-            vec.insert(location, rules);
+            if location == vec.len() + 1 {
+                vec.push(rules);
+            } else if location < vec.len() {
+                vec.insert(location, rules);
+            } else if location > vec.len() {
+                panic!()
+            }
 
             // Update the indices of all the values that are after the current stage (since they were shifted to the right)
             for (_, i) in indices.iter_mut() {
-                if *i >= index {
+                if *i >= location {
                     *i += 1;
                 }
             }
@@ -185,7 +213,7 @@ fn sort(
 
     // Add the stages into the vector and start sorting them
     for key in keys {
-        calc(key, &mut indices, map, &mut vec, 0, None)?;
+        calc(key, &mut indices, &mut map, &mut vec, 0, None)?;
     }
 
     Ok(indices)

@@ -31,9 +31,9 @@ pub fn system(events: &mut Events) {
     // Register the events
     events
         .registry::<Init>()
-        .insert_with(init, Stage::new("input insert").before("earliest"))
+        .insert_with(init, Stage::new("input insert").before("user"))
         .unwrap();
     events
         .registry::<DeviceEvent>()
-        .insert_with(event, Stage::new("input").before("internal"));
+        .insert_with(event, Stage::new("input").before("user")).unwrap();
 }
