@@ -1,13 +1,19 @@
+use std::rc::Rc;
 use glutin::event::{WindowEvent, DeviceEvent};
-use crate::{Descriptor, World, Caller, Event};
+use crate::{Descriptor, World, Caller, Event, IntoEntry};
 
-// Window event marker (called by glutin handler)
+impl<'a> IntoEntry<'a> for WindowEvent<'a> {
+    fn into_registry<'b>(events: &'b mut crate::Events) -> crate::RegistryEntry<'b, 'a, Self> {
+        let events = &mut events.window.map;
+        crate::RegistryEntry {
+            container: events,
+            _phantom: Default::default(),
+        }
+    }
+}
+
 impl<'a> Descriptor for WindowEvent<'a> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
-
-    fn registry<'b>(events: &'b mut crate::Events) -> &'b mut crate::Registry<Self> where 'a: 'b {
-        &mut events.window
-    }
 }
 
 impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {
