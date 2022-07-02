@@ -1,90 +1,63 @@
 use ahash::AHashMap;
-
 use crate::StageError;
 
-// Name key type
-type Key = &'static str;
-
 // A rule that depicts the arrangement and the location of the stages relative to other stages
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone)]
 pub enum Rule {
     // This hints that the stage should be executed before other
-    Before(Key),
+    Before(String),
 
     // This hints that the stage should be executed after other
-    After(Key),
+    After(String),
 }
 
 impl Rule {
     // Get the current parent of the current strict node
-    fn parent(&self) -> Key {
+    fn parent(&self) -> &str {
         match self {
-            Rule::Before(p) => p,
-            Rule::After(p) => p,
+            Rule::Before(p) => &p,
+            Rule::After(p) => &p,
         }
     }
 }
 
 // Stages are are a way for us to sort and prioritize certain events before others
+// Stages will be converted to Nodes whenever they get inserted into a pipeline
 #[derive(Clone)]
 pub struct Stage {
     // The user defined name of the current stage
-    name: Key,
+    name: String,
 
     // The direction of this rule compared to other rules
     rules: Vec<Rule>,
+
+    // The pipeline where we will insert this stage
+    pipeline: String,
 }
 
 impl Stage {
-    // This creates a stage builder so we can link some rules to the newly made stage
-    pub fn builder() -> StageBuilder {
-        StageBuilder(Stage {
-            name: "",
-            rules: Vec::default(),
-        })
-    }
-
-    // Get the name of the current stage
-    pub fn name(&self) -> Key {
-        self.name
-    }
-
-    // Get the rules of the current stage
-    pub fn rules(&self) -> &[Rule] {
-        &self.rules
-    }
-}
-
-// A stage builder will help us create stages that have AT LEAST one rule associated with them
-pub struct StageBuilder(Stage);
-
-impl StageBuilder {
-    // Update the name of the inner stage
-    pub fn set_name(mut self, name: impl Into<Key>) -> Self {
-        self.0.name = name.into();
-        self
+    // Create a new empty stage with no rules and no pipeline (invalid)
+    pub fn new(name: impl Into<String>, pipeline: impl Into<String>) -> Self {
+        Self { name: name.into(), pipeline: pipeline.into(), rules: Vec::new()  }
     }
 
     // Add a "before" rule to the current stage
-    pub fn set_before(mut self, other: impl Into<Key>) -> Self {
-        self.0.rules.push(Rule::Before(other.into()));
+    pub fn set_before(mut self, other: impl Into<String>) -> Self {
+        self.rules.push(Rule::Before(other.into()));
         self
     }
 
     // Add a "after" rule to the current stage
-    pub fn set_after(mut self, other: impl Into<Key>) -> Self {
-        self.0.rules.push(Rule::After(other.into()));
+    pub fn set_after(mut self, other: impl Into<String>) -> Self {
+        self.rules.push(Rule::After(other.into()));
         self
     }
 
-    // Try to build the inner stage. If we have zero rules or if the name is empty, this will return None
-    pub fn build(self) -> Option<Stage> {
-        if self.0.name.is_empty() || self.0.rules.is_empty() {
-            None
-        } else {
-            Some(self.0)
-        }
-    }
+    // Set the pipeline where the stage should be inserted to
+    pub fn set_pipeline(mut self, pipeline: impl Into<String>) -> Self {
+        self.pipeline = pipeline.into();
+        self
+    } 
 }
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
@@ -96,6 +69,12 @@ const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
 // The name of the main execution start stage
 const EXEC_STAGE_NAME: &str = "main";
 
+// A pipeline is what will contain all the different stages
+// Multiple types of events can have different pipelines, however, we must assume that the pipelines have no dependencies upon each other
+#[derive(Default)]
+pub(super) struct Pipeline(AHashMap<String, Stage>);
+
+/*
 // Calculate all the priority indices of the stages and sort them automatically
 // This returns a hashmap containing the new indices of the sorted stages
 pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> {
@@ -209,3 +188,4 @@ pub(crate) fn sort(vec: Vec<Stage>) -> Result<AHashMap<Key, usize>, StageError> 
 
     Ok(indices)
 }
+*/

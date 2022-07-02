@@ -32,10 +32,6 @@ pub fn system(events: &mut Events) {
     events.registry::<Init>().insert(init);
     events.registry::<DeviceEvent>().insert_with(
         event,
-        Stage::builder()
-            .set_name("input")
-            .set_after("main")
-            .build()
-            .unwrap(),
+        Stage::new("input").before("internal begin"),
     );
 }

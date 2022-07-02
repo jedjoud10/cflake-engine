@@ -1,5 +1,4 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-
 use crate::{Events, World};
 
 // The setup function can only be called once

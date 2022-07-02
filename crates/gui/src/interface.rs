@@ -30,6 +30,8 @@ impl AsRef<egui::Context> for UserInterface {
     }
 }
 
+
+
 // This system will automatically insert the user interface and setup it's necessary events
 // This will create the init event, begin update event, draw update event, and window event
 pub fn system(_events: &mut Events) {
