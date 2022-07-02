@@ -1,18 +1,16 @@
 use std::{rc::Rc, cell::RefCell};
 use glutin::event::{WindowEvent, DeviceEvent};
-use crate::{Descriptor, World, Caller, Event, Events, FuckYou};
+use crate::{Descriptor, World, Caller, Event, Events, Pipeline};
 
 pub struct Init;
 pub struct Update;
 
-impl FuckYou for WindowEvent<'static> {
-    fn test(events: &mut Events) -> crate::RegistryEntry<Self> {
-        crate::RegistryEntry(&mut events.window)
-    }
-}
-
 impl<'a> Descriptor for WindowEvent<'a> {
     type DynFunc = dyn Fn(&mut World, &mut WindowEvent);
+
+    fn get_registry(events: &mut Events) -> &mut crate::Registry<Self> {
+        &mut events.window
+    }
 }
 
 impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {

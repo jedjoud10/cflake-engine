@@ -107,19 +107,23 @@ impl App {
         self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
 
         // Sort & execute the init events
-        //let mut reg = self.events.registry::<Init>();
-        //reg.sort().unwrap();
-        //reg.execute((&mut self.world, &mut self.el));
+        /*
+        let mut reg = self.events.registry::<Init>();
+        reg.sort().unwrap();
+        reg.execute((&mut self.world, &mut self.el));
+
+        
+        // Sort the remaining events registries
+        events.registry::<Update>().sort().unwrap();
+        events.registry::<WindowEvent>().sort().unwrap();
+        events.registry::<DeviceEvent>().sort().unwrap();
+        */
 
         // Decompose the app
         let mut events = self.events;
         let mut world = self.world;
         let el = self.el;
 
-        // Sort the remaining events registries
-        //events.registry::<Update>().sort().unwrap();
-        //events.registry::<WindowEvent>().sort().unwrap();
-        //events.registry::<DeviceEvent>().sort().unwrap();
 
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {
@@ -134,15 +138,15 @@ impl App {
                 mut event,
             } => {
                 // Call the window events
-                let mut reg = events.registry::<WindowEvent>();
-                let pipe = reg.pipeline("ff");
-                pipe.execute((&mut world, &mut event));
+                events
+                    .registry::<WindowEvent>();
+                    //.execute((&mut world, &mut event));
             }
             glutin::event::Event::DeviceEvent { device_id, event } => {
                 // Call the device events
-                //events
-                //    .registry::<DeviceEvent>()
-                //    .execute((&mut world, &event));
+                /*events
+                    .registry::<DeviceEvent>()
+                    .execute((&mut world, &event));*/
             }
             _ => {}
         });

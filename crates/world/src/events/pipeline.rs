@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, marker::PhantomData};
 use ahash::AHashMap;
 use crate::{Stage, StageError, Event, Descriptor, Rule, StageKey, PipelineSortingError, Caller};
 
@@ -14,7 +14,7 @@ pub const EXEC_STAGE_NAME: &str = "main";
 // A pipeline is what will contain all the different stages, alongside the events
 // Multiple types of events can have different pipelines, however, we must assume that the pipelines have no dependencies upon each other
 #[derive(Default)]
-pub struct Pipeline<M: Descriptor> {
+pub struct Pipeline<M: Descriptor + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
@@ -58,7 +58,7 @@ impl<M: Descriptor> Pipeline<M> {
         Ok(())
     }
 
-
+    /*
     // Execute all the event sequentially using the proper caller parameters
     pub fn execute<'a>(&mut self, params: <M as Caller<'a>>::Params)
     where
@@ -66,6 +66,7 @@ impl<M: Descriptor> Pipeline<M> {
     {
         M::call(&mut self.events, params);
     }
+    */
 }
 
 // Sort a hashmap containing multiple stage rules that depend upon each other
