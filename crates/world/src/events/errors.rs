@@ -1,6 +1,5 @@
 use crate::StageKey;
 
-
 // Error that gets thrown whenever we fail to sort the event stages
 pub enum PipelineSortingError {
     CyclicReference,
@@ -45,8 +44,13 @@ impl std::fmt::Debug for StageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             StageError::InvalidName => write!(f, "The given stage has an invalid name"),
-            StageError::MissingRules => write!(f, "The given stage has no rules associated with it"),
-            StageError::Overlapping => write!(f, "Tried to insert the stage into the pipeline, but the stage name was already used"),
+            StageError::MissingRules => {
+                write!(f, "The given stage has no rules associated with it")
+            }
+            StageError::Overlapping => write!(
+                f,
+                "Tried to insert the stage into the pipeline, but the stage name was already used"
+            ),
         }
     }
 }

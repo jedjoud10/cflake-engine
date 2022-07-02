@@ -1,6 +1,6 @@
-use std::{rc::Rc, marker::PhantomData};
+use crate::{Caller, Descriptor, Event, PipelineSortingError, Rule, Stage, StageError, StageKey};
 use ahash::AHashMap;
-use crate::{Stage, StageError, Event, Descriptor, Rule, StageKey, PipelineSortingError, Caller};
+use std::rc::Rc;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
@@ -26,7 +26,11 @@ pub struct Registry<M: Descriptor + 'static> {
 
 impl<D: Descriptor + 'static> Default for Registry<D> {
     fn default() -> Self {
-        Self { map: Default::default(), events: Default::default(), counter: 0 }
+        Self {
+            map: Default::default(),
+            events: Default::default(),
+            counter: 0,
+        }
     }
 }
 
@@ -40,11 +44,15 @@ impl<M: Descriptor> Registry<M> {
     }
 
     // Insert a new stage-event tuple into the registry (faillible)
-    pub fn insert_with<P>(&mut self, event: impl Event<M, P>, stage: Stage) -> Result<(), StageError> {
+    pub fn insert_with<P>(
+        &mut self,
+        event: impl Event<M, P>,
+        stage: Stage,
+    ) -> Result<(), StageError> {
         // We can only have one event per stage and one stage per event
         if self.map.contains_key(stage.name().as_ref()) {
-            return Err(StageError::Overlapping);
-        }  else {
+            Err(StageError::Overlapping)
+        } else {
             // Convert the stage and the event
             let stage = stage.validate()?;
             let boxed = event.boxed();
@@ -54,7 +62,7 @@ impl<M: Descriptor> Registry<M> {
             self.map.insert(name.clone(), stage.into_rules());
 
             // Then insert the event
-            self.events.push((name.clone(), boxed));
+            self.events.push((name, boxed));
             Ok(())
         }
     }
@@ -64,7 +72,8 @@ impl<M: Descriptor> Registry<M> {
         let indices = sort(&mut self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.events.sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a],&indices[b]));
+        self.events
+            .sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
 
         for (name, _) in indices.iter() {
             println!("sorted: {}", &name);
@@ -85,7 +94,9 @@ impl<M: Descriptor> Registry<M> {
 
 // Sort a hashmap containing multiple stage rules that depend upon each other
 // This returns a hashmap containing the new indices of the sorted stages, but it will also update the old hashmap if needed
-fn sort(map: &mut AHashMap<StageKey, Vec<Rule>>) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {    
+fn sort(
+    map: &mut AHashMap<StageKey, Vec<Rule>>,
+) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
     let keys = map.keys().cloned().collect::<Vec<_>>();
     let mut indices = AHashMap::<StageKey, usize>::default();

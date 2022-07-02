@@ -1,6 +1,6 @@
+mod events;
 mod resource;
 mod world;
-mod events;
+pub use events::*;
 pub use resource::*;
 pub use world::*;
-pub use events::*;

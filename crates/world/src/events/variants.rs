@@ -1,7 +1,8 @@
-use std::{rc::Rc, cell::RefCell};
-use glutin::{event::{WindowEvent, DeviceEvent}, event_loop::EventLoop};
-use crate::{Descriptor, World, Caller, Event, Events, Registry};
-
+use crate::{Caller, Descriptor, Event, Events, Registry, World};
+use glutin::{
+    event::{DeviceEvent, WindowEvent},
+    event_loop::EventLoop,
+};
 
 // Window event marker (called by glutin handler)
 impl<'a> Descriptor for WindowEvent<'a> {
@@ -12,7 +13,10 @@ impl<'a> Descriptor for WindowEvent<'a> {
     }
 }
 
-impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {
+impl<'a, 'p> Caller<'p> for WindowEvent<'a>
+where
+    'a: 'p,
+{
     type Params = (&'p mut World, &'p mut WindowEvent<'a>);
 
     fn call(vec: &mut Vec<(crate::StageKey, Box<Self::DynFunc>)>, params: Self::Params) {
@@ -25,11 +29,13 @@ impl<'a, 'p> Caller<'p> for WindowEvent<'a> where 'a: 'p {
     }
 }
 
-impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static> Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F {
+impl<'a, F: Fn(&mut World, &mut WindowEvent<'_>) + 'static>
+    Event<WindowEvent<'a>, (&mut World, &mut WindowEvent<'_>)> for F
+{
     fn boxed(self) -> Box<<WindowEvent<'a> as Descriptor>::DynFunc> {
         Box::new(self)
     }
-}  
+}
 
 // Device event marker (called by glutin handler)
 impl Descriptor for DeviceEvent {
@@ -53,12 +59,13 @@ impl<'p> Caller<'p> for DeviceEvent {
     }
 }
 
-impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)> for F {
+impl<F: Fn(&mut World, &DeviceEvent) + 'static> Event<DeviceEvent, (&mut World, &DeviceEvent)>
+    for F
+{
     fn boxed(self) -> Box<<DeviceEvent as Descriptor>::DynFunc> {
         Box::new(self)
     }
 }
-
 
 // Init event marker(FnOnce, called at the start of the engine)
 pub struct Init(());
@@ -92,8 +99,8 @@ impl<F: FnOnce(&mut World) + 'static> Event<Init, &mut World> for F {
     }
 }
 
-impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static>
-    Event<Init, (&mut World, &EventLoop<()>)> for F
+impl<F: FnOnce(&mut World, &EventLoop<()>) + 'static> Event<Init, (&mut World, &EventLoop<()>)>
+    for F
 {
     fn boxed(self) -> Box<<Init as Descriptor>::DynFunc> {
         Box::new(self)

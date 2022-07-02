@@ -1,4 +1,4 @@
-mod world;
 mod global;
-pub use world::*;
+mod world;
 pub use global::*;
+pub use world::*;

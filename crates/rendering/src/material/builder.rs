@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
-use assets::Assets;
-use world::Storage;
-use crate::{context::Context, prelude::Shader};
 use super::Material;
+use crate::{context::Context, prelude::Shader};
+use assets::Assets;
+use std::marker::PhantomData;
+use world::Storage;
 
 // Instance builder that will take a unique material and construct a new instance for it
 // You can implement the instance builder for your specic material to write some methods that use the builder pattern

@@ -1,7 +1,5 @@
-use std::{rc::Rc, marker::PhantomData, cell::{RefCell, RefMut}};
-use ahash::AHashMap;
-use glutin::event::{WindowEvent, DeviceEvent};
-use crate::{Registry, StageKey, StageError, Stage, World, Init, Update};
+use crate::{Init, Registry, StageKey, Update};
+use glutin::event::{DeviceEvent, WindowEvent};
 
 // Descriptors simply tell us how we should box the function
 pub trait Descriptor: Sized {

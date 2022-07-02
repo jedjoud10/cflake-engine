@@ -1,8 +1,8 @@
+mod errors;
+mod layout;
 mod resource;
 mod storage;
-mod layout;
-mod errors;
 pub use errors::*;
+pub use layout::*;
 pub use resource::*;
 pub use storage::*;
-pub use layout::*;

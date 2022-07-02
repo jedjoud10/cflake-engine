@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use crate::{Events, World};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // The setup function can only be called once
 static INITIALIZED: AtomicBool = AtomicBool::new(false);

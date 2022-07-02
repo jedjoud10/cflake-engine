@@ -1,4 +1,4 @@
-use crate::{self as world, Events, Update, Stage};
+use crate::{self as world, Events, Stage, Update};
 use crate::{FromWorld, Resource, World};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
@@ -100,9 +100,11 @@ pub fn system(events: &mut Events) {
     }
 
     // Register the cleaning event (doesn't really matter *when* we execute it really)
-    events.registry::<Update>().insert_with(clean, Stage::new("storage clean").after("post user")).unwrap();
+    events
+        .registry::<Update>()
+        .insert_with(clean, Stage::new("storage clean").after("post user"))
+        .unwrap();
     //events.register_with::<Update>(clean, i32::MAX);
-
 }
 
 // A storage is a way to keep certain values stored in memory without dropping them

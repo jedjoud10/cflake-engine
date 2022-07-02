@@ -105,11 +105,11 @@ fn rendering(world: &mut World) {
 }
 
 // Window resizing event for updating the current main canvas when the main window changes size
-fn window_resize(world: &mut World, event: &mut WindowEvent) {}
+fn window_resize(_world: &mut World, _event: &mut WindowEvent) {}
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
-    let Graphics(device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+    let Graphics(_device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
     ctx.raw().swap_buffers().unwrap();
 }
 
@@ -136,13 +136,25 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert init events
     events
         .registry::<Init>()
-        .insert_with(|world: &mut World, el: &EventLoop<()>| init(world, settings, el), Stage::new("graphics insert").after("asset loader insert")).unwrap();
+        .insert_with(
+            |world: &mut World, el: &EventLoop<()>| init(world, settings, el),
+            Stage::new("graphics insert").after("asset loader insert"),
+        )
+        .unwrap();
 
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
     reg.insert(main_camera);
-    reg.insert_with(rendering, Stage::new("scene rendering").after("main camera update")).unwrap();
-    reg.insert_with(swap, Stage::new("window back buffer swap").after("scene renderin")).unwrap();
+    reg.insert_with(
+        rendering,
+        Stage::new("scene rendering").after("main camera update"),
+    )
+    .unwrap();
+    reg.insert_with(
+        swap,
+        Stage::new("window back buffer swap").after("scene renderin"),
+    )
+    .unwrap();
 
     // Insert window events
     events.registry::<WindowEvent>().insert(window_resize);
