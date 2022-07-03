@@ -1,6 +1,6 @@
-use crate::{Archetype, ArchetypeSet, ComponentStateRow, Evaluate, Input, LayoutAccess, QueryLayout};
+use crate::{Archetype, ArchetypeSet, Evaluate, Input, LayoutAccess, QueryLayout, StateRow};
 
-// Currently loaded chunk
+// The main threaded iterators used "chunks" to keep track of the currently loaded archetype and it's base storage pointers
 struct Chunk<'a, Layout: QueryLayout<'a>> {
     // Loaded archetype
     archetype: &'a Archetype,
@@ -12,7 +12,7 @@ struct Chunk<'a, Layout: QueryLayout<'a>> {
 impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
     fn clone(&self) -> Self {
         Self {
-            archetype: self.archetype.clone(),
+            archetype: self.archetype,
             ptrs: self.ptrs,
         }
     }
@@ -38,7 +38,7 @@ pub struct QueryItem<'a, Layout: QueryLayout<'a>> {
     tuple: Layout,
 
     // Current component states
-    state: ComponentStateRow,
+    state: StateRow,
 
     // The archetype it came from
     archetype: &'a Archetype,
@@ -71,7 +71,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
         let chunks = archetypes
             .iter()
             .filter_map(|(_, archetype)| {
-                (archetype.mask & mask == mask).then(|| {
+                (archetype.mask() & mask == mask).then(|| {
                     // Combine the archetype and pointers into a chunk
                     Chunk {
                         archetype,
@@ -113,32 +113,47 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         // Load a component bundle
         let chunk = self.loaded.as_ref().unwrap();
         let bundle = chunk.load(self.bundle);
+
         // Update the bundle states
         let old = chunk
             .archetype
-            .states
-            .update(self.bundle, |mutated, _| *mutated = *mutated | self.access.writing())
+            .states()
+            .update(self.bundle, |mutated, _| {
+                *mutated = *mutated | self.access.writing()
+            })
             .unwrap();
         self.bundle += 1;
 
-        // Create the query item
-        let item = QueryItem {
+        // Create the query item and return it
+        Some(QueryItem {
             tuple: bundle,
             state: old,
             archetype: chunk.archetype,
-        };
-
-        Some(item)
+        })
     }
 }
 
 // Create a query without a filter
-pub fn query<'a, Layout: QueryLayout<'a> + 'a>(archetypes: &'a ArchetypeSet) -> impl Iterator<Item = Layout> + 'a {
+pub fn query<'a, Layout: QueryLayout<'a> + 'a>(
+    archetypes: &'a ArchetypeSet,
+) -> impl Iterator<Item = Layout> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
 // Create a query with a filter
-pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(archetypes: &'a ArchetypeSet, _: Filter) -> impl Iterator<Item = Layout> + 'a {
+pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
+    archetypes: &'a ArchetypeSet,
+    _: Filter,
+) -> impl Iterator<Item = Layout> + 'a {
     let cache = Filter::setup();
 
-    QueryIter::new(archetypes).filter_map(move |item| Filter::eval(&cache, &Input { row: item.state }).then_some(item.tuple))
+    QueryIter::new(archetypes).filter_map(move |item| {
+        Filter::eval(
+            &cache,
+            &Input {
+                state_row: item.state,
+                mask: item.archetype.mask(),
+            },
+        )
+        .then_some(item.tuple)
+    })
 }

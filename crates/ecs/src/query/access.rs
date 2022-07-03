@@ -18,9 +18,15 @@ impl LayoutAccess {
     pub fn reading(&self) -> Mask {
         self.0
     }
+
     // Get the writing mask
     pub fn writing(&self) -> Mask {
         self.1
+    }
+
+    // Reading AND writing masks combined
+    pub fn both(&self) -> Mask {
+        self.reading() | self.writing()
     }
 }
 
@@ -70,7 +76,7 @@ where
 
     fn fetch(archetype: &Archetype) -> NonNull<Self::Item> {
         let mask = registry::mask::<Self::Item>();
-        archetype.vectors[&mask].get_storage_ptr().cast()
+        archetype.storage()[&mask].get_storage_ptr().cast()
     }
 }
 
@@ -91,7 +97,7 @@ where
 
     fn fetch(archetype: &Archetype) -> NonNull<Self::Item> {
         let mask = registry::mask::<Self::Item>();
-        archetype.vectors[&mask].get_storage_ptr().cast()
+        archetype.storage()[&mask].get_storage_ptr().cast()
     }
 }
 
@@ -111,6 +117,6 @@ where
 
     fn fetch(archetype: &Archetype) -> NonNull<Self::Item> {
         // Idk if this is UB but it works fine
-        NonNull::new(archetype.entities.as_ptr() as *mut Entity).unwrap()
+        NonNull::new(archetype.entities().as_ptr() as *mut Entity).unwrap()
     }
 }

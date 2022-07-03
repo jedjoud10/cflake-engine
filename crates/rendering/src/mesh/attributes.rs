@@ -1,236 +1,294 @@
-use super::{GeometryBuilder, VertexLayout};
+use std::ptr::null;
+
 use crate::{
-    buffer::{ArrayBuffer, BufferAccess, GPUSendable},
+    buffer::{ArrayBuffer, Buffer, BufferMode},
     context::Context,
+    mesh::{GeometryBuilder, VertexAssembly, VertexLayout},
+    object::{Shared, ToGlName},
 };
-use std::{num::NonZeroU32, ptr::null};
 
 // Attribute base that will make up the elements of compound attributes.
-pub trait BaseAttribute: GPUSendable {
+pub trait ScalarAttribute: Shared {
     const GL_TYPE: u32;
 }
 
 // A compound attribute, like a vector (as in vec2, vec3, vec4) that consists of multiple attributes
-pub trait Attribute: GPUSendable {
+pub trait RawAttribute: Shared {
     const GL_TYPE: u32;
     const COUNT_PER_VERTEX: u32;
 }
 
 // Base attribute implementaions
-impl BaseAttribute for f32 {
+impl ScalarAttribute for f32 {
     const GL_TYPE: u32 = gl::FLOAT;
 }
 
-impl BaseAttribute for i32 {
+impl ScalarAttribute for i32 {
     const GL_TYPE: u32 = gl::INT;
 }
 
-impl BaseAttribute for u32 {
+impl ScalarAttribute for u32 {
     const GL_TYPE: u32 = gl::UNSIGNED_INT;
 }
 
-impl BaseAttribute for i16 {
+impl ScalarAttribute for i16 {
     const GL_TYPE: u32 = gl::SHORT;
 }
 
-impl BaseAttribute for u16 {
+impl ScalarAttribute for u16 {
     const GL_TYPE: u32 = gl::UNSIGNED_SHORT;
 }
 
-impl BaseAttribute for i8 {
+impl ScalarAttribute for i8 {
     const GL_TYPE: u32 = gl::BYTE;
 }
 
-impl BaseAttribute for u8 {
+impl ScalarAttribute for u8 {
     const GL_TYPE: u32 = gl::UNSIGNED_BYTE;
 }
 
-impl<T: BaseAttribute> Attribute for T {
-    const GL_TYPE: u32 = <T as BaseAttribute>::GL_TYPE;
+impl<T: ScalarAttribute> RawAttribute for T {
+    const GL_TYPE: u32 = <T as ScalarAttribute>::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 1;
 }
 
-impl<T: BaseAttribute> Attribute for vek::Vec2<T> {
+impl<T: ScalarAttribute> RawAttribute for vek::Vec2<T> {
     const GL_TYPE: u32 = T::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 2;
 }
 
-impl<T: BaseAttribute> Attribute for vek::Vec3<T> {
+impl<T: ScalarAttribute> RawAttribute for vek::Vec3<T> {
     const GL_TYPE: u32 = T::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 3;
 }
 
-impl<T: BaseAttribute> Attribute for vek::Vec4<T> {
+impl<T: ScalarAttribute> RawAttribute for vek::Vec4<T> {
     const GL_TYPE: u32 = T::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 4;
 }
 
-impl<T: BaseAttribute> Attribute for vek::Rgb<T> {
+impl<T: ScalarAttribute> RawAttribute for vek::Rgb<T> {
     const GL_TYPE: u32 = T::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 3;
 }
 
-impl<T: BaseAttribute> Attribute for vek::Rgba<T> {
+impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
     const GL_TYPE: u32 = T::GL_TYPE;
     const COUNT_PER_VERTEX: u32 = 4;
-}
-
-// Attribute buffer that *might* be disabled, or maybe enabled
-type AttribBuf<T> = Option<ArrayBuffer<T>>;
-
-// Multiple OpenGL attribute buffers stored in the same struct
-pub struct AttributeSet {
-    // The actual attribute buffers
-    positions: AttribBuf<vek::Vec3<f32>>,
-    normals: AttribBuf<vek::Vec3<i8>>,
-    tangents: AttribBuf<vek::Vec4<i8>>,
-    colors: AttribBuf<vek::Rgb<u8>>,
-
-    // Multiple texture coordiantes (TODO)
-    tex_coord_0: AttribBuf<vek::Vec2<u8>>,
-
-    // The number of enabled attributes
-    count: u32,
 }
 
 // A named attribute that has a specific name, like "Position", or "Normal"
-pub trait NamedAttribute {
-    type Out: Attribute + GPUSendable;
+pub trait Attribute {
+    type Out: RawAttribute + Shared;
     const LAYOUT: VertexLayout;
 
     // Get the OpenGL array buffer from a specific attribute set
     fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>>;
     fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>>;
 
-    // Set a specific vector inside a geometry builder
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>);
+    // Get the Rust vector from a vertex assembly (PS: The vector might be null)
+    fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>>;
+    fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>>;
+
+    // Insert a vector into an assembly
+    fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>);
 }
 
-// Named attributes implement for empty structs
-pub struct Position;
-pub struct Normal;
-pub struct Tangent;
-pub struct Color;
-pub struct TexCoord0;
-
-impl NamedAttribute for Position {
-    type Out = vek::Vec3<f32>;
-    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.positions.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.positions.as_mut()
-    }
-
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.positions = vec;
-    }
-}
-
-impl NamedAttribute for Normal {
-    type Out = vek::Vec3<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.normals.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.normals.as_mut()
-    }
-
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.normals = vec;
-    }
-}
-
-impl NamedAttribute for Tangent {
-    type Out = vek::Vec4<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.tangents.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.tangents.as_mut()
-    }
-
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.tangents = vec;
-    }
-}
-
-impl NamedAttribute for Color {
-    type Out = vek::Rgb<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::COLORS;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.colors.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.colors.as_mut()
-    }
-
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.colors = vec;
-    }
-}
-
-impl NamedAttribute for TexCoord0 {
-    type Out = vek::Vec2<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
-
-    fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
-        set.tex_coord_0.as_ref()
-    }
-
-    fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
-        set.tex_coord_0.as_mut()
-    }
-
-    fn insert(builder: &mut GeometryBuilder, vec: Vec<Self::Out>) {
-        builder.tex_coord_0 = vec;
-    }
-}
-
-// Type aliases for the underlying vertex attribute data
-pub mod vertex {
+pub mod named {
     use super::*;
-    pub type VePos = <Position as NamedAttribute>::Out;
-    pub type VeNormal = <Normal as NamedAttribute>::Out;
-    pub type VeTangent = <Tangent as NamedAttribute>::Out;
-    pub type VeColor = <Color as NamedAttribute>::Out;
-    pub type VeTexCoord0 = <TexCoord0 as NamedAttribute>::Out;
+    // Named attributes implement for empty structs
+    pub struct Position;
+    pub struct Normal;
+    pub struct Tangent;
+    pub struct Color;
+    pub struct TexCoord0;
+
+    impl Attribute for Position {
+        type Out = vek::Vec3<f32>;
+        const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.positions.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.positions.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.positions.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.positions.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.positions.insert(vec);
+        }
+    }
+
+    impl Attribute for Normal {
+        type Out = vek::Vec3<i8>;
+        const LAYOUT: VertexLayout = VertexLayout::NORMALS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.normals.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.normals.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.normals.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.normals.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.normals.insert(vec);
+        }
+    }
+
+    impl Attribute for Tangent {
+        type Out = vek::Vec4<i8>;
+        const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.tangents.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.tangents.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.tangents.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.tangents.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.tangents.insert(vec);
+        }
+    }
+
+    impl Attribute for Color {
+        type Out = vek::Rgb<u8>;
+        const LAYOUT: VertexLayout = VertexLayout::COLORS;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.colors.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.colors.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.colors.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.colors.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.colors.insert(vec);
+        }
+    }
+
+    impl Attribute for TexCoord0 {
+        type Out = vek::Vec2<u8>;
+        const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
+
+        fn get(set: &AttributeSet) -> Option<&ArrayBuffer<Self::Out>> {
+            set.tex_coord_0.as_ref()
+        }
+
+        fn get_mut(set: &mut AttributeSet) -> Option<&mut ArrayBuffer<Self::Out>> {
+            set.tex_coord_0.as_mut()
+        }
+
+        fn get_from_assembly(assembly: &VertexAssembly) -> Option<&Vec<Self::Out>> {
+            assembly.tex_coord_0.as_ref()
+        }
+
+        fn get_from_assembly_mut(assembly: &mut VertexAssembly) -> Option<&mut Vec<Self::Out>> {
+            assembly.tex_coord_0.as_mut()
+        }
+
+        fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
+            assembly.tex_coord_0.insert(vec);
+        }
+    }
+}
+
+pub mod output {
+    use super::named::*;
+    use super::Attribute;
+    // Type aliases for the underlying vertex attribute data
+    pub type VePos = <Position as Attribute>::Out;
+    pub type VeNormal = <Normal as Attribute>::Out;
+    pub type VeTangent = <Tangent as Attribute>::Out;
+    pub type VeColor = <Color as Attribute>::Out;
+    pub type VeTexCoord0 = <TexCoord0 as Attribute>::Out;
+}
+
+// Multiple OpenGL attribute buffers stored in the same struct that we will use for normal mesh rendering
+pub struct AttributeSet {
+    // The raw name of the VAO
+    name: u32,
+
+    // The actual attribute buffers
+    positions: Option<ArrayBuffer<vek::Vec3<f32>>>,
+    normals: Option<ArrayBuffer<vek::Vec3<i8>>>,
+    tangents: Option<ArrayBuffer<vek::Vec4<i8>>>,
+    colors: Option<ArrayBuffer<vek::Rgb<u8>>>,
+
+    // Multiple texture coordiantes (TODO)
+    tex_coord_0: Option<ArrayBuffer<vek::Vec2<u8>>>,
+
+    // The enabled attributes
+    layout: VertexLayout,
 }
 
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {
-    vao: NonZeroU32,
+    vao: u32,
     index: &'a mut u32,
+    vertices: &'a mut VertexAssembly,
     ctx: &'a mut Context,
-    access: BufferAccess,
-    layout: VertexLayout,
+    mode: BufferMode,
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Vec<T::Out>) -> AttribBuf<T::Out> {
-    aux.layout.contains(T::LAYOUT).then(|| {
-        let mut buffer = ArrayBuffer::<T::Out>::from_vec(aux.ctx, aux.access, vec);
+fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
+    aux.vertices.get_mut::<T>().map(|vec| unsafe {
+        // Create the array buffer
+        let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
 
         // Bind the buffer to bind the attributes
-        buffer.bind(aux.ctx, |_, _| unsafe {
-            // Enable the pointer
-            gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
-            gl::EnableVertexArrayAttrib(aux.vao.get(), *aux.index);
+        gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
 
-            // Increment the counter, since we've enabled the attribute
-            *aux.index += 1;
-        });
+        // Enable the pointer
+        gl::VertexAttribPointer(
+            *aux.index,
+            T::Out::COUNT_PER_VERTEX as i32,
+            T::Out::GL_TYPE,
+            normalized.into(),
+            0,
+            null(),
+        );
+        gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
+
+        // Increment the counter, since we've enabled the attribute
+        *aux.index += 1;
 
         buffer
     })
@@ -238,28 +296,83 @@ fn gen<'a, T: NamedAttribute>(aux: &mut AuxBufGen<'a>, normalized: bool, vec: Ve
 
 impl AttributeSet {
     // Create a new attribute set using a context, a VAO, buffer access type, and a geometry builder
-    pub(super) fn new(vao: NonZeroU32, ctx: &mut Context, access: BufferAccess, builder: GeometryBuilder) -> Self {
+    pub fn new(ctx: &mut Context, mode: BufferMode, mut vertices: VertexAssembly) -> Self {
+        // Create and bind the VAO, then create a safe VAO wrapper
+        let vao = unsafe {
+            let mut name = 0;
+            gl::GenVertexArrays(1, &mut name);
+            gl::BindVertexArray(name);
+            name
+        };
+
+        // We do a bit of copying
+        let layout = vertices.layout();
+
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
         let mut aux = AuxBufGen {
             vao,
             index: &mut index,
+            vertices: &mut vertices,
             ctx,
-            access,
-            layout: builder.layout(),
+            mode,
         };
 
-        // We do a bit of yoinking
-        let count = builder.layout().bits().count_ones();
-
         // Create the set with valid buffers (if they are enabled)
+        use super::attributes::named::*;
         Self {
-            positions: gen::<Position>(&mut aux, false, builder.positions),
-            normals: gen::<Normal>(&mut aux, true, builder.normals),
-            tangents: gen::<Tangent>(&mut aux, true, builder.tangents),
-            colors: gen::<Color>(&mut aux, false, builder.colors),
-            tex_coord_0: gen::<TexCoord0>(&mut aux, false, builder.tex_coord_0),
-            count,
+            name: vao,
+            positions: gen::<Position>(&mut aux, false),
+            normals: gen::<Normal>(&mut aux, true),
+            tangents: gen::<Tangent>(&mut aux, true),
+            colors: gen::<Color>(&mut aux, false),
+            tex_coord_0: gen::<TexCoord0>(&mut aux, false),
+            layout,
         }
+    }
+
+    // Get the layout that we are using
+    pub fn layout(&self) -> VertexLayout {
+        self.layout
+    }
+
+    // Get the number of vertices that we have in total (this will return None if one or more vectors have different lengths)
+    pub fn len(&self) -> Option<usize> {
+        // This function just takes an AttribBuf<T> and returns an Option<usize>
+        fn len<T: RawAttribute>(vec: &Option<ArrayBuffer<T>>) -> Option<usize> {
+            vec.as_ref().map(Buffer::len)
+        }
+
+        // Make sure all the lengths (that are valid) be equal to each other
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
+        let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
+
+        // Iterate and check
+        let valid = arr.into_iter().flatten().all(|len| len == first);
+
+        // Trollinnggggg
+        valid.then(|| first)
+    }
+
+    // Get an immutable attribute buffer from the set
+    pub fn get_attribute_buffer<T: Attribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
+        T::get(self)
+    }
+
+    // Get a mutable attribute buffer from the set
+    pub fn get_attribute_buffer_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
+        T::get_mut(self)
+    }
+}
+
+impl ToGlName for AttributeSet {
+    fn name(&self) -> u32 {
+        self.name
     }
 }

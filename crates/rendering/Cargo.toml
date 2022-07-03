@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.136", features = ["derive"] }
 opengl = { path = "../opengl" }
+world = { path = "../world" }
+ecs = { path = "../ecs" }
 mikktspace = "0.3.0"
 getset = "0.1.2"
 vek = "0.15.6"

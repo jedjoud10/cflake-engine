@@ -1,15 +1,17 @@
-use crate::context::Cached;
-
-use super::{FragmentStage, VertexStage};
+use super::Program;
 
 // A shader that will render our objects onto the screen
-// This will make use of two shader programs, the vertex programs, and fragment program
-pub struct Shader {
-    // Shader source that is ran for every vertex
-    vertex: VertexStage,
+// This will make use of two shader stages, the vertex stage, and fragment stage
+pub struct Shader(pub(super) Program);
 
-    // Shader source that is ran for every visible fragment in the viewport1
-    fragment: FragmentStage,
+impl AsRef<Program> for Shader {
+    fn as_ref(&self) -> &Program {
+        &self.0
+    }
 }
 
-impl Cached for Shader {}
+impl AsMut<Program> for Shader {
+    fn as_mut(&mut self) -> &mut Program {
+        &mut self.0
+    }
+}

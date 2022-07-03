@@ -1,17 +1,14 @@
-use crate::{source::AudioSource, AudioSourceTracker};
-use rodio::{source::Buffered, Decoder, OutputStream, OutputStreamHandle, Sink, Source, SpatialSink};
-use std::{cell::RefCell, fmt::Debug, io::Cursor, sync::Arc};
+use rodio::{OutputStream, OutputStreamHandle};
+
 // A playback cache that contains all the loaded sources
 pub struct AudioPlayer {
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
-    // Keep track of each sink
-    sinks: RefCell<Vec<AudioSourceTracker>>,
     // Position of the left ear and right ear for positional sounds
     left: vek::Vec3<f32>,
     right: vek::Vec3<f32>,
 }
-
+/*
 impl Default for AudioPlayer {
     fn default() -> Self {
         // Get the stream handle
@@ -19,7 +16,6 @@ impl Default for AudioPlayer {
         Self {
             _stream,
             stream_handle: handle,
-            sinks: Default::default(),
             left: Default::default(),
             right: Default::default(),
         }
@@ -28,7 +24,11 @@ impl Default for AudioPlayer {
 
 impl AudioPlayer {
     // Play a global audio source with modifier
-    pub fn play<T: Source + Send + 'static>(&self, source: &AudioSource, map: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send) -> Option<AudioSourceTracker>
+    pub fn play<T: Source + Send + 'static>(
+        &self,
+        source: &AudioSource,
+        map: impl FnOnce(Buffered<Decoder<Cursor<Vec<u8>>>>) -> T + Send,
+    ) -> Option<AudioSourceTracker>
     where
         <T as Iterator>::Item: rodio::Sample + Send,
     {
@@ -86,3 +86,4 @@ impl AudioPlayer {
         });
     }
 }
+*/

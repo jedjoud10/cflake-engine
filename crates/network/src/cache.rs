@@ -26,7 +26,10 @@ impl NetworkCache {
         let vec = buckets.entry(bucket_id).or_default();
         let vec = std::mem::take(vec);
         // Deserialize
-        let payloads = vec.into_iter().map(|packet| deserialize_payload(packet.payload()).unwrap()).collect::<Vec<P>>();
+        let payloads = vec
+            .into_iter()
+            .map(|packet| deserialize_payload(packet.payload()).unwrap())
+            .collect::<Vec<P>>();
         cache.payloads = payloads;
     }
     // Push some received packet data into the corresponding bucket
@@ -47,7 +50,9 @@ pub struct PayloadCache<P: Payload> {
 
 impl<P: Payload> Default for PayloadCache<P> {
     fn default() -> Self {
-        Self { payloads: Default::default() }
+        Self {
+            payloads: Default::default(),
+        }
     }
 }
 

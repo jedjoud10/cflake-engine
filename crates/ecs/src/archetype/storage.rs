@@ -1,8 +1,8 @@
-use crate::component::Component;
+use crate::Component;
 use std::{any::Any, ffi::c_void, ptr::NonNull};
 
 // A component storage that is implemented for Vec<T>
-pub(crate) trait StorageVec {
+pub trait StorageVec {
     // As any and as any mut
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -17,6 +17,7 @@ pub(crate) trait StorageVec {
     fn get_storage_ptr(&self) -> NonNull<c_void>;
 
     // Create a new boxed vector (empty)
+    // TODO: Remove this whole unique storage shit since it makes it confusing
     fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
 }
 

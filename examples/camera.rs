@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets, defaults,
     defaults::components::{Camera, Light, Transform},
@@ -28,3 +29,5 @@ fn init(world: &mut World) {
         linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
     });
 }
+*/
+fn main() {}

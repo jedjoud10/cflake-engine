@@ -1,6 +1,9 @@
-mod attributes;
+pub mod assembly;
+pub mod attributes;
 mod builder;
-mod mesh;
-pub use attributes::*;
+mod submesh;
+mod surface;
+pub use assembly::*;
 pub use builder::*;
-pub use mesh::*;
+pub use submesh::*;
+pub use surface::*;

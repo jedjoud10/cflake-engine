@@ -34,7 +34,11 @@ impl Client {
             heartbeat_interval: Some(Duration::from_secs(3)),
             ..Default::default()
         })?;
-        println!("Client: Bound on port '{}' & connected to server socket '{}'", socket.local_addr().unwrap().port(), addr);
+        println!(
+            "Client: Bound on port '{}' & connected to server socket '{}'",
+            socket.local_addr().unwrap().port(),
+            addr
+        );
 
         // Start polling in another thread
         let sender = socket.get_packet_sender();
@@ -42,7 +46,9 @@ impl Client {
         let _handle = std::thread::spawn(move || socket.start_polling());
 
         // Send a single packet to establish a connection
-        sender.send(Packet::reliable_unordered(addr, Vec::new())).unwrap();
+        sender
+            .send(Packet::reliable_unordered(addr, Vec::new()))
+            .unwrap();
 
         // Wait till we get a connection back
         if let SocketEvent::Connect(_) = receiver.recv().unwrap() {
