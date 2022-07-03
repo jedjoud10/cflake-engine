@@ -1,4 +1,7 @@
+use world::Resource;
+
 // This mouse struct will be responsible for all the values that require the mouse, like cursor position or position delta
+#[derive(Resource)]
 pub struct Mouse {
     // Absolute values (not clampled)
     pub(crate) scroll_delta: f32,

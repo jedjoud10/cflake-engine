@@ -1,4 +1,4 @@
-use crate::{Archetype, ArchetypeSet, Evaluate, Input, LayoutAccess, QueryLayout, StateRow};
+use crate::{Archetype, ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow};
 
 // The main threaded iterators used "chunks" to keep track of the currently loaded archetype and it's base storage pointers
 struct Chunk<'a, Layout: QueryLayout<'a>> {
@@ -149,7 +149,7 @@ pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
     QueryIter::new(archetypes).filter_map(move |item| {
         Filter::eval(
             &cache,
-            &Input {
+            &ItemInput {
                 state_row: item.state,
                 mask: item.archetype.mask(),
             },

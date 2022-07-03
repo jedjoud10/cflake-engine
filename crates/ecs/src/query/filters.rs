@@ -5,7 +5,7 @@ use crate::{
 use std::marker::PhantomData;
 
 // Input data given to the filter
-pub struct Input {
+pub struct ItemInput {
     pub(super) state_row: StateRow,
     pub(super) mask: Mask,
 }
@@ -19,7 +19,7 @@ pub trait Evaluate: 'static {
     fn setup() -> Self::Cached;
 
     // Evaluate the filter using the proper filter input
-    fn eval(cached: &Self::Cached, input: &Input) -> bool;
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool;
 }
 
 // Filter sources
@@ -44,7 +44,7 @@ impl<T: Component> Evaluate for Added<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         input.state_row.added(cached.offset())
     }
 }
@@ -56,7 +56,7 @@ impl<T: Component> Evaluate for Modified<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         input.state_row.mutated(cached.offset())
     }
 }
@@ -68,7 +68,7 @@ impl<T: Component> Evaluate for Contains<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         input.mask.one_corresponding_bit(*cached)
     }
 }
@@ -78,7 +78,7 @@ impl Evaluate for Always {
 
     fn setup() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, _input: &Input) -> bool {
+    fn eval(_cached: &Self::Cached, _input: &ItemInput) -> bool {
         true
     }
 }
@@ -88,7 +88,7 @@ impl Evaluate for Never {
 
     fn setup() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, _input: &Input) -> bool {
+    fn eval(_cached: &Self::Cached, _input: &ItemInput) -> bool {
         false
     }
 }
@@ -101,7 +101,7 @@ impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
         (A::setup(), B::setup())
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         A::eval(&cached.0, input) && B::eval(&cached.1, input)
     }
 }
@@ -113,7 +113,7 @@ impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
         (A::setup(), B::setup())
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         A::eval(&cached.0, input) || B::eval(&cached.1, input)
     }
 }
@@ -125,7 +125,7 @@ impl<A: Evaluate> Evaluate for Not<A> {
         A::setup()
     }
 
-    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
         !A::eval(cached, input)
     }
 }
