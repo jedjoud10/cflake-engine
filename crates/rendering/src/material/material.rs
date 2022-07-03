@@ -154,12 +154,11 @@ impl<M: Material> BatchRenderer<M> {
 
             // Check if we changed material instances
             if old != Some(surface.material().clone()) {
-                // We changed instances, so we must re-set the uniform property
                 old = Some(surface.material().clone());
                 let instance = materials.get(old.as_ref().unwrap());
                 let _ = instance.instance();
 
-                // Set the material property block uniforms (only if the instance changes)
+                // Update the material property block uniforms
                 M::set_instance_properties(instance, &mut uniforms, &property_block_resources);
             }
 

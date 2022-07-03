@@ -13,6 +13,7 @@ use assets::Assets;
 use ecs::{EcsManager, added, Component, contains, and, Entity};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
+use time::Time;
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -149,15 +150,14 @@ fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let (ecs, Graphics(_device, _), scene) = world
         .get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>()
-        .unwrap();
-        
+        .unwrap();        
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
         let mut entry = ecs.try_entry(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &Transform)>().unwrap();
+        let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &mut Transform)>().unwrap();
         camera.update(transform);
     }
 }

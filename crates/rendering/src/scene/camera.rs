@@ -22,16 +22,15 @@ pub struct Camera {
     far: f32,
 }
 
-// Convert a horizontal FOV to a vertical FOV
+// Convert a horizontal FOV to a vertical FOV (this returns the FOV in radians)
 fn horizontal_to_vertical(hfov: f32, aspect_ratio: f32) -> f32 {
     2.0 * ((hfov.to_radians() / 2.0).tan() * (1.0 / (aspect_ratio))).atan()
 }
 
 // Create a new projection matrix using a ratio, a field of view, and the clip planes
 fn new_projection_matrix(hfov: f32, aspect_ratio: f32, near: f32, far: f32) -> vek::Mat4<f32> {
-    //vek::Mat4::<f32>::perspective_fov_rh_no(horizontal_to_vertical(hfov, aspect_ratio), width, height, self.clips.x, self.clips.y);
-    let verticla_fov_radians = horizontal_to_vertical(hfov, aspect_ratio).to_radians();
-    vek::Mat4::<f32>::perspective_rh_no(verticla_fov_radians, aspect_ratio, near, far)
+    let vfov = horizontal_to_vertical(hfov, aspect_ratio);
+    vek::Mat4::<f32>::perspective_rh_no(vfov, aspect_ratio, near, far)
 }
 
 // Create a new view matrix using a transform

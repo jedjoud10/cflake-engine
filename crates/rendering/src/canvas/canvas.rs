@@ -112,10 +112,10 @@ impl Canvas {
         settings: RasterSettings,
     ) -> (Rasterizer<'canvas, 'context>, Uniforms<'shader>) {
         // Make sure the framebuffer is bound, and that the viewport is valid
-        ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
-        });
+        }
 
         // Bind the program, and set it's uniforms
         ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe {

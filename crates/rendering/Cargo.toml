@@ -17,6 +17,7 @@ slotmap = "1.0.6"
 half = "1.8.2"
 hdrldr = "0.1.2"
 assets = { path = "../assets" }
+time = { path = "../time" }
 rayon = "1.5.1"
 math = { path = "../math" }
 lazy_static = "1.4.0"

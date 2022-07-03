@@ -44,6 +44,11 @@ impl Time {
         self.startup
     }
 
+    // Caclulate the number of seconds that have passed since the start of the engine
+    pub fn secs_since_startup_f32(&self) -> f32 {
+        (Instant::now() - self.startup()).as_secs_f32()
+    }
+
     // Get the moment the current frame started
     pub fn frame_start(&self) -> Instant {
         self.frame_start

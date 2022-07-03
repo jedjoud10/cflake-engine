@@ -351,12 +351,10 @@ impl AttributeSet {
             len(&self.colors),
             len(&self.tex_coord_0),
         ];
+
+        
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
-
-        // Iterate and check
         let valid = arr.into_iter().flatten().all(|len| len == first);
-
-        // Trollinnggggg
         valid.then(|| first)
     }
 
