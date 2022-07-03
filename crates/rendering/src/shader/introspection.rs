@@ -102,7 +102,7 @@ struct UnifProps {
 
 impl Props for UnifProps {
     fn tags() -> &'static [u32] {
-        &[gl::NAME_LENGTH, gl::LOCATION, gl::BLOCK_INDEX, gl::TYPE],
+        &[gl::NAME_LENGTH, gl::LOCATION, gl::BLOCK_INDEX, gl::TYPE]
     }
 }
 
@@ -149,10 +149,10 @@ unsafe fn name(program: u32, name_length: i32, interface: u32, index: u32) -> St
 // Get a vector of shader blocks directly from the program
 unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
     // Get the max index count for this block interface
-    let max = 0;
+    let mut max = 0;
     gl::GetProgramInterfaceiv(
         program,
-        gl::UNIFORM_BLOCK,
+        interface,
         interface,
         &mut max,
     );
@@ -191,24 +191,64 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
         gl::ACTIVE_RESOURCES,
         &mut non_block_uniforms,
     );
+    /*
+    // Get all the indices of the uniform resources
+    let indices = 0..non_block_uniforms
+    */
+
+    let mut uniforms = Vec::new(); 
 
     // Fetch non block uniforms
-    let uniforms = (0..non_block_uniforms)
+    uniforms.extend((0..non_block_uniforms)
         .into_iter()
-        .map(|i| {
+        .map(|uniform_index| {
             // Read the uniform properties, and decompose it's values
-            let props = props::<UnifProps>(program, gl::UNIFORM, i as u32);
+            let props = props::<UnifProps>(program, gl::UNIFORM, uniform_index as u32);
 
             // Skip fetching it's name if it's contained within a uniform block (since we have a unique case for those)
-            let name = name(program, props.name_length, gl::UNIFORM, i as u32);
+            let name = name(program, props.name_length, gl::UNIFORM, uniform_index as u32);
             
             // Construct the uniform and add it to the vector
             Uniform { name, location: props.location as u32, }
         })
-        .collect::<Vec<_>>();
+    );
 
-    // Fetch block uniforms
-    let mut blocks = 0;
+    // Fetch uniforms that are stored within uniform blocks
+    let mut uniform_blocks = 0;
+    gl::GetProgramInterfaceiv(
+        program,
+        gl::UNIFORM_BLOCK,
+        gl::ACTIVE_RESOURCES,
+        &mut uniform_blocks
+    );
+
+    /*
+    uniforms.extend((0..uniform_blocks)
+        .into_iter()
+        .(|block_index| {
+            // Read the block properties, of ONLY uniform blocks
+            let props = props::<BlockProps>(program, gl::UNIFORM_BLOCK, block_index as u32);
+
+            // Make sure we are dealing with valid blocks
+            if props.num_active_variables > 0 {
+                // Get the indices of the 
+
+                for uniform_index in 0..props.num_active_variables {
+                    // Read the uniform properties, and decompose it's values
+                    let props = props::<UnifProps>(program, gl::UNIFORM, uniform_index as u32);
+
+                    // Skip fetching it's name if it's contained within a uniform block (since we have a unique case for those)
+                    let name = name(program, props.name_length, gl::UNIFORM, uniform_index as u32);
+                }
+            }
+            Uniform { name: String::new(), location: 0 }
+        })
+    );
+
+    uniforms
+    */
+
+    Vec::new()
 }
 
 // Introspect a shader, and construct an Introspection struct
@@ -236,5 +276,5 @@ pub(super) unsafe fn introspect(program: u32) -> Introspection {
 
     Introspection { blocks, uniforms }
     */
-    todo!()
+    panic!()
 }
