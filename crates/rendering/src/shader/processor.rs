@@ -66,29 +66,26 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
-                    // Get the start location and end location of the directive bound
+                    // Get the directive, type, and name indices
                     let directive = trimmed.split_whitespace().position(|n| n == "#const").unwrap();
-                    let name = directive + 1;
+                    let ty = directive + 1;
+                    let name = directive + 2;
 
                     // Split into words
-                    let mut words = trimmed
+                    let words = trimmed
                         .split_whitespace()
                         .collect::<Vec<&str>>();
 
-                    // Get the name and value
-                    let filtered = words[name].replace(&['(', ')', ',', '\"', '.', ';', ':', '\''], "");
-                    let name = filtered.trim();
-                    println!("{}", name);
-                    let loaded = self.constants.get(name).unwrap();
+                    // Get the name and value (this assumes that there are no special character after the name of the directive)
+                    let name = words[name];
+                    let ty = words[ty];
+                    let loaded = self.constants.get(name).unwrap().clone();
 
-                    // Remove the directive words and replace them with the proper values
-                    words.remove(directive);
-                    words.remove(directive);
-                    words.insert(directive, loaded);
+                    // Create a whole new line with the proper params
+                    let line = format!("const {} {} = {};", ty, name, loaded);
 
                     // Overwrite output
-                    output = words.join(" ");
-                    println!("{}", &output);
+                    output = line;
                 } else if trimmed.starts_with("#snip") {
                     // Split into words, and classify name
                     let words = trimmed
