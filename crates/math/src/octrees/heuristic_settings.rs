@@ -9,7 +9,11 @@ pub struct HeuristicSettings {
 impl Default for HeuristicSettings {
     fn default() -> Self {
         Self {
-            function: |node, target| vek::Vec3::<f32>::distance(node.center().as_(), *target) / (node.half_extent() as f32 * 2.0) < 1.2,
+            function: |node, target| {
+                vek::Vec3::<f32>::distance(node.center().as_(), *target)
+                    / (node.half_extent() as f32 * 2.0)
+                    < 1.2
+            },
         }
     }
 }

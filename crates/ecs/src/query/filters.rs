@@ -1,12 +1,13 @@
 use crate::{
     registry::{self},
-    Component, ComponentStateRow, Mask, QueryLayout,
+    Component, Mask, StateRow,
 };
 use std::marker::PhantomData;
 
 // Input data given to the filter
 pub struct Input {
-    pub(super) row: ComponentStateRow,
+    pub(super) state_row: StateRow,
+    pub(super) mask: Mask,
 }
 
 // Basic evaluator that will be implemented for the filter sources and modifiers
@@ -21,9 +22,10 @@ pub trait Evaluate: 'static {
     fn eval(cached: &Self::Cached, input: &Input) -> bool;
 }
 
-// Sources
+// Filter sources
 pub struct Added<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);
+pub struct Contains<T: Component>(PhantomData<T>);
 
 // Constant source that always fails / succeeds the test
 pub struct Always(());
@@ -43,7 +45,7 @@ impl<T: Component> Evaluate for Added<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &Input) -> bool {
-        input.row.added(cached.offset())
+        input.state_row.added(cached.offset())
     }
 }
 
@@ -55,7 +57,19 @@ impl<T: Component> Evaluate for Modified<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &Input) -> bool {
-        input.row.mutated(cached.offset())
+        input.state_row.mutated(cached.offset())
+    }
+}
+
+impl<T: Component> Evaluate for Contains<T> {
+    type Cached = Mask;
+
+    fn setup() -> Self::Cached {
+        registry::mask::<T>()
+    }
+
+    fn eval(cached: &Self::Cached, input: &Input) -> bool {
+        input.mask.one_corresponding_bit(*cached)
     }
 }
 
@@ -122,6 +136,9 @@ pub fn modified<T: Component>() -> Modified<T> {
 }
 pub fn added<T: Component>() -> Added<T> {
     Added(PhantomData::default())
+}
+pub fn contains<T: Component>() -> Contains<T> {
+    Contains(PhantomData::default())
 }
 
 // Constant sources

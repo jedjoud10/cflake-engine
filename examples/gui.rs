@@ -1,3 +1,4 @@
+/*
 use cflake_engine::*;
 
 // An empty game window
@@ -16,3 +17,5 @@ fn run(world: &mut World) {
         ui.label("Hello, I am your average anime enjoyer. How are you on this fine day?");
     });
 }
+*/
+fn main() {}

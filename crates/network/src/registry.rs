@@ -12,7 +12,8 @@ use crate::{Payload, PayloadBucketId};
 // Use to keep track of the payload bucket IDs
 lazy_static! {
     static ref NEXT_REGISTERED_BUCKET_ID: AtomicU16 = AtomicU16::new(0);
-    static ref REGSISTERED_BUCKET_IDS: RwLock<AHashMap<TypeId, PayloadBucketId>> = RwLock::new(AHashMap::new());
+    static ref REGSISTERED_BUCKET_IDS: RwLock<AHashMap<TypeId, PayloadBucketId>> =
+        RwLock::new(AHashMap::new());
 }
 
 // Register a type using a new bucket ID
@@ -32,6 +33,9 @@ pub fn get_bucket_id<P: Payload + 'static>() -> PayloadBucketId {
     if let Some(id) = read.get(&TypeId::of::<P>()).cloned() {
         id
     } else {
-        panic!("Payload '{}' does not have a registered bucket ID!", type_name::<P>())
+        panic!(
+            "Payload '{}' does not have a registered bucket ID!",
+            type_name::<P>()
+        )
     }
 }

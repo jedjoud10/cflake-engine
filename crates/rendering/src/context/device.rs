@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 
-use super::Context;
+use super::{get_static_str, Context};
 
 // A device is just some sort of wrapper around glutin windows
 pub struct Device {
@@ -38,11 +38,6 @@ impl Device {
         &self.canvas
     }
 
-    // Get the size of the device window
-    pub fn size(&self) -> vek::Extent2<u16> {
-        self.size
-    }
-
     // Get the raw glutin window
     pub fn window(&self) -> &glutin::window::Window {
         &self.glutin
@@ -51,5 +46,15 @@ impl Device {
     // Get the default window canvas mutably
     pub fn canvas_mut(&mut self) -> &mut Canvas {
         &mut self.canvas
+    }
+
+    // Get the GPU name (renderer)
+    pub fn name(&self) -> &'static str {
+        unsafe { get_static_str(gl::RENDERER) }
+    }
+
+    // Get the vendor (Company responsible for the OpenGL implementation)
+    pub fn vendor(&self) -> &'static str {
+        unsafe { get_static_str(gl::VENDOR) }
     }
 }

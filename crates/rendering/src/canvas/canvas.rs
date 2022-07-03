@@ -1,5 +1,7 @@
-use crate::{canvas::rasterizer::Rasterizer, context::Context, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::Uniforms, shader::Shader};
 use std::marker::PhantomData;
+
+use super::{RasterSettings, Rasterizer};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the device using the canvas() function
@@ -10,11 +12,12 @@ pub struct Canvas {
     // The size of the framebuffer, in pixels
     size: vek::Extent2<u16>,
 
+    // Unsend + Unsync
     _phantom: PhantomData<*const ()>,
 }
 impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
-    pub unsafe fn from_raw_parts(ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
+    pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
         Self {
             name,
             size,
@@ -23,9 +26,13 @@ impl Canvas {
     }
 
     // Create a new canvas with a specific size (size must be valid)
-    pub fn new(ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         // Validate size first
-        assert_ne!(size, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            size,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
 
         // Create the raw OpenGL framebuffer
         let name = unsafe {
@@ -44,7 +51,11 @@ impl Canvas {
 
     // Resize the canvas to a new size
     pub fn resize(&mut self, new: vek::Extent2<u16>) {
-        assert_ne!(new, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            new,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
         self.size = new;
     }
 
@@ -53,24 +64,20 @@ impl Canvas {
         self.size
     }
 
-    // Bind the underlying framebuffer if it isn't bound already
-    fn bind(&mut self, ctx: &mut Context) {
-        // Make sure the framebuffer is bound, and that the viewport is valid
-        ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
-            gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
-        });
-    }
-
     // Clear the whole framebuffer using the proper flags
-    pub fn clear(&mut self, ctx: &mut Context, color: Option<vek::Rgba<f32>>, depth: Option<f32>, stencil: Option<i32>) {
+    pub fn clear(
+        &mut self,
+        color: Option<vek::Rgb<f32>>,
+        depth: Option<f32>,
+        stencil: Option<i32>,
+    ) {
         // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 
         // Set the background color values
         if let Some(color) = color {
             unsafe {
-                gl::ClearColor(color.r, color.g, color.g, color.a);
+                gl::ClearColor(color.r, color.g, color.b, 1.0);
                 flags |= gl::COLOR_BUFFER_BIT
             }
         }
@@ -96,12 +103,29 @@ impl Canvas {
             gl::Clear(flags);
         }
     }
-    // Get the canvas' rasterizer so we can draw stuff onto the canvas using a specific shader
-    pub fn rasterizer<'canvas, 'shader, 'context>(&'canvas mut self, shader: &'shader mut Shader, ctx: &'context mut Context) -> Rasterizer<'canvas, 'shader, 'context> {
-        Rasterizer {
-            canvas: self,
-            shader,
-            context: ctx,
-        }
+
+    // Create a new canvas rasterizer that we can use to draw some 3D or 2D objects
+    pub fn rasterizer<'canvas, 'context, 'shader>(
+        &'canvas mut self,
+        ctx: &'context mut Context,
+        shader: &'shader mut Shader,
+        settings: RasterSettings,
+    ) -> (Rasterizer<'canvas, 'context>, Uniforms<'shader>) {
+        // Make sure the framebuffer is bound, and that the viewport is valid
+        ctx.bind(gl::FRAMEBUFFER, self.name, |name| unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
+            gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
+        });
+
+        // Bind the program, and set it's uniforms
+        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe {
+            gl::UseProgram(obj)
+        });
+
+        // Create the new rasterizer
+        (
+            Rasterizer::new(self, ctx, settings),
+            Uniforms(shader.as_mut()),
+        )
     }
 }

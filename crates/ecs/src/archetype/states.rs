@@ -3,9 +3,9 @@ use std::cell::RefCell;
 
 // Component state chunk that contains the component states for a bundle
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct ComponentStateRow(Mask, Mask);
+pub struct StateRow(Mask, Mask);
 
-impl ComponentStateRow {
+impl StateRow {
     // Create a chunk for newly added bundles using it's linked mask
     pub const fn new(mask: Mask) -> Self {
         Self(mask, mask)
@@ -15,6 +15,7 @@ impl ComponentStateRow {
     pub fn added(&self, offset: usize) -> bool {
         self.1.get(offset)
     }
+
     // Check if a component was mutated since the start of the current frame
     pub fn mutated(&self, offset: usize) -> bool {
         self.0.get(offset)
@@ -28,11 +29,11 @@ impl ComponentStateRow {
 
 // Component states (their mutation state)
 #[derive(Default)]
-pub(crate) struct ComponentStateSet {
-    rows: RefCell<Vec<ComponentStateRow>>,
+pub struct States {
+    rows: RefCell<Vec<StateRow>>,
 }
 
-impl ComponentStateSet {
+impl States {
     // Reset the component states to their default values
     pub fn reset(&self) {
         self.rows.borrow_mut().iter_mut().for_each(|row| {
@@ -44,7 +45,7 @@ impl ComponentStateSet {
     }
 
     // Add a new component states row
-    pub fn push(&self, state: ComponentStateRow) {
+    pub fn push(&self, state: StateRow) {
         self.rows.borrow_mut().push(state);
     }
 
@@ -54,7 +55,11 @@ impl ComponentStateSet {
     }
 
     // Update the value of a row. This will return the old row state
-    pub fn update(&self, bundle: usize, function: impl FnOnce(&mut Mask, &mut Mask)) -> Option<ComponentStateRow> {
+    pub fn update(
+        &self,
+        bundle: usize,
+        function: impl FnOnce(&mut Mask, &mut Mask),
+    ) -> Option<StateRow> {
         // Fetch the element
         let mut borrowed = self.rows.borrow_mut();
         let row = borrowed.get_mut(bundle)?;
@@ -71,7 +76,7 @@ impl ComponentStateSet {
     }
 
     // Get all the component states for a specific row
-    pub fn get(&self, bundle: usize) -> Option<ComponentStateRow> {
+    pub fn get(&self, bundle: usize) -> Option<StateRow> {
         self.rows.borrow().get(bundle).cloned()
     }
 }

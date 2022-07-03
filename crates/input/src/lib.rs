@@ -1,8 +1,8 @@
-// Export
-mod input;
-mod keys;
-mod states;
-
-pub use self::input::*;
-pub use keys::*;
-pub use states::*;
+mod keyboard;
+mod mouse;
+mod state;
+mod system;
+pub use keyboard::*;
+pub use mouse::*;
+pub use state::*;
+pub use system::*;

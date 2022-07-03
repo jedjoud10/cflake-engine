@@ -1,6 +1,10 @@
-use std::{num::NonZeroU32, ptr::null_mut};
+use std::ptr::null_mut;
 
-use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage};
+use ahash::AHashMap;
+
+use super::{
+    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage,
+};
 use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages
@@ -22,8 +26,13 @@ unsafe fn compile(names: &[u32]) -> Program {
         let mut len = 0;
         gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
         let message = String::from_utf8({
-            let mut vec = Vec::with_capacity(len as usize + 1);
-            gl::GetProgramInfoLog(program, len, null_mut(), vec.spare_capacity_mut().as_mut_ptr() as _);
+            let mut vec = vec![0; len as usize + 1];
+            gl::GetProgramInfoLog(
+                program,
+                len,
+                null_mut(),
+                vec.as_mut_ptr() as _,
+            );
             vec
         })
         .unwrap();
@@ -41,14 +50,23 @@ unsafe fn compile(names: &[u32]) -> Program {
     let introspection = introspect(program);
 
     // Fetch all the uniform locations
-    let uniform_locations = introspection.uniforms().iter().map(|uniform| (uniform.name().to_string(), uniform.location())).collect();
+    let uniform_locations: AHashMap<String, u32> = introspection
+        .uniforms()
+        .iter()
+        .map(|uniform| (uniform.name().to_string(), uniform.location()))
+        .collect();
+
+    // Count the number of user defined inputs (uniforms, samplers, buffers)
+    let inputs = uniform_locations.len() as u32;
 
     Program {
-        name: u32::from(program),
+        name: program,
+        introspection,
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),
         uniform_locations,
+        inputs,
     }
 }
 
@@ -64,13 +82,19 @@ pub trait StageSet {
 impl StageSet for (VertexStage, FragmentStage) {
     type OutShaderType = Shader;
 
-    unsafe fn link(input: Self, mut processor: Processor, ctx: &mut Context) -> Self::OutShaderType {
+    unsafe fn link(
+        input: Self,
+        mut processor: Processor,
+        ctx: &mut Context,
+    ) -> Self::OutShaderType {
         // Process shader directives and includes
         let vertex = processor.filter(input.0);
         let fragment = processor.filter(input.1);
 
         // Compile the stages
         let vertex = super::stage::compile(ctx, vertex);
+        println!("Compiled vertex stage for shader ");
+
         let fragment = super::stage::compile(ctx, fragment);
 
         // And compile the main shader
@@ -81,7 +105,11 @@ impl StageSet for (VertexStage, FragmentStage) {
 impl StageSet for ComputeStage {
     type OutShaderType = ComputeShader;
 
-    unsafe fn link(input: Self, mut processor: Processor, ctx: &mut Context) -> Self::OutShaderType {
+    unsafe fn link(
+        input: Self,
+        mut processor: Processor,
+        ctx: &mut Context,
+    ) -> Self::OutShaderType {
         // Process shader directives and includes
         let compute = processor.filter(input);
 
@@ -97,7 +125,11 @@ impl StageSet for ComputeStage {
 pub struct ShaderCompiler;
 impl ShaderCompiler {
     // Simply link multiple shader stages into a shader
-    pub fn link<C: StageSet>(input: C, processor: Processor, ctx: &mut Context) -> C::OutShaderType {
+    pub fn link<C: StageSet>(
+        input: C,
+        processor: Processor,
+        ctx: &mut Context,
+    ) -> C::OutShaderType {
         unsafe { C::link(input, processor, ctx) }
     }
 }

@@ -1,10 +1,7 @@
-use std::{cell::Cell, num::NonZeroU32, time::Instant};
-
 use super::Program;
 use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
-    texture::{Bindless, Sampler, TexelLayout, Texture, Texture2D, R},
+    object::ToGlName,
+    texture::{Sampler, Texture},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -166,15 +163,10 @@ macro_rules! impl_matrices {
         }
     };
 }
-
-// Insanity
-mod raw {
-    // A uniform variable trait that will set a unique uniform within a shader
-    pub trait SetRawUniform {
-        unsafe fn set(self, loc: i32, program: u32);
-    }
+// A uniform variable trait that will set a unique uniform within a shader
+pub trait SetRawUniform {
+    unsafe fn set(self, loc: i32, program: u32);
 }
-use raw::SetRawUniform;
 
 // Wrapper traits
 pub trait Scalar: SetRawUniform {}
@@ -205,12 +197,19 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
-// The main struct that will allow us to set the uniforms
-pub struct Uniforms<'uniforms>(pub(super) &'uniforms mut Program);
+// The main struct that will allow us to set the shader uniforms before it's execution
+// We must set ALL the uniforms before each shader execution
+// Shader uniforms can be fetched from a compute shader using the scheduler() method and from a painter using the uniforms() method
+// When we drop the uniforms, we have to assume that we unbind the values that have a specific lifetime, like buffers and samplers
+// Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
+    // Make sure the user set all the proper uniform values, and that there are no missing values
+    pub(crate) fn validate(&self) {}
+
     // Get the uniform location of a uniform using it's name
-    fn location(&self, name: &'static str) -> Option<i32> {
+    fn location(&self, _name: &'static str) -> Option<i32> {
         None
     }
 
@@ -218,6 +217,8 @@ impl<'uniforms> Uniforms<'uniforms> {
     fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
         if let Some(loc) = self.location(name) {
             unsafe { val.set(loc as i32, self.0.name()) }
+        } else {
+            panic!("Uniform with name '{}' does not exist!", name);
         }
     }
 
@@ -261,8 +262,15 @@ impl<'uniforms> Uniforms<'uniforms> {
         self.set_raw(name, mat);
     }
 
+    /*
+
     // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
-    unsafe fn set_normal_sampler_unchecked(&mut self, name: &'static str, target: u32, texture: u32) {
+    unsafe fn set_normal_sampler_unchecked(
+        &mut self,
+        name: &'static str,
+        target: u32,
+        texture: u32,
+    ) {
         // First of all, we must get the texture unit offset
         let count = self.0.texture_units.len() as u32;
         let offset = *self.0.texture_units.entry(name).or_insert(count);
@@ -278,11 +286,10 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Set a texture sampler, assuming that it uses bindless textures
     unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: &Bindless) {
         // If the texture isn't resident, we have to make it resident
-        bindless.last_shader_usage.set(Instant::now());
+        bindless.last_residency_instant.set(Instant::now());
         if !bindless.resident.get() {
             // Make the bindless texture a resident bindless texture
-            bindless.resident.set(true);
-            gl::MakeTextureHandleResidentARB(bindless.handle);
+            bindless.set_residency(true);
         } else {
             // The bindless texture handle is already resident, we just need to set the uniform
             if let Some(loc) = self.location(name) {
@@ -290,15 +297,25 @@ impl<'uniforms> Uniforms<'uniforms> {
             }
         }
     }
+    */
 
-    // Set a texture sampler, switching between the bindless and normal methods
-    // TODO: Handle texture samplers that might outlive the program
-    pub fn set_sampler<'me: 'sampler, 'sampler, T: Texture>(&'me mut self, name: &'static str, sampler: Sampler<'sampler, T>) {
+    // Set a texture sampler uniform
+    // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
+    pub fn set_sampler<T: Texture>(
+        &mut self,
+        _name: &'static str,
+        _sampler: Sampler<'uniforms, T>,
+    ) {
+        /*
         unsafe {
             match sampler.0.bindless() {
                 Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
                 None => self.set_normal_sampler_unchecked(name, T::target(), sampler.0.name()),
             }
         }
+        */
     }
+
+    // Apply the uniorms before executing the code
+    // This is going to be called internally by the program scheduler
 }

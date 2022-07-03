@@ -11,22 +11,43 @@ pub struct AABB {
 }
 
 impl AABB {
-    // Create an AABB at a specified position and half-width scale
-    pub fn new(pos: vek::Vec3<f32>, hw: vek::Vec3<f32>) -> Self {
-        Self { min: pos - hw, max: pos + hw }
+    // Create an AABB at a specified center position and half-extent scale
+    pub fn new(center: vek::Vec3<f32>, half_extent: vek::Extent3<f32>) -> Self {
+        Self {
+            min: center - vek::Vec3::from(half_extent),
+            max: center + vek::Vec3::from(half_extent),
+        }
     }
-    // Create all the points that belong to this AABB in arbitrary order cause I can't give a shit
+
+    // Get all the vertices of this AABB, in the order that is defined on this website
+    // http://paulbourke.net/geometry/polygonise/
     pub fn points(&self) -> [vek::Vec3<f32>; 8] {
         [
             self.min,
-            vek::Vec3::new(self.min.x, self.min.y, self.max.z),
-            vek::Vec3::new(self.min.x, self.max.y, self.max.z),
-            vek::Vec3::new(self.min.x, self.max.y, self.min.z),
             vek::Vec3::new(self.max.x, self.min.y, self.min.z),
-            vek::Vec3::new(self.max.x, self.max.y, self.min.z),
             vek::Vec3::new(self.max.x, self.min.y, self.max.z),
-            self.max,
+            vek::Vec3::new(self.min.x, self.min.y, self.max.z),
+            vek::Vec3::new(self.min.x, self.max.y, self.min.z),
+            vek::Vec3::new(self.max.x, self.max.y, self.min.z),
+            vek::Vec3::new(self.max.x, self.max.y, self.max.z),
+            vek::Vec3::new(self.min.x, self.max.y, self.max.z),
         ]
+    }
+
+    // Calculate the center of the AABB
+    pub fn get_center(&self) -> vek::Vec3<f32> {
+        (self.min + self.max) / 2.0
+    }
+
+    // Calculate the full extent of the AABB
+    pub fn get_extent(&self) -> vek::Extent3<f32> {
+        vek::Extent3::from(self.max - self.min)
+    }
+
+    // Check if the AABB is valid (it's max point is indeed bigger than min)
+    pub fn is_valid(&self) -> bool {
+        let mask = self.max.partial_cmpgt(&self.min);
+        mask.x & mask.y & mask.z
     }
 }
 
@@ -40,12 +61,7 @@ impl Index<usize> for AABB {
         } else if index == 1 {
             &self.max
         } else {
-            panic!("no")
+            panic!()
         }
     }
-}
-
-// Trait to convert any shape to an AABB
-pub trait ToAABB {
-    fn aabb(&self) -> AABB;
 }

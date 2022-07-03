@@ -1,12 +1,12 @@
 mod bindless;
-mod layout;
-mod raw;
-mod sampling;
+mod params;
+mod sampler;
+mod texel;
 mod texture;
 mod texture2d;
 pub use bindless::*;
-pub use layout::*;
-pub use raw::*;
-pub use sampling::*;
+pub use params::*;
+pub use sampler::*;
+pub use texel::*;
 pub use texture::*;
 pub use texture2d::*;

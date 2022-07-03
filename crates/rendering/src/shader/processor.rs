@@ -1,22 +1,7 @@
-use super::{FragmentStage, Processed, Stage, VertexStage};
+use super::{Processed, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::{loader::AssetLoader, Asset};
-
-// This is just a wrapper for String. It can be loaded from any file really, but we will only load it from shader files
-struct RawText(String);
-
-impl Asset<'static> for RawText {
-    type Args = ();
-
-    fn extensions() -> &'static [&'static str] {
-        &[]
-    }
-
-    fn deserialize(bytes: assets::loader::CachedSlice, args: Self::Args) -> Self {
-        Self(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
-    }
-}
+use assets::{Asset, Assets};
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
@@ -24,10 +9,9 @@ pub struct Constant<T: ToString>(T);
 // A processor is something that will take some raw GLSL text and expand/process each directive
 pub struct Processor<'a> {
     // This is the asset loader that we will use to load include files
-    loader: &'a mut AssetLoader,
+    loader: &'a mut Assets,
 
     // A hashmap containing the constant values that we must replace
-    // #const [name] [opt<default>]
     // #const [name]
     constants: AHashMap<String, String>,
 
@@ -36,15 +20,15 @@ pub struct Processor<'a> {
     snippets: AHashMap<String, String>,
 }
 
-impl<'a> From<&'a mut AssetLoader> for Processor<'a> {
-    fn from(loader: &'a mut AssetLoader) -> Self {
+impl<'a> From<&'a mut Assets> for Processor<'a> {
+    fn from(loader: &'a mut Assets) -> Self {
         Self::new(loader)
     }
 }
 
 impl<'a> Processor<'a> {
     // Create a processor from an asset loader
-    pub fn new(loader: &'a mut AssetLoader) -> Self {
+    pub fn new(loader: &'a mut Assets) -> Self {
         Self {
             loader,
             constants: Default::default(),
@@ -53,19 +37,23 @@ impl<'a> Processor<'a> {
     }
 
     // Include a constant directive
-    pub fn constant(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn insert_constant(&mut self, name: impl ToString, value: impl ToString) {
         self.constants.insert(name.to_string(), value.to_string());
     }
 
     // Include a snippet directive
-    pub fn snippet(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn insert_snippet(&mut self, name: impl ToString, value: impl ToString) {
         self.snippets.insert(name.to_string(), value.to_string());
     }
 
     // Filter and process a single stage
     pub(super) fn filter<S: Stage>(&mut self, stage: S) -> Processed<S> {
-        // We must filter infinitely until we find no more directives
-        let mut lines = stage.as_ref().to_string().lines().map(str::to_string).collect::<Vec<String>>();
+        // We must filter repeatedly until we find no more directives
+        let (source, name) = stage.into_raw_parts();
+        let mut lines = source
+            .lines()
+            .map(str::to_string)
+            .collect::<Vec<String>>();
         loop {
             // Simply iterate through each line, and check if it starts with a directive that we must replace (whitespaces ignored)
             let mut skipped = 0usize;
@@ -78,17 +66,34 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
-                    // Split into words, and classify name and optional default value
-                    let words = trimmed.split("#const").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
-                    let name = words[0];
-                    let default = words.get(1).cloned();
+                    // Get the directive, type, and name indices
+                    let directive = trimmed.split_whitespace().position(|n| n == "#const").unwrap();
+                    let ty = directive + 1;
+                    let name = directive + 2;
 
-                    // Then try to load the value from the processor
-                    let loaded = self.constants.get(name).map(String::as_str);
-                    output = loaded.or(default).unwrap().to_string();
+                    // Split into words
+                    let words = trimmed
+                        .split_whitespace()
+                        .collect::<Vec<&str>>();
+
+                    // Get the name and value (this assumes that there are no special character after the name of the directive)
+                    let name = words[name];
+                    let ty = words[ty];
+                    let loaded = self.constants.get(name).unwrap().clone();
+
+                    // Create a whole new line with the proper params
+                    let line = format!("const {} {} = {};", ty, name, loaded);
+
+                    // Overwrite output
+                    output = line;
                 } else if trimmed.starts_with("#snip") {
                     // Split into words, and classify name
-                    let words = trimmed.split("#snip").next().unwrap().split_whitespace().collect::<ArrayVec<&str, 3>>();
+                    let words = trimmed
+                        .split("#snip")
+                        .next()
+                        .unwrap()
+                        .split_whitespace()
+                        .collect::<ArrayVec<&str, 3>>();
                     let name = words[0];
 
                     // Try to get the snippet
@@ -99,9 +104,14 @@ impl<'a> Processor<'a> {
                     let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let path = words[1];
 
+                    // Make sure the path is something we can load (.func file)
+                    if !path.ends_with(".func") {
+                        panic!();
+                    }
+
                     // Load the path from the asset manager
-                    let raw = self.loader.load::<RawText>(path).unwrap();
-                    output = raw.0;
+                    let raw = self.loader.load::<String>(path).unwrap();
+                    output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line
                     skipped += 1;
@@ -113,7 +123,11 @@ impl<'a> Processor<'a> {
             }
 
             // Make sure we split the lines again
-            lines = lines.join("\n").lines().map(str::to_string).collect::<Vec<String>>();
+            lines = lines
+                .join("\n")
+                .lines()
+                .map(str::to_string)
+                .collect::<Vec<String>>();
 
             // If we skipped all the lines, it means that we did absolutely nothing, and we can exit
             if skipped == lines.len() {
@@ -122,6 +136,6 @@ impl<'a> Processor<'a> {
         }
 
         // Combine the lines into a string and return the new, filtered stage
-        Processed(S::from(lines.join("\n")))
+        Processed(S::from_raw_parts(lines.join("\n"), name))
     }
 }

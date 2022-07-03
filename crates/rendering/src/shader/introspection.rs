@@ -1,12 +1,6 @@
-use std::{
-    ffi::CString,
-    num::NonZeroU32,
-    ptr::{null, null_mut},
-};
+use std::ptr::null_mut;
 
-use crate::{context::Context, object::ToGlName};
-
-use super::Program;
+use crate::object::ToGlName;
 
 // The type of block that we have stored
 pub enum Index {
@@ -73,8 +67,18 @@ pub(super) unsafe fn introspect(program: u32) -> Introspection {
     // Count the number of uniform blocks and shader storage blocks
     let mut uniforms = 0;
     let mut storages = 0;
-    gl::GetProgramInterfaceiv(program, gl::UNIFORM_BLOCK, gl::ACTIVE_RESOURCES, &mut uniforms);
-    gl::GetProgramInterfaceiv(program, gl::SHADER_STORAGE_BLOCK, gl::ACTIVE_RESOURCES, &mut storages);
+    gl::GetProgramInterfaceiv(
+        program,
+        gl::UNIFORM_BLOCK,
+        gl::ACTIVE_RESOURCES,
+        &mut uniforms,
+    );
+    gl::GetProgramInterfaceiv(
+        program,
+        gl::SHADER_STORAGE_BLOCK,
+        gl::ACTIVE_RESOURCES,
+        &mut storages,
+    );
 
     // Raw block properties given directly from opengl
     #[repr(C)]

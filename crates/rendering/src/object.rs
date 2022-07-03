@@ -1,5 +1,3 @@
-use crate::context::Context;
-use std::{num::NonZeroU32, ops::Deref, rc::Rc};
 // This trait will be implemented on objects that contain a raw OpenGL name
 pub trait ToGlName {
     fn name(&self) -> u32;
@@ -11,5 +9,5 @@ pub trait ToGlTarget {
 }
 
 // Objects that can be shared/sent to the GPU through OpenGL functions
-pub trait Shared: Copy + Sized + Sync + Send {}
-impl<T: Copy + Sized + Sync + Send> Shared for T {}
+pub trait Shared: Copy + Sized + Sync + Send + 'static {}
+impl<T: Copy + Sized + Sync + Send + 'static> Shared for T {}

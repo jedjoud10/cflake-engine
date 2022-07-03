@@ -12,7 +12,10 @@ impl<T> Payload for T where T: Serialize + DeserializeOwned + 'static {}
 pub type PayloadBucketId = u16;
 
 // Serialize a payload, with it's packet bucket ID
-pub fn serialize_payload<P: Payload>(bucket_id: PayloadBucketId, payload: P) -> Result<Vec<u8>, Error> {
+pub fn serialize_payload<P: Payload>(
+    bucket_id: PayloadBucketId,
+    payload: P,
+) -> Result<Vec<u8>, Error> {
     // Serialze the bucket ID
     let bucket_id_bytes = bucket_id.to_be_bytes();
     // Serialize the payload
@@ -66,7 +69,12 @@ pub enum PacketType {
 }
 
 // Helper functions that automatically serialize the payload before sending it
-pub fn send<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>, _type: PacketType) -> Result<(), Error> {
+pub fn send<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+    _type: PacketType,
+) -> Result<(), Error> {
     match _type {
         PacketType::UnreliableUnordered => send_unreliable_unordered(recv, payload, sender),
         PacketType::ReliableUnordered => send_reliable_unordered(recv, payload, sender),
@@ -75,33 +83,65 @@ pub fn send<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<
         PacketType::UnreliableSequenced => send_unreliable_sequenced(recv, payload, sender),
     }
 }
-fn send_unreliable_unordered<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>) -> Result<(), Error> {
+fn send_unreliable_unordered<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+) -> Result<(), Error> {
     let bucket_id = registry::get_bucket_id::<P>();
     let packet = Packet::unreliable(recv, serialize_payload(bucket_id, payload)?);
     sender.send(packet).unwrap();
     Ok(())
 }
-fn send_reliable_unordered<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>) -> Result<(), Error> {
+fn send_reliable_unordered<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+) -> Result<(), Error> {
     let bucket_id = registry::get_bucket_id::<P>();
     let packet = Packet::reliable_unordered(recv, serialize_payload(bucket_id, payload)?);
     sender.send(packet).unwrap();
     Ok(())
 }
-fn send_reliable_ordered<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>) -> Result<(), Error> {
+fn send_reliable_ordered<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+) -> Result<(), Error> {
     let bucket_id = registry::get_bucket_id::<P>();
-    let packet = Packet::reliable_ordered(recv, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+    let packet = Packet::reliable_ordered(
+        recv,
+        serialize_payload(bucket_id, payload)?,
+        Some(bucket_id.try_into().unwrap()),
+    );
     sender.send(packet).unwrap();
     Ok(())
 }
-fn send_reliable_sequenced<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>) -> Result<(), Error> {
+fn send_reliable_sequenced<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+) -> Result<(), Error> {
     let bucket_id = registry::get_bucket_id::<P>();
-    let packet = Packet::reliable_sequenced(recv, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+    let packet = Packet::reliable_sequenced(
+        recv,
+        serialize_payload(bucket_id, payload)?,
+        Some(bucket_id.try_into().unwrap()),
+    );
     sender.send(packet).unwrap();
     Ok(())
 }
-fn send_unreliable_sequenced<P: Payload + 'static>(recv: SocketAddr, payload: P, sender: &Sender<Packet>) -> Result<(), Error> {
+fn send_unreliable_sequenced<P: Payload + 'static>(
+    recv: SocketAddr,
+    payload: P,
+    sender: &Sender<Packet>,
+) -> Result<(), Error> {
     let bucket_id = registry::get_bucket_id::<P>();
-    let packet = Packet::unreliable_sequenced(recv, serialize_payload(bucket_id, payload)?, Some(bucket_id.try_into().unwrap()));
+    let packet = Packet::unreliable_sequenced(
+        recv,
+        serialize_payload(bucket_id, payload)?,
+        Some(bucket_id.try_into().unwrap()),
+    );
     sender.send(packet).unwrap();
     Ok(())
 }

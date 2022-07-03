@@ -4,7 +4,7 @@ use super::{
 };
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
-#[derive(Default)]
+// The vertex assembly does not
 pub struct VertexAssembly {
     // Rust vectors of vertex attributes
     pub(super) positions: Option<Vec<out::VePos>>,
@@ -17,7 +17,25 @@ pub struct VertexAssembly {
     layout: VertexLayout,
 }
 
+impl Default for VertexAssembly {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl VertexAssembly {
+    // Create an empty vertex assembly that contains no attributes what so ever
+    pub fn empty() -> Self {
+        Self {
+            positions: None,
+            normals: None,
+            tangents: None,
+            colors: None,
+            tex_coord_0: None,
+            layout: VertexLayout::default(),
+        }
+    }
+
     // Insert an attribute vector into the assembly
     pub fn insert<U: Attribute>(&mut self, vec: Vec<U::Out>) {
         U::insert(self, vec);
@@ -47,11 +65,17 @@ impl VertexAssembly {
         }
 
         // Make sure all the lengths (that are valid) be equal to each other
-        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check
-        let valid = arr.into_iter().filter_map(|a| a).all(|len| len == first);
+        let valid = arr.into_iter().flatten().all(|len| len == first);
 
         // Trollinnggggg
         valid.then(|| first)

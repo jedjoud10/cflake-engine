@@ -1,35 +1,32 @@
-use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
-};
+use crate::object::{ToGlName, ToGlTarget};
 use ahash::AHashMap;
-use std::{cell::Cell, marker::PhantomData, num::NonZeroU32};
+use std::marker::PhantomData;
 
-use super::{Introspection, Uniforms};
+use super::Introspection;
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
 pub struct Program {
-    // The program OpenGL name
+    // The OpenGL name of the program
     pub(super) name: u32,
 
-    // Cached texture units
+    // Complete shader introspection (even though the values are stored directly in the following fields)
+    pub(super) introspection: Introspection,
+
+    // The texture units, alongside the name of the texture uniform that they are bound to
     pub(super) texture_units: AHashMap<&'static str, u32>,
 
-    // Cached binding points
-    pub(super) binding_points: AHashMap<&'static str, u32>,
+    // A list of binding points that are created during shader compilation time
+    pub(super) binding_points: AHashMap<String, u32>,
 
-    // Cached pre-fetched uniform locations
+    // A list of uniform location that are created during shader compilation time
     pub(super) uniform_locations: AHashMap<String, u32>,
 
-    // Unsend and unsync lul
-    pub(super) _phantom: PhantomData<*const ()>,
-}
+    // This keeps track of the total number of user defined inputs that we must set through the Uniforms struct
+    // If we set the uniforms and forget some uniforms, we will crash the program. Lul
+    pub(super) inputs: u32,
 
-impl Program {
-    // Get the uniforms of the currently bound program so we can modify them
-    pub fn uniforms(&mut self) -> Uniforms {
-        Uniforms(self)
-    }
+    // Unsync + unsend
+    pub(super) _phantom: PhantomData<*const ()>,
 }
 
 impl ToGlName for Program {
