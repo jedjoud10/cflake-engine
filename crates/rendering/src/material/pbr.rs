@@ -5,7 +5,7 @@ use world::{Handle, Storage};
 use crate::{
     context::{Context, Graphics},
     mesh::SubMesh,
-    scene::SceneRenderer,
+    scene::SceneSettings,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
@@ -125,7 +125,7 @@ impl MaterialBuilder<Standard> {
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (
-        &'world SceneRenderer,
+        &'world SceneSettings,
         &'world Storage<AlbedoMap>,
         &'world Storage<NormalMap>,
         &'world Storage<MaskMap>,
@@ -133,23 +133,23 @@ impl<'world> PropertyBlock<'world> for Standard {
 
     fn set_instance_properties<'u>(
         &'world self,
-        _uniforms: &mut Uniforms<'u>,
+        uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
     ) where
         'world: 'u,
     {
         // Decompose the fetched resource references
-        let (_renderer, _albedo_maps, _normal_maps, _mask_maps) = resources;
-        /*
+        let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
+        
         // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(
             storage: &'a Storage<T>,
             opt: &Option<Handle<T>>,
-            fallback: &Handle<T>,
+            fallback: Handle<T>,
         ) -> &'a T {
             opt.as_ref()
                 .map(|handle| storage.get(handle))
-                .unwrap_or_else(|| storage.get(fallback))
+                .unwrap_or_else(|| storage.get(&fallback))
         }
 
         // Scalar parameters
@@ -158,9 +158,9 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms.set_scalar("_metallic", self.metallic);
 
         // Try to fetch the textures
-        let albedo_map = fallback(albedo_maps, &self.albedo, &renderer.albedo_map());
-        let normal_map = fallback(normal_maps, &self.normal, &renderer.normal_map());
-        let mask_map = fallback(mask_maps, &self.mask, &renderer.mask_map());
+        let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
+        let normal_map = fallback(normal_maps, &self.normal, renderer.normal_map());
+        let mask_map = fallback(mask_maps, &self.mask, renderer.mask_map());
 
         // Get their corresponding samplers
         let albedo_map_sampler = Texture::sampler(albedo_map);
@@ -171,7 +171,6 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms.set_sampler("_albedo", albedo_map_sampler);
         uniforms.set_sampler("_normal", normal_map_sampler);
         uniforms.set_sampler("_mask", mask_map_sampler);
-        */
     }
 
     fn fetch(
@@ -204,7 +203,7 @@ impl<'world> PropertyBlock<'world> for Standard {
                 &Storage<AlbedoMap>,
                 &Storage<NormalMap>,
                 &Storage<MaskMap>,
-                &SceneRenderer,
+                &SceneSettings,
             )>()
             .unwrap();
         (
@@ -222,7 +221,7 @@ impl MaterialRenderer for BatchRenderer<Standard> {
     fn render(
         &self,
         world: &mut world::World,
-        settings: &crate::scene::SceneRenderer,
+        settings: &crate::scene::SceneSettings,
     ) -> Option<super::Stats> {
         self.render_batched_surfaces(world, settings)
     }

@@ -1,53 +1,43 @@
-// Example that will try to render a simple 3D cube
+use cflake_engine::prelude::*;
+
+// Create a game that will draw a simple mesh onto the screen
 fn main() {
-    //    App::default().insert_system(system).execute();
-}
-/*
-fn system(events: &Events) {
-    events.register::<Init>(init);
+    App::default().insert_system(system).execute();
 }
 
-// Initialize the world
+// This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    // ---- Initialize the world ---- \\
-    let (ecs, graphic, assets) = world
-        .get_mut::<(&mut EcsManager, &mut Graphics, &mut Assets)>()
-        .unwrap();
-}
-*/
-/*
-// Init the simple camera and simple mesh
-fn init(world: &mut World) {
-    // ----Start the world----
-    assets::init!("/examples/assets/");
+    // Create a perspective camera
+    let camera = Camera::new(90.0, 0.003, 1000.0, 16.0/9.0);
 
-    defaults::systems::flycam_system::system(world);
+    // Fetch main resources
+    let (ecs, settings) = world.get_mut::<(&mut EcsManager, &mut SceneSettings)>().unwrap();
 
-    // Create a simple camera entity
-    world.ecs.insert(|_, linker| {
-        linker.insert(Camera::new(90.0, 0.2, 9000.0)).unwrap();
+    // And insert it into the world as an entity
+    ecs.insert(|entity, linker| {
+        linker.insert(camera).unwrap();
+        linker.insert(Transform::default()).unwrap()
+    });
+
+    // Load up a new entity renderer and surface
+    let renderer = Renderer::default();
+    let surface = Surface::new(settings.cube(), settings.material());
+
+    // And insert them as a render entity
+    ecs.insert(|entity, linker| {
+        linker.insert(renderer).unwrap();
+        linker.insert(surface).unwrap();
         linker.insert(Transform::default()).unwrap();
     });
-
-    // Create the directional light source
-    world.ecs.insert(|_, linker| {
-        let light = Light(LightType::directional(vek::Rgb::one() * 6.0));
-        linker.insert(light).unwrap();
-        linker.insert(Transform::rotation_x(-45f32.to_radians())).unwrap();
-    });
-
-    // Create a sphere
-    let sphere = world.pipeline.defaults().sphere.clone();
-    world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::from(sphere)).unwrap();
-        linker.insert(Transform::at_y(0.5)).unwrap();
-    });
-
-    // Create a floor
-    let plane = world.pipeline.defaults().plane.clone();
-    world.ecs.insert(|_, linker| {
-        linker.insert(Renderer::from(plane)).unwrap();
-        linker.insert(Transform::default().scaled_by(vek::Vec3::new(10.0, 1.0, 10.0))).unwrap();
-    });
 }
-*/
+
+// This is an update event that will be called each frame
+fn update(world: &mut World) {
+
+}
+
+// This is an example system that will register specific events
+fn system(events: &mut Events) {
+    events.registry::<Init>().insert(init);
+    events.registry::<Update>().insert(update);
+}

@@ -18,15 +18,6 @@ pub enum BufferMode {
     Resizable,
 }
 
-// Simply used for organization
-enum BufferType {
-    // Immutable buffers allocated through glBufferStorage
-    Immutable(u32),
-
-    // Normal buffers allocated through glBufferData
-    Default(u32),
-}
-
 // Common OpenGL buffer types
 pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
 pub type ElementBuffer<T> = Buffer<T, { gl::ELEMENT_ARRAY_BUFFER }>;

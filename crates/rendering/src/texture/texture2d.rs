@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{Bindless, ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode};
+use super::{ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -18,7 +18,6 @@ pub struct Texture2D<T: Texel> {
     dimensions: vek::Extent2<u16>,
     mode: TextureMode,
     levels: NonZeroU8,
-    bindless: Option<Rc<Bindless>>,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -52,10 +51,6 @@ impl<T: Texel> Texture for Texture2D<T> {
         super::Sampler(self)
     }
 
-    fn bindless(&self) -> Option<&Bindless> {
-        self.bindless.as_ref().map(Rc::as_ref)
-    }
-
     fn levels(&self) -> NonZeroU8 {
         self.levels
     }
@@ -73,14 +68,12 @@ impl<T: Texel> Texture for Texture2D<T> {
         dimensions: <Self::Region as super::Region>::E,
         mode: TextureMode,
         levels: NonZeroU8,
-        bindless: Option<Rc<Bindless>>,
     ) -> Self {
         Self {
             name,
             dimensions,
             mode,
             levels,
-            bindless,
             _phantom: Default::default(),
         }
     }

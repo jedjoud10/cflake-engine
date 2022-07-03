@@ -37,7 +37,7 @@ impl Canvas {
         // Create the raw OpenGL framebuffer
         let name = unsafe {
             let mut name = 0u32;
-            gl::GenFramebuffers(1, &mut name);
+            gl::CreateFramebuffers(1, &mut name);
             name
         };
 

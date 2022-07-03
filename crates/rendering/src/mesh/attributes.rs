@@ -124,7 +124,7 @@ pub mod named {
         }
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-            assembly.positions.insert(vec);
+            assembly.positions = Some(vec);
         }
     }
 
@@ -149,7 +149,7 @@ pub mod named {
         }
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-            assembly.normals.insert(vec);
+            assembly.normals = Some(vec);
         }
     }
 
@@ -174,7 +174,7 @@ pub mod named {
         }
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-            assembly.tangents.insert(vec);
+            assembly.tangents = Some(vec);
         }
     }
 
@@ -199,7 +199,7 @@ pub mod named {
         }
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-            assembly.colors.insert(vec);
+            assembly.colors = Some(vec);
         }
     }
 
@@ -224,7 +224,7 @@ pub mod named {
         }
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
-            assembly.tex_coord_0.insert(vec);
+            assembly.tex_coord_0 = Some(vec);
         }
     }
 }
@@ -300,8 +300,7 @@ impl AttributeSet {
         // Create and bind the VAO, then create a safe VAO wrapper
         let vao = unsafe {
             let mut name = 0;
-            gl::GenVertexArrays(1, &mut name);
-            gl::BindVertexArray(name);
+            gl::CreateVertexArrays(1, &mut name);
             name
         };
 

@@ -1,4 +1,4 @@
-use super::{Bindless, Filter, Sampler, Sampling, Texel, Wrap};
+use super::{Filter, Sampler, Sampling, Texel, Wrap};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -297,9 +297,6 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 }
             }
 
-            // Create a bindless handle for dynamic textures only (since dealing with resizable textures would be an absolute pain)
-            let bindless = None;
-
             // Appply the sampling parameters for this texture
             // We do a bit of enum fetching (this is safe) (trust)
             let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
@@ -344,7 +341,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // Create the texture object
-            Self::from_raw_parts(tex, dimensions, mode, levels, bindless)
+            Self::from_raw_parts(tex, dimensions, mode, levels)
         })
     }
 
@@ -361,9 +358,6 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
     // Create an immutable texture sampler
     fn sampler(&self) -> Sampler<Self>;
-
-    // Get the bindless handle that is stored within this texture
-    fn bindless(&self) -> Option<&Bindless>;
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {
@@ -384,27 +378,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         u64::from(Self::T::bytes()) * u64::from(self.texel_count())
     }
 
-    // Force this texture to be stored within system memory (if it is a bindless texture)
-    fn try_make_non_resident(&mut self) {
-        if let Some(bindless) = self.bindless() {
-            bindless.set_residency(false);
-        }
-    }
-
-    // Force this texture to be stored within vram (if it is a bindless texture)
-    fn try_make_resident(&mut self) {
-        if let Some(bindless) = self.bindless() {
-            bindless.set_residency(true);
-        }
-    }
-
     // Construct the texture object from it's raw parts
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
         levels: NonZeroU8,
-        bindless: Option<Rc<Bindless>>,
     ) -> Self;
 
     // Allocate some immutable texture storage during texture initialization

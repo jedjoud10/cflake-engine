@@ -10,7 +10,7 @@ use crate::{
     context::{Context, Graphics},
     mesh::{SubMesh, Surface},
     others::Comparison,
-    scene::{Camera, Model, SceneRenderer},
+    scene::{Camera, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
@@ -75,7 +75,7 @@ pub struct Stats {}
 pub trait MaterialRenderer: 'static {
     // Render all the objects that use this material type
     // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
-    fn render(&self, world: &mut World, settings: &SceneRenderer) -> Option<Stats>;
+    fn render(&self, world: &mut World, settings: &SceneSettings) -> Option<Stats>;
 }
 
 // A batch renderer will use a single shader use pass to render the materialized surfaces
@@ -104,11 +104,13 @@ impl<M: Material> BatchRenderer<M> {
     pub fn render_batched_surfaces<'a>(
         &self,
         world: &'a mut World,
-        _settings: &SceneRenderer,
+        _settings: &SceneSettings,
     ) -> Option<Stats>
     where
         M: PropertyBlock<'a>,
     {
+        println!("Render batched surfaces");
+
         // Fetch the rendering resources to batch render the surfaces
         let (ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             M::fetch(world);
@@ -132,7 +134,7 @@ impl<M: Material> BatchRenderer<M> {
         let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
-        let query = ecs.try_view::<(&Model, &Surface<M>)>().unwrap();
+        let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
 
         // Get the main camera component (if there is none, just don't render)
         let (_, camera) = ecs.try_view::<(&Transform, &Camera)>().unwrap().next()?;

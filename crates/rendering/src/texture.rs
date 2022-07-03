@@ -1,10 +1,8 @@
-mod bindless;
 mod params;
 mod sampler;
 mod texel;
 mod texture;
 mod texture2d;
-pub use bindless::*;
 pub use params::*;
 pub use sampler::*;
 pub use texel::*;

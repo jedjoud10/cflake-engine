@@ -1,4 +1,4 @@
-use super::{Camera, SceneRenderer};
+use super::{Camera, SceneSettings};
 use crate::{
     context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
@@ -86,7 +86,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let cube = submeshes.insert(cube);
 
     // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material, cube.clone(), cube);
+    let scene = SceneSettings::new(black, white.clone(), white, normal_map, mask_map, material, cube.clone(), cube);
     world.insert(scene);
 }
 
@@ -94,7 +94,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // I am pretty proud of my material system tbh. Sick as hell fr fr
 fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneRenderer)>().unwrap();
+    let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneSettings)>().unwrap();
     let Graphics(_device, context) = graphics;
 
     // Can we render the scene? (cause if we can't then we have a big problemo)
@@ -148,7 +148,7 @@ fn swap(world: &mut World) {
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let (ecs, Graphics(_device, _), scene) = world
-        .get_mut::<(&mut EcsManager, &Graphics, &SceneRenderer)>()
+        .get_mut::<(&mut EcsManager, &Graphics, &SceneSettings)>()
         .unwrap();
 
     // Fetch the main perspective camera from the scene renderer
