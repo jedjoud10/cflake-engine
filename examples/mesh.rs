@@ -64,7 +64,7 @@ fn update(world: &mut World) {
 
 
         transform.position += velocity * time.delta_f32() * 10.0;
-
+        
         let pos = mouse.position();
         const SENSIVITY: f32 = 0.0007;
         let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY) * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);

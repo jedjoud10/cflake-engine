@@ -3,12 +3,12 @@ use std::ptr::null_mut;
 use ahash::AHashMap;
 
 use super::{
-    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage,
+    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage, Stage,
 };
 use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages
-unsafe fn compile(names: &[u32]) -> Program {
+unsafe fn compile(username: String, names: &[u32]) -> Program {
     // Create the program and link the stages to it
     let program = gl::CreateProgram();
     for name in names {
@@ -50,23 +50,22 @@ unsafe fn compile(names: &[u32]) -> Program {
     let introspection = introspect(program);
 
     // Fetch all the uniform locations
-    let uniform_locations: AHashMap<String, u32> = introspection
+    let uniform_locations: AHashMap<String, (u32, bool)> = introspection
         .uniforms()
         .iter()
-        .map(|uniform| (uniform.name().to_string(), uniform.location()))
+        .map(|uniform| (uniform.name().to_string(), (uniform.location(), false)))
         .collect();
 
-    // Count the number of user defined inputs (uniforms, samplers, buffers)
-    let inputs = uniform_locations.len() as u32;
+    // Fetch all binding points (for buffers / blocks)
 
     Program {
+        username,
         name: program,
         introspection,
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),
-        uniform_locations,
-        inputs,
+        uniform_locations: uniform_locations,
     }
 }
 
@@ -88,17 +87,16 @@ impl StageSet for (VertexStage, FragmentStage) {
         ctx: &mut Context,
     ) -> Self::OutShaderType {
         // Process shader directives and includes
+        let username = format!("{}-{}", input.0.name(), input.1.name());
         let vertex = processor.filter(input.0);
         let fragment = processor.filter(input.1);
 
         // Compile the stages
         let vertex = super::stage::compile(ctx, vertex);
-        println!("Compiled vertex stage for shader ");
-
         let fragment = super::stage::compile(ctx, fragment);
 
         // And compile the main shader
-        Shader(compile(&[vertex.name(), fragment.name()]))
+        Shader(compile(username, &[vertex.name(), fragment.name()]))
     }
 }
 
@@ -111,13 +109,14 @@ impl StageSet for ComputeStage {
         ctx: &mut Context,
     ) -> Self::OutShaderType {
         // Process shader directives and includes
+        let username = input.name().to_string();
         let compute = processor.filter(input);
 
         // Compile the single stage
         let compute = super::stage::compile(ctx, compute);
 
         // And compile the main shader
-        ComputeShader(compile(&[compute.name()]))
+        ComputeShader(compile(username, &[compute.name()]))
     }
 }
 

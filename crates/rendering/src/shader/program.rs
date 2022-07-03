@@ -1,7 +1,6 @@
 use crate::object::{ToGlName, ToGlTarget};
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use std::marker::PhantomData;
-
 use super::Introspection;
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers
@@ -9,21 +8,22 @@ pub struct Program {
     // The OpenGL name of the program
     pub(super) name: u32,
 
+    // The user friendly name of the program
+    pub(super) username: String,
+
     // Complete shader introspection (even though the values are stored directly in the following fields)
     pub(super) introspection: Introspection,
 
     // The texture units, alongside the name of the texture uniform that they are bound to
     pub(super) texture_units: AHashMap<&'static str, u32>,
 
-    // A list of binding points that are created during shader compilation time
-    pub(super) binding_points: AHashMap<String, u32>,
+    // A list of binding points (for buffers / ssbos) that are created during shader compilation time
+    // The boolean tells us if the user set the binding point or not
+    pub(super) binding_points: AHashMap<String, (u32, bool)>,
 
     // A list of uniform location that are created during shader compilation time
-    pub(super) uniform_locations: AHashMap<String, u32>,
-
-    // This keeps track of the total number of user defined inputs that we must set through the Uniforms struct
-    // If we set the uniforms and forget some uniforms, we will crash the program. Lul
-    pub(super) inputs: u32,
+    // The boolean tells us if the user set the uniform or not
+    pub(super) uniform_locations: AHashMap<String, (u32, bool)>,
 
     // Unsync + unsend
     pub(super) _phantom: PhantomData<*const ()>,

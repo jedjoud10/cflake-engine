@@ -205,20 +205,23 @@ impl_matrices!();
 pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
-    // Make sure the user set all the proper uniform values, and that there are no missing values (ex: missing texture)
-    pub(crate) fn validate(&self) {}
-
-    // Get the uniform location of a uniform using it's name
-    fn location(&self, name: &str) -> Option<u32> {
-        self.0.uniform_locations.get(name).cloned()
+    // Make sure the user set all the proper shader variables before executing 
+    pub(crate) fn validate(&mut self) -> Result<(), MissingUniforms> {
+        let bindings = &self.0.binding_points;
+        let uniforms = &self.0.uniform_locations;   
+        
+        for
     }
 
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw<A: SetRawUniform>(&mut self, name: &str, val: A) {
-        if let Some(loc) = self.location(name) {
-            unsafe { val.set(loc as i32, self.0.name()) }
+        let locations = &mut self.0.uniform_locations;
+        if locations.contains_key(name) {
+            let (loc, set) = locations.get_mut(name).unwrap();
+            *set = true;
+            unsafe { val.set(*loc as i32, self.0.name()) }            
         } else {
-            panic!("Uniform with name '{}' does not exist!", name);
+            panic!("Program '{}' does not contain a uniform with name '{}'", self.0.username, name);
         }
     }
 
