@@ -13,11 +13,12 @@ fn init(world: &mut World) {
     // Fetch main resources
     let (ecs, settings) = world.get_mut::<(&mut EcsManager, &mut SceneSettings)>().unwrap();
 
-    // And insert it into the world as an entity
-    ecs.insert(|entity, linker| {
+    // And insert it into the world as an entity (and update the scene settings)
+    let camera = ecs.insert(|entity, linker| {
         linker.insert(camera).unwrap();
         linker.insert(Transform::default()).unwrap()
     });
+    settings.set_main_camera(camera);
 
     // Load up a new entity renderer and surface
     let renderer = Renderer::default();
@@ -29,6 +30,16 @@ fn init(world: &mut World) {
         linker.insert(surface).unwrap();
         linker.insert(Transform::default()).unwrap();
     });
+
+    // Create a directional light
+    let light = Directional::default();
+
+    // And insert it as a light entity (and update the scene settings)
+    let entity = ecs.insert(|entity, linker| {
+        linker.insert(light).unwrap();
+        linker.insert(Transform::default()).unwrap();
+    });
+    //settings.set_main_directional_light(entity);
 }
 
 // This is an update event that will be called each frame

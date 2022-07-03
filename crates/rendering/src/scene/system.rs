@@ -10,7 +10,7 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::EcsManager;
+use ecs::{EcsManager, added, Component, contains, and, Entity};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 use world::{Events, Init, Stage, Storage, Update, World};
@@ -94,19 +94,19 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // I am pretty proud of my material system tbh. Sick as hell fr fr
 fn rendering(world: &mut World) {
     // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, renderer) = world.get_mut::<(&mut Graphics, &SceneSettings)>().unwrap();
+    let (graphics, settings) = world.get_mut::<(&mut Graphics, &SceneSettings)>().unwrap();
     let Graphics(_device, context) = graphics;
 
     // Can we render the scene? (cause if we can't then we have a big problemo)
-    if !renderer.can_render() {
+    if !settings.can_render() {
         return;
     }
-    let settings = renderer.clone();
-
+    
     // Update all the renderer components
     let renderers = context.extract_material_renderers();
-
+    
     // Render all the material surfaces
+    let settings = settings.clone();
     let _stats = renderers
         .into_iter()
         .map(|elem| elem.render(world, &settings))
@@ -148,8 +148,9 @@ fn swap(world: &mut World) {
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let (ecs, Graphics(_device, _), scene) = world
-        .get_mut::<(&mut EcsManager, &Graphics, &SceneSettings)>()
+        .get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>()
         .unwrap();
+        
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {

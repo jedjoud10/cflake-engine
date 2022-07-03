@@ -209,7 +209,9 @@ impl<'uniforms> Uniforms<'uniforms> {
     pub(crate) fn validate(&self) {}
 
     // Get the uniform location of a uniform using it's name
-    fn location(&self, _name: &'static str) -> Option<i32> {
+    fn location(&self, name: &'static str) -> Option<i32> {
+        dbg!(&self.0.uniform_locations);
+        
         None
     }
 

@@ -117,9 +117,9 @@ impl EcsManager {
     }
 
     // Create a query with a specific filter
-    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
+    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a>(
         &'a mut self,
-        filter: Filter,
+        filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = Layout> + 'a> {
         Layout::validate().then(|| filtered(&self.archetypes, filter))
     }
@@ -135,9 +135,9 @@ impl EcsManager {
     }
 
     // View query with a specific filter
-    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(
         &'a self,
-        filter: Filter,
+        filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
