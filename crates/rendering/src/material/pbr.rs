@@ -75,7 +75,9 @@ impl Material for Standard {
             .unwrap();
 
         // Link the two stages and compile the shader
-        let shader = ShaderCompiler::link((vs, fs), Processor::new(loader), ctx);
+        let mut processor = Processor::new(loader);
+        processor.insert_constant("tag", 1.0);
+        let shader = ShaderCompiler::link((vs, fs), processor, ctx);
 
         // Cache the shader (even though it's unique)
         let handle = storage.insert(shader);

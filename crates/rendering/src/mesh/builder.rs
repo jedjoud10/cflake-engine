@@ -68,9 +68,9 @@ impl Asset<'static> for GeometryBuilder {
         &["obj"]
     }
 
-    fn deserialize(bytes: assets::CachedSlice, _ctx: Self::Args) -> Self {
+    fn deserialize(data: assets::Data, _ctx: Self::Args) -> Self {
         // Parse the OBJ mesh into an geoemtry builder
-        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(bytes.as_ref()).unwrap();
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
         let capacity = parsed.vertices.len();
 
         // Create all the buffers at once

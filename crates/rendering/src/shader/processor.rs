@@ -3,21 +3,6 @@ use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{Asset, Assets};
 
-// This is just a wrapper for String. It can be loaded from any file really, but we will only load it from shader files
-struct RawText(String);
-
-impl Asset<'static> for RawText {
-    type Args = ();
-
-    fn extensions() -> &'static [&'static str] {
-        &[]
-    }
-
-    fn deserialize(bytes: assets::CachedSlice, _args: Self::Args) -> Self {
-        Self(String::from_utf8(bytes.as_ref().to_vec()).unwrap())
-    }
-}
-
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
 
@@ -27,7 +12,6 @@ pub struct Processor<'a> {
     loader: &'a mut Assets,
 
     // A hashmap containing the constant values that we must replace
-    // #const [name] [opt<default>]
     // #const [name]
     constants: AHashMap<String, String>,
 
@@ -53,21 +37,20 @@ impl<'a> Processor<'a> {
     }
 
     // Include a constant directive
-    pub fn constant(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn insert_constant(&mut self, name: impl ToString, value: impl ToString) {
         self.constants.insert(name.to_string(), value.to_string());
     }
 
     // Include a snippet directive
-    pub fn snippet(&mut self, name: impl ToString, value: impl ToString) {
+    pub fn insert_snippet(&mut self, name: impl ToString, value: impl ToString) {
         self.snippets.insert(name.to_string(), value.to_string());
     }
 
     // Filter and process a single stage
     pub(super) fn filter<S: Stage>(&mut self, stage: S) -> Processed<S> {
-        // We must filter infinitely until we find no more directives
-        let mut lines = stage
-            .as_ref()
-            .to_string()
+        // We must filter repeatedly until we find no more directives
+        let (source, name) = stage.into_raw_parts();
+        let mut lines = source
             .lines()
             .map(str::to_string)
             .collect::<Vec<String>>();
@@ -83,19 +66,29 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
-                    // Split into words, and classify name and optional default value
-                    let words = trimmed
-                        .split("#const")
-                        .next()
-                        .unwrap()
-                        .split_whitespace()
-                        .collect::<ArrayVec<&str, 3>>();
-                    let name = words[0];
-                    let default = words.get(1).cloned();
+                    // Get the start location and end location of the directive bound
+                    let directive = trimmed.split_whitespace().position(|n| n == "#const").unwrap();
+                    let name = directive + 1;
 
-                    // Then try to load the value from the processor
-                    let loaded = self.constants.get(name).map(String::as_str);
-                    output = loaded.or(default).unwrap().to_string();
+                    // Split into words
+                    let mut words = trimmed
+                        .split_whitespace()
+                        .collect::<Vec<&str>>();
+
+                    // Get the name and value
+                    let filtered = words[name].replace(&['(', ')', ',', '\"', '.', ';', ':', '\''], "");
+                    let name = filtered.trim();
+                    println!("{}", name);
+                    let loaded = self.constants.get(name).unwrap();
+
+                    // Remove the directive words and replace them with the proper values
+                    words.remove(directive);
+                    words.remove(directive);
+                    words.insert(directive, loaded);
+
+                    // Overwrite output
+                    output = words.join(" ");
+                    println!("{}", &output);
                 } else if trimmed.starts_with("#snip") {
                     // Split into words, and classify name
                     let words = trimmed
@@ -114,9 +107,14 @@ impl<'a> Processor<'a> {
                     let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let path = words[1];
 
+                    // Make sure the path is something we can load (.func file)
+                    if !path.ends_with(".func") {
+                        panic!();
+                    }
+
                     // Load the path from the asset manager
-                    let raw = self.loader.load::<RawText>(path).unwrap();
-                    output = raw.0;
+                    let raw = self.loader.load::<String>(path).unwrap();
+                    output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line
                     skipped += 1;
@@ -141,6 +139,6 @@ impl<'a> Processor<'a> {
         }
 
         // Combine the lines into a string and return the new, filtered stage
-        Processed(S::from(lines.join("\n")))
+        Processed(S::from_raw_parts(lines.join("\n"), name))
     }
 }

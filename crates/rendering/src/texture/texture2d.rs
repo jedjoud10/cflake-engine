@@ -156,8 +156,8 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
         &["png", "jpg"]
     }
 
-    fn deserialize(bytes: assets::CachedSlice, args: Self::Args) -> Self {
-        let image = image::load_from_memory(bytes.as_ref()).unwrap();
+    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+        let image = image::load_from_memory(data.bytes()).unwrap();
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
         let texels = T::to_image_texels(image);
         Self::new(

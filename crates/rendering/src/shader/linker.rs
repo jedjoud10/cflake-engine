@@ -26,12 +26,12 @@ unsafe fn compile(names: &[u32]) -> Program {
         let mut len = 0;
         gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
         let message = String::from_utf8({
-            let mut vec = Vec::with_capacity(len as usize + 1);
+            let mut vec = vec![0; len as usize + 1];
             gl::GetProgramInfoLog(
                 program,
                 len,
                 null_mut(),
-                vec.spare_capacity_mut().as_mut_ptr() as _,
+                vec.as_mut_ptr() as _,
             );
             vec
         })
@@ -93,6 +93,8 @@ impl StageSet for (VertexStage, FragmentStage) {
 
         // Compile the stages
         let vertex = super::stage::compile(ctx, vertex);
+        println!("Compiled vertex stage for shader ");
+
         let fragment = super::stage::compile(ctx, fragment);
 
         // And compile the main shader

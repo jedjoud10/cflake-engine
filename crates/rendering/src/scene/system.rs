@@ -56,14 +56,18 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         )>()
         .unwrap();
 
+    // Convert the texture maps into texture map handles
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
     let normal_map = normal_maps.insert(normal_map);
     let mask_map = mask_maps.insert(mask_map);
+
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, storage) = world
         .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>()
         .unwrap();
+
+    // Create le default material
     let material = Standard::builder()
         .with_albedo(&white)
         .with_normal(&normal_map)
