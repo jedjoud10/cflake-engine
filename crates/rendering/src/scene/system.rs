@@ -118,6 +118,9 @@ fn rendering(world: &mut World) {
 fn window(world: &mut World, event: &mut WindowEvent) {
     match event {
         WindowEvent::Resized(size) => {
+            // We might get null dimensions when the user minimizes the window
+            if size.height == 0 || size.width == 0 { return; }
+
             // Resize the main device canvas when we resize the window
             let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
             device

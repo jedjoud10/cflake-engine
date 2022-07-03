@@ -41,13 +41,35 @@ fn init(world: &mut World) {
     settings.set_main_directional_light(entity);
 }
 
-// We will use this update event to move the camera aroud
+// We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let (ecs, keyboard, mouse, time) = world.get_mut::<(&mut EcsManager, &Keyboard, &Mouse, &Time)>().unwrap();
+    let (ecs, scene, keyboard, mouse, time) = world.get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &Time)>().unwrap();
 
-    if keyboard.held("forward") {
-        println!("forward");
-    }
+    if let Some(mut entry) = scene.main_camera().map(|c| ecs.try_entry(c)).flatten() {
+        let transform = entry.get_mut::<Transform>().unwrap();
+        let mut velocity = vek::Vec3::<f32>::zero();
+        let forward = transform.forward();
+        let right = transform.right();
+        if keyboard.held("forward") {
+            velocity += forward;
+        } else if keyboard.held("backward") {
+            velocity += -forward;
+        }
+
+        if keyboard.held("left") {
+            velocity += -right;
+        } else if keyboard.held("right") {
+            velocity += right;
+        }
+
+
+        transform.position += velocity * time.delta_f32() * 10.0;
+
+        let pos = mouse.position();
+        const SENSIVITY: f32 = 0.0007;
+        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY) * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
+        transform.rotation = rot;
+    }    
 }
 
 // This is an example system that will register specific events

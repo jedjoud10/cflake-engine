@@ -34,6 +34,11 @@ impl Time {
         self.delta
     }
 
+    // Get the time delta as a float depicting the number of seconds that elapsed
+    pub fn delta_f32(&self) -> f32 {
+        self.delta().as_secs_f32()
+    }
+
     // Get the total frame count
     pub fn frame_count(&self) -> u128 {
         self.frame_count

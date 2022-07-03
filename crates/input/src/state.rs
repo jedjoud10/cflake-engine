@@ -41,7 +41,7 @@ impl KeyState {
     // This checks if the State is equal to State::Held
     pub fn held(&self) -> bool {
         match self {
-            KeyState::Held => todo!(),
+            KeyState::Held => true,
             _ => false,
         }
     }
