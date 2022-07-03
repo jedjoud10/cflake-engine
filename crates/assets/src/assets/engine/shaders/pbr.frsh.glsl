@@ -8,6 +8,8 @@ uniform sampler2D _albedo;
 uniform sampler2D _normal;
 uniform sampler2D _mask;
 */
+
+
 void main() {
     frag_color = vec4(1);
 }
