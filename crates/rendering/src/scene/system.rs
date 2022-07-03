@@ -24,7 +24,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create a new graphics pipeline and insert it
     let Graphics(_device, ctx) = world.entry().or_insert(Graphics::new(settings, el));
 
-    // This function creates a 1x1 Texture2D wit default settings that we can store within the scene renderer
+    // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
         Texture2D::<T>::new(
             ctx,
@@ -126,9 +126,15 @@ fn window(world: &mut World, event: &mut WindowEvent) {
     }
 }
 
+// Frame startup (clearing the frame at the start of the frame)
+fn clear(world: &mut World) {
+    let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
+    device.canvas_mut().clear(Some(vek::Rgb::black()), None, None);
+}
+
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
-    let Graphics(_device, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+    let Graphics(_, ctx) = world.get_mut::<&mut Graphics>().unwrap();
     ctx.raw().swap_buffers().unwrap();
 }
 
@@ -164,24 +170,26 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
     reg.insert_with(
+        clear,
+        Stage::new("window clear")
+        .before("user"),
+    ).unwrap();
+    reg.insert_with(
         main_camera,
         Stage::new("main camera update")
             .after("user")
             .before("post user"),
-    )
-    .unwrap();
+    ).unwrap();
     reg.insert_with(
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
             .after("post user"),
-    )
-    .unwrap();
+    ).unwrap();
     reg.insert_with(
         swap,
         Stage::new("window back buffer swap").after("scene rendering"),
-    )
-    .unwrap();
+    ).unwrap();
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);
