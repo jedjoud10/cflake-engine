@@ -209,14 +209,12 @@ impl<'uniforms> Uniforms<'uniforms> {
     pub(crate) fn validate(&self) {}
 
     // Get the uniform location of a uniform using it's name
-    fn location(&self, name: &'static str) -> Option<i32> {
-        dbg!(&self.0.uniform_locations);
-        
-        None
+    fn location(&self, name: &str) -> Option<u32> {
+        self.0.uniform_locations.get(name).cloned()
     }
 
     // Set the type for any object, as long as it implements SetRawUniform
-    fn set_raw<A: SetRawUniform>(&mut self, name: &'static str, val: A) {
+    fn set_raw<A: SetRawUniform>(&mut self, name: &str, val: A) {
         if let Some(loc) = self.location(name) {
             unsafe { val.set(loc as i32, self.0.name()) }
         } else {
@@ -225,42 +223,42 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a single scalar type using the Scalar trait
-    pub fn set_scalar<S: Scalar>(&mut self, name: &'static str, scalar: S) {
+    pub fn set_scalar<S: Scalar>(&mut self, name: &str, scalar: S) {
         self.set_raw(name, scalar);
     }
 
     // Set an array of values values
-    pub fn set_array<S: Array>(&mut self, name: &'static str, array: S) {
+    pub fn set_array<S: Array>(&mut self, name: &str, array: S) {
         self.set_raw(name, array);
     }
 
     // Set a 2D vector that consists of scalar values
-    pub fn set_vec2<V: Vector<2>>(&mut self, name: &'static str, vec: V) {
+    pub fn set_vec2<V: Vector<2>>(&mut self, name: &str, vec: V) {
         self.set_raw(name, vec);
     }
 
     // Set a 3D vector that consists of scalar values
-    pub fn set_vec3<V: Vector<3>>(&mut self, name: &'static str, vec: V) {
+    pub fn set_vec3<V: Vector<3>>(&mut self, name: &str, vec: V) {
         self.set_raw(name, vec);
     }
 
     // Set a 4D vector that consists of scalar values
-    pub fn set_vec4<V: Vector<4>>(&mut self, name: &'static str, vec: V) {
+    pub fn set_vec4<V: Vector<4>>(&mut self, name: &str, vec: V) {
         self.set_raw(name, vec);
     }
 
     // Set a 4x4 matrix
-    pub fn set_mat4x4<M: Matrix<4, 4>>(&mut self, name: &'static str, mat: M) {
+    pub fn set_mat4x4<M: Matrix<4, 4>>(&mut self, name: &str, mat: M) {
         self.set_raw(name, mat);
     }
 
     // Set a 3x3 matrix
-    pub fn set_mat3x3<M: Matrix<3, 3>>(&mut self, name: &'static str, mat: M) {
+    pub fn set_mat3x3<M: Matrix<3, 3>>(&mut self, name: &str, mat: M) {
         self.set_raw(name, mat);
     }
 
     // Set a 2x2 matrix
-    pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &'static str, mat: M) {
+    pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &str, mat: M) {
         self.set_raw(name, mat);
     }
 
@@ -305,7 +303,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
     pub fn set_sampler<T: Texture>(
         &mut self,
-        _name: &'static str,
+        _name: &str,
         _sampler: Sampler<'uniforms, T>,
     ) {
         /*

@@ -140,7 +140,7 @@ impl<'world> PropertyBlock<'world> for Standard {
     {
         // Decompose the fetched resource references
         let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
-        
+        /*
         // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(
             storage: &'a Storage<T>,
@@ -171,6 +171,7 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms.set_sampler("_albedo", albedo_map_sampler);
         uniforms.set_sampler("_normal", normal_map_sampler);
         uniforms.set_sampler("_mask", mask_map_sampler);
+        */
     }
 
     fn fetch(

@@ -39,7 +39,7 @@ fn init(world: &mut World) {
         linker.insert(light).unwrap();
         linker.insert(Transform::default()).unwrap();
     });
-    //settings.set_main_directional_light(entity);
+    settings.set_main_directional_light(entity);
 }
 
 // This is an update event that will be called each frame
