@@ -1,13 +1,28 @@
-use crate::{Entry, Layout, Resource, ResourceError};
+use crate::{
+    world, Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor,
+    Update,
+};
 use ahash::AHashMap;
 use std::any::TypeId;
 
 // The world is a unique container for multiple resources
 // All the game engine logic is stored within the world, like ECS and Asset management
 // Each World can be created using the builder pattern with the help of an App
-#[derive(Default)]
 pub struct World {
     pub(crate) resources: AHashMap<TypeId, Box<dyn Resource>>,
+}
+
+// This is the main world state that the user can manually update to force the engine to stop running
+#[derive(Resource)]
+pub enum State {
+    // This is the default state for frame 0
+    Initializing,
+
+    // This is the default state from frame 1 to frame n
+    Running,
+
+    // This is only set manually, by the user
+    Stopped,
 }
 
 impl World {
@@ -55,4 +70,32 @@ impl World {
 // An example of this would be the storage resources, since we require the world to create them and insert them
 pub trait FromWorld {
     fn from_world(world: &mut World) -> Self;
+}
+
+// Global world system for cleaning and handling world state
+pub fn system(events: &mut Events) {
+    // At the end of every frame, we clean ALL the storages
+    fn clean(world: &mut World) {
+        let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
+        for obj in descriptor.storages.iter() {
+            obj.remove_dangling();
+        }
+    }
+
+    // Insert the default world state event
+    fn insert(world: &mut World) {
+        world.insert(State::Initializing);
+    }
+
+    // Register the cleaning event (doesn't really matter *when* we execute it really)
+    events
+        .registry::<Update>()
+        .insert_with(clean, Stage::new("storage clean").after("post user"))
+        .unwrap();
+
+    // Register the init state event
+    events
+        .registry::<Init>()
+        .insert_with(insert, Stage::new("state insert").before("user"))
+        .unwrap();
 }

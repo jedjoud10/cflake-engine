@@ -13,7 +13,9 @@ impl<'a> Descriptor for WindowEvent<'a> {
     }
 }
 
-impl<'b, 'p> Caller<'p> for WindowEvent<'b> where 'b: 'p
+impl<'b, 'p> Caller<'p> for WindowEvent<'b>
+where
+    'b: 'p,
 {
     type Params = (&'p mut World, &'p mut WindowEvent<'b>);
 

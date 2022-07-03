@@ -32,8 +32,7 @@ impl<T> Queue<T> {
 
 // This trait will implemented for all InnerStorage<T> types
 // This will automatically be called at the very very end of each frame, automatically, to clean all the storages of any dangling values that might be stored within them
-// It's like a garbage collector, but type safe and in rust
-trait Clean {
+pub(crate) trait Clean {
     fn remove_dangling(&self);
 }
 
@@ -86,25 +85,7 @@ impl<T> Clean for InnerStorage<T> {
 // This allows us to clean each storage of any dangling values automatically using a specific system
 #[derive(Resource)]
 pub struct StorageSetDescriptor {
-    storages: Vec<Rc<dyn Clean>>,
-}
-
-// This is the main system that will "clean" the stored storages
-pub fn system(events: &mut Events) {
-    // At the end of every frame, we clean ALL the storages
-    fn clean(world: &mut World) {
-        let descriptor = world.get_mut::<&mut StorageSetDescriptor>().unwrap();
-        for obj in descriptor.storages.iter() {
-            obj.remove_dangling();
-        }
-    }
-
-    // Register the cleaning event (doesn't really matter *when* we execute it really)
-    events
-        .registry::<Update>()
-        .insert_with(clean, Stage::new("storage clean").after("post user"))
-        .unwrap();
-    //events.register_with::<Update>(clean, i32::MAX);
+    pub(crate) storages: Vec<Rc<dyn Clean>>,
 }
 
 // A storage is a way to keep certain values stored in memory without dropping them

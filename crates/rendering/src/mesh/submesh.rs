@@ -36,7 +36,11 @@ impl SubMesh {
     // Construct a unsafe submesh using a vertex assembly and a index set
     // This will not check if the vertex assembly and index set are valid
     // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
-    pub unsafe fn new_unchecked(ctx: &mut Context, vertices: VertexAssembly, indices: Vec<u32>) -> Self {
+    pub unsafe fn new_unchecked(
+        ctx: &mut Context,
+        vertices: VertexAssembly,
+        indices: Vec<u32>,
+    ) -> Self {
         Self {
             attributes: AttributeSet::new(ctx, BufferMode::Static, vertices),
             indices: Buffer::new(ctx, BufferMode::Static, &indices).unwrap(),

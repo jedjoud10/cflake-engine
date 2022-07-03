@@ -104,8 +104,23 @@ fn rendering(world: &mut World) {
         .collect::<Vec<_>>();
 }
 
-// Window resizing event for updating the current main canvas when the main window changes size
-fn window_resize(_world: &mut World, _event: &mut WindowEvent) {}
+// Window event for updating the current main canvas and world state if needed
+fn window(world: &mut World, event: &mut WindowEvent) {
+    match event {
+        WindowEvent::Resized(size) => {
+            // Resize the main device canvas when we resize the window
+            let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
+            device
+                .canvas_mut()
+                .resize(vek::Extent2::new(size.width as u16, size.height as u16));
+        }
+        WindowEvent::CloseRequested => {
+            // Stop the game engine
+            *world.get_mut::<&mut world::State>().unwrap() = world::State::Stopped;
+        }
+        _ => {}
+    }
+}
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
@@ -144,10 +159,18 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
-    reg.insert_with(main_camera, Stage::new("main camera update").after("user").before("post user")).unwrap();
+    reg.insert_with(
+        main_camera,
+        Stage::new("main camera update")
+            .after("user")
+            .before("post user"),
+    )
+    .unwrap();
     reg.insert_with(
         rendering,
-        Stage::new("scene rendering").after("main camera update").after("post user"),
+        Stage::new("scene rendering")
+            .after("main camera update")
+            .after("post user"),
     )
     .unwrap();
     reg.insert_with(
@@ -156,6 +179,6 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
-    // Insert window events
-    //events.registry::<WindowEvent>().insert(window_resize);
+    // Insert window event
+    events.registry::<WindowEvent>().insert(window);
 }

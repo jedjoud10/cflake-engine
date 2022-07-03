@@ -1,7 +1,10 @@
-use glutin::{event::{WindowEvent, DeviceEvent}, event_loop::EventLoop};
+use glutin::{
+    event::{DeviceEvent, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+};
 use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;
-use world::{Events, System, World, Init, Update, Caller};
+use world::{Caller, Events, Init, System, Update, World};
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
@@ -87,8 +90,8 @@ impl App {
             .insert_system(input::system)
             .insert_system(gui::system)
             .insert_system(ecs::system)
-            .insert_system(time::system);
-        //.insert_system(world::system);
+            .insert_system(time::system)
+            .insert_system(world::system);
 
         // Insert the asset loader
         let user = self.user_assets_folder.take();
@@ -119,12 +122,15 @@ impl App {
         events.registry::<DeviceEvent>().sort().unwrap();
 
         // We must now start the game engine (start the glutin event loop)
-        el.run(move |event, _, _cf| match event {
+        el.run(move |event, _, cf| match event {
             glutin::event::Event::MainEventsCleared => {
                 // Call the update events
                 events.execute::<Update>(&mut world);
 
                 // Update the current control flow based on the world state
+                if let world::State::Stopped = world.get_mut::<&mut world::State>().unwrap() {
+                    *cf = ControlFlow::Exit;
+                }
             }
             glutin::event::Event::WindowEvent {
                 window_id: _,
@@ -139,9 +145,6 @@ impl App {
             } => {
                 // Call the device events
                 events.execute::<DeviceEvent>((&mut world, &event));
-                /*events
-                .registry::<DeviceEvent>()
-                .execute((&mut world, &event));*/
             }
             _ => {}
         });

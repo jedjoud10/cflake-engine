@@ -87,7 +87,7 @@ fn sort(
 ) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
     let mut map: AHashMap<StageKey, Vec<Rule>> = map.clone();
-    
+
     // We might need to sort the keys to make sure they are deterministic
     let mut keys = map.keys().cloned().collect::<Vec<_>>();
     keys.sort();
@@ -98,7 +98,7 @@ fn sort(
     // Insert the reserved stages, since we use them as reference points
     for reserved in RESERVED.iter() {
         vec.push(Vec::default());
-        indices.insert(Rc::from(*reserved), vec.len()-1);
+        indices.insert(Rc::from(*reserved), vec.len() - 1);
     }
 
     // This event will add a current stage into the main vector and sort it according to it's rules
@@ -128,12 +128,18 @@ fn sort(
             while changed {
                 changed = false;
 
-
                 // Restrict the current node using it's rules
                 for rule in rules.iter() {
                     // Get the location of the parent stage
                     let parent = rule.parent();
-                    let l = calc(parent.clone(), indices, dedupped, vec, iter + 1, Some(key.clone()))?;
+                    let l = calc(
+                        parent.clone(),
+                        indices,
+                        dedupped,
+                        vec,
+                        iter + 1,
+                        Some(key.clone()),
+                    )?;
 
                     match rule {
                         // Move the current stage BEFORE the parent stage
@@ -163,9 +169,9 @@ fn sort(
 
             // Insert the name -> index reference
             indices.insert(key.clone(), location);
-            
+
             // Insert the new updated stage at it's correct location
-            if location == vec.len() + 1 {
+            if location == vec.len() {
                 vec.push(rules);
             } else if location < vec.len() {
                 vec.insert(location, rules);
@@ -178,7 +184,7 @@ fn sort(
                 if *i >= location && &*name != &key {
                     *i += 1;
                 }
-            }           
+            }
 
             Ok(location)
         } else {

@@ -35,5 +35,6 @@ pub fn system(events: &mut Events) {
         .unwrap();
     events
         .registry::<DeviceEvent>()
-        .insert_with(event, Stage::new("input").before("user")).unwrap();
+        .insert_with(event, Stage::new("input").before("user"))
+        .unwrap();
 }
