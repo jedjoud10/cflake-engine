@@ -144,15 +144,15 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
-    reg.insert(main_camera);
+    reg.insert_with(main_camera, Stage::new("main camera update").after("user").before("post user")).unwrap();
     reg.insert_with(
         rendering,
-        Stage::new("scene rendering").after("main camera update"),
+        Stage::new("scene rendering").after("main camera update").after("post user"),
     )
     .unwrap();
     reg.insert_with(
         swap,
-        Stage::new("window back buffer swap").after("scene renderin"),
+        Stage::new("window back buffer swap").after("scene rendering"),
     )
     .unwrap();
 

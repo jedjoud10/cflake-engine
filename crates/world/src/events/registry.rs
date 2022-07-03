@@ -75,24 +75,8 @@ impl<M: Descriptor> Registry<M> {
         self.events
             .sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
 
-        for (name, idx) in indices.iter() {
-            println!("sorted: {} {idx}", &name);
-        }
-
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
-    }
-}
-
-
-#[test]
-fn test() {
-    let mut map = AHashMap::default();
-    map.insert(Rc::from("test"), vec![Rule::Before(Rc::from("user"))]);
-    let new = sort(&map).unwrap();
-
-    for (name, i) in new {
-        println!("{} {}", name, i);
     }
 }
 
@@ -108,17 +92,13 @@ fn sort(
     let mut keys = map.keys().cloned().collect::<Vec<_>>();
     keys.sort();
 
-    for key in &keys {
-        dbg!(key);
-    }
-
     let mut indices = AHashMap::<StageKey, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
     for reserved in RESERVED.iter() {
         vec.push(Vec::default());
-        indices.insert(Rc::from(*reserved), vec.len());
+        indices.insert(Rc::from(*reserved), vec.len()-1);
     }
 
     // This event will add a current stage into the main vector and sort it according to it's rules
@@ -148,11 +128,12 @@ fn sort(
             while changed {
                 changed = false;
 
+
                 // Restrict the current node using it's rules
                 for rule in rules.iter() {
                     // Get the location of the parent stage
                     let parent = rule.parent();
-                    let l = calc(parent, indices, dedupped, vec, iter + 1, Some(key.clone()))?;
+                    let l = calc(parent.clone(), indices, dedupped, vec, iter + 1, Some(key.clone()))?;
 
                     match rule {
                         // Move the current stage BEFORE the parent stage
@@ -189,15 +170,15 @@ fn sort(
             } else if location < vec.len() {
                 vec.insert(location, rules);
             } else if location > vec.len() {
-                panic!()
+                panic!("{} {}", location, vec.len());
             }
 
             // Update the indices of all the values that are after the current stage (since they were shifted to the right)
-            for (_, i) in indices.iter_mut() {
-                if *i >= location {
+            for (name, i) in indices.iter_mut() {
+                if *i >= location && &*name != &key {
                     *i += 1;
                 }
-            }
+            }           
 
             Ok(location)
         } else {
