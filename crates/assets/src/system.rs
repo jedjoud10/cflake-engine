@@ -17,6 +17,9 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/pbr.vrsh.glsl");
                 persistent!(loader, "engine/shaders/pbr.frsh.glsl");
 
+                // Load the default meshes
+                persistent!(loader, "engine/meshes/cube.obj");
+
                 // Insert the loader
                 world.insert(loader);
             },

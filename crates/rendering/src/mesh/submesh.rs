@@ -1,3 +1,5 @@
+use assets::Asset;
+
 use super::{attributes::AttributeSet, GeometryBuilder, VertexAssembly};
 use crate::{
     buffer::{Buffer, BufferMode, ElementBuffer},
@@ -70,6 +72,19 @@ impl SubMesh {
     // Get the underlying index buffer mutably
     pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
         &mut self.indices
+    }
+}
+
+impl<'a> Asset<'a> for SubMesh {
+    type Args = &'a mut Context;
+
+    fn extensions() -> &'static [&'static str] {
+        GeometryBuilder::extensions()
+    }
+
+    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+        let builder = GeometryBuilder::deserialize(data, ());
+        builder.build(args).unwrap()
     }
 }
 

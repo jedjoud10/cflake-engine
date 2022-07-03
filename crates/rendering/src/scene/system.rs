@@ -6,7 +6,7 @@ use crate::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
     },
-    shader::Shader,
+    shader::Shader, mesh::SubMesh,
 };
 
 use assets::Assets;
@@ -63,8 +63,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mask_map = mask_maps.insert(mask_map);
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
-    let (Graphics(_, ctx), assets, storage) = world
-        .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Shader>)>()
+    let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
+        .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Standard>, &mut Storage<Shader>, &mut Storage<SubMesh>)>()
         .unwrap();
 
     // Create le default material
@@ -74,14 +74,19 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .with_mask(&mask_map)
         .with_metallic(0.2)
         .with_roughness(1.0)
-        .build(ctx, assets, storage);
+        .build(ctx, assets, shaders);
 
     // Insert el material and get it's handle
-    let storage = world.get_mut::<&mut Storage<Standard>>().unwrap();
-    let material = storage.insert(material);
+    let material = materials.insert(material);
+
+    // Load the default cube and sphere meshes
+    let cube = assets.load_with::<SubMesh>("engine/meshes/cube.obj", ctx).unwrap();
+
+    // Insert the meshes and get their handles
+    let cube = submeshes.insert(cube);
 
     // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material);
+    let scene = SceneRenderer::new(black, white.clone(), white, normal_map, mask_map, material, cube.clone(), cube);
     world.insert(scene);
 }
 

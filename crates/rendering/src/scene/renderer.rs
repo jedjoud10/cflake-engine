@@ -3,7 +3,7 @@ use world::{Handle, Resource};
 
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
-    prelude::{Ranged, Texture2D, RGBA},
+    prelude::{Ranged, Texture2D, RGBA}, mesh::SubMesh,
 };
 
 type Image = Texture2D<RGBA<Ranged<u8>>>;
@@ -28,6 +28,10 @@ pub struct SceneRenderer {
     normal_map: Handle<NormalMap>,
     mask_map: Handle<MaskMap>,
 
+    // Default cube and sphere meshes
+    cube: Handle<SubMesh>,
+    sphere: Handle<SubMesh>,
+
     // Default PBR material
     material: Handle<Standard>,
 }
@@ -41,6 +45,8 @@ impl SceneRenderer {
         normal_map: Handle<NormalMap>,
         mask_map: Handle<MaskMap>,
         material: Handle<Standard>,
+        cube: Handle<SubMesh>,
+        sphere: Handle<SubMesh>,
     ) -> Self {
         Self {
             camera: None,
@@ -51,6 +57,8 @@ impl SceneRenderer {
             normal_map,
             mask_map,
             material,
+            cube,
+            sphere
         }
     }
 
@@ -102,5 +110,15 @@ impl SceneRenderer {
     // Get the handle for the default white texture
     pub fn white(&self) -> Handle<Image> {
         self.white.clone()
+    }
+
+    // Get the handle for the default cube mesh
+    pub fn cube(&self) -> Handle<SubMesh> {
+        self.cube.clone()
+    }
+
+    // Get the handle for the default sphere mesh
+    pub fn sphere(&self) -> Handle<SubMesh> {
+        self.sphere.clone()
     }
 }
