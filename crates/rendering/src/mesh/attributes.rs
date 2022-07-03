@@ -276,7 +276,8 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
         // Bind the buffer to bind the attributes
         gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
 
-        // Enable the pointer
+        // Enable the attribute and set it's parameters
+        gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
         gl::VertexAttribPointer(
             *aux.index,
             T::Out::COUNT_PER_VERTEX as i32,
@@ -285,7 +286,6 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
             0,
             null(),
         );
-        gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
 
         // Increment the counter, since we've enabled the attribute
         *aux.index += 1;
@@ -300,7 +300,8 @@ impl AttributeSet {
         // Create and bind the VAO, then create a safe VAO wrapper
         let vao = unsafe {
             let mut name = 0;
-            gl::CreateVertexArrays(1, &mut name);
+            gl::GenVertexArrays(1, &mut name);
+            gl::BindVertexArray(name);
             name
         };
 

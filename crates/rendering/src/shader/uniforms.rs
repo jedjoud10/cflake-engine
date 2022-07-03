@@ -205,7 +205,7 @@ impl_matrices!();
 pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
-    // Make sure the user set all the proper uniform values, and that there are no missing values
+    // Make sure the user set all the proper uniform values, and that there are no missing values (ex: missing texture)
     pub(crate) fn validate(&self) {}
 
     // Get the uniform location of a uniform using it's name

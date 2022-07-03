@@ -82,7 +82,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
 
         // Todo: Use a fence instead of this
-        gl::Finish();
+        //gl::Finish();
 
         // Create the buffer struct
         Some(Self {

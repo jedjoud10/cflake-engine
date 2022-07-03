@@ -44,8 +44,8 @@ impl SubMesh {
         indices: Vec<u32>,
     ) -> Self {
         Self {
-            attributes: AttributeSet::new(ctx, BufferMode::Static, vertices),
-            indices: Buffer::new(ctx, BufferMode::Static, &indices).unwrap(),
+            attributes: AttributeSet::new(ctx, BufferMode::Dynamic, vertices),
+            indices: Buffer::new(ctx, BufferMode::Dynamic, &indices).unwrap(),
         }
     }
 

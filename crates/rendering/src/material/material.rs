@@ -109,18 +109,16 @@ impl<M: Material> BatchRenderer<M> {
     where
         M: PropertyBlock<'a>,
     {
-        println!("Render batched surfaces");
-
         // Fetch the rendering resources to batch render the surfaces
         let (ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             M::fetch(world);
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
-            depth_test: Some(Comparison::Less),
+            depth_test: None,
             scissor_test: None,
             primitive: PrimitiveMode::Triangles {
-                cull: FaceCullMode::Back(true),
+                cull: FaceCullMode::None,
             },
             srgb: false,
             blend: None,
