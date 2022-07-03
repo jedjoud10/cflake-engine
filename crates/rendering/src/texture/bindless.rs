@@ -29,7 +29,7 @@ impl Drop for Bindless {
         // If we drop a bindless handle, we must make it non-resident
         unsafe {
             self.resident.set(false);
-            gl::MakeTextureHandleNonResidentARB(self.handle);
+            //gl::MakeTextureHandleNonResidentARB(self.handle);
         }
     }
 }
@@ -57,6 +57,7 @@ impl Bindless {
 
     // Store the new residency state (either stored within system memory or within ram)
     pub fn set_residency(&self, resident: bool) {
+        /*
         unsafe {
             if resident {
                 gl::MakeTextureHandleResidentARB(self.handle);
@@ -65,6 +66,7 @@ impl Bindless {
                 gl::MakeTextureHandleNonResidentARB(self.handle);
             }
         }
+        */
 
         self.resident.set(resident);
     }
@@ -77,6 +79,7 @@ pub(super) unsafe fn create_bindless(
     timeout: u64,
     mode: TextureMode,
 ) -> Option<Rc<Bindless>> {
+    /*
     (mode == TextureMode::Dynamic).then(|| {
         Rc::new(Bindless {
             handle: gl::GetTextureHandleARB(name),
@@ -85,4 +88,6 @@ pub(super) unsafe fn create_bindless(
             last_residency_instant: Cell::new(Instant::now()),
         })
     })
+    */
+    None
 }

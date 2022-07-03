@@ -41,7 +41,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let black = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
 
     // Create the default white texture
-    let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::one());
+    let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::broadcast(255));
 
     // Create the default PBR textures (normal map, mask map)
     let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
