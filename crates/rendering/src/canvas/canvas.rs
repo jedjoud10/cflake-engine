@@ -86,7 +86,7 @@ impl Canvas {
         if let Some(depth) = depth {
             unsafe {
                 gl::ClearDepth(depth as f64);
-                flags |= gl::COLOR_BUFFER_BIT;
+                flags |= gl::DEPTH_BUFFER_BIT;
             }
         }
 

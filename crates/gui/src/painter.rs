@@ -177,12 +177,14 @@ impl Painter {
             self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
-                rasterizer.draw_from_raw_parts(
-                    self.vao,
-                    self.indices.name(),
-                    self.indices.len() as u32,
-                    &uniforms,
-                );
+                rasterizer
+                    .draw_from_raw_parts(
+                        self.vao,
+                        self.indices.name(),
+                        self.indices.len() as u32,
+                        &mut uniforms,
+                    )
+                    .unwrap();
             }
         }
     }

@@ -115,10 +115,10 @@ impl<M: Material> BatchRenderer<M> {
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
-            depth_test: None,
+            depth_test: Some(Comparison::Less),
             scissor_test: None,
             primitive: PrimitiveMode::Triangles {
-                cull: FaceCullMode::None,
+                cull: FaceCullMode::Back(true),
             },
             srgb: false,
             blend: None,

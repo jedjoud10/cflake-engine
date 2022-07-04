@@ -12,12 +12,7 @@ impl ComputeShader {
         &'s mut self,
         ctx: &'c mut Context,
     ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
-        (
-            ComputeScheduler {
-                ctx,
-            },
-            Uniforms(self.as_mut(), None),
-        )
+        (ComputeScheduler { ctx }, Uniforms(self.as_mut(), None))
     }
 }
 

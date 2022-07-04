@@ -198,20 +198,24 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
-        
+
         // Don't call the GL functions if it's a waste
         if count > 0 {
             gl::BindVertexArray(vao);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
         }
-        
+
         Ok(())
     }
 
     // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and draw them.
     // This will use the currently bound shader uniforms to draw the object
-    pub fn draw<T: ToRasterBuffers>(&mut self, obj: &T, uniforms: &mut Uniforms) -> Result<(), RasterError> {
+    pub fn draw<T: ToRasterBuffers>(
+        &mut self,
+        obj: &T,
+        uniforms: &mut Uniforms,
+    ) -> Result<(), RasterError> {
         unsafe {
             self.draw_from_raw_parts(
                 obj.vao().name(),

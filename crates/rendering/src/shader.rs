@@ -1,4 +1,5 @@
 mod compute;
+mod error;
 mod introspection;
 mod linker;
 mod processor;
@@ -6,9 +7,8 @@ mod program;
 mod shader;
 mod stage;
 mod uniforms;
-mod error;
-pub use error::*;
 pub use compute::*;
+pub use error::*;
 pub use introspection::*;
 pub use linker::*;
 pub use processor::*;

@@ -1,6 +1,6 @@
 mod canvas;
-mod rasterizer;
 mod error;
-pub use error::*;
+mod rasterizer;
 pub use canvas::*;
+pub use error::*;
 pub use rasterizer::*;

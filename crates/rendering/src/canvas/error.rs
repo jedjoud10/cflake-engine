@@ -3,7 +3,7 @@ use crate::prelude::UniformsError;
 // Error that gets thrown whenever we fail doing something when we try to rasterize an object
 pub enum RasterError {
     // We goofed when setting the uniforms
-    Uniforms(UniformsError)
+    Uniforms(UniformsError),
 }
 
 impl std::fmt::Debug for RasterError {

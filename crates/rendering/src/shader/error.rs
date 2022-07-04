@@ -17,9 +17,17 @@ impl std::fmt::Debug for UniformsError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             UniformsError::IncompleteUniform(name) => write!(f, "The uniform '{name}' was not set"),
-            UniformsError::IncompleteBinding(name) => write!(f, "The binding point '{name}' was not set"),
-            UniformsError::InvalidUniformName(name) => write!(f, "Tried to set uniform '{name}', but it does not exist in the program"),
-            UniformsError::InvalidBindingName(name) => write!(f, "Tried to set binding point '{name}', but it does not exist in the program")
+            UniformsError::IncompleteBinding(name) => {
+                write!(f, "The binding point '{name}' was not set")
+            }
+            UniformsError::InvalidUniformName(name) => write!(
+                f,
+                "Tried to set uniform '{name}', but it does not exist in the program"
+            ),
+            UniformsError::InvalidBindingName(name) => write!(
+                f,
+                "Tried to set binding point '{name}', but it does not exist in the program"
+            ),
         }
     }
 }

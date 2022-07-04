@@ -152,6 +152,8 @@ impl<'world> PropertyBlock<'world> for Standard {
         }
 
         // Scalar parameters
+        uniforms.set_scalar("_bumpiness", 1.0);
+        /*
         uniforms.set_scalar("_bumpiness", self.bumpiness);
         uniforms.set_scalar("_roughness", self.roughness);
         uniforms.set_scalar("_metallic", self.metallic);
@@ -170,6 +172,7 @@ impl<'world> PropertyBlock<'world> for Standard {
         uniforms.set_sampler("_albedo", albedo_map_sampler);
         uniforms.set_sampler("_normal", normal_map_sampler);
         uniforms.set_sampler("_mask", mask_map_sampler);
+        */
     }
 
     fn fetch(

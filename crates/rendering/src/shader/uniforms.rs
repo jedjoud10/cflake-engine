@@ -202,7 +202,10 @@ impl_matrices!();
 // Shader uniforms can be fetched from a compute shader using the scheduler() method and from a painter using the uniforms() method
 // When we drop the uniforms, we have to assume that we unbind the values that have a specific lifetime, like buffers and samplers
 // Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program, pub(crate) Option<UniformsError>);
+pub struct Uniforms<'uniforms>(
+    pub(crate) &'uniforms mut Program,
+    pub(crate) Option<UniformsError>,
+);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Make sure the user set all the proper shader variables before executing
@@ -211,7 +214,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         // Extract any internal errors first
         if let Some(err) = self.1.take() {
             return Err(err);
-        } 
+        }
 
         // Find the first missing uniforms
         let uniforms = &self.0.uniform_locations;
@@ -229,7 +232,7 @@ impl<'uniforms> Uniforms<'uniforms> {
                 (None, Some((name, _))) => UniformsError::IncompleteBinding(name.clone()),
                 (Some((name, _)), None) => UniformsError::IncompleteUniform(name.clone()),
                 (Some((name, _)), Some(_)) => UniformsError::IncompleteUniform(name.clone()),
-                _ => todo!()
+                _ => todo!(),
             })
         } else {
             Ok(())
@@ -246,7 +249,8 @@ impl<'uniforms> Uniforms<'uniforms> {
             unsafe { val.set(*loc as i32, self.0.name()) }
         } else {
             // Internally log the missing uniform error
-            self.1.get_or_insert(UniformsError::InvalidUniformName(name.to_string()));
+            self.1
+                .get_or_insert(UniformsError::InvalidUniformName(name.to_string()));
         }
     }
 

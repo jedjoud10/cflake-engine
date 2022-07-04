@@ -160,7 +160,7 @@ fn clear(world: &mut World) {
     let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
     device
         .canvas_mut()
-        .clear(Some(vek::Rgb::black()), None, None);
+        .clear(Some(vek::Rgb::black()), Some(1.0), None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
