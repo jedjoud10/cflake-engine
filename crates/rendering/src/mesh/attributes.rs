@@ -92,6 +92,9 @@ pub trait Attribute {
 
     // Insert a vector into an assembly
     fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>);
+
+    // This will set the default attribute values for a specific index
+    unsafe fn default(index: u32);
 }
 
 pub mod named {
@@ -126,6 +129,10 @@ pub mod named {
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
             assembly.positions = Some(vec);
         }
+
+        unsafe fn default(index: u32) {
+            panic!()
+        }
     }
 
     impl Attribute for Normal {
@@ -150,6 +157,10 @@ pub mod named {
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
             assembly.normals = Some(vec);
+        }
+
+        unsafe fn default(index: u32) {
+            gl::VertexAttrib4Nbv(index, [127, 127, 127, 0_i8].as_ptr());
         }
     }
 
@@ -176,6 +187,10 @@ pub mod named {
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
             assembly.tangents = Some(vec);
         }
+
+        unsafe fn default(index: u32) {
+            gl::VertexAttrib4Nbv(index, [0, 0, 0, 127_i8].as_ptr());
+        }
     }
 
     impl Attribute for Color {
@@ -201,6 +216,10 @@ pub mod named {
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
             assembly.colors = Some(vec);
         }
+
+        unsafe fn default(index: u32) {
+            gl::VertexAttrib4Nub(index, 255, 255, 255, 0);
+        }
     }
 
     impl Attribute for TexCoord0 {
@@ -225,6 +244,10 @@ pub mod named {
 
         fn insert(assembly: &mut VertexAssembly, vec: Vec<Self::Out>) {
             assembly.tex_coord_0 = Some(vec);
+        }
+
+        unsafe fn default(index: u32) {
+            gl::VertexAttrib4Nub(index, 255, 255, 0, 0);
         }
     }
 }
@@ -268,8 +291,8 @@ struct AuxBufGen<'a> {
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
-    aux.vertices.get_mut::<T>().map(|vec| unsafe {
+unsafe fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
+    if let Some(vec) = aux.vertices.get_mut::<T>() {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
 
@@ -289,9 +312,15 @@ fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<Ar
 
         // Increment the counter, since we've enabled the attribute
         *aux.index += 1;
+        Some(buffer)
+    } else {
+        // Set the default values for the missing attribute
+        T::default(*aux.index);
+        *aux.index += 1;
 
-        buffer
-    })
+        // Maidenless?
+        None
+    }
 }
 
 impl AttributeSet {
@@ -320,14 +349,17 @@ impl AttributeSet {
 
         // Create the set with valid buffers (if they are enabled)
         use super::attributes::named::*;
-        Self {
-            name: vao,
-            positions: gen::<Position>(&mut aux, false),
-            normals: gen::<Normal>(&mut aux, true),
-            tangents: gen::<Tangent>(&mut aux, true),
-            colors: gen::<Color>(&mut aux, false),
-            tex_coord_0: gen::<TexCoord0>(&mut aux, false),
-            layout,
+        
+        unsafe {
+            Self {
+                name: vao,
+                positions: gen::<Position>(&mut aux, false),
+                normals: gen::<Normal>(&mut aux, true),
+                tangents: gen::<Tangent>(&mut aux, true),
+                colors: gen::<Color>(&mut aux, true),
+                tex_coord_0: gen::<TexCoord0>(&mut aux, true),
+                layout,
+            }
         }
     }
 

@@ -331,8 +331,8 @@ impl<'uniforms> Uniforms<'uniforms> {
         let offset = *self.0.texture_units.entry(name.to_string()).or_insert(count);
 
         unsafe {
-            gl::BindTexture(T::target(), sampler.name());
             gl::ActiveTexture(gl::TEXTURE0 + offset);
+            gl::BindTexture(T::target(), sampler.name());
             
             // Set the corresponding sampler uniform
             self.set_scalar(name, offset as i32);

@@ -22,6 +22,7 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
 
                 // Load the default textures
                 persistent!(loader, "engine/textures/bumps.png");
+                persistent!(loader, "engine/textures/missing.png");
 
                 // Insert the loader
                 world.insert(loader);

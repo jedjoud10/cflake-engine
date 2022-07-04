@@ -1,11 +1,12 @@
 use assets::Assets;
 use ecs::EcsManager;
+use math::Transform;
 use world::{Handle, Storage};
 
 use crate::{
     context::{Context, Graphics},
     mesh::SubMesh,
-    scene::SceneSettings,
+    scene::{SceneSettings, Camera},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
@@ -164,14 +165,14 @@ impl<'world> PropertyBlock<'world> for Standard {
 
         // Scalar and vec parameters
         //uniforms.set_vec3("_tint", self.tint);
-        //uniforms.set_scalar("_bumpiness", self.bumpiness);
+        uniforms.set_scalar("bumpiness", self.bumpiness);
         /*
         uniforms.set_scalar("_bumpiness", 1.0);
         uniforms.set_scalar("_roughness", self.roughness);
         uniforms.set_scalar("_metallic", self.metallic);
         */
         // Try to fetch the textures
-        //let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
+        let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
         let normal_map = fallback(normal_maps, &self.normal, renderer.normal_map());
         /*
         let mask_map = fallback(mask_maps, &self.mask, renderer.mask_map());
@@ -181,16 +182,17 @@ impl<'world> PropertyBlock<'world> for Standard {
         */
 
         // And set their uniform values
-        //uniforms.set_sampler("_albedo", normal_map);
+        uniforms.set_sampler("albedo", albedo_map);
         /*
         uniforms.set_sampler("_mask", mask_map_sampler);
         */
-        //uniforms.set_sampler("_normal", normal_map);
+        uniforms.set_sampler("normal", normal_map);
     }
 
     fn fetch(
         world: &'world mut world::World,
     ) -> (
+        &'world SceneSettings,
         &'world EcsManager,
         &'world Storage<Self>,
         &'world Storage<SubMesh>,
@@ -207,7 +209,7 @@ impl<'world> PropertyBlock<'world> for Standard {
             albedo_maps,
             normal_maps,
             mask_maps,
-            scene_renderer,
+            scene,
         ) = world
             .get_mut::<(
                 &EcsManager,
@@ -222,13 +224,24 @@ impl<'world> PropertyBlock<'world> for Standard {
             )>()
             .unwrap();
         (
+            scene,
             ecs_manager,
             materials,
             submesh,
             shaders,
             graphics,
-            (scene_renderer, albedo_maps, normal_maps, mask_maps),
+            (scene, albedo_maps, normal_maps, mask_maps),
         )
+    }
+
+    fn set_static_instance_properties<'u>(
+        uniforms: &mut Uniforms<'u>,
+        resources: &Self::PropertyBlockResources,
+    ) where 
+        'world: 'u {
+        // Set the global static uniforms once
+        uniforms.set_mat4x4("_view_matrix", camera.view());
+        uniforms.set_mat4x4("_proj_matrix", camera.projection());
     }
 }
 

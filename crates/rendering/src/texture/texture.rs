@@ -200,6 +200,7 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 
 // This enum tells the texture how exactly it should create it's mipmaps
 // Default mode for mipmap generation is MipMaps::AutomaticAniso
+#[derive(Clone, Copy)]
 pub enum MipMaps {
     // Disable mipmap generation for the texture
     Disabled,

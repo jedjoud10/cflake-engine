@@ -46,7 +46,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::broadcast(255));
 
     // Create the default PBR textures (normal map, mask map)
-    //let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
+    let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
     // Insert all of the textures into their corresponding storages
@@ -63,11 +63,18 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Convert the texture maps into texture map handles
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
-    let args = (ctx, Sampling::new(Filter::Linear, Wrap::Repeat), MipMaps::Disabled, TextureMode::Static);
-    let normal_map = assets.load_with::<Texture2D<RGB<Ranged<u8>>>>("engine/textures/bumps.png", args).unwrap();
     let normal_map = normal_maps.insert(normal_map);
     let mask_map = mask_maps.insert(mask_map);
 
+    // Load the persistent textures like the debug texture and missing texture
+    let params = (Sampling::new(Filter::Linear, Wrap::Repeat), MipMaps::Disabled, TextureMode::Static);
+    let debug = assets.load_with::<NormalMap>("engine/textures/bumps.png", (ctx, params.0, params.1, params.2)).unwrap();
+    let missing = assets.load_with::<AlbedoMap>("engine/textures/missing.png", (ctx, params.0, params.1, params.2)).unwrap();    
+
+    // Convert them to map handles
+    let missing = albedo_maps.insert(missing);
+    let debug = normal_maps.insert(debug);
+    
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
         .get_mut::<(
@@ -106,6 +113,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         white,
         normal_map,
         mask_map,
+        missing,
+        debug,
         material,
         cube.clone(),
         cube,

@@ -10,7 +10,7 @@ use crate::{
     context::{Context, Graphics},
     mesh::{SubMesh, Surface},
     others::Comparison,
-    scene::{Camera, Renderer, SceneSettings},
+    scene::{Camera, Renderer, SceneSettings, Directional},
     shader::{Shader, Uniforms},
 };
 
@@ -49,6 +49,7 @@ pub trait PropertyBlock<'world>: Sized {
     fn fetch(
         world: &'world mut World,
     ) -> (
+        &'world SceneSettings,
         &'world EcsManager,
         &'world Storage<Self>,
         &'world Storage<SubMesh>,
@@ -57,8 +58,23 @@ pub trait PropertyBlock<'world>: Sized {
         Self::PropertyBlockResources,
     );
 
+    // Set the global and static instance properties when we start batch rendering
+    fn set_static_properties<'u>(
+        uniforms: &mut Uniforms<'u>,
+        resources: &Self::PropertyBlockResources,
+    ) where 
+        'world: 'u {}
+
+    // Set the uniforms for this property block right before we render our surface
+    fn set_render_unique_properties<'u>(
+        uniforms: &mut Uniforms<'u>,
+        resources: &Self::PropertyBlockResources,
+        submesh: &SubMesh,
+    ) where 
+        'world: 'u {}
+
     // With the help of the fetched resources, set the uniform properties for a unique material instance
-    // Remember, the shader must never outlive the world reference, so we can set the shader uniforms properly
+    // This will only be called whenever we switch material instance
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
@@ -110,7 +126,7 @@ impl<M: Material> BatchRenderer<M> {
         M: PropertyBlock<'a>,
     {
         // Fetch the rendering resources to batch render the surfaces
-        let (ecs, materials, submeshes, shaders, graphics, property_block_resources) =
+        let (scene, ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             M::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -134,8 +150,15 @@ impl<M: Material> BatchRenderer<M> {
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
 
-        // Get the main camera component (if there is none, just don't render)
-        let (_, camera) = ecs.try_view::<(&Transform, &Camera)>().unwrap().next()?;
+        // Get the main camera component (there has to be one for us to render)
+        let camera_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
+        let camera_transform = camera_entry.get::<Transform>().unwrap();
+        let camera = camera_entry.get::<Camera>().unwrap();
+
+        // Get the main directional light
+        let light_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
+        let light_transform = light_entry.get::<Transform>().unwrap();
+        let light = light_entry.get::<Directional>().unwrap();
 
         // Ignore invisible surfaces
         let query = query.filter(|(renderer, _)| renderer.enabled());
@@ -143,15 +166,8 @@ impl<M: Material> BatchRenderer<M> {
         // Render the valid surfaces
         let mut old: Option<Handle<M>> = None;
 
-        // Set the global static uniforms once
-        uniforms.set_mat4x4("_view_matrix", camera.view());
-        uniforms.set_mat4x4("_proj_matrix", camera.projection());
-
         // Render each surface that is present in the query
         for (renderer, surface) in query {
-            // Set the needed uniforms per surface
-            uniforms.set_mat4x4("_world_matrix", renderer.matrix());
-
             // Check if we changed material instances
             if old != Some(surface.material().clone()) {
                 old = Some(surface.material().clone());

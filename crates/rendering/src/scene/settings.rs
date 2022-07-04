@@ -29,6 +29,10 @@ pub struct SceneSettings {
     normal_map: Handle<NormalMap>,
     mask_map: Handle<MaskMap>,
 
+    // Default missing and debug maps
+    missing: Handle<AlbedoMap>,
+    debug: Handle<NormalMap>,
+
     // Default cube and sphere meshes
     cube: Handle<SubMesh>,
     sphere: Handle<SubMesh>,
@@ -45,6 +49,8 @@ impl SceneSettings {
         albedo_map: Handle<AlbedoMap>,
         normal_map: Handle<NormalMap>,
         mask_map: Handle<MaskMap>,
+        missing: Handle<AlbedoMap>,
+        debug: Handle<NormalMap>,
         material: Handle<Standard>,
         cube: Handle<SubMesh>,
         sphere: Handle<SubMesh>,
@@ -57,6 +63,8 @@ impl SceneSettings {
             albedo_map,
             normal_map,
             mask_map,
+            missing,
+            debug,
             material,
             cube,
             sphere,
@@ -106,6 +114,16 @@ impl SceneSettings {
     // Get the handle for the default mask map
     pub fn mask_map(&self) -> Handle<MaskMap> {
         self.mask_map.clone()
+    }
+
+    // Get the handle for the default missing map
+    pub fn missing(&self) -> Handle<AlbedoMap> {
+        self.albedo_map.clone()
+    }
+    
+    // Get the handle for the debug normal mpa
+    pub fn debug(&self) -> Handle<NormalMap> {
+        self.debug.clone()
     }
 
     // Get the handle for the default black texture
