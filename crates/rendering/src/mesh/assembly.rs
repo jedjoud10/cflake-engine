@@ -4,7 +4,7 @@ use super::{
 };
 
 // A vertex assembly is just a collection of multiple vertices that are stored on the CPU
-// The vertex assembly does not
+// The vertex assembly does not contain any GPU data, though we can use this assembly to *make* an AttributeSet
 pub struct VertexAssembly {
     // Rust vectors of vertex attributes
     pub(super) positions: Option<Vec<out::VePos>>,

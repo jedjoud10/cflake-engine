@@ -46,21 +46,25 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::broadcast(255));
 
     // Create the default PBR textures (normal map, mask map)
-    let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
+    //let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
 
     // Insert all of the textures into their corresponding storages
-    let (albedo_maps, normal_maps, mask_maps) = world
+    let (albedo_maps, normal_maps, mask_maps, assets, Graphics(_, ctx)) = world
         .get_mut::<(
             &mut Storage<AlbedoMap>,
             &mut Storage<NormalMap>,
             &mut Storage<MaskMap>,
+            &mut Assets,
+            &mut Graphics
         )>()
         .unwrap();
 
     // Convert the texture maps into texture map handles
     let black = albedo_maps.insert(black);
     let white = albedo_maps.insert(white);
+    let args = (ctx, Sampling::new(Filter::Linear, Wrap::Repeat), MipMaps::Disabled, TextureMode::Static);
+    let normal_map = assets.load_with::<Texture2D<RGB<Ranged<u8>>>>("engine/textures/bumps.png", args).unwrap();
     let normal_map = normal_maps.insert(normal_map);
     let mask_map = mask_maps.insert(mask_map);
 

@@ -163,10 +163,10 @@ impl<'world> PropertyBlock<'world> for Standard {
         }
 
         // Scalar and vec parameters
-        uniforms.set_vec3("_tint", self.tint);
+        //uniforms.set_vec3("_tint", self.tint);
+        //uniforms.set_scalar("_bumpiness", self.bumpiness);
         /*
         uniforms.set_scalar("_bumpiness", 1.0);
-        uniforms.set_scalar("_bumpiness", self.bumpiness);
         uniforms.set_scalar("_roughness", self.roughness);
         uniforms.set_scalar("_metallic", self.metallic);
         */
@@ -181,11 +181,11 @@ impl<'world> PropertyBlock<'world> for Standard {
         */
 
         // And set their uniform values
-        uniforms.set_sampler("_albedo", normal_map);
+        //uniforms.set_sampler("_albedo", normal_map);
         /*
-        uniforms.set_sampler("_normal", normal_map_sampler);
         uniforms.set_sampler("_mask", mask_map_sampler);
         */
+        //uniforms.set_sampler("_normal", normal_map);
     }
 
     fn fetch(

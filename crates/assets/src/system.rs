@@ -20,6 +20,9 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 // Load the default meshes
                 persistent!(loader, "engine/meshes/cube.obj");
 
+                // Load the default textures
+                persistent!(loader, "engine/textures/bumps.png");
+
                 // Insert the loader
                 world.insert(loader);
             },

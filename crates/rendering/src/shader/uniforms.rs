@@ -338,9 +338,6 @@ impl<'uniforms> Uniforms<'uniforms> {
             self.set_scalar(name, offset as i32);
         }
     }
-
-    // Apply the uniorms before executing the code
-    // This is going to be called internally by the program scheduler
 }
 
 impl<'uniforms> Drop for Uniforms<'uniforms> {
