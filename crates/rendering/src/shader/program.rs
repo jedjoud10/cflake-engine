@@ -15,7 +15,7 @@ pub struct Program {
     pub(super) introspection: Introspection,
 
     // The texture units, alongside the name of the texture uniform that they are bound to
-    pub(super) texture_units: AHashMap<&'static str, u32>,
+    pub(super) texture_units: AHashMap<String, u32>,
 
     // A list of binding points (for buffers / ssbos) that are created during shader compilation time
     // The boolean tells us if the user set the binding point or not

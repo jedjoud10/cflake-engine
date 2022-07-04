@@ -1,4 +1,4 @@
-use super::{Filter, Sampler, Sampling, Texel, Wrap};
+use super::{Filter, Sampling, Texel, Wrap};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -355,9 +355,6 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
-
-    // Create an immutable texture sampler
-    fn sampler(&self) -> Sampler<Self>;
 
     // Calculate the number of texels that make up this texture
     fn texel_count(&self) -> u32 {

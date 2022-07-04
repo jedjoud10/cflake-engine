@@ -167,8 +167,8 @@ impl Painter {
                 .rasterizer(ctx, &mut self.shader, settings);
 
         // Set the global static uniforms at the start
-        let sampler = self.texture.as_ref().unwrap().sampler();
-        uniforms.set_sampler("u_sampler", sampler);
+        let texture = self.texture.as_ref().unwrap();
+        uniforms.set_sampler("u_sampler", texture);
 
         // Draw the clipped meshes
         for mesh in meshes {

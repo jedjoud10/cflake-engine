@@ -47,10 +47,6 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.mode
     }
 
-    fn sampler(&self) -> super::Sampler<Self> {
-        super::Sampler(self)
-    }
-
     fn levels(&self) -> NonZeroU8 {
         self.levels
     }

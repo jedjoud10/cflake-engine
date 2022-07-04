@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use super::{Program, UniformsError};
 use crate::{
     object::ToGlName,
-    texture::{Sampler, Texture},
+    texture::{Texture},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -303,16 +305,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         target: u32,
         texture: u32,
     ) {
-        // First of all, we must get the texture unit offset
-        let count = self.0.texture_units.len() as u32;
-        let offset = *self.0.texture_units.entry(name).or_insert(count);
 
-        // Set the uniforms properly now
-        if let Some(loc) = self.location(name) {
-            gl::ActiveTexture(gl::TEXTURE0 + offset);
-            gl::BindTexture(target, texture);
-            gl::ProgramUniform1i(self.0.name(), loc as i32, offset as i32);
-        }
     }
 
     // Set a texture sampler, assuming that it uses bindless textures
@@ -332,16 +325,18 @@ impl<'uniforms> Uniforms<'uniforms> {
     */
 
     // Set a texture sampler uniform
-    // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
-    pub fn set_sampler<T: Texture>(&mut self, _name: &str, _sampler: Sampler<'uniforms, T>) {
-        /*
+    // Since the lifetime of this sampler *must* outlive the uniforms, we can make sure the program does not contain invalid sampler references
+    pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &'uniforms T) {
+        let count = self.0.texture_units.len() as u32;
+        let offset = *self.0.texture_units.entry(name.to_string()).or_insert(count);
+
         unsafe {
-            match sampler.0.bindless() {
-                Some(bindless) => self.set_bindless_sampler_unchecked(name, bindless),
-                None => self.set_normal_sampler_unchecked(name, T::target(), sampler.0.name()),
-            }
+            gl::BindTexture(T::target(), sampler.name());
+            gl::ActiveTexture(gl::TEXTURE0 + offset);
+            
+            // Set the corresponding sampler uniform
+            self.set_scalar(name, offset as i32);
         }
-        */
     }
 
     // Apply the uniorms before executing the code

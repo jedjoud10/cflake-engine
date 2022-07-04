@@ -36,6 +36,9 @@ pub struct Standard {
     roughness: f32,
     metallic: f32,
 
+    // Unique parameters
+    tint: vek::Vec3<f32>,
+
     // Current instance
     instance: InstanceID<Self>,
 }
@@ -51,6 +54,7 @@ impl Material for Standard {
             bumpiness: 1.0,
             roughness: 1.0,
             metallic: 0.0,
+            tint: vek::Vec3::one(),
             instance: id,
         }
     }
@@ -104,8 +108,14 @@ impl MaterialBuilder<Standard> {
         self
     }
 
+    // Set the tint parameter
+    pub fn with_tint(mut self, tint: vek::Vec3<f32>) -> Self {
+        self.material_mut().tint = tint;
+        self
+    }
+
     // Set the bumpiness parameter
-    pub fn bumpiness(mut self, bumpiness: f32) -> Self {
+    pub fn with_bumpiness(mut self, bumpiness: f32) -> Self {
         self.material_mut().bumpiness = bumpiness;
         self
     }
@@ -140,6 +150,7 @@ impl<'world> PropertyBlock<'world> for Standard {
     {
         // Decompose the fetched resource references
         let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
+        
         // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(
             storage: &'a Storage<T>,
@@ -151,25 +162,27 @@ impl<'world> PropertyBlock<'world> for Standard {
                 .unwrap_or_else(|| storage.get(&fallback))
         }
 
-        // Scalar parameters
-        uniforms.set_scalar("_bumpiness", 1.0);
+        // Scalar and vec parameters
+        uniforms.set_vec3("_tint", self.tint);
         /*
+        uniforms.set_scalar("_bumpiness", 1.0);
         uniforms.set_scalar("_bumpiness", self.bumpiness);
         uniforms.set_scalar("_roughness", self.roughness);
         uniforms.set_scalar("_metallic", self.metallic);
-
+        */
         // Try to fetch the textures
-        let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
+        //let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
         let normal_map = fallback(normal_maps, &self.normal, renderer.normal_map());
+        /*
         let mask_map = fallback(mask_maps, &self.mask, renderer.mask_map());
-
         // Get their corresponding samplers
-        let albedo_map_sampler = Texture::sampler(albedo_map);
         let normal_map_sampler = Texture::sampler(normal_map);
         let mask_map_sampler = Texture::sampler(mask_map);
+        */
 
         // And set their uniform values
-        uniforms.set_sampler("_albedo", albedo_map_sampler);
+        uniforms.set_sampler("_albedo", normal_map);
+        /*
         uniforms.set_sampler("_normal", normal_map_sampler);
         uniforms.set_sampler("_mask", mask_map_sampler);
         */

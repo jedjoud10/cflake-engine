@@ -45,9 +45,13 @@ fn init(world: &mut World) {
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let (ecs, scene, keyboard, mouse, time) = world
-        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &Time)>()
+    let (ecs, scene, keyboard, mouse, Graphics(device, _), time) = world
+        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &mut Graphics, &Time)>()
         .unwrap();
+
+    // Lock the cursor basically
+    device.window().set_cursor_grab(true).unwrap();
+    device.window().set_cursor_visible(false);
 
     if let Some(mut entry) = scene.main_camera().map(|c| ecs.try_entry(c)).flatten() {
         let transform = entry.get_mut::<Transform>().unwrap();
