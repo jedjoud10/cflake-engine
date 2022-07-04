@@ -188,6 +188,16 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         }
     }
 
+    // Get an immutable reference to the underlying canvas
+    pub fn canvas(&self) -> &Canvas {
+        &self.canvas
+    }
+
+    // Get an immutable reference to the underlying context
+    pub fn context(&self) -> &Context {
+        &self.ctx
+    }
+
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
     // This will use the currently bound shader uniforms to draw the object
     pub unsafe fn draw_from_raw_parts(

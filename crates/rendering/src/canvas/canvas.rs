@@ -122,10 +122,10 @@ impl Canvas {
             gl::UseProgram(obj)
         });
 
-        // Create the new rasterizer
+        // Create the new rasterizer and it's corresponding uniforms
         (
             Rasterizer::new(self, ctx, settings),
-            Uniforms(shader.as_mut(), None),
+            Uniforms(shader.as_mut()),
         )
     }
 }

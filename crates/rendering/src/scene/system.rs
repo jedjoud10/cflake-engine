@@ -192,7 +192,7 @@ fn main_camera(world: &mut World) {
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
-        let mut entry = ecs.try_entry(entity).unwrap();
+        let mut entry = ecs.try_mut_entry(entity).unwrap();
 
         // Fetch it's components, and update them
         let (camera, transform) = entry

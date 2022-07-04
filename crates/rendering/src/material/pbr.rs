@@ -4,11 +4,11 @@ use math::Transform;
 use world::{Handle, Storage};
 
 use crate::{
-    context::{Context, Graphics},
-    mesh::SubMesh,
-    scene::{SceneSettings, Camera},
+    context::{Context, Graphics, Device},
+    mesh::{SubMesh, Surface},
+    scene::{SceneSettings, Camera, Renderer},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, canvas::Canvas,
 };
 
 use super::{
@@ -136,22 +136,49 @@ impl MaterialBuilder<Standard> {
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (
-        &'world SceneSettings,
         &'world Storage<AlbedoMap>,
         &'world Storage<NormalMap>,
         &'world Storage<MaskMap>,
     );
 
+    // This method will be called once right before we start rendering the batches
+    fn set_static_properties<'u>(
+        uniforms: &mut Uniforms<'u>,
+        resources: &Self::PropertyBlockResources,
+        canvas: &Canvas,
+        scene: &SceneSettings,
+        camera: (&Camera, &Transform),
+    ) where 
+        'world: 'u {
+        uniforms.set_mat4x4("view_matrix", camera.0.view());
+        uniforms.set_mat4x4("proj_matrix", camera.0.projection());
+        uniforms.set_vec3("camera", camera.1.position);
+        uniforms.set_vec3("forward", camera.1.forward());
+    }
+
+    // This method will be called for each surface that we have to render
+    fn set_render_properties<'u>(
+        uniforms: &mut Uniforms<'u>,
+        resources: &Self::PropertyBlockResources,
+        renderer: &Renderer,
+        camera: (&Camera, &Transform),
+    ) where 
+        'world: 'u {
+        uniforms.set_mat4x4("world_matrix", renderer.matrix());
+    }
+
+    // This method will be called whenever we detect a material instance change
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
+        scene: &SceneSettings,
+        camera: (&Camera, &Transform),
     ) where
         'world: 'u,
     {
-        // Decompose the fetched resource references
-        let (renderer, albedo_maps, normal_maps, mask_maps) = resources;
-        
+        let (albedo_maps, normal_maps, mask_maps) = resources;
+
         // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(
             storage: &'a Storage<T>,
@@ -164,29 +191,20 @@ impl<'world> PropertyBlock<'world> for Standard {
         }
 
         // Scalar and vec parameters
-        //uniforms.set_vec3("_tint", self.tint);
+        uniforms.set_vec3("tint", self.tint);
         uniforms.set_scalar("bumpiness", self.bumpiness);
-        /*
-        uniforms.set_scalar("_bumpiness", 1.0);
-        uniforms.set_scalar("_roughness", self.roughness);
-        uniforms.set_scalar("_metallic", self.metallic);
-        */
-        // Try to fetch the textures
-        let albedo_map = fallback(albedo_maps, &self.albedo, renderer.albedo_map());
-        let normal_map = fallback(normal_maps, &self.normal, renderer.normal_map());
-        /*
-        let mask_map = fallback(mask_maps, &self.mask, renderer.mask_map());
-        // Get their corresponding samplers
-        let normal_map_sampler = Texture::sampler(normal_map);
-        let mask_map_sampler = Texture::sampler(mask_map);
-        */
+        uniforms.set_scalar("roughness", self.roughness);
+        uniforms.set_scalar("metallic", self.metallic);
+
+        // Try to fetch the textures, and fallback to the default ones if we can't
+        let albedo_map = fallback(albedo_maps, &self.albedo, scene.albedo_map());
+        let normal_map = fallback(normal_maps, &self.normal, scene.normal_map());
+        let mask_map = fallback(mask_maps, &self.mask, scene.mask_map());
 
         // And set their uniform values
         uniforms.set_sampler("albedo", albedo_map);
-        /*
-        uniforms.set_sampler("_mask", mask_map_sampler);
-        */
         uniforms.set_sampler("normal", normal_map);
+        uniforms.set_sampler("mask", mask_map);
     }
 
     fn fetch(
@@ -230,18 +248,8 @@ impl<'world> PropertyBlock<'world> for Standard {
             submesh,
             shaders,
             graphics,
-            (scene, albedo_maps, normal_maps, mask_maps),
+            (albedo_maps, normal_maps, mask_maps),
         )
-    }
-
-    fn set_static_instance_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
-    ) where 
-        'world: 'u {
-        // Set the global static uniforms once
-        uniforms.set_mat4x4("_view_matrix", camera.view());
-        uniforms.set_mat4x4("_proj_matrix", camera.projection());
     }
 }
 

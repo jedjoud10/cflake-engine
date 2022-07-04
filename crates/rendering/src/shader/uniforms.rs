@@ -206,18 +206,11 @@ impl_matrices!();
 // Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
 pub struct Uniforms<'uniforms>(
     pub(crate) &'uniforms mut Program,
-    pub(crate) Option<UniformsError>,
 );
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Make sure the user set all the proper shader variables before executing
-    // This will also make sure there are no internal errors stored from within the uniforms
     pub(crate) fn validate(&mut self) -> Result<(), UniformsError> {
-        // Extract any internal errors first
-        if let Some(err) = self.1.take() {
-            return Err(err);
-        }
-
         // Find the first missing uniforms
         let uniforms = &self.0.uniform_locations;
         let missing_uniform = uniforms.iter().find(|(_, (_, set))| !set);
@@ -250,9 +243,8 @@ impl<'uniforms> Uniforms<'uniforms> {
             *set = true;
             unsafe { val.set(*loc as i32, self.0.name()) }
         } else {
-            // Internally log the missing uniform error
-            self.1
-                .get_or_insert(UniformsError::InvalidUniformName(name.to_string()));
+            // Silently ignore uniforms that cannot be set
+            // TODO: Find a better solution??
         }
     }
 

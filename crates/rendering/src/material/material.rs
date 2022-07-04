@@ -6,8 +6,8 @@ use math::Transform;
 use world::{Handle, Storage, World};
 
 use crate::{
-    canvas::{FaceCullMode, PrimitiveMode, RasterSettings},
-    context::{Context, Graphics},
+    canvas::{FaceCullMode, PrimitiveMode, RasterSettings, Canvas},
+    context::{Context, Graphics, Device},
     mesh::{SubMesh, Surface},
     others::Comparison,
     scene::{Camera, Renderer, SceneSettings, Directional},
@@ -40,8 +40,10 @@ pub trait Material: 'static + Sized {
     fn instance(&self) -> &InstanceID<Self>;
 }
 
+
+
 // A property block is an interface that tells us exactly we should set the material properties
-pub trait PropertyBlock<'world>: Sized {
+pub trait PropertyBlock<'world>: Sized + Material {
     // The resources that we need to fetch from the world to set the uniforms
     type PropertyBlockResources;
 
@@ -62,23 +64,29 @@ pub trait PropertyBlock<'world>: Sized {
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
+        canvas: &Canvas,
+        scene: &SceneSettings,
+        camera: (&Camera, &Transform),
     ) where 
         'world: 'u {}
 
     // Set the uniforms for this property block right before we render our surface
-    fn set_render_unique_properties<'u>(
+    fn set_render_properties<'u>(
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
-        submesh: &SubMesh,
+        renderer: &Renderer,
+        camera: (&Camera, &Transform),
     ) where 
         'world: 'u {}
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
-    // This will only be called whenever we switch material instance
+    // This will only be called whenever we switch instances
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
         resources: &Self::PropertyBlockResources,
+        scene: &SceneSettings,
+        camera: (&Camera, &Transform),
     ) where
         'world: 'u;
 }
@@ -144,39 +152,40 @@ impl<M: Material> BatchRenderer<M> {
         let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(self.shader());
 
-        // Create a new rasterizer so we can draw the objects onto the world
-        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
-
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
+        let query = query.filter(|(renderer, _)| renderer.enabled());
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
         let camera_transform = camera_entry.get::<Transform>().unwrap();
-        let camera = camera_entry.get::<Camera>().unwrap();
+        let camera_data = camera_entry.get::<Camera>().unwrap();
+        let camera = (camera_data, camera_transform);
 
         // Get the main directional light
-        let light_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
+        let light_entry = ecs.try_entry(scene.main_directional_light().unwrap()).unwrap();
         let light_transform = light_entry.get::<Transform>().unwrap();
         let light = light_entry.get::<Directional>().unwrap();
 
-        // Ignore invisible surfaces
-        let query = query.filter(|(renderer, _)| renderer.enabled());
-
-        // Render the valid surfaces
-        let mut old: Option<Handle<M>> = None;
+        // Create a new rasterizer so we can draw the objects onto the world
+        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
+        M::set_static_properties(&mut uniforms, &property_block_resources, rasterizer.canvas(), scene, camera);        
 
         // Render each surface that is present in the query
+        let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
             // Check if we changed material instances
             if old != Some(surface.material().clone()) {
                 old = Some(surface.material().clone());
                 let instance = materials.get(old.as_ref().unwrap());
                 let _ = instance.instance();
-
+                
                 // Update the material property block uniforms
-                M::set_instance_properties(instance, &mut uniforms, &property_block_resources);
+                M::set_instance_properties(instance, &mut uniforms, &property_block_resources, &scene, camera);
             }
+            
+            // Set the uniforms per renderer
+            M::set_render_properties(&mut uniforms, &property_block_resources, renderer, camera);
 
             // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(surface.submesh());

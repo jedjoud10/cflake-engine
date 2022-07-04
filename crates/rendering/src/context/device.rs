@@ -53,7 +53,7 @@ impl Device {
         unsafe { get_static_str(gl::RENDERER) }
     }
 
-    // Get the vendor (Company responsible for the OpenGL implementation)
+    // Get the vendor name (Company responsible for the OpenGL implementation)
     pub fn vendor(&self) -> &'static str {
         unsafe { get_static_str(gl::VENDOR) }
     }
