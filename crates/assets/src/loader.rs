@@ -51,7 +51,15 @@ impl Assets {
         let slice = self.cached.get(&path).map(Vec::as_slice)?;
 
         // Deserialize the asset file
-        Some(A::deserialize(crate::Data { name, extension, bytes: slice, path: &path }, args))
+        Some(A::deserialize(
+            crate::Data {
+                name,
+                extension,
+                bytes: slice,
+                path: &path,
+            },
+            args,
+        ))
     }
 
     // Load an asset using some default loading arguments

@@ -6,6 +6,8 @@ mod program;
 mod shader;
 mod stage;
 mod uniforms;
+mod error;
+pub use error::*;
 pub use compute::*;
 pub use introspection::*;
 pub use linker::*;

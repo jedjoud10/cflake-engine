@@ -3,7 +3,8 @@ use std::ptr::null_mut;
 use ahash::AHashMap;
 
 use super::{
-    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, VertexStage, Stage,
+    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage,
+    VertexStage,
 };
 use crate::{context::Context, object::ToGlName};
 
@@ -27,12 +28,7 @@ unsafe fn compile(username: String, names: &[u32]) -> Program {
         gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
         let message = String::from_utf8({
             let mut vec = vec![0; len as usize + 1];
-            gl::GetProgramInfoLog(
-                program,
-                len,
-                null_mut(),
-                vec.as_mut_ptr() as _,
-            );
+            gl::GetProgramInfoLog(program, len, null_mut(), vec.as_mut_ptr() as _);
             vec
         })
         .unwrap();

@@ -7,10 +7,12 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, settings, keyboard) = world.get_mut::<(&mut EcsManager, &mut SceneSettings, &mut Keyboard)>().unwrap();
-    
+    let (ecs, settings, keyboard) = world
+        .get_mut::<(&mut EcsManager, &mut SceneSettings, &mut Keyboard)>()
+        .unwrap();
+
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.003, 1000.0, 16.0/9.0);
+    let camera = Camera::new(90.0, 0.003, 1000.0, 16.0 / 9.0);
     let camera = ecs.insert(|entity, linker| {
         linker.insert(camera).unwrap();
         linker.insert(Transform::default()).unwrap()
@@ -43,7 +45,9 @@ fn init(world: &mut World) {
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let (ecs, scene, keyboard, mouse, time) = world.get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &Time)>().unwrap();
+    let (ecs, scene, keyboard, mouse, time) = world
+        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &Time)>()
+        .unwrap();
 
     if let Some(mut entry) = scene.main_camera().map(|c| ecs.try_entry(c)).flatten() {
         let transform = entry.get_mut::<Transform>().unwrap();
@@ -62,14 +66,14 @@ fn update(world: &mut World) {
             velocity += right;
         }
 
-
         transform.position += velocity * time.delta_f32() * 10.0;
-        
+
         let pos = mouse.position();
         const SENSIVITY: f32 = 0.0007;
-        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY) * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
+        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
+            * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
-    }    
+    }
 }
 
 // This is an example system that will register specific events

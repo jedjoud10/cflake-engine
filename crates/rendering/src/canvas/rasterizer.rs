@@ -196,11 +196,12 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         ebo: u32,
         count: u32,
         uniforms: &Uniforms,
-    ) {
-        uniforms.validate();
+    ) -> Result<(), ()> {
+        //uniforms.validate();
         gl::BindVertexArray(vao);
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
         gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
+        Ok(())
     }
 
     // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and draw them.
@@ -212,7 +213,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
                 obj.ebo().name(),
                 obj.ebo().len() as u32,
                 uniforms,
-            )
+            ).unwrap()
         }
     }
 }

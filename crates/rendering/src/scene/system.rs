@@ -2,15 +2,16 @@ use super::{Camera, SceneSettings};
 use crate::{
     context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
+    mesh::SubMesh,
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
     },
-    shader::Shader, mesh::SubMesh,
+    shader::Shader,
 };
 
 use assets::Assets;
-use ecs::{EcsManager, added, Component, contains, and, Entity};
+use ecs::{added, and, contains, Component, EcsManager, Entity};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 use time::Time;
@@ -65,7 +66,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
-        .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Standard>, &mut Storage<Shader>, &mut Storage<SubMesh>)>()
+        .get_mut::<(
+            &mut Graphics,
+            &mut Assets,
+            &mut Storage<Standard>,
+            &mut Storage<Shader>,
+            &mut Storage<SubMesh>,
+        )>()
         .unwrap();
 
     // Create le default material
@@ -81,13 +88,24 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let material = materials.insert(material);
 
     // Load the default cube and sphere meshes
-    let cube = assets.load_with::<SubMesh>("engine/meshes/cube.obj", ctx).unwrap();
+    let cube = assets
+        .load_with::<SubMesh>("engine/meshes/cube.obj", ctx)
+        .unwrap();
 
     // Insert the meshes and get their handles
     let cube = submeshes.insert(cube);
 
     // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneSettings::new(black, white.clone(), white, normal_map, mask_map, material, cube.clone(), cube);
+    let scene = SceneSettings::new(
+        black,
+        white.clone(),
+        white,
+        normal_map,
+        mask_map,
+        material,
+        cube.clone(),
+        cube,
+    );
     world.insert(scene);
 }
 
@@ -102,10 +120,10 @@ fn rendering(world: &mut World) {
     if !settings.can_render() {
         return;
     }
-    
+
     // Update all the renderer components
     let renderers = context.extract_material_renderers();
-    
+
     // Render all the material surfaces
     let settings = settings.clone();
     let _stats = renderers
@@ -119,7 +137,9 @@ fn window(world: &mut World, event: &mut WindowEvent) {
     match event {
         WindowEvent::Resized(size) => {
             // We might get null dimensions when the user minimizes the window
-            if size.height == 0 || size.width == 0 { return; }
+            if size.height == 0 || size.width == 0 {
+                return;
+            }
 
             // Resize the main device canvas when we resize the window
             let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
@@ -138,7 +158,9 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
     let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-    device.canvas_mut().clear(Some(vek::Rgb::black()), None, None);
+    device
+        .canvas_mut()
+        .clear(Some(vek::Rgb::black()), None, None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
@@ -153,14 +175,16 @@ fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let (ecs, Graphics(_device, _), scene) = world
         .get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>()
-        .unwrap();        
+        .unwrap();
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
         let mut entry = ecs.try_entry(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &mut Transform)>().unwrap();
+        let (camera, transform) = entry
+            .get_mut_layout::<(&mut Camera, &mut Transform)>()
+            .unwrap();
         camera.update(transform);
     }
 }
@@ -178,27 +202,27 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
-    reg.insert_with(
-        clear,
-        Stage::new("window clear")
-        .before("user"),
-    ).unwrap();
+    reg.insert_with(clear, Stage::new("window clear").before("user"))
+        .unwrap();
     reg.insert_with(
         main_camera,
         Stage::new("main camera update")
             .after("user")
             .before("post user"),
-    ).unwrap();
+    )
+    .unwrap();
     reg.insert_with(
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
             .after("post user"),
-    ).unwrap();
+    )
+    .unwrap();
     reg.insert_with(
         swap,
         Stage::new("window back buffer swap").after("scene rendering"),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);

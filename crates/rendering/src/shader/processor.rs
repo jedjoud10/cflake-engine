@@ -50,10 +50,7 @@ impl<'a> Processor<'a> {
     pub(super) fn filter<S: Stage>(&mut self, stage: S) -> Processed<S> {
         // We must filter repeatedly until we find no more directives
         let (source, name) = stage.into_raw_parts();
-        let mut lines = source
-            .lines()
-            .map(str::to_string)
-            .collect::<Vec<String>>();
+        let mut lines = source.lines().map(str::to_string).collect::<Vec<String>>();
         loop {
             // Simply iterate through each line, and check if it starts with a directive that we must replace (whitespaces ignored)
             let mut skipped = 0usize;
@@ -67,14 +64,15 @@ impl<'a> Processor<'a> {
                 // Very funny indeed
                 if trimmed.contains("#const") {
                     // Get the directive, type, and name indices
-                    let directive = trimmed.split_whitespace().position(|n| n == "#const").unwrap();
+                    let directive = trimmed
+                        .split_whitespace()
+                        .position(|n| n == "#const")
+                        .unwrap();
                     let ty = directive + 1;
                     let name = directive + 2;
 
                     // Split into words
-                    let words = trimmed
-                        .split_whitespace()
-                        .collect::<Vec<&str>>();
+                    let words = trimmed.split_whitespace().collect::<Vec<&str>>();
 
                     // Get the name and value (this assumes that there are no special character after the name of the directive)
                     let name = words[name];

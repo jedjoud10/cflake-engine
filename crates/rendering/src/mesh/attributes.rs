@@ -352,7 +352,6 @@ impl AttributeSet {
             len(&self.tex_coord_0),
         ];
 
-        
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
         let valid = arr.into_iter().flatten().all(|len| len == first);
         valid.then(|| first)

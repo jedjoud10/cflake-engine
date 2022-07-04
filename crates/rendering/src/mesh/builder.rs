@@ -88,7 +88,7 @@ impl Asset<'static> for GeometryBuilder {
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
         }
 
-        // We will now calculate the tangents for each vertex using some math magic       
+        // We will now calculate the tangents for each vertex using some math magic
         struct TangentGenerator<'a> {
             // Values read from the mesh
             positions: &'a [vek::Vec3<f32>],
@@ -132,7 +132,8 @@ impl Asset<'static> for GeometryBuilder {
             // Write a tangent internally
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
                 let i = self.indices[face * 3 + vert] as usize;
-                self.tangents[i] = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
+                self.tangents[i] =
+                    vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
             }
         }
 

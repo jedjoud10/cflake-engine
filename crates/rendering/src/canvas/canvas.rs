@@ -125,7 +125,7 @@ impl Canvas {
         // Create the new rasterizer
         (
             Rasterizer::new(self, ctx, settings),
-            Uniforms(shader.as_mut()),
+            Uniforms(shader.as_mut(), None),
         )
     }
 }

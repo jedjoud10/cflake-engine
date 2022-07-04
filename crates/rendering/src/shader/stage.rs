@@ -15,7 +15,7 @@ pub trait Stage: Sized + ToGlTarget {
     fn name(&self) -> &str;
 
     // Get the source code of the stage
-    fn source(&self) -> &str; 
+    fn source(&self) -> &str;
 
     // Convert the stage into it's source code and name
     fn into_raw_parts(self) -> (String, String);
@@ -57,16 +57,13 @@ macro_rules! impl_stage_traits {
             fn source(&self) -> &str {
                 &self.source
             }
-        
+
             fn into_raw_parts(self) -> (String, String) {
                 (self.source, self.name)
             }
 
             fn from_raw_parts(source: String, name: String) -> Self {
-                Self {
-                    source,
-                    name
-                }
+                Self { source, name }
             }
         }
 
@@ -80,7 +77,13 @@ macro_rules! impl_stage_traits {
             fn deserialize(data: assets::Data, _args: Self::Args) -> Self {
                 Self {
                     source: String::from_utf8(data.bytes().to_vec()).unwrap(),
-                    name: data.path().file_name().unwrap().to_str().unwrap().to_string(),
+                    name: data
+                        .path()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string(),
                 }
             }
         }
@@ -97,7 +100,7 @@ pub(super) struct Processed<T: Stage>(pub(super) T);
 // This hints that the underlying shader source has been compiled
 pub(super) struct Compiled<T: Stage> {
     name: u32,
-    _phantom: PhantomData<T>, 
+    _phantom: PhantomData<T>,
 }
 
 impl<T: Stage> ToGlName for Compiled<T> {
@@ -134,12 +137,7 @@ pub(super) unsafe fn compile<U: Stage>(_ctx: &mut Context, stage: Processed<U>) 
         // Create a string that will contain the error message
         let message = String::from_utf8({
             let mut vec = vec![0; len as usize + 1];
-            gl::GetShaderInfoLog(
-                shader,
-                len,
-                null_mut(),
-                vec.as_mut_ptr() as _,
-            );
+            gl::GetShaderInfoLog(shader, len, null_mut(), vec.as_mut_ptr() as _);
             vec
         })
         .unwrap();

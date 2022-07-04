@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
@@ -11,10 +11,10 @@ pub struct Data<'a> {
 
 impl<'a> Data<'a> {
     // Get the name of the loaded file
-    pub fn name(&self) ->&str {
+    pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     // Get the extension of the loaded file
     pub fn extension(&self) -> &str {
         &self.extension
@@ -24,7 +24,7 @@ impl<'a> Data<'a> {
     pub fn path(&self) -> &Path {
         &self.path
     }
-    
+
     // Get the bytes of the loaded file
     pub fn bytes(&self) -> &[u8] {
         &self.bytes

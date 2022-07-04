@@ -17,9 +17,9 @@ pub struct Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        Self { 
+        Self {
             matrix: vek::Mat4::identity(),
-            enabled: true
+            enabled: true,
         }
     }
 }

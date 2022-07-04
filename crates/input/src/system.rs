@@ -1,6 +1,6 @@
-use crate::{Keyboard, Mouse, Key, KeyState};
+use crate::{Key, KeyState, Keyboard, Mouse};
 use glutin::event::DeviceEvent;
-use world::{Events, Init, Resource, Stage, World, Update};
+use world::{Events, Init, Resource, Stage, Update, World};
 
 // This system will automatically insert the input resource and update it each frame using the device events
 pub fn system(events: &mut Events) {
@@ -10,7 +10,7 @@ pub fn system(events: &mut Events) {
             binds: Default::default(),
             keys: Default::default(),
         });
-        
+
         world.insert(Mouse {
             scroll_delta: 0.0,
             scroll: 0.0,
@@ -22,27 +22,31 @@ pub fn system(events: &mut Events) {
     // Glutin device event (called by handler when needed)
     fn event(world: &mut World, ev: &DeviceEvent) {
         let (keyboard, mouse) = world.get_mut::<(&mut Keyboard, &mut Mouse)>().unwrap();
-        
+
         match ev {
             // Update mouse position delta and summed  pos
             DeviceEvent::MouseMotion { delta } => {
                 let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
                 mouse.pos += delta;
                 mouse.pos_delta = delta;
-            },
-            
+            }
+
             // Update mouse wheel delta and summed value
             DeviceEvent::MouseWheel { delta } => {
                 let delta = match delta {
                     glutin::event::MouseScrollDelta::LineDelta(_, y) => *y,
                     glutin::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
-                };    
+                };
                 mouse.scroll += delta;
                 mouse.scroll_delta = delta;
-            },
-            
+            }
+
             // Update keyboard key states
-            DeviceEvent::Key(key) => { keyboard.keys.insert(key.virtual_keycode.unwrap(), key.state.into()); },
+            DeviceEvent::Key(key) => {
+                keyboard
+                    .keys
+                    .insert(key.virtual_keycode.unwrap(), key.state.into());
+            }
             _ => (),
         }
     }

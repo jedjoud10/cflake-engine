@@ -1,4 +1,4 @@
-use std::{ptr::null_mut, mem::MaybeUninit, ffi::CString};
+use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
 
 use crate::object::ToGlName;
 
@@ -80,7 +80,12 @@ struct BlockProps {
 
 impl Props for BlockProps {
     fn tags() -> &'static [u32] {
-        &[gl::NAME_LENGTH, gl::BUFFER_BINDING, gl::BUFFER_DATA_SIZE, gl::NUM_ACTIVE_VARIABLES]
+        &[
+            gl::NAME_LENGTH,
+            gl::BUFFER_BINDING,
+            gl::BUFFER_DATA_SIZE,
+            gl::NUM_ACTIVE_VARIABLES,
+        ]
     }
 }
 
@@ -116,7 +121,7 @@ trait Props {
 unsafe fn props<P: Props>(program: u32, interface: u32, index: u32) -> P {
     let props = P::tags();
     let mut output = MaybeUninit::uninit();
-    let ptr: *mut i32 = std::mem::transmute(output.as_mut_ptr() as *mut P); 
+    let ptr: *mut i32 = std::mem::transmute(output.as_mut_ptr() as *mut P);
     gl::GetProgramResourceiv(
         program,
         interface,
@@ -144,21 +149,18 @@ unsafe fn name(program: u32, name_length: i32, interface: u32, index: u32) -> St
     );
 
     // Return a valid string
-    CString::from_vec_with_nul(name).unwrap().into_string().unwrap()
+    CString::from_vec_with_nul(name)
+        .unwrap()
+        .into_string()
+        .unwrap()
 }
 
 // Get a vector of shader blocks directly from the program
 unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
     // Get the max index count for this block interface
     let mut max = 0;
-    gl::GetProgramInterfaceiv(
-        program,
-        interface,
-        interface,
-        &mut max,
-    );
+    gl::GetProgramInterfaceiv(program, interface, interface, &mut max);
 
-    
     (0..max)
         .into_iter()
         .map(|i| {
@@ -166,7 +168,7 @@ unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
             let props = props::<BlockProps>(program, interface, i as u32);
             let size = props.data_size as usize;
             let name = name(program, props.name_length, interface, i as u32);
-            
+
             // Classify the index into the valid enum variant
             let index = if interface == gl::UNIFORM_BLOCK {
                 Index::UniformBlock(i as u32)
@@ -191,7 +193,7 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
         gl::UNIFORM,
         gl::ACTIVE_RESOURCES,
         &mut non_block_uniforms,
-    ); 
+    );
 
     // Fetch non block uniforms
     (0..non_block_uniforms)
@@ -201,10 +203,18 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
             let props = props::<UnifProps>(program, gl::UNIFORM, uniform_index as u32);
 
             // Skip fetching it's name if it's contained within a uniform block (since we have a unique case for those)
-            let name = name(program, props.name_length, gl::UNIFORM, uniform_index as u32);
-            
+            let name = name(
+                program,
+                props.name_length,
+                gl::UNIFORM,
+                uniform_index as u32,
+            );
+
             // Construct the uniform and add it to the vector
-            Uniform { name, location: props.location as u32, }
+            Uniform {
+                name,
+                location: props.location as u32,
+            }
         })
         .collect::<Vec<_>>()
 }

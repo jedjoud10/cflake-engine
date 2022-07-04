@@ -1,4 +1,4 @@
-use super::Program;
+use super::{Program, UniformsError};
 use crate::{
     object::ToGlName,
     texture::{Sampler, Texture},
@@ -202,67 +202,92 @@ impl_matrices!();
 // Shader uniforms can be fetched from a compute shader using the scheduler() method and from a painter using the uniforms() method
 // When we drop the uniforms, we have to assume that we unbind the values that have a specific lifetime, like buffers and samplers
 // Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program, pub(crate) Option<UniformsError>);
 
 impl<'uniforms> Uniforms<'uniforms> {
-    // Make sure the user set all the proper shader variables before executing 
-    pub(crate) fn validate(&mut self) -> Result<(), MissingUniforms> {
+    // Make sure the user set all the proper shader variables before executing
+    // This will also make sure there are no internal errors stored from within the uniforms
+    pub(crate) fn validate(&mut self) -> Result<(), UniformsError> {
+        // Extract any internal errors first
+        if let Some(err) = self.1.take() {
+            return Err(err);
+        } 
+
+        // Find the first missing uniforms
+        let uniforms = &self.0.uniform_locations;
+        let missing_uniform = uniforms.iter().find(|(_, (_, set))| !set);
         let bindings = &self.0.binding_points;
-        let uniforms = &self.0.uniform_locations;   
-        
-        for
+        let missing_binding = bindings.iter().find(|(_, (_, set))| !set);
+
+        // If we have a missing uniform or missing binding, the uniform binder is invalid
+        let valid = missing_uniform.is_none() && missing_binding.is_none();
+
+        // Le erron throwing
+        if !valid {
+            // If we have a missing uniform AND a missing binding, prioritize the error for the missing uniform
+            Err(match (missing_uniform, missing_binding) {
+                (None, Some((name, _))) => UniformsError::IncompleteBinding(name.clone()),
+                (Some((name, _)), None) => UniformsError::IncompleteUniform(name.clone()),
+                (Some((name, _)), Some(_)) => UniformsError::IncompleteUniform(name.clone()),
+                _ => todo!()
+            })
+        } else {
+            Ok(())
+        }
     }
 
     // Set the type for any object, as long as it implements SetRawUniform
-    fn set_raw<A: SetRawUniform>(&mut self, name: &str, val: A) {
+    fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
         let locations = &mut self.0.uniform_locations;
         if locations.contains_key(name) {
+            // Get the location and set it's "set" flag to true
             let (loc, set) = locations.get_mut(name).unwrap();
             *set = true;
-            unsafe { val.set(*loc as i32, self.0.name()) }            
+            unsafe { val.set(*loc as i32, self.0.name()) }
         } else {
-            panic!("Program '{}' does not contain a uniform with name '{}'", self.0.username, name);
+            // Internally log the missing uniform error
+            self.1.get_or_insert(UniformsError::InvalidUniformName(name.to_string()));
         }
     }
 
     // Set a single scalar type using the Scalar trait
     pub fn set_scalar<S: Scalar>(&mut self, name: &str, scalar: S) {
-        self.set_raw(name, scalar);
+        self.set_raw_uniform(name, scalar);
     }
 
     // Set an array of values values
     pub fn set_array<S: Array>(&mut self, name: &str, array: S) {
-        self.set_raw(name, array);
+        self.set_raw_uniform(name, array);
     }
 
     // Set a 2D vector that consists of scalar values
     pub fn set_vec2<V: Vector<2>>(&mut self, name: &str, vec: V) {
-        self.set_raw(name, vec);
+        self.set_raw_uniform(name, vec);
     }
 
     // Set a 3D vector that consists of scalar values
     pub fn set_vec3<V: Vector<3>>(&mut self, name: &str, vec: V) {
-        self.set_raw(name, vec);
+        self.set_raw_uniform(name, vec);
     }
 
     // Set a 4D vector that consists of scalar values
     pub fn set_vec4<V: Vector<4>>(&mut self, name: &str, vec: V) {
-        self.set_raw(name, vec);
+        self.set_raw_uniform(name, vec);
     }
 
     // Set a 4x4 matrix
     pub fn set_mat4x4<M: Matrix<4, 4>>(&mut self, name: &str, mat: M) {
-        self.set_raw(name, mat);
+        self.set_raw_uniform(name, mat);
     }
 
     // Set a 3x3 matrix
     pub fn set_mat3x3<M: Matrix<3, 3>>(&mut self, name: &str, mat: M) {
-        self.set_raw(name, mat);
+        self.set_raw_uniform(name, mat);
     }
 
     // Set a 2x2 matrix
     pub fn set_mat2x2<M: Matrix<2, 2>>(&mut self, name: &str, mat: M) {
-        self.set_raw(name, mat);
+        self.set_raw_uniform(name, mat);
     }
 
     /*
@@ -304,11 +329,7 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a texture sampler uniform
     // Since this uniform block will only exist right before we execute the shader, we can be 100% sure that the sampler object can never get deleted before that
-    pub fn set_sampler<T: Texture>(
-        &mut self,
-        _name: &str,
-        _sampler: Sampler<'uniforms, T>,
-    ) {
+    pub fn set_sampler<T: Texture>(&mut self, _name: &str, _sampler: Sampler<'uniforms, T>) {
         /*
         unsafe {
             match sampler.0.bindless() {
@@ -321,4 +342,15 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Apply the uniorms before executing the code
     // This is going to be called internally by the program scheduler
+}
+
+impl<'uniforms> Drop for Uniforms<'uniforms> {
+    fn drop(&mut self) {
+        // This will clear all the "set" states of the user defined inputs
+        self.0
+            .binding_points
+            .iter_mut()
+            .chain(self.0.uniform_locations.iter_mut())
+            .for_each(|(_, (_, set))| *set = false);
+    }
 }

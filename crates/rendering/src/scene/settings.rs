@@ -3,7 +3,8 @@ use world::{Handle, Resource};
 
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
-    prelude::{Ranged, Texture2D, RGBA}, mesh::SubMesh,
+    mesh::SubMesh,
+    prelude::{Ranged, Texture2D, RGBA},
 };
 
 type Image = Texture2D<RGBA<Ranged<u8>>>;
@@ -58,7 +59,7 @@ impl SceneSettings {
             mask_map,
             material,
             cube,
-            sphere
+            sphere,
         }
     }
 
@@ -66,7 +67,7 @@ impl SceneSettings {
     pub fn can_render(&self) -> bool {
         self.camera.is_some() && self.light.is_some()
     }
-    
+
     // Get the handle to the main PBR material
     pub fn material(&self) -> Handle<Standard> {
         self.material.clone()

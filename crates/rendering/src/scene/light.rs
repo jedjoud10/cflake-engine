@@ -15,7 +15,10 @@ pub struct Directional {
 
 impl Default for Directional {
     fn default() -> Self {
-        Self { color: Color::broadcast(255), strength: 1.0 }
+        Self {
+            color: Color::broadcast(255),
+            strength: 1.0,
+        }
     }
 }
 
@@ -34,6 +37,10 @@ pub struct Point {
 
 impl Default for Point {
     fn default() -> Self {
-        Self { color: Color::broadcast(255), strength: 1.0, radius: 10.0 }
+        Self {
+            color: Color::broadcast(255),
+            strength: 1.0,
+            radius: 10.0,
+        }
     }
 }
