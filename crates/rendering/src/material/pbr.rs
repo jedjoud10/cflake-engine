@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    BatchRenderer, InstanceID, Material, MaterialBuilder, MaterialRenderer, PropertyBlock,
+    InstanceID, Material, MaterialBuilder, PropertyBlock, Batched,
 };
 
 // Albedo map (color data), rgba
@@ -45,8 +45,6 @@ pub struct Standard {
 }
 
 impl Material for Standard {
-    type Renderer = BatchRenderer<Self>;
-
     fn default(id: InstanceID<Self>) -> Self {
         Self {
             albedo: None,
@@ -63,13 +61,10 @@ impl Material for Standard {
     fn instance(&self) -> &InstanceID<Self> {
         &self.instance
     }
+}
 
-    fn renderer(
-        ctx: &mut Context,
-        loader: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) -> Self::Renderer {
-        // Load the vertex shader stage
+/*
+            // Load the vertex shader stage
         let vs = loader
             .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
             .unwrap();
@@ -84,11 +79,8 @@ impl Material for Standard {
 
         // Cache the shader (even though it's unique)
         let handle = storage.insert(shader);
-
-        // Create the batch renderer from this shader handle
-        BatchRenderer::from(handle)
-    }
-}
+        
+        */
 
 impl MaterialBuilder<Standard> {
     // Set the albedo map
@@ -133,6 +125,8 @@ impl MaterialBuilder<Standard> {
         self
     }
 }
+
+impl Batched for Standard {}
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (
@@ -250,14 +244,5 @@ impl<'world> PropertyBlock<'world> for Standard {
             graphics,
             (albedo_maps, normal_maps, mask_maps),
         )
-    }
-}
-
-impl MaterialRenderer for BatchRenderer<Standard> {
-    fn render(
-        &self,
-        world: &mut world::World,
-    ) -> Option<super::Stats> {
-        self.render_batched_surfaces(world)
     }
 }

@@ -139,7 +139,7 @@ fn rendering(world: &mut World) {
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
     }
-
+    /*
     // Fetch the material renderer
     let renderers = context.extract_material_renderers();
 
@@ -149,6 +149,7 @@ fn rendering(world: &mut World) {
         .into_iter()
         .map(|elem| elem.render(world, &settings))
         .collect::<Vec<_>>();
+    */
 }
 
 // Window event for updating the current main canvas and world state if needed

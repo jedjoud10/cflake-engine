@@ -18,18 +18,17 @@ use super::{InstanceID, MaterialBuilder};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material: 'static + Sized {
-    // How exactly we should render this material
-    type Renderer: MaterialRenderer;
-
     // Create a default material instance
     fn default(id: InstanceID<Self>) -> Self;
 
-    // Create a new material renderer for this material type (PS: this will only be called once)
-    fn renderer(
+    /*
+    // Create a new material pipeline for this material type. This will only be called
+    fn pipeline(
         ctx: &mut Context,
         loader: &mut Assets,
         storage: &mut Storage<Shader>,
-    ) -> Self::Renderer;
+    ) -> Self::Pipe;
+    */
 
     // Create a new instance builder for this material type
     fn builder() -> MaterialBuilder<Self> {
@@ -40,17 +39,49 @@ pub trait Material: 'static + Sized {
     fn instance(&self) -> &InstanceID<Self>;
 }
 
-// A material renderer will simply take the world and try to render all the surface that make up the render objects
-pub trait MaterialRenderer: 'static {
-    // Render all the objects that use this material type
-    // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
-    fn render(&self, world: &mut World, settings: &SceneSettings) -> Option<Stats> ;
+
+
+// A material pipeline contain the logic telling us how we should render and draw a specific material type
+pub trait Pipeline: 'static {
+    // Get the required shader for this material pipeline
+    fn shader(&self) -> Handle<Shader>;
+
+    // Pepare the pipeline for rendering
+    fn prepare(&self) {}
+
+    // Cull any surfaces if needed
+    fn cull(&self) {}
+
+    // Render the materialized surface onto the screen
+    fn render(&self, world: &mut World) -> Option<Stats>;
 }
 
+// A batch pipeline will use a single shader use pass to render the materialized surfaces
+pub struct BatchPipeline<M: Material + Batched> {
+    shader: Handle<Shader>,
+    _phantom: PhantomData<M>,
+}
+
+
+impl<'world, M: Batched + Material + PropertyBlock<'world>> Pipeline for BatchPipeline<M> {
+    fn shader(&self) -> Handle<Shader> {
+        self.shader.clone()
+    }
+
+    fn render(&self, world: &mut World) -> Option<Stats> {
+        self.test(world);
+        None
+    }
+}
+
+// This is a batched material that will be used from within batch rendering pipelines
+// By default, the Standard PBR material is using batching, however, the user can enable batching for their own materials
+pub trait Batched: Material {}
+
 // A property block is an interface that tells us exactly we should set the material properties
-pub trait PropertyBlock<'world>: Sized + Material {
+pub trait PropertyBlock<'world>: Sized + Material + Batched {
     // The resources that we need to fetch from the world to set the uniforms
-    type PropertyBlockResources;
+    type PropertyBlockResources: 'world;
 
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
@@ -99,38 +130,15 @@ pub trait PropertyBlock<'world>: Sized + Material {
 // Statistics that tell us what exactly happened when we rendered the material surfaces
 pub struct Stats {}
 
-// A batch renderer will use a single shader use pass to render the materialized surfaces
-pub trait BatchRenderer {
-    
-}
+/*
+// Fetch the rendering resources to batch render the surfaces
+        
 
-impl<M: Material> From<Handle<Shader>> for BatchRenderer<M> {
-    fn from(shader: Handle<Shader>) -> Self {
-        Self {
-            material: Default::default(),
-            shader,
-        }
-    }
-}
+*/
 
-impl<M: Material> BatchRenderer<M> {
-    // Get a reference to the shader handle
-    pub fn shader(&self) -> &Handle<Shader> {
-        &self.shader
-    }
-
-    // This method will batch render a ton of surfaces using one material instance only
-    // This method can be called within the implementation of render()
-    pub fn render_batched_surfaces<'a>(
-        &self,
-        world: &'a mut World,
-    ) -> Option<Stats>
-    where
-        M: PropertyBlock<'a>,
-    {
-        // Fetch the rendering resources to batch render the surfaces
+/*
         let (scene, ecs, materials, submeshes, shaders, graphics, property_block_resources) =
-            M::fetch(world);
+            <M as PropertyBlock<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
@@ -145,7 +153,7 @@ impl<M: Material> BatchRenderer<M> {
 
         // Create a valid rasterizer and start rendering
         let Graphics(device, ctx) = graphics;
-        let shader = shaders.get_mut(self.shader());
+        let shader = shaders.get_mut(&self.shader());
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
@@ -188,5 +196,4 @@ impl<M: Material> BatchRenderer<M> {
             rasterizer.draw(submesh, &mut uniforms).unwrap();
         }
         None
-    }
-}
+        */

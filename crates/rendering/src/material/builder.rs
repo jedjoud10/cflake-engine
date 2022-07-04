@@ -29,7 +29,7 @@ impl<M: Material> MaterialBuilder<M> {
     // Build the underlying material instance
     pub fn build(self, ctx: &mut Context, loader: &mut Assets, storage: &mut Storage<Shader>) -> M {
         // Add the material type renderer to the context
-        ctx.register_material_renderer::<M, _>(|ctx| M::renderer(ctx, loader, storage));
+        //ctx.register_material_renderer::<M, _>(|ctx| M::renderer(ctx, loader, storage));
 
         // Simply return the built material
         self.0

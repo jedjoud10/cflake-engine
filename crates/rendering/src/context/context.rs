@@ -3,7 +3,7 @@ use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
 
-use crate::material::{Material, MaterialRenderer};
+use crate::material::{Material, Pipeline};
 
 use super::get_static_str;
 
@@ -19,7 +19,7 @@ pub struct Context {
     pub(crate) bound: BindingHashMap,
 
     // A list of material surface renderers that we will use
-    renderers: AHashMap<TypeId, Rc<dyn MaterialRenderer>>,
+    renderers: AHashMap<TypeId, Rc<dyn Pipeline>>,
 }
 
 impl Context {
@@ -67,6 +67,7 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
+    /*
     // Try to register a material renderer with a callback
     // We use callback since we need to register the renderer only once, and it would be a waste to create it multiple times
     pub(crate) fn register_material_renderer<M: Material, F>(&mut self, callback: F)
@@ -94,6 +95,7 @@ impl Context {
             .map(|(_key, value)| value.clone())
             .collect::<_>()
     }
+    */
 
     // Get the raw Glutin OpenGL context wrapper
     pub fn raw(&self) -> &RawContext<PossiblyCurrent> {
