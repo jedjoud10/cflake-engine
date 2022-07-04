@@ -40,7 +40,12 @@ pub trait Material: 'static + Sized {
     fn instance(&self) -> &InstanceID<Self>;
 }
 
-
+// A material renderer will simply take the world and try to render all the surface that make up the render objects
+pub trait MaterialRenderer: 'static {
+    // Render all the objects that use this material type
+    // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
+    fn render(&self, world: &mut World, settings: &SceneSettings) -> Option<Stats> ;
+}
 
 // A property block is an interface that tells us exactly we should set the material properties
 pub trait PropertyBlock<'world>: Sized + Material {
@@ -94,18 +99,9 @@ pub trait PropertyBlock<'world>: Sized + Material {
 // Statistics that tell us what exactly happened when we rendered the material surfaces
 pub struct Stats {}
 
-// A material renderer will simply take the world and try to render all the surface that make up the render objects
-// This trait will be automatically implemented for BatchRenderer (since we can batch all the surface into one shader use pass)
-pub trait MaterialRenderer: 'static {
-    // Render all the objects that use this material type
-    // The rendering is implementation specific, so if the user has some sort of optimizations like culling, it would be executed here
-    fn render(&self, world: &mut World, settings: &SceneSettings) -> Option<Stats>;
-}
-
 // A batch renderer will use a single shader use pass to render the materialized surfaces
-pub struct BatchRenderer<M: Material> {
-    shader: Handle<Shader>,
-    material: PhantomData<M>,
+pub trait BatchRenderer {
+    
 }
 
 impl<M: Material> From<Handle<Shader>> for BatchRenderer<M> {
@@ -128,7 +124,6 @@ impl<M: Material> BatchRenderer<M> {
     pub fn render_batched_surfaces<'a>(
         &self,
         world: &'a mut World,
-        _settings: &SceneSettings,
     ) -> Option<Stats>
     where
         M: PropertyBlock<'a>,
@@ -166,6 +161,7 @@ impl<M: Material> BatchRenderer<M> {
         let light_entry = ecs.try_entry(scene.main_directional_light().unwrap()).unwrap();
         let light_transform = light_entry.get::<Transform>().unwrap();
         let light = light_entry.get::<Directional>().unwrap();
+        dbg!(light_transform.forward());
 
         // Create a new rasterizer so we can draw the objects onto the world
         let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
