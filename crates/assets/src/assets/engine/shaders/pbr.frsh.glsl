@@ -15,7 +15,7 @@ uniform vec3 camera;
 uniform vec3 forward;
 
 // Uniforms set by the main scene
-uniform vec3 light;
+uniform vec3 light_dir;
 
 // Data given by the vertex shader
 in vec3 m_position;
@@ -41,7 +41,7 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
     // Calculate lighting factor
-    float light = dot(normal, vec3(0, 1, 0));
+    float light = dot(normal, light_dir);
 
     // This sets the color for the current fragment
     frag = vec4(light * diffuse, 0.0);

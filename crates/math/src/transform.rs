@@ -116,6 +116,11 @@ impl Transform {
         }
     }
 
+    // Construct a transform that is looking directly down (forward => (0, -1, 0))
+    pub fn looking_down() -> Self {
+        Self::rotation_x(90.0f32.to_radians())
+    }
+
     // Construct a transform using an X width
     pub fn scale_x(width: f32) -> Self {
         Self {

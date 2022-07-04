@@ -2,7 +2,12 @@ use cflake_engine::prelude::*;
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
-    App::default().insert_system(system).execute();
+    App::default()
+        .set_window_title("Cflake Engine Mesh Example")
+        .set_window_vsync(false)
+        .set_window_fullscreen(true)
+        .insert_system(system)
+        .execute();
 }
 
 // This is an init event that will be called at the start of the game
@@ -38,7 +43,7 @@ fn init(world: &mut World) {
     let light = Directional::default();
     let entity = ecs.insert(|entity, linker| {
         linker.insert(light).unwrap();
-        linker.insert(Transform::default()).unwrap();
+        linker.insert(Transform::looking_down()).unwrap();
     });
     settings.set_main_directional_light(entity);
 }
@@ -77,6 +82,10 @@ fn update(world: &mut World) {
         let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
+    }
+
+    if keyboard.key(Key::H).pressed() {
+        println!("Delta {}, FPS: {}", time.delta_f32(), 1.0 / time.delta_f32());
     }
 }
 

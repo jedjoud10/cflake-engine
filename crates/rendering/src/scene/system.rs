@@ -1,4 +1,4 @@
-use super::{Camera, SceneSettings};
+use super::{Camera, SceneSettings, Renderer};
 use crate::{
     context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
@@ -11,7 +11,7 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{added, and, contains, Component, EcsManager, Entity};
+use ecs::{added, and, contains, Component, EcsManager, Entity, modified, or};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 use time::Time;
@@ -123,10 +123,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 }
 
 // Rendering event that will try to render the 3D scene each frame
-// I am pretty proud of my material system tbh. Sick as hell fr fr
+// This will also update the world matrices of each renderer
 fn rendering(world: &mut World) {
-    // Get the graphics context, ecs, and the main scene renderer
-    let (graphics, settings) = world.get_mut::<(&mut Graphics, &SceneSettings)>().unwrap();
+    let (ecs, graphics, settings) = world.get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>().unwrap();
     let Graphics(_device, context) = graphics;
 
     // Can we render the scene? (cause if we can't then we have a big problemo)
@@ -134,7 +133,14 @@ fn rendering(world: &mut World) {
         return;
     }
 
-    // Update all the renderer components
+    // Update the world matrices
+    let filter = or(modified::<Transform>(), added::<Transform>());
+    let query = ecs.try_query_with::<(&mut Renderer, &Transform)>(filter).unwrap();
+    for (renderer, transform) in query {
+        renderer.set_matrix(transform.matrix());
+    }
+
+    // Fetch the material renderer
     let renderers = context.extract_material_renderers();
 
     // Render all the material surfaces

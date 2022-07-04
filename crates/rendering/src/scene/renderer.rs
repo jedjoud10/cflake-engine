@@ -35,6 +35,11 @@ impl Renderer {
         &self.matrix
     }
 
+    // Set the underlying mesh matrix
+    pub fn set_matrix(&mut self, matrix: vek::Mat4<f32>) {
+        self.matrix = matrix;
+    }
+
     // Get the current bounds of the model
     /*
     pub fn bounds(&self) -> &AABB {

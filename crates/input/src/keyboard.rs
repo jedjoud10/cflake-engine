@@ -18,6 +18,11 @@ impl Keyboard {
         self.binds.insert(name, key);
     }
 
+    // Get the raw state of a unique key
+    pub fn key(&self, key: Key) -> KeyState {
+        self.keys.get(&key).cloned().unwrap_or(KeyState::None)
+    }
+
     // Get the raw state of a key bind (map)
     pub fn state(&self, name: &'static str) -> Option<&KeyState> {
         self.binds.get(name).and_then(|key| self.keys.get(key))

@@ -12,8 +12,6 @@ spin_sleep = "1.1.0"
 vek = "0.15.6"
 mimalloc = "0.1.28"
 input = { path = "../input" }
-physics = { path = "../physics" }
-network = { path = "../network" }
 ecs = { path = "../ecs" }
 rendering = { path = "../rendering" }
 world = { path = "../world" }
