@@ -164,7 +164,7 @@ impl<M: Material> BatchRenderer<M> {
 
             // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(surface.submesh());
-            rasterizer.draw(submesh, &uniforms);
+            rasterizer.draw(submesh, &mut uniforms).unwrap();
         }
         None
     }

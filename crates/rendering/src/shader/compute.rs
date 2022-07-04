@@ -15,7 +15,6 @@ impl ComputeShader {
         (
             ComputeScheduler {
                 ctx,
-                axii: vek::Vec3::one(),
             },
             Uniforms(self.as_mut(), None),
         )
@@ -37,24 +36,18 @@ impl AsMut<Program> for ComputeShader {
 // The responsability of a compute scheduler is to set the compute shader parameters and to execute a compute shader
 pub struct ComputeScheduler<'c> {
     ctx: &'c mut Context,
-    axii: vek::Vec3<u32>,
 }
 
 impl<'c> ComputeScheduler<'c> {
-    // Set the execution axii counts for the compute shader
-    pub fn set_axii(mut self, axii: vek::Vec3<u32>) {
-        self.axii = axii;
-    }
-
-    // Consume the compute scheduler, and execute the compute shader with the given uniform values
-    pub fn run(mut self, uniforms: Uniforms) -> Result<(), ()> {
+    // Execute the compute scheduler with the compute shader axii parameter and the valid uniforms
+    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) -> Result<(), ()> {
         // Return an error if any of the axii is 0
-        if self.axii.reduce_min() == 0 {
+        if axii.reduce_min() == 0 {
             return Err(());
         }
 
         // Validate the uniforms
-        //uniforms.validate();
+        uniforms.validate().unwrap();
 
         // Execute le compute
         Ok(())

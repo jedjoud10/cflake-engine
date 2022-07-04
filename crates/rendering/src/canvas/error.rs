@@ -5,20 +5,18 @@ pub enum RasterError {
     // We goofed when setting the uniforms
     Uniforms(UniformsError)
 }
-/*
-impl std::fmt::Debug for UniformsError {
+
+impl std::fmt::Debug for RasterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UniformsError::MissingUniform(name) => write!(f, "The uniform '{name}' was not set"),
-            UniformsError::MissingBinding(name) => write!(f, "The binding point '{name}' was not set"),
+            RasterError::Uniforms(err) => <UniformsError as std::fmt::Debug>::fmt(err, f),
         }
     }
 }
 
-impl std::fmt::Display for UniformsError {
+impl std::fmt::Display for RasterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self, f)
     }
 }
-impl std::error::Error for UniformsError {}
-*/
+impl std::error::Error for RasterError {}
