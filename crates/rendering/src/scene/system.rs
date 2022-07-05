@@ -103,7 +103,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create le default material
     let material = Standard::builder(ctx, assets, shaders)
         .with_albedo(&white)
-        .with_normal(&normal_map)
+        .with_normal(&debug)
         .with_mask(&mask_map)
         .with_metallic(0.2)
         .with_roughness(1.0)
