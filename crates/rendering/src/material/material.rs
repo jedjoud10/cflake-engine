@@ -18,18 +18,18 @@ use super::{Standard, Pipeline, Stats};
 
 // This is an Instance ID that will be stored within the materials
 // By itself it does nothing, but we use it internally to make sure that the underlying material was created through a material builder
-pub struct InstanceID<M: for<'a> Material<'a>>(PhantomData<M>);
+pub struct InstanceID<M: Material>(PhantomData<M>);
 
-impl<M: for<'a> Material<'a>> InstanceID<M> {
+impl<M: Material> InstanceID<M> {
     // Generate a new instance ID of a specific material
     // This will register the material's renderer if needed
-    pub fn new<'a>(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
         todo!()
     }
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
-pub trait Material<'world>: 'static + Sized + From<InstanceID<Self>> {
+pub trait Material: 'static + Sized + From<InstanceID<Self>> + for<'a> PropertyBlock<'a> {
     type Pipe: Pipeline;
 
     // Try to get a copy of the handle that we will use for this material
@@ -49,9 +49,13 @@ pub trait Material<'world>: 'static + Sized + From<InstanceID<Self>> {
 
     // Get the current material instance ID (just to make sure the material is not created externally)
     fn instance(&self) -> &InstanceID<Self>;
+}
 
+// A property block is an interface that tells us exactly we should set the material properties when using shader batching
+// This will be implemented for ALL material types, since they all use shader batching
+pub trait PropertyBlock<'world>: Sized {
     // The resources that we need to fetch from the world to set the uniforms
-    type PropertyBlockResources: 'world;
+    type Res: 'world;
 
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
@@ -63,13 +67,13 @@ pub trait Material<'world>: 'static + Sized + From<InstanceID<Self>> {
         &'world Storage<SubMesh>,
         &'world mut Storage<Shader>,
         &'world mut Graphics,
-        Self::PropertyBlockResources,
+        Self::Res,
     );
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         canvas: &Canvas,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
@@ -79,7 +83,7 @@ pub trait Material<'world>: 'static + Sized + From<InstanceID<Self>> {
     // Set the uniforms for this property block right before we render our surface
     fn set_render_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         renderer: &Renderer,
         camera: (&Camera, &Transform),
     ) where 
@@ -90,17 +94,18 @@ pub trait Material<'world>: 'static + Sized + From<InstanceID<Self>> {
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
     ) where
         'world: 'u;
 }
 
+
 // This is the default batch renderer
-pub fn batch_renderer<M: for<'a> Material<'a>>(world: &mut World, handle: Handle<Shader>) -> Option<Stats> {
-    let (scene, ecs, materials, submeshes, shaders, graphics, property_block_resources) =
-            M::fetch(world);
+pub fn batch_renderer<M: Material + for<'a> PropertyBlock<'a>>(world: &mut World, handle: Handle<Shader>) -> Option<Stats> {
+    let (scene, ecs, materials, submeshes, shaders, graphics, mut property_block_resources) =
+            <M as PropertyBlock<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
@@ -135,7 +140,7 @@ pub fn batch_renderer<M: for<'a> Material<'a>>(world: &mut World, handle: Handle
 
         // Create a new rasterizer so we can draw the objects onto the world
         let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
-        M::set_static_properties(&mut uniforms, &property_block_resources, rasterizer.canvas(), scene, camera);        
+        M::set_static_properties(&mut uniforms, &mut property_block_resources, rasterizer.canvas(), scene, camera);        
 
         // Render each surface that is present in the query
         let mut old: Option<Handle<M>> = None;
@@ -147,11 +152,11 @@ pub fn batch_renderer<M: for<'a> Material<'a>>(world: &mut World, handle: Handle
                 let _ = instance.instance();
                 
                 // Update the material property block uniforms
-                M::set_instance_properties(instance, &mut uniforms, &property_block_resources, &scene, camera);
+                M::set_instance_properties(instance, &mut uniforms, &mut property_block_resources, &scene, camera);
             }
             
             // Set the uniforms per renderer
-            M::set_render_properties(&mut uniforms, &property_block_resources, renderer, camera);
+            M::set_render_properties(&mut uniforms, &mut property_block_resources, renderer, camera);
 
             // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(&surface.submesh());

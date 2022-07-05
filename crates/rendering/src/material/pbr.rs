@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    InstanceID, Material, PropertyBlock, Pipeline, batch_renderer, SinglePassPipeline,
+    InstanceID, Material, PropertyBlock, Pipeline, batch_renderer, BatchedPipeline,
 };
 
 // Albedo map (color data), rgba
@@ -60,23 +60,19 @@ impl From<InstanceID<Standard>> for Standard {
 }
 
 impl Material for Standard {
+    type Pipe = BatchedPipeline<Self>;
+    
     fn instance(&self) -> &InstanceID<Self> {
         &self.instance
     }
 
-    fn shader(ctx: &mut Context, loader: &mut Assets) -> Shader {
-        let vs = loader
-            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
-            .unwrap();
-
-        let fs = loader
-            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
-            .unwrap();
-
-        ShaderCompiler::link((vs, fs), Processor::new(loader), ctx)
-    }
-
-    type Pipe = SinglePassPipeline<Self>;
+    fn register(
+            ctx: &mut Context,
+            loader: &mut Assets,
+            storage: &mut Storage<Shader>,
+        ) {
+        todo!()
+    }    
 }
 
 /*
@@ -130,7 +126,7 @@ impl Material for Standard {
 */
 
 impl<'world> PropertyBlock<'world> for Standard {
-    type PropertyBlockResources = (
+    type Res = (
         &'world Storage<AlbedoMap>,
         &'world Storage<NormalMap>,
         &'world Storage<MaskMap>,
@@ -139,7 +135,7 @@ impl<'world> PropertyBlock<'world> for Standard {
     // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         canvas: &Canvas,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
@@ -154,7 +150,7 @@ impl<'world> PropertyBlock<'world> for Standard {
     // This method will be called for each surface that we have to render
     fn set_render_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         renderer: &Renderer,
         camera: (&Camera, &Transform),
     ) where 
@@ -166,7 +162,7 @@ impl<'world> PropertyBlock<'world> for Standard {
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
-        resources: &Self::PropertyBlockResources,
+        resources: &mut Self::Res,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
     ) where
@@ -211,7 +207,7 @@ impl<'world> PropertyBlock<'world> for Standard {
         &'world Storage<SubMesh>,
         &'world mut Storage<Shader>,
         &'world mut Graphics,
-        Self::PropertyBlockResources,
+        Self::Res,
     ) {
         let (
             ecs_manager,
