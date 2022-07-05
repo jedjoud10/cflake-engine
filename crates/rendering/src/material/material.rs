@@ -14,72 +14,33 @@ use crate::{
     shader::{Shader, Uniforms},
 };
 
-use super::{InstanceID, MaterialBuilder};
+use super::{InstanceID, MaterialBuilder, Standard, MaterialRenderer, Stats};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material: 'static + Sized {
     // Create a default material instance
     fn default(id: InstanceID<Self>) -> Self;
 
-    /*
     // Create a new material pipeline for this material type. This will only be called
     fn pipeline(
         ctx: &mut Context,
         loader: &mut Assets,
         storage: &mut Storage<Shader>,
-    ) -> Self::Pipe;
-    */
+    ) -> Box<dyn MaterialRenderer> {
+        todo!()
+    }
 
     // Create a new instance builder for this material type
     fn builder() -> MaterialBuilder<Self> {
         MaterialBuilder::default()
     }
 
-    // Get the current material instance ID
+    // Get the current material instance ID (just to make sure the material is not created externally)
     fn instance(&self) -> &InstanceID<Self>;
 }
 
-
-
-// A material pipeline contain the logic telling us how we should render and draw a specific material type
-pub trait Pipeline: 'static {
-    // Get the required shader for this material pipeline
-    fn shader(&self) -> Handle<Shader>;
-
-    // Pepare the pipeline for rendering
-    fn prepare(&self) {}
-
-    // Cull any surfaces if needed
-    fn cull(&self) {}
-
-    // Render the materialized surface onto the screen
-    fn render(&self, world: &mut World) -> Option<Stats>;
-}
-
-// A batch pipeline will use a single shader use pass to render the materialized surfaces
-pub struct BatchPipeline<M: Material + Batched> {
-    shader: Handle<Shader>,
-    _phantom: PhantomData<M>,
-}
-
-
-impl<'world, M: Batched + Material + PropertyBlock<'world>> Pipeline for BatchPipeline<M> {
-    fn shader(&self) -> Handle<Shader> {
-        self.shader.clone()
-    }
-
-    fn render(&self, world: &mut World) -> Option<Stats> {
-        self.test(world);
-        None
-    }
-}
-
-// This is a batched material that will be used from within batch rendering pipelines
-// By default, the Standard PBR material is using batching, however, the user can enable batching for their own materials
-pub trait Batched: Material {}
-
-// A property block is an interface that tells us exactly we should set the material properties
-pub trait PropertyBlock<'world>: Sized + Material + Batched {
+// A property block is an interface that tells us exactly we should set the material properties when using batch rendering
+pub trait PropertyBlock<'world>: Sized + Material {
     // The resources that we need to fetch from the world to set the uniforms
     type PropertyBlockResources: 'world;
 
@@ -127,17 +88,10 @@ pub trait PropertyBlock<'world>: Sized + Material + Batched {
         'world: 'u;
 }
 
-// Statistics that tell us what exactly happened when we rendered the material surfaces
-pub struct Stats {}
 
-/*
-// Fetch the rendering resources to batch render the surfaces
-        
-
-*/
-
-/*
-        let (scene, ecs, materials, submeshes, shaders, graphics, property_block_resources) =
+// This is the default batch renderer
+pub fn batch_renderer<'a, M: Material + PropertyBlock<'a>>(world: &'a mut World, handle: Handle<Shader>) -> Option<Stats> {
+    let (scene, ecs, materials, submeshes, shaders, graphics, property_block_resources) =
             <M as PropertyBlock<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -153,7 +107,7 @@ pub struct Stats {}
 
         // Create a valid rasterizer and start rendering
         let Graphics(device, ctx) = graphics;
-        let shader = shaders.get_mut(&self.shader());
+        let shader = shaders.get_mut(&handle.clone());
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
@@ -196,4 +150,13 @@ pub struct Stats {}
             rasterizer.draw(submesh, &mut uniforms).unwrap();
         }
         None
+}
+/*
+// Fetch the rendering resources to batch render the surfaces
+        
+
+*/
+
+/*
+        
         */

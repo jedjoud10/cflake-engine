@@ -1,7 +1,7 @@
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use world::{Handle, Storage};
+use world::{Handle, Storage, World};
 
 use crate::{
     context::{Context, Graphics, Device},
@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    InstanceID, Material, MaterialBuilder, PropertyBlock, Batched,
+    InstanceID, Material, MaterialBuilder, PropertyBlock, MaterialRenderer, batch_renderer,
 };
 
 // Albedo map (color data), rgba
@@ -60,6 +60,16 @@ impl Material for Standard {
 
     fn instance(&self) -> &InstanceID<Self> {
         &self.instance
+    }
+
+    fn pipeline(
+            ctx: &mut Context,
+            loader: &mut Assets,
+            storage: &mut Storage<Shader>,
+        ) -> Box<dyn MaterialRenderer> {
+        Box::new(|world: &mut World| {
+            batch_renderer::<Self>(world, todo!())
+        })
     }
 }
 
@@ -125,8 +135,6 @@ impl MaterialBuilder<Standard> {
         self
     }
 }
-
-impl Batched for Standard {}
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (

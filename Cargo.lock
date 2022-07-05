@@ -99,7 +99,6 @@ dependencies = [
  "mimalloc",
  "rendering",
  "spin_sleep",
- "terrain",
  "time",
  "vek",
  "world",
@@ -2683,21 +2682,6 @@ dependencies = [
  "redox_syscall",
  "remove_dir_all",
  "winapi",
-]
-
-[[package]]
-name = "terrain"
-version = "0.1.0"
-dependencies = [
- "ahash 0.7.6",
- "half",
- "math",
- "parking_lot 0.12.1",
- "rayon",
- "rendering",
- "slotmap",
- "threadpool",
- "vek",
 ]
 
 [[package]]
