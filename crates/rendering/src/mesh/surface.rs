@@ -7,21 +7,24 @@ use world::Handle;
 // A surface is a combination of a sub mesh and a specific material handle
 // A renderable entity will have multiple surface sets
 #[derive(Component)]
-pub struct Surface<M: Material>(Handle<SubMesh>, Handle<M>);
+pub struct Surface<M: Material> {
+    submesh: Handle<SubMesh>,
+    material: Handle<M>,
+}
 
 impl<M: Material> Surface<M> {
     // Create a new surface using a material handle and a submesh handle
     pub fn new(submesh: Handle<SubMesh>, material: Handle<M>) -> Self {
-        Self(submesh, material)
+        Self { submesh, material }
     }
 
     // Get the submesh handle
-    pub fn submesh(&self) -> &Handle<SubMesh> {
-        &self.0
+    pub fn submesh(&self) -> Handle<SubMesh> {
+        self.submesh.clone()
     }
 
     // Get the material handle
-    pub fn material(&self) -> &Handle<M> {
-        &self.1
+    pub fn material(&self) -> Handle<M> {
+        self.material.clone()
     }
 }

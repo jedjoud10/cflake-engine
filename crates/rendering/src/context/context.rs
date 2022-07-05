@@ -3,7 +3,7 @@ use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
 
-use crate::material::{Material, MaterialRenderer};
+use crate::material::{Material, Pipeline};
 
 use super::get_static_str;
 
@@ -19,7 +19,7 @@ pub struct Context {
     pub(crate) bound: BindingHashMap,
 
     // A list of material surface renderers that we will use
-    renderers: AHashMap<TypeId, Rc<dyn MaterialRenderer>>,
+    renderers: AHashMap<TypeId, Rc<dyn Pipeline>>,
 }
 
 impl Context {

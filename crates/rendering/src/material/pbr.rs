@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    InstanceID, Material, MaterialBuilder, PropertyBlock, MaterialRenderer, batch_renderer,
+    InstanceID, Material, PropertyBlock, Pipeline, batch_renderer, SinglePassPipeline,
 };
 
 // Albedo map (color data), rgba
@@ -44,8 +44,8 @@ pub struct Standard {
     instance: InstanceID<Self>,
 }
 
-impl Material for Standard {
-    fn default(id: InstanceID<Self>) -> Self {
+impl From<InstanceID<Standard>> for Standard {
+    fn from(id: InstanceID<Standard>) -> Self {
         Self {
             albedo: None,
             normal: None,
@@ -57,43 +57,36 @@ impl Material for Standard {
             instance: id,
         }
     }
+}
 
+impl Material for Standard {
     fn instance(&self) -> &InstanceID<Self> {
         &self.instance
     }
 
-    fn pipeline(
-            ctx: &mut Context,
-            loader: &mut Assets,
-            storage: &mut Storage<Shader>,
-        ) -> Box<dyn MaterialRenderer> {
-        Box::new(|world: &mut World| {
-            batch_renderer::<Self>(world, todo!())
-        })
-    }
-}
-
-/*
-            // Load the vertex shader stage
+    fn shader(ctx: &mut Context, loader: &mut Assets) -> Shader {
         let vs = loader
             .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
             .unwrap();
 
-        // Load the fragment shader stage
         let fs = loader
             .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
             .unwrap();
 
-        // Link the two stages and compile the shader
-        let shader = ShaderCompiler::link((vs, fs), Processor::new(loader), ctx);
+        ShaderCompiler::link((vs, fs), Processor::new(loader), ctx)
+    }
 
-        // Cache the shader (even though it's unique)
-        let handle = storage.insert(shader);
+    type Pipe = SinglePassPipeline<Self>;
+}
+
+/*
+        
         
         */
 
-impl MaterialBuilder<Standard> {
-    // Set the albedo map
+
+/*
+// Set the albedo map
     pub fn with_albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
         self.material_mut().albedo = Some(albedo.clone());
         self
@@ -134,7 +127,7 @@ impl MaterialBuilder<Standard> {
         self.material_mut().metallic = metallic;
         self
     }
-}
+*/
 
 impl<'world> PropertyBlock<'world> for Standard {
     type PropertyBlockResources = (

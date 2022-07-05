@@ -87,6 +87,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .unwrap();
 
     // Create le default material
+    /*
     let material = Standard::builder()
         .with_albedo(&white)
         .with_normal(&normal_map)
@@ -94,10 +95,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .with_metallic(0.2)
         .with_roughness(1.0)
         .build(ctx, assets, shaders);
+    */
 
     // Insert el material and get it's handle
-    let material = materials.insert(material);
-
+    //    let material = materials.insert(material);
+    let material = todo!();
     // Load the default cube and sphere meshes
     let cube = assets
         .load_with::<SubMesh>("engine/meshes/cube.obj", ctx)
