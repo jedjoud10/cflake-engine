@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use super::Entity;
 use crate::{registry, Archetype, Component, EcsManager, EntryError, Mask, QueryLayout};
 
-
 // An entity entry that we can use to access multiple components on a single entity
 // This will take an immutable reference of the ECS manager, so we cannot mutate any of the underlying entity components
 pub struct Entry<'a> {
@@ -21,7 +20,7 @@ impl<'a> Entry<'a> {
         Some(Self {
             archetype: manager.archetypes.get(&linkings.mask)?,
             bundle: linkings.bundle,
-            _phantom: Default::default()
+            _phantom: Default::default(),
         })
     }
 
@@ -58,7 +57,6 @@ impl<'a> Entry<'a> {
     }
 }
 
-
 // An entity entry that we can use to access multiple components on a single entity
 // This will take a mutable reference of the ECS manager. Use Entry instead if you wish for an immutable entry
 pub struct MutEntry<'a> {
@@ -76,7 +74,7 @@ impl<'a> MutEntry<'a> {
         Some(Self {
             archetype: manager.archetypes.get(&linkings.mask)?,
             bundle: linkings.bundle,
-            _phantom: Default::default()
+            _phantom: Default::default(),
         })
     }
 

@@ -51,7 +51,14 @@ fn init(world: &mut World) {
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let (ecs, scene, keyboard, mouse, Graphics(device, _), time) = world
-        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &mut Graphics, &Time)>()
+        .get_mut::<(
+            &mut EcsManager,
+            &SceneSettings,
+            &Keyboard,
+            &Mouse,
+            &mut Graphics,
+            &Time,
+        )>()
         .unwrap();
 
     // Lock the cursor basically
@@ -85,7 +92,11 @@ fn update(world: &mut World) {
     }
 
     if keyboard.key(Key::H).pressed() {
-        println!("Delta {}, FPS: {}", time.delta_f32(), 1.0 / time.delta_f32());
+        println!(
+            "Delta {}, FPS: {}",
+            time.delta_f32(),
+            1.0 / time.delta_f32()
+        );
     }
 }
 

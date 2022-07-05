@@ -3,8 +3,8 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, filtered, query, Archetype, EntityLinkings, MutEntry, Evaluate, LinkModifier,
-    Mask, MaskMap, QueryLayout, StorageVec, Entry,
+    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
+    Mask, MaskMap, MutEntry, QueryLayout, StorageVec,
 };
 
 // Type aliases because I have gone insane
@@ -61,7 +61,7 @@ impl EcsManager {
         Some(())
     }
 
-    // Try to fetch a mutable entry for an entity 
+    // Try to fetch a mutable entry for an entity
     pub fn try_mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
         MutEntry::new(self, entity)
     }

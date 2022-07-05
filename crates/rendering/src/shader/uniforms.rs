@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use super::{Program, UniformsError};
-use crate::{
-    object::ToGlName,
-    texture::{Texture},
-};
+use crate::{object::ToGlName, texture::Texture};
 
 // IMplement the scalar trait for single, scalar uniform types
 macro_rules! impl_scalars {
@@ -204,9 +201,7 @@ impl_matrices!();
 // Shader uniforms can be fetched from a compute shader using the scheduler() method and from a painter using the uniforms() method
 // When we drop the uniforms, we have to assume that we unbind the values that have a specific lifetime, like buffers and samplers
 // Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
-pub struct Uniforms<'uniforms>(
-    pub(crate) &'uniforms mut Program,
-);
+pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Make sure the user set all the proper shader variables before executing
@@ -320,12 +315,16 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Since the lifetime of this sampler *must* outlive the uniforms, we can make sure the program does not contain invalid sampler references
     pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &'uniforms T) {
         let count = self.0.texture_units.len() as u32;
-        let offset = *self.0.texture_units.entry(name.to_string()).or_insert(count);
+        let offset = *self
+            .0
+            .texture_units
+            .entry(name.to_string())
+            .or_insert(count);
 
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + offset);
             gl::BindTexture(T::target(), sampler.name());
-            
+
             // Set the corresponding sampler uniform
             self.set_scalar(name, offset as i32);
         }

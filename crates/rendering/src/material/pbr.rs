@@ -4,16 +4,15 @@ use math::Transform;
 use world::{Handle, Storage, World};
 
 use crate::{
-    context::{Context, Graphics, Device},
+    canvas::Canvas,
+    context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
-    scene::{SceneSettings, Camera, Renderer},
+    scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, canvas::Canvas,
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
 
-use super::{
-    InstanceID, Material, PropertyBlock, Pipeline, batch_renderer, BatchedPipeline,
-};
+use super::{BatchedPipeline, InstanceID, Material, Pipeline, PropertyBlock};
 
 // Albedo map (color data), rgba
 pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
@@ -40,13 +39,48 @@ pub struct Standard {
     // Unique parameters
     tint: vek::Vec3<f32>,
 
-    // Current instance
+    // Le instance
     instance: InstanceID<Self>,
 }
 
-impl From<InstanceID<Standard>> for Standard {
-    fn from(id: InstanceID<Standard>) -> Self {
-        Self {
+impl Material for Standard {
+    type Pipeline = BatchedPipeline<Self>;
+
+    // Create a new batch pipeline for the PBR material
+    fn pipeline(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        storage: &mut Storage<Shader>,
+    ) -> Self::Pipeline {
+        let vs = assets
+            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
+            .unwrap();
+
+        let fs = assets
+            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
+            .unwrap();
+
+        let shader = ShaderCompiler::link((vs, fs), Processor::new(assets), ctx);
+
+        let handle = storage.insert(shader);
+
+        BatchedPipeline::new(handle)
+    }
+
+    // Get the instance ID of the current material object
+    fn id(&self) -> &InstanceID<Self> {
+        &self.instance
+    }
+}
+
+impl Standard {
+    // Create a new standard builder with default parameters
+    pub fn builder(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        shaders: &mut Storage<Shader>,
+    ) -> StandardBuilder {
+        StandardBuilder(Self {
             albedo: None,
             normal: None,
             mask: None,
@@ -54,79 +88,65 @@ impl From<InstanceID<Standard>> for Standard {
             roughness: 1.0,
             metallic: 0.0,
             tint: vek::Vec3::one(),
-            instance: id,
-        }
+            instance: InstanceID::new(ctx, assets, shaders),
+        })
     }
 }
 
-impl Material for Standard {
-    type Pipe = BatchedPipeline<Self>;
-    
-    fn instance(&self) -> &InstanceID<Self> {
-        &self.instance
-    }
+// This is a builder that we can use to optionally set some material parameters
+pub struct StandardBuilder(Standard);
 
-    fn register(
-            ctx: &mut Context,
-            loader: &mut Assets,
-            storage: &mut Storage<Shader>,
-        ) {
-        todo!()
-    }    
-}
-
-/*
-        
-        
-        */
-
-
-/*
-// Set the albedo map
+impl StandardBuilder {
+    // Set the albedo map
     pub fn with_albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
-        self.material_mut().albedo = Some(albedo.clone());
+        self.0.albedo = Some(albedo.clone());
         self
     }
 
     // Set the normal map
     pub fn with_normal(mut self, normal: &Handle<NormalMap>) -> Self {
-        self.material_mut().normal = Some(normal.clone());
+        self.0.normal = Some(normal.clone());
         self
     }
 
     // Set the mask map
     pub fn with_mask(mut self, mask: &Handle<MaskMap>) -> Self {
-        self.material_mut().mask = Some(mask.clone());
+        self.0.mask = Some(mask.clone());
         self
     }
 
     // Set the tint parameter
     pub fn with_tint(mut self, tint: vek::Vec3<f32>) -> Self {
-        self.material_mut().tint = tint;
+        self.0.tint = tint;
         self
     }
 
     // Set the bumpiness parameter
     pub fn with_bumpiness(mut self, bumpiness: f32) -> Self {
-        self.material_mut().bumpiness = bumpiness;
+        self.0.bumpiness = bumpiness;
         self
     }
 
     // Set the roughness parameter
     pub fn with_roughness(mut self, roughness: f32) -> Self {
-        self.material_mut().roughness = roughness;
+        self.0.roughness = roughness;
         self
     }
 
     // Set the metallic parameter
     pub fn with_metallic(mut self, metallic: f32) -> Self {
-        self.material_mut().metallic = metallic;
+        self.0.metallic = metallic;
         self
     }
-*/
+
+    // Return the inner material stored within the builder
+    pub fn build(self) -> Standard {
+        self.0
+    }
+}
 
 impl<'world> PropertyBlock<'world> for Standard {
-    type Res = (
+    type Resources = (
         &'world Storage<AlbedoMap>,
         &'world Storage<NormalMap>,
         &'world Storage<MaskMap>,
@@ -135,26 +155,31 @@ impl<'world> PropertyBlock<'world> for Standard {
     // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Res,
+        resources: &mut Self::Resources,
         canvas: &Canvas,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
-    ) where 
-        'world: 'u {
+        light: (&Directional, &Transform),
+    ) where
+        'world: 'u,
+    {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
         uniforms.set_vec3("camera", camera.1.position);
         uniforms.set_vec3("forward", camera.1.forward());
+        uniforms.set_vec3("light_dir", light.1.forward());
     }
 
     // This method will be called for each surface that we have to render
     fn set_render_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Res,
+        resources: &mut Self::Resources,
         renderer: &Renderer,
         camera: (&Camera, &Transform),
-    ) where 
-        'world: 'u {
+        light: (&Directional, &Transform),
+    ) where
+        'world: 'u,
+    {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
@@ -162,9 +187,10 @@ impl<'world> PropertyBlock<'world> for Standard {
     fn set_instance_properties<'u>(
         &'world self,
         uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Res,
+        resources: &mut Self::Resources,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
+        light: (&Directional, &Transform),
     ) where
         'world: 'u,
     {
@@ -207,7 +233,7 @@ impl<'world> PropertyBlock<'world> for Standard {
         &'world Storage<SubMesh>,
         &'world mut Storage<Shader>,
         &'world mut Graphics,
-        Self::Res,
+        Self::Resources,
     ) {
         let (
             ecs_manager,

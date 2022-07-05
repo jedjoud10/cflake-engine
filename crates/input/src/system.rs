@@ -75,6 +75,9 @@ pub fn system(events: &mut Events) {
         .unwrap();
     events
         .registry::<Update>()
-        .insert_with(update, Stage::new("keyboard update states").after("post user"))
+        .insert_with(
+            update,
+            Stage::new("keyboard update states").after("post user"),
+        )
         .unwrap();
 }

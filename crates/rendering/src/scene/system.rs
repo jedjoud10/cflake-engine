@@ -1,7 +1,7 @@
-use super::{Camera, SceneSettings, Renderer};
+use super::{Camera, Renderer, SceneSettings};
 use crate::{
     context::{Context, Graphics, GraphicsSetupSettings},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Standard},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Standard, StandardBuilder},
     mesh::SubMesh,
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
@@ -11,7 +11,7 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{added, and, contains, Component, EcsManager, Entity, modified, or};
+use ecs::{added, and, contains, modified, or, Component, EcsManager, Entity};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 use time::Time;
@@ -56,7 +56,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             &mut Storage<NormalMap>,
             &mut Storage<MaskMap>,
             &mut Assets,
-            &mut Graphics
+            &mut Graphics,
         )>()
         .unwrap();
 
@@ -67,14 +67,28 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mask_map = mask_maps.insert(mask_map);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (Sampling::new(Filter::Linear, Wrap::Repeat), MipMaps::Disabled, TextureMode::Static);
-    let debug = assets.load_with::<NormalMap>("engine/textures/bumps.png", (ctx, params.0, params.1, params.2)).unwrap();
-    let missing = assets.load_with::<AlbedoMap>("engine/textures/missing.png", (ctx, params.0, params.1, params.2)).unwrap();    
+    let params = (
+        Sampling::new(Filter::Linear, Wrap::Repeat),
+        MipMaps::Disabled,
+        TextureMode::Static,
+    );
+    let debug = assets
+        .load_with::<NormalMap>(
+            "engine/textures/bumps.png",
+            (ctx, params.0, params.1, params.2),
+        )
+        .unwrap();
+    let missing = assets
+        .load_with::<AlbedoMap>(
+            "engine/textures/missing.png",
+            (ctx, params.0, params.1, params.2),
+        )
+        .unwrap();
 
     // Convert them to map handles
     let missing = albedo_maps.insert(missing);
     let debug = normal_maps.insert(debug);
-    
+
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
         .get_mut::<(
@@ -87,19 +101,15 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .unwrap();
 
     // Create le default material
-    /*
-    let material = Standard::builder()
+    let material = Standard::builder(ctx, assets, shaders)
         .with_albedo(&white)
         .with_normal(&normal_map)
         .with_mask(&mask_map)
         .with_metallic(0.2)
         .with_roughness(1.0)
-        .build(ctx, assets, shaders);
-    */
+        .build();
+    let material = materials.insert(material);
 
-    // Insert el material and get it's handle
-    //    let material = materials.insert(material);
-    let material = todo!();
     // Load the default cube and sphere meshes
     let cube = assets
         .load_with::<SubMesh>("engine/meshes/cube.obj", ctx)
@@ -127,31 +137,30 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // Rendering event that will try to render the 3D scene each frame
 // This will also update the world matrices of each renderer
 fn rendering(world: &mut World) {
-    let (ecs, graphics, settings) = world.get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>().unwrap();
+    let (ecs, graphics, settings) = world
+        .get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>()
+        .unwrap();
     let Graphics(_device, context) = graphics;
 
-    // Can we render the scene? (cause if we can't then we have a big problemo)
     if !settings.can_render() {
         return;
     }
 
     // Update the world matrices
     let filter = or(modified::<Transform>(), added::<Transform>());
-    let query = ecs.try_query_with::<(&mut Renderer, &Transform)>(filter).unwrap();
+    let query = ecs
+        .try_query_with::<(&mut Renderer, &Transform)>(filter)
+        .unwrap();
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
     }
-    /*
-    // Fetch the material renderer
-    let renderers = context.extract_material_renderers();
 
-    // Render all the material surfaces
-    let settings = settings.clone();
-    let _stats = renderers
+    // Render all the surfaces using their respective pipelines
+    let pipes = context.extract_pipelines();
+    let _stats = pipes
         .into_iter()
-        .map(|elem| elem.render(world, &settings))
+        .map(|pipe| pipe.render(world))
         .collect::<Vec<_>>();
-    */
 }
 
 // Window event for updating the current main canvas and world state if needed

@@ -1,9 +1,14 @@
 use ahash::AHashMap;
+use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
+use world::Storage;
 
-use crate::material::{Material, Pipeline};
+use crate::{
+    material::{Material, Pipeline},
+    prelude::Shader,
+};
 
 use super::get_static_str;
 
@@ -67,35 +72,26 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
-    /*
-    // Try to register a material renderer with a callback
-    // We use callback since we need to register the renderer only once, and it would be a waste to create it multiple times
-    pub(crate) fn register_material_renderer<M: Material, F>(&mut self, callback: F)
-    where
-        F: FnOnce(&mut Context) -> M::Renderer,
-    {
-        // Material renderers are defined by their material type, so we can only have one material renderer per material type
+    // Try to create a new material pipeline and automatically register it
+    pub(crate) fn register_pipeline<M: Material>(
+        &mut self,
+        assets: &mut Assets,
+        storage: &mut Storage<Shader>,
+    ) {
         let key = TypeId::of::<M>();
-
-        // Only register the renderer once
         if !self.renderers.contains_key(&key) {
-            // Create the RC and call the callback
-            let renderer = Rc::new(callback(self));
-
-            // Insert the renderer into the context
-            self.renderers.insert(key, renderer);
+            let pipeline = Rc::new(M::pipeline(self, assets, storage));
+            self.renderers.insert(key, pipeline);
         }
     }
 
-    // Clone all the material renderers outside the context
-    // This is going to be executed every frame, but the number of unique material types is low so we shall'n't worry about it
-    pub(crate) fn extract_material_renderers(&self) -> Vec<Rc<dyn MaterialRenderer>> {
+    // Extract all the internally stored material pipelines
+    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {
         self.renderers
             .iter()
             .map(|(_key, value)| value.clone())
             .collect::<_>()
     }
-    */
 
     // Get the raw Glutin OpenGL context wrapper
     pub fn raw(&self) -> &RawContext<PossiblyCurrent> {

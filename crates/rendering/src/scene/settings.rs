@@ -12,7 +12,7 @@ type Image = Texture2D<RGBA<Ranged<u8>>>;
 // The global scene settings that specifies how we should render the surfaces
 // This resource will contain the handles to the default PBR textures
 // This resource will contain the entity ID of the main camera and the main directional light
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct SceneSettings {
     // Main camera entity that we will use for rendering
     camera: Option<Entity>,
@@ -120,7 +120,7 @@ impl SceneSettings {
     pub fn missing(&self) -> Handle<AlbedoMap> {
         self.albedo_map.clone()
     }
-    
+
     // Get the handle for the debug normal mpa
     pub fn debug(&self) -> Handle<NormalMap> {
         self.debug.clone()

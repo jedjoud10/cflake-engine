@@ -291,7 +291,10 @@ struct AuxBufGen<'a> {
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-unsafe fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
+unsafe fn gen<'a, T: Attribute>(
+    aux: &mut AuxBufGen<'a>,
+    normalized: bool,
+) -> Option<ArrayBuffer<T::Out>> {
     if let Some(vec) = aux.vertices.get_mut::<T>() {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
@@ -349,7 +352,7 @@ impl AttributeSet {
 
         // Create the set with valid buffers (if they are enabled)
         use super::attributes::named::*;
-        
+
         unsafe {
             Self {
                 name: vao,
