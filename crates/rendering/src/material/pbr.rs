@@ -145,11 +145,11 @@ impl StandardBuilder {
     }
 }
 
-impl<'world> PropertyBlock<'world> for Standard {
+impl<'w> PropertyBlock<'w> for Standard {
     type Resources = (
-        &'world Storage<AlbedoMap>,
-        &'world Storage<NormalMap>,
-        &'world Storage<MaskMap>,
+        &'w Storage<AlbedoMap>,
+        &'w Storage<NormalMap>,
+        &'w Storage<MaskMap>,
     );
 
     // This method will be called once right before we start rendering the batches
@@ -161,7 +161,7 @@ impl<'world> PropertyBlock<'world> for Standard {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u,
+        'w: 'u,
     {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
@@ -178,21 +178,21 @@ impl<'world> PropertyBlock<'world> for Standard {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u,
+        'w: 'u,
     {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
     // This method will be called whenever we detect a material instance change
     fn set_instance_properties<'u>(
-        &'world self,
+        &'w self,
         uniforms: &mut Uniforms<'u>,
         resources: &mut Self::Resources,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u,
+        'w: 'u,
     {
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
@@ -225,14 +225,14 @@ impl<'world> PropertyBlock<'world> for Standard {
     }
 
     fn fetch(
-        world: &'world mut world::World,
+        world: &'w mut world::World,
     ) -> (
-        &'world SceneSettings,
-        &'world EcsManager,
-        &'world Storage<Self>,
-        &'world Storage<SubMesh>,
-        &'world mut Storage<Shader>,
-        &'world mut Graphics,
+        &'w SceneSettings,
+        &'w EcsManager,
+        &'w Storage<Self>,
+        &'w Storage<SubMesh>,
+        &'w mut Storage<Shader>,
+        &'w mut Graphics,
         Self::Resources,
     ) {
         let (

@@ -23,28 +23,18 @@ pub enum Factor {
     OneMinusDstAlpha = gl::ONE_MINUS_DST_ALPHA,
 }
 
-// Blending mode when utilising alpha blending moment
+// Tells us if we should/how we should blend between transparent objects
 #[derive(Clone, Copy)]
 pub struct BlendMode {
-    s_factor: Factor,
-    d_factor: Factor,
-}
-
-impl BlendMode {
-    pub fn with(s_factor: Factor, d_factor: Factor) -> Self {
-        Self { s_factor, d_factor }
-    }
+    src: Factor,
+    dest: Factor,
 }
 
 // How rasterized triangles should be culled
 #[derive(Clone, Copy)]
 pub enum FaceCullMode {
-    // The boolean specifies if the culling should be Counter Clockwise
     Front(bool),
     Back(bool),
-
-    // Don't cull anything
-    None,
 }
 
 // Main rasterizer self like sissor tests and depth tests
@@ -66,94 +56,10 @@ pub struct RasterSettings {
     pub blend: Option<BlendMode>,
 }
 
-impl RasterSettings {
-    /*
-    // Apply all the raster self, without checking for double assignment
-    fn apply(&self, canvas: &Canvas) -> u32 {
-        // Get the OpenGL primitive type
-        let primitive = match self.primitive {
-            PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
-            PrimitiveMode::Points { .. } => gl::POINTS,
-        };
-
-        // Set the OpenGL primitive parameters
-        match &self.primitive {
-            PrimitiveMode::Triangles { cull } => unsafe { 
-                // Check if we must cull the faces or not
-                if let FaceCullMode::None = mode {
-                    gl::Disable(gl::CULL_FACE);
-                    return;
-                } else {
-                    gl::Enable(gl::CULL_FACE)
-                };
-            
-                // Get the face culling direction, either front or back, and winding order
-                let (direction, ccw) = match mode {
-                    FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
-                    FaceCullMode::Back(ccw) => (gl::BACK, ccw),
-                    _ => todo!(),
-                };
-            
-                // Set the face culling direction
-                gl::CullFace(direction);
-            
-                // And set winding order
-                gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
-            },
-            PrimitiveMode::Points { diameter } => unsafe {
-                gl::PointSize(*diameter);
-            },
-        }
-
-        // Handle depth testing and it's parameters
-        unsafe {
-            if let Some(func) = &self.depth_test {
-                gl::Enable(gl::DEPTH_TEST);
-                gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
-            } else {
-                gl::Disable(gl::DEPTH_TEST);
-            }
-        }
-
-        // Handle scissor testing and it's parameters
-        unsafe {
-            if let Some((origin, size)) = &self.scissor_test {
-                gl::Enable(gl::SCISSOR_TEST);
-                gl::Scissor(origin.x, canvas.size().h as i32 - origin.y, size.w, size.h);
-            } else {
-                gl::Disable(gl::SCISSOR_TEST);
-            }
-        }
-
-        // Handle the SRGB framebuffer mode
-        unsafe {
-            if self.srgb {
-                gl::Enable(gl::FRAMEBUFFER_SRGB);
-            } else {
-                gl::Disable(gl::FRAMEBUFFER_SRGB);
-            }
-        }
-
-        // Handle blending and it's parameters
-        unsafe {
-            if let Some(mode) = self.blend {
-                gl::Enable(gl::BLEND);
-                gl::BlendFunc(
-                    transmute::<Factor, u32>(mode.s_factor),
-                    transmute::<Factor, u32>(mode.d_factor),
-                );
-            } else {
-                gl::Disable(gl::BLEND)
-            }
-        }
-    } 
-    */
-}
-
 // Depicts the exact primitives we will use to draw the mesh
 #[derive(Clone)]
 pub enum PrimitiveMode {
-    Triangles { cull: FaceCullMode },
+    Triangles { cull: Option<FaceCullMode> },
     Points { diameter: f32 },
 }
 
@@ -172,6 +78,7 @@ pub struct Rasterizer<'canvas, 'context> {
     canvas: &'canvas mut Canvas,
     ctx: &'context mut Context,
     settings: RasterSettings,
+    primitive: u32,
 }
 
 impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
@@ -181,10 +88,86 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         ctx: &'context mut Context,
         settings: RasterSettings,
     ) -> Self {
+        // Get the OpenGL primitive type
+        let primitive = match settings.primitive {
+            PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
+            PrimitiveMode::Points { .. } => gl::POINTS,
+        };
+
+        // Set the OpenGL primitive parameters (along with face culling)
+        match &settings.primitive {
+            PrimitiveMode::Triangles { cull } => unsafe { 
+                if let Some(cull) = cull {
+                    gl::Enable(gl::CULL_FACE);
+                
+                    // Get the face culling direction, either front or back, and winding order
+                    let (direction, ccw) = match cull {
+                        FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
+                        FaceCullMode::Back(ccw) => (gl::BACK, ccw),
+                        _ => todo!(),
+                    };
+                
+                    // Set the face culling direction
+                    gl::CullFace(direction);
+                
+                    // And set winding order
+                    gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
+                } else {
+                    gl::Disable(gl::CULL_FACE);
+                };
+            },
+            PrimitiveMode::Points { diameter } => unsafe {
+                gl::PointSize(*diameter);
+            },
+        }
+
+        // Handle depth testing and it's parameters
+        unsafe {
+            if let Some(func) = &settings.depth_test {
+                gl::Enable(gl::DEPTH_TEST);
+                gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
+            } else {
+                gl::Disable(gl::DEPTH_TEST);
+            }
+        }
+
+        // Handle scissor testing and it's parameters
+        unsafe {
+            if let Some((origin, size)) = &settings.scissor_test {
+                gl::Enable(gl::SCISSOR_TEST);
+                gl::Scissor(origin.x, canvas.size().h as i32 - origin.y, size.w, size.h);
+            } else {
+                gl::Disable(gl::SCISSOR_TEST);
+            }
+        }
+
+        // Handle the SRGB framebuffer mode
+        unsafe {
+            if settings.srgb {
+                gl::Enable(gl::FRAMEBUFFER_SRGB);
+            } else {
+                gl::Disable(gl::FRAMEBUFFER_SRGB);
+            }
+        }
+
+        // Handle blending and it's parameters
+        unsafe {
+            if let Some(mode) = settings.blend {
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(
+                    transmute::<Factor, u32>(mode.src),
+                    transmute::<Factor, u32>(mode.dest),
+                );
+            } else {
+                gl::Disable(gl::BLEND)
+            }
+        }
+
         Self {
             canvas,
             ctx,
             settings,
+            primitive,
         }
     }
 

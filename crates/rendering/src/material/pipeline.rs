@@ -63,13 +63,11 @@ impl<M: Material + for<'a> PropertyBlock<'a>> Pipeline for BatchedPipeline<M> {
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
-            depth_test: Some(Comparison::Less),
+            depth_test: M::depth_comparison(),
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles {
-                cull: FaceCullMode::Back(true),
-            },
-            srgb: false,
-            blend: None,
+            primitive: PrimitiveMode::Triangles { cull: M::face_cull_mode() },
+            srgb: M::srgb(),
+            blend: M::blend_mode(),
         };
 
         // Create a valid rasterizer and start rendering

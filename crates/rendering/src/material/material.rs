@@ -6,7 +6,7 @@ use math::Transform;
 use world::{Handle, Storage, World};
 
 use crate::{
-    canvas::{Canvas, FaceCullMode, PrimitiveMode, RasterSettings},
+    canvas::{Canvas, FaceCullMode, PrimitiveMode, RasterSettings, BlendMode},
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
     others::Comparison,
@@ -46,25 +46,45 @@ pub trait Material: 'static + Sized + for<'a> PropertyBlock<'a> {
 
     // Get the instance ID of the material instance
     fn id(&self) -> &InstanceID<Self>;
+
+    // Get the depth comparison setting
+    fn depth_comparison() -> Option<Comparison> {
+        Some(Comparison::Less)
+    }
+
+    // Get the sRGB framebuffer setting
+    fn srgb() -> bool {
+        false
+    }
+
+    // Get the transparency setting
+    fn blend_mode() -> Option<BlendMode> {
+        None
+    }
+
+    // Get the face culling mode 
+    fn face_cull_mode() -> Option<FaceCullMode> {
+        Some(FaceCullMode::Back(true))
+    }
 }
 
 // A property block is an interface that tells us exactly we should set the material properties when using shader batching
 // This will be implemented for ALL material types, since they all use shader batching
 // TODO: Remove this whole trait by merging it into the material trait somehow...
-pub trait PropertyBlock<'world>: Sized {
+pub trait PropertyBlock<'w>: Sized {
     // The resources that we need to fetch from the world to set the uniforms
-    type Resources: 'world;
+    type Resources: 'w;
 
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
-        world: &'world mut World,
+        world: &'w mut World,
     ) -> (
-        &'world SceneSettings,
-        &'world EcsManager,
-        &'world Storage<Self>,
-        &'world Storage<SubMesh>,
-        &'world mut Storage<Shader>,
-        &'world mut Graphics,
+        &'w SceneSettings,
+        &'w EcsManager,
+        &'w Storage<Self>,
+        &'w Storage<SubMesh>,
+        &'w mut Storage<Shader>,
+        &'w mut Graphics,
         Self::Resources,
     );
 
@@ -77,7 +97,7 @@ pub trait PropertyBlock<'world>: Sized {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u,
+        'w: 'u,
     {
     }
 
@@ -89,19 +109,19 @@ pub trait PropertyBlock<'world>: Sized {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u,
+        'w: 'u,
     {
     }
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn set_instance_properties<'u>(
-        &'world self,
+        &'w self,
         uniforms: &mut Uniforms<'u>,
         resources: &mut Self::Resources,
         scene: &SceneSettings,
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'world: 'u;
+        'w: 'u;
 }
