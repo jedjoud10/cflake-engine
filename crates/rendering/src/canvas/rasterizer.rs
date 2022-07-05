@@ -23,11 +23,11 @@ pub enum Factor {
     OneMinusDstAlpha = gl::ONE_MINUS_DST_ALPHA,
 }
 
-// Tells us if we should/how we should blend between transparent objects
+// Tells us if we how we should blend between transparent objects
 #[derive(Clone, Copy)]
 pub struct BlendMode {
-    src: Factor,
-    dest: Factor,
+    pub src: Factor,
+    pub dest: Factor,
 }
 
 // How rasterized triangles should be culled
@@ -93,6 +93,8 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
             PrimitiveMode::Points { .. } => gl::POINTS,
         };
+
+        gl::MaxShaderCompilerThreadsKHR(count)
 
         // Set the OpenGL primitive parameters (along with face culling)
         match &settings.primitive {
