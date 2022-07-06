@@ -98,10 +98,17 @@ pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 // This will also register the storage's clean function automatically
 impl<T> FromWorld for Storage<T> {
     fn from_world(world: &mut world::World) -> Self {
-        let rc = Rc::new(InnerStorage { slots: Default::default(), empty: Default::default(), must_drop: Default::default() });
-        let descriptor = world
-            .entry::<StorageSetDescriptor>()
-            .or_insert_with(|_| StorageSetDescriptor { storages: Default::default() });
+        let rc = Rc::new(InnerStorage {
+            slots: Default::default(),
+            empty: Default::default(),
+            must_drop: Default::default(),
+        });
+        let descriptor =
+            world
+                .entry::<StorageSetDescriptor>()
+                .or_insert_with(|_| StorageSetDescriptor {
+                    storages: Default::default(),
+                });
         descriptor.storages.push(rc.clone() as Rc<dyn Clean>);
         Self(rc)
     }
@@ -166,7 +173,11 @@ impl<T: 'static> Storage<T> {
         };
 
         // Create the handle object
-        Handle { _phantom: Default::default(), inner: self.0.clone(), idx }
+        Handle {
+            _phantom: Default::default(),
+            inner: self.0.clone(),
+            idx,
+        }
     }
 
     // Get an immutable reference to a value stored within the stored using it's handle
@@ -234,7 +245,11 @@ impl<T: 'static> Clone for Handle<T> {
         unsafe {
             self.increment_count();
         }
-        Self { _phantom: Default::default(), inner: self.inner.clone(), idx: self.idx }
+        Self {
+            _phantom: Default::default(),
+            inner: self.inner.clone(),
+            idx: self.idx,
+        }
     }
 }
 

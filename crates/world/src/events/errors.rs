@@ -41,7 +41,10 @@ impl std::fmt::Debug for StageError {
             StageError::MissingRules => {
                 write!(f, "The given stage has no rules associated with it")
             }
-            StageError::Overlapping => write!(f, "Tried to insert the stage into the pipeline, but the stage name was already used"),
+            StageError::Overlapping => write!(
+                f,
+                "Tried to insert the stage into the pipeline, but the stage name was already used"
+            ),
         }
     }
 }

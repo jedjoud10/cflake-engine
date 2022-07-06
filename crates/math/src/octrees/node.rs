@@ -38,7 +38,9 @@ pub struct Node {
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         // Check coordinates, then check if we have the same child count
-        self.center() == other.center() && self.children.is_none() == other.children.is_none() && self.depth == other.depth
+        self.center() == other.center()
+            && self.children.is_none() == other.children.is_none()
+            && self.depth == other.depth
     }
 }
 
@@ -57,13 +59,24 @@ impl Node {
     pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
         // Get the maximum size of the root node
         let full_extent = (2_u64.pow(depth as u32) * size) as i64;
-        let position = vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
+        let position =
+            vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
 
-        Self { position, half_extent: full_extent as u64 / 2, depth: 0, parent: NodeKey::null(), key, children: None }
+        Self {
+            position,
+            half_extent: full_extent as u64 / 2,
+            depth: 0,
+            parent: NodeKey::null(),
+            key,
+            children: None,
+        }
     }
     // Get the AABB from this octee node
     pub fn aabb(&self) -> crate::AABB {
-        crate::AABB { min: self.position.as_(), max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0) }
+        crate::AABB {
+            min: self.position.as_(),
+            max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0),
+        }
     }
 
     // Get the center of this octree node
@@ -72,7 +85,12 @@ impl Node {
     }
 
     // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &vek::Vec3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
+    pub fn can_subdivide(
+        &self,
+        target: &vek::Vec3<f32>,
+        max_depth: u8,
+        settings: &HeuristicSettings,
+    ) -> bool {
         let test = (settings.function)(self, target);
         test && self.depth < (max_depth - 1)
     }
@@ -88,7 +106,11 @@ impl Node {
             for z in 0..2 {
                 for x in 0..2 {
                     // The position offset for the new octree node
-                    let offset = vek::Vec3::<i64>::new(x * half_extent as i64, y * half_extent as i64, z * half_extent as i64);
+                    let offset = vek::Vec3::<i64>::new(
+                        x * half_extent as i64,
+                        y * half_extent as i64,
+                        z * half_extent as i64,
+                    );
 
                     // Calculate the child's index
                     let child = Node {

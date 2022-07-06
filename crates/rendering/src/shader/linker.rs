@@ -2,7 +2,10 @@ use std::ptr::null_mut;
 
 use ahash::AHashMap;
 
-use super::{introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage, VertexStage};
+use super::{
+    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage,
+    VertexStage,
+};
 use crate::{context::Context, object::ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages
@@ -74,7 +77,11 @@ pub trait StageSet {
 impl StageSet for (VertexStage, FragmentStage) {
     type OutShaderType = Shader;
 
-    unsafe fn link(input: Self, mut processor: Processor, ctx: &mut Context) -> Self::OutShaderType {
+    unsafe fn link(
+        input: Self,
+        mut processor: Processor,
+        ctx: &mut Context,
+    ) -> Self::OutShaderType {
         // Process shader directives and includes
         let username = format!("{}-{}", input.0.name(), input.1.name());
         let vertex = processor.filter(input.0);
@@ -92,7 +99,11 @@ impl StageSet for (VertexStage, FragmentStage) {
 impl StageSet for ComputeStage {
     type OutShaderType = ComputeShader;
 
-    unsafe fn link(input: Self, mut processor: Processor, ctx: &mut Context) -> Self::OutShaderType {
+    unsafe fn link(
+        input: Self,
+        mut processor: Processor,
+        ctx: &mut Context,
+    ) -> Self::OutShaderType {
         // Process shader directives and includes
         let username = input.name().to_string();
         let compute = processor.filter(input);
@@ -109,7 +120,11 @@ impl StageSet for ComputeStage {
 pub struct ShaderCompiler;
 impl ShaderCompiler {
     // Simply link multiple shader stages into a shader
-    pub fn link<C: StageSet>(input: C, processor: Processor, ctx: &mut Context) -> C::OutShaderType {
+    pub fn link<C: StageSet>(
+        input: C,
+        processor: Processor,
+        ctx: &mut Context,
+    ) -> C::OutShaderType {
         unsafe { C::link(input, processor, ctx) }
     }
 }

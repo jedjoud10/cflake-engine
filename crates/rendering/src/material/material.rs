@@ -27,7 +27,11 @@ pub trait Material<'w>: 'static + Sized {
     type Pipeline: Pipeline;
 
     // Create a new material pipeline for this material type. This should be called once
-    fn pipeline(ctx: &mut Context, assets: &mut Assets, storage: &mut Storage<Shader>) -> Self::Pipeline;
+    fn pipeline(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        storage: &mut Storage<Shader>,
+    ) -> Self::Pipeline;
 
     // Get the depth comparison setting
     fn depth_comparison() -> Option<Comparison> {
@@ -50,7 +54,17 @@ pub trait Material<'w>: 'static + Sized {
     }
 
     // Fetch the default rendering resources and the material property block resources as well
-    fn fetch(world: &'w mut World) -> (&'w SceneSettings, &'w EcsManager, &'w Storage<Self>, &'w Storage<SubMesh>, &'w mut Storage<Shader>, &'w mut Graphics, Self::Resources);
+    fn fetch(
+        world: &'w mut World,
+    ) -> (
+        &'w SceneSettings,
+        &'w EcsManager,
+        &'w Storage<Self>,
+        &'w Storage<SubMesh>,
+        &'w mut Storage<Shader>,
+        &'w mut Graphics,
+        Self::Resources,
+    );
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties<'u>(

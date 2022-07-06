@@ -29,7 +29,11 @@ impl<'a> From<&'a mut Assets> for Processor<'a> {
 impl<'a> Processor<'a> {
     // Create a processor from an asset loader
     pub fn new(loader: &'a mut Assets) -> Self {
-        Self { loader, constants: Default::default(), snippets: Default::default() }
+        Self {
+            loader,
+            constants: Default::default(),
+            snippets: Default::default(),
+        }
     }
 
     // Include a constant directive
@@ -60,7 +64,10 @@ impl<'a> Processor<'a> {
                 // Very funny indeed
                 if trimmed.contains("#const") {
                     // Get the directive, type, and name indices
-                    let directive = trimmed.split_whitespace().position(|n| n == "#const").unwrap();
+                    let directive = trimmed
+                        .split_whitespace()
+                        .position(|n| n == "#const")
+                        .unwrap();
                     let ty = directive + 1;
                     let name = directive + 2;
 
@@ -114,7 +121,11 @@ impl<'a> Processor<'a> {
             }
 
             // Make sure we split the lines again
-            lines = lines.join("\n").lines().map(str::to_string).collect::<Vec<String>>();
+            lines = lines
+                .join("\n")
+                .lines()
+                .map(str::to_string)
+                .collect::<Vec<String>>();
 
             // If we skipped all the lines, it means that we did absolutely nothing, and we can exit
             if skipped == lines.len() {

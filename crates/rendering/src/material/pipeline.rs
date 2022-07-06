@@ -47,7 +47,10 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
     where
         Self: Sized,
     {
-        Self { shader, _phantom: Default::default() }
+        Self {
+            shader,
+            _phantom: Default::default(),
+        }
     }
 
     fn shader(&self) -> Handle<Shader> {
@@ -55,13 +58,16 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
     }
 
     fn render(&self, world: &mut World) -> Option<Stats> {
-        let (scene, ecs, materials, submeshes, shaders, graphics, mut property_block_resources) = <M as Material<'_>>::fetch(world);
+        let (scene, ecs, materials, submeshes, shaders, graphics, mut property_block_resources) =
+            <M as Material<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
             depth_test: M::depth_comparison(),
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles { cull: M::face_cull_mode() },
+            primitive: PrimitiveMode::Triangles {
+                cull: M::face_cull_mode(),
+            },
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
@@ -81,14 +87,23 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
         let camera = (camera_data, camera_transform);
 
         // Get the main directional light
-        let light_entry = ecs.try_entry(scene.main_directional_light().unwrap()).unwrap();
+        let light_entry = ecs
+            .try_entry(scene.main_directional_light().unwrap())
+            .unwrap();
         let light_transform = light_entry.get::<Transform>().unwrap();
         let light_data = light_entry.get::<Directional>().unwrap();
         let light = (light_data, light_transform);
 
         // Create a new rasterizer so we can draw the objects onto the world
         let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
-        M::set_static_properties(&mut uniforms, &mut property_block_resources, rasterizer.canvas(), scene, camera, light);
+        M::set_static_properties(
+            &mut uniforms,
+            &mut property_block_resources,
+            rasterizer.canvas(),
+            scene,
+            camera,
+            light,
+        );
 
         // Render each surface that is present in the query
         let mut old: Option<Handle<M>> = None;
@@ -99,11 +114,24 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
                 let instance = materials.get(old.as_ref().unwrap());
 
                 // Update the material property block uniforms
-                M::set_instance_properties(instance, &mut uniforms, &mut property_block_resources, &scene, camera, light);
+                M::set_instance_properties(
+                    instance,
+                    &mut uniforms,
+                    &mut property_block_resources,
+                    &scene,
+                    camera,
+                    light,
+                );
             }
 
             // Set the uniforms per renderer
-            M::set_render_properties(&mut uniforms, &mut property_block_resources, renderer, camera, light);
+            M::set_render_properties(
+                &mut uniforms,
+                &mut property_block_resources,
+                renderer,
+                camera,
+                light,
+            );
 
             // Draw the surface object using the current rasterizer pass
             let submesh = submeshes.get(&surface.submesh());

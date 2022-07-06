@@ -33,7 +33,11 @@ mod tests {
         */
 
         for i in 0..1 {
-            let tuple = (Tag("Hello world tag!"), SimpleValue(i), Name("Sususus amogus?", [0; 64]));
+            let tuple = (
+                Tag("Hello world tag!"),
+                SimpleValue(i),
+                Name("Sususus amogus?", [0; 64]),
+            );
             let entity = manager.insert(tuple).unwrap();
 
             //let mut entry = manager.entry(entity).unwrap();

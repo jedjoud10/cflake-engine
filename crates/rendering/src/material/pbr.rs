@@ -38,15 +38,27 @@ pub struct Standard {
 }
 
 impl<'w> Material<'w> for Standard {
-    type Resources = (&'w Storage<AlbedoMap>, &'w Storage<NormalMap>, &'w Storage<MaskMap>);
+    type Resources = (
+        &'w Storage<AlbedoMap>,
+        &'w Storage<NormalMap>,
+        &'w Storage<MaskMap>,
+    );
 
     type Pipeline = BatchedPipeline<Self>;
 
     // Create a new batch pipeline for the PBR material
-    fn pipeline(ctx: &mut Context, assets: &mut Assets, storage: &mut Storage<Shader>) -> Self::Pipeline {
-        let vs = assets.load::<VertexStage>("engine/shaders/pbr.vrsh.glsl").unwrap();
+    fn pipeline(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        storage: &mut Storage<Shader>,
+    ) -> Self::Pipeline {
+        let vs = assets
+            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
+            .unwrap();
 
-        let fs = assets.load::<FragmentStage>("engine/shaders/pbr.frsh.glsl").unwrap();
+        let fs = assets
+            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
+            .unwrap();
 
         let shader = ShaderCompiler::link((vs, fs), Processor::new(assets), ctx);
 
@@ -57,11 +69,47 @@ impl<'w> Material<'w> for Standard {
 
     fn fetch(
         world: &'w mut world::World,
-    ) -> (&'w SceneSettings, &'w EcsManager, &'w Storage<Self>, &'w Storage<SubMesh>, &'w mut Storage<Shader>, &'w mut Graphics, Self::Resources) {
-        let (ecs_manager, materials, submesh, shaders, graphics, albedo_maps, normal_maps, mask_maps, scene) = world
-            .get_mut::<(&EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Graphics, &Storage<AlbedoMap>, &Storage<NormalMap>, &Storage<MaskMap>, &SceneSettings)>()
+    ) -> (
+        &'w SceneSettings,
+        &'w EcsManager,
+        &'w Storage<Self>,
+        &'w Storage<SubMesh>,
+        &'w mut Storage<Shader>,
+        &'w mut Graphics,
+        Self::Resources,
+    ) {
+        let (
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            scene,
+        ) = world
+            .get_mut::<(
+                &EcsManager,
+                &Storage<Self>,
+                &Storage<SubMesh>,
+                &mut Storage<Shader>,
+                &mut Graphics,
+                &Storage<AlbedoMap>,
+                &Storage<NormalMap>,
+                &Storage<MaskMap>,
+                &SceneSettings,
+            )>()
             .unwrap();
-        (scene, ecs_manager, materials, submesh, shaders, graphics, (albedo_maps, normal_maps, mask_maps))
+        (
+            scene,
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            (albedo_maps, normal_maps, mask_maps),
+        )
     }
 
     // This method will be called once right before we start rendering the batches
@@ -108,7 +156,11 @@ impl<'w> Material<'w> for Standard {
     {
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
-        fn fallback<'a, T: 'static>(storage: &'a Storage<T>, opt: &Option<Handle<T>>, fallback: Handle<T>) -> &'a T {
+        fn fallback<'a, T: 'static>(
+            storage: &'a Storage<T>,
+            opt: &Option<Handle<T>>,
+            fallback: Handle<T>,
+        ) -> &'a T {
             opt.as_ref()
                 .map(|handle| storage.get(handle))
                 .unwrap_or_else(|| storage.get(&fallback))
@@ -132,7 +184,15 @@ impl<'w> Material<'w> for Standard {
 impl Standard {
     // Create a new standard builder with default parameters
     pub fn builder() -> StandardBuilder {
-        StandardBuilder(Self { albedo: None, normal: None, mask: None, bumpiness: 1.0, roughness: 1.0, metallic: 0.0, tint: vek::Rgb::white() })
+        StandardBuilder(Self {
+            albedo: None,
+            normal: None,
+            mask: None,
+            bumpiness: 1.0,
+            roughness: 1.0,
+            metallic: 0.0,
+            tint: vek::Rgb::white(),
+        })
     }
 }
 

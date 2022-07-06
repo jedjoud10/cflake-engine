@@ -35,7 +35,8 @@ impl AsRef<egui::Context> for UserInterface {
 pub fn system(events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
-        let (Graphics(_, context), assets) = world.get_mut::<(&mut Graphics, &mut Assets)>().unwrap();
+        let (Graphics(_, context), assets) =
+            world.get_mut::<(&mut Graphics, &mut Assets)>().unwrap();
 
         // Get the maximum texture size from OpenGL (idk why egui needs this tbh)
         let max_texture_size = unsafe {
@@ -45,7 +46,11 @@ pub fn system(events: &mut Events) {
         };
 
         // Construct the user interface and add it as a resource
-        let ui = UserInterface { egui: Default::default(), state: egui_winit::State::from_pixels_per_point(max_texture_size, 1.0), painter: Painter::new(assets, context) };
+        let ui = UserInterface {
+            egui: Default::default(),
+            state: egui_winit::State::from_pixels_per_point(max_texture_size, 1.0),
+            painter: Painter::new(assets, context),
+        };
         world.insert(ui);
     }
 
@@ -57,14 +62,18 @@ pub fn system(events: &mut Events) {
 
     // This is called at the start of each frame to tell egui that we must register the upcoming draw commands
     fn begin(world: &mut World) {
-        let (ui, Graphics(device, _)) = world.get_mut::<(&mut UserInterface, &mut Graphics)>().unwrap();
+        let (ui, Graphics(device, _)) = world
+            .get_mut::<(&mut UserInterface, &mut Graphics)>()
+            .unwrap();
         let raw_input = ui.state.take_egui_input(device.window());
         ui.egui.begin_frame(raw_input);
     }
 
     // This is called at the end of each frame (after we render the main 3D scene)
     fn draw(world: &mut World) {
-        let (ui, Graphics(device, ctx), assets) = world.get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>().unwrap();
+        let (ui, Graphics(device, ctx), assets) = world
+            .get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>()
+            .unwrap();
 
         let output = ui.egui.end_frame();
         ui.state

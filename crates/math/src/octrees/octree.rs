@@ -40,7 +40,14 @@ impl Octree {
         // Create the root node
         let mut nodes = SlotMap::<NodeKey, Node>::default();
         let root = nodes.insert_with_key(|key| Node::root(key, depth, size));
-        Self { target: None, nodes, root, size, depth, hsettings }
+        Self {
+            target: None,
+            nodes,
+            root,
+            size,
+            depth,
+            hsettings,
+        }
     }
 
     // Get the root node of this octree

@@ -50,14 +50,22 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Update a sub-region of the mip-layer, but without checking for safety
-    unsafe fn update_unchecked(&mut self, _ctx: &mut Context, region: T::Region, data: &[<T::T as Texel>::Storage]) {
+    unsafe fn update_unchecked(
+        &mut self,
+        _ctx: &mut Context,
+        region: T::Region,
+        data: &[<T::T as Texel>::Storage],
+    ) {
         T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
     }
 
     // Update a sub-region of the mip-layer using a data slice
     fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[<T::T as Texel>::Storage]) {
         // The length of the buffer should be equal to the surface area of the region
-        assert!((data.len() as u32) == region.area(), "Input data length is not equal to region area surface");
+        assert!(
+            (data.len() as u32) == region.area(),
+            "Input data length is not equal to region area surface"
+        );
 
         // Le update texture subimage
         unsafe {
@@ -203,21 +211,30 @@ pub enum MipMaps {
     // Manual mipmap generation with specific levels.
     // This will be clamped to the maximum number of levels allowed for the given texture dimensions
     // If levels is less than 2, then mipmapping will be disabled
-    Manual { levels: NonZeroU8 },
+    Manual {
+        levels: NonZeroU8,
+    },
 
     // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
     // If samples is less than 2m then anisotropic filtering will be disabled
-    AutomaticAniso { samples: NonZeroU8 },
+    AutomaticAniso {
+        samples: NonZeroU8,
+    },
 
     // Manual mipmap generation, but with a specified number of anisotropy sampler
     // If levels is less than 2, then mipmapping will be disabled
     // If samples is less than 2m then anisotropic filtering will be disabled
-    ManualAniso { levels: NonZeroU8, samples: NonZeroU8 },
+    ManualAniso {
+        levels: NonZeroU8,
+        samples: NonZeroU8,
+    },
 }
 
 impl Default for MipMaps {
     fn default() -> Self {
-        Self::AutomaticAniso { samples: NonZeroU8::new(16).unwrap() }
+        Self::AutomaticAniso {
+            samples: NonZeroU8::new(16).unwrap(),
+        }
     }
 }
 
@@ -241,12 +258,18 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         let dims_valid = dimensions.is_valid();
 
         // Validate length (make sure the data slice matches up with dimensions)
-        let len_valid = if !data.is_empty() { data.len() as u64 == (dimensions.area() as u64) } else { true };
+        let len_valid = if !data.is_empty() {
+            data.len() as u64 == (dimensions.area() as u64)
+        } else {
+            true
+        };
 
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {
             // Convert some parameters to their raw counterpart
-            let ptr = (!data.is_empty()).then(|| data.as_ptr()).unwrap_or_else(null);
+            let ptr = (!data.is_empty())
+                .then(|| data.as_ptr())
+                .unwrap_or_else(null);
 
             // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
             let auto = dimensions.levels();
@@ -267,8 +290,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
-                TextureMode::Dynamic | TextureMode::Static => Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _),
-                TextureMode::Resizable => Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _),
+                TextureMode::Dynamic | TextureMode::Static => {
+                    Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _)
+                }
+                TextureMode::Resizable => {
+                    Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _)
+                }
             }
 
             // Appply the sampling parameters for this texture
@@ -309,7 +336,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
                 if let Some(samples) = anisotropy_samples {
-                    gl::TextureParameterf(tex, gl::TEXTURE_MAX_ANISOTROPY_EXT, samples.get() as f32);
+                    gl::TextureParameterf(
+                        tex,
+                        gl::TEXTURE_MAX_ANISOTROPY_EXT,
+                        samples.get() as f32,
+                    );
                 }
             }
 
@@ -349,14 +380,29 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     }
 
     // Construct the texture object from it's raw parts
-    unsafe fn from_raw_parts(name: u32, dimensions: <Self::Region as Region>::E, mode: TextureMode, levels: NonZeroU8) -> Self;
+    unsafe fn from_raw_parts(
+        name: u32,
+        dimensions: <Self::Region as Region>::E,
+        mode: TextureMode,
+        levels: NonZeroU8,
+    ) -> Self;
 
     // Allocate some immutable texture storage during texture initialization
-    unsafe fn alloc_immutable_storage(name: u32, extent: <Self::Region as Region>::E, levels: u8, ptr: *const c_void);
+    unsafe fn alloc_immutable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        levels: u8,
+        ptr: *const c_void,
+    );
 
     // Allocate some mutable(resizable) texture during texture initialization
     // PS: This will allocate the texture storage for only one level
-    unsafe fn alloc_resizable_storage(name: u32, extent: <Self::Region as Region>::E, unique_level: u8, ptr: *const c_void);
+    unsafe fn alloc_resizable_storage(
+        name: u32,
+        extent: <Self::Region as Region>::E,
+        unique_level: u8,
+        ptr: *const c_void,
+    );
 
     // Update a sub-region of the raw texture
     unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);

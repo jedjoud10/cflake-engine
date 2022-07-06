@@ -26,7 +26,11 @@ pub struct Registry<M: Descriptor + 'static> {
 
 impl<D: Descriptor + 'static> Default for Registry<D> {
     fn default() -> Self {
-        Self { map: Default::default(), events: Default::default(), counter: 0 }
+        Self {
+            map: Default::default(),
+            events: Default::default(),
+            counter: 0,
+        }
     }
 }
 
@@ -40,7 +44,11 @@ impl<M: Descriptor> Registry<M> {
     }
 
     // Insert a new stage-event tuple into the registry (faillible)
-    pub fn insert_with<P>(&mut self, event: impl Event<M, P>, stage: Stage) -> Result<(), StageError> {
+    pub fn insert_with<P>(
+        &mut self,
+        event: impl Event<M, P>,
+        stage: Stage,
+    ) -> Result<(), StageError> {
         // We can only have one event per stage and one stage per event
         if self.map.contains_key(stage.name().as_ref()) {
             Err(StageError::Overlapping)
@@ -74,7 +82,9 @@ impl<M: Descriptor> Registry<M> {
 
 // Sort a hashmap containing multiple stage rules that depend upon each other
 // This returns a hashmap containing the new indices of the sorted stages
-fn sort(map: &AHashMap<StageKey, Vec<Rule>>) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
+fn sort(
+    map: &AHashMap<StageKey, Vec<Rule>>,
+) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
     let mut map: AHashMap<StageKey, Vec<Rule>> = map.clone();
 
@@ -122,7 +132,14 @@ fn sort(map: &AHashMap<StageKey, Vec<Rule>>) -> Result<AHashMap<StageKey, usize>
                 for rule in rules.iter() {
                     // Get the location of the parent stage
                     let parent = rule.parent();
-                    let l = calc(parent.clone(), indices, dedupped, vec, iter + 1, Some(key.clone()))?;
+                    let l = calc(
+                        parent.clone(),
+                        indices,
+                        dedupped,
+                        vec,
+                        iter + 1,
+                        Some(key.clone()),
+                    )?;
 
                     match rule {
                         // Move the current stage BEFORE the parent stage

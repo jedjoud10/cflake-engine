@@ -39,7 +39,10 @@ pub struct Stage {
 impl Stage {
     // Create a new empty stage with no rules (invalid)
     pub fn new(name: impl Into<StageKey>) -> Self {
-        Self { name: name.into(), rules: Vec::new() }
+        Self {
+            name: name.into(),
+            rules: Vec::new(),
+        }
     }
 
     // Get a copy of the underlying stage name

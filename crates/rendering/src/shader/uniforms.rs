@@ -315,7 +315,11 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Since the lifetime of this sampler *must* outlive the uniforms, we can make sure the program does not contain invalid sampler references
     pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &'uniforms T) {
         let count = self.0.texture_units.len() as u32;
-        let offset = *self.0.texture_units.entry(name.to_string()).or_insert(count);
+        let offset = *self
+            .0
+            .texture_units
+            .entry(name.to_string())
+            .or_insert(count);
 
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + offset);

@@ -1,15 +1,27 @@
-use crate::{registry, Archetype, ArchetypeSet, Component, EcsManager, Entity, EntityLinkings, LinkError, Mask, UniqueStoragesSet};
+use crate::{
+    registry, Archetype, ArchetypeSet, Component, EcsManager, Entity, EntityLinkings, LinkError,
+    Mask, UniqueStoragesSet,
+};
 use std::any::Any;
 
 // Make sure there is an emtpy unique component vector at our disposal
 pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
     // Create a new unique component storage if it is missing
-    manager.uniques.entry(mask).or_insert_with(|| Box::new(Vec::<T>::new()));
+    manager
+        .uniques
+        .entry(mask)
+        .or_insert_with(|| Box::new(Vec::<T>::new()));
 }
 
 // Make sure there is a valid archetype
-pub(super) fn register_archetype<'a>(archetypes: &'a mut ArchetypeSet, mask: Mask, uniques: &UniqueStoragesSet) -> &'a mut Archetype {
-    archetypes.entry(mask).or_insert_with(|| Archetype::new(mask, uniques))
+pub(super) fn register_archetype<'a>(
+    archetypes: &'a mut ArchetypeSet,
+    mask: Mask,
+    uniques: &UniqueStoragesSet,
+) -> &'a mut Archetype {
+    archetypes
+        .entry(mask)
+        .or_insert_with(|| Archetype::new(mask, uniques))
 }
 
 // A link modifier that will either link or remove components from an entity
@@ -35,7 +47,13 @@ impl<'a> LinkModifier<'a> {
         // Fetch the entity's linking mask
         let linkings = *manager.entities.get(entity)?;
 
-        Some(Self { old: linkings.mask, new: linkings.mask, manager, locals: Default::default(), entity })
+        Some(Self {
+            old: linkings.mask,
+            new: linkings.mask,
+            manager,
+            locals: Default::default(),
+            entity,
+        })
     }
 
     // Insert a component into the modifier, thus linking it to the entity
@@ -100,10 +118,22 @@ impl<'a> LinkModifier<'a> {
         // Check if we even modified the entity
         if self.new != self.old {
             // Make sure the target archetype is valid
-            register_archetype(&mut self.manager.archetypes, self.new, &self.manager.uniques);
+            register_archetype(
+                &mut self.manager.archetypes,
+                self.new,
+                &self.manager.uniques,
+            );
 
             // Move the entity to the new archetype
-            Archetype::move_entity(&mut self.manager.archetypes, &mut self.manager.entities, self.old, self.new, self.entity, linkings, self.locals)
+            Archetype::move_entity(
+                &mut self.manager.archetypes,
+                &mut self.manager.entities,
+                self.old,
+                self.new,
+                self.entity,
+                linkings,
+                self.locals,
+            )
             //println!("Moved entity from {} to {}", self.old, self.new);
         }
     }

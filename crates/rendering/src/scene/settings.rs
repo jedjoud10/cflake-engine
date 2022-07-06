@@ -55,7 +55,20 @@ impl SceneSettings {
         cube: Handle<SubMesh>,
         sphere: Handle<SubMesh>,
     ) -> Self {
-        Self { camera: None, light: None, black, white, albedo_map, normal_map, mask_map, missing, debug, material, cube, sphere }
+        Self {
+            camera: None,
+            light: None,
+            black,
+            white,
+            albedo_map,
+            normal_map,
+            mask_map,
+            missing,
+            debug,
+            material,
+            cube,
+            sphere,
+        }
     }
 
     // Are we allowed to render the scene (check if the SceneRenderer is valid)

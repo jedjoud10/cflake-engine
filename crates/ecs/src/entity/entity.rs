@@ -16,6 +16,9 @@ pub struct EntityLinkings {
 
 impl Default for EntityLinkings {
     fn default() -> Self {
-        Self { mask: Mask::zero(), bundle: Default::default() }
+        Self {
+            mask: Mask::zero(),
+            bundle: Default::default(),
+        }
     }
 }

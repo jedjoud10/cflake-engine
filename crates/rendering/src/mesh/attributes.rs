@@ -291,7 +291,10 @@ struct AuxBufGen<'a> {
 }
 
 // Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-unsafe fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Option<ArrayBuffer<T::Out>> {
+unsafe fn gen<'a, T: Attribute>(
+    aux: &mut AuxBufGen<'a>,
+    normalized: bool,
+) -> Option<ArrayBuffer<T::Out>> {
     if let Some(vec) = aux.vertices.get_mut::<T>() {
         // Create the array buffer
         let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
@@ -301,7 +304,14 @@ unsafe fn gen<'a, T: Attribute>(aux: &mut AuxBufGen<'a>, normalized: bool) -> Op
 
         // Enable the attribute and set it's parameters
         gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
-        gl::VertexAttribPointer(*aux.index, T::Out::COUNT_PER_VERTEX as i32, T::Out::GL_TYPE, normalized.into(), 0, null());
+        gl::VertexAttribPointer(
+            *aux.index,
+            T::Out::COUNT_PER_VERTEX as i32,
+            T::Out::GL_TYPE,
+            normalized.into(),
+            0,
+            null(),
+        );
 
         // Increment the counter, since we've enabled the attribute
         *aux.index += 1;
@@ -332,7 +342,13 @@ impl AttributeSet {
 
         // Helper struct to make buffer initializiation a bit easier
         let mut index = 0u32;
-        let mut aux = AuxBufGen { vao, index: &mut index, vertices: &mut vertices, ctx, mode };
+        let mut aux = AuxBufGen {
+            vao,
+            index: &mut index,
+            vertices: &mut vertices,
+            ctx,
+            mode,
+        };
 
         // Create the set with valid buffers (if they are enabled)
         use super::attributes::named::*;
@@ -363,7 +379,13 @@ impl AttributeSet {
         }
 
         // Make sure all the lengths (that are valid) be equal to each other
-        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
 
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
         let valid = arr.into_iter().flatten().all(|len| len == first);

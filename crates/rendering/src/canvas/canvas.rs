@@ -18,13 +18,21 @@ pub struct Canvas {
 impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
     pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
-        Self { name, size, _phantom: Default::default() }
+        Self {
+            name,
+            size,
+            _phantom: Default::default(),
+        }
     }
 
     // Create a new canvas with a specific size (size must be valid)
     pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         // Validate size first
-        assert_ne!(size, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            size,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
 
         // Create the raw OpenGL framebuffer
         let name = unsafe {
@@ -34,12 +42,20 @@ impl Canvas {
         };
 
         // Then we can create the canvas object
-        Self { name, size, _phantom: Default::default() }
+        Self {
+            name,
+            size,
+            _phantom: Default::default(),
+        }
     }
 
     // Resize the canvas to a new size
     pub fn resize(&mut self, new: vek::Extent2<u16>) {
-        assert_ne!(new, vek::Extent2::default(), "Size of canvas cannot be zero");
+        assert_ne!(
+            new,
+            vek::Extent2::default(),
+            "Size of canvas cannot be zero"
+        );
         self.size = new;
     }
 
@@ -49,7 +65,12 @@ impl Canvas {
     }
 
     // Clear the whole framebuffer using the proper flags
-    pub fn clear(&mut self, color: Option<vek::Rgb<f32>>, depth: Option<f32>, stencil: Option<i32>) {
+    pub fn clear(
+        &mut self,
+        color: Option<vek::Rgb<f32>>,
+        depth: Option<f32>,
+        stencil: Option<i32>,
+    ) {
         // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 
@@ -97,9 +118,14 @@ impl Canvas {
         }
 
         // Bind the program, and set it's uniforms
-        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe { gl::UseProgram(obj) });
+        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe {
+            gl::UseProgram(obj)
+        });
 
         // Create the new rasterizer and it's corresponding uniforms
-        (Rasterizer::new(self, ctx, settings), Uniforms(shader.as_mut()))
+        (
+            Rasterizer::new(self, ctx, settings),
+            Uniforms(shader.as_mut()),
+        )
     }
 }

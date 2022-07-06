@@ -16,7 +16,15 @@ fn main() {
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
     let (ecs, Graphics(_, ctx), settings, keyboard, materials, textures, assets) = world
-        .get_mut::<(&mut EcsManager, &mut Graphics, &mut SceneSettings, &mut Keyboard, &mut Storage<Standard>, &mut Storage<NormalMap>, &mut Assets)>()
+        .get_mut::<(
+            &mut EcsManager,
+            &mut Graphics,
+            &mut SceneSettings,
+            &mut Keyboard,
+            &mut Storage<Standard>,
+            &mut Storage<NormalMap>,
+            &mut Assets,
+        )>()
         .unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
@@ -31,31 +39,56 @@ fn init(world: &mut World) {
     keyboard.bind("right", Key::D);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (Sampling { filter: Filter::Linear, wrap: Wrap::Repeat }, MipMaps::AutomaticAniso { samples: NonZeroU8::new(4).unwrap() }, TextureMode::Static);
+    let params = (
+        Sampling {
+            filter: Filter::Linear,
+            wrap: Wrap::Repeat,
+        },
+        MipMaps::AutomaticAniso {
+            samples: NonZeroU8::new(4).unwrap(),
+        },
+        TextureMode::Static,
+    );
 
     let texture = assets
-        .load_with::<NormalMap>("user/textures/normal.png", (ctx, params.0, params.1, params.2))
+        .load_with::<NormalMap>(
+            "user/textures/normal.png",
+            (ctx, params.0, params.1, params.2),
+        )
         .unwrap();
     let texture = textures.insert(texture);
 
-    let material = Standard::builder().with_normal(&texture).with_bumpiness(1.4).build();
+    let material = Standard::builder()
+        .with_normal(&texture)
+        .with_bumpiness(1.4)
+        .build();
     let material = materials.insert(material);
 
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material);
-    ecs.insert((renderer, surface, Transform::default())).unwrap();
+    ecs.insert((renderer, surface, Transform::default()))
+        .unwrap();
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
-    let entity = ecs.insert((light, Transform::rotation_x(45f32.to_radians()))).unwrap();
+    let entity = ecs
+        .insert((light, Transform::rotation_x(45f32.to_radians())))
+        .unwrap();
     settings.set_main_directional_light(entity);
 }
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let (ecs, scene, keyboard, mouse, Graphics(device, _), time) = world
-        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &mut Graphics, &Time)>()
+        .get_mut::<(
+            &mut EcsManager,
+            &SceneSettings,
+            &Keyboard,
+            &Mouse,
+            &mut Graphics,
+            &Time,
+        )>()
         .unwrap();
 
     // Lock the cursor basically
@@ -83,7 +116,8 @@ fn update(world: &mut World) {
 
         let pos = mouse.position();
         const SENSIVITY: f32 = 0.0007;
-        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY) * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
+        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
+            * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
     }
 }

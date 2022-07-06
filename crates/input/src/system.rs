@@ -6,9 +6,17 @@ use world::{Events, Init, Resource, Stage, Update, World};
 pub fn system(events: &mut Events) {
     // Init event (called once at the start of program)
     fn init(world: &mut World) {
-        world.insert(Keyboard { binds: Default::default(), keys: Default::default() });
+        world.insert(Keyboard {
+            binds: Default::default(),
+            keys: Default::default(),
+        });
 
-        world.insert(Mouse { scroll_delta: 0.0, scroll: 0.0, pos_delta: Default::default(), pos: Default::default() });
+        world.insert(Mouse {
+            scroll_delta: 0.0,
+            scroll: 0.0,
+            pos_delta: Default::default(),
+            pos: Default::default(),
+        });
     }
 
     // Glutin device event (called by handler when needed)
@@ -35,7 +43,9 @@ pub fn system(events: &mut Events) {
 
             // Update keyboard key states
             DeviceEvent::Key(key) => {
-                keyboard.keys.insert(key.virtual_keycode.unwrap(), key.state.into());
+                keyboard
+                    .keys
+                    .insert(key.virtual_keycode.unwrap(), key.state.into());
             }
             _ => (),
         }
@@ -65,6 +75,9 @@ pub fn system(events: &mut Events) {
         .unwrap();
     events
         .registry::<Update>()
-        .insert_with(update, Stage::new("keyboard update states").after("post user"))
+        .insert_with(
+            update,
+            Stage::new("keyboard update states").after("post user"),
+        )
         .unwrap();
 }

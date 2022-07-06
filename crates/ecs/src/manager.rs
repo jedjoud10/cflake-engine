@@ -2,7 +2,10 @@ use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
-use crate::{entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkError, LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec};
+use crate::{
+    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
+    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec,
+};
 
 // Type aliases because I have gone insane
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -30,14 +33,22 @@ impl Default for EcsManager {
         let uniques: UniqueStoragesSet = Default::default();
         let empty = Archetype::new(Mask::zero(), &uniques);
 
-        Self { entities: Default::default(), archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))), uniques }
+        Self {
+            entities: Default::default(),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
+            uniques,
+        }
     }
 }
 
 impl EcsManager {
     // Modify an entity's component layout
     // TODO: Make this more coherent with the new insert() method
-    pub fn modify(&mut self, entity: Entity, function: impl FnOnce(&mut LinkModifier)) -> Option<()> {
+    pub fn modify(
+        &mut self,
+        entity: Entity,
+        function: impl FnOnce(&mut LinkModifier),
+    ) -> Option<()> {
         // Keep a copy of the linkings before we do anything
         let mut copied = *self.entities.get(entity)?;
 
@@ -67,7 +78,10 @@ impl EcsManager {
     }
 
     // Insert an entity with the given component set as a tuple using a callback
-    pub fn insert_with<T: OwnedLayout>(&mut self, callback: impl FnOnce(Entity) -> T) -> Result<Entity, LinkError> {
+    pub fn insert_with<T: OwnedLayout>(
+        &mut self,
+        callback: impl FnOnce(Entity) -> T,
+    ) -> Result<Entity, LinkError> {
         let entity = self.entities.insert(EntityLinkings::default());
 
         // Create the modifier and insert the components
@@ -85,7 +99,12 @@ impl EcsManager {
     // Remove an entity from the world
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
         // Remove the entity from it's current archetype first
-        Archetype::remove(&mut self.archetypes, &mut self.entities, entity, Mask::zero());
+        Archetype::remove(
+            &mut self.archetypes,
+            &mut self.entities,
+            entity,
+            Mask::zero(),
+        );
 
         // Then remove it from the manager
         self.entities.remove(entity).unwrap();
@@ -104,25 +123,35 @@ impl EcsManager {
 
     /* #region Main thread queries */
     // Normal query without filter
-    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self) -> Option<impl Iterator<Item = Layout> + 'a> {
+    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(
+        &'a mut self,
+    ) -> Option<impl Iterator<Item = Layout> + 'a> {
         Layout::validate().then(|| query(&self.archetypes))
     }
 
     // Create a query with a specific filter
-    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a>(&'a mut self, filter: impl Evaluate) -> Option<impl Iterator<Item = Layout> + 'a> {
+    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a>(
+        &'a mut self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = Layout> + 'a> {
         Layout::validate().then(|| filtered(&self.archetypes, filter))
     }
 
     // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
     // TODO: Make use of Rust's type system to check for immutable borrows instead
-    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(&'a self) -> Option<impl Iterator<Item = Layout> + 'a> {
+    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(
+        &'a self,
+    ) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| query(&self.archetypes))
     }
 
     // View query with a specific filter
-    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(&'a self, filter: impl Evaluate) -> Option<impl Iterator<Item = Layout> + 'a> {
+    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(
+        &'a self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = Layout> + 'a> {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
     }
@@ -153,6 +182,11 @@ pub fn system(events: &mut Events) {
         .unwrap();
     events
         .registry::<Update>()
-        .insert_with(cleanup, Stage::new("ecs cleanup").after("time update").after("post user"))
+        .insert_with(
+            cleanup,
+            Stage::new("ecs cleanup")
+                .after("time update")
+                .after("post user"),
+        )
         .unwrap();
 }

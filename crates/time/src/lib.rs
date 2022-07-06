@@ -19,7 +19,12 @@ pub struct Time {
 
 impl Default for Time {
     fn default() -> Self {
-        Self { delta: Default::default(), frame_count: Default::default(), startup: Instant::now(), frame_start: Instant::now() }
+        Self {
+            delta: Default::default(),
+            frame_count: Default::default(),
+            startup: Instant::now(),
+            frame_start: Instant::now(),
+        }
     }
 }
 
@@ -59,7 +64,12 @@ impl Time {
 pub fn system(events: &mut Events) {
     // Init event (called once at the start of program)
     fn init(world: &mut World) {
-        world.insert(Time { delta: Duration::ZERO, frame_count: 0, startup: Instant::now(), frame_start: Instant::now() })
+        world.insert(Time {
+            delta: Duration::ZERO,
+            frame_count: 0,
+            startup: Instant::now(),
+            frame_start: Instant::now(),
+        })
     }
 
     // Update event (called per frame)
