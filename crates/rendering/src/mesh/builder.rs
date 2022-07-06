@@ -1,5 +1,5 @@
 use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
-use crate::{context::Context, buffer::BufferMode};
+use crate::{buffer::BufferMode, context::Context};
 use assets::Asset;
 use obj::TexturedVertex;
 

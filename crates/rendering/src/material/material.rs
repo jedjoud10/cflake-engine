@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, rc::Rc, any::TypeId};
+use std::{any::TypeId, marker::PhantomData, rc::Rc};
 
 use ahash::AHashMap;
 use assets::Assets;
@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use world::{Handle, Storage, World};
 
 use crate::{
-    canvas::{Canvas, FaceCullMode, PrimitiveMode, RasterSettings, BlendMode},
+    canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode, RasterSettings},
     context::{Context, Device, Graphics},
     mesh::{SubMesh, Surface},
     others::Comparison,
@@ -17,7 +17,6 @@ use crate::{
 };
 
 use super::{Pipeline, Standard, Stats};
-
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
@@ -49,7 +48,7 @@ pub trait Material<'w>: 'static + Sized {
         None
     }
 
-    // Get the face culling mode 
+    // Get the face culling mode
     fn face_cull_mode() -> Option<FaceCullMode> {
         Some(FaceCullMode::Back(true))
     }
@@ -102,7 +101,7 @@ pub trait Material<'w>: 'static + Sized {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'w: 'u 
+        'w: 'u,
     {
     }
 }

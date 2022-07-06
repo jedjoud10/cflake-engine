@@ -1,5 +1,6 @@
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
+    buffer::BufferMode,
     context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard, StandardBuilder},
     mesh::SubMesh,
@@ -7,7 +8,7 @@ use crate::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
     },
-    shader::Shader, buffer::BufferMode,
+    shader::Shader,
 };
 
 use assets::Assets;
@@ -32,7 +33,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             ctx,
             TextureMode::Static,
             vek::Extent2::one(),
-            Sampling { filter: Filter::Nearest, wrap: Wrap::Repeat },
+            Sampling {
+                filter: Filter::Nearest,
+                wrap: Wrap::Repeat,
+            },
             MipMaps::Disabled,
             &[texel],
         )

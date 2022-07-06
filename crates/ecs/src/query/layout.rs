@@ -1,6 +1,6 @@
 use std::ptr::NonNull;
 
-use crate::{Archetype, LayoutAccess, PtrReader, Mask, Component, LinkModifier, LinkError};
+use crate::{Archetype, Component, LayoutAccess, LinkError, LinkModifier, Mask, PtrReader};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 pub trait QueryLayout<'a>
@@ -28,10 +28,13 @@ where
 }
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
-pub trait OwnedLayout where Self: Sized {
+pub trait OwnedLayout
+where
+    Self: Sized,
+{
     // Consume the tuple and insert the components using a link modifier
     fn insert(self, modifier: &mut LinkModifier) -> Result<(), LinkError>;
-} 
+}
 
 impl<'a, A: PtrReader<'a>> QueryLayout<'a> for A {
     type PtrTuple = NonNull<A::Item>;
@@ -104,8 +107,15 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
     }
 }
 
-impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> QueryLayout<'a> for (A, B, C, D) {
-    type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>, NonNull<C::Item>, NonNull<D::Item>);
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> QueryLayout<'a>
+    for (A, B, C, D)
+{
+    type PtrTuple = (
+        NonNull<A::Item>,
+        NonNull<B::Item>,
+        NonNull<C::Item>,
+        NonNull<D::Item>,
+    );
     type Tuple = (A::Item, B::Item, C::Item, D::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {

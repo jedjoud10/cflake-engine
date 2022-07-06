@@ -1,9 +1,8 @@
-use super::{Material, BatchedPipeline, Pipeline};
+use super::{BatchedPipeline, Material, Pipeline};
 
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit
-pub struct Sky {
-}
+pub struct Sky {}
 
 impl<'w> Material<'w> for Sky {
     type Resources = ();
@@ -40,7 +39,8 @@ impl<'w> Material<'w> for Sky {
         camera: (&crate::scene::Camera, &math::Transform),
         light: (&crate::scene::Directional, &math::Transform),
     ) where
-        'w: 'u {
+        'w: 'u,
+    {
         todo!()
     }
 }

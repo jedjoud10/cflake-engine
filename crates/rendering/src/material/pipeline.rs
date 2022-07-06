@@ -65,7 +65,9 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
         let settings: RasterSettings = RasterSettings {
             depth_test: M::depth_comparison(),
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles { cull: M::face_cull_mode() },
+            primitive: PrimitiveMode::Triangles {
+                cull: M::face_cull_mode(),
+            },
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };

@@ -29,7 +29,8 @@ fn init(world: &mut World) {
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), settings.material());
-    ecs.insert((renderer, surface, Transform::default())).unwrap();
+    ecs.insert((renderer, surface, Transform::default()))
+        .unwrap();
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();

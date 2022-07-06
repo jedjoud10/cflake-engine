@@ -42,7 +42,7 @@ impl SubMesh {
         ctx: &mut Context,
         vertices: VertexAssembly,
         indices: Vec<u32>,
-        mode: BufferMode
+        mode: BufferMode,
     ) -> Self {
         Self {
             attributes: AttributeSet::new(ctx, mode, vertices),

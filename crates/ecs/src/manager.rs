@@ -3,8 +3,8 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
-    Mask, MaskMap, MutEntry, QueryLayout, StorageVec, OwnedLayout, LinkError,
+    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
+    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec,
 };
 
 // Type aliases because I have gone insane
@@ -78,13 +78,16 @@ impl EcsManager {
     }
 
     // Insert an entity with the given component set as a tuple using a callback
-    pub fn insert_with<T: OwnedLayout>(&mut self, callback: impl FnOnce(Entity) -> T) -> Result<Entity, LinkError> {
+    pub fn insert_with<T: OwnedLayout>(
+        &mut self,
+        callback: impl FnOnce(Entity) -> T,
+    ) -> Result<Entity, LinkError> {
         let entity = self.entities.insert(EntityLinkings::default());
 
         // Create the modifier and insert the components
         let mut linker = LinkModifier::new(self, entity).unwrap();
         T::insert(callback(entity), &mut linker)?;
-        
+
         // Create the linkings and apply the modifier
         let mut linkings = EntityLinkings::default();
         linker.apply(&mut linkings);

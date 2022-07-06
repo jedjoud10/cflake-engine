@@ -1,6 +1,6 @@
 use cflake_engine::prelude::*;
 
-// Create an app that will render some GUI text 
+// Create an app that will render some GUI text
 fn main() {
     App::default()
         .set_window_title("cflake engine GUI example")
@@ -36,14 +36,12 @@ fn update(world: &mut World) {
             ui.label("Delta (s/f): ");
             ui.label(time.delta_f32().to_string());
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("FPS (f/s): ");
             ui.label((1.0 / time.delta_f32()).to_string());
         });
     });
-
-
 }
 
 // This is an example system that will register specific events

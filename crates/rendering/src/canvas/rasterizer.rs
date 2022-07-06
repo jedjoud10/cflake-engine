@@ -2,8 +2,12 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
 use super::{Canvas, RasterError};
 use crate::{
-    buffer::ElementBuffer, context::Context, mesh::attributes::AttributeSet, object::{ToGlName, ToGlTarget},
-    others::Comparison, prelude::Uniforms,
+    buffer::ElementBuffer,
+    context::Context,
+    mesh::attributes::AttributeSet,
+    object::{ToGlName, ToGlTarget},
+    others::Comparison,
+    prelude::Uniforms,
 };
 
 // Blend mode factor source
@@ -96,20 +100,20 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
 
         // Set the OpenGL primitive parameters (along with face culling)
         match &settings.primitive {
-            PrimitiveMode::Triangles { cull } => unsafe { 
+            PrimitiveMode::Triangles { cull } => unsafe {
                 if let Some(cull) = cull {
                     gl::Enable(gl::CULL_FACE);
-                
+
                     // Get the face culling direction, either front or back, and winding order
                     let (direction, ccw) = match cull {
                         FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
                         FaceCullMode::Back(ccw) => (gl::BACK, ccw),
                         _ => todo!(),
                     };
-                
+
                     // Set the face culling direction
                     gl::CullFace(direction);
-                
+
                     // And set winding order
                     gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
                 } else {

@@ -54,7 +54,7 @@ pub(crate) extern "system" fn callback(
         gl::DEBUG_SEVERITY_MEDIUM => "Medium Severity",
         gl::DEBUG_SEVERITY_HIGH => "High Severity",
         gl::DEBUG_SEVERITY_NOTIFICATION => "Notification",
-        _ => panic!()
+        _ => panic!(),
     };
 
     println!("{source}, {severity}, {message}");

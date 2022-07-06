@@ -141,7 +141,10 @@ impl Painter {
                     ctx,
                     TextureMode::Resizable,
                     dimensions,
-                    Sampling { filter: Filter::Nearest, wrap: Wrap::ClampToEdge },
+                    Sampling {
+                        filter: Filter::Nearest,
+                        wrap: Wrap::ClampToEdge,
+                    },
                     MipMaps::Disabled,
                     &texels,
                 )
@@ -153,9 +156,7 @@ impl Painter {
         let settings = RasterSettings {
             depth_test: None,
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles {
-                cull: None,
-            },
+            primitive: PrimitiveMode::Triangles { cull: None },
             srgb: true,
             blend: Some(BlendMode {
                 src: Factor::One,
@@ -172,7 +173,10 @@ impl Painter {
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
         uniforms.set_sampler("u_sampler", texture);
-        uniforms.set_vec2::<vek::Vec2<i32>>("resolution", rasterizer.canvas().size().as_::<i32>().into());
+        uniforms.set_vec2::<vek::Vec2<i32>>(
+            "resolution",
+            rasterizer.canvas().size().as_::<i32>().into(),
+        );
 
         // Draw the clipped meshes
         for mesh in meshes {

@@ -2,7 +2,7 @@ use crate::painter::Painter;
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
 use rendering::{gl, prelude::Graphics};
-use world::{Events, Resource, World, Init, Update, Stage};
+use world::{Events, Init, Resource, Stage, Update, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
@@ -92,6 +92,14 @@ pub fn system(events: &mut Events) {
     // Register all the events
     events.registry::<Init>().insert(init);
     events.registry::<Update>().insert(begin);
-    events.registry::<Update>().insert_with(draw, Stage::new("ui rendering").after("scene rendering").before("window back buffer swap")).unwrap();
+    events
+        .registry::<Update>()
+        .insert_with(
+            draw,
+            Stage::new("ui rendering")
+                .after("scene rendering")
+                .before("window back buffer swap"),
+        )
+        .unwrap();
     events.registry::<WindowEvent>().insert(window);
 }

@@ -1,5 +1,5 @@
 use super::SubMesh;
-use crate::{material::Material, canvas::FaceCullMode};
+use crate::{canvas::FaceCullMode, material::Material};
 use ecs::Component;
 
 use math::AABB;
@@ -20,7 +20,11 @@ pub struct Surface<M: for<'w> Material<'w>> {
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
     pub fn new(submesh: Handle<SubMesh>, material: Handle<M>) -> Self {
-        Self { submesh, material, bounds: None }
+        Self {
+            submesh,
+            material,
+            bounds: None,
+        }
     }
 
     // Set the AABB bounds of this surface manually
