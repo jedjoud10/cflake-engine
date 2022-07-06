@@ -1,9 +1,8 @@
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
-#[repr(u32)]
 #[derive(Clone, Copy)]
 pub enum Filter {
-    Nearest = gl::NEAREST,
-    Linear = gl::LINEAR,
+    Nearest,
+    Linear,
 }
 
 // Wrapping mode utilised by TEXTURE_WRAP_R and TEXTURE_WRAP_T

@@ -299,16 +299,19 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // Appply the sampling parameters for this texture
-            // We do a bit of enum fetching (this is safe) (trust)
-            let filter = std::mem::transmute::<Filter, u32>(sampling.filter);
+            let min = match sampling.filter {
+                Filter::Nearest => gl::NEAREST_MIPMAP_NEAREST,
+                Filter::Linear => gl::LINEAR_MIPMAP_LINEAR,
+            };
 
-            // Min and mag filters conversion cause OpenGL suxs
-            let min = filter as i32;
-            let mag = filter as i32;
+            let mag = match sampling.filter {
+                Filter::Nearest => gl::NEAREST,
+                Filter::Linear => gl::LINEAR,
+            };
 
             // Set the filters
-            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, min);
-            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, mag);
+            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, min as i32);
+            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, mag as i32);
 
             // Convert the wrapping mode enum to the raw opengl type
             let (wrap, border) = match sampling.wrap {

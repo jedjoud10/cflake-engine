@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use cflake_engine::prelude::*;
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/"); 
@@ -7,7 +9,6 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
-        .set_window_fullscreen(true)
         .insert_system(system)
         .execute();
 }
@@ -32,10 +33,10 @@ fn init(world: &mut World) {
     // Load the persistent textures like the debug texture and missing texture
     let params = (
         Sampling {
-            filter: Filter::Nearest,
+            filter: Filter::Linear,
             wrap: Wrap::Repeat,
         },
-        MipMaps::Automatic,
+        MipMaps::AutomaticAniso { samples: NonZeroU8::new(4).unwrap() },
         TextureMode::Static,
     );
 
@@ -49,7 +50,7 @@ fn init(world: &mut World) {
 
     let material = Standard::builder()
         .with_normal(&texture)
-        .with_tint(vek::Rgb::red())
+        .with_bumpiness(1.4)
         .build();
     let material = materials.insert(material);
 
