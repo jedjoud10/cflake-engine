@@ -1,7 +1,7 @@
 use crate::painter::Painter;
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{gl, prelude::Graphics};
+use rendering::{gl, prelude::{Context, Window}};
 use world::{Events, Init, Resource, Stage, Update, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
@@ -35,8 +35,8 @@ impl AsRef<egui::Context> for UserInterface {
 pub fn system(events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
-        let (Graphics(_, context), assets) =
-            world.get_mut::<(&mut Graphics, &mut Assets)>().unwrap();
+        let (ctx, assets) =
+            world.get_mut::<(&mut Context, &mut Assets)>().unwrap();
 
         // Get the maximum texture size from OpenGL (idk why egui needs this tbh)
         let max_texture_size = unsafe {
@@ -49,7 +49,7 @@ pub fn system(events: &mut Events) {
         let ui = UserInterface {
             egui: Default::default(),
             state: egui_winit::State::from_pixels_per_point(max_texture_size, 1.0),
-            painter: Painter::new(assets, context),
+            painter: Painter::new(assets, ctx),
         };
         world.insert(ui);
     }
@@ -62,29 +62,29 @@ pub fn system(events: &mut Events) {
 
     // This is called at the start of each frame to tell egui that we must register the upcoming draw commands
     fn begin(world: &mut World) {
-        let (ui, Graphics(device, _)) = world
-            .get_mut::<(&mut UserInterface, &mut Graphics)>()
+        let (ui, window) = world
+            .get_mut::<(&mut UserInterface, &mut Window)>()
             .unwrap();
-        let raw_input = ui.state.take_egui_input(device.window());
+        let raw_input = ui.state.take_egui_input(window.raw());
         ui.egui.begin_frame(raw_input);
     }
 
     // This is called at the end of each frame (after we render the main 3D scene)
     fn draw(world: &mut World) {
-        let (ui, Graphics(device, ctx), assets) = world
-            .get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>()
+        let (ui, window, ctx, assets) = world
+            .get_mut::<(&mut UserInterface, &mut Window, &mut Context, &mut Assets)>()
             .unwrap();
 
         let output = ui.egui.end_frame();
         ui.state
-            .handle_platform_output(device.window(), &mut ui.egui, output.platform_output);
+            .handle_platform_output(window.raw(), &mut ui.egui, output.platform_output);
 
         let clipped_shapes = output.shapes;
         let deltas = output.textures_delta;
         let meshes = ui.egui.tessellate(clipped_shapes);
 
         if !meshes.is_empty() {
-            ui.painter.draw(device, ctx, meshes, assets, deltas);
+            ui.painter.draw(window, ctx, meshes, assets, deltas);
         }
     }
 

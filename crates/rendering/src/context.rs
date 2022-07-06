@@ -1,8 +1,8 @@
 mod context;
 mod details;
-mod device;
+mod window;
 mod graphics;
 pub use context::*;
 pub use details::*;
-pub use device::*;
+pub use window::*;
 pub use graphics::*;

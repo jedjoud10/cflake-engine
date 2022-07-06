@@ -81,7 +81,6 @@ pub trait ToRasterBuffers {
 pub struct Rasterizer<'canvas, 'context> {
     canvas: &'canvas mut Canvas,
     ctx: &'context mut Context,
-    settings: RasterSettings,
     primitive: u32,
 }
 
@@ -108,7 +107,6 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
                     let (direction, ccw) = match cull {
                         FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
                         FaceCullMode::Back(ccw) => (gl::BACK, ccw),
-                        _ => todo!(),
                     };
 
                     // Set the face culling direction
@@ -170,7 +168,6 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         Self {
             canvas,
             ctx,
-            settings,
             primitive,
         }
     }

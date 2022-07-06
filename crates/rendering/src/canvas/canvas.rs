@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use super::{RasterSettings, Rasterizer};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
-// We can access the main default canvas from the device using the canvas() function
+// We can access the main default canvas from the window using the canvas() function
 pub struct Canvas {
     // The raw framebuffer name (This can be 0 to depict the default framebuffer)
     name: u32,

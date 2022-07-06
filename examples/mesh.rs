@@ -15,10 +15,10 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, Graphics(_, ctx), settings, keyboard, materials, textures, assets) = world
+    let (ecs, ctx, settings, keyboard, materials, textures, assets) = world
         .get_mut::<(
             &mut EcsManager,
-            &mut Graphics,
+            &mut Context,
             &mut SceneSettings,
             &mut Keyboard,
             &mut Storage<Standard>,
@@ -80,20 +80,20 @@ fn init(world: &mut World) {
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let (ecs, scene, keyboard, mouse, Graphics(device, _), time) = world
+    let (ecs, scene, keyboard, mouse, window, time) = world
         .get_mut::<(
             &mut EcsManager,
             &SceneSettings,
             &Keyboard,
             &Mouse,
-            &mut Graphics,
+            &mut Window,
             &Time,
         )>()
         .unwrap();
 
     // Lock the cursor basically
-    device.window().set_cursor_grab(true).unwrap();
-    device.window().set_cursor_visible(false);
+    window.raw().set_cursor_grab(true).unwrap();
+    window.raw().set_cursor_visible(false);
 
     if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.try_mut_entry(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();

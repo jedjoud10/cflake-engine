@@ -1,7 +1,6 @@
 use super::{Material};
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
-    context::Graphics,
     mesh::Surface,
     prelude::Shader,
     scene::{Camera, Directional, Renderer},
@@ -57,7 +56,7 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
     }
 
     fn render(&self, world: &mut World) -> Option<Stats> {
-        let (scene, ecs, materials, submeshes, shaders, graphics, mut property_block_resources) =
+        let (scene, ecs, materials, submeshes, shaders, window, ctx, mut property_block_resources) =
             <M as Material<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -72,7 +71,6 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
         };
 
         // Create a valid rasterizer and start rendering
-        let Graphics(device, ctx) = graphics;
         let shader = shaders.get_mut(&self.shader);
 
         // Find all the surfaces that use this material type (and that have a valid renderer component)
@@ -94,7 +92,7 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
         let light = (light_data, light_transform);
 
         // Create a new rasterizer so we can draw the objects onto the world
-        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, shader, settings);
+        let (mut rasterizer, mut uniforms) = window.canvas_mut().rasterizer(ctx, shader, settings);
         M::set_static_properties(
             &mut uniforms,
             &mut property_block_resources,

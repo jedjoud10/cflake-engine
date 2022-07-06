@@ -4,7 +4,7 @@ use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
 use rendering::canvas::{BlendMode, Factor, PrimitiveMode, RasterSettings};
-use rendering::context::{Context, Device};
+use rendering::context::{Context, Window};
 use rendering::gl;
 use rendering::object::ToGlName;
 use rendering::prelude::MipMaps;
@@ -119,7 +119,7 @@ impl Painter {
     // Draw the whole user interface onto the screen
     pub fn draw(
         &mut self,
-        device: &mut Device,
+        window: &mut Window,
         ctx: &mut Context,
         meshes: Vec<ClippedMesh>,
         _loader: &mut Assets,
@@ -166,7 +166,7 @@ impl Painter {
 
         // Create a new canvas rasterizer and fetch it's uniforms
         let (mut rasterizer, mut uniforms) =
-            device
+            window
                 .canvas_mut()
                 .rasterizer(ctx, &mut self.shader, settings);
 

@@ -3,7 +3,7 @@ use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
-use world::Storage;
+use world::{Storage, Resource};
 
 use crate::{
     material::{Material, Pipeline},
@@ -16,6 +16,7 @@ use super::get_static_str;
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
 
 // An abstract wrapper around the whole OpenGL context
+#[derive(Resource)]
 pub struct Context {
     // Raw Glutin context
     ctx: RawContext<PossiblyCurrent>,

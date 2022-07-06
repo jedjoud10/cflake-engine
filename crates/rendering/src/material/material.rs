@@ -9,7 +9,7 @@ use world::{Storage, World};
 
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode},
-    context::{Context, Graphics},
+    context::{Context, Window},
     mesh::{SubMesh},
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
@@ -62,7 +62,8 @@ pub trait Material<'w>: 'static + Sized {
         &'w Storage<Self>,
         &'w Storage<SubMesh>,
         &'w mut Storage<Shader>,
-        &'w mut Graphics,
+        &'w mut Window,
+        &'w mut Context,
         Self::Resources,
     );
 

@@ -3,7 +3,7 @@
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
-    context::{Context, Graphics, GraphicsSetupSettings},
+    context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
     mesh::SubMesh,
     prelude::{
@@ -23,8 +23,8 @@ use world::{Events, Init, Stage, Storage, Update, World};
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
-    let mut graphics = Graphics::new(settings, el);
-    let Graphics(_device, ctx) = &mut graphics;
+    let (mut window, mut context) = crate::context::new(settings, el);
+    let ctx = &mut context;
 
     let (albedo_maps, normal_maps, mask_maps, submeshes, assets) = world
     .get_mut::<(
@@ -112,16 +112,16 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         cube,
     );
     world.insert(scene);
-    world.insert(graphics);
+    world.insert(window);
+    world.insert(context);
 }
 
 // Rendering event that will try to render the 3D scene each frame
 // This will also update the world matrices of each renderer
 fn rendering(world: &mut World) {
-    let (ecs, graphics, settings) = world
-        .get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>()
+    let (ecs, ctx, settings) = world
+        .get_mut::<(&mut EcsManager, &mut Context, &SceneSettings)>()
         .unwrap();
-    let Graphics(_device, context) = graphics;
 
     if !settings.can_render() {
         return;
@@ -137,7 +137,7 @@ fn rendering(world: &mut World) {
     }
 
     // Render all the surfaces using their respective pipelines
-    context
+    ctx
         .extract_pipelines()
         .into_iter()
         .for_each(|pipe| { pipe.render(world); });
@@ -152,9 +152,9 @@ fn window(world: &mut World, event: &mut WindowEvent) {
                 return;
             }
 
-            // Resize the main device canvas when we resize the window
-            let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-            device
+            // Resize the main window canvas when we resize the window
+            let window = world.get_mut::<&mut Window>().unwrap();
+            window
                 .canvas_mut()
                 .resize(vek::Extent2::new(size.width as u16, size.height as u16));
         }
@@ -168,15 +168,15 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
-    let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-    device
+    let window = world.get_mut::<&mut Window>().unwrap();
+    window
         .canvas_mut()
         .clear(Some(vek::Rgb::black()), Some(1.0), None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
-    let Graphics(_, ctx) = world.get_mut::<&mut Graphics>().unwrap();
+    let ctx = world.get_mut::<&mut Context>().unwrap();
     ctx.raw().swap_buffers().unwrap();
 }
 
@@ -184,8 +184,8 @@ fn swap(world: &mut World) {
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
-    let (ecs, Graphics(_device, _), scene) = world
-        .get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>()
+    let (ecs, scene) = world
+        .get_mut::<(&mut EcsManager, &mut SceneSettings)>()
         .unwrap();
 
     // Fetch the main perspective camera from the scene renderer

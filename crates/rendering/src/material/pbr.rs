@@ -5,7 +5,7 @@ use world::{Handle, Storage};
 
 use crate::{
     canvas::Canvas,
-    context::{Context, Graphics},
+    context::{Context, Window},
     mesh::{SubMesh},
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
@@ -75,7 +75,8 @@ impl<'w> Material<'w> for Standard {
         &'w Storage<Self>,
         &'w Storage<SubMesh>,
         &'w mut Storage<Shader>,
-        &'w mut Graphics,
+        &'w mut Window,
+        &'w mut Context,
         Self::Resources,
     ) {
         let (
@@ -83,7 +84,8 @@ impl<'w> Material<'w> for Standard {
             materials,
             submesh,
             shaders,
-            graphics,
+            window,
+            ctx,
             albedo_maps,
             normal_maps,
             mask_maps,
@@ -94,7 +96,8 @@ impl<'w> Material<'w> for Standard {
                 &Storage<Self>,
                 &Storage<SubMesh>,
                 &mut Storage<Shader>,
-                &mut Graphics,
+                &mut Window,
+                &mut Context,
                 &Storage<AlbedoMap>,
                 &Storage<NormalMap>,
                 &Storage<MaskMap>,
@@ -107,7 +110,8 @@ impl<'w> Material<'w> for Standard {
             materials,
             submesh,
             shaders,
-            graphics,
+            window,
+            ctx,
             (albedo_maps, normal_maps, mask_maps),
         )
     }

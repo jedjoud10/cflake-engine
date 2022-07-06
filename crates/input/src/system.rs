@@ -2,7 +2,7 @@ use crate::{KeyState, Keyboard, Mouse};
 use glutin::event::DeviceEvent;
 use world::{Events, Init, Stage, Update, World};
 
-// This system will automatically insert the input resource and update it each frame using the device events
+// This system will automatically insert the input resource and update it each frame using the window events
 pub fn system(events: &mut Events) {
     // Init event (called once at the start of program)
     fn init(world: &mut World) {
@@ -19,7 +19,7 @@ pub fn system(events: &mut Events) {
         });
     }
 
-    // Glutin device event (called by handler when needed)
+    // Glutin window event (called by handler when needed)
     fn event(world: &mut World, ev: &DeviceEvent) {
         let (keyboard, mouse) = world.get_mut::<(&mut Keyboard, &mut Mouse)>().unwrap();
 

@@ -18,14 +18,15 @@ impl<'w> Material<'w> for Sky {
     }
 
     fn fetch(
-        _world: &'w mut world::World,
+        world: &'w mut world::World,
     ) -> (
         &'w crate::scene::SceneSettings,
         &'w ecs::EcsManager,
         &'w world::Storage<Self>,
         &'w world::Storage<crate::mesh::SubMesh>,
-        &'w mut world::Storage<crate::shader::Shader>,
-        &'w mut crate::context::Graphics,
+        &'w mut world::Storage<crate::prelude::Shader>,
+        &'w mut crate::context::Window,
+        &'w mut crate::context::Context,
         Self::Resources,
     ) {
         todo!()

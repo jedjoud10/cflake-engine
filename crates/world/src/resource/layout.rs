@@ -318,3 +318,48 @@ impl<
         ))
     }
 }
+
+impl<
+        'a,
+        A: ResHandle<'a>,
+        B: ResHandle<'a>,
+        C: ResHandle<'a>,
+        D: ResHandle<'a>,
+        E: ResHandle<'a>,
+        F: ResHandle<'a>,
+        G: ResHandle<'a>,
+        H: ResHandle<'a>,
+        I: ResHandle<'a>,
+        J: ResHandle<'a>
+    > Layout<'a> for (A, B, C, D, E, F, G, H, I, J)
+{
+    fn types() -> Vec<HandleID> {
+        vec![
+            A::id(),
+            B::id(),
+            C::id(),
+            D::id(),
+            E::id(),
+            F::id(),
+            G::id(),
+            H::id(),
+            I::id(),
+            J::id(),
+        ]
+    }
+
+    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
+        Ok((
+            fetch::<A>(world)?,
+            fetch::<B>(world)?,
+            fetch::<C>(world)?,
+            fetch::<D>(world)?,
+            fetch::<E>(world)?,
+            fetch::<F>(world)?,
+            fetch::<G>(world)?,
+            fetch::<H>(world)?,
+            fetch::<I>(world)?,
+            fetch::<J>(world)?,
+        ))
+    }
+}
