@@ -42,10 +42,11 @@ impl SubMesh {
         ctx: &mut Context,
         vertices: VertexAssembly,
         indices: Vec<u32>,
+        mode: BufferMode
     ) -> Self {
         Self {
-            attributes: AttributeSet::new(ctx, BufferMode::Dynamic, vertices),
-            indices: Buffer::new(ctx, BufferMode::Dynamic, &indices).unwrap(),
+            attributes: AttributeSet::new(ctx, mode, vertices),
+            indices: Buffer::new(ctx, mode, &indices).unwrap(),
         }
     }
 
@@ -76,7 +77,7 @@ impl SubMesh {
 }
 
 impl<'a> Asset<'a> for SubMesh {
-    type Args = &'a mut Context;
+    type Args = (&'a mut Context, BufferMode);
 
     fn extensions() -> &'static [&'static str] {
         GeometryBuilder::extensions()
@@ -84,7 +85,7 @@ impl<'a> Asset<'a> for SubMesh {
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
         let builder = GeometryBuilder::deserialize(data, ());
-        builder.build(args).unwrap()
+        builder.build(args.0, args.1).unwrap()
     }
 }
 

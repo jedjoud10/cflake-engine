@@ -39,6 +39,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
     // Unsend + unsync
     _phantom: PhantomData<*const T>,
+    _phantom2: PhantomData<T>,
 }
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
@@ -81,9 +82,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
         }
 
-        // Todo: Use a fence instead of this
-        //gl::Finish();
-
         // Create the buffer struct
         Some(Self {
             buffer,
@@ -91,6 +89,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             capacity,
             mode,
             _phantom: Default::default(),
+            _phantom2: Default::default(),
         })
     }
 
@@ -141,16 +140,14 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
-    // Overwrite the whole buffer if possible
+    // Overwrite the whole buffer with new data
     pub fn write(&mut self, data: &[T]) {
-        // Cannot update static buffers
         assert_ne!(
             self.mode,
             BufferMode::Static,
             "Cannot update Static buffers"
         );
 
-        // Make sure the lengths match up (in case of a dynamic buffer)
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
 
         unsafe {
@@ -169,17 +166,29 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.capacity = data.len();
     }
 
-    // Copy some data from another buffer into our buffer
-    pub fn copy_from<const OTHER: u32>(&mut self, _other: &Buffer<T, OTHER>) {
-        todo!()
+    // Copy the data from another buffer into our buffer
+    pub fn copy_from<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) {
+        assert!(
+            self.len * size_of::<T>() == other.len(),
+            "Current byte length and other buffer byte length do not match up, cannot copy"
+        );
+
+        unsafe {
+            let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
+            gl::CopyNamedBufferSubData(other.name(), self.name(), 0, 0, bytes);
+        }
+    }
+
+    // Copy the data from our buffer into another buffer
+    pub fn copy_into<U: Shared, const OTHER: u32>(&self, other: &mut Buffer<U, OTHER>) {
+        other.copy_from(self);
     }
 
     // Read back the whole buffer, and store it inside output
     pub fn read(&self, output: &mut [T]) {
-        // Make sure the lengths always match up
         assert!(
             output.len() == self.len(),
-            "Current length and output length do not match up."
+            "Current length and output length do not match up, cannot read"
         );
 
         unsafe {

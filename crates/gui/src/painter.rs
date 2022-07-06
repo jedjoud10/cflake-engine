@@ -141,7 +141,7 @@ impl Painter {
                     ctx,
                     TextureMode::Resizable,
                     dimensions,
-                    Sampling::new(Filter::Nearest, Wrap::ClampToEdge),
+                    Sampling { filter: Filter::Nearest, wrap: Wrap::ClampToEdge },
                     MipMaps::Disabled,
                     &texels,
                 )

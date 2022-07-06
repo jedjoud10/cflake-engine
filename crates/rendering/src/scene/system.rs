@@ -7,7 +7,7 @@ use crate::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
     },
-    shader::Shader,
+    shader::Shader, buffer::BufferMode,
 };
 
 use assets::Assets;
@@ -32,7 +32,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             ctx,
             TextureMode::Static,
             vek::Extent2::one(),
-            Sampling::new(Filter::Nearest, Wrap::Repeat),
+            Sampling { filter: Filter::Nearest, wrap: Wrap::Repeat },
             MipMaps::Disabled,
             &[texel],
         )
@@ -68,7 +68,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the persistent textures like the debug texture and missing texture
     let params = (
-        Sampling::new(Filter::Linear, Wrap::Repeat),
+        Sampling {
+            filter: Filter::Linear,
+            wrap: Wrap::Repeat,
+        },
         MipMaps::Disabled,
         TextureMode::Static,
     );
@@ -113,7 +116,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the default cube and sphere meshes
     let cube = assets
-        .load_with::<SubMesh>("engine/meshes/cube.obj", ctx)
+        .load_with::<SubMesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
         .unwrap();
 
     // Insert the meshes and get their handles

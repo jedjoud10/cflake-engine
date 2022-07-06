@@ -24,13 +24,6 @@ pub enum Wrap {
 // Some special sampling parameters for textures
 #[derive(Clone, Copy)]
 pub struct Sampling {
-    pub(super) filter: Filter,
-    pub(super) wrap: Wrap,
-}
-
-impl Sampling {
-    // Create some new smapling parameters
-    pub fn new(filter: Filter, wrap: Wrap) -> Self {
-        Self { filter, wrap }
-    }
+    pub filter: Filter,
+    pub wrap: Wrap,
 }

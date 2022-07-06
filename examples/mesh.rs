@@ -18,10 +18,7 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 1000.0, 16.0 / 9.0);
-    let camera = ecs.insert(|entity, linker| {
-        linker.insert(camera).unwrap();
-        linker.insert(Transform::default()).unwrap()
-    });
+    let camera = ecs.insert((camera, Transform::default())).unwrap();
     settings.set_main_camera(camera);
 
     // We will also register some new keybinds for the camera controller
@@ -33,18 +30,11 @@ fn init(world: &mut World) {
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), settings.material());
-    ecs.insert(|entity, linker| {
-        linker.insert(renderer).unwrap();
-        linker.insert(surface).unwrap();
-        linker.insert(Transform::default()).unwrap();
-    });
+    ecs.insert((renderer, surface, Transform::default())).unwrap();
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
-    let entity = ecs.insert(|entity, linker| {
-        linker.insert(light).unwrap();
-        linker.insert(Transform::looking_down()).unwrap();
-    });
+    let entity = ecs.insert((light, Transform::looking_down())).unwrap();
     settings.set_main_directional_light(entity);
 }
 

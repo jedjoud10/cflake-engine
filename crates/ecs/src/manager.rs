@@ -43,6 +43,7 @@ impl Default for EcsManager {
 
 impl EcsManager {
     // Modify an entity's component layout
+    // TODO: Make this more coherent with the new insert() method
     pub fn modify(
         &mut self,
         entity: Entity,
@@ -71,29 +72,25 @@ impl EcsManager {
         Entry::new(self, entity)
     }
 
-    // Insert an emtpy entity into the manager, and run a callback that will add components to it
-    pub fn insert(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
+    // Insert an entity with the given component set as a tuple
+    pub fn insert<T: OwnedLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
+        self.insert_with(|_| tuple)
+    }
+
+    // Insert an entity with the given component set as a tuple using a callback
+    pub fn insert_with<T: OwnedLayout>(&mut self, callback: impl FnOnce(Entity) -> T) -> Result<Entity, LinkError> {
         let entity = self.entities.insert(EntityLinkings::default());
 
-        // Create a link modifier, so we can insert/remove components
+        // Create the modifier and insert the components
         let mut linker = LinkModifier::new(self, entity).unwrap();
-        function(entity, &mut linker);
-
-        // Since we are inserting this entity, the linkings are always default
+        T::insert(callback(entity), &mut linker)?;
+        
+        // Create the linkings and apply the modifier
         let mut linkings = EntityLinkings::default();
         linker.apply(&mut linkings);
         *self.entities.get_mut(entity).unwrap() = linkings;
 
-        entity
-    }
-
-    // Insert an entity with the given component set as a tuple
-    pub fn insert_tuple<T: OwnedLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
-        let mut error: Result<(), LinkError> = Ok(());
-        let entity = self.insert(|_, modifier| {
-            error = T::insert(tuple, modifier); 
-        });
-        error.map(|_| entity)
+        Ok(entity)
     }
 
     // Remove an entity from the world

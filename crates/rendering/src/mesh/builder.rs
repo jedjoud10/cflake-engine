@@ -1,5 +1,5 @@
 use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
-use crate::context::Context;
+use crate::{context::Context, buffer::BufferMode};
 use assets::Asset;
 use obj::TexturedVertex;
 
@@ -50,14 +50,14 @@ impl GeometryBuilder {
     }
 
     // Build the final submesh without checking for validity or anything
-    pub unsafe fn build_unchecked(self, ctx: &mut Context) -> SubMesh {
-        SubMesh::new_unchecked(ctx, self.vertices, self.indices)
+    pub unsafe fn build_unchecked(self, ctx: &mut Context, mode: BufferMode) -> SubMesh {
+        SubMesh::new_unchecked(ctx, self.vertices, self.indices, mode)
     }
 
     // Build the final submesh, and make sure the attribute vectors are valid
-    pub fn build(self, ctx: &mut Context) -> Option<SubMesh> {
+    pub fn build(self, ctx: &mut Context, mode: BufferMode) -> Option<SubMesh> {
         self.valid()
-            .then(|| unsafe { SubMesh::new_unchecked(ctx, self.vertices, self.indices) })
+            .then(|| unsafe { SubMesh::new_unchecked(ctx, self.vertices, self.indices, mode) })
     }
 }
 
