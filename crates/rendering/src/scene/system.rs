@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
@@ -73,12 +75,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Load the persistent textures like the debug texture and missing texture
     let params = (
         Sampling {
-            filter: Filter::Linear,
+            filter: Filter::Nearest,
             wrap: Wrap::Repeat,
         },
-        MipMaps::Disabled,
+        MipMaps::Automatic,
         TextureMode::Static,
     );
+
     let debug = assets
         .load_with::<NormalMap>(
             "engine/textures/bumps.png",
@@ -108,7 +111,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .unwrap();
 
     // Create le default material
-    let material = Standard::builder(ctx, assets, shaders)
+    let material = Standard::builder()
         .with_albedo(&white)
         .with_normal(&debug)
         .with_mask(&mask_map)

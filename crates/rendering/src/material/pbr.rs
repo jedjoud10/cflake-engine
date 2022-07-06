@@ -26,18 +26,15 @@ pub type MaskMap = Texture2D<RG<Ranged<u8>>>;
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
 pub struct Standard {
-    // Texture maps used for rendering
     albedo: Option<Handle<AlbedoMap>>,
     normal: Option<Handle<NormalMap>>,
     mask: Option<Handle<MaskMap>>,
 
-    // Texture parameters
     bumpiness: f32,
     roughness: f32,
     metallic: f32,
 
-    // Unique parameters
-    tint: vek::Vec3<f32>,
+    tint: vek::Rgb<f32>,
 }
 
 impl<'w> Material<'w> for Standard {
@@ -159,7 +156,6 @@ impl<'w> Material<'w> for Standard {
     {
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
-        // Fallback to the given handle if the first handle is missing
         fn fallback<'a, T: 'static>(
             storage: &'a Storage<T>,
             opt: &Option<Handle<T>>,
@@ -170,18 +166,15 @@ impl<'w> Material<'w> for Standard {
                 .unwrap_or_else(|| storage.get(&fallback))
         }
 
-        // Scalar and vec parameters
         uniforms.set_vec3("tint", self.tint);
         uniforms.set_scalar("bumpiness", self.bumpiness);
         uniforms.set_scalar("roughness", self.roughness);
         uniforms.set_scalar("metallic", self.metallic);
 
-        // Try to fetch the textures, and fallback to the default ones if we can't
         let albedo_map = fallback(albedo_maps, &self.albedo, scene.albedo_map());
         let normal_map = fallback(normal_maps, &self.normal, scene.normal_map());
         let mask_map = fallback(mask_maps, &self.mask, scene.mask_map());
 
-        // And set their uniform values
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
@@ -190,11 +183,7 @@ impl<'w> Material<'w> for Standard {
 
 impl Standard {
     // Create a new standard builder with default parameters
-    pub fn builder(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        shaders: &mut Storage<Shader>,
-    ) -> StandardBuilder {
+    pub fn builder() -> StandardBuilder {
         StandardBuilder(Self {
             albedo: None,
             normal: None,
@@ -202,7 +191,7 @@ impl Standard {
             bumpiness: 1.0,
             roughness: 1.0,
             metallic: 0.0,
-            tint: vek::Vec3::one(),
+            tint: vek::Rgb::white(),
         })
     }
 }
@@ -230,7 +219,7 @@ impl StandardBuilder {
     }
 
     // Set the tint parameter
-    pub fn with_tint(mut self, tint: vek::Vec3<f32>) -> Self {
+    pub fn with_tint(mut self, tint: vek::Rgb<f32>) -> Self {
         self.0.tint = tint;
         self
     }

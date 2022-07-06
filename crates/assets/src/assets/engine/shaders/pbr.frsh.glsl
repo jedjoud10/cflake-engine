@@ -5,7 +5,7 @@ out vec4 frag;
 uniform float roughness;
 uniform float bumpiness;
 //uniform float metallic;
-//uniform vec3 tint;
+uniform vec3 tint;
 uniform sampler2D albedo;
 uniform sampler2D normal;
 //uniform sampler2D mask;
@@ -33,7 +33,7 @@ void main() {
 	vec3 bumps = texture(normal, m_tex_coord_0).xyz * 2.0 - 1.0;
 	bumps.xy *= bumpiness;
 
-	// Calculate the world space normals (TBN matrix)
+	// Calculate the world space normals
 	mat3 tbn = mat3(
 		normalize(m_tangent),
 		normalize(m_bitangent),
@@ -41,12 +41,12 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
     // Calculate lighting factor
-    float light = dot(normal, light_dir);
+    float light = min(max(dot(normal, light_dir), 0.0) + 0.2, 1.0);
 
 	// Calculate specular light
-	vec3 view = normalize(m_position - camera);
-	float spec = pow(max(dot(view, reflect(light_dir, normal)), 0.0), 32);
+	vec3 view = normalize(camera - m_position);
+	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32);
 
     // This sets the color for the current fragment
-    frag = vec4(light * diffuse + spec, 0.0);
+    frag = vec4(light * diffuse * tint + spec, 0.0);
 }

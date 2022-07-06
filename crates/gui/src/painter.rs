@@ -125,7 +125,7 @@ impl Painter {
         _loader: &mut Assets,
         deltas: TexturesDelta,
     ) {
-        // Update the main  fonttexture
+        // Update font texture
         if let Some((_tid, delta)) = deltas
             .set
             .iter()
@@ -178,7 +178,6 @@ impl Painter {
             rasterizer.canvas().size().as_::<i32>().into(),
         );
 
-        // Draw the clipped meshes
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
             self.vertices.write(mesh.1.vertices.as_slice());

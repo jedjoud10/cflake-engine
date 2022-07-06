@@ -75,18 +75,17 @@ pub fn system(events: &mut Events) {
             .get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>()
             .unwrap();
 
-        // Stop the eGUi frame handler
         let output = ui.egui.end_frame();
         ui.state
             .handle_platform_output(device.window(), &mut ui.egui, output.platform_output);
 
-        // Decompose the given state into it's raw parts
         let clipped_shapes = output.shapes;
         let deltas = output.textures_delta;
         let meshes = ui.egui.tessellate(clipped_shapes);
 
-        // Handle the parts and rasterize the elements
-        ui.painter.draw(device, ctx, meshes, assets, deltas);
+        if !meshes.is_empty() {
+            ui.painter.draw(device, ctx, meshes, assets, deltas);
+        }
     }
 
     // Register all the events

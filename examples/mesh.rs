@@ -1,9 +1,12 @@
 use cflake_engine::prelude::*;
 
+const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/"); 
+
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
+        .set_user_assets_folder_path(ASSETS_PATH)
         .set_window_fullscreen(true)
         .insert_system(system)
         .execute();
@@ -11,8 +14,8 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, settings, keyboard) = world
-        .get_mut::<(&mut EcsManager, &mut SceneSettings, &mut Keyboard)>()
+    let (ecs, Graphics(_, ctx), settings, keyboard, materials, textures, assets) = world
+        .get_mut::<(&mut EcsManager, &mut Graphics, &mut SceneSettings, &mut Keyboard, &mut Storage<Standard>, &mut Storage<NormalMap>, &mut Assets)>()
         .unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
@@ -26,15 +29,39 @@ fn init(world: &mut World) {
     keyboard.bind("left", Key::A);
     keyboard.bind("right", Key::D);
 
+    // Load the persistent textures like the debug texture and missing texture
+    let params = (
+        Sampling {
+            filter: Filter::Nearest,
+            wrap: Wrap::Repeat,
+        },
+        MipMaps::Automatic,
+        TextureMode::Static,
+    );
+
+    let texture = assets
+        .load_with::<NormalMap>(
+            "user/textures/normal.png",
+            (ctx, params.0, params.1, params.2),
+        )
+        .unwrap();
+    let texture = textures.insert(texture);
+
+    let material = Standard::builder()
+        .with_normal(&texture)
+        .with_tint(vek::Rgb::red())
+        .build();
+    let material = materials.insert(material);
+
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
-    let surface = Surface::new(settings.cube(), settings.material());
+    let surface = Surface::new(settings.cube(), material);
     ecs.insert((renderer, surface, Transform::default()))
         .unwrap();
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
-    let entity = ecs.insert((light, Transform::looking_down())).unwrap();
+    let entity = ecs.insert((light, Transform::rotation_x(45f32.to_radians()))).unwrap();
     settings.set_main_directional_light(entity);
 }
 
@@ -79,14 +106,6 @@ fn update(world: &mut World) {
         let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
-    }
-
-    if keyboard.key(Key::H).pressed() {
-        println!(
-            "Delta {}, FPS: {}",
-            time.delta_f32(),
-            1.0 / time.delta_f32()
-        );
     }
 }
 

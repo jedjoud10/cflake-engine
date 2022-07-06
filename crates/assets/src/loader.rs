@@ -43,7 +43,7 @@ impl Assets {
 
         // If we have no bytes currently cached, try to load and cache them
         if self.cached.get(&path).is_none() {
-            let bytes = super::raw::read(&path, self.user.as_ref()?)?;
+            let bytes = super::raw::read(path.as_path(), self.user.as_ref()?)?;
             self.cached.insert(path.clone(), bytes);
         };
 
