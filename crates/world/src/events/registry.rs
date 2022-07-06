@@ -1,4 +1,4 @@
-use crate::{Caller, Descriptor, Event, PipelineSortingError, Rule, Stage, StageError, StageKey};
+use crate::{Descriptor, Event, PipelineSortingError, Rule, Stage, StageError, StageKey};
 use ahash::AHashMap;
 use std::rc::Rc;
 
@@ -181,7 +181,7 @@ fn sort(
 
             // Update the indices of all the values that are after the current stage (since they were shifted to the right)
             for (name, i) in indices.iter_mut() {
-                if *i >= location && &*name != &key {
+                if *i >= location && name != &key {
                     *i += 1;
                 }
             }

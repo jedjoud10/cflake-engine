@@ -61,7 +61,7 @@ unsafe fn compile(username: String, names: &[u32]) -> Program {
         _phantom: Default::default(),
         texture_units: Default::default(),
         binding_points: Default::default(),
-        uniform_locations: uniform_locations,
+        uniform_locations,
     }
 }
 

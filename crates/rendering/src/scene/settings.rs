@@ -36,9 +36,6 @@ pub struct SceneSettings {
     // Default cube and sphere meshes
     cube: Handle<SubMesh>,
     sphere: Handle<SubMesh>,
-
-    // Default PBR material
-    material: Handle<Standard>,
 }
 
 impl SceneSettings {
@@ -51,7 +48,6 @@ impl SceneSettings {
         mask_map: Handle<MaskMap>,
         missing: Handle<AlbedoMap>,
         debug: Handle<NormalMap>,
-        material: Handle<Standard>,
         cube: Handle<SubMesh>,
         sphere: Handle<SubMesh>,
     ) -> Self {
@@ -65,7 +61,6 @@ impl SceneSettings {
             mask_map,
             missing,
             debug,
-            material,
             cube,
             sphere,
         }
@@ -74,11 +69,6 @@ impl SceneSettings {
     // Are we allowed to render the scene (check if the SceneRenderer is valid)
     pub fn can_render(&self) -> bool {
         self.camera.is_some() && self.light.is_some()
-    }
-
-    // Get the handle to the main PBR material
-    pub fn material(&self) -> Handle<Standard> {
-        self.material.clone()
     }
 
     // Get the main camera entity ID

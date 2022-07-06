@@ -1,4 +1,4 @@
-use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly, VertexLayout};
+use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly};
 use crate::{buffer::BufferMode, context::Context};
 use assets::Asset;
 use obj::TexturedVertex;
@@ -151,13 +151,13 @@ impl Asset<'static> for GeometryBuilder {
         assert!(mikktspace::generate_tangents(&mut gen));
 
         // Set the very sussy bakas (POV: You are slowly going insane)
-        let builder = GeometryBuilder::empty()
+        
+
+        GeometryBuilder::empty()
             .with_attribute_vec::<Position>(positions)
             .with_attribute_vec::<Normal>(normals)
             .with_attribute_vec::<Tangent>(tangents)
             .with_attribute_vec::<TexCoord0>(tex_coords_0)
-            .with_indices(indices);
-
-        builder
+            .with_indices(indices)
     }
 }

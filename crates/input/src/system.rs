@@ -1,6 +1,6 @@
-use crate::{Key, KeyState, Keyboard, Mouse};
+use crate::{KeyState, Keyboard, Mouse};
 use glutin::event::DeviceEvent;
-use world::{Events, Init, Resource, Stage, Update, World};
+use world::{Events, Init, Stage, Update, World};
 
 // This system will automatically insert the input resource and update it each frame using the device events
 pub fn system(events: &mut Events) {

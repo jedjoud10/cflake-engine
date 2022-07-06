@@ -31,7 +31,7 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let (ui, time) = world.get_mut::<(&mut UserInterface, &mut Time)>().unwrap();
     let ctx = ui.as_mut();
-    egui::Window::new("Test window").show(&ctx, |ui| {
+    egui::Window::new("Test window").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.label("Delta (s/f): ");
             ui.label(time.delta_f32().to_string());

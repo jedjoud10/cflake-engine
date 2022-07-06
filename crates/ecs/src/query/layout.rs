@@ -1,6 +1,6 @@
 use std::ptr::NonNull;
 
-use crate::{Archetype, Component, LayoutAccess, LinkError, LinkModifier, Mask, PtrReader};
+use crate::{Archetype, Component, LayoutAccess, LinkError, LinkModifier, PtrReader};
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems, basically
 pub trait QueryLayout<'a>

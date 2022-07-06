@@ -5,7 +5,7 @@ use crate::{
     buffer::ElementBuffer,
     context::Context,
     mesh::attributes::AttributeSet,
-    object::{ToGlName, ToGlTarget},
+    object::{ToGlName},
     others::Comparison,
     prelude::Uniforms,
 };
@@ -177,12 +177,12 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
 
     // Get an immutable reference to the underlying canvas
     pub fn canvas(&self) -> &Canvas {
-        &self.canvas
+        self.canvas
     }
 
     // Get an immutable reference to the underlying context
     pub fn context(&self) -> &Context {
-        &self.ctx
+        self.ctx
     }
 
     // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count

@@ -1,7 +1,7 @@
 use super::{Processed, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::{Asset, Assets};
+use assets::{Assets};
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);

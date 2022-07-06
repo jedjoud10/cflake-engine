@@ -1,5 +1,5 @@
 use super::SubMesh;
-use crate::{canvas::FaceCullMode, material::Material};
+use crate::{material::Material};
 use ecs::Component;
 
 use math::AABB;

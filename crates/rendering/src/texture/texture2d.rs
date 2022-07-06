@@ -5,7 +5,7 @@ use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{marker::PhantomData, num::NonZeroU8, rc::Rc};
+use std::{marker::PhantomData, num::NonZeroU8};
 
 // A 2D texture that contains multiple pixels that have their own channels
 // Each pixel can be either a single value, RG, RGB, or even RGBA

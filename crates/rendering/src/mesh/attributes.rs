@@ -3,7 +3,7 @@ use std::ptr::null;
 use crate::{
     buffer::{ArrayBuffer, Buffer, BufferMode},
     context::Context,
-    mesh::{GeometryBuilder, VertexAssembly, VertexLayout},
+    mesh::{VertexAssembly, VertexLayout},
     object::{Shared, ToGlName},
 };
 
@@ -130,7 +130,7 @@ pub mod named {
             assembly.positions = Some(vec);
         }
 
-        unsafe fn default(index: u32) {
+        unsafe fn default(_index: u32) {
             panic!()
         }
     }

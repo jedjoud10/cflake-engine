@@ -1,6 +1,6 @@
 use super::Introspection;
 use crate::object::{ToGlName, ToGlTarget};
-use ahash::{AHashMap, AHashSet};
+use ahash::{AHashMap};
 use std::marker::PhantomData;
 
 // A program is the underlying compiled shader that we will store inside the shader wrappers

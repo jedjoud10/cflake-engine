@@ -1,14 +1,13 @@
-use super::{Material, Standard};
+use super::{Material};
 use crate::{
-    canvas::{FaceCullMode, PrimitiveMode, RasterSettings},
+    canvas::{PrimitiveMode, RasterSettings},
     context::Graphics,
     mesh::Surface,
-    others::Comparison,
     prelude::Shader,
     scene::{Camera, Directional, Renderer},
 };
 use math::Transform;
-use std::{marker::PhantomData, rc::Rc};
+use std::{marker::PhantomData};
 use world::{Handle, World};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
@@ -26,13 +25,13 @@ pub trait Pipeline: 'static {
     fn shader(&self) -> Handle<Shader>;
 
     // Cull all the surfaces that we will render
-    fn cull(&self, world: &mut World) {}
+    fn cull(&self, _world: &mut World) {}
 
     // Render all the materialized surfaces
     fn render(&self, world: &mut World) -> Option<Stats>;
 
     // Post-render method
-    fn cleanup(&self, world: &mut World) {}
+    fn cleanup(&self, _world: &mut World) {}
 }
 
 // The default pipeline that uses one shader pass to render everything
@@ -118,7 +117,7 @@ impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
                     instance,
                     &mut uniforms,
                     &mut property_block_resources,
-                    &scene,
+                    scene,
                     camera,
                     light,
                 );

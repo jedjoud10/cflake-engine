@@ -1,5 +1,5 @@
-use crate::{self as world, Events, Stage, Update};
-use crate::{FromWorld, Resource, World};
+use crate::{self as world};
+use crate::{FromWorld, Resource};
 use std::{
     cell::{Cell, RefCell, UnsafeCell},
     marker::PhantomData,

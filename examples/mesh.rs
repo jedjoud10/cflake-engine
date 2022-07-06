@@ -95,7 +95,7 @@ fn update(world: &mut World) {
     device.window().set_cursor_grab(true).unwrap();
     device.window().set_cursor_visible(false);
 
-    if let Some(mut entry) = scene.main_camera().map(|c| ecs.try_mut_entry(c)).flatten() {
+    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.try_mut_entry(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();
         let mut velocity = vek::Vec3::<f32>::zero();
         let forward = transform.forward();

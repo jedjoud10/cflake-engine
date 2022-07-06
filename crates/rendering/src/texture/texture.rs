@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{ffi::c_void, num::NonZeroU8, ptr::null, rc::Rc};
+use std::{ffi::c_void, num::NonZeroU8, ptr::null};
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]

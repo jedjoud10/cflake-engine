@@ -1,22 +1,22 @@
-use std::{any::TypeId, marker::PhantomData, rc::Rc};
 
-use ahash::AHashMap;
+
+
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use parking_lot::Mutex;
-use world::{Handle, Storage, World};
+
+use world::{Storage, World};
 
 use crate::{
-    canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode, RasterSettings},
-    context::{Context, Device, Graphics},
-    mesh::{SubMesh, Surface},
+    canvas::{BlendMode, Canvas, FaceCullMode},
+    context::{Context, Graphics},
+    mesh::{SubMesh},
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
-use super::{Pipeline, Standard, Stats};
+use super::{Pipeline};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
@@ -68,12 +68,12 @@ pub trait Material<'w>: 'static + Sized {
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Resources,
-        canvas: &Canvas,
-        scene: &SceneSettings,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _uniforms: &mut Uniforms<'u>,
+        _resources: &mut Self::Resources,
+        _canvas: &Canvas,
+        _scene: &SceneSettings,
+        _camera: (&Camera, &Transform),
+        _light: (&Directional, &Transform),
     ) where
         'w: 'u,
     {
@@ -81,11 +81,11 @@ pub trait Material<'w>: 'static + Sized {
 
     // Set the uniforms for this property block right before we render our surface
     fn set_render_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Resources,
-        renderer: &Renderer,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _uniforms: &mut Uniforms<'u>,
+        _resources: &mut Self::Resources,
+        _renderer: &Renderer,
+        _camera: (&Camera, &Transform),
+        _light: (&Directional, &Transform),
     ) where
         'w: 'u,
     {
@@ -95,11 +95,11 @@ pub trait Material<'w>: 'static + Sized {
     // This will only be called whenever we switch instances
     fn set_instance_properties<'u>(
         &'w self,
-        uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Resources,
-        scene: &SceneSettings,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _uniforms: &mut Uniforms<'u>,
+        _resources: &mut Self::Resources,
+        _scene: &SceneSettings,
+        _camera: (&Camera, &Transform),
+        _light: (&Directional, &Transform),
     ) where
         'w: 'u,
     {

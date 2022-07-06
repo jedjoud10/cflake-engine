@@ -1,4 +1,4 @@
-use crate::{Init, Registry, StageKey, Update};
+use crate::{Init, Registry, Update};
 use glutin::event::{DeviceEvent, WindowEvent};
 
 // Descriptors simply tell us how we should box the function

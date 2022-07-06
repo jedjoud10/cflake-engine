@@ -1,12 +1,12 @@
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use world::{Handle, Storage, World};
+use world::{Handle, Storage};
 
 use crate::{
     canvas::Canvas,
-    context::{Context, Device, Graphics},
-    mesh::{SubMesh, Surface},
+    context::{Context, Graphics},
+    mesh::{SubMesh},
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
@@ -115,9 +115,9 @@ impl<'w> Material<'w> for Standard {
     // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Resources,
-        canvas: &Canvas,
-        scene: &SceneSettings,
+        _resources: &mut Self::Resources,
+        _canvas: &Canvas,
+        _scene: &SceneSettings,
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
@@ -133,10 +133,10 @@ impl<'w> Material<'w> for Standard {
     // This method will be called for each surface that we have to render
     fn set_render_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        resources: &mut Self::Resources,
+        _resources: &mut Self::Resources,
         renderer: &Renderer,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _camera: (&Camera, &Transform),
+        _light: (&Directional, &Transform),
     ) where
         'w: 'u,
     {
@@ -149,8 +149,8 @@ impl<'w> Material<'w> for Standard {
         uniforms: &mut Uniforms<'u>,
         resources: &mut Self::Resources,
         scene: &SceneSettings,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _camera: (&Camera, &Transform),
+        _light: (&Directional, &Transform),
     ) where
         'w: 'u,
     {

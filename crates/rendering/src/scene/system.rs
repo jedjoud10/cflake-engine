@@ -1,10 +1,10 @@
-use std::num::NonZeroU8;
+
 
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, Graphics, GraphicsSetupSettings},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Standard, StandardBuilder},
+    material::{AlbedoMap, MaskMap, NormalMap, Standard},
     mesh::SubMesh,
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
@@ -14,20 +14,27 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{added, and, contains, modified, or, Component, EcsManager, Entity};
+use ecs::{added, modified, or, EcsManager};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
-use time::Time;
+
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
-    // During initialization, the world always contains the Init resource
-    // This resource contains the global event loop and all informations that are needed for
+    let mut graphics = Graphics::new(settings, el);
+    let Graphics(_device, ctx) = &mut graphics;
 
-    // Create a new graphics pipeline and insert it
-    let Graphics(_device, ctx) = world.entry().or_insert(Graphics::new(settings, el));
+    let (albedo_maps, normal_maps, mask_maps, submeshes, assets) = world
+    .get_mut::<(
+        &mut Storage<AlbedoMap>,
+        &mut Storage<NormalMap>,
+        &mut Storage<MaskMap>,
+        &mut Storage<SubMesh>,
+        &mut Assets,
+    )>()
+    .unwrap();
 
     // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -45,26 +52,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .unwrap()
     }
 
-    // Create the default black texture
+    // Create the 1x1 default textures
     let black = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
-
-    // Create the default white texture
     let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::broadcast(255));
-
-    // Create the default PBR textures (normal map, mask map)
     let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
     let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
-
-    // Insert all of the textures into their corresponding storages
-    let (albedo_maps, normal_maps, mask_maps, assets, Graphics(_, ctx)) = world
-        .get_mut::<(
-            &mut Storage<AlbedoMap>,
-            &mut Storage<NormalMap>,
-            &mut Storage<MaskMap>,
-            &mut Assets,
-            &mut Graphics,
-        )>()
-        .unwrap();
 
     // Convert the texture maps into texture map handles
     let black = albedo_maps.insert(black);
@@ -99,28 +91,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let missing = albedo_maps.insert(missing);
     let debug = normal_maps.insert(debug);
 
-    // Load the default PBR material (refetch the resources since we need storage and asset loader)
-    let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
-        .get_mut::<(
-            &mut Graphics,
-            &mut Assets,
-            &mut Storage<Standard>,
-            &mut Storage<Shader>,
-            &mut Storage<SubMesh>,
-        )>()
-        .unwrap();
-
-    // Create le default material
-    let material = Standard::builder()
-        .with_albedo(&white)
-        .with_normal(&debug)
-        .with_mask(&mask_map)
-        .with_metallic(0.2)
-        .with_roughness(1.0)
-        .build();
-    let material = materials.insert(material);
-    ctx.register_pipeline::<Standard>(assets, shaders);
-
     // Load the default cube and sphere meshes
     let cube = assets
         .load_with::<SubMesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
@@ -138,11 +108,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         mask_map,
         missing,
         debug,
-        material,
         cube.clone(),
         cube,
     );
     world.insert(scene);
+    world.insert(graphics);
 }
 
 // Rendering event that will try to render the 3D scene each frame
@@ -167,11 +137,10 @@ fn rendering(world: &mut World) {
     }
 
     // Render all the surfaces using their respective pipelines
-    let pipes = context.extract_pipelines();
-    let _stats = pipes
+    context
+        .extract_pipelines()
         .into_iter()
-        .map(|pipe| pipe.render(world))
-        .collect::<Vec<_>>();
+        .for_each(|pipe| { pipe.render(world); });
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -246,7 +215,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     let reg = events.registry::<Update>();
     reg.insert_with(clear, Stage::new("window clear").before("user"))
         .unwrap();
-        
+
     reg.insert_with(
         main_camera,
         Stage::new("main camera update")

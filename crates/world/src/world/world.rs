@@ -1,5 +1,5 @@
 use crate::{
-    world, Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor,
+    Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor,
     Update,
 };
 use ahash::AHashMap;

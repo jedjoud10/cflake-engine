@@ -10,15 +10,15 @@ impl<'w> Material<'w> for Sky {
     type Pipeline = BatchedPipeline<Self>;
 
     fn pipeline(
-        ctx: &mut crate::context::Context,
-        assets: &mut assets::Assets,
-        storage: &mut world::Storage<crate::prelude::Shader>,
+        _ctx: &mut crate::context::Context,
+        _assets: &mut assets::Assets,
+        _storage: &mut world::Storage<crate::prelude::Shader>,
     ) -> Self::Pipeline {
         <Self::Pipeline as Pipeline>::new(todo!())
     }
 
     fn fetch(
-        world: &'w mut world::World,
+        _world: &'w mut world::World,
     ) -> (
         &'w crate::scene::SceneSettings,
         &'w ecs::EcsManager,
@@ -33,11 +33,11 @@ impl<'w> Material<'w> for Sky {
 
     fn set_instance_properties<'u>(
         &'w self,
-        uniforms: &mut crate::prelude::Uniforms<'u>,
-        resources: &mut Self::Resources,
-        scene: &crate::scene::SceneSettings,
-        camera: (&crate::scene::Camera, &math::Transform),
-        light: (&crate::scene::Directional, &math::Transform),
+        _uniforms: &mut crate::prelude::Uniforms<'u>,
+        _resources: &mut Self::Resources,
+        _scene: &crate::scene::SceneSettings,
+        _camera: (&crate::scene::Camera, &math::Transform),
+        _light: (&crate::scene::Directional, &math::Transform),
     ) where
         'w: 'u,
     {
