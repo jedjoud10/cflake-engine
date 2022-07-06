@@ -43,7 +43,7 @@ impl Context {
                 gl::DONT_CARE,
                 0,
                 null(),
-                gl::FALSE,
+                gl::TRUE,
             );
         }
 
@@ -71,7 +71,7 @@ impl Context {
 
         *self.bound.entry(target).or_insert(object) = object;
     }
-
+    /*
     // Try to create a new material pipeline and automatically register it
     pub(crate) fn register_pipeline<M: Material>(
         &mut self,
@@ -84,6 +84,7 @@ impl Context {
             self.renderers.insert(key, pipeline);
         }
     }
+    */
 
     // Extract all the internally stored material pipelines
     pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {

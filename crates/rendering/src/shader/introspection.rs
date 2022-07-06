@@ -159,7 +159,7 @@ unsafe fn name(program: u32, name_length: i32, interface: u32, index: u32) -> St
 unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
     // Get the max index count for this block interface
     let mut max = 0;
-    gl::GetProgramInterfaceiv(program, interface, interface, &mut max);
+    gl::GetProgramInterfaceiv(program, interface, gl::ACTIVE_RESOURCES, &mut max);
 
     (0..max)
         .into_iter()

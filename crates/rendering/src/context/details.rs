@@ -9,6 +9,13 @@ pub(crate) unsafe fn get_static_str(symbolic: u32) -> &'static str {
     str.to_str().unwrap()
 }
 
+// Get a value from the global OpenGL context
+pub(crate) unsafe fn get_value(value: u32) -> i32 {
+    let mut val = 0;
+    gl::GetIntegerv(value, &mut val);
+    val
+}
+
 // Callback function for OpenGl debugging output
 // This might log the newly fed message to a log or the console
 pub(crate) extern "system" fn callback(

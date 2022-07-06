@@ -1,4 +1,4 @@
-use super::{Material, PropertyBlock, Standard};
+use super::{Material, Standard};
 use crate::{
     canvas::{FaceCullMode, PrimitiveMode, RasterSettings},
     context::Graphics,
@@ -37,12 +37,12 @@ pub trait Pipeline: 'static {
 
 // The default pipeline that uses one shader pass to render everything
 // TODO: Find better name
-pub struct BatchedPipeline<M: Material + for<'a> PropertyBlock<'a>> {
+pub struct BatchedPipeline<M: for<'w> Material<'w>> {
     shader: Handle<Shader>,
     _phantom: PhantomData<M>,
 }
 
-impl<M: Material + for<'a> PropertyBlock<'a>> Pipeline for BatchedPipeline<M> {
+impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
     fn new(shader: Handle<Shader>) -> Self
     where
         Self: Sized,
@@ -59,7 +59,7 @@ impl<M: Material + for<'a> PropertyBlock<'a>> Pipeline for BatchedPipeline<M> {
 
     fn render(&self, world: &mut World) -> Option<Stats> {
         let (scene, ecs, materials, submeshes, shaders, graphics, mut property_block_resources) =
-            <M as PropertyBlock<'_>>::fetch(world);
+            <M as Material<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
@@ -110,7 +110,6 @@ impl<M: Material + for<'a> PropertyBlock<'a>> Pipeline for BatchedPipeline<M> {
             if old != Some(surface.material().clone()) {
                 old = Some(surface.material().clone());
                 let instance = materials.get(old.as_ref().unwrap());
-                let _ = instance.id();
 
                 // Update the material property block uniforms
                 M::set_instance_properties(

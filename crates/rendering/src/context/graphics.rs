@@ -6,6 +6,8 @@ use glutin::{
 };
 use world::Resource;
 
+use crate::context::get_value;
+
 // A wrapper that contains both the context and the underlying device
 // It's like the whole render pipeline
 #[derive(Resource)]

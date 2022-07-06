@@ -1,8 +1,10 @@
-use std::{marker::PhantomData, rc::Rc};
+use std::{marker::PhantomData, rc::Rc, any::TypeId};
 
+use ahash::AHashMap;
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
+use parking_lot::Mutex;
 use world::{Handle, Storage, World};
 
 use crate::{
@@ -16,24 +18,11 @@ use crate::{
 
 use super::{Pipeline, Standard, Stats};
 
-// This is an Instance ID that will be stored within the materials
-// By itself it does nothing, but we use it internally to make sure that the underlying material was created through a material builder
-pub struct InstanceID<M: Material>(PhantomData<M>);
-
-impl<M: Material> InstanceID<M> {
-    // This will create a new instance ID for a specific material by registering it's pipeline
-    pub fn new(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) -> InstanceID<M> {
-        ctx.register_pipeline::<M>(assets, storage);
-        InstanceID(Default::default())
-    }
-}
-
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
-pub trait Material: 'static + Sized + for<'a> PropertyBlock<'a> {
+pub trait Material<'w>: 'static + Sized {
+    // The resources that we need to fetch from the world to set the uniforms
+    type Resources: 'w;
+
     // The material pipeline that this material will use
     type Pipeline: Pipeline;
 
@@ -43,9 +32,6 @@ pub trait Material: 'static + Sized + for<'a> PropertyBlock<'a> {
         assets: &mut Assets,
         storage: &mut Storage<Shader>,
     ) -> Self::Pipeline;
-
-    // Get the instance ID of the material instance
-    fn id(&self) -> &InstanceID<Self>;
 
     // Get the depth comparison setting
     fn depth_comparison() -> Option<Comparison> {
@@ -66,14 +52,6 @@ pub trait Material: 'static + Sized + for<'a> PropertyBlock<'a> {
     fn face_cull_mode() -> Option<FaceCullMode> {
         Some(FaceCullMode::Back(true))
     }
-}
-
-// A property block is an interface that tells us exactly we should set the material properties when using shader batching
-// This will be implemented for ALL material types, since they all use shader batching
-// TODO: Remove this whole trait by merging it into the material trait somehow...
-pub trait PropertyBlock<'w>: Sized {
-    // The resources that we need to fetch from the world to set the uniforms
-    type Resources: 'w;
 
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(

@@ -154,10 +154,13 @@ impl Painter {
             depth_test: None,
             scissor_test: None,
             primitive: PrimitiveMode::Triangles {
-                cull: FaceCullMode::None,
+                cull: None,
             },
             srgb: true,
-            blend: Some(BlendMode::with(Factor::One, Factor::OneMinusSrcAlpha)),
+            blend: Some(BlendMode {
+                src: Factor::One,
+                dest: Factor::OneMinusSrcAlpha,
+            }),
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms

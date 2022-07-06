@@ -94,8 +94,6 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
             PrimitiveMode::Points { .. } => gl::POINTS,
         };
 
-        gl::MaxShaderCompilerThreadsKHR(count)
-
         // Set the OpenGL primitive parameters (along with face culling)
         match &settings.primitive {
             PrimitiveMode::Triangles { cull } => unsafe { 

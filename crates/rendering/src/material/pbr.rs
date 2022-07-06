@@ -12,7 +12,7 @@ use crate::{
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
 
-use super::{BatchedPipeline, InstanceID, Material, Pipeline, PropertyBlock};
+use super::{BatchedPipeline, Material, Pipeline};
 
 // Albedo map (color data), rgba
 pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
@@ -38,12 +38,15 @@ pub struct Standard {
 
     // Unique parameters
     tint: vek::Vec3<f32>,
-
-    // Le instance
-    instance: InstanceID<Self>,
 }
 
-impl Material for Standard {
+impl<'w> Material<'w> for Standard {
+    type Resources = (
+        &'w Storage<AlbedoMap>,
+        &'w Storage<NormalMap>,
+        &'w Storage<MaskMap>,
+    );
+
     type Pipeline = BatchedPipeline<Self>;
 
     // Create a new batch pipeline for the PBR material
@@ -67,90 +70,50 @@ impl Material for Standard {
         BatchedPipeline::new(handle)
     }
 
-    // Get the instance ID of the current material object
-    fn id(&self) -> &InstanceID<Self> {
-        &self.instance
+    fn fetch(
+        world: &'w mut world::World,
+    ) -> (
+        &'w SceneSettings,
+        &'w EcsManager,
+        &'w Storage<Self>,
+        &'w Storage<SubMesh>,
+        &'w mut Storage<Shader>,
+        &'w mut Graphics,
+        Self::Resources,
+    ) {
+        let (
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            albedo_maps,
+            normal_maps,
+            mask_maps,
+            scene,
+        ) = world
+            .get_mut::<(
+                &EcsManager,
+                &Storage<Self>,
+                &Storage<SubMesh>,
+                &mut Storage<Shader>,
+                &mut Graphics,
+                &Storage<AlbedoMap>,
+                &Storage<NormalMap>,
+                &Storage<MaskMap>,
+                &SceneSettings,
+            )>()
+            .unwrap();
+        (
+            scene,
+            ecs_manager,
+            materials,
+            submesh,
+            shaders,
+            graphics,
+            (albedo_maps, normal_maps, mask_maps),
+        )
     }
-}
-
-impl Standard {
-    // Create a new standard builder with default parameters
-    pub fn builder(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        shaders: &mut Storage<Shader>,
-    ) -> StandardBuilder {
-        StandardBuilder(Self {
-            albedo: None,
-            normal: None,
-            mask: None,
-            bumpiness: 1.0,
-            roughness: 1.0,
-            metallic: 0.0,
-            tint: vek::Vec3::one(),
-            instance: InstanceID::new(ctx, assets, shaders),
-        })
-    }
-}
-
-// This is a builder that we can use to optionally set some material parameters
-pub struct StandardBuilder(Standard);
-
-impl StandardBuilder {
-    // Set the albedo map
-    pub fn with_albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
-        self.0.albedo = Some(albedo.clone());
-        self
-    }
-
-    // Set the normal map
-    pub fn with_normal(mut self, normal: &Handle<NormalMap>) -> Self {
-        self.0.normal = Some(normal.clone());
-        self
-    }
-
-    // Set the mask map
-    pub fn with_mask(mut self, mask: &Handle<MaskMap>) -> Self {
-        self.0.mask = Some(mask.clone());
-        self
-    }
-
-    // Set the tint parameter
-    pub fn with_tint(mut self, tint: vek::Vec3<f32>) -> Self {
-        self.0.tint = tint;
-        self
-    }
-
-    // Set the bumpiness parameter
-    pub fn with_bumpiness(mut self, bumpiness: f32) -> Self {
-        self.0.bumpiness = bumpiness;
-        self
-    }
-
-    // Set the roughness parameter
-    pub fn with_roughness(mut self, roughness: f32) -> Self {
-        self.0.roughness = roughness;
-        self
-    }
-
-    // Set the metallic parameter
-    pub fn with_metallic(mut self, metallic: f32) -> Self {
-        self.0.metallic = metallic;
-        self
-    }
-
-    // Return the inner material stored within the builder
-    pub fn build(self) -> Standard {
-        self.0
-    }
-}
-
-impl<'w> PropertyBlock<'w> for Standard {
-    type Resources = (
-        &'w Storage<AlbedoMap>,
-        &'w Storage<NormalMap>,
-        &'w Storage<MaskMap>,
-    );
 
     // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
@@ -223,49 +186,75 @@ impl<'w> PropertyBlock<'w> for Standard {
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
     }
+}
 
-    fn fetch(
-        world: &'w mut world::World,
-    ) -> (
-        &'w SceneSettings,
-        &'w EcsManager,
-        &'w Storage<Self>,
-        &'w Storage<SubMesh>,
-        &'w mut Storage<Shader>,
-        &'w mut Graphics,
-        Self::Resources,
-    ) {
-        let (
-            ecs_manager,
-            materials,
-            submesh,
-            shaders,
-            graphics,
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            scene,
-        ) = world
-            .get_mut::<(
-                &EcsManager,
-                &Storage<Self>,
-                &Storage<SubMesh>,
-                &mut Storage<Shader>,
-                &mut Graphics,
-                &Storage<AlbedoMap>,
-                &Storage<NormalMap>,
-                &Storage<MaskMap>,
-                &SceneSettings,
-            )>()
-            .unwrap();
-        (
-            scene,
-            ecs_manager,
-            materials,
-            submesh,
-            shaders,
-            graphics,
-            (albedo_maps, normal_maps, mask_maps),
-        )
+impl Standard {
+    // Create a new standard builder with default parameters
+    pub fn builder(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        shaders: &mut Storage<Shader>,
+    ) -> StandardBuilder {
+        StandardBuilder(Self {
+            albedo: None,
+            normal: None,
+            mask: None,
+            bumpiness: 1.0,
+            roughness: 1.0,
+            metallic: 0.0,
+            tint: vek::Vec3::one(),
+        })
+    }
+}
+
+// This is a builder that we can use to optionally set some material parameters
+pub struct StandardBuilder(Standard);
+
+impl StandardBuilder {
+    // Set the albedo map
+    pub fn with_albedo(mut self, albedo: &Handle<AlbedoMap>) -> Self {
+        self.0.albedo = Some(albedo.clone());
+        self
+    }
+
+    // Set the normal map
+    pub fn with_normal(mut self, normal: &Handle<NormalMap>) -> Self {
+        self.0.normal = Some(normal.clone());
+        self
+    }
+
+    // Set the mask map
+    pub fn with_mask(mut self, mask: &Handle<MaskMap>) -> Self {
+        self.0.mask = Some(mask.clone());
+        self
+    }
+
+    // Set the tint parameter
+    pub fn with_tint(mut self, tint: vek::Vec3<f32>) -> Self {
+        self.0.tint = tint;
+        self
+    }
+
+    // Set the bumpiness parameter
+    pub fn with_bumpiness(mut self, bumpiness: f32) -> Self {
+        self.0.bumpiness = bumpiness;
+        self
+    }
+
+    // Set the roughness parameter
+    pub fn with_roughness(mut self, roughness: f32) -> Self {
+        self.0.roughness = roughness;
+        self
+    }
+
+    // Set the metallic parameter
+    pub fn with_metallic(mut self, metallic: f32) -> Self {
+        self.0.metallic = metallic;
+        self
+    }
+
+    // Return the inner material stored within the builder
+    pub fn build(self) -> Standard {
+        self.0
     }
 }

@@ -181,7 +181,6 @@ impl<T: 'static> Storage<T> {
     }
 
     // Get an immutable reference to a value stored within the stored using it's handle
-    // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get(&self, handle: &Handle<T>) -> &T {
         let slots = self.0.slots.borrow();
         let ptr = unsafe { &*slots[handle.idx].cell.get() };
@@ -189,7 +188,6 @@ impl<T: 'static> Storage<T> {
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
-    // The handle must outlive the returned reference, since dropping the handle before then might cause UB
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         let slots = self.0.slots.borrow_mut();
         let ptr = unsafe { &mut *slots[handle.idx].cell.get() };
@@ -215,22 +213,18 @@ impl<T: 'static> Eq for Handle<T> {}
 
 impl<T: 'static> Handle<T> {
     // Get the current reference count for this handle
-    // This tells us how many valid handles exist for the current value (including the current handle)
     pub fn count(&self) -> u32 {
         let slots = self.inner.slots.borrow();
         slots[self.idx].counter.get()
     }
 
     // Overwrite the current reference counted value directly
-    // I love anime girls. Yes. I am a degenerate
     pub unsafe fn set_count(&self, count: u32) {
         let slots = self.inner.slots.borrow();
         slots[self.idx].counter.set(count);
     }
 
     // This will manually incremememnt the underlying reference counter
-    // This is pretty unsafe, since it will mess up how the handles work internally
-    // This will return the new reference counter value after we incremented it
     pub unsafe fn increment_count(&self) -> u32 {
         let value = self.count().saturating_add(1);
         self.set_count(value);
@@ -238,8 +232,6 @@ impl<T: 'static> Handle<T> {
     }
 
     // This will manually decrement the underlying reference counter
-    // This is pretty unsafe, since it will mess up how the handles work internally
-    // This will return the new reference counter alue after we decremented it
     pub unsafe fn decrement_count(&self) -> u32 {
         let value = self.count().saturating_sub(1);
         self.set_count(value);
