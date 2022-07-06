@@ -9,11 +9,7 @@ impl<'w> Material<'w> for Sky {
 
     type Pipeline = BatchedPipeline<Self>;
 
-    fn pipeline(
-        ctx: &mut crate::context::Context,
-        assets: &mut assets::Assets,
-        storage: &mut world::Storage<crate::prelude::Shader>,
-    ) -> Self::Pipeline {
+    fn pipeline(ctx: &mut crate::context::Context, assets: &mut assets::Assets, storage: &mut world::Storage<crate::prelude::Shader>) -> Self::Pipeline {
         <Self::Pipeline as Pipeline>::new(todo!())
     }
 

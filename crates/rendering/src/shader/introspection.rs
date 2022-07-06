@@ -80,12 +80,7 @@ struct BlockProps {
 
 impl Props for BlockProps {
     fn tags() -> &'static [u32] {
-        &[
-            gl::NAME_LENGTH,
-            gl::BUFFER_BINDING,
-            gl::BUFFER_DATA_SIZE,
-            gl::NUM_ACTIVE_VARIABLES,
-        ]
+        &[gl::NAME_LENGTH, gl::BUFFER_BINDING, gl::BUFFER_DATA_SIZE, gl::NUM_ACTIVE_VARIABLES]
     }
 }
 
@@ -122,16 +117,7 @@ unsafe fn props<P: Props>(program: u32, interface: u32, index: u32) -> P {
     let props = P::tags();
     let mut output = MaybeUninit::uninit();
     let ptr: *mut i32 = std::mem::transmute(output.as_mut_ptr() as *mut P);
-    gl::GetProgramResourceiv(
-        program,
-        interface,
-        index,
-        props.len() as i32,
-        props.as_ptr(),
-        props.len() as i32,
-        null_mut(),
-        ptr,
-    );
+    gl::GetProgramResourceiv(program, interface, index, props.len() as i32, props.as_ptr(), props.len() as i32, null_mut(), ptr);
     output.assume_init()
 }
 
@@ -139,20 +125,10 @@ unsafe fn props<P: Props>(program: u32, interface: u32, index: u32) -> P {
 unsafe fn name(program: u32, name_length: i32, interface: u32, index: u32) -> String {
     // Then fetch the name
     let mut name = vec![0u8; name_length as usize];
-    gl::GetProgramResourceName(
-        program,
-        interface,
-        index,
-        name_length,
-        null_mut(),
-        name.as_mut_ptr() as *mut i8,
-    );
+    gl::GetProgramResourceName(program, interface, index, name_length, null_mut(), name.as_mut_ptr() as *mut i8);
 
     // Return a valid string
-    CString::from_vec_with_nul(name)
-        .unwrap()
-        .into_string()
-        .unwrap()
+    CString::from_vec_with_nul(name).unwrap().into_string().unwrap()
 }
 
 // Get a vector of shader blocks directly from the program
@@ -188,12 +164,7 @@ unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
 unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
     // Get the non block uniforms first
     let mut non_block_uniforms = 0;
-    gl::GetProgramInterfaceiv(
-        program,
-        gl::UNIFORM,
-        gl::ACTIVE_RESOURCES,
-        &mut non_block_uniforms,
-    );
+    gl::GetProgramInterfaceiv(program, gl::UNIFORM, gl::ACTIVE_RESOURCES, &mut non_block_uniforms);
 
     // Fetch non block uniforms
     (0..non_block_uniforms)
@@ -203,18 +174,10 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
             let props = props::<UnifProps>(program, gl::UNIFORM, uniform_index as u32);
 
             // Skip fetching it's name if it's contained within a uniform block (since we have a unique case for those)
-            let name = name(
-                program,
-                props.name_length,
-                gl::UNIFORM,
-                uniform_index as u32,
-            );
+            let name = name(program, props.name_length, gl::UNIFORM, uniform_index as u32);
 
             // Construct the uniform and add it to the vector
-            Uniform {
-                name,
-                location: props.location as u32,
-            }
+            Uniform { name, location: props.location as u32 }
         })
         .collect::<Vec<_>>()
 }

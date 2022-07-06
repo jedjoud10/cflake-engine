@@ -27,12 +27,7 @@ impl Graphics {
     // This will be called internally by the system, and the system will simply pass the settings from the app
     pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> Self {
         // Decompose le struct
-        let GraphicsSetupSettings {
-            title,
-            size,
-            fullscreen,
-            vsync,
-        } = settings;
+        let GraphicsSetupSettings { title, size, fullscreen, vsync } = settings;
 
         // Build a valid window
         let wb = WindowBuilder::new()

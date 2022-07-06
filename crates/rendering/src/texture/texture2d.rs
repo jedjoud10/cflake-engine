@@ -59,82 +59,25 @@ impl<T: Texel> Texture for Texture2D<T> {
         (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
     }
 
-    unsafe fn from_raw_parts(
-        name: u32,
-        dimensions: <Self::Region as super::Region>::E,
-        mode: TextureMode,
-        levels: NonZeroU8,
-    ) -> Self {
-        Self {
-            name,
-            dimensions,
-            mode,
-            levels,
-            _phantom: Default::default(),
-        }
+    unsafe fn from_raw_parts(name: u32, dimensions: <Self::Region as super::Region>::E, mode: TextureMode, levels: NonZeroU8) -> Self {
+        Self { name, dimensions, mode, levels, _phantom: Default::default() }
     }
 
-    unsafe fn alloc_immutable_storage(
-        name: u32,
-        extent: <Self::Region as Region>::E,
-        levels: u8,
-        ptr: *const std::ffi::c_void,
-    ) {
-        gl::TextureStorage2D(
-            name,
-            levels as i32,
-            T::INTERNAL_FORMAT,
-            extent.w as i32,
-            extent.h as i32,
-        );
-        gl::TextureSubImage2D(
-            name,
-            0,
-            0,
-            0,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
+    unsafe fn alloc_immutable_storage(name: u32, extent: <Self::Region as Region>::E, levels: u8, ptr: *const std::ffi::c_void) {
+        gl::TextureStorage2D(name, levels as i32, T::INTERNAL_FORMAT, extent.w as i32, extent.h as i32);
+        gl::TextureSubImage2D(name, 0, 0, 0, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
     }
 
-    unsafe fn alloc_resizable_storage(
-        name: u32,
-        extent: <Self::Region as Region>::E,
-        unique_level: u8,
-        ptr: *const std::ffi::c_void,
-    ) {
+    unsafe fn alloc_resizable_storage(name: u32, extent: <Self::Region as Region>::E, unique_level: u8, ptr: *const std::ffi::c_void) {
         gl::BindTexture(gl::TEXTURE_2D, name);
-        gl::TexImage2D(
-            gl::TEXTURE_2D,
-            unique_level as i32,
-            T::INTERNAL_FORMAT as i32,
-            extent.w as i32,
-            extent.h as i32,
-            0,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
+        gl::TexImage2D(gl::TEXTURE_2D, unique_level as i32, T::INTERNAL_FORMAT as i32, extent.w as i32, extent.h as i32, 0, T::FORMAT, T::TYPE, ptr);
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
     unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const std::ffi::c_void) {
         let origin = region.origin();
         let extent = region.extent();
-        gl::TextureSubImage2D(
-            name,
-            0,
-            origin.x as i32,
-            origin.y as i32,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
+        gl::TextureSubImage2D(name, 0, origin.x as i32, origin.y as i32, extent.w as i32, extent.h as i32, T::FORMAT, T::TYPE, ptr);
     }
 }
 
@@ -150,14 +93,6 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
         let image = image.flipv();
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
         let texels = T::to_image_texels(image);
-        Self::new(
-            args.0,
-            args.3,
-            dimensions,
-            args.1,
-            args.2,
-            texels.as_slice(),
-        )
-        .unwrap()
+        Self::new(args.0, args.3, dimensions, args.1, args.2, texels.as_slice()).unwrap()
     }
 }

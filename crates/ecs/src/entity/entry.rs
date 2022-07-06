@@ -17,11 +17,7 @@ impl<'a> Entry<'a> {
     // Create an entry from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
-        Some(Self {
-            archetype: manager.archetypes.get(&linkings.mask)?,
-            bundle: linkings.bundle,
-            _phantom: Default::default(),
-        })
+        Some(Self { archetype: manager.archetypes.get(&linkings.mask)?, bundle: linkings.bundle, _phantom: Default::default() })
     }
 
     // Try to get a component mask
@@ -71,11 +67,7 @@ impl<'a> MutEntry<'a> {
     // Create a mutable entry from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
-        Some(Self {
-            archetype: manager.archetypes.get(&linkings.mask)?,
-            bundle: linkings.bundle,
-            _phantom: Default::default(),
-        })
+        Some(Self { archetype: manager.archetypes.get(&linkings.mask)?, bundle: linkings.bundle, _phantom: Default::default() })
     }
 
     // Try to get a component mask

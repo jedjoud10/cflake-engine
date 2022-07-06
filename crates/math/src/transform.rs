@@ -10,49 +10,32 @@ pub struct Transform {
 
 impl From<vek::Transform<f32, f32, f32>> for Transform {
     fn from(t: vek::Transform<f32, f32, f32>) -> Self {
-        Self {
-            position: t.position,
-            rotation: t.orientation,
-            scale: t.scale,
-        }
+        Self { position: t.position, rotation: t.orientation, scale: t.scale }
     }
 }
 
 impl From<vek::Vec3<f32>> for Transform {
     fn from(vec: vek::Vec3<f32>) -> Self {
-        Self {
-            position: vec,
-            ..Default::default()
-        }
+        Self { position: vec, ..Default::default() }
     }
 }
 
 impl From<(f32, f32, f32)> for Transform {
     fn from(vec: (f32, f32, f32)) -> Self {
-        Self {
-            position: vec.into(),
-            ..Default::default()
-        }
+        Self { position: vec.into(), ..Default::default() }
     }
 }
 
 impl From<vek::Quaternion<f32>> for Transform {
     fn from(quat: vek::Quaternion<f32>) -> Self {
-        Self {
-            rotation: quat,
-            ..Default::default()
-        }
+        Self { rotation: quat, ..Default::default() }
     }
 }
 
 // Default transform
 impl Default for Transform {
     fn default() -> Self {
-        Self {
-            position: vek::Vec3::zero(),
-            rotation: vek::Quaternion::identity(),
-            scale: vek::Vec3::one(),
-        }
+        Self { position: vek::Vec3::zero(), rotation: vek::Quaternion::identity(), scale: vek::Vec3::one() }
     }
 }
 
@@ -94,26 +77,17 @@ impl Transform {
 
     // Construct a transform using an X rotation (radians)
     pub fn rotation_x(angle_radians: f32) -> Self {
-        Self {
-            rotation: vek::Quaternion::rotation_x(angle_radians),
-            ..Default::default()
-        }
+        Self { rotation: vek::Quaternion::rotation_x(angle_radians), ..Default::default() }
     }
 
     // Construct a transform using a Y rotation (radians)
     pub fn rotation_y(angle_radians: f32) -> Self {
-        Self {
-            rotation: vek::Quaternion::rotation_y(angle_radians),
-            ..Default::default()
-        }
+        Self { rotation: vek::Quaternion::rotation_y(angle_radians), ..Default::default() }
     }
 
     // Construct a transform using a Z rotation (radians)
     pub fn rotation_z(angle_radians: f32) -> Self {
-        Self {
-            rotation: vek::Quaternion::rotation_z(angle_radians),
-            ..Default::default()
-        }
+        Self { rotation: vek::Quaternion::rotation_z(angle_radians), ..Default::default() }
     }
 
     // Construct a transform that is looking directly down (forward => (0, -1, 0))
@@ -123,50 +97,32 @@ impl Transform {
 
     // Construct a transform using an X width
     pub fn scale_x(width: f32) -> Self {
-        Self {
-            scale: vek::Vec3::new(width, 1.0, 1.0),
-            ..Default::default()
-        }
+        Self { scale: vek::Vec3::new(width, 1.0, 1.0), ..Default::default() }
     }
 
     // Construct a transform using a Y height
     pub fn scale_y(height: f32) -> Self {
-        Self {
-            scale: vek::Vec3::new(1.0, height, 1.0),
-            ..Default::default()
-        }
+        Self { scale: vek::Vec3::new(1.0, height, 1.0), ..Default::default() }
     }
 
     // Construct a transform using a Z depth
     pub fn scale_z(depth: f32) -> Self {
-        Self {
-            scale: vek::Vec3::new(1.0, 1.0, depth),
-            ..Default::default()
-        }
+        Self { scale: vek::Vec3::new(1.0, 1.0, depth), ..Default::default() }
     }
 
     // Construct a transform at the given X unit position
     pub fn at_x(x: f32) -> Self {
-        Self {
-            position: vek::Vec3::new(x, 0.0, 0.0),
-            ..Default::default()
-        }
+        Self { position: vek::Vec3::new(x, 0.0, 0.0), ..Default::default() }
     }
 
     // Construct a transform at the given Y unit position
     pub fn at_y(y: f32) -> Self {
-        Self {
-            position: vek::Vec3::new(0.0, y, 0.0),
-            ..Default::default()
-        }
+        Self { position: vek::Vec3::new(0.0, y, 0.0), ..Default::default() }
     }
 
     // Construct a transform at the given Z unit position
     pub fn at_z(z: f32) -> Self {
-        Self {
-            position: vek::Vec3::new(0.0, 0.0, z),
-            ..Default::default()
-        }
+        Self { position: vek::Vec3::new(0.0, 0.0, z), ..Default::default() }
     }
 
     // Construct a transform at the given X, Y, Z position

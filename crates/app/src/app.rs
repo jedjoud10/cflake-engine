@@ -68,11 +68,7 @@ impl App {
 
     // Set the assets folder for the user defined assets
     pub fn set_user_assets_folder_path(mut self, path: impl TryInto<PathBuf>) -> Self {
-        self.user_assets_folder = Some(
-            path.try_into()
-                .ok()
-                .expect("Input path failed to convert into PathBuf"),
-        );
+        self.user_assets_folder = Some(path.try_into().ok().expect("Input path failed to convert into PathBuf"));
         self
     }
 
@@ -98,12 +94,7 @@ impl App {
         self = self.insert_system(|e: &mut Events| assets::system(e, user));
 
         // Insert the graphics pipeline and everything rendering related
-        let settings = GraphicsSetupSettings {
-            title: self.title.clone(),
-            size: self.screensize,
-            fullscreen: self.fullscreen,
-            vsync: self.vsync,
-        };
+        let settings = GraphicsSetupSettings { title: self.title.clone(), size: self.screensize, fullscreen: self.fullscreen, vsync: self.vsync };
         self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
 
         // Sort & execute the init events
@@ -132,17 +123,11 @@ impl App {
                     *cf = ControlFlow::Exit;
                 }
             }
-            glutin::event::Event::WindowEvent {
-                window_id: _,
-                mut event,
-            } => {
+            glutin::event::Event::WindowEvent { window_id: _, mut event } => {
                 // Call the window events
                 events.execute::<WindowEvent>((&mut world, &mut event));
             }
-            glutin::event::Event::DeviceEvent {
-                device_id: _,
-                event,
-            } => {
+            glutin::event::Event::DeviceEvent { device_id: _, event } => {
                 // Call the device events
                 events.execute::<DeviceEvent>((&mut world, &event));
             }

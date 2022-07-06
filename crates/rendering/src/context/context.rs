@@ -40,19 +40,12 @@ impl Context {
         }
 
         // Create el safe wrapper
-        Self {
-            ctx,
-            bound: Default::default(),
-            renderers: Default::default(),
-        }
+        Self { ctx, bound: Default::default(), renderers: Default::default() }
     }
 
     // This will check if an object of a unique target type is currently bound to the context
     pub(crate) fn is_bound(&self, target: u32, object: u32) -> bool {
-        self.bound
-            .get(&target)
-            .map(|&bound| bound == object)
-            .unwrap_or_default()
+        self.bound.get(&target).map(|&bound| bound == object).unwrap_or_default()
     }
 
     // This will bind an object if it wasn't bound already
@@ -65,11 +58,7 @@ impl Context {
     }
 
     // Try to create a new material pipeline and automatically register it
-    pub(crate) fn register_pipeline<M: for<'w> Material<'w>>(
-        &mut self,
-        assets: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) {
+    pub(crate) fn register_pipeline<M: for<'w> Material<'w>>(&mut self, assets: &mut Assets, storage: &mut Storage<Shader>) {
         let key = TypeId::of::<M>();
         if !self.renderers.contains_key(&key) {
             let pipeline = Rc::new(M::pipeline(self, assets, storage));
@@ -79,10 +68,7 @@ impl Context {
 
     // Extract all the internally stored material pipelines
     pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {
-        self.renderers
-            .iter()
-            .map(|(_key, value)| value.clone())
-            .collect::<_>()
+        self.renderers.iter().map(|(_key, value)| value.clone()).collect::<_>()
     }
 
     // Get the raw Glutin OpenGL context wrapper

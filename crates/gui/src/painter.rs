@@ -58,12 +58,8 @@ impl Painter {
     // Create a new rasterizer using an asset loader an OpenGL context
     pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
-        let vert = loader
-            .load::<VertexStage>("engine/shaders/gui.vrsh.glsl")
-            .unwrap();
-        let frag = loader
-            .load::<FragmentStage>("engine/shaders/gui.frsh.glsl")
-            .unwrap();
+        let vert = loader.load::<VertexStage>("engine/shaders/gui.vrsh.glsl").unwrap();
+        let frag = loader.load::<FragmentStage>("engine/shaders/gui.frsh.glsl").unwrap();
 
         // Link the stages and compile the shader
         let shader = ShaderCompiler::link((vert, frag), Processor::from(loader), ctx);
@@ -76,8 +72,7 @@ impl Painter {
         }
 
         // Resizable buffers for vertices and indices
-        let vertices =
-            ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
+        let vertices = ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
         let indices = ElementBuffer::<u32>::new(ctx, BufferMode::Resizable, &[]).unwrap();
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
@@ -87,68 +82,26 @@ impl Painter {
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
             gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(
-                1,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                STRIDE,
-                (size_of::<f32>() * 2) as isize as _,
-            );
+            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, STRIDE, (size_of::<f32>() * 2) as isize as _);
             gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(
-                2,
-                4,
-                gl::UNSIGNED_BYTE,
-                gl::FALSE,
-                STRIDE,
-                (size_of::<f32>() * 4) as isize as _,
-            );
+            gl::VertexAttribPointer(2, 4, gl::UNSIGNED_BYTE, gl::FALSE, STRIDE, (size_of::<f32>() * 4) as isize as _);
             gl::BindVertexArray(0);
         }
 
-        Self {
-            shader,
-            texture: None,
-            vao,
-            indices,
-            vertices,
-        }
+        Self { shader, texture: None, vao, indices, vertices }
     }
 
     // Draw the whole user interface onto the screen
-    pub fn draw(
-        &mut self,
-        device: &mut Device,
-        ctx: &mut Context,
-        meshes: Vec<ClippedMesh>,
-        _loader: &mut Assets,
-        deltas: TexturesDelta,
-    ) {
+    pub fn draw(&mut self, device: &mut Device, ctx: &mut Context, meshes: Vec<ClippedMesh>, _loader: &mut Assets, deltas: TexturesDelta) {
         // Update font texture
-        if let Some((_tid, delta)) = deltas
-            .set
-            .iter()
-            .find(|(&tid, _)| tid == TextureId::Managed(0))
-        {
+        if let Some((_tid, delta)) = deltas.set.iter().find(|(&tid, _)| tid == TextureId::Managed(0)) {
             // Insert the texture if we don't have it already
             self.texture.get_or_insert_with(|| {
                 let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
                 let texels = image_data_to_texels(&delta.image);
 
                 // Create the main font texture since it is missing
-                Texture2D::new(
-                    ctx,
-                    TextureMode::Resizable,
-                    dimensions,
-                    Sampling {
-                        filter: Filter::Nearest,
-                        wrap: Wrap::ClampToEdge,
-                    },
-                    MipMaps::Disabled,
-                    &texels,
-                )
-                .unwrap()
+                Texture2D::new(ctx, TextureMode::Resizable, dimensions, Sampling { filter: Filter::Nearest, wrap: Wrap::ClampToEdge }, MipMaps::Disabled, &texels).unwrap()
             });
         }
 
@@ -158,25 +111,16 @@ impl Painter {
             scissor_test: None,
             primitive: PrimitiveMode::Triangles { cull: None },
             srgb: true,
-            blend: Some(BlendMode {
-                src: Factor::One,
-                dest: Factor::OneMinusSrcAlpha,
-            }),
+            blend: Some(BlendMode { src: Factor::One, dest: Factor::OneMinusSrcAlpha }),
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
-        let (mut rasterizer, mut uniforms) =
-            device
-                .canvas_mut()
-                .rasterizer(ctx, &mut self.shader, settings);
+        let (mut rasterizer, mut uniforms) = device.canvas_mut().rasterizer(ctx, &mut self.shader, settings);
 
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
         uniforms.set_sampler("u_sampler", texture);
-        uniforms.set_vec2::<vek::Vec2<i32>>(
-            "resolution",
-            rasterizer.canvas().size().as_::<i32>().into(),
-        );
+        uniforms.set_vec2::<vek::Vec2<i32>>("resolution", rasterizer.canvas().size().as_::<i32>().into());
 
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
@@ -185,12 +129,7 @@ impl Painter {
 
             unsafe {
                 rasterizer
-                    .draw_from_raw_parts(
-                        self.vao,
-                        self.indices.name(),
-                        self.indices.len() as u32,
-                        &mut uniforms,
-                    )
+                    .draw_from_raw_parts(self.vao, self.indices.name(), self.indices.len() as u32, &mut uniforms)
                     .unwrap();
             }
         }

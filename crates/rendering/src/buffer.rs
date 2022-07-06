@@ -44,13 +44,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
-    unsafe fn from_raw_parts(
-        _ctx: &mut Context,
-        mode: BufferMode,
-        capacity: usize,
-        length: usize,
-        ptr: *const T,
-    ) -> Option<Self> {
+    unsafe fn from_raw_parts(_ctx: &mut Context, mode: BufferMode, capacity: usize, length: usize, ptr: *const T) -> Option<Self> {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::CreateBuffers(1, &mut buffer);
@@ -64,33 +58,17 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
 
         // Validate the pointer
-        let ptr = if bytes == 0 {
-            null()
-        } else {
-            ptr as *const c_void
-        };
+        let ptr = if bytes == 0 { null() } else { ptr as *const c_void };
 
         // Initialize the buffer correctly
         match mode {
             BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, 0),
-            BufferMode::Dynamic => gl::NamedBufferStorage(
-                buffer,
-                bytes,
-                ptr,
-                gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT,
-            ),
+            BufferMode::Dynamic => gl::NamedBufferStorage(buffer, bytes, ptr, gl::DYNAMIC_STORAGE_BIT | gl::CLIENT_STORAGE_BIT),
             BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
         }
 
         // Create the buffer struct
-        Some(Self {
-            buffer,
-            len: length,
-            capacity,
-            mode,
-            _phantom: Default::default(),
-            _phantom2: Default::default(),
-        })
+        Some(Self { buffer, len: length, capacity, mode, _phantom: Default::default(), _phantom2: Default::default() })
     }
 
     // Create an empty resizable buffer
@@ -127,26 +105,14 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             if bytes != 0 {
                 let borrow = &val as *const T;
-                gl::ClearNamedBufferSubData(
-                    self.buffer,
-                    gl::R8,
-                    0,
-                    bytes,
-                    gl::RED,
-                    gl::UNSIGNED_BYTE,
-                    borrow as _,
-                );
+                gl::ClearNamedBufferSubData(self.buffer, gl::R8, 0, bytes, gl::RED, gl::UNSIGNED_BYTE, borrow as _);
             }
         }
     }
 
     // Overwrite the whole buffer with new data
     pub fn write(&mut self, data: &[T]) {
-        assert_ne!(
-            self.mode,
-            BufferMode::Static,
-            "Cannot update Static buffers"
-        );
+        assert_ne!(self.mode, BufferMode::Static, "Cannot update Static buffers");
 
         assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
 
@@ -168,10 +134,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Copy the data from another buffer into our buffer
     pub fn copy_from<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) {
-        assert!(
-            self.len * size_of::<T>() == other.len(),
-            "Current byte length and other buffer byte length do not match up, cannot copy"
-        );
+        assert!(self.len * size_of::<T>() == other.len(), "Current byte length and other buffer byte length do not match up, cannot copy");
 
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
@@ -186,10 +149,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Read back the whole buffer, and store it inside output
     pub fn read(&self, output: &mut [T]) {
-        assert!(
-            output.len() == self.len(),
-            "Current length and output length do not match up, cannot read"
-        );
+        assert!(output.len() == self.len(), "Current length and output length do not match up, cannot read");
 
         unsafe {
             let bytes = isize::try_from(output.len() * size_of::<T>()).unwrap();

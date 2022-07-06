@@ -19,10 +19,7 @@ impl std::fmt::Debug for EntryError {
             EntryError::LayoutIntersectingMask => {
                 write!(f, "The given layout has intersecting mutable components")
             }
-            EntryError::LayoutMissingComponents => write!(
-                f,
-                " The given layout has components that are not linked to the entity"
-            ),
+            EntryError::LayoutMissingComponents => write!(f, " The given layout has components that are not linked to the entity"),
         }
     }
 }

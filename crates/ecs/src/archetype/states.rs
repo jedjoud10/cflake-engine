@@ -55,11 +55,7 @@ impl States {
     }
 
     // Update the value of a row. This will return the old row state
-    pub fn update(
-        &self,
-        bundle: usize,
-        function: impl FnOnce(&mut Mask, &mut Mask),
-    ) -> Option<StateRow> {
+    pub fn update(&self, bundle: usize, function: impl FnOnce(&mut Mask, &mut Mask)) -> Option<StateRow> {
         // Fetch the element
         let mut borrowed = self.rows.borrow_mut();
         let row = borrowed.get_mut(bundle)?;

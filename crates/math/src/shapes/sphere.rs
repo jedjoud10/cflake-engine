@@ -18,18 +18,12 @@ impl Sphere {
 
     // Create a new unit sphere at a specific location
     pub fn new_unit(center: vek::Vec3<f32>) -> Self {
-        Self {
-            center,
-            radius: 1.0,
-        }
+        Self { center, radius: 1.0 }
     }
 
     // Create a point (a sphere with radius of 0)
     pub fn new_point(center: vek::Vec3<f32>) -> Self {
-        Self {
-            center,
-            radius: 0.0,
-        }
+        Self { center, radius: 0.0 }
     }
 }
 

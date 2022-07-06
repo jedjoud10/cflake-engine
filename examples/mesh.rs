@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use cflake_engine::prelude::*;
 
-const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/"); 
+const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
@@ -31,34 +31,20 @@ fn init(world: &mut World) {
     keyboard.bind("right", Key::D);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (
-        Sampling {
-            filter: Filter::Linear,
-            wrap: Wrap::Repeat,
-        },
-        MipMaps::AutomaticAniso { samples: NonZeroU8::new(4).unwrap() },
-        TextureMode::Static,
-    );
+    let params = (Sampling { filter: Filter::Linear, wrap: Wrap::Repeat }, MipMaps::AutomaticAniso { samples: NonZeroU8::new(4).unwrap() }, TextureMode::Static);
 
     let texture = assets
-        .load_with::<NormalMap>(
-            "user/textures/normal.png",
-            (ctx, params.0, params.1, params.2),
-        )
+        .load_with::<NormalMap>("user/textures/normal.png", (ctx, params.0, params.1, params.2))
         .unwrap();
     let texture = textures.insert(texture);
 
-    let material = Standard::builder()
-        .with_normal(&texture)
-        .with_bumpiness(1.4)
-        .build();
+    let material = Standard::builder().with_normal(&texture).with_bumpiness(1.4).build();
     let material = materials.insert(material);
 
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material);
-    ecs.insert((renderer, surface, Transform::default()))
-        .unwrap();
+    ecs.insert((renderer, surface, Transform::default())).unwrap();
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
@@ -69,14 +55,7 @@ fn init(world: &mut World) {
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let (ecs, scene, keyboard, mouse, Graphics(device, _), time) = world
-        .get_mut::<(
-            &mut EcsManager,
-            &SceneSettings,
-            &Keyboard,
-            &Mouse,
-            &mut Graphics,
-            &Time,
-        )>()
+        .get_mut::<(&mut EcsManager, &SceneSettings, &Keyboard, &Mouse, &mut Graphics, &Time)>()
         .unwrap();
 
     // Lock the cursor basically
@@ -104,8 +83,7 @@ fn update(world: &mut World) {
 
         let pos = mouse.position();
         const SENSIVITY: f32 = 0.0007;
-        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
-            * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
+        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY) * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
     }
 }

@@ -6,10 +6,7 @@ use crate::{
     context::{Context, Graphics, GraphicsSetupSettings},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Standard, StandardBuilder},
     mesh::SubMesh,
-    prelude::{
-        Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
-        RGBA,
-    },
+    prelude::{Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB, RGBA},
     shader::Shader,
 };
 
@@ -31,18 +28,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
-        Texture2D::<T>::new(
-            ctx,
-            TextureMode::Static,
-            vek::Extent2::one(),
-            Sampling {
-                filter: Filter::Nearest,
-                wrap: Wrap::Repeat,
-            },
-            MipMaps::Disabled,
-            &[texel],
-        )
-        .unwrap()
+        Texture2D::<T>::new(ctx, TextureMode::Static, vek::Extent2::one(), Sampling { filter: Filter::Nearest, wrap: Wrap::Repeat }, MipMaps::Disabled, &[texel]).unwrap()
     }
 
     // Create the default black texture
@@ -57,13 +43,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Insert all of the textures into their corresponding storages
     let (albedo_maps, normal_maps, mask_maps, assets, Graphics(_, ctx)) = world
-        .get_mut::<(
-            &mut Storage<AlbedoMap>,
-            &mut Storage<NormalMap>,
-            &mut Storage<MaskMap>,
-            &mut Assets,
-            &mut Graphics,
-        )>()
+        .get_mut::<(&mut Storage<AlbedoMap>, &mut Storage<NormalMap>, &mut Storage<MaskMap>, &mut Assets, &mut Graphics)>()
         .unwrap();
 
     // Convert the texture maps into texture map handles
@@ -73,26 +53,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mask_map = mask_maps.insert(mask_map);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (
-        Sampling {
-            filter: Filter::Nearest,
-            wrap: Wrap::Repeat,
-        },
-        MipMaps::Automatic,
-        TextureMode::Static,
-    );
+    let params = (Sampling { filter: Filter::Nearest, wrap: Wrap::Repeat }, MipMaps::Automatic, TextureMode::Static);
 
     let debug = assets
-        .load_with::<NormalMap>(
-            "engine/textures/bumps.png",
-            (ctx, params.0, params.1, params.2),
-        )
+        .load_with::<NormalMap>("engine/textures/bumps.png", (ctx, params.0, params.1, params.2))
         .unwrap();
     let missing = assets
-        .load_with::<AlbedoMap>(
-            "engine/textures/missing.png",
-            (ctx, params.0, params.1, params.2),
-        )
+        .load_with::<AlbedoMap>("engine/textures/missing.png", (ctx, params.0, params.1, params.2))
         .unwrap();
 
     // Convert them to map handles
@@ -101,13 +68,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the default PBR material (refetch the resources since we need storage and asset loader)
     let (Graphics(_, ctx), assets, materials, shaders, submeshes) = world
-        .get_mut::<(
-            &mut Graphics,
-            &mut Assets,
-            &mut Storage<Standard>,
-            &mut Storage<Shader>,
-            &mut Storage<SubMesh>,
-        )>()
+        .get_mut::<(&mut Graphics, &mut Assets, &mut Storage<Standard>, &mut Storage<Shader>, &mut Storage<SubMesh>)>()
         .unwrap();
 
     // Create le default material
@@ -130,27 +91,14 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let cube = submeshes.insert(cube);
 
     // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneSettings::new(
-        black,
-        white.clone(),
-        white,
-        normal_map,
-        mask_map,
-        missing,
-        debug,
-        material,
-        cube.clone(),
-        cube,
-    );
+    let scene = SceneSettings::new(black, white.clone(), white, normal_map, mask_map, missing, debug, material, cube.clone(), cube);
     world.insert(scene);
 }
 
 // Rendering event that will try to render the 3D scene each frame
 // This will also update the world matrices of each renderer
 fn rendering(world: &mut World) {
-    let (ecs, graphics, settings) = world
-        .get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>()
-        .unwrap();
+    let (ecs, graphics, settings) = world.get_mut::<(&mut EcsManager, &mut Graphics, &SceneSettings)>().unwrap();
     let Graphics(_device, context) = graphics;
 
     if !settings.can_render() {
@@ -159,19 +107,14 @@ fn rendering(world: &mut World) {
 
     // Update the world matrices
     let filter = or(modified::<Transform>(), added::<Transform>());
-    let query = ecs
-        .try_query_with::<(&mut Renderer, &Transform)>(filter)
-        .unwrap();
+    let query = ecs.try_query_with::<(&mut Renderer, &Transform)>(filter).unwrap();
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
     }
 
     // Render all the surfaces using their respective pipelines
     let pipes = context.extract_pipelines();
-    let _stats = pipes
-        .into_iter()
-        .map(|pipe| pipe.render(world))
-        .collect::<Vec<_>>();
+    let _stats = pipes.into_iter().map(|pipe| pipe.render(world)).collect::<Vec<_>>();
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -200,9 +143,7 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
     let Graphics(device, _) = world.get_mut::<&mut Graphics>().unwrap();
-    device
-        .canvas_mut()
-        .clear(Some(vek::Rgb::black()), Some(1.0), None);
+    device.canvas_mut().clear(Some(vek::Rgb::black()), Some(1.0), None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
@@ -215,18 +156,14 @@ fn swap(world: &mut World) {
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
-    let (ecs, Graphics(_device, _), scene) = world
-        .get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>()
-        .unwrap();
+    let (ecs, Graphics(_device, _), scene) = world.get_mut::<(&mut EcsManager, &Graphics, &mut SceneSettings)>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
         let mut entry = ecs.try_mut_entry(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry
-            .get_mut_layout::<(&mut Camera, &mut Transform)>()
-            .unwrap();
+        let (camera, transform) = entry.get_mut_layout::<(&mut Camera, &mut Transform)>().unwrap();
         camera.update(transform);
     }
 }
@@ -236,35 +173,18 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert init events
     events
         .registry::<Init>()
-        .insert_with(
-            |world: &mut World, el: &EventLoop<()>| init(world, settings, el),
-            Stage::new("graphics insert").after("asset loader insert"),
-        )
+        .insert_with(|world: &mut World, el: &EventLoop<()>| init(world, settings, el), Stage::new("graphics insert").after("asset loader insert"))
         .unwrap();
 
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
-    reg.insert_with(clear, Stage::new("window clear").before("user"))
+    reg.insert_with(clear, Stage::new("window clear").before("user")).unwrap();
+    reg.insert_with(main_camera, Stage::new("main camera update").after("user").before("post user"))
         .unwrap();
-    reg.insert_with(
-        main_camera,
-        Stage::new("main camera update")
-            .after("user")
-            .before("post user"),
-    )
-    .unwrap();
-    reg.insert_with(
-        rendering,
-        Stage::new("scene rendering")
-            .after("main camera update")
-            .after("post user"),
-    )
-    .unwrap();
-    reg.insert_with(
-        swap,
-        Stage::new("window back buffer swap").after("scene rendering"),
-    )
-    .unwrap();
+    reg.insert_with(rendering, Stage::new("scene rendering").after("main camera update").after("post user"))
+        .unwrap();
+    reg.insert_with(swap, Stage::new("window back buffer swap").after("scene rendering"))
+        .unwrap();
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);

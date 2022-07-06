@@ -23,10 +23,7 @@ impl GeometryBuilder {
     // Create a new empty procedular geometry builder
     // It contains no attributes or indices, just an empty one
     pub fn empty() -> Self {
-        Self {
-            vertices: VertexAssembly::empty(),
-            indices: Vec::new(),
-        }
+        Self { vertices: VertexAssembly::empty(), indices: Vec::new() }
     }
 
     // Set a single unique vertex attribute
@@ -132,20 +129,13 @@ impl Asset<'static> for GeometryBuilder {
             // Write a tangent internally
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
                 let i = self.indices[face * 3 + vert] as usize;
-                self.tangents[i] =
-                    vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
+                self.tangents[i] = vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
             }
         }
 
         // Pre-allocate the tangents and create the mikktspace generator
         let mut tangents = vec![vek::Vec4::<i8>::zero(); capacity];
-        let mut gen = TangentGenerator {
-            positions: &positions,
-            normals: &normals,
-            indices: &indices,
-            uvs: &tex_coords_0,
-            tangents: &mut tangents,
-        };
+        let mut gen = TangentGenerator { positions: &positions, normals: &normals, indices: &indices, uvs: &tex_coords_0, tangents: &mut tangents };
 
         // Generate the procedural tangents
         assert!(mikktspace::generate_tangents(&mut gen));

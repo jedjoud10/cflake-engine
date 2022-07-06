@@ -10,17 +10,11 @@ pub enum PipelineSortingError {
 impl std::fmt::Debug for PipelineSortingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PipelineSortingError::CyclicReference => write!(
-                f,
-                "Detected a cyclic reference when trying to sort stages; aborting"
-            ),
+            PipelineSortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages; aborting"),
             PipelineSortingError::CyclicRuleReference(name) => {
                 write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
             }
-            PipelineSortingError::MissingStage(current, name) => write!(
-                f,
-                "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"
-            ),
+            PipelineSortingError::MissingStage(current, name) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
         }
     }
 }
@@ -47,10 +41,7 @@ impl std::fmt::Debug for StageError {
             StageError::MissingRules => {
                 write!(f, "The given stage has no rules associated with it")
             }
-            StageError::Overlapping => write!(
-                f,
-                "Tried to insert the stage into the pipeline, but the stage name was already used"
-            ),
+            StageError::Overlapping => write!(f, "Tried to insert the stage into the pipeline, but the stage name was already used"),
         }
     }
 }

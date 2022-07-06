@@ -83,11 +83,7 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
     type Tuple = (A::Item, B::Item, C::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        (
-            A::fetch(archetype),
-            B::fetch(archetype),
-            C::fetch(archetype),
-        )
+        (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype))
     }
 
     fn combined() -> LayoutAccess {
@@ -99,32 +95,16 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> QueryLayout<'a> f
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        (
-            A::offset(tuple.0, bundle),
-            B::offset(tuple.1, bundle),
-            C::offset(tuple.2, bundle),
-        )
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle))
     }
 }
 
-impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> QueryLayout<'a>
-    for (A, B, C, D)
-{
-    type PtrTuple = (
-        NonNull<A::Item>,
-        NonNull<B::Item>,
-        NonNull<C::Item>,
-        NonNull<D::Item>,
-    );
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> QueryLayout<'a> for (A, B, C, D) {
+    type PtrTuple = (NonNull<A::Item>, NonNull<B::Item>, NonNull<C::Item>, NonNull<D::Item>);
     type Tuple = (A::Item, B::Item, C::Item, D::Item);
 
     fn get_base_ptrs(archetype: &Archetype) -> Self::PtrTuple {
-        (
-            A::fetch(archetype),
-            B::fetch(archetype),
-            C::fetch(archetype),
-            D::fetch(archetype),
-        )
+        (A::fetch(archetype), B::fetch(archetype), C::fetch(archetype), D::fetch(archetype))
     }
 
     fn combined() -> LayoutAccess {
@@ -136,12 +116,7 @@ impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>>
     }
 
     fn offset(tuple: Self::PtrTuple, bundle: usize) -> Self {
-        (
-            A::offset(tuple.0, bundle),
-            B::offset(tuple.1, bundle),
-            C::offset(tuple.2, bundle),
-            D::offset(tuple.3, bundle),
-        )
+        (A::offset(tuple.0, bundle), B::offset(tuple.1, bundle), C::offset(tuple.2, bundle), D::offset(tuple.3, bundle))
     }
 }
 

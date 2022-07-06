@@ -13,10 +13,7 @@ pub struct AABB {
 impl AABB {
     // Create an AABB at a specified center position and half-extent scale
     pub fn new(center: vek::Vec3<f32>, half_extent: vek::Extent3<f32>) -> Self {
-        Self {
-            min: center - vek::Vec3::from(half_extent),
-            max: center + vek::Vec3::from(half_extent),
-        }
+        Self { min: center - vek::Vec3::from(half_extent), max: center + vek::Vec3::from(half_extent) }
     }
 
     // Get all the vertices of this AABB, in the order that is defined on this website

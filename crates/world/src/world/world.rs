@@ -1,7 +1,4 @@
-use crate::{
-    world, Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor,
-    Update,
-};
+use crate::{world, Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor, Update};
 use ahash::AHashMap;
 use std::any::TypeId;
 
@@ -59,10 +56,7 @@ impl World {
 
     // Get a resource entry that we can use to overwrite or insert missing resources with
     pub fn entry<'a, T: Resource>(&'a mut self) -> Entry<'a, T> {
-        Entry {
-            world: self,
-            _phantom: Default::default(),
-        }
+        Entry { world: self, _phantom: Default::default() }
     }
 }
 

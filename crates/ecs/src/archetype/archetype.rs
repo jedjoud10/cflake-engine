@@ -1,7 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, EntitySet, Mask, MaskMap, StateRow, States, StorageVec,
-    UniqueStoragesSet,
+    registry, ArchetypeSet, EntitySet, Mask, MaskMap, StateRow, States, StorageVec, UniqueStoragesSet,
 };
 use std::any::Any;
 // Combination of multiple component types
@@ -36,21 +35,11 @@ impl Archetype {
             })
             .collect::<_>();
 
-        Self {
-            vectors,
-            mask,
-            entities: Default::default(),
-            states: Default::default(),
-        }
+        Self { vectors, mask, entities: Default::default(), states: Default::default() }
     }
 
     // Add an entity into the archetype and update it's linkings
-    pub(crate) fn push(
-        &mut self,
-        entity: Entity,
-        linkings: &mut EntityLinkings,
-        components: Vec<(Mask, Box<dyn Any>)>,
-    ) {
+    pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
         // Add the entity and update it's linkings
         self.states.push(StateRow::new(self.mask));
         self.entities.push(entity);
@@ -64,11 +53,7 @@ impl Archetype {
     }
 
     // Update a single underlying storage
-    fn fetch_update(
-        &mut self,
-        mask: Mask,
-        function: impl FnOnce(&mut Box<dyn StorageVec>),
-    ) -> Option<()> {
+    fn fetch_update(&mut self, mask: Mask, function: impl FnOnce(&mut Box<dyn StorageVec>)) -> Option<()> {
         let vec = self.vectors.get_mut(&mask)?;
         function(vec);
         Some(())
@@ -101,20 +86,14 @@ impl Archetype {
 
     // Remove an entity from the archetype it is currently linked to
     // This will return the removed boxed components that validate the given mask
-    pub(crate) fn remove(
-        archetypes: &mut ArchetypeSet,
-        entities: &mut EntitySet,
-        entity: Entity,
-        filter: Mask,
-    ) -> Vec<(Mask, Box<dyn Any>)> {
+    pub(crate) fn remove(archetypes: &mut ArchetypeSet, entities: &mut EntitySet, entity: Entity, filter: Mask) -> Vec<(Mask, Box<dyn Any>)> {
         // Get the archetype directly
         let linkings = entities.get_mut(entity).unwrap();
         let bundle = linkings.bundle;
         let archetype = archetypes.get_mut(&linkings.mask).unwrap();
 
         // The boxed components that will be added into the new archetype
-        let mut components: Vec<(Mask, Box<dyn Any>)> =
-            Vec::with_capacity(filter.count_ones() as usize);
+        let mut components: Vec<(Mask, Box<dyn Any>)> = Vec::with_capacity(filter.count_ones() as usize);
 
         // Remove the components from the storages
         for (&mask, vec) in archetype.vectors.iter_mut() {

@@ -26,14 +26,7 @@ impl Default for VertexAssembly {
 impl VertexAssembly {
     // Create an empty vertex assembly that contains no attributes what so ever
     pub fn empty() -> Self {
-        Self {
-            positions: None,
-            normals: None,
-            tangents: None,
-            colors: None,
-            tex_coord_0: None,
-            layout: VertexLayout::default(),
-        }
+        Self { positions: None, normals: None, tangents: None, colors: None, tex_coord_0: None, layout: VertexLayout::default() }
     }
 
     // Insert an attribute vector into the assembly
@@ -65,13 +58,7 @@ impl VertexAssembly {
         }
 
         // Make sure all the lengths (that are valid) be equal to each other
-        let arr = [
-            len(&self.positions),
-            len(&self.normals),
-            len(&self.tangents),
-            len(&self.colors),
-            len(&self.tex_coord_0),
-        ];
+        let arr = [len(&self.positions), len(&self.normals), len(&self.tangents), len(&self.colors), len(&self.tex_coord_0)];
         let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
 
         // Iterate and check

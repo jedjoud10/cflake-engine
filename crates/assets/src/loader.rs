@@ -22,18 +22,11 @@ pub struct Assets {
 impl Assets {
     // Create a new asset loader using a path to the user defined asset folder (if there is one)
     pub fn new(user: Option<PathBuf>) -> Self {
-        Self {
-            cached: Default::default(),
-            user,
-        }
+        Self { cached: Default::default(), user }
     }
 
     // Load an asset using some explicit loading arguments
-    pub fn load_with<'loader, 'args, A: Asset<'args>>(
-        &'loader mut self,
-        path: &str,
-        args: A::Args,
-    ) -> Option<A> {
+    pub fn load_with<'loader, 'args, A: Asset<'args>>(&'loader mut self, path: &str, args: A::Args) -> Option<A> {
         // Check if the extension is valid
         let path = PathBuf::from_str(path).unwrap();
         let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
@@ -51,15 +44,7 @@ impl Assets {
         let slice = self.cached.get(&path).map(Vec::as_slice)?;
 
         // Deserialize the asset file
-        Some(A::deserialize(
-            crate::Data {
-                name,
-                extension,
-                bytes: slice,
-                path: &path,
-            },
-            args,
-        ))
+        Some(A::deserialize(crate::Data { name, extension, bytes: slice, path: &path }, args))
     }
 
     // Load an asset using some default loading arguments
@@ -72,11 +57,7 @@ impl Assets {
 
     // Import a persistant asset using it's global asset path and it's raw bytes
     pub fn import(&mut self, path: impl AsRef<Path>, bytes: Vec<u8>) {
-        let path = path
-            .as_ref()
-            .strip_prefix("./assets/")
-            .unwrap()
-            .to_path_buf();
+        let path = path.as_ref().strip_prefix("./assets/").unwrap().to_path_buf();
         self.cached.entry(path).or_insert(bytes);
     }
 }

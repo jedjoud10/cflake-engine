@@ -20,14 +20,8 @@ impl std::fmt::Debug for UniformsError {
             UniformsError::IncompleteBinding(name) => {
                 write!(f, "The binding point '{name}' was not set")
             }
-            UniformsError::InvalidUniformName(name) => write!(
-                f,
-                "Tried to set uniform '{name}', but it does not exist in the program"
-            ),
-            UniformsError::InvalidBindingName(name) => write!(
-                f,
-                "Tried to set binding point '{name}', but it does not exist in the program"
-            ),
+            UniformsError::InvalidUniformName(name) => write!(f, "Tried to set uniform '{name}', but it does not exist in the program"),
+            UniformsError::InvalidBindingName(name) => write!(f, "Tried to set binding point '{name}', but it does not exist in the program"),
         }
     }
 }

@@ -75,16 +75,7 @@ macro_rules! impl_stage_traits {
             }
 
             fn deserialize(data: assets::Data, _args: Self::Args) -> Self {
-                Self {
-                    source: String::from_utf8(data.bytes().to_vec()).unwrap(),
-                    name: data
-                        .path()
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                }
+                Self { source: String::from_utf8(data.bytes().to_vec()).unwrap(), name: data.path().file_name().unwrap().to_str().unwrap().to_string() }
             }
         }
     };
@@ -157,8 +148,5 @@ pub(super) unsafe fn compile<U: Stage>(_ctx: &mut Context, stage: Processed<U>) 
     // Return the stage GL name
     println!("Compiled shader source {name} successfully");
 
-    Compiled {
-        name: shader,
-        _phantom: Default::default(),
-    }
+    Compiled { name: shader, _phantom: Default::default() }
 }

@@ -8,10 +8,7 @@ pub struct ComputeShader(pub(super) Program);
 
 impl ComputeShader {
     // Create a new scheduler for this compute shader and it's corresponding uniform values
-    pub fn scheduler<'s, 'c>(
-        &'s mut self,
-        ctx: &'c mut Context,
-    ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
+    pub fn scheduler<'s, 'c>(&'s mut self, ctx: &'c mut Context) -> (ComputeScheduler<'c>, Uniforms<'s>) {
         (ComputeScheduler { ctx }, Uniforms(self.as_mut()))
     }
 }

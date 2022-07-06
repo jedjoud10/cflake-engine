@@ -14,9 +14,7 @@ pub trait Resource: 'static {
     where
         Self: Sized,
     {
-        world
-            .get_mut_unique::<Self>()
-            .map(|r| NonNull::new(r as *mut Self).unwrap())
+        world.get_mut_unique::<Self>().map(|r| NonNull::new(r as *mut Self).unwrap())
     }
 }
 
