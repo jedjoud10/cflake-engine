@@ -27,6 +27,10 @@ pub(crate) extern "system" fn callback(
     ptr: *const types::GLchar,
     _user: *mut c_void,
 ) {
+    if severity == gl::DEBUG_SEVERITY_NOTIFICATION {
+        return;
+    }
+
     // Convert the source type to a user safe name
     let source = match source {
         gl::DEBUG_SOURCE_API => "API",
@@ -34,7 +38,7 @@ pub(crate) extern "system" fn callback(
         gl::DEBUG_SOURCE_APPLICATION => "App",
         gl::DEBUG_SOURCE_SHADER_COMPILER => "Shader Compiler",
         gl::DEBUG_SOURCE_THIRD_PARTY => "Third Party",
-        _ => "Don't care",
+        _ => panic!(),
     };
 
     // Convert the unsafe message pointer to a safe string
@@ -46,12 +50,12 @@ pub(crate) extern "system" fn callback(
 
     // Convert the severity type to a user safe name
     let severity = match severity {
-        gl::DEBUG_SEVERITY_LOW => "Low",
-        gl::DEBUG_SEVERITY_MEDIUM => "Mid",
-        gl::DEBUG_SEVERITY_HIGH => "High",
-        _ => "Don't care",
+        gl::DEBUG_SEVERITY_LOW => "Low Severity",
+        gl::DEBUG_SEVERITY_MEDIUM => "Medium Severity",
+        gl::DEBUG_SEVERITY_HIGH => "High Severity",
+        gl::DEBUG_SEVERITY_NOTIFICATION => "Notification",
+        _ => panic!()
     };
 
-    // Print el messsage
-    println!("{source}, {severity} severity, {message}");
+    println!("{source}, {severity}, {message}");
 }

@@ -16,6 +16,8 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 // Load the default shaders
                 persistent!(loader, "engine/shaders/pbr.vrsh.glsl");
                 persistent!(loader, "engine/shaders/pbr.frsh.glsl");
+                persistent!(loader, "engine/shaders/gui.vrsh.glsl");
+                persistent!(loader, "engine/shaders/gui.frsh.glsl");
 
                 // Load the default meshes
                 persistent!(loader, "engine/meshes/cube.obj");

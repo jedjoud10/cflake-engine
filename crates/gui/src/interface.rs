@@ -2,7 +2,7 @@ use crate::painter::Painter;
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
 use rendering::{gl, prelude::Graphics};
-use world::{Events, Resource, World};
+use world::{Events, Resource, World, Init, Update, Stage};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
@@ -32,7 +32,7 @@ impl AsRef<egui::Context> for UserInterface {
 
 // This system will automatically insert the user interface and setup it's necessary events
 // This will create the init event, begin update event, draw update event, and window event
-pub fn system(_events: &mut Events) {
+pub fn system(events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
         let (Graphics(_, context), assets) =
@@ -55,13 +55,13 @@ pub fn system(_events: &mut Events) {
     }
 
     // Called from within glutin to register a new window event
-    pub fn window(world: &mut World, event: &WindowEvent) {
+    fn window(world: &mut World, event: &WindowEvent) {
         let ui = world.get_mut::<&mut UserInterface>().unwrap();
         ui.state.on_event(&mut ui.egui, event);
     }
 
     // This is called at the start of each frame to tell egui that we must register the upcoming draw commands
-    pub fn begin(world: &mut World) {
+    fn begin(world: &mut World) {
         let (ui, Graphics(device, _)) = world
             .get_mut::<(&mut UserInterface, &mut Graphics)>()
             .unwrap();
@@ -70,7 +70,7 @@ pub fn system(_events: &mut Events) {
     }
 
     // This is called at the end of each frame (after we render the main 3D scene)
-    pub fn draw(world: &mut World) {
+    fn draw(world: &mut World) {
         let (ui, Graphics(device, ctx), assets) = world
             .get_mut::<(&mut UserInterface, &mut Graphics, &mut Assets)>()
             .unwrap();
@@ -90,10 +90,8 @@ pub fn system(_events: &mut Events) {
     }
 
     // Register all the events
-    /*
-    events.register::<Init>(init);
-    events.register::<Update>(begin);
-    events.register_with::<Update>(draw, i32::MAX);
-    events.register::<WindowEvent>(window);
-    */
+    events.registry::<Init>().insert(init);
+    events.registry::<Update>().insert(begin);
+    events.registry::<Update>().insert_with(draw, Stage::new("ui rendering").after("scene rendering").before("window back buffer swap")).unwrap();
+    events.registry::<WindowEvent>().insert(window);
 }

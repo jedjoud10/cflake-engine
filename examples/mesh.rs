@@ -3,8 +3,7 @@ use cflake_engine::prelude::*;
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
     App::default()
-        .set_window_title("Cflake Engine Mesh Example")
-        .set_window_vsync(false)
+        .set_window_title("cflake engine mesh example")
         .set_window_fullscreen(true)
         .insert_system(system)
         .execute();

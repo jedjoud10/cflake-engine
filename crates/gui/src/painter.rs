@@ -59,10 +59,10 @@ impl Painter {
     pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
         let vert = loader
-            .load::<VertexStage>("defaults/shaders/gui/vert.vrsh.glsl")
+            .load::<VertexStage>("engine/shaders/gui.vrsh.glsl")
             .unwrap();
         let frag = loader
-            .load::<FragmentStage>("defaults/shaders/gui/frag.frsh.glsl")
+            .load::<FragmentStage>("engine/shaders/gui.frsh.glsl")
             .unwrap();
 
         // Link the stages and compile the shader
@@ -172,6 +172,7 @@ impl Painter {
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
         uniforms.set_sampler("u_sampler", texture);
+        uniforms.set_vec2::<vek::Vec2<i32>>("resolution", rasterizer.canvas().size().as_::<i32>().into());
 
         // Draw the clipped meshes
         for mesh in meshes {
