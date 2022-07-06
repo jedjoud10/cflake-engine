@@ -43,6 +43,10 @@ void main() {
     // Calculate lighting factor
     float light = dot(normal, light_dir);
 
+	// Calculate specular light
+	vec3 view = normalize(m_position - camera);
+	float spec = pow(max(dot(view, reflect(light_dir, normal)), 0.0), 32);
+
     // This sets the color for the current fragment
-    frag = vec4(light * diffuse, 0.0);
+    frag = vec4(light * diffuse + spec, 0.0);
 }

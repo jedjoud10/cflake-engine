@@ -18,6 +18,7 @@ use crate::{
 
 use super::{Pipeline, Standard, Stats};
 
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
     // The resources that we need to fetch from the world to set the uniforms
@@ -101,5 +102,7 @@ pub trait Material<'w>: 'static + Sized {
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
     ) where
-        'w: 'u;
+        'w: 'u 
+    {
+    }
 }

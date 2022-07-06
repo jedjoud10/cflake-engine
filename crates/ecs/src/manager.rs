@@ -4,7 +4,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkModifier,
-    Mask, MaskMap, MutEntry, QueryLayout, StorageVec,
+    Mask, MaskMap, MutEntry, QueryLayout, StorageVec, OwnedLayout, LinkError,
 };
 
 // Type aliases because I have gone insane
@@ -73,7 +73,6 @@ impl EcsManager {
 
     // Insert an emtpy entity into the manager, and run a callback that will add components to it
     pub fn insert(&mut self, function: impl FnOnce(Entity, &mut LinkModifier)) -> Entity {
-        // Add le entity
         let entity = self.entities.insert(EntityLinkings::default());
 
         // Create a link modifier, so we can insert/remove components
@@ -86,6 +85,15 @@ impl EcsManager {
         *self.entities.get_mut(entity).unwrap() = linkings;
 
         entity
+    }
+
+    // Insert an entity with the given component set as a tuple
+    pub fn insert_tuple<T: OwnedLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
+        let mut error: Result<(), LinkError> = Ok(());
+        let entity = self.insert(|_, modifier| {
+            error = T::insert(tuple, modifier); 
+        });
+        error.map(|_| entity)
     }
 
     // Remove an entity from the world

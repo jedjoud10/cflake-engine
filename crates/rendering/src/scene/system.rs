@@ -109,6 +109,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .with_roughness(1.0)
         .build();
     let material = materials.insert(material);
+    ctx.register_pipeline::<Standard>(assets, shaders);
 
     // Load the default cube and sphere meshes
     let cube = assets

@@ -71,9 +71,9 @@ impl Context {
 
         *self.bound.entry(target).or_insert(object) = object;
     }
-    /*
+
     // Try to create a new material pipeline and automatically register it
-    pub(crate) fn register_pipeline<M: Material>(
+    pub(crate) fn register_pipeline<M: for<'w> Material<'w>>(
         &mut self,
         assets: &mut Assets,
         storage: &mut Storage<Shader>,
@@ -84,7 +84,6 @@ impl Context {
             self.renderers.insert(key, pipeline);
         }
     }
-    */
 
     // Extract all the internally stored material pipelines
     pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {

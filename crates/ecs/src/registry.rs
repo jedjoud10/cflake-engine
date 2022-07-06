@@ -8,8 +8,12 @@ use std::any::{type_name, TypeId};
 // This is a certified hood classic
 pub trait Component
 where
-    Self: 'static,
+    Self: 'static + Sized,
 {
+    // Get the bitfield mask of this component
+    fn mask() -> Mask {
+        mask::<Self>()
+    }
 }
 
 // Registered components

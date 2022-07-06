@@ -55,6 +55,7 @@ impl<'a> LinkModifier<'a> {
             entity,
         })
     }
+
     // Insert a component into the modifier, thus linking it to the entity
     pub fn insert<T: Component>(&mut self, component: T) -> Result<(), LinkError> {
         let mask = registry::mask::<T>();
@@ -88,6 +89,7 @@ impl<'a> LinkModifier<'a> {
 
         Ok(())
     }
+
     // Remove a component from the entity
     pub fn remove<T: Component>(&mut self) -> Result<(), LinkError> {
         let mask = registry::mask::<T>();
@@ -110,7 +112,7 @@ impl<'a> LinkModifier<'a> {
 
         Ok(())
     }
-    // Apply the modifier
+
     // This will register a new archetype if needed, and it will move the entity from it's old archetype to the new one
     pub(crate) fn apply(self, linkings: &mut EntityLinkings) {
         // Check if we even modified the entity
