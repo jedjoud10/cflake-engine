@@ -1,7 +1,10 @@
+use std::{path::PathBuf, str::FromStr};
+
 use super::{Processed, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
 use assets::{Assets};
+use snailquote::unescape;
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
 pub struct Constant<T: ToString>(T);
@@ -63,6 +66,7 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
+                    dbg!(&trimmed);
                     // Get the directive, type, and name indices
                     let directive = trimmed
                         .split_whitespace()
@@ -77,6 +81,7 @@ impl<'a> Processor<'a> {
                     // Get the name and value (this assumes that there are no special character after the name of the directive)
                     let name = words[name];
                     let ty = words[ty];
+                    dbg!(name);
                     let loaded = self.constants.get(name).unwrap().clone();
 
                     // Create a whole new line with the proper params
@@ -100,15 +105,19 @@ impl<'a> Processor<'a> {
                 } else if trimmed.starts_with("#include") {
                     // Split into words, and classify path
                     let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
-                    let path = words[1];
-
+                    let path = unescape(words[1]).unwrap();
+                    
                     // Make sure the path is something we can load (.func file)
-                    if !path.ends_with(".func") {
+                    let pathbuf = PathBuf::try_from(path).unwrap();
+                    let name = pathbuf.file_name().unwrap().to_str().unwrap();
+                    if !name.ends_with(".func.glsl") {
                         panic!();
                     }
 
                     // Load the path from the asset manager
-                    let raw = self.loader.load::<String>(path).unwrap();
+                    dbg!(&pathbuf);
+                    let path = pathbuf.as_os_str().to_str().unwrap();
+                    let raw = unsafe { self.loader.load_with_unchecked::<String>(path, ()).unwrap() };
                     output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line

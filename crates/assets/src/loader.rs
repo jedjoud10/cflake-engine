@@ -28,6 +28,37 @@ impl Assets {
         }
     }
 
+    // Load an asset using some explicit loading arguments without checking it's extensions
+    pub unsafe fn load_with_unchecked<'loader, 'args, A: Asset<'args>>(
+        &'loader mut self,
+        path: &str,
+        args: A::Args,
+    ) -> Option<A> {
+        // Check if the extension is valid
+        let path = PathBuf::from_str(path).unwrap();
+        let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
+
+        // If we have no bytes currently cached, try to load and cache them
+        if self.cached.get(&path).is_none() {
+            let bytes = super::raw::read(path.as_path(), self.user.as_ref()?)?;
+            self.cached.insert(path.clone(), bytes);
+        };
+
+        // Load the cached bytes and increment the accessed counter
+        let slice = self.cached.get(&path).map(Vec::as_slice)?;
+
+        // Deserialize the asset file
+        Some(A::deserialize(
+            crate::Data {
+                name,
+                extension,
+                bytes: slice,
+                path: &path,
+            },
+            args,
+        ))
+    }
+
     // Load an asset using some explicit loading arguments
     pub fn load_with<'loader, 'args, A: Asset<'args>>(
         &'loader mut self,
