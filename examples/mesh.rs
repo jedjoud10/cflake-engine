@@ -15,21 +15,23 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, ctx, settings, keyboard, materials, textures, assets, shaders) = world
+    let (ecs, ctx, settings, keyboard, standard_mats, sky_mats, normal_maps, albedo_maps, assets, shaders) = world
         .get_mut::<(
             &mut EcsManager,
             &mut Context,
             &mut SceneSettings,
             &mut Keyboard,
             &mut Storage<Standard>,
+            &mut Storage<Sky>,
             &mut Storage<NormalMap>,
+            &mut Storage<AlbedoMap>,
             &mut Assets,
             &mut Storage<Shader>,
         )>()
         .unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.003, 1000.0, 16.0 / 9.0);
+    let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
     let camera = ecs.insert((camera, Transform::default())).unwrap();
     settings.set_main_camera(camera);
 
@@ -51,23 +53,56 @@ fn init(world: &mut World) {
         TextureMode::Static,
     );
 
+    let params2 = (
+        Sampling {
+            filter: Filter::Linear,
+            wrap: Wrap::ClampToEdge,
+        },
+        MipMaps::Disabled,
+        TextureMode::Static,
+    );
+
+    let texture = assets
+        .load_with::<AlbedoMap>(
+            "engine/textures/sky_gradient.png",
+            (ctx, params2.0, params2.1, params2.2),
+        )
+        .unwrap();
+    let texture = albedo_maps.insert(texture);
+
+    let material = Sky {
+        gradient: texture,
+        offset: 0.0,
+        sun_intensity: 10.0,
+        sun_radius: 1.0,
+        cloud_coverage: 0.0,
+        cloud_speed: 0.0,
+    };
+    let material = sky_mats.insert(material);
+
+    let pipeid = ctx.pipeline::<Sky>(shaders, assets);
+
+    let renderer = Renderer::default();
+    let surface = Surface::new(settings.sphere(), material, pipeid);
+    ecs.insert((renderer, surface, Transform::default().scaled(vek::Vec3::one() * 5000.0)))
+        .unwrap();
+
     let texture = assets
         .load_with::<NormalMap>(
             "user/textures/normal.png",
             (ctx, params.0, params.1, params.2),
         )
         .unwrap();
-    let texture = textures.insert(texture);
+    let texture = normal_maps.insert(texture);
 
     let material = Standard::builder()
         .with_normal(&texture)
         .with_bumpiness(1.4)
         .build();
-    let material = materials.insert(material);
+    let material = standard_mats.insert(material);
 
     let pipeid = ctx.pipeline::<Standard>(shaders, assets);
 
-    // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material, pipeid);
     ecs.insert((renderer, surface, Transform::default()))

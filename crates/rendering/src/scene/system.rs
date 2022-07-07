@@ -97,8 +97,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .load_with::<SubMesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
         .unwrap();
 
+    let sphere = assets
+        .load_with::<SubMesh>("engine/meshes/sphere.obj", (ctx, BufferMode::Static))
+        .unwrap();
+
     // Insert the meshes and get their handles
     let cube = submeshes.insert(cube);
+    let sphere = submeshes.insert(sphere);
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -109,8 +114,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         mask_map,
         missing,
         debug,
-        cube.clone(),
         cube,
+        sphere,
     );
     world.insert(scene);
     world.insert(window);

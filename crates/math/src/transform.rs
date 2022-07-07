@@ -145,6 +145,12 @@ impl Transform {
         }
     }
 
+    // Modify the current transform with a new scaling vector
+    pub fn scaled(mut self, scale: vek::Vec3<f32>) -> Self {
+        self.scale = scale;
+        self
+    }
+
     // Construct a transform at the given X unit position
     pub fn at_x(x: f32) -> Self {
         Self {

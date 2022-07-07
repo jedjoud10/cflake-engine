@@ -18,14 +18,16 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/pbr.frsh.glsl");
                 persistent!(loader, "engine/shaders/gui.vrsh.glsl");
                 persistent!(loader, "engine/shaders/gui.frsh.glsl");
-                persistent!(loader, "engine/shaders/test.func.glsl");
+                persistent!(loader, "engine/shaders/sky.frsh.glsl");
 
                 // Load the default meshes
                 persistent!(loader, "engine/meshes/cube.obj");
+                persistent!(loader, "engine/meshes/sphere.obj");
 
                 // Load the default textures
                 persistent!(loader, "engine/textures/bumps.png");
                 persistent!(loader, "engine/textures/missing.png");
+                persistent!(loader, "engine/textures/sky_gradient.png");
 
                 // Insert the loader
                 world.insert(loader);

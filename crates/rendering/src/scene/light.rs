@@ -7,10 +7,10 @@ type Color = vek::Rgb<u8>;
 #[derive(Component)]
 pub struct Directional {
     // The color of the light
-    color: Color,
+    pub color: Color,
 
     // The strength the light
-    strength: f32,
+    pub strength: f32,
 }
 
 impl Default for Directional {
@@ -26,13 +26,13 @@ impl Default for Directional {
 #[derive(Component)]
 pub struct Point {
     // The color of the light
-    color: Color,
+    pub color: Color,
 
     // The strength of the light (in lumens or lux)
-    strength: f32,
+    pub strength: f32,
 
     // The sphere of influence of the light
-    radius: f32,
+    pub radius: f32,
 }
 
 impl Default for Point {
