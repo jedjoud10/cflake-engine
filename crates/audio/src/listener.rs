@@ -1,27 +1,50 @@
-use rodio::{OutputStream, OutputStreamHandle};
+use std::sync::{Mutex, atomic::{AtomicBool, Ordering}, Arc};
 
-// A playback cache that contains all the loaded sources
-pub struct AudioPlayer {
-    _stream: OutputStream,
-    stream_handle: OutputStreamHandle,
+use rodio::{OutputStream, OutputStreamHandle};
+use world::Resource;
+
+pub(crate) static GLOBAL_LISTENER: Mutex<Option<OutputStreamHandle>> = Mutex::new(None);
+
+// An audio listener component that will hear all of the audio source entities that are in the world
+#[derive(Resource)]
+pub struct Listener {
+    active: bool,
+    stream: OutputStream,
+    handle: OutputStreamHandle,
+
     // Position of the left ear and right ear for positional sounds
+    /*
     left: vek::Vec3<f32>,
     right: vek::Vec3<f32>,
+    */
 }
-/*
-impl Default for AudioPlayer {
-    fn default() -> Self {
-        // Get the stream handle
-        let (_stream, handle) = OutputStream::try_default().unwrap();
-        Self {
-            _stream,
-            stream_handle: handle,
-            left: Default::default(),
-            right: Default::default(),
+
+impl Listener {
+    // Try to create a new listener and return Some. If there is already a new listener that is active, this will simply return None
+    pub fn try_new() -> Option<Self> {
+        let mut guard = GLOBAL_LISTENER.lock().unwrap();
+        if let None = *guard {
+            let (stream, handle) = OutputStream::try_default().unwrap();
+            *guard = Some(handle.clone());
+            Some(Self {
+                active: true,
+                stream,
+                handle,
+            })
+        } else {
+            None
         }
     }
 }
 
+impl Drop for Listener {
+    fn drop(&mut self) {
+        let mut guard = GLOBAL_LISTENER.lock().unwrap();
+        *guard = None;
+    }
+}
+
+/*
 impl AudioPlayer {
     // Play a global audio source with modifier
     pub fn play<T: Source + Send + 'static>(

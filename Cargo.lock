@@ -242,9 +242,12 @@ name = "audio"
 version = "0.1.0"
 dependencies = [
  "assets",
+ "ecs",
  "enum-as-inner",
+ "math",
  "rodio",
  "vek",
+ "world",
 ]
 
 [[package]]

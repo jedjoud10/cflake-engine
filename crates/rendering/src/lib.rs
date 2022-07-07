@@ -1,4 +1,3 @@
-// Re-export the OpenGL crate
 pub extern crate opengl as gl;
 
 pub mod buffer;

@@ -1,7 +1,5 @@
-// Export
 pub mod app;
 
-// Re-rexport
 pub use assets;
 pub use audio;
 pub use ecs;
@@ -12,7 +10,6 @@ pub use rendering;
 pub use time;
 pub use world;
 
-// Prelude
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::assets::*;
