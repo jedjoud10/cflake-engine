@@ -5,6 +5,7 @@ use math::Transform;
 use rodio::{OutputStream, OutputStreamHandle, Sink, SpatialSink};
 use world::Resource;
 
+#[derive(Clone, Copy)]
 pub(crate) struct AudioHead {
     pub(crate) left: vek::Vec3<f32>,
     pub(crate) right: vek::Vec3<f32>,
@@ -12,7 +13,7 @@ pub(crate) struct AudioHead {
 
 pub(crate) struct SharedListener {
     pub(crate) handle: OutputStreamHandle,
-    pub(crate) head: Mutex<AudioHead>,
+    pub(crate) head: Arc<Mutex<AudioHead>>,
 }
 
 pub(crate) static GLOBAL_LISTENER: Mutex<Option<SharedListener>> = Mutex::new(None);
@@ -31,10 +32,10 @@ impl Listener {
             let (stream, handle) = OutputStream::try_default().unwrap();
             *guard = Some(SharedListener {
                 handle,
-                head: Mutex::new(AudioHead {
+                head: Arc::new(Mutex::new(AudioHead {
                     left: -transform.right(),
                     right: transform.right()
-                })
+                }))
             });
             Some(Self {
                 stream,

@@ -91,6 +91,7 @@ impl App {
             .insert_system(gui::system)
             .insert_system(ecs::system)
             .insert_system(time::system)
+            .insert_system(audio::system)
             .insert_system(world::system);
 
         // Insert the asset loader

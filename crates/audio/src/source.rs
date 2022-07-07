@@ -1,31 +1,49 @@
-use std::sync::Arc;
+use std::{sync::{Arc, Mutex}, time::Duration};
 
 use ecs::Component;
-use rodio::{Sink, SpatialSink};
+use rodio::{Sink, SpatialSink, source::Spatial, Source};
 use world::{Handle, Storage};
-use crate::{AudioClip, GLOBAL_LISTENER};
-
-// Audio sources can be either Global or Positional
-enum SinkType {
-    Global(Sink),
-    Positional(SpatialSink),
-}
+use crate::{AudioClip, GLOBAL_LISTENER, AudioHead};
 
 // This component will be attached to entities that can play specific audio clips
 #[derive(Component)]
-pub struct AudioEmitter {
+pub struct AudioSource {
+    // Main audio clip handle
     clip: Handle<AudioClip>,
+    
+    // Playback parameters
     speed: f32,
     paused: bool,
     volume: f32,
-    playing: Option<SinkType>,
-    position: vek::Vec3<f32>
+
+    // Inner resources
+    playing: Option<Sink>,
+    pub(crate) position: Option<Arc<Mutex<vek::Vec3<f32>>>>,
 }
 
-impl AudioEmitter {
-    // Create a new audio source. This will *not* play the audio clip
-    pub fn new(clip: Handle<AudioClip>, position: vek::Vec3<f32>) -> Self {
-        Self { clip, volume: 1.0, speed: 1.0, playing: None, paused: false, position }
+impl AudioSource {
+    // Create a new positional audio source.
+    pub fn positional(clip: Handle<AudioClip>, position: vek::Vec3<f32>) -> Self {
+        Self { 
+            clip,
+            speed: 1.0,
+            paused: false,
+            volume: 1.0,
+            playing: None,
+            position: Some(Arc::new(Mutex::new(position)))
+        }
+    }
+    
+    // Create a new global audio source
+    pub fn global(clip: Handle<AudioClip>) -> Self {
+        Self { 
+            clip,
+            speed: 1.0,
+            paused: false,
+            volume: 1.0,
+            playing: None,
+            position: None
+        }
     }
 
     // Set the master volume
@@ -45,7 +63,7 @@ impl AudioEmitter {
     }
 
     // Try to get the inner sink
-    pub fn sink(&self) -> Option<&SpatialSink> {
+    pub fn sink(&self) -> Option<&Sink> {
         self.playing.as_ref()
     }
 
@@ -84,19 +102,41 @@ impl AudioEmitter {
         let clip = clips.get(&self.clip);
         let data = clip.0.clone();
 
-        // Decompose the shared listener
-        let handle = &shared.handle;
-        let head = shared.head.lock().unwrap();
-        let left = head.left;
-        let right = head.right;
-
         // Create a new sink and play the sound
-        let sink = SpatialSink::try_new(&handle, self.position.into_array(), left.into_array(), right.into_array()).unwrap();
-        sink.append(data);
+        let sink = Sink::try_new(&shared.handle).unwrap();
+
+        // Insert the data in the sink
+        if let Some(emitter) = self.position.as_ref() {
+            // 3D audio source, must create the Spatial modifier
+            let emitter = emitter.clone();
+            let head = shared.head.clone();
+            let emitter_guard = *emitter.lock().unwrap();
+            let head_guard = *head.lock().unwrap();
+
+            // Create the source modifier
+            let source = Spatial::new(
+                data,
+                emitter_guard.into_array(),
+                head_guard.left.into_array(),
+                head_guard.right.into_array(),
+            )
+            .periodic_access(Duration::from_millis(10), move |i| {
+                let emitter_guard = emitter.lock().unwrap();
+                let head_guard = head.lock().unwrap(); 
+                i.set_positions(emitter_guard.into_array(), head_guard.left.into_array(), head_guard.right.into_array());
+            }); 
+
+            sink.append(source);
+        } else {
+            sink.append(data);
+        }
+
+        // Set playback params
         sink.set_volume(self.volume);
         sink.set_speed(self.speed);         
         self.playing = Some(sink);
         self.paused = false;
+
         Some(())
     }
 }

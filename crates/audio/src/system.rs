@@ -1,13 +1,12 @@
-use ecs::EcsManager;
+use ecs::{EcsManager, modified, added, or};
 use math::Transform;
 use world::{Events, World, Update, Stage};
-use crate::{Listener, AudioEmitter, AudioHead};
+use crate::{Listener, AudioSource, AudioHead, GLOBAL_LISTENER};
 
 // This will update the audio listener ear positions and audio sources emitter positions
 fn update(world: &mut World) {
     let ecs = world.get_mut::<&mut EcsManager>().unwrap();
     
-    // Get the main audio listener
     let head = ecs.try_view::<(&Transform, &Listener)>().unwrap().next().map(|(transform, _)| {
         AudioHead {
             left: -transform.right(),
@@ -15,28 +14,27 @@ fn update(world: &mut World) {
         }
     });
 
-    // Update the audio listener ear positions
-    if let Some(head) = head {
-        let sources = ecs.try_query::<&mut AudioEmitter>().unwrap();
-        for (source, transform) in sources {
-            source
-        }
-    }
+    if let Some(new) = head {
+        // Update ear locations
+        let global = GLOBAL_LISTENER.lock().unwrap();
+        let mut head = global.as_ref().unwrap().head.lock().unwrap();
+        head.left = new.left;
+        head.right = new.right;
 
-    // Automatically update the position of audio sources that contain the transform component
-    if let Some(head) = head {
-        let sources = ecs.try_query::<(&mut AudioEmitter, &Transform)>().unwrap();
+        // Update emitter locations
+        let filter = or(modified::<Transform>(), added::<Transform>());
+        let sources = ecs.try_query_with::<(&mut AudioSource, &Transform)>(filter).unwrap();
         for (source, transform) in sources {
-            let sink = source.sink().unwrap();
-            sink.set_emitter_position(transform.position.into_array());
-            sink.set_left_ear_position(head.left.into_array());
-            sink.set_right_ear_position(head.right.into_array());
+            if let Some(pos) = &source.position {
+                *pos.lock().unwrap() = transform.position;
+            }
         }
     }  
     
     
 }
 
-fn system(events: &mut Events) {
-    events.registry::<Update>().insert_with(update, Stage::new("audio update").after("user"))
+// Main audio system
+pub fn system(events: &mut Events) {
+    events.registry::<Update>().insert_with(update, Stage::new("audio update").after("post user")).unwrap();
 }
