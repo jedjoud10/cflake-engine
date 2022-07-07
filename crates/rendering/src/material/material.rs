@@ -1,24 +1,21 @@
-
-
-
-use std::{marker::PhantomData, any::TypeId};
+use std::{any::TypeId, marker::PhantomData};
 
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
 
-use world::{Storage, World, Resource};
+use world::{Resource, Storage, World};
 
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode},
     context::{Context, Window},
-    mesh::{SubMesh},
+    mesh::SubMesh,
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
-use super::{Pipeline};
+use super::Pipeline;
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {

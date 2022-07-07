@@ -1,6 +1,6 @@
-use world::Resource;
-use crate::canvas::Canvas;
 use super::{get_static_str, Context};
+use crate::canvas::Canvas;
+use world::Resource;
 
 // A device is a software/hardware renderer that will be responsible for dealing with a specific window
 pub struct Device {
@@ -25,7 +25,7 @@ impl Device {
 pub struct Window {
     glutin: glutin::window::Window,
     canvas: Canvas,
-    device: Device
+    device: Device,
 }
 
 impl Window {
@@ -37,11 +37,11 @@ impl Window {
             glutin,
             canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size) },
             device: unsafe {
-                Device { 
+                Device {
                     name: get_static_str(gl::RENDERER),
-                    vendor: get_static_str(gl::VENDOR)
+                    vendor: get_static_str(gl::VENDOR),
                 }
-            }
+            },
         }
     }
 
@@ -63,5 +63,5 @@ impl Window {
     // Get the window's device (OpenGL software/hardware that will be responsible for rendering onto this window)
     pub fn device(&self) -> &Device {
         &self.device
-    }    
+    }
 }

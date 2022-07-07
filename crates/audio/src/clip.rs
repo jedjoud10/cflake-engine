@@ -1,6 +1,6 @@
-use std::io::Cursor;
 use assets::Asset;
 use rodio::{source::Buffered, Decoder, Source};
+use std::io::Cursor;
 type Data = Buffered<Decoder<Cursor<Vec<u8>>>>;
 
 // A single audio clip that will be loaded from .mp3, .ogg, or .wav files

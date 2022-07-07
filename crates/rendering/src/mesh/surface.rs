@@ -1,5 +1,5 @@
 use super::SubMesh;
-use crate::{material::{Material, Pipeline, PipeId}};
+use crate::material::{Material, PipeId, Pipeline};
 use ecs::Component;
 
 use math::AABB;
@@ -25,7 +25,7 @@ impl<M: for<'w> Material<'w>> Surface<M> {
             submesh,
             material,
             bounds: None,
-            id
+            id,
         }
     }
 

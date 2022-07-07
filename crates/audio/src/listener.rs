@@ -1,4 +1,7 @@
-use std::sync::{Mutex, atomic::{AtomicBool, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 
 use ecs::Component;
 use math::Transform;
@@ -34,12 +37,10 @@ impl Listener {
                 handle,
                 head: Arc::new(Mutex::new(AudioHead {
                     left: -transform.right(),
-                    right: transform.right()
-                }))
+                    right: transform.right(),
+                })),
             });
-            Some(Self {
-                stream,
-            })
+            Some(Self { stream })
         } else {
             None
         }

@@ -1,4 +1,4 @@
-use std::path::{Path};
+use std::path::Path;
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files

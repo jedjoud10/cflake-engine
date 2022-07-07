@@ -1,11 +1,9 @@
-
-
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, NormalMap, Standard, Material, Pipeline},
-    mesh::SubMesh,
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
+    mesh::{SubMesh, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
@@ -26,16 +24,23 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let (mut window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
-    let (albedo_maps, normal_maps, mask_maps, submeshes, shaders, assets) = world
-    .get_mut::<(
-        &mut Storage<AlbedoMap>,
-        &mut Storage<NormalMap>,
-        &mut Storage<MaskMap>,
-        &mut Storage<SubMesh>,
-        &mut Storage<Shader>,
-        &mut Assets,
-    )>()
-    .unwrap();
+    let (
+        albedo_maps,
+        normal_maps,
+        mask_maps,
+        submeshes,
+        shaders,
+        assets
+    ) = world
+        .get_mut::<(
+            &mut Storage<AlbedoMap>,
+            &mut Storage<NormalMap>,
+            &mut Storage<MaskMap>,
+            &mut Storage<SubMesh>,
+            &mut Storage<Shader>,
+            &mut Assets,
+        )>()
+        .unwrap();
 
     // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -122,6 +127,58 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(context);
 }
 
+// This event will create the main skysphere and pre-register the pipelines
+fn postinit(world: &mut World) {
+    let (settings, assets, textures, ctx, ecs, sky_mats, shaders) = world
+        .get_mut::<(
+            &mut SceneSettings,
+            &mut Assets,
+            &mut Storage<AlbedoMap>,
+            &mut Context,
+            &mut EcsManager,
+            &mut Storage<Sky>,
+            &mut Storage<Shader>,
+        )>()
+        .unwrap();
+
+    let texture = assets
+        .load_with::<AlbedoMap>(
+            "engine/textures/sky_gradient.png",
+            (
+                ctx,
+                Sampling {
+                    filter: Filter::Linear,
+                    wrap: Wrap::ClampToEdge,
+                },
+                MipMaps::Disabled,
+                TextureMode::Static,
+            ),
+        )
+        .unwrap();
+    let texture = textures.insert(texture);
+
+    let material = Sky {
+        gradient: texture,
+        offset: 0.0,
+        sun_intensity: 10.0,
+        sun_radius: 1.0,
+        cloud_coverage: 0.0,
+        cloud_speed: 0.0,
+    };
+    let material = sky_mats.insert(material);
+
+    let pipeid = ctx.pipeline::<Sky>(shaders, assets);
+
+    let renderer = Renderer::default();
+    let surface = Surface::new(settings.sphere(), material, pipeid);
+    ecs.insert((
+        renderer,
+        surface,
+        Transform::default().scaled(vek::Vec3::one() * 5000.0),
+    ))
+    .unwrap();
+}
+
 // Rendering event that will try to render the 3D scene each frame
 // This will also update the world matrices of each renderer
 fn rendering(world: &mut World) {
@@ -143,10 +200,9 @@ fn rendering(world: &mut World) {
     }
 
     // Render all the surfaces using their respective pipelines
-    ctx
-        .extract_pipelines()
-        .into_iter()
-        .for_each(|pipe| { pipe.render(world); });
+    ctx.extract_pipelines().into_iter().for_each(|pipe| {
+        pipe.render(world);
+    });
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -213,7 +269,18 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         .registry::<Init>()
         .insert_with(
             |world: &mut World, el: &EventLoop<()>| init(world, settings, el),
-            Stage::new("graphics insert").after("asset loader insert"),
+            Stage::new("graphics insert")
+                .after("asset loader insert")
+                .before("user"),
+        )
+        .unwrap();
+    events
+        .registry::<Init>()
+        .insert_with(
+            postinit,
+            Stage::new("graphics post init")
+                .after("graphics insert")
+                .before("user"),
         )
         .unwrap();
 

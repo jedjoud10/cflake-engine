@@ -1,3 +1,4 @@
+use super::{Context, Window};
 use glutin::{
     dpi::LogicalSize,
     event_loop::EventLoop,
@@ -5,7 +6,6 @@ use glutin::{
     ContextBuilder, GlProfile, GlRequest,
 };
 use world::Resource;
-use super::{Context, Window};
 
 // These settings will be needed to be able to create the underlying graphics pipeline
 // This is a resource that will be automatically added onto the world by our main app

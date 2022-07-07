@@ -1,7 +1,10 @@
 use crate::painter::Painter;
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{gl, prelude::{Context, Window}};
+use rendering::{
+    gl,
+    prelude::{Context, Window},
+};
 use world::{Events, Init, Resource, Stage, Update, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
@@ -35,8 +38,7 @@ impl AsRef<egui::Context> for UserInterface {
 pub fn system(events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
-        let (ctx, assets) =
-            world.get_mut::<(&mut Context, &mut Assets)>().unwrap();
+        let (ctx, assets) = world.get_mut::<(&mut Context, &mut Assets)>().unwrap();
 
         // Get the maximum texture size from OpenGL (idk why egui needs this tbh)
         let max_texture_size = unsafe {

@@ -1,11 +1,17 @@
 use ecs::EcsManager;
 use math::Transform;
 use time::Time;
-use world::{Storage, Handle};
+use world::{Handle, Storage};
 
-use crate::{scene::{SceneSettings, Directional, Camera, Renderer}, mesh::SubMesh, prelude::{Shader, Processor, ShaderCompiler, FragmentStage, VertexStage, Uniforms}, context::{Window, Context}, canvas::{Canvas, FaceCullMode}};
+use crate::{
+    canvas::{Canvas, FaceCullMode},
+    context::{Context, Window},
+    mesh::SubMesh,
+    prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
+    scene::{Camera, Directional, Renderer, SceneSettings},
+};
 
-use super::{Material, Pipeline, AlbedoMap};
+use super::{AlbedoMap, Material, Pipeline};
 
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit
@@ -38,8 +44,29 @@ impl<'w> Material<'w> for Sky {
         &'w mut Context,
         Self::Resources,
     ) {
-        let (settings, ecs, mats, submeshes, shaders, window, context, albedo_maps, time) = world.get_mut::<(&SceneSettings, &EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Window, &mut Context, &Storage<AlbedoMap>, &Time)>().unwrap();
-        (settings, ecs, mats, submeshes, shaders, window, context, (albedo_maps, time))
+        let (settings, ecs, mats, submeshes, shaders, window, context, albedo_maps, time) = world
+            .get_mut::<(
+                &SceneSettings,
+                &EcsManager,
+                &Storage<Self>,
+                &Storage<SubMesh>,
+                &mut Storage<Shader>,
+                &mut Window,
+                &mut Context,
+                &Storage<AlbedoMap>,
+                &Time,
+            )>()
+            .unwrap();
+        (
+            settings,
+            ecs,
+            mats,
+            submeshes,
+            shaders,
+            window,
+            context,
+            (albedo_maps, time),
+        )
     }
 
     fn face_cull_mode() -> Option<FaceCullMode> {
@@ -96,7 +123,10 @@ impl<'w> Material<'w> for Sky {
         uniforms.set_scalar("time", resources.1.secs_since_startup_f32());
     }
 
-    fn shader(ctx: &mut crate::context::Context, assets: &mut assets::Assets) -> crate::prelude::Shader {
+    fn shader(
+        ctx: &mut crate::context::Context,
+        assets: &mut assets::Assets,
+    ) -> crate::prelude::Shader {
         let vs = assets
             .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
             .unwrap();

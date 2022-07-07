@@ -3,7 +3,7 @@ use std::{path::PathBuf, str::FromStr};
 use super::{Processed, Stage};
 use ahash::AHashMap;
 use arrayvec::ArrayVec;
-use assets::{Assets};
+use assets::Assets;
 use snailquote::unescape;
 
 // A shader code constant. This value will be replaced at shader compile time (aka runtime)
@@ -89,7 +89,7 @@ impl<'a> Processor<'a> {
                     // Split into words, and classify path
                     let words = trimmed.split_whitespace().collect::<ArrayVec<&str, 3>>();
                     let path = unescape(words[1]).unwrap();
-                    
+
                     // Make sure the path is something we can load (.func file)
                     let pathbuf = PathBuf::try_from(path).unwrap();
                     let name = pathbuf.file_name().unwrap().to_str().unwrap();
@@ -100,7 +100,8 @@ impl<'a> Processor<'a> {
                     // Load the path from the asset manager
                     dbg!(&pathbuf);
                     let path = pathbuf.as_os_str().to_str().unwrap();
-                    let raw = unsafe { self.loader.load_with_unchecked::<String>(path, ()).unwrap() };
+                    let raw =
+                        unsafe { self.loader.load_with_unchecked::<String>(path, ()).unwrap() };
                     output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line

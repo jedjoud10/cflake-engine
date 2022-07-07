@@ -15,7 +15,18 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, ctx, settings, keyboard, standard_mats, sky_mats, normal_maps, albedo_maps, assets, shaders) = world
+    let (
+        ecs,
+        ctx,
+        settings,
+        keyboard,
+        standard_mats,
+        sky_mats,
+        normal_maps,
+        albedo_maps,
+        assets,
+        shaders,
+    ) = world
         .get_mut::<(
             &mut EcsManager,
             &mut Context,
@@ -50,15 +61,6 @@ fn init(world: &mut World) {
         MipMaps::AutomaticAniso {
             samples: NonZeroU8::new(4).unwrap(),
         },
-        TextureMode::Static,
-    );
-
-    let params2 = (
-        Sampling {
-            filter: Filter::Linear,
-            wrap: Wrap::ClampToEdge,
-        },
-        MipMaps::Disabled,
         TextureMode::Static,
     );
 

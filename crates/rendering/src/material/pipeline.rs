@@ -1,14 +1,15 @@
-use super::{Material};
+use super::Material;
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
+    context::Context,
     mesh::Surface,
     prelude::Shader,
-    scene::{Camera, Directional, Renderer}, context::Context,
+    scene::{Camera, Directional, Renderer},
 };
 use assets::Assets;
 use math::Transform;
-use std::{marker::PhantomData};
-use world::{Handle, World, Resource, Storage};
+use std::marker::PhantomData;
+use world::{Handle, Resource, Storage, World};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
 pub struct Stats {}
@@ -22,9 +23,7 @@ impl<M: for<'w> Material<'w>> Clone for PipeId<M> {
     }
 }
 
-impl<M: for<'w> Material<'w>> Copy for PipeId<M> {
-
-}
+impl<M: for<'w> Material<'w>> Copy for PipeId<M> {}
 
 // Pipeline trait that will be boxed and stored from within the world
 // TODO: Redesign to allow for user defined pipelines

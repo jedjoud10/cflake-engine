@@ -3,10 +3,10 @@ use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
-use world::{Storage, Resource};
+use world::{Resource, Storage};
 
 use crate::{
-    material::{Material, Pipeline, SpecializedPipeline, PipeId},
+    material::{Material, PipeId, Pipeline, SpecializedPipeline},
     prelude::Shader,
 };
 
@@ -66,7 +66,11 @@ impl Context {
     }
 
     // Register a material pipeline if it is missing, and return it's specific PipeId
-    pub fn pipeline<M: for<'w> Material<'w>>(&mut self, shaders: &mut Storage<Shader>, assets: &mut Assets) -> PipeId<M> {
+    pub fn pipeline<M: for<'w> Material<'w>>(
+        &mut self,
+        shaders: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> PipeId<M> {
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
             let pipeline: Rc<dyn SpecializedPipeline> = Rc::new(Pipeline::<M> {

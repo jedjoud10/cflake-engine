@@ -1,16 +1,19 @@
-use std::{sync::{Arc, Mutex}, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
+use crate::{AudioClip, AudioHead, GLOBAL_LISTENER};
 use ecs::Component;
-use rodio::{Sink, SpatialSink, source::Spatial, Source};
+use rodio::{source::Spatial, Sink, Source, SpatialSink};
 use world::{Handle, Storage};
-use crate::{AudioClip, GLOBAL_LISTENER, AudioHead};
 
 // This component will be attached to entities that can play specific audio clips
 #[derive(Component)]
 pub struct AudioSource {
     // Main audio clip handle
     clip: Handle<AudioClip>,
-    
+
     // Playback parameters
     speed: f32,
     paused: bool,
@@ -24,25 +27,25 @@ pub struct AudioSource {
 impl AudioSource {
     // Create a new positional audio source.
     pub fn positional(clip: Handle<AudioClip>, position: vek::Vec3<f32>) -> Self {
-        Self { 
+        Self {
             clip,
             speed: 1.0,
             paused: false,
             volume: 1.0,
             playing: None,
-            position: Some(Arc::new(Mutex::new(position)))
+            position: Some(Arc::new(Mutex::new(position))),
         }
     }
-    
+
     // Create a new global audio source
     pub fn global(clip: Handle<AudioClip>) -> Self {
-        Self { 
+        Self {
             clip,
             speed: 1.0,
             paused: false,
             volume: 1.0,
             playing: None,
-            position: None
+            position: None,
         }
     }
 
@@ -122,9 +125,13 @@ impl AudioSource {
             )
             .periodic_access(Duration::from_millis(10), move |i| {
                 let emitter_guard = emitter.lock().unwrap();
-                let head_guard = head.lock().unwrap(); 
-                i.set_positions(emitter_guard.into_array(), head_guard.left.into_array(), head_guard.right.into_array());
-            }); 
+                let head_guard = head.lock().unwrap();
+                i.set_positions(
+                    emitter_guard.into_array(),
+                    head_guard.left.into_array(),
+                    head_guard.right.into_array(),
+                );
+            });
 
             sink.append(source);
         } else {
@@ -133,7 +140,7 @@ impl AudioSource {
 
         // Set playback params
         sink.set_volume(self.volume);
-        sink.set_speed(self.speed);         
+        sink.set_speed(self.speed);
         self.playing = Some(sink);
         self.paused = false;
 

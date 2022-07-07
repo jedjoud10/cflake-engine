@@ -151,7 +151,6 @@ impl Asset<'static> for GeometryBuilder {
         assert!(mikktspace::generate_tangents(&mut gen));
 
         // Set the very sussy bakas (POV: You are slowly going insane)
-        
 
         GeometryBuilder::empty()
             .with_attribute_vec::<Position>(positions)

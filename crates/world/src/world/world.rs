@@ -1,6 +1,5 @@
 use crate::{
-    Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor,
-    Update,
+    Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor, Update,
 };
 use ahash::AHashMap;
 use std::any::TypeId;
