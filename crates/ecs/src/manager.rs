@@ -155,6 +155,7 @@ impl EcsManager {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
     }
+
     /* #endregion */
 }
 
