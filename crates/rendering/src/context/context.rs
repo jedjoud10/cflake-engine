@@ -6,7 +6,7 @@ use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null
 use world::{Storage, Resource};
 
 use crate::{
-    material::{Material, Pipeline},
+    material::{Material, Pipeline, SpecializedPipeline, PipeId},
     prelude::Shader,
 };
 
@@ -25,7 +25,7 @@ pub struct Context {
     pub(crate) bound: BindingHashMap,
 
     // A list of material surface renderers that we will use
-    renderers: AHashMap<TypeId, Rc<dyn Pipeline>>,
+    pipelines: AHashMap<TypeId, Rc<dyn SpecializedPipeline>>,
 }
 
 impl Context {
@@ -44,7 +44,7 @@ impl Context {
         Self {
             ctx,
             bound: Default::default(),
-            renderers: Default::default(),
+            pipelines: Default::default(),
         }
     }
 
@@ -65,22 +65,23 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
-    // Try to create a new material pipeline and automatically register it
-    pub(crate) fn register_pipeline<M: for<'w> Material<'w>>(
-        &mut self,
-        assets: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) {
+    // Register a material pipeline if it is missing, and return it's specific PipeId
+    pub fn pipeline<M: for<'w> Material<'w>>(&mut self, shaders: &mut Storage<Shader>, assets: &mut Assets) -> PipeId<M> {
         let key = TypeId::of::<M>();
-        if !self.renderers.contains_key(&key) {
-            let pipeline = Rc::new(M::pipeline(self, assets, storage));
-            self.renderers.insert(key, pipeline);
+        if !self.pipelines.contains_key(&key) {
+            let pipeline: Rc<dyn SpecializedPipeline> = Rc::new(Pipeline::<M> {
+                shader: shaders.insert(M::shader(self, assets)),
+                _phantom: Default::default(),
+            });
+            self.pipelines.insert(key, pipeline);
         }
+
+        PipeId(Default::default())
     }
 
     // Extract all the internally stored material pipelines
-    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {
-        self.renderers
+    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn SpecializedPipeline>> {
+        self.pipelines
             .iter()
             .map(|(_key, value)| value.clone())
             .collect::<_>()

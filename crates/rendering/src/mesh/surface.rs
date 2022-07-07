@@ -1,5 +1,5 @@
 use super::SubMesh;
-use crate::{material::Material};
+use crate::{material::{Material, Pipeline, PipeId}};
 use ecs::Component;
 
 use math::AABB;
@@ -15,15 +15,17 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
     // Bounds of the surface
     bounds: Option<AABB>,
+    id: PipeId<M>,
 }
 
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
-    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>, pipe: &<M as Material<'_>>::Pipeline) -> Self {
+    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>, id: PipeId<M>) -> Self {
         Self {
             submesh,
             material,
             bounds: None,
+            id
         }
     }
 

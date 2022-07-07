@@ -4,7 +4,7 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, NormalMap, Standard, Material},
+    material::{AlbedoMap, MaskMap, NormalMap, Standard, Material, Pipeline},
     mesh::SubMesh,
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,

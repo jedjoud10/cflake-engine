@@ -1,6 +1,8 @@
 
 
 
+use std::{marker::PhantomData, any::TypeId};
+
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
@@ -23,15 +25,8 @@ pub trait Material<'w>: 'static + Sized {
     // The resources that we need to fetch from the world to set the uniforms
     type Resources: 'w;
 
-    // The material pipeline that this material will use
-    type Pipeline: Pipeline + Resource;
-
-    // Create a new material pipeline for this material type. This should be called once
-    fn pipeline(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) -> Self::Pipeline;
+    // Load in the shader that we will use for our material pipeline
+    fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader;
 
     // Get the depth comparison setting
     fn depth_comparison() -> Option<Comparison> {

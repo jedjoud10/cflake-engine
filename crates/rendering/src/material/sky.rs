@@ -1,4 +1,4 @@
-use super::{BatchedPipeline, Material, Pipeline};
+use super::{Material, Pipeline};
 
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit
@@ -6,16 +6,6 @@ pub struct Sky {}
 
 impl<'w> Material<'w> for Sky {
     type Resources = ();
-
-    type Pipeline = BatchedPipeline<Self>;
-
-    fn pipeline(
-        _ctx: &mut crate::context::Context,
-        _assets: &mut assets::Assets,
-        _storage: &mut world::Storage<crate::prelude::Shader>,
-    ) -> Self::Pipeline {
-        <Self::Pipeline as Pipeline>::new(todo!())
-    }
 
     fn fetch(
         world: &'w mut world::World,
@@ -42,6 +32,10 @@ impl<'w> Material<'w> for Sky {
     ) where
         'w: 'u,
     {
+        todo!()
+    }
+
+    fn shader(ctx: &mut crate::context::Context, assets: &mut assets::Assets) -> crate::prelude::Shader {
         todo!()
     }
 }

@@ -12,7 +12,7 @@ use crate::{
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
 };
 
-use super::{BatchedPipeline, Material, Pipeline};
+use super::Material;
 
 // Albedo map (color data), rgba
 pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
@@ -43,29 +43,6 @@ impl<'w> Material<'w> for Standard {
         &'w Storage<NormalMap>,
         &'w Storage<MaskMap>,
     );
-
-    type Pipeline = BatchedPipeline<Self>;
-
-    // Create a new batch pipeline for the PBR material
-    fn pipeline(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        storage: &mut Storage<Shader>,
-    ) -> Self::Pipeline {
-        let vs = assets
-            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
-            .unwrap();
-
-        let fs = assets
-            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
-            .unwrap();
-
-        let shader = ShaderCompiler::link((vs, fs), Processor::new(assets), ctx);
-
-        let handle = storage.insert(shader);
-
-        BatchedPipeline::new(handle)
-    }
 
     fn fetch(
         world: &'w mut world::World,
@@ -182,6 +159,18 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
+    }
+
+    fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {
+        let vs = assets
+            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
+            .unwrap();
+
+        let fs = assets
+            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
+            .unwrap();
+
+        ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)
     }
 }
 

@@ -3,59 +3,44 @@ use crate::{
     canvas::{PrimitiveMode, RasterSettings},
     mesh::Surface,
     prelude::Shader,
-    scene::{Camera, Directional, Renderer},
+    scene::{Camera, Directional, Renderer}, context::Context,
 };
+use assets::Assets;
 use math::Transform;
 use std::{marker::PhantomData};
-use world::{Handle, World, Resource};
+use world::{Handle, World, Resource, Storage};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
 pub struct Stats {}
 
-// A material renderer is responsible for rendering and drawing surfaces of a specific material onto the screen
-// For now, material renderers are implemented as functions that can be called back
-pub trait Pipeline: 'static + Resource {
-    // Create a new pipeline from a shader
-    fn new(shader: Handle<Shader>) -> Self
-    where
-        Self: Sized;
+// Marker that tells us that we have a registered valid pipeline
+pub struct PipeId<M: for<'w> Material<'w>>(pub(crate) PhantomData<Pipeline<M>>);
 
-    // Fetch the shader handle from the pipeline
-    fn shader(&self) -> Handle<Shader>;
+impl<M: for<'w> Material<'w>> Clone for PipeId<M> {
+    fn clone(&self) -> Self {
+        Self(PhantomData::default())
+    }
+}
 
-    // Cull all the surfaces that we will render
-    fn cull(&self, _world: &mut World) {}
+impl<M: for<'w> Material<'w>> Copy for PipeId<M> {
 
+}
+
+// Pipeline trait that will be boxed and stored from within the world
+// TODO: Redesign to allow for user defined pipelines
+pub(crate) trait SpecializedPipeline: 'static {
     // Render all the materialized surfaces
     fn render(&self, world: &mut World) -> Option<Stats>;
-
-    // Post-render method
-    fn cleanup(&self, _world: &mut World) {}
 }
 
-// The default pipeline that uses one shader pass to render everything
-// TODO: Find better name
+// Main material pipeline that shall use one single material shader
 #[derive(Resource)]
-pub struct BatchedPipeline<M: for<'w> Material<'w>> {
-    shader: Handle<Shader>,
-    _phantom: PhantomData<M>,
+pub struct Pipeline<M: for<'w> Material<'w>> {
+    pub(crate) shader: Handle<Shader>,
+    pub(crate) _phantom: PhantomData<M>,
 }
 
-impl<M: for<'w> Material<'w>> Pipeline for BatchedPipeline<M> {
-    fn new(shader: Handle<Shader>) -> Self
-    where
-        Self: Sized,
-    {
-        Self {
-            shader,
-            _phantom: Default::default(),
-        }
-    }
-
-    fn shader(&self) -> Handle<Shader> {
-        self.shader.clone()
-    }
-
+impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> Option<Stats> {
         let (scene, ecs, materials, submeshes, shaders, window, ctx, mut property_block_resources) =
             <M as Material<'_>>::fetch(world);
