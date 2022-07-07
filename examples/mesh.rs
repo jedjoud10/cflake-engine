@@ -63,31 +63,6 @@ fn init(world: &mut World) {
     );
 
     let texture = assets
-        .load_with::<AlbedoMap>(
-            "engine/textures/sky_gradient.png",
-            (ctx, params2.0, params2.1, params2.2),
-        )
-        .unwrap();
-    let texture = albedo_maps.insert(texture);
-
-    let material = Sky {
-        gradient: texture,
-        offset: 0.0,
-        sun_intensity: 10.0,
-        sun_radius: 1.0,
-        cloud_coverage: 0.0,
-        cloud_speed: 0.0,
-    };
-    let material = sky_mats.insert(material);
-
-    let pipeid = ctx.pipeline::<Sky>(shaders, assets);
-
-    let renderer = Renderer::default();
-    let surface = Surface::new(settings.sphere(), material, pipeid);
-    ecs.insert((renderer, surface, Transform::default().scaled(vek::Vec3::one() * 5000.0)))
-        .unwrap();
-
-    let texture = assets
         .load_with::<NormalMap>(
             "user/textures/normal.png",
             (ctx, params.0, params.1, params.2),

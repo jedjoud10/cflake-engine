@@ -1,5 +1,6 @@
 use ecs::EcsManager;
 use math::Transform;
+use time::Time;
 use world::{Storage, Handle};
 
 use crate::{scene::{SceneSettings, Directional, Camera, Renderer}, mesh::SubMesh, prelude::{Shader, Processor, ShaderCompiler, FragmentStage, VertexStage, Uniforms}, context::{Window, Context}, canvas::{Canvas, FaceCullMode}};
@@ -23,7 +24,7 @@ pub struct Sky {
 }
 
 impl<'w> Material<'w> for Sky {
-    type Resources = &'w Storage<AlbedoMap>;
+    type Resources = (&'w Storage<AlbedoMap>, &'w Time);
 
     fn fetch(
         world: &'w mut world::World,
@@ -37,7 +38,8 @@ impl<'w> Material<'w> for Sky {
         &'w mut Context,
         Self::Resources,
     ) {
-        world.get_mut::<(&SceneSettings, &EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Window, &mut Context, &Storage<AlbedoMap>)>().unwrap()
+        let (settings, ecs, mats, submeshes, shaders, window, context, albedo_maps, time) = world.get_mut::<(&SceneSettings, &EcsManager, &Storage<Self>, &Storage<SubMesh>, &mut Storage<Shader>, &mut Window, &mut Context, &Storage<AlbedoMap>, &Time)>().unwrap();
+        (settings, ecs, mats, submeshes, shaders, window, context, (albedo_maps, time))
     }
 
     fn face_cull_mode() -> Option<FaceCullMode> {
@@ -84,13 +86,14 @@ impl<'w> Material<'w> for Sky {
     ) where
         'w: 'u,
     {
-        let texture = resources.get(&self.gradient);
+        let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);
         uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
         uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);
         uniforms.set_scalar("sun_radius", self.sun_radius);
         uniforms.set_scalar("cloud_speed", self.cloud_speed);
         uniforms.set_scalar("cloud_coverage", self.cloud_coverage);
+        uniforms.set_scalar("time", resources.1.secs_since_startup_f32());
     }
 
     fn shader(ctx: &mut crate::context::Context, assets: &mut assets::Assets) -> crate::prelude::Shader {
