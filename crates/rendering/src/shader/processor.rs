@@ -66,21 +66,11 @@ impl<'a> Processor<'a> {
 
                 // Very funny indeed
                 if trimmed.contains("#const") {
-                    dbg!(&trimmed);
-                    // Get the directive, type, and name indices
-                    let directive = trimmed
-                        .split_whitespace()
-                        .position(|n| n == "#const")
-                        .unwrap();
-                    let ty = directive + 1;
-                    let name = directive + 2;
-
-                    // Split into words
                     let words = trimmed.split_whitespace().collect::<Vec<&str>>();
 
                     // Get the name and value (this assumes that there are no special character after the name of the directive)
-                    let name = words[name];
-                    let ty = words[ty];
+                    let name = words[2];
+                    let ty = words[1];
                     dbg!(name);
                     let loaded = self.constants.get(name).unwrap().clone();
 
@@ -90,17 +80,10 @@ impl<'a> Processor<'a> {
                     // Overwrite output
                     output = line;
                 } else if trimmed.starts_with("#snip") {
-                    // Split into words, and classify name
-                    let words = trimmed
-                        .split("#snip")
-                        .next()
-                        .unwrap()
-                        .split_whitespace()
-                        .collect::<ArrayVec<&str, 3>>();
-                    let name = words[0];
+                    let words = trimmed.split_whitespace().collect::<Vec<&str>>();
 
                     // Try to get the snippet
-                    let snippet = self.snippets.get(name).cloned().unwrap();
+                    let snippet = self.snippets.get(words[1]).cloned().unwrap();
                     output = snippet;
                 } else if trimmed.starts_with("#include") {
                     // Split into words, and classify path

@@ -170,10 +170,7 @@ impl<'w> Material<'w> for Standard {
             .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
             .unwrap();
 
-        let mut processor = Processor::new(assets);
-        processor.insert_constant("value", 5.0);
-
-        ShaderCompiler::link((vs, fs), processor, ctx)
+        ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)
     }
 }
 

@@ -25,8 +25,6 @@ in vec3 m_bitangent;
 in vec3 m_color;
 in vec2 m_tex_coord_0;
 
-#include "engine/shaders/test.func.glsl"
-
 void main() {
     // Fetch the main albedo/diffuse color
     vec3 diffuse = texture(albedo, m_tex_coord_0).xyz;

@@ -1,11 +1,25 @@
-use super::{Material, Pipeline};
+use world::Storage;
+
+use super::{Material, Pipeline, AlbedoMap};
 
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit
-pub struct Sky {}
+pub struct Sky {
+    // Main sky color
+    gradient: AlbedoMap,
+    offset: f32,
+
+    // Sun settings
+    sun_intensity: f32,
+    sun_radius: f32,
+
+    // Cloud settings
+    cloud_coverage: f32,
+    cloud_speed: f32,
+}
 
 impl<'w> Material<'w> for Sky {
-    type Resources = ();
+    type Resources = &'w Storage<AlbedoMap>;
 
     fn fetch(
         world: &'w mut world::World,
