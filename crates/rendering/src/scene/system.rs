@@ -4,7 +4,7 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, NormalMap, Standard},
+    material::{AlbedoMap, MaskMap, NormalMap, Standard, Material},
     mesh::SubMesh,
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
@@ -26,12 +26,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let (mut window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
-    let (albedo_maps, normal_maps, mask_maps, submeshes, assets) = world
+    let (albedo_maps, normal_maps, mask_maps, submeshes, shaders, assets) = world
     .get_mut::<(
         &mut Storage<AlbedoMap>,
         &mut Storage<NormalMap>,
         &mut Storage<MaskMap>,
         &mut Storage<SubMesh>,
+        &mut Storage<Shader>,
         &mut Assets,
     )>()
     .unwrap();

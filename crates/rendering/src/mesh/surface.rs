@@ -19,7 +19,7 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
-    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>) -> Self {
+    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>, pipe: &<M as Material<'_>>::Pipeline) -> Self {
         Self {
             submesh,
             material,

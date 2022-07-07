@@ -7,14 +7,14 @@ use crate::{
 };
 use math::Transform;
 use std::{marker::PhantomData};
-use world::{Handle, World};
+use world::{Handle, World, Resource};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
 pub struct Stats {}
 
 // A material renderer is responsible for rendering and drawing surfaces of a specific material onto the screen
 // For now, material renderers are implemented as functions that can be called back
-pub trait Pipeline: 'static {
+pub trait Pipeline: 'static + Resource {
     // Create a new pipeline from a shader
     fn new(shader: Handle<Shader>) -> Self
     where
@@ -35,6 +35,7 @@ pub trait Pipeline: 'static {
 
 // The default pipeline that uses one shader pass to render everything
 // TODO: Find better name
+#[derive(Resource)]
 pub struct BatchedPipeline<M: for<'w> Material<'w>> {
     shader: Handle<Shader>,
     _phantom: PhantomData<M>,

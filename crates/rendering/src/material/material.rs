@@ -5,7 +5,7 @@ use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
 
-use world::{Storage, World};
+use world::{Storage, World, Resource};
 
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode},
@@ -24,7 +24,7 @@ pub trait Material<'w>: 'static + Sized {
     type Resources: 'w;
 
     // The material pipeline that this material will use
-    type Pipeline: Pipeline;
+    type Pipeline: Pipeline + Resource;
 
     // Create a new material pipeline for this material type. This should be called once
     fn pipeline(

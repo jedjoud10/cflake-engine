@@ -15,7 +15,7 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (ecs, ctx, settings, keyboard, materials, textures, assets) = world
+    let (ecs, ctx, settings, keyboard, materials, textures, pipe, assets) = world
         .get_mut::<(
             &mut EcsManager,
             &mut Context,
@@ -23,6 +23,7 @@ fn init(world: &mut World) {
             &mut Keyboard,
             &mut Storage<Standard>,
             &mut Storage<NormalMap>,
+            &mut <Standard as Material<'_>>::Pipeline,
             &mut Assets,
         )>()
         .unwrap();
@@ -66,7 +67,7 @@ fn init(world: &mut World) {
 
     // Load up a new entity renderer and surface nd insert them as a render entity
     let renderer = Renderer::default();
-    let surface = Surface::new(settings.cube(), material);
+    let surface = Surface::new(settings.cube(), material, &pipe);
     ecs.insert((renderer, surface, Transform::default()))
         .unwrap();
 
