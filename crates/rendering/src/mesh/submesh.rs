@@ -78,10 +78,8 @@ impl SubMesh {
 
     // Calculate the AABB of this submesh
     pub fn compute_aabb(&self) -> AABB {
-        let positions = self.attributes().get_attribute_buffer::<Position>().unwrap();
-        positions.
-
-        AABB { min: todo!(), max: todo!() }
+        let positions = self.attributes().get::<Position>().unwrap();
+        todo!()
     }
 }
 

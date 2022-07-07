@@ -4,7 +4,7 @@ use glutin::{
 };
 use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;
-use world::{Events, Init, System, Update, World};
+use world::{Events, Init, System, Update, World, Event};
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
@@ -80,6 +80,30 @@ impl App {
     // This will register all the necessary events automatically
     pub fn insert_system(mut self, system: impl System) -> Self {
         system.insert(&mut self.events);
+        self
+    }
+
+    // Insert a single update event
+    pub fn insert_update<P>(mut self, update: impl Event<Update, P>) -> Self {
+        self.events.registry::<Update>().insert(update);
+        self
+    }
+
+    // Insert a single init event
+    pub fn insert_init<P>(mut self, update: impl Event<Init, P>) -> Self {
+        self.events.registry::<Init>().insert(update);
+        self
+    }
+
+    // Insert a single window event
+    pub fn insert_window<P>(mut self, update: impl Event<WindowEvent<'static>, P>) -> Self {
+        self.events.registry::<WindowEvent>().insert(update);
+        self
+    }
+
+    // Insert a single device event 
+    pub fn insert_device<P>(mut self, update: impl Event<DeviceEvent, P>) -> Self {
+        self.events.registry::<DeviceEvent>().insert(update);
         self
     }
 

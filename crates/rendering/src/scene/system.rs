@@ -29,7 +29,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         normal_maps,
         mask_maps,
         submeshes,
-        shaders,
         assets
     ) = world
         .get_mut::<(
@@ -37,7 +36,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             &mut Storage<NormalMap>,
             &mut Storage<MaskMap>,
             &mut Storage<SubMesh>,
-            &mut Storage<Shader>,
             &mut Assets,
         )>()
         .unwrap();
@@ -122,6 +120,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         cube,
         sphere,
     );
+
+    // Insert the newly created resources
     world.insert(scene);
     world.insert(window);
     world.insert(context);
@@ -129,18 +129,27 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
 // This event will create the main skysphere and pre-register the pipelines
 fn postinit(world: &mut World) {
-    let (settings, assets, textures, ctx, ecs, sky_mats, shaders) = world
+    let (
+        assets,
+        ctx,
+        settings,
+        textures,
+        shaders,
+        sky_mats,
+        ecs,
+    ) = world
         .get_mut::<(
-            &mut SceneSettings,
             &mut Assets,
-            &mut Storage<AlbedoMap>,
             &mut Context,
-            &mut EcsManager,
-            &mut Storage<Sky>,
+            &mut SceneSettings,
+            &mut Storage<AlbedoMap>,
             &mut Storage<Shader>,
+            &mut Storage<Sky>,
+            &mut EcsManager,
         )>()
         .unwrap();
 
+    // Load the default sky gradient texture
     let texture = assets
         .load_with::<AlbedoMap>(
             "engine/textures/sky_gradient.png",
@@ -155,8 +164,11 @@ fn postinit(world: &mut World) {
             ),
         )
         .unwrap();
+    
+    // Get texture handle
     let texture = textures.insert(texture);
 
+    // Create the default sky material
     let material = Sky {
         gradient: texture,
         offset: 0.0,
@@ -165,18 +177,21 @@ fn postinit(world: &mut World) {
         cloud_coverage: 0.0,
         cloud_speed: 0.0,
     };
-    let material = sky_mats.insert(material);
 
+    // Get material handle and PipeId
+    let material = sky_mats.insert(material);
     let pipeid = ctx.pipeline::<Sky>(shaders, assets);
 
+    // Create a default skysphere that is pretty large
     let renderer = Renderer::default();
     let surface = Surface::new(settings.sphere(), material, pipeid);
+
+    // Insert it as a new entity
     ecs.insert((
         renderer,
         surface,
         Transform::default().scaled(vek::Vec3::one() * 5000.0),
-    ))
-    .unwrap();
+    )).unwrap();
 }
 
 // Rendering event that will try to render the 3D scene each frame
@@ -186,11 +201,12 @@ fn rendering(world: &mut World) {
         .get_mut::<(&mut EcsManager, &mut Context, &SceneSettings)>()
         .unwrap();
 
+    // Don't render if we don't have a camera or a main directional light
     if !settings.can_render() {
         return;
     }
 
-    // Update the world matrices
+    // Update the world matrices of renderer
     let filter = or(modified::<Transform>(), added::<Transform>());
     let query = ecs
         .try_query_with::<(&mut Renderer, &Transform)>(filter)
@@ -264,7 +280,7 @@ fn main_camera(world: &mut World) {
 
 // Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
-    // Insert init events
+    // Insert graphics init event
     events
         .registry::<Init>()
         .insert_with(
@@ -274,6 +290,8 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
                 .before("user"),
         )
         .unwrap();
+
+    // Insert post init event
     events
         .registry::<Init>()
         .insert_with(
@@ -289,27 +307,27 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     reg.insert_with(clear, Stage::new("window clear").before("user"))
         .unwrap();
 
+    // Insert camera update event
     reg.insert_with(
         main_camera,
         Stage::new("main camera update")
             .after("user")
             .before("post user"),
-    )
-    .unwrap();
+    ).unwrap();
 
+    // Insert scene renderer event
     reg.insert_with(
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
             .after("post user"),
-    )
-    .unwrap();
+    ).unwrap();
 
+    // Insert window buffer swap event
     reg.insert_with(
         swap,
         Stage::new("window back buffer swap").after("scene rendering"),
-    )
-    .unwrap();
+    ).unwrap();
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);

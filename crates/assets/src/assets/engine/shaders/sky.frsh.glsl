@@ -9,6 +9,7 @@ uniform float time;
 // Sun params
 uniform float sun_intensity;
 uniform float sun_radius;
+uniform vec3 sun_dir;
 
 // Cloud params
 uniform float cloud_speed;

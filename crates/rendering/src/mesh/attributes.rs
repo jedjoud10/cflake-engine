@@ -393,12 +393,12 @@ impl AttributeSet {
     }
 
     // Get an immutable attribute buffer from the set
-    pub fn get_attribute_buffer<T: Attribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
+    pub fn get<T: Attribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
         T::get(self)
     }
 
     // Get a mutable attribute buffer from the set
-    pub fn get_attribute_buffer_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
+    pub fn get_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
         T::get_mut(self)
     }
 }

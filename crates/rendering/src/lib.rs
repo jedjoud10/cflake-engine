@@ -22,4 +22,7 @@ pub mod prelude {
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
+    pub use super::mesh::attributes::named::*;
+    pub use super::mesh::attributes::output::*;
+    pub use super::gl;
 }

@@ -76,7 +76,7 @@ impl<'w> Material<'w> for Sky {
     // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        _resources: &mut Self::Resources,
+        resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
         camera: (&Camera, &Transform),
@@ -86,8 +86,9 @@ impl<'w> Material<'w> for Sky {
     {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
-        uniforms.set_vec3("camera", camera.1.position);
-        uniforms.set_vec3("forward", camera.1.forward());
+        uniforms.set_vec3("sun_dir", light.1.forward());
+        uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
+        uniforms.set_scalar("time", resources.1.secs_since_startup_f32());
     }
 
     // This method will be called for each surface that we have to render
@@ -115,12 +116,10 @@ impl<'w> Material<'w> for Sky {
     {
         let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);
-        uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
         uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);
         uniforms.set_scalar("sun_radius", self.sun_radius);
         uniforms.set_scalar("cloud_speed", self.cloud_speed);
         uniforms.set_scalar("cloud_coverage", self.cloud_coverage);
-        uniforms.set_scalar("time", resources.1.secs_since_startup_f32());
     }
 
     fn shader(

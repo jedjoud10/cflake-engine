@@ -108,7 +108,7 @@ impl SceneSettings {
 
     // Get the handle for the default missing map
     pub fn missing(&self) -> Handle<AlbedoMap> {
-        self.albedo_map.clone()
+        self.missing.clone()
     }
 
     // Get the handle for the debug normal mpa

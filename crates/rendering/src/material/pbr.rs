@@ -152,7 +152,7 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("roughness", self.roughness);
         uniforms.set_scalar("metallic", self.metallic);
 
-        let albedo_map = fallback(albedo_maps, &self.albedo, scene.albedo_map());
+        let albedo_map = fallback(albedo_maps, &self.albedo, scene.missing());
         let normal_map = fallback(normal_maps, &self.normal, scene.normal_map());
         let mask_map = fallback(mask_maps, &self.mask, scene.mask_map());
 
