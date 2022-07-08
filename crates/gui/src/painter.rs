@@ -180,8 +180,8 @@ impl Painter {
 
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
-            self.vertices.write(mesh.1.vertices.as_slice());
-            self.indices.write(mesh.1.indices.as_slice());
+            self.vertices.write_from_slice(mesh.1.vertices.as_slice());
+            self.indices.write_from_slice(mesh.1.indices.as_slice());
 
             unsafe {
                 rasterizer

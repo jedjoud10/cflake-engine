@@ -2,21 +2,14 @@ use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
 use std::mem::MaybeUninit;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
+use super::BufferError;
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferMode {
-    // Static buffers can only be set once through their initialization
-    Static,
-
-    // Same as Static, but the buffer can be mapped and then read
-    StaticMapRead,
-
-    // Dynamic buffers can be modified, though they have a specific number of elements that must be constant
+    // Dynamic buffers can be modified, and they can push only a fixed amount of elements into their allocated space
+    // They allocate only once, but the number of elements can vary, until they hit the capacity
     Dynamic,
-
-    // Same as dynamic, but the buffer can be mapped for reading/writing
-    DynamicMapReadWrite,
 
     // Just like dynamic buffers, but resizable
     // By default, resizable buffers can be mapped
@@ -52,19 +45,22 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
     capacity: usize,
     mode: BufferMode,
 
-    _phantom: PhantomData<*const T>,
+    _phantom: PhantomData<*const MaybeUninit<T>>,
     _phantom2: PhantomData<T>,
 }
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a new buffer from it's raw parts, like a pointer and some capacity and length
+    // It should be valid to read from ptr for capacity number of elements (MaybeUninit<T>)
+    // Capacity is the finaly allocated number of elements in the back store
+    // Capacity should be greater or equal to length
     unsafe fn from_raw_parts(
         _ctx: &mut Context,
         mode: BufferMode,
         capacity: usize,
         length: usize,
         ptr: *const T,
-    ) -> Option<Self> {
+    ) -> Result<Self, BufferError> {
         // Create the new OpenGL buffer
         let mut buffer = 0;
         gl::CreateBuffers(1, &mut buffer);
@@ -73,8 +69,12 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         let bytes = isize::try_from(capacity * size_of::<T>()).unwrap();
 
         // We must some pre-existing data if we are a dynamic or static buffer
-        if bytes == 0 && (mode == BufferMode::Dynamic || mode == BufferMode::Static) {
-            return None;
+        if bytes == 0 {
+            match mode {
+                BufferMode::Static | BufferMode::StaticMapRead => Err(BufferError::EmptyStaticInit),
+                BufferMode::DynamicMapReadWrite | BufferMode::Dynamic => Err(BufferError::EmptyDynamicInit),
+                _ => Ok(())
+            }?;
         }
 
         // Validate the pointer
@@ -104,7 +104,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
 
         // Create the buffer struct
-        Some(Self {
+        Ok(Self {
             buffer,
             len: length,
             capacity,
@@ -114,13 +114,37 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         })
     }
 
+    // Check if the buffer can be mutated by any means 
+    pub fn can_write(&self) -> bool {
+        match self.mode {
+            BufferMode::Static => false,
+            BufferMode::StaticMapRead => false,
+            BufferMode::Dynamic => true,
+            BufferMode::DynamicMapReadWrite => true,
+            BufferMode::Resizable => true,
+
+            AccesMode::None
+        }
+    }
+    
+    // Check if the buffer can be resized
+    pub fn can_resize(&self) -> bool {
+        match self.mode {
+            BufferMode::Static => todo!(),
+            BufferMode::StaticMapRead => todo!(),
+            BufferMode::Dynamic => todo!(),
+            BufferMode::DynamicMapReadWrite => todo!(),
+            BufferMode::Resizable => todo!(),
+        }
+    }
+
     // Create an empty resizable buffer
     pub fn empty(_ctx: &mut Context) -> Self {
         unsafe { Self::from_raw_parts(_ctx, BufferMode::Resizable, 0, 0, null()) }.unwrap()
     }
 
     // Create a buffer using a buffer mode and a slice containing some data
-    pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Option<Self> {
+    pub fn new(_ctx: &mut Context, mode: BufferMode, data: &[T]) -> Result<Self, BufferError> {
         unsafe { Self::from_raw_parts(_ctx, mode, data.len(), data.len(), data.as_ptr()) }
     }
 
@@ -140,8 +164,10 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Try to clear the whole buffer to the given value
-    pub fn clear(&mut self, val: T) {
-        assert_ne!(self.mode, BufferMode::Static, "Cannot clear static buffers");
+    pub fn clear(&mut self, val: T) -> Result<(), BufferError> {
+        if let BufferMode::Static = self.mode {
+            return Err(BufferError::WriteStatic);
+        }
 
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
@@ -158,54 +184,84 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 );
             }
         }
+
+        Ok(())
     }
 
-    // Overwrite the whole buffer with new data
-    pub fn write(&mut self, data: &[T]) {
-        assert_ne!(
-            self.mode,
-            BufferMode::Static,
-            "Cannot update Static buffers"
-        );
-
-        assert!(self.mode == BufferMode::Resizable || data.len() == self.len());
-
-        unsafe {
-            let bytes = isize::try_from(data.len() * size_of::<T>()).unwrap();
-
-            // Reallocate if we need to, but if we don't need to just update a subregion of the buffer
-            if data.len() > self.len() {
-                gl::NamedBufferData(self.buffer, bytes, data.as_ptr() as _, gl::DYNAMIC_DRAW);
-            } else {
-                gl::NamedBufferSubData(self.buffer, 0, bytes, data.as_ptr() as _);
-            }
+    // Extend the buffer with slice containing some new elements
+    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferError> {
+        match self.mode {
+            BufferMode::Static => todo!(),
+            BufferMode::StaticMapRead => todo!(),
+            BufferMode::Dynamic => todo!(),
+            BufferMode::DynamicMapReadWrite => todo!(),
+            BufferMode::Resizable => todo!(),
         }
 
-        // Update length and capacity states at the end
-        self.len = data.len();
-        self.capacity = data.len();
+        unsafe {
+            let realloc = slice.len() + self.capacity() > self.capacity();
+
+            if realloc {
+                match self.mode {
+                    BufferMode::Static => todo!(),
+                    BufferMode::StaticMapRead => todo!(),
+                    BufferMode::Dynamic => todo!(),
+                    BufferMode::DynamicMapReadWrite => todo!(),
+                    BufferMode::Resizable => todo!(),
+                }
+            }
+
+            if realloc {
+                //gl::NamedBufferData(self.buffer, bytes, data.as_ptr() as _, gl::DYNAMIC_DRAW);
+            } else {
+
+            }
+        }
+        Ok(())
+    }
+
+    // Overwrite the whole buffer with new data. This will not extend the buffer automatically
+    pub fn write_from_slice(&mut self, slice: &[T]) -> Result<(), BufferError> {
+        if let BufferMode::Static = self.mode {
+            return Err(BufferError::WriteStatic);
+        }
+
+        if slice.len() != self.len() {
+            return Err(BufferError::WriteFromSliceInvalidLen(self.len(), slice.len()));
+        }
+
+        unsafe {
+            let bytes = isize::try_from(slice.len() * size_of::<T>()).unwrap();
+            gl::NamedBufferSubData(self.buffer, 0, bytes, slice.as_ptr() as _);
+        }
+
+        Ok(())
     }
 
     // Copy the data from another buffer into our buffer
-    pub fn copy_from<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) {
-        assert!(
-            self.len * size_of::<T>() == other.len(),
-            "Current byte length and other buffer byte length do not match up, cannot copy"
-        );
+    pub fn copy_from<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) -> Result<(), BufferError> {
+        if self.len * size_of::<T>() != other.len() * size_of::<U>() {
+            return Err(BufferError::CopyFromInvalidLen(self.len() * size_of::<T>(), other.len() * size_of::<U>()));
+        }
 
         unsafe {
             let bytes = isize::try_from(self.len() * size_of::<T>()).unwrap();
             gl::CopyNamedBufferSubData(other.name(), self.name(), 0, 0, bytes);
         }
+
+        Ok(())
     }
 
     // Copy the data from our buffer into another buffer
-    pub fn copy_into<U: Shared, const OTHER: u32>(&self, other: &mut Buffer<U, OTHER>) {
-        other.copy_from(self);
+    pub fn copy_into<U: Shared, const OTHER: u32>(&self, other: &mut Buffer<U, OTHER>) -> Result<(), BufferError> {
+        other.copy_from(self).map_err(|err| BufferError::CopyToInvalidLen(self.len() * size_of::<T>(), other.len() * size_of::<U>()))
     }
 
     // Read back the whole buffer, and store it inside output
-    pub fn read(&self, output: &mut [T]) {
+    pub fn read_slice(&self, output: &mut [T]) -> Result<(), BufferError> {
+        if output.len() != self.len() {
+            return Err(BufferError::ReadToSliceInvalidLen(self.len(), output.len()))
+        }
         assert!(
             output.len() == self.len(),
             "Current length and output length do not match up, cannot read"
@@ -215,10 +271,12 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             let bytes = isize::try_from(output.len() * size_of::<T>()).unwrap();
             gl::GetNamedBufferSubData(self.buffer, 0, bytes, output.as_mut_ptr() as _);
         }
+
+        Ok(())
     }
 
     // Map the buffer, making it unusable for the duration of the mapping
-    pub fn map(&mut self, access: MapAccess) -> Option<Mapped<T, TARGET>> {
+    pub fn map(&mut self, access: MapAccess) -> Result<Mapped<T, TARGET>, BufferError> {
         // Read / write permission for the buffer
         let (read, write) = match self.mode {
             BufferMode::StaticMapRead => (true, false),
@@ -236,16 +294,20 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         // Missing read permission
         if need_read && !read {
-            return None;
+            return Err(BufferError::MapPermissionsInvalidRead(access, self.mode));
         }
 
         // Missing write permission
         if need_write && !write {
-
+            return Err(BufferError::MapPermissionsInvalidRead(access, self.mode));
         }
 
         let ptr = unsafe {
-            gl::MapNamedBuffer(self.buffer, ) as *mut MaybeUninit<T>
+            gl::MapNamedBuffer(self.buffer, match access {
+                MapAccess::Read => gl::MAP_READ_BIT,
+                MapAccess::Write => gl::MAP_WRITE_BIT,
+                MapAccess::ReadWrite => gl::MAP_READ_BIT | gl::MAP_WRITE_BIT,
+            }) as *mut MaybeUninit<T>
         };
         
         /*
