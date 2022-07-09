@@ -1,8 +1,8 @@
+/*
 use super::{attributes::Attribute, IndexAssembly, SubMesh, VertexAssembly};
 use crate::{buffer::BufferMode, context::Context};
 use assets::Asset;
 use obj::TexturedVertex;
-
 // Procedural geometry builder that will help us generate submeshes
 // This however, can be made in other threads and then sent to the main thread
 pub struct GeometryBuilder {
@@ -160,3 +160,4 @@ impl Asset<'static> for GeometryBuilder {
             .with_indices(indices)
     }
 }
+*/
