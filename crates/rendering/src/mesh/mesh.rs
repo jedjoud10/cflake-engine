@@ -1,11 +1,11 @@
 use assets::Asset;
 use math::AABB;
 
-use super::{attributes::{AttributeSet, named::Position}, GeometryBuilder, VertexAssembly};
+use super::{attributes::{named::Position, Attribute}, VertexAssembly};
 use crate::{
-    buffer::{Buffer, BufferMode, ElementBuffer},
+    buffer::{Buffer, ElementBuffer, ArrayBuffer},
     canvas::ToRasterBuffers,
-    context::Context,
+    context::Context, mesh::attributes::RawAttribute,
 };
 
 // Specified what attributes are enabled in a vertex set
@@ -27,43 +27,28 @@ impl Default for VertexLayout {
 
 // A submesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
-pub struct SubMesh {
-    // The vertex attribute buffers
-    attributes: AttributeSet,
+pub struct Mesh {
+    // The raw name of the VAO
+    name: u32,
+
+    // Vertex attribute buffers
+    pub(super) positions: Option<ArrayBuffer<vek::Vec3<f32>>>,
+    pub(super) normals: Option<ArrayBuffer<vek::Vec3<i8>>>,
+    pub(super) tangents: Option<ArrayBuffer<vek::Vec4<i8>>>,
+    pub(super) colors: Option<ArrayBuffer<vek::Rgb<u8>>>,
+    pub(super) tex_coord_0: Option<ArrayBuffer<vek::Vec2<u8>>>,
+
+    // The enabled attributes
+    layout: VertexLayout,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: ElementBuffer<u32>,
 }
 
-impl SubMesh {
-    // Construct a unsafe submesh using a vertex assembly and a index set
-    // This will not check if the vertex assembly and index set are valid
-    // This will initialize a valid VAO, EBO, and the proper vertex attribute buffers
-    pub unsafe fn new_unchecked(
-        ctx: &mut Context,
-        vertices: VertexAssembly,
-        indices: Vec<u32>,
-        mode: BufferMode,
-    ) -> Self {
-        Self {
-            attributes: AttributeSet::new(ctx, mode, vertices),
-            indices: Buffer::new(ctx, mode, &indices).unwrap(),
-        }
-    }
-
-    // Get the current submesh's layout
+impl Mesh {
+    // Get the vertex attrib layout that we are using
     pub fn layout(&self) -> VertexLayout {
-        self.attributes.layout()
-    }
-
-    // Get the underlying attribute set immutably
-    pub fn attributes(&self) -> &AttributeSet {
-        &self.attributes
-    }
-
-    // Get the underlying attribute set mutably
-    pub fn attributes_mut(&mut self) -> &mut AttributeSet {
-        &mut self.attributes
+        self.layout
     }
 
     // Get the underlying index buffer immutably
@@ -76,32 +61,73 @@ impl SubMesh {
         &mut self.indices
     }
 
-    // Calculate the AABB of this submesh
-    pub fn compute_aabb(&self) -> AABB {
-        let positions = self.attributes().get::<Position>().unwrap();
-        todo!()
+    // Get the number of vertices that we have in total (this will return None if two or more vectors have different lengths)
+    pub fn len(&self) -> Option<usize> {
+        // This function just takes an AttribBuf<T> and returns an Option<usize>
+        fn len<T: RawAttribute>(vec: &Option<ArrayBuffer<T>>) -> Option<usize> {
+            vec.as_ref().map(Buffer::len)
+        }
+
+        // Make sure all the lengths (that are valid) be equal to each other
+        let arr = [
+            len(&self.positions),
+            len(&self.normals),
+            len(&self.tangents),
+            len(&self.colors),
+            len(&self.tex_coord_0),
+        ];
+
+        let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
+        let valid = arr.into_iter().flatten().all(|len| len == first);
+        valid.then(|| first)
+    }
+
+    // Get a vertex attribute buffer immutably
+    pub fn attribute_buffer<T: Attribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
+        None
+    }
+
+    // Get a vertex attribute buffer mutably
+    pub fn attribute_buffer_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
+        None
     }
 }
 
-impl<'a> Asset<'a> for SubMesh {
-    type Args = (&'a mut Context, BufferMode);
 
-    fn extensions() -> &'static [&'static str] {
-        GeometryBuilder::extensions()
-    }
+/*
+// Create and bind the VAO, then create a safe VAO wrapper
+        let vao = unsafe {
+            let mut name = 0;
+            gl::GenVertexArrays(1, &mut name);
+            gl::BindVertexArray(name);
+            name
+        };
 
-    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
-        let builder = GeometryBuilder::deserialize(data, ());
-        builder.build(args.0, args.1).unwrap()
-    }
-}
+        // We do a bit of copying
+        let layout = vertices.layout();
 
-impl ToRasterBuffers for SubMesh {
-    fn vao(&self) -> &AttributeSet {
-        self.attributes()
-    }
+        // Helper struct to make buffer initializiation a bit easier
+        let mut index = 0u32;
+        let mut aux = AuxBufGen {
+            vao,
+            index: &mut index,
+            vertices: &mut vertices,
+            ctx,
+            mode,
+        };
 
-    fn ebo(&self) -> &ElementBuffer<u32> {
-        self.indices()
-    }
-}
+        // Create the set with valid buffers (if they are enabled)
+        use super::attributes::named::*;
+
+        unsafe {
+            Self {
+                name: vao,
+                positions: gen::<Position>(&mut aux, false),
+                normals: gen::<Normal>(&mut aux, true),
+                tangents: gen::<Tangent>(&mut aux, true),
+                colors: gen::<Color>(&mut aux, true),
+                tex_coord_0: gen::<TexCoord0>(&mut aux, true),
+                layout,
+            }
+        }
+*/

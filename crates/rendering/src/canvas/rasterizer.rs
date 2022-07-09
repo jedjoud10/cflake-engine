@@ -2,7 +2,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
 use super::{Canvas, RasterError};
 use crate::{
-    buffer::ElementBuffer, context::Context, mesh::attributes::AttributeSet, object::ToGlName,
+    buffer::ElementBuffer, context::Context, object::ToGlName,
     others::Comparison, prelude::Uniforms,
 };
 
@@ -61,15 +61,6 @@ pub struct RasterSettings {
 pub enum PrimitiveMode {
     Triangles { cull: Option<FaceCullMode> },
     Points { diameter: f32 },
-}
-
-// An object that can be rasterized and drawn onto the screen
-pub trait ToRasterBuffers {
-    // Get the VAO handle of the object
-    fn vao(&self) -> &AttributeSet;
-
-    // Get the EBO handle of the object
-    fn ebo(&self) -> &ElementBuffer<u32>;
 }
 
 // A rasterizer will help us render specific shaded / colored objects onto the screen
@@ -177,10 +168,11 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     pub fn context(&self) -> &Context {
         self.ctx
     }
+    /*
+    // Rasterize a 
 
-    // Rasterize a raw VAO and raw EBO using their OpenGL names, alongside the primitive count
-    // This will use the currently bound shader uniforms to draw the object
-    pub unsafe fn draw_from_raw_parts(
+    // Rasterize a raw VAO and raw EBO
+    pub unsafe fn draw_ebo_vao(
         &mut self,
         vao: u32,
         ebo: u32,
@@ -199,20 +191,17 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         Ok(())
     }
 
-    // Draw an object that implements the ToRasterBuffers. Get it's VAO, and EBO and draw them.
-    // This will use the currently bound shader uniforms to draw the object
-    pub fn draw<T: ToRasterBuffers>(
-        &mut self,
-        obj: &T,
-        uniforms: &mut Uniforms,
-    ) -> Result<(), RasterError> {
-        unsafe {
-            self.draw_from_raw_parts(
-                obj.vao().name(),
-                obj.ebo().name(),
-                obj.ebo().len() as u32,
-                uniforms,
-            )
+    // Rasterize a raw VAO directly, without using an EBO
+    pub unsafe fn draw_vao(&mut self, vao: u32, count: u32, uniforms: &mut Uniforms) -> Result<(), RasterError> {
+        uniforms.validate().map_err(RasterError::Uniforms)?;
+
+        // Don't call the GL functions if it's a waste
+        if count > 0 {
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(self.primitive, count as i32, gl::UNSIGNED_INT, null());
         }
-    }
+
+        Ok(())
+    } 
+    */
 }

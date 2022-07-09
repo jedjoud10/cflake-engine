@@ -6,7 +6,7 @@ use world::{Handle, Storage};
 use crate::{
     canvas::{Canvas, FaceCullMode},
     context::{Context, Window},
-    mesh::SubMesh,
+    mesh::Mesh,
     prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     scene::{Camera, Directional, Renderer, SceneSettings},
 };
@@ -38,7 +38,7 @@ impl<'w> Material<'w> for Sky {
         &'w SceneSettings,
         &'w EcsManager,
         &'w Storage<Self>,
-        &'w Storage<SubMesh>,
+        &'w Storage<Mesh>,
         &'w mut Storage<Shader>,
         &'w mut Window,
         &'w mut Context,
@@ -49,7 +49,7 @@ impl<'w> Material<'w> for Sky {
                 &SceneSettings,
                 &EcsManager,
                 &Storage<Self>,
-                &Storage<SubMesh>,
+                &Storage<Mesh>,
                 &mut Storage<Shader>,
                 &mut Window,
                 &mut Context,

@@ -3,7 +3,7 @@ use world::{Handle, Resource};
 
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
-    mesh::SubMesh,
+    mesh::Mesh,
     prelude::{Ranged, Texture2D, RGBA},
 };
 
@@ -34,8 +34,8 @@ pub struct SceneSettings {
     debug: Handle<NormalMap>,
 
     // Default cube and sphere meshes
-    cube: Handle<SubMesh>,
-    sphere: Handle<SubMesh>,
+    cube: Handle<Mesh>,
+    sphere: Handle<Mesh>,
 }
 
 impl SceneSettings {
@@ -48,8 +48,8 @@ impl SceneSettings {
         mask_map: Handle<MaskMap>,
         missing: Handle<AlbedoMap>,
         debug: Handle<NormalMap>,
-        cube: Handle<SubMesh>,
-        sphere: Handle<SubMesh>,
+        cube: Handle<Mesh>,
+        sphere: Handle<Mesh>,
     ) -> Self {
         Self {
             camera: None,
@@ -127,12 +127,12 @@ impl SceneSettings {
     }
 
     // Get the handle for the default cube mesh
-    pub fn cube(&self) -> Handle<SubMesh> {
+    pub fn cube(&self) -> Handle<Mesh> {
         self.cube.clone()
     }
 
     // Get the handle for the default sphere mesh
-    pub fn sphere(&self) -> Handle<SubMesh> {
+    pub fn sphere(&self) -> Handle<Mesh> {
         self.sphere.clone()
     }
 }

@@ -6,7 +6,7 @@ use world::{Handle, Storage};
 use crate::{
     canvas::Canvas,
     context::{Context, Window},
-    mesh::SubMesh,
+    mesh::Mesh,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
@@ -50,7 +50,7 @@ impl<'w> Material<'w> for Standard {
         &'w SceneSettings,
         &'w EcsManager,
         &'w Storage<Self>,
-        &'w Storage<SubMesh>,
+        &'w Storage<Mesh>,
         &'w mut Storage<Shader>,
         &'w mut Window,
         &'w mut Context,
@@ -71,7 +71,7 @@ impl<'w> Material<'w> for Standard {
             .get_mut::<(
                 &EcsManager,
                 &Storage<Self>,
-                &Storage<SubMesh>,
+                &Storage<Mesh>,
                 &mut Storage<Shader>,
                 &mut Window,
                 &mut Context,

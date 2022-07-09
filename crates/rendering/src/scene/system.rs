@@ -3,7 +3,7 @@ use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
-    mesh::{SubMesh, Surface},
+    mesh::{Mesh, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
         RGBA,
@@ -35,7 +35,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
             &mut Storage<AlbedoMap>,
             &mut Storage<NormalMap>,
             &mut Storage<MaskMap>,
-            &mut Storage<SubMesh>,
+            &mut Storage<Mesh>,
             &mut Assets,
         )>()
         .unwrap();
@@ -97,11 +97,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the default cube and sphere meshes
     let cube = assets
-        .load_with::<SubMesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
+        .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
         .unwrap();
 
     let sphere = assets
-        .load_with::<SubMesh>("engine/meshes/sphere.obj", (ctx, BufferMode::Static))
+        .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, BufferMode::Static))
         .unwrap();
 
     // Insert the meshes and get their handles

@@ -1,4 +1,4 @@
-use super::SubMesh;
+use super::Mesh;
 use crate::material::{Material, PipeId, Pipeline};
 use ecs::Component;
 
@@ -10,7 +10,7 @@ use world::Handle;
 #[derive(Component)]
 pub struct Surface<M: for<'w> Material<'w>> {
     // Graphic object handles
-    submesh: Handle<SubMesh>,
+    submesh: Handle<Mesh>,
     material: Handle<M>,
 
     // Bounds of the surface
@@ -20,7 +20,7 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
-    pub fn new(submesh: Handle<SubMesh>, material: Handle<M>, id: PipeId<M>) -> Self {
+    pub fn new(submesh: Handle<Mesh>, material: Handle<M>, id: PipeId<M>) -> Self {
         Self {
             submesh,
             material,
@@ -40,7 +40,7 @@ impl<M: for<'w> Material<'w>> Surface<M> {
     }
 
     // Get the submesh handle
-    pub fn submesh(&self) -> Handle<SubMesh> {
+    pub fn submesh(&self) -> Handle<Mesh> {
         self.submesh.clone()
     }
 
