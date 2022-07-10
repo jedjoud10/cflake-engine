@@ -44,7 +44,7 @@ impl<'w> Material<'w> for Sky {
         &'w mut Context,
         Self::Resources,
     ) {
-        let (settings, ecs, mats, submeshes, shaders, window, context, albedo_maps, time) = world
+        let (settings, ecs, mats, meshes, shaders, window, context, albedo_maps, time) = world
             .get_mut::<(
                 &SceneSettings,
                 &EcsManager,
@@ -61,7 +61,7 @@ impl<'w> Material<'w> for Sky {
             settings,
             ecs,
             mats,
-            submeshes,
+            meshes,
             shaders,
             window,
             context,

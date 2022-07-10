@@ -41,7 +41,7 @@ pub struct Pipeline<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> Option<Stats> {
-        let (scene, ecs, materials, submeshes, shaders, window, ctx, mut property_block_resources) =
+        let (scene, ecs, materials, meshes, shaders, window, ctx, mut property_block_resources) =
             <M as Material<'_>>::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -116,8 +116,8 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             );
 
             // Draw the surface object using the current rasterizer pass
-            let submesh = submeshes.get(&surface.submesh());
-            rasterizer.draw(submesh, &mut uniforms).unwrap();
+            let mesh = meshes.get(&surface.mesh());
+            //rasterizer.draw(mesh, &mut uniforms).unwrap();
         }
         None
     }

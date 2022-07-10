@@ -27,7 +27,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         albedo_maps,
         normal_maps,
         mask_maps,
-        submeshes,
+        meshes,
         assets
     ) = world
         .get_mut::<(
@@ -104,8 +104,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         .unwrap();
 
     // Insert the meshes and get their handles
-    let cube = submeshes.insert(cube);
-    let sphere = submeshes.insert(sphere);
+    let cube = meshes.insert(cube);
+    let sphere = meshes.insert(sphere);
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(

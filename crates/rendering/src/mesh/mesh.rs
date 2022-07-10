@@ -7,22 +7,21 @@ use obj::TexturedVertex;
 use super::{attributes::*};
 use crate::{
     buffer::{Buffer, ElementBuffer, ArrayBuffer},
-    context::Context, mesh::attributes::RawAttribute,
+    context::Context, mesh::attributes::RawAttribute, prelude::Array,
 };
 
-// This specified was buffers / attributes are enabled from within the mesh
+// This specifies what attributes are enabled from within the mesh
 bitflags::bitflags! {
-    pub struct MeshLayout: u8 {
+    pub struct VertexLayout: u8 {
         const POSITIONS = 1;
         const NORMALS = 1 << 2;
         const TANGENTS = 1 << 3;
         const COLORS = 1 << 4;
         const TEX_COORD_0 = 1 << 5;
-        const ELEMENT_BUFFER_OBJECT = 1 << 6;
     }
 }
 
-impl Default for MeshLayout {
+impl Default for VertexLayout {
     fn default() -> Self {
         Self::empty()
     }
@@ -31,13 +30,13 @@ impl Default for MeshLayout {
 // Contains the underlying array buffer for a specific attribute
 type AttribBuffer<A: Attribute> = MaybeUninit<ArrayBuffer<A::Out>>;
 
-// A submesh is a collection of 3D vertices connected by triangles (optional)
+// A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 // TODO: Fix missing required attribs like pos
 pub struct Mesh {
     // Layout and GL name
-    name: u32,
-    layout: MeshLayout,
+    pub(crate) vao: u32,
+    layout: VertexLayout,
 
     // Vertex attribute buffers
     pub(super) positions: AttribBuffer<Position>,
@@ -46,18 +45,43 @@ pub struct Mesh {
     pub(super) colors: AttribBuffer<Color>,
     pub(super) tex_coord_0: AttribBuffer<TexCoord0>,
 
-    // The index buffer (optional) (PS: Supports only triangles rn)
+    // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
 }
 
 impl Mesh {
+    // Uninitialized mesh for internal use
+    unsafe fn uninit() -> Self {
+        Self { 
+            vao: 0,
+            layout: VertexLayout::empty(),
+            positions: MaybeUninit::uninit(),
+            normals: MaybeUninit::uninit(),
+            tangents: MaybeUninit::uninit(),
+            colors: MaybeUninit::uninit(),
+            tex_coord_0: MaybeUninit::uninit(),
+            indices: MaybeUninit::uninit()
+        }
+    }
+
+    // Create a new mesh from a positions buffer and an index buffer
+    pub fn new_from_buffers(positions: ArrayBuffer<<Position as Attribute>::Out>, indices: ElementBuffer<u32>) -> Self {
+        unsafe {
+            let mut mesh = Self::uninit();
+            gl::CreateVertexArrays(1, &mut mesh.vao);
+            mesh.set_attribute_buffer::<Position>(positions);
+            mesh.set_indices(indices);
+            mesh
+        }
+    } 
+    
     // Get the vertex attrib layout that we are using
-    pub fn layout(&self) -> MeshLayout {
+    pub fn layout(&self) -> VertexLayout {
         self.layout
     }
 
     // Check if the layout contains a feature
-    pub fn contains(&self, feature: MeshLayout) -> bool {
+    pub fn contains(&self, feature: VertexLayout) -> bool {
         self.layout.contains(feature)
     }
 
@@ -65,20 +89,29 @@ impl Mesh {
     pub fn is_attribute_active<T: Attribute>(&self) -> bool {
         self.contains(T::LAYOUT)
     }
-    
-    // Check if we have an element buffer object that is initialized
-    pub fn is_ebo_active(&self) -> bool {
-        self.contains(MeshLayout::ELEMENT_BUFFER_OBJECT)
+
+    // Check if this mesh can be used for rendering
+    pub fn is_valid(&self) -> bool {
+        self.is_attribute_active::<Position>()
+    }
+
+    // Clear the underlying mesh, making it invisible
+    pub fn clear(&mut self) {
     }
 
     // Get the underlying index buffer immutably
-    pub fn indices(&self) -> Option<&ElementBuffer<u32>> {
-        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_ref() })
+    pub fn indices(&self) -> &ElementBuffer<u32> {
+        unsafe { self.indices.assume_init_ref() }
     }
 
     // Get the underlying index buffer mutably
-    pub fn indices_mut(&mut self) -> Option<&mut ElementBuffer<u32>> {
-        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_mut() })
+    pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
+        unsafe { self.indices.assume_init_mut() }
+    }
+
+    // Set a new element buffer, dropping the old one
+    pub fn set_indices(&mut self, buffer: ElementBuffer<u32>) {
+        self.indices = MaybeUninit::new(buffer);
     }
 
     // Get a vertex attribute buffer immutably
@@ -89,6 +122,14 @@ impl Mesh {
     // Get a vertex attribute buffer mutably
     pub fn attribute_buffer_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
         self.is_attribute_active::<T>().then(|| unsafe { T::assume_init_get_mut(self) })
+    }
+
+    // Set a new vertex attribute buffer, dropping the old one if there was one
+    pub fn set_attribute_buffer<T: Attribute>(&mut self, buffer: ArrayBuffer<T::Out>) {
+        unsafe { 
+            T::set_raw(self, buffer);
+        }
+        self.layout.insert(T::LAYOUT);
     }
 
     // Get the number of vertices that we have in total (this will return None if two or more vectors have different lengths)
@@ -118,14 +159,13 @@ impl Mesh {
     
 
     // Recalculate the vertex normals procedurally based on positions
-    pub fn compute_normals(&mut self) {
-
-    }
+    pub fn compute_normals(&mut self) {}
 
     // Recalculate the tangents procedurall based on normals, positions, and texture coordinates
-    pub fn compute_tangents(&mut self) {
+    pub fn compute_tangents(&mut self) {}
 
-    }
+    // Recalculate the AABB bounds of this mesh
+    pub fn compute_bounds(&mut self) {}
 }
 
 

@@ -10,7 +10,7 @@ use world::Handle;
 #[derive(Component)]
 pub struct Surface<M: for<'w> Material<'w>> {
     // Graphic object handles
-    submesh: Handle<Mesh>,
+    mesh: Handle<Mesh>,
     material: Handle<M>,
 
     // Bounds of the surface
@@ -20,9 +20,9 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
-    pub fn new(submesh: Handle<Mesh>, material: Handle<M>, id: PipeId<M>) -> Self {
+    pub fn new(mesh: Handle<Mesh>, material: Handle<M>, id: PipeId<M>) -> Self {
         Self {
-            submesh,
+            mesh,
             material,
             bounds: None,
             id,
@@ -39,9 +39,9 @@ impl<M: for<'w> Material<'w>> Surface<M> {
         &self.bounds
     }
 
-    // Get the submesh handle
-    pub fn submesh(&self) -> Handle<Mesh> {
-        self.submesh.clone()
+    // Get the mesh handle
+    pub fn mesh(&self) -> Handle<Mesh> {
+        self.mesh.clone()
     }
 
     // Get the material handle

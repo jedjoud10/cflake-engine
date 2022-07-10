@@ -5,7 +5,7 @@ use crate::{
     object::{Shared, ToGlName},
 };
 
-use super::{Mesh, MeshLayout};
+use super::{Mesh, VertexLayout};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -80,7 +80,7 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait Attribute {
     type Out: RawAttribute + Shared;
-    const LAYOUT: MeshLayout;
+    const LAYOUT: VertexLayout;
 
     // Get the corresponding buffer for this attribute from the mesh
     // This assumes that the underlying buffer is indeed intialized
@@ -88,7 +88,7 @@ pub trait Attribute {
     unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out>;
 
     // Insert a buffer containing the raw attribute data into a mesh
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>);
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>);
 
     // This will set the default attribute values for a specific index
     unsafe fn default(index: u32);
@@ -111,7 +111,7 @@ pub struct TexCoord0;
 
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT: MeshLayout = MeshLayout::POSITIONS;
+    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
     
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.positions.assume_init_ref()
@@ -121,7 +121,7 @@ impl Attribute for Position {
         mesh.positions.assume_init_mut()
     }
 
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
         mesh.positions = MaybeUninit::new(buffer);
     }
 
@@ -132,7 +132,7 @@ impl Attribute for Position {
 
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT: MeshLayout = MeshLayout::NORMALS;
+    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.normals.assume_init_ref()
@@ -142,7 +142,7 @@ impl Attribute for Normal {
         mesh.normals.assume_init_mut()
     }
 
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
         mesh.normals = MaybeUninit::new(buffer);
     }
 
@@ -153,7 +153,7 @@ impl Attribute for Normal {
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT: MeshLayout = MeshLayout::TANGENTS;
+    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.tangents.assume_init_ref()
@@ -163,7 +163,7 @@ impl Attribute for Tangent {
         mesh.tangents.assume_init_mut()
     }
 
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
         mesh.tangents = MaybeUninit::new(buffer);
     }
 
@@ -174,7 +174,7 @@ impl Attribute for Tangent {
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT: MeshLayout = MeshLayout::COLORS;
+    const LAYOUT: VertexLayout = VertexLayout::COLORS;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.colors.assume_init_ref()
@@ -184,7 +184,7 @@ impl Attribute for Color {
         mesh.colors.assume_init_mut()
     }
 
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
         mesh.colors = MaybeUninit::new(buffer);
     }
 
@@ -195,7 +195,7 @@ impl Attribute for Color {
 
 impl Attribute for TexCoord0 {
     type Out = vek::Vec2<u8>;
-    const LAYOUT: MeshLayout = MeshLayout::TEX_COORD_0;
+    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.tex_coord_0.assume_init_ref()
@@ -205,7 +205,7 @@ impl Attribute for TexCoord0 {
         mesh.tex_coord_0.assume_init_mut()
     }
 
-    fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
+    unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
         mesh.tex_coord_0 = MaybeUninit::new(buffer);
     }
 

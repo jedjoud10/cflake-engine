@@ -6,7 +6,7 @@ use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum BufferMode {
+pub enum BufferMode {
     // Static buffers are only created once, and they can never be modified ever again
     Static,
 
@@ -123,11 +123,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         todo!()
     }
 
-    // Clear the whole contents of the buffer to the specified value 
-    pub fn clear(&mut self, val: T) {
-        self.clear_range(val, ..)
-    }
-
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
         todo!()
@@ -148,24 +143,35 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         todo!()
     }
 
-    // Overwrite the whole buffer using a slice
-    pub fn write(&mut self, slice: &[T]) {
-        self.write_range(slice, ..)
-    }
-
     // Read a region of the buffer into a mutable slice
     pub fn read_range(&mut self, slice: &mut [T], range: impl RangeBounds<usize>) {
         todo!()
     }
 
-    // Read the whole buffer into a mutable slice
-    pub fn read(&mut self, slice: &mut [T]) {
-        self.read_range(slice, ..)
-    }
-
     // Copy the buffer contents of Self into Other
     pub fn copy_into<U: Shared, const OTHER: u32>(&self, other: &mut Buffer<U, OTHER>) {
         todo!()
+    }
+
+    // Cast the buffer to a buffer of another target / type
+    // The type U and T must have the same exact size and alignment
+    pub unsafe fn cast<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
+        Buffer::<U, OTHER> { buffer: self.buffer, length: self.length, capacity: self.capacity, mode: self.mode, _phantom: Default::default(), _phantom2: Default::default() }
+    } 
+
+    // Clear the whole contents of the buffer to the specified value 
+    pub fn clear(&mut self, val: T) {
+        self.clear_range(val, ..)
+    }
+
+    // Overwrite the whole buffer using a slice
+    pub fn write(&mut self, slice: &[T]) {
+        self.write_range(slice, ..)
+    }
+
+    // Read the whole buffer into a mutable slice
+    pub fn read(&mut self, slice: &mut [T]) {
+        self.read_range(slice, ..)
     }
 }
 

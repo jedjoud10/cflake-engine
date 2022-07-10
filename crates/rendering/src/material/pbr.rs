@@ -59,7 +59,7 @@ impl<'w> Material<'w> for Standard {
         let (
             ecs_manager,
             materials,
-            submesh,
+            mesh,
             shaders,
             window,
             ctx,
@@ -85,7 +85,7 @@ impl<'w> Material<'w> for Standard {
             scene,
             ecs_manager,
             materials,
-            submesh,
+            mesh,
             shaders,
             window,
             ctx,

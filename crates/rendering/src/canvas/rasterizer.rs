@@ -3,7 +3,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 use super::{Canvas, RasterError};
 use crate::{
     buffer::ElementBuffer, context::Context, object::ToGlName,
-    others::Comparison, prelude::Uniforms,
+    others::Comparison, prelude::Uniforms, mesh::Mesh,
 };
 
 // Blend mode factor source
@@ -168,20 +168,17 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     pub fn context(&self) -> &Context {
         self.ctx
     }
-    /*
-    // Rasterize a 
 
-    // Rasterize a raw VAO and raw EBO
+    // Draw a raw vertex array object, and an element array object
     pub unsafe fn draw_ebo_vao(
         &mut self,
         vao: u32,
         ebo: u32,
-        count: u32,
+        count: usize,
         uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
-        // Don't call the GL functions if it's a waste
         if count > 0 {
             gl::BindVertexArray(vao);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
@@ -191,17 +188,27 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         Ok(())
     }
 
-    // Rasterize a raw VAO directly, without using an EBO
-    pub unsafe fn draw_vao(&mut self, vao: u32, count: u32, uniforms: &mut Uniforms) -> Result<(), RasterError> {
+    // Draw a raw vertex array object by itself
+    pub unsafe fn draw_vao(
+        &mut self,
+        vao: u32,
+        count: usize,
+        uniforms: &mut Uniforms
+    ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
-        // Don't call the GL functions if it's a waste
         if count > 0 {
             gl::BindVertexArray(vao);
-            gl::DrawArrays(self.primitive, count as i32, gl::UNSIGNED_INT, null());
+            gl::DrawArrays(self.primitive, 0, count as i32);
         }
 
         Ok(())
+    }
+
+    // Draw a 3D engine mesh directly 
+    pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
+        unsafe {
+            self.draw_ebo_vao(mesh.vao, mesh.indices().name(), mesh.indices().len(), uniforms)
+        }
     } 
-    */
 }
