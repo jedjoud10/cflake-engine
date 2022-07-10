@@ -1,6 +1,5 @@
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
-    buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
     mesh::{Mesh, Surface},
@@ -97,11 +96,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Load the default cube and sphere meshes
     let cube = assets
-        .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, BufferMode::Static))
+        .load_with::<Mesh>("engine/meshes/cube.obj", ctx)
         .unwrap();
 
     let sphere = assets
-        .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, BufferMode::Static))
+        .load_with::<Mesh>("engine/meshes/sphere.obj", ctx)
         .unwrap();
 
     // Insert the meshes and get their handles

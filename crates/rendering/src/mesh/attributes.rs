@@ -1,13 +1,11 @@
-use std::ptr::null;
+use std::{ptr::null, mem::MaybeUninit};
 
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferMode},
-    context::Context,
-    mesh::{VertexAssembly, VertexLayout},
+    buffer::{ArrayBuffer},
     object::{Shared, ToGlName},
 };
 
-use super::Mesh;
+use super::{Mesh, MeshLayout};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -82,11 +80,12 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait Attribute {
     type Out: RawAttribute + Shared;
-    const LAYOUT: VertexLayout;
+    const LAYOUT: MeshLayout;
 
     // Get the corresponding buffer for this attribute from the mesh
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>>;
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>>;
+    // This assumes that the underlying buffer is indeed intialized
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out>;
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out>;
 
     // Insert a buffer containing the raw attribute data into a mesh
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>);
@@ -112,39 +111,39 @@ pub struct TexCoord0;
 
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
+    const LAYOUT: MeshLayout = MeshLayout::POSITIONS;
     
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>> {
-        mesh.positions.as_ref()
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
+        mesh.positions.assume_init_ref()
     }
 
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>> {
-        mesh.positions.as_mut()
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
+        mesh.positions.assume_init_mut()
     }
 
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.positions = Some(buffer);
+        mesh.positions = MaybeUninit::new(buffer);
     }
 
     unsafe fn default(_index: u32) {
         panic!()
-    }
+    }    
 }
 
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
+    const LAYOUT: MeshLayout = MeshLayout::NORMALS;
 
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>> {
-        mesh.normals.as_ref()
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
+        mesh.normals.assume_init_ref()
     }
 
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>> {
-        mesh.normals.as_mut()
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
+        mesh.normals.assume_init_mut()
     }
 
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.normals = Some(buffer);
+        mesh.normals = MaybeUninit::new(buffer);
     }
 
     unsafe fn default(index: u32) {
@@ -154,18 +153,18 @@ impl Attribute for Normal {
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
+    const LAYOUT: MeshLayout = MeshLayout::TANGENTS;
 
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>> {
-        mesh.tangents.as_ref()
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
+        mesh.tangents.assume_init_ref()
     }
 
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>> {
-        mesh.tangents.as_mut()
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
+        mesh.tangents.assume_init_mut()
     }
 
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.tangents = Some(buffer);
+        mesh.tangents = MaybeUninit::new(buffer);
     }
 
     unsafe fn default(index: u32) {
@@ -175,18 +174,18 @@ impl Attribute for Tangent {
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::COLORS;
+    const LAYOUT: MeshLayout = MeshLayout::COLORS;
 
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>> {
-        mesh.colors.as_ref()
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
+        mesh.colors.assume_init_ref()
     }
 
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>> {
-        mesh.colors.as_mut()
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
+        mesh.colors.assume_init_mut()
     }
 
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.colors = Some(buffer);
+        mesh.colors = MaybeUninit::new(buffer);
     }
 
     unsafe fn default(index: u32) {
@@ -196,18 +195,18 @@ impl Attribute for Color {
 
 impl Attribute for TexCoord0 {
     type Out = vek::Vec2<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
+    const LAYOUT: MeshLayout = MeshLayout::TEX_COORD_0;
 
-    fn get(mesh: &Mesh) -> Option<&ArrayBuffer<Self::Out>> {
-        mesh.tex_coord_0.as_ref()
+    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
+        mesh.tex_coord_0.assume_init_ref()
     }
 
-    fn get_mut(mesh: &mut Mesh) -> Option<&mut ArrayBuffer<Self::Out>> {
-        mesh.tex_coord_0.as_mut()
+    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
+        mesh.tex_coord_0.assume_init_mut()
     }
 
     fn insert(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.tex_coord_0 = Some(buffer);
+        mesh.tex_coord_0 = MaybeUninit::new(buffer);
     }
 
     unsafe fn default(index: u32) {
