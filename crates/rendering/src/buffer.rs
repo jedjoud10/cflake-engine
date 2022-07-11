@@ -1,5 +1,6 @@
 use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
+use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ops::{Range, RangeBounds};
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
@@ -75,6 +76,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a buffer using a slice of elements
     pub fn from_slice(slice: &[T], mode: BufferMode) -> Self {
+        // Enable mapping by default
         todo!()
     }
 
@@ -143,6 +145,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         todo!()
     }
 
+    // Get an untyped buffer reference of the current buffer
+    pub fn untyped(&self) -> UntypedBufferRef {
+        UntypedBufferRef { target: TARGET, buffer: &self.buffer, length: &self.length, capacity: &self.capacity, mode: &self.mode, _type: TypeId::of::<T>(), stride: size_of::<T>() }
+    }
+
     // Cast the buffer to a buffer of another target / type
     // The type U and T must have the same exact size and alignment
     pub unsafe fn cast<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
@@ -164,14 +171,24 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.read_range(slice, ..)
     }
 
-    // Map the buffer temporarily for reading only
-    pub fn map(&self) -> Mapped<T, TARGET> {
+    // Map a region of the buffer temporarily for reading
+    pub fn map_range(&self, range: impl RangeBounds<usize>) -> Mapped<T, TARGET> {
         todo!()
     }
-    
-    // Map the buffer temporarily for writing AND reading
-    pub fn map_mut(&mut self) -> MappedMut<T, TARGET> {
+
+    // Map a region of the buffer temporarily for reading and writing
+    pub fn map_range_mut(&mut self, range: impl RangeBounds<usize>) -> MappedMut<T, TARGET> {
         todo!()
+    }
+
+    // Map the whole buffer temporarily for reading
+    pub fn map(&self) -> Mapped<T, TARGET> {
+        self.map_range(..)
+    }
+    
+    // Map the whole buffer temporarily for reading and writing
+    pub fn map_mut(&mut self) -> MappedMut<T, TARGET> {
+        self.map_range_mut(..)
     }
 }
 
@@ -195,15 +212,72 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
     }
 }
 
+// An untyped view is an immutable reference to a buffer, but without type or target information
+// Untyped views cannot be modified, and they serve as a way to access heterogeneous buffers easily
+pub struct UntypedBufferRef<'a> {
+    target: u32,
+    buffer: &'a u32,
+    length: &'a usize,
+    capacity: &'a usize,
+    mode: &'a BufferMode,
+    _type: TypeId,
+    stride: usize,
+}
+
+impl<'a> UntypedBufferRef<'a> {
+    // Get the current length of the buffer
+    pub fn len(&self) -> usize {
+        *self.length
+    }
+    
+    // Check if the buffer is empty
+    pub fn is_empty(&self) -> bool {
+        *self.length == 0
+    }
+    
+    // Get the current capacity of the buffer
+    pub fn capacity(&self) -> usize {
+        *self.capacity
+    }
+    
+    // Get the buffer mode that we used to initialize this buffer
+    pub fn mode(&self) -> BufferMode {
+        *self.mode
+    }
+
+    // Get the buffer's stride (length of each element)
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
+
+    // Get the untyped T type ID
+    pub fn type_id(&self) -> TypeId {
+        self._type
+    }
+
+    // Get the untyped target
+    pub fn target(&self) -> u32 {
+        self.target
+    }
+}
+
+impl<'a> ToGlName for UntypedBufferRef<'a> {
+    fn name(&self) -> u32 {
+        *self.buffer
+    }
+}
+
 // Immutably mapped buffer that we read from directly
 pub struct Mapped<'a, T: Shared, const TARGET: u32> {
     buffer: &'a Buffer<T, TARGET>,
+    len: usize,
     ptr: *const T,
 }
 
 // Mutably mapped buffer that we can write / read from directly
 pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
     buffer: &'a mut Buffer<T, TARGET>,
+    len: usize,
     ptr: *mut T,
 }
 
@@ -211,18 +285,24 @@ pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
 impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
     // Convert the mapped pointer into an immutable slice
     pub fn as_slice(&self) -> &[T] {
-        todo!()
+        unsafe {
+            std::slice::from_raw_parts(self.ptr, self.len)
+        }
     }
 }
 
 impl<'a, T: Shared, const TARGET: u32> MappedMut<'a, T, TARGET> {
     // Convert the mapped buffer into an immutable slice
     pub fn as_slice(&self) -> &[T] {
-        todo!()
+        unsafe {
+            std::slice::from_raw_parts(self.ptr, self.len)
+        }
     }
     
     // Convert the mapped buffer into a mutable slice
     pub fn as_slice_mut(&mut self) -> &mut [T] {
-        todo!()        
+        unsafe {
+            std::slice::from_raw_parts_mut(self.ptr, self.len)
+        }
     }
 }

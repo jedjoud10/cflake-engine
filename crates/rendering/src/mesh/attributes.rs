@@ -1,7 +1,7 @@
-use std::{ptr::null, mem::MaybeUninit};
+use std::{ptr::null, mem::MaybeUninit, any::TypeId};
 
 use crate::{
-    buffer::{ArrayBuffer},
+    buffer::{ArrayBuffer, BufferMode},
     object::{Shared, ToGlName},
 };
 
@@ -81,6 +81,7 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 pub trait Attribute {
     type Out: RawAttribute + Shared;
     const LAYOUT: VertexLayout;
+    const NORMALIZED: bool;
 
     // Get the corresponding buffer for this attribute from the mesh
     // This assumes that the underlying buffer is indeed intialized
@@ -91,11 +92,13 @@ pub trait Attribute {
     unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>);
 
     // This will set the default attribute values for a specific index
-    unsafe fn default(index: u32);
-}
+    unsafe fn default();
 
-// Max number of vertex attribute that we can store within the mesh type
-pub const MAX_MESH_VERTEX_ATTRIBUTE_BUFFERS: usize = 5;
+    // Calculate the attribute index offset of self
+    fn offset() -> u32 {
+        Self::LAYOUT.bits().leading_zeros()
+    }
+}
 
 // This specifies what attributes are enabled from within the mesh
 bitflags::bitflags! {
@@ -132,6 +135,7 @@ pub struct TexCoord0;
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
     const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
+    const NORMALIZED: bool = false;
     
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.positions.assume_init_ref()
@@ -145,7 +149,7 @@ impl Attribute for Position {
         mesh.positions = MaybeUninit::new(buffer);
     }
 
-    unsafe fn default(_index: u32) {
+    unsafe fn default() {
         panic!()
     }    
 }
@@ -153,6 +157,7 @@ impl Attribute for Position {
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
     const LAYOUT: VertexLayout = VertexLayout::NORMALS;
+    const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.normals.assume_init_ref()
@@ -166,14 +171,15 @@ impl Attribute for Normal {
         mesh.normals = MaybeUninit::new(buffer);
     }
 
-    unsafe fn default(index: u32) {
-        gl::VertexAttrib4Nbv(index, [127, 127, 127, 0_i8].as_ptr());
+    unsafe fn default() {
+        gl::VertexAttrib4Nbv(Self::offset(), [127, 127, 127, 0_i8].as_ptr());
     }
 }
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
     const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
+    const NORMALIZED: bool= true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.tangents.assume_init_ref()
@@ -187,14 +193,15 @@ impl Attribute for Tangent {
         mesh.tangents = MaybeUninit::new(buffer);
     }
 
-    unsafe fn default(index: u32) {
-        gl::VertexAttrib4Nbv(index, [0, 0, 0, 127_i8].as_ptr());
+    unsafe fn default() {
+        gl::VertexAttrib4Nbv(Self::offset(), [0, 0, 0, 127_i8].as_ptr());
     }
 }
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
     const LAYOUT: VertexLayout = VertexLayout::COLORS;
+    const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.colors.assume_init_ref()
@@ -208,14 +215,15 @@ impl Attribute for Color {
         mesh.colors = MaybeUninit::new(buffer);
     }
 
-    unsafe fn default(index: u32) {
-        gl::VertexAttrib4Nub(index, 255, 255, 255, 0);
+    unsafe fn default() {
+        gl::VertexAttrib4Nub(Self::offset(), 255, 255, 255, 0);
     }
 }
 
 impl Attribute for TexCoord0 {
     type Out = vek::Vec2<u8>;
     const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
+    const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
         mesh.tex_coord_0.assume_init_ref()
@@ -229,61 +237,14 @@ impl Attribute for TexCoord0 {
         mesh.tex_coord_0 = MaybeUninit::new(buffer);
     }
 
-    unsafe fn default(index: u32) {
-        gl::VertexAttrib4Nub(index, 255, 255, 0, 0);
+    unsafe fn default() {
+        gl::VertexAttrib4Nub(Self::offset(), 255, 255, 0, 0);
     }
 }
 
 // All the raw types used by the attributes
-pub type VePos = <Position as Attribute>::Out;
+pub type VePosition = <Position as Attribute>::Out;
 pub type VeNormal = <Normal as Attribute>::Out;
 pub type VeTangent = <Tangent as Attribute>::Out;
 pub type VeColor = <Color as Attribute>::Out;
 pub type VeTexCoord0 = <TexCoord0 as Attribute>::Out;
-
-/*
-// Temp auxiliary data for generating the vertex attribute buffers
-struct AuxBufGen<'a> {
-    vao: u32,
-    index: &'a mut u32,
-    vertices: &'a mut VertexAssembly,
-    ctx: &'a mut Context,
-    mode: BufferMode,
-}
-
-// Generate a unique attribute buffer given some settings and the corresponding Rust vector from the geometry builder
-unsafe fn gen<'a, T: Attribute>(
-    aux: &mut AuxBufGen<'a>,
-    normalized: bool,
-) -> Option<ArrayBuffer<T::Out>> {
-    if let Some(vec) = aux.vertices.get_mut::<T>() {
-        // Create the array buffer
-        let buffer = ArrayBuffer::new(aux.ctx, aux.mode, vec).unwrap();
-
-        // Bind the buffer to bind the attributes
-        gl::BindBuffer(gl::ARRAY_BUFFER, buffer.name());
-
-        // Enable the attribute and set it's parameters
-        gl::EnableVertexArrayAttrib(aux.vao, *aux.index);
-        gl::VertexAttribPointer(
-            *aux.index,
-            T::Out::COUNT_PER_VERTEX as i32,
-            T::Out::GL_TYPE,
-            normalized.into(),
-            0,
-            null(),
-        );
-
-        // Increment the counter, since we've enabled the attribute
-        *aux.index += 1;
-        Some(buffer)
-    } else {
-        // Set the default values for the missing attribute
-        T::default(*aux.index);
-        *aux.index += 1;
-
-        // Maidenless?
-        None
-    }
-}
-*/
