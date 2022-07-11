@@ -9,7 +9,7 @@ use rayon::iter::Positions;
 use super::{attributes::*, MeshImportSettings};
 use crate::{
     buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
-    context::Context, mesh::{attributes::RawAttribute}, prelude::Array, object::{ToGlName, Shared},
+    context::Context, mesh::{attributes::RawAttribute, MeshImportMode}, prelude::Array, object::{ToGlName, Shared},
 };
 
 // Contains the underlying array buffer for a specific attribute
@@ -31,7 +31,7 @@ pub struct Mesh {
     pub(super) normals: AttribBuffer<Normal>,
     pub(super) tangents: AttribBuffer<Tangent>,
     pub(super) colors: AttribBuffer<Color>,
-    pub(super) tex_coord: AttribBuffer<TexCoord0>,
+    pub(super) tex_coord: AttribBuffer<TexCoord>,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
@@ -69,7 +69,7 @@ impl Mesh {
             mesh.set_attribute::<Normal>(normals);
             mesh.set_attribute::<Tangent>(tangents);
             mesh.set_attribute::<Color>(colors);
-            mesh.set_attribute::<TexCoord0>(tex_coord);
+            mesh.set_attribute::<TexCoord>(tex_coord);
             
             // Set required index buffer
             mesh.set_indices(indices);
@@ -134,7 +134,7 @@ impl Mesh {
             self.attribute::<Normal>().map(|b| (Buffer::as_buffer_any_ref(b), Normal::as_attribute_any())),
             self.attribute::<Tangent>().map(|b| (Buffer::as_buffer_any_ref(b), Tangent::as_attribute_any())),
             self.attribute::<Color>().map(|b| (Buffer::as_buffer_any_ref(b), Color::as_attribute_any())),
-            self.attribute::<TexCoord0>().map(|b| (Buffer::as_buffer_any_ref(b), TexCoord0::as_attribute_any())),
+            self.attribute::<TexCoord>().map(|b| (Buffer::as_buffer_any_ref(b), TexCoord::as_attribute_any())),
         ]
     }
 
@@ -264,7 +264,7 @@ impl Mesh {
         let normals = mapped.as_slice();
 
         // Get texture coordinate slice
-        let mapped = self.attribute::<TexCoord0>().unwrap().map();
+        let mapped = self.attribute::<TexCoord>().unwrap().map();
         let uvs = mapped.as_slice();
 
         // Get index slice
@@ -334,7 +334,7 @@ impl Mesh {
         self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Color>().map(|buf| *buf = Buffer::empty(ctx, mode));
-        self.attribute_mut::<TexCoord0>().map(|buf| *buf = Buffer::empty(ctx, mode));
+        self.attribute_mut::<TexCoord>().map(|buf| *buf = Buffer::empty(ctx, mode));
     }
 
     // Recalculate the AABB bounds of this mesh
@@ -372,17 +372,24 @@ impl<'a> Asset<'a> for Mesh {
         }        
 
         // Convert the mesh mode into the valid buffer modes
-        let positions = Buffer::from_slice(ctx, &positions, settings.mode.positions);
-        let normals = Buffer::from_slice(ctx, &normals, settings.mode.tangents);
-        let tex_coord = Buffer::from_slice(ctx, &tex_coords_0, settings.mode.tex_coords);
-        let indices = Buffer::from_slice(ctx, &indices, settings.mode.indices);
+        let mode = match settings.mode {
+            MeshImportMode::Static => BufferMode::Static,
+            MeshImportMode::Dynamic => BufferMode::Dynamic,
+            MeshImportMode::Procedural => BufferMode::Resizable,
+        };
+
+        // Create the buffers
+        let positions = Buffer::from_slice(ctx, &positions, mode);
+        let normals = Buffer::from_slice(ctx, &normals, mode);
+        let tex_coord = Buffer::from_slice(ctx, &tex_coords_0, mode);
+        let indices = Buffer::from_slice(ctx, &indices, mode);
 
         // Create a new mesh
         let mut mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {
-            mesh.compute_tangents(ctx, settings.mode.tangents).unwrap();
+            mesh.compute_tangents(ctx, mode).unwrap();
         }
         mesh
     }

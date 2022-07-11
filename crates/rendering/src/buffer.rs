@@ -105,6 +105,27 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         self.mode
     }
 
+    // Convert a range bounds type into the range indices
+    pub fn convert_range_bounds(&self, range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
+        let start = match range.start_bound() {
+            std::ops::Bound::Included(start) => *start,
+            std::ops::Bound::Excluded(start) => panic!(),
+            std::ops::Bound::Unbounded => 0,
+        };
+
+        let end = match range.end_bound() {
+            std::ops::Bound::Included(end) => *end,
+            std::ops::Bound::Excluded(end) => *end - 1,
+            std::ops::Bound::Unbounded => self.length - 1,
+        };
+
+        if start < self.length - 1 && end <= self.length {
+            Some((start, end))
+        } else {
+            None
+        }
+    }
+
     // Clear the values specified by the range to a new value
     pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
         todo!()

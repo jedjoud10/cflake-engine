@@ -179,7 +179,7 @@ pub struct Tangent;
 pub struct Color;
 
 // TexCoord0 (UV) attribute for vertices. Uses Vec2<u8> internally
-pub struct TexCoord0;
+pub struct TexCoord;
 
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
@@ -269,7 +269,7 @@ impl Attribute for Color {
     }
 }
 
-impl Attribute for TexCoord0 {
+impl Attribute for TexCoord {
     type Out = vek::Vec2<u8>;
     const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
     const NORMALIZED: bool = true;
@@ -296,4 +296,4 @@ pub type VePosition = <Position as Attribute>::Out;
 pub type VeNormal = <Normal as Attribute>::Out;
 pub type VeTangent = <Tangent as Attribute>::Out;
 pub type VeColor = <Color as Attribute>::Out;
-pub type VeTexCoord0 = <TexCoord0 as Attribute>::Out;
+pub type VeTexCoord0 = <TexCoord as Attribute>::Out;
