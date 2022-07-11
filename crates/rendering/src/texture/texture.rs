@@ -245,7 +245,8 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
     // Texel layout that we will use internally
     type T: Texel;
-    // Create a new texture that contains some data
+
+    // Create a new texture that contains some predefined data
     fn new(
         _ctx: &mut Context,
         mode: TextureMode,

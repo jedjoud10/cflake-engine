@@ -75,14 +75,14 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a buffer using a slice of elements
-    pub fn from_slice(slice: &[T], mode: BufferMode) -> Self {
+    pub fn from_slice(ctx: &mut Context, slice: &[T], mode: BufferMode) -> Self {
         // Enable mapping by default
         todo!()
     }
 
     // Create an empty buffer. Only used internally
-    pub fn empty(mode: BufferMode) -> Self {
-        Self::from_slice(&[], mode)
+    pub fn empty(ctx: &mut Context, mode: BufferMode) -> Self {
+        Self::from_slice(ctx, &[], mode)
     }
 
     // Get the current length of the buffer

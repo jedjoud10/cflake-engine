@@ -77,8 +77,8 @@ impl Painter {
 
         // Resizable buffers for vertices and indices
         let vertices =
-            ArrayBuffer::<egui::epaint::Vertex>::new(ctx, BufferMode::Resizable, &[]).unwrap();
-        let indices = ElementBuffer::<u32>::new(ctx, BufferMode::Resizable, &[]).unwrap();
+            ArrayBuffer::<egui::epaint::Vertex>::from_slice(ctx, &[], BufferMode::Resizable);
+        let indices = ElementBuffer::<u32>::from_slice(ctx, &[], BufferMode::Resizable);
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
         unsafe {
@@ -180,15 +180,15 @@ impl Painter {
 
         for mesh in meshes {
             // Update the buffers using data from the clipped mesh
-            self.vertices.write_from_slice(mesh.1.vertices.as_slice());
-            self.indices.write_from_slice(mesh.1.indices.as_slice());
+            self.vertices.write(mesh.1.vertices.as_slice());
+            self.indices.write(mesh.1.indices.as_slice());
 
             unsafe {
                 rasterizer
-                    .draw_from_raw_parts(
+                    .draw_ebo_vao(
                         self.vao,
                         self.indices.name(),
-                        self.indices.len() as u32,
+                        self.indices.len(),
                         &mut uniforms,
                     )
                     .unwrap();

@@ -11,6 +11,6 @@ fn main() {
 fn update(world: &mut World) {
     let (meshes, scene, ctx) = world.get_mut::<(&Storage<Mesh>, &SceneSettings, &mut Context)>().unwrap();
     let cube = meshes.get(&scene.cube());
-    let buffer = cube.attributes().get::<Position>().unwrap();
-    println!("{}", buffer.len());
+    //let buffer = cube.attributes().get::<Position>().unwrap();
+    //println!("{}", buffer.len());
 }

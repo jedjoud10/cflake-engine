@@ -7,7 +7,7 @@ use math::Transform;
 use world::{Resource, Storage, World};
 
 use crate::{
-    canvas::{BlendMode, Canvas, FaceCullMode},
+    canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
     mesh::Mesh,
     others::Comparison,
@@ -17,10 +17,20 @@ use crate::{
 
 use super::Pipeline;
 
+pub struct MeshRequirements {
+
+}
+
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
     // The resources that we need to fetch from the world to set the uniforms
     type Resources: 'w;
+
+    // Get the mesh requirements needed to render out a singular surface
+    fn requires() -> MeshRequirements {
+        todo!()
+    }
 
     // Load in the shader that we will use for our material pipeline
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader;

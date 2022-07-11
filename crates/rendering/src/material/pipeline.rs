@@ -117,7 +117,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-            //rasterizer.draw(mesh, &mut uniforms).unwrap();
+            rasterizer.draw(mesh, &mut uniforms).unwrap();
         }
         None
     }

@@ -1,3 +1,5 @@
+use crate::context::Context;
+
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[derive(Clone, Copy)]
 pub enum Filter {
@@ -19,4 +21,12 @@ pub enum Wrap {
 pub struct Sampling {
     pub filter: Filter,
     pub wrap: Wrap,
+}
+
+// Texture settings that we shall use when loading in a new texture
+pub struct TextureImportSettings<'a> {
+    pub ctx: &'a mut Context,
+    pub filter: Filter,
+    pub wrap: Wrap,
+    pub sampling: Sampling,
 }

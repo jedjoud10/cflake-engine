@@ -191,8 +191,10 @@ impl Mesh {
         // Bind all the active buffers at the start (create the binding indices)
         let iter = self.attributes_any().into_iter().filter_map(|s| s).enumerate();
         for (i, (buffer, attrib)) in iter {
-            gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
-            gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
+            if self.maybe_reassigned.contains(attrib.layout()) {
+                gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
+                gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
+            }
         }
     }
 
@@ -205,7 +207,7 @@ impl Mesh {
 
     // Recalculate the vertex normals procedurally; based on position attribute
     // This will fail if the current mesh is not valid
-    pub fn compute_normals(&mut self, mode: BufferMode) -> Option<()> {
+    pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         self.is_valid().then_some(())?;
         
         // Get positions buffer and mapping
@@ -246,13 +248,13 @@ impl Mesh {
                 .map(|e| (e * 127.0) as i8)
             ).collect::<_>();
 
-        self.set_attribute::<Normal>(Some(Buffer::from_slice(normals.as_slice(), mode)));
+        self.set_attribute::<Normal>(Some(Buffer::from_slice(ctx, normals.as_slice(), mode)));
         Some(())
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
     // This will fail if the current mesh is not valid or if the tangent generator fails
-    pub fn compute_tangents(&mut self, mode: BufferMode) -> Option<()> {
+    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         self.is_valid().then_some(())?;
 
         // Get positions slice
@@ -322,19 +324,19 @@ impl Mesh {
 
         // Generate the procedural tangents and store them
         mikktspace::generate_tangents(&mut gen).then_some(())?;
-        self.set_attribute::<Tangent>(Some(Buffer::from_slice(tangents.as_slice(), mode)));
+        self.set_attribute::<Tangent>(Some(Buffer::from_slice(ctx, tangents.as_slice(), mode)));
         Some(())
     }
 
     // Clear the underlying mesh, making it invisible and dispose of the buffers
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, ctx: &mut Context) {
         let mode = BufferMode::Static;
-        *self.indices_mut() = Buffer::empty(mode);
-        self.attribute_mut::<Position>().map(|buf| *buf = Buffer::empty(mode));
-        self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(mode));
-        self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(mode));
-        self.attribute_mut::<Color>().map(|buf| *buf = Buffer::empty(mode));
-        self.attribute_mut::<TexCoord0>().map(|buf| *buf = Buffer::empty(mode));
+        *self.indices_mut() = Buffer::empty(ctx, mode);
+        self.attribute_mut::<Position>().map(|buf| *buf = Buffer::empty(ctx, mode));
+        self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(ctx, mode));
+        self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(ctx, mode));
+        self.attribute_mut::<Color>().map(|buf| *buf = Buffer::empty(ctx, mode));
+        self.attribute_mut::<TexCoord0>().map(|buf| *buf = Buffer::empty(ctx, mode));
     }
 
     // Recalculate the AABB bounds of this mesh
@@ -342,45 +344,6 @@ impl Mesh {
         todo!()
     }
 }
-
-
-/*
-// Create and bind the VAO, then create a safe VAO wrapper
-        let vao = unsafe {
-            let mut name = 0;
-            gl::GenVertexArrays(1, &mut name);
-            gl::BindVertexArray(name);
-            name
-        };
-
-        // We do a bit of copying
-        let layout = vertices.layout();
-
-        // Helper struct to make buffer initializiation a bit easier
-        let mut index = 0u32;
-        let mut aux = AuxBufGen {
-            vao,
-            index: &mut index,
-            vertices: &mut vertices,
-            ctx,
-            mode,
-        };
-
-        // Create the set with valid buffers (if they are enabled)
-        use super::attributes::named::*;
-
-        unsafe {
-            Self {
-                name: vao,
-                positions: gen::<Position>(&mut aux, false),
-                normals: gen::<Normal>(&mut aux, true),
-                tangents: gen::<Tangent>(&mut aux, true),
-                colors: gen::<Color>(&mut aux, true),
-                tex_coord_0: gen::<TexCoord0>(&mut aux, true),
-                layout,
-            }
-        }
-*/
 impl<'a> Asset<'a> for Mesh {
     type Args = &'a mut Context;
 
@@ -393,23 +356,20 @@ impl<'a> Asset<'a> for Mesh {
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
         let capacity = parsed.vertices.len();
 
-        // Create all the buffers at once
         let mut positions = Vec::with_capacity(capacity);
         let mut normals = Vec::with_capacity(capacity);
         let mut tex_coords_0 = Vec::with_capacity(capacity);
         let indices = parsed.indices;
 
-        // Fill each buffer now
         use vek::{Vec2, Vec3};
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
-        }
+        }        
 
-        
-
-        // Set the very sussy bakas (POV: You are slowly going insane)
         todo!()
+
+        //Mesh::from_buffers(positions, normals, tangents, colors, tex_coord_0, indices)
     }
 }
