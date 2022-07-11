@@ -1,4 +1,4 @@
-use std::{ptr::null, mem::MaybeUninit, any::TypeId};
+use std::{ptr::null, mem::{MaybeUninit, size_of}, any::TypeId};
 
 use crate::{
     buffer::{ArrayBuffer, BufferMode},
@@ -95,19 +95,68 @@ pub trait Attribute {
     unsafe fn default();
 
     // Calculate the attribute index offset of self
-    fn offset() -> u32 {
-        Self::LAYOUT.bits().leading_zeros()
+    fn attribute_index() -> u32 {
+        Self::LAYOUT.bits().trailing_zeros()
+    }
+
+    // Calculate the buffer data stride for each raw element of this attribute
+    fn stride() -> usize {
+        size_of::<Self::Out>()
+    }
+
+    // Create a new homogeneous wrapper that contains all the basic information about this attribute
+    fn as_attribute_any() -> AttributeFormatAny {
+        AttributeFormatAny {
+            layout: Self::LAYOUT,
+            normalized: Self::NORMALIZED,
+            stride: Self::stride(),
+            attribute_index: Self::attribute_index(),
+        }
     }
 }
+
+// An untyped attribute wrapper that contains all the basic information about attributes
+// Only used internally for now 
+pub struct AttributeFormatAny {
+    layout: VertexLayout,
+    normalized: bool,
+    stride: usize,
+    attribute_index: u32,
+}
+
+impl AttributeFormatAny {
+    // Get the underlying layout of our attribute
+    pub fn layout(&self) -> VertexLayout {
+        self.layout
+    }
+    
+    // Get the normalization state of the attribute
+    pub fn normalized(&self) -> bool {
+        self.normalized
+    }
+    
+    // Get the width of each raw attribute element
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
+    
+    // Get the final attribute index
+    pub fn attribute_index(&self) -> u32 {
+        self.attribute_index
+    }
+}
+
+// This is the maximum number of active attributes that we can have inside a mesh
+pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = VertexLayout::all().bits().trailing_ones() as usize;
 
 // This specifies what attributes are enabled from within the mesh
 bitflags::bitflags! {
     pub struct VertexLayout: u8 {
         const POSITIONS = 1;
-        const NORMALS = 1 << 2;
-        const TANGENTS = 1 << 3;
-        const COLORS = 1 << 4;
-        const TEX_COORD_0 = 1 << 5;
+        const NORMALS = 1 << 1;
+        const TANGENTS = 1 << 2;
+        const COLORS = 1 << 3;
+        const TEX_COORD_0 = 1 << 4;
     }
 }
 
@@ -172,7 +221,7 @@ impl Attribute for Normal {
     }
 
     unsafe fn default() {
-        gl::VertexAttrib4Nbv(Self::offset(), [127, 127, 127, 0_i8].as_ptr());
+        gl::VertexAttrib4Nbv(Self::attribute_index(), [127, 127, 127, 0_i8].as_ptr());
     }
 }
 
@@ -194,7 +243,7 @@ impl Attribute for Tangent {
     }
 
     unsafe fn default() {
-        gl::VertexAttrib4Nbv(Self::offset(), [0, 0, 0, 127_i8].as_ptr());
+        gl::VertexAttrib4Nbv(Self::attribute_index(), [0, 0, 0, 127_i8].as_ptr());
     }
 }
 
@@ -216,7 +265,7 @@ impl Attribute for Color {
     }
 
     unsafe fn default() {
-        gl::VertexAttrib4Nub(Self::offset(), 255, 255, 255, 0);
+        gl::VertexAttrib4Nub(Self::attribute_index(), 255, 255, 255, 0);
     }
 }
 
@@ -238,7 +287,7 @@ impl Attribute for TexCoord0 {
     }
 
     unsafe fn default() {
-        gl::VertexAttrib4Nub(Self::offset(), 255, 255, 0, 0);
+        gl::VertexAttrib4Nub(Self::attribute_index(), 255, 255, 0, 0);
     }
 }
 

@@ -146,8 +146,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Get an untyped buffer reference of the current buffer
-    pub fn untyped(&self) -> UntypedBufferRef {
-        UntypedBufferRef { target: TARGET, buffer: &self.buffer, length: &self.length, capacity: &self.capacity, mode: &self.mode, _type: TypeId::of::<T>(), stride: size_of::<T>() }
+    pub fn as_buffer_any_ref(&self) -> BufferAnyRef {
+        BufferAnyRef { target: TARGET, buffer: &self.buffer, length: &self.length, capacity: &self.capacity, mode: &self.mode, _type: TypeId::of::<T>(), stride: size_of::<T>() }
     }
 
     // Cast the buffer to a buffer of another target / type
@@ -212,9 +212,8 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
     }
 }
 
-// An untyped view is an immutable reference to a buffer, but without type or target information
-// Untyped views cannot be modified, and they serve as a way to access heterogeneous buffers easily
-pub struct UntypedBufferRef<'a> {
+// This is an immutable reference to a buffer that doesn't contain any type reference or target reference
+pub struct BufferAnyRef<'a> {
     target: u32,
     buffer: &'a u32,
     length: &'a usize,
@@ -224,7 +223,7 @@ pub struct UntypedBufferRef<'a> {
     stride: usize,
 }
 
-impl<'a> UntypedBufferRef<'a> {
+impl<'a> BufferAnyRef<'a> {
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         *self.length
@@ -261,13 +260,13 @@ impl<'a> UntypedBufferRef<'a> {
     }
 }
 
-impl<'a> ToGlName for UntypedBufferRef<'a> {
+impl<'a> ToGlName for BufferAnyRef<'a> {
     fn name(&self) -> u32 {
         *self.buffer
     }
 }
 
-// Immutably mapped buffer that we read from directly
+// Immutably mapped buffer that we can read from directly
 pub struct Mapped<'a, T: Shared, const TARGET: u32> {
     buffer: &'a Buffer<T, TARGET>,
     len: usize,

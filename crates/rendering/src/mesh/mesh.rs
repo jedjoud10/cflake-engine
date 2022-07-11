@@ -7,7 +7,7 @@ use obj::TexturedVertex;
 
 use super::{attributes::*};
 use crate::{
-    buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode},
+    buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
     context::Context, mesh::attributes::RawAttribute, prelude::Array, object::{ToGlName, Shared},
 };
 
@@ -129,6 +129,17 @@ impl Mesh {
         self.is_attribute_active::<T>().then(|| unsafe { T::assume_init_get_mut(self) })
     }
 
+    // Get an array containing all the buffer any ref and attribute format any
+    pub fn attributes_any(&self) -> [Option<(BufferAnyRef, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+        [
+            self.attribute::<Position>().map(|b| (Buffer::as_buffer_any_ref(b), Position::as_attribute_any())),
+            self.attribute::<Normal>().map(|b| (Buffer::as_buffer_any_ref(b), Normal::as_attribute_any())),
+            self.attribute::<Tangent>().map(|b| (Buffer::as_buffer_any_ref(b), Tangent::as_attribute_any())),
+            self.attribute::<Color>().map(|b| (Buffer::as_buffer_any_ref(b), Color::as_attribute_any())),
+            self.attribute::<TexCoord0>().map(|b| (Buffer::as_buffer_any_ref(b), TexCoord0::as_attribute_any())),
+        ]
+    }
+
     // Set a new vertex attribute buffer, dropping the old one if there was one
     pub fn set_attribute<T: Attribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
         if let Some(buffer) = buffer {
@@ -141,9 +152,9 @@ impl Mesh {
             self.layout.insert(T::LAYOUT);
             self.maybe_reassigned.insert(T::LAYOUT);
             unsafe {
-                gl::EnableVertexArrayAttrib(self.vao, T::offset());
+                gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
                 gl::VertexAttribFormat(
-                    T::offset(),
+                    T::attribute_index(),
                     T::Out::COUNT_PER_VERTEX as i32,
                     T::Out::GL_TYPE,
                     T::NORMALIZED.into(),
@@ -154,24 +165,22 @@ impl Mesh {
             // Disable the vertex attribute
             self.layout.remove(T::LAYOUT);
             unsafe {
-                gl::DisableVertexArrayAttrib(self.vao, T::offset())
+                gl::DisableVertexArrayAttrib(self.vao, T::attribute_index())
             }
         }
-
-        // In any case, we must update the 
     }
 
     // Get the number of vertices that we have in total (this will return None if two or more vectors have different lengths)
     pub fn len(&self) -> Option<usize> {
-        let arr = [
-            self.attribute::<Position>().map(Buffer::len),
-            self.attribute::<Normal>().map(Buffer::len),
-            self.attribute::<Tangent>().map(Buffer::len),
-            self.attribute::<Color>().map(Buffer::len),
-            self.attribute::<TexCoord0>().map(Buffer::len),
-        ];
+        let mut arr = self
+            .attributes_any()
+            .into_iter()
+            .map(|opt| 
+                opt.map(|(buf, _)| buf.len()
+            )
+        );
 
-        let first = arr.iter().find(|opt| opt.is_some()).cloned().flatten()?;
+        let first = arr.find(|opt| opt.is_some()).flatten()?;
         let valid = arr.into_iter().flatten().all(|len| len == first);
         valid.then(|| first)
     }
@@ -180,40 +189,11 @@ impl Mesh {
     // This will only re-bind the buffer that are marked as "maybe reassigned" since they might be unlinked
     unsafe fn bind_buffers(&mut self) {
         // Bind all the active buffers at the start (create the binding indices)
-        let mut buffers = ArrayVec::<u32, 5>::new();
-        let mut strides = ArrayVec::<usize, 5>::new();
-
-        if let Some(buffer) = self.attribute::<Position>() {
-            buffers.push(buffer.name());
-            strides.push(size_of::<VePosition>());
+        let iter = self.attributes_any().into_iter().filter_map(|s| s).enumerate();
+        for (i, (buffer, attrib)) in iter {
+            gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
+            gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
         }
-
-        if let Some(buffer) = self.attribute::<Normal>() {
-            buffers.push(buffer.name());
-            strides.push(size_of::<VeNormal>());
-        }
-
-        if let Some(buffer) = self.attribute::<Tangent>() {
-            buffers.push(buffer.name());
-            strides.push(size_of::<VeTangent>());
-        }
-
-        if let Some(buffer) = self.attribute::<Color>() {
-            buffers.push(buffer.name());
-            strides.push(size_of::<VeColor>());
-        }
-
-        if let Some(buffer) = self.attribute::<TexCoord0>() {
-            buffers.push(buffer.name());
-            strides.push(size_of::<VeTexCoord0>());
-        }
-        
-        // Bind the vertex buffers
-        let offsets = [0; 5];
-        //gl::VertexArrayVertexBuffers(self.vao, 0, buffers.len() as i32, buffers.as_ptr(), offsets.as_ptr(), strides.as_ptr());
-
-        // Use the binding indices and link them to the attribute indices for each buffer
-        //gl::VertexArrayAttribBinding(self.vao, )
     }
 
     // Optimize the mesh for rendering (this is called once a frame, for each unique mesh)
