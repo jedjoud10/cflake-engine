@@ -5,7 +5,7 @@ use crate::{
     object::{Shared, ToGlName},
 };
 
-use super::{Mesh, VertexLayout};
+use super::{Mesh};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -92,6 +92,26 @@ pub trait Attribute {
 
     // This will set the default attribute values for a specific index
     unsafe fn default(index: u32);
+}
+
+// Max number of vertex attribute that we can store within the mesh type
+pub const MAX_MESH_VERTEX_ATTRIBUTE_BUFFERS: usize = 5;
+
+// This specifies what attributes are enabled from within the mesh
+bitflags::bitflags! {
+    pub struct VertexLayout: u8 {
+        const POSITIONS = 1;
+        const NORMALS = 1 << 2;
+        const TANGENTS = 1 << 3;
+        const COLORS = 1 << 4;
+        const TEX_COORD_0 = 1 << 5;
+    }
+}
+
+impl Default for VertexLayout {
+    fn default() -> Self {
+        Self::empty()
+    }
 }
 
 // Position attribute for vertices. Uses Vec3<f32> internally
@@ -220,6 +240,7 @@ pub type VeNormal = <Normal as Attribute>::Out;
 pub type VeTangent = <Tangent as Attribute>::Out;
 pub type VeColor = <Color as Attribute>::Out;
 pub type VeTexCoord0 = <TexCoord0 as Attribute>::Out;
+
 /*
 // Temp auxiliary data for generating the vertex attribute buffers
 struct AuxBufGen<'a> {

@@ -73,39 +73,24 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 }
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
-    // Create a static buffer using a slice of elements
-    pub fn static_from_slice(slice: &[T]) -> Option<Self> {
+    // Create a buffer using a slice of elements
+    pub fn from_slice(slice: &[T], mode: BufferMode) -> Self {
         todo!()
     }
 
-    // Create a dynamic buffer using a slice of elements
-    pub fn dynamic_from_slice(slice: &[T]) -> Option<Self> {
-        todo!()
-    }
-    
-    // Create a partial buffer using a slice of elements
-    pub fn partial_from_slice(slice: &[T]) -> Option<Self> {
-        todo!()
-    }
-
-    // Create a partial buffer using a specific capacity
-    pub fn partial_with_capacity(cap: usize) -> Option<Self> {
-        todo!()
-    }
-    
-    // Create a resizable buffer using a slice of elements
-    pub fn resizable_from_slice(slice: &[T]) -> Self {
-        todo!()
-    }
-    
-    // Create a resizable buffer using a specific capacity
-    pub fn resizable_with_capacity(cap: usize) -> Self {
-        todo!()
+    // Create an empty buffer. Only used internally
+    pub fn empty(mode: BufferMode) -> Self {
+        Self::from_slice(&[], mode)
     }
 
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length
+    }
+
+    // Check if the buffer is empty
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
     }
 
     // Get the current capacity of the buffer
@@ -119,7 +104,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Clear the values specified by the range to a new value
-    pub fn clear_range(&mut self, val: T, range: impl RangeBounds<usize>) {
+    pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
         todo!()
     }
 
@@ -153,6 +138,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         todo!()
     }
 
+    // Clear the buffer contents, resetting the buffer's length down to zero
+    pub fn clear(&mut self) {
+        todo!()
+    }
+
     // Cast the buffer to a buffer of another target / type
     // The type U and T must have the same exact size and alignment
     pub unsafe fn cast<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
@@ -160,8 +150,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     } 
 
     // Clear the whole contents of the buffer to the specified value 
-    pub fn clear(&mut self, val: T) {
-        self.clear_range(val, ..)
+    pub fn splat(&mut self, val: T) {
+        self.splat_range(val, ..)
     }
 
     // Overwrite the whole buffer using a slice
@@ -172,6 +162,16 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Read the whole buffer into a mutable slice
     pub fn read(&mut self, slice: &mut [T]) {
         self.read_range(slice, ..)
+    }
+
+    // Map the buffer temporarily for reading only
+    pub fn map(&self) -> Mapped<T, TARGET> {
+        todo!()
+    }
+    
+    // Map the buffer temporarily for writing AND reading
+    pub fn map_mut(&mut self) -> MappedMut<T, TARGET> {
+        todo!()
     }
 }
 
@@ -192,5 +192,37 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
         unsafe {
             gl::DeleteBuffers(1, &self.buffer);
         }
+    }
+}
+
+// Immutably mapped buffer that we read from directly
+pub struct Mapped<'a, T: Shared, const TARGET: u32> {
+    buffer: &'a Buffer<T, TARGET>,
+    ptr: *const T,
+}
+
+// Mutably mapped buffer that we can write / read from directly
+pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
+    buffer: &'a mut Buffer<T, TARGET>,
+    ptr: *mut T,
+}
+
+
+impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
+    // Convert the mapped pointer into an immutable slice
+    pub fn as_slice(&self) -> &[T] {
+        todo!()
+    }
+}
+
+impl<'a, T: Shared, const TARGET: u32> MappedMut<'a, T, TARGET> {
+    // Convert the mapped buffer into an immutable slice
+    pub fn as_slice(&self) -> &[T] {
+        todo!()
+    }
+    
+    // Convert the mapped buffer into a mutable slice
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        todo!()        
     }
 }
