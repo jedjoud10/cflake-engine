@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode};
+use super::{ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode, TextureImportSettings};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
@@ -139,23 +139,24 @@ impl<T: Texel> Texture for Texture2D<T> {
 }
 
 impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
-    type Args = (&'a mut Context, Sampling, MipMaps, TextureMode);
+    type Args = (&'a mut Context, TextureImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["png", "jpg"]
     }
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+        let (ctx, settings) = args;
         let image = image::load_from_memory(data.bytes()).unwrap();
         let image = image.flipv();
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
         let texels = T::to_image_texels(image);
         Self::new(
-            args.0,
-            args.3,
+            ctx,
+            settings.mode,
             dimensions,
-            args.1,
-            args.2,
+            settings.sampling,
+            settings.mipmaps,
             texels.as_slice(),
         )
         .unwrap()

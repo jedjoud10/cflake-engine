@@ -4,19 +4,19 @@ use arrayvec::ArrayVec;
 use assets::Asset;
 use math::AABB;
 use obj::TexturedVertex;
+use rayon::iter::Positions;
 
-use super::{attributes::*};
+use super::{attributes::*, MeshImportSettings};
 use crate::{
     buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
-    context::Context, mesh::attributes::RawAttribute, prelude::Array, object::{ToGlName, Shared},
+    context::Context, mesh::{attributes::RawAttribute}, prelude::Array, object::{ToGlName, Shared},
 };
 
 // Contains the underlying array buffer for a specific attribute
-type AttribBuffer<A: Attribute> = MaybeUninit<ArrayBuffer<A::Out>>;
+type AttribBuffer<A> = MaybeUninit<ArrayBuffer<<A as Attribute>::Out>>;
 
 // A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
-// TODO: Fix buffer assignment without VAO format update
 pub struct Mesh {
     // Layout and GL name
     pub(crate) vao: u32,
@@ -31,13 +31,11 @@ pub struct Mesh {
     pub(super) normals: AttribBuffer<Normal>,
     pub(super) tangents: AttribBuffer<Tangent>,
     pub(super) colors: AttribBuffer<Color>,
-    pub(super) tex_coord_0: AttribBuffer<TexCoord0>,
+    pub(super) tex_coord: AttribBuffer<TexCoord0>,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
 }
-
-
 
 impl Mesh {
     // Create a new mesh from the attribute buffers and the indices
@@ -47,7 +45,7 @@ impl Mesh {
         normals: Option<ArrayBuffer<VeNormal>>,
         tangents: Option<ArrayBuffer<VeTangent>>,
         colors: Option<ArrayBuffer<VeColor>>,
-        tex_coord_0: Option<ArrayBuffer<VeTexCoord0>>,    
+        tex_coord: Option<ArrayBuffer<VeTexCoord0>>,    
         indices: ElementBuffer<u32>,
     ) -> Option<Self> {
         unsafe {
@@ -59,7 +57,7 @@ impl Mesh {
                 normals: MaybeUninit::uninit(),
                 tangents: MaybeUninit::uninit(),
                 colors: MaybeUninit::uninit(),
-                tex_coord_0: MaybeUninit::uninit(),
+                tex_coord: MaybeUninit::uninit(),
                 indices: MaybeUninit::uninit()
             };
             gl::CreateVertexArrays(1, &mut mesh.vao);
@@ -71,7 +69,7 @@ impl Mesh {
             mesh.set_attribute::<Normal>(normals);
             mesh.set_attribute::<Tangent>(tangents);
             mesh.set_attribute::<Color>(colors);
-            mesh.set_attribute::<TexCoord0>(tex_coord_0);
+            mesh.set_attribute::<TexCoord0>(tex_coord);
             
             // Set required index buffer
             mesh.set_indices(indices);
@@ -345,31 +343,47 @@ impl Mesh {
     }
 }
 impl<'a> Asset<'a> for Mesh {
-    type Args = &'a mut Context;
+    type Args = (&'a mut Context, MeshImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["obj"]
     }
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
-        // Parse the OBJ mesh into the different vertex attributes and the indices
-        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
-        let capacity = parsed.vertices.len();
+        let (ctx, settings) = args;
 
+        // Load the .Obj mesh
+        let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
+        
+        // Create temporary vectors containing the vertex attributes
+        let capacity = parsed.vertices.len();
         let mut positions = Vec::with_capacity(capacity);
         let mut normals = Vec::with_capacity(capacity);
         let mut tex_coords_0 = Vec::with_capacity(capacity);
         let indices = parsed.indices;
 
         use vek::{Vec2, Vec3};
+
+        // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
             positions.push(Vec3::from_slice(&vertex.position));
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
         }        
 
-        todo!()
+        // Convert the mesh mode into the valid buffer modes
+        let positions = Buffer::from_slice(ctx, &positions, settings.mode.positions);
+        let normals = Buffer::from_slice(ctx, &normals, settings.mode.tangents);
+        let tex_coord = Buffer::from_slice(ctx, &tex_coords_0, settings.mode.tex_coords);
+        let indices = Buffer::from_slice(ctx, &indices, settings.mode.indices);
 
-        //Mesh::from_buffers(positions, normals, tangents, colors, tex_coord_0, indices)
+        // Create a new mesh
+        let mut mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
+
+        // Generate procedural tangents if requested
+        if settings.generate_tangents {
+            mesh.compute_tangents(ctx, settings.mode.tangents).unwrap();
+        }
+        mesh
     }
 }

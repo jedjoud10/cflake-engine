@@ -9,7 +9,8 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
-        .insert_system(system)
+        .insert_init(init)
+        .insert_update(update)
         .execute();
 }
 
@@ -53,21 +54,21 @@ fn init(world: &mut World) {
     keyboard.bind("right", Key::D);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (
-        Sampling {
+    let import_settings = TextureImportSettings {
+        sampling: Sampling {
             filter: Filter::Linear,
             wrap: Wrap::Repeat,
         },
-        MipMaps::AutomaticAniso {
+        mipmaps: MipMaps::AutomaticAniso {
             samples: NonZeroU8::new(4).unwrap(),
         },
-        TextureMode::Static,
-    );
+        mode: TextureMode::Static,  
+    };
 
     let texture = assets
         .load_with::<NormalMap>(
             "user/textures/normal.png",
-            (ctx, params.0, params.1, params.2),
+            (ctx, import_settings),
         )
         .unwrap();
     let texture = normal_maps.insert(texture);
@@ -135,10 +136,4 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
     }
-}
-
-// This is an example system that will register specific events
-fn system(events: &mut Events) {
-    events.registry::<Init>().insert(init);
-    events.registry::<Update>().insert(update);
 }

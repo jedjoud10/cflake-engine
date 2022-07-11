@@ -5,7 +5,7 @@ layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec4 tangent;
 layout(location = 3) in vec3 color;
-layout(location = 4) in vec2 tex_coord_0;
+layout(location = 4) in vec2 tex_coord;
 
 // Transformation / projection matrices
 uniform mat4 view_matrix;
@@ -30,7 +30,7 @@ void main()
     m_position = world_pos.xyz;
     m_normal = (world_matrix * vec4(normal, 0)).xyz;
     m_tangent = (world_matrix * vec4(tangent.xyz, 0)).xyz;
-    m_tex_coord_0 = tex_coord_0;
+    m_tex_coord_0 = tex_coord;
 
     // Calculate world space bitangent
 	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;

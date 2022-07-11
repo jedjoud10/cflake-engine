@@ -275,15 +275,15 @@ impl Attribute for TexCoord0 {
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
-        mesh.tex_coord_0.assume_init_ref()
+        mesh.tex_coord.assume_init_ref()
     }
 
     unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out> {
-        mesh.tex_coord_0.assume_init_mut()
+        mesh.tex_coord.assume_init_mut()
     }
 
     unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>) {
-        mesh.tex_coord_0 = MaybeUninit::new(buffer);
+        mesh.tex_coord = MaybeUninit::new(buffer);
     }
 
     unsafe fn default() {

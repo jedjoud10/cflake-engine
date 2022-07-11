@@ -1,7 +1,7 @@
 use std::ops::Index;
 
 // An axis aligned bounding box
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct AABB {
     // Minimum vertex in world space
     pub min: vek::Vec3<f32>,

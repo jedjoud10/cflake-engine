@@ -2,12 +2,12 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
-    mesh::{Mesh, Surface},
+    mesh::{Mesh, Surface, MeshImportSettings, MeshImportMode},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
-        RGBA,
+        RGBA, TextureImportSettings,
     },
-    shader::Shader,
+    shader::Shader, buffer::BufferMode,
 };
 
 use assets::Assets;
@@ -68,25 +68,25 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mask_map = mask_maps.insert(mask_map);
 
     // Load the persistent textures like the debug texture and missing texture
-    let params = (
-        Sampling {
+    let settings = TextureImportSettings {
+        sampling: Sampling {
             filter: Filter::Nearest,
             wrap: Wrap::Repeat,
         },
-        MipMaps::Automatic,
-        TextureMode::Static,
-    );
+        mode: TextureMode::Static,
+        mipmaps: MipMaps::Automatic,
+    };
 
     let debug = assets
         .load_with::<NormalMap>(
             "engine/textures/bumps.png",
-            (ctx, params.0, params.1, params.2),
+            (ctx, settings),
         )
         .unwrap();
     let missing = assets
         .load_with::<AlbedoMap>(
             "engine/textures/missing.png",
-            (ctx, params.0, params.1, params.2),
+            (ctx, settings),
         )
         .unwrap();
 
@@ -94,13 +94,19 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let missing = albedo_maps.insert(missing);
     let debug = normal_maps.insert(debug);
 
+    let import = MeshImportSettings {
+        mode: MeshImportMode::Static,
+        generate_tangents: true,
+        scale: 1.0,
+    };
+
     // Load the default cube and sphere meshes
     let cube = assets
-        .load_with::<Mesh>("engine/meshes/cube.obj", ctx)
+        .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
 
     let sphere = assets
-        .load_with::<Mesh>("engine/meshes/sphere.obj", ctx)
+        .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
 
     // Insert the meshes and get their handles
@@ -148,24 +154,24 @@ fn postinit(world: &mut World) {
         )>()
         .unwrap();
 
-    // Load the default sky gradient texture
-    let texture = assets
+    // Sky gradient texture import settings
+    let import_settings = TextureImportSettings {
+        sampling: Sampling {
+            filter: Filter::Linear,
+            wrap: Wrap::ClampToEdge,
+        },
+        mode: TextureMode::Static,
+        mipmaps: MipMaps::Disabled,
+    };
+
+    // Load in the texture
+    let texture = textures.insert(assets
         .load_with::<AlbedoMap>(
             "engine/textures/sky_gradient.png",
-            (
-                ctx,
-                Sampling {
-                    filter: Filter::Linear,
-                    wrap: Wrap::ClampToEdge,
-                },
-                MipMaps::Disabled,
-                TextureMode::Static,
-            ),
+            (ctx, import_settings),
         )
-        .unwrap();
-    
-    // Get texture handle
-    let texture = textures.insert(texture);
+        .unwrap()
+    );
 
     // Create the default sky material
     let material = Sky {
