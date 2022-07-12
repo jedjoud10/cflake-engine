@@ -91,6 +91,7 @@ pub fn system(events: &mut Events) {
     }
 
     // Register all the events
+    /*
     events.registry::<Init>().insert(init);
     events.registry::<Update>().insert(begin);
     events
@@ -103,4 +104,5 @@ pub fn system(events: &mut Events) {
         )
         .unwrap();
     events.registry::<WindowEvent>().insert(window);
+    */
 }

@@ -48,5 +48,5 @@ void main() {
 	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32);
 
     // This sets the color for the current fragment
-    frag = vec4(1, 1, 1, 0.0);
+    frag = vec4(m_normal, 0.0);
 }
