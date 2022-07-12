@@ -3,7 +3,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 use super::{Canvas, RasterError};
 use crate::{
     buffer::ElementBuffer, context::Context, object::ToGlName,
-    others::Comparison, prelude::Uniforms, mesh::Mesh,
+    others::Comparison, prelude::Uniforms, mesh::{Mesh, MeshFeatures},
 };
 
 // Blend mode factor source
@@ -169,6 +169,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         self.ctx
     }
 
+    /*
     // Draw a vao directly onto the rasterizer
     pub unsafe fn draw_vao(
         &mut self,
@@ -195,8 +196,10 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // Draw a 3D engine mesh directly 
     pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
         unsafe {
-            //mesh.optimize();
-            self.draw_vao(mesh.vao, mesh.indices().len(), true, uniforms)
+            let ebo = mesh.contains(MeshFeatures::ELEMENT_BUFFER);
+            let count = mesh.indices().map(||   )
+            self.draw_vao(mesh.vao, mesh.indices(), ebo, uniforms)
         }
     } 
+    */
 }

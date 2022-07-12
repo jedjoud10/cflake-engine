@@ -97,12 +97,12 @@ impl Mesh {
         }
     } 
     
-    // Get the vertex attrib layout that we are using
-    pub fn layout(&self) -> MeshFeatures {
+    // Get the mesh features that are enabled
+    pub fn features(&self) -> MeshFeatures {
         self.features
     }
 
-    // Check if the layout contains a feature
+    // Check if the features contains a feature
     pub fn contains(&self, feature: MeshFeatures) -> bool {
         self.features.contains(feature)
     }
@@ -112,22 +112,19 @@ impl Mesh {
         self.contains(T::LAYOUT)
     }
 
-    // Check if this mesh can be used for rendering
-    pub fn is_valid(&self) -> bool {
-        let tris = self.indices().len() % 3 == 0;
-        let required = self.is_attribute_active::<Position>();
-        let len = self.len().is_some();
-        tris && required && len
+    // Check if we have an index buffer enabled
+    pub fn is_ebo_active(&self) -> bool {
+        self.contains(MeshFeatures::ELEMENT_BUFFER)
     }
 
     // Get the underlying index buffer immutably
-    pub fn indices(&self) -> &ElementBuffer<u32> {
-        unsafe { self.indices.assume_init_ref() }
+    pub fn indices(&self) -> Option<&ElementBuffer<u32>> {
+        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_ref() })
     }
 
     // Get the underlying index buffer mutably
-    pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
-        unsafe { self.indices.assume_init_mut() }
+    pub fn indices_mut(&mut self) -> Option<&mut ElementBuffer<u32>> {
+        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_mut() })
     }
 
     // Set a new element buffer, dropping the old one
@@ -238,17 +235,18 @@ impl Mesh {
     }
 
     // Recalculate the vertex normals procedurally; based on position attribute
-    // This will fail if the current mesh is not valid
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
-        self.is_valid().then_some(())?;
+        assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
+        assert!(self.is_ebo_active(), "Index buffer is not enabled");
         
         // Get positions buffer and mapping
         let mapped_positions = self.attribute::<Position>().unwrap().map();
         let positions = mapped_positions.as_slice();
 
         // Get index buffer and mapping
-        let mapped_indices = self.indices().map();
+        let mapped_indices = self.indices().unwrap().map();
         let indices = mapped_indices.as_slice();
+        assert!(indices.len() % 3 == 0, "Index count is not multiple of 3");
         
         // Create pre-allocated normal buffer
         let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
@@ -291,9 +289,9 @@ impl Mesh {
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
-    // This will fail if the current mesh is not valid or if the tangent generator fails
     pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
-        self.is_valid().then_some(())?;
+        assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
+        assert!(self.is_ebo_active(), "Index buffer is not enabled");
 
         // Get positions slice
         let mapped_positions = self.attribute::<Position>().unwrap().map();
@@ -308,8 +306,9 @@ impl Mesh {
         let uvs = mapped_tex_coords.as_slice();
 
         // Get index slice
-        let mapped_indices = self.indices().map();
+        let mapped_indices = self.indices().unwrap().map();
         let indices = mapped_indices.as_slice();
+        assert!(indices.len() % 3 == 0, "Index count is not multiple of 3");
 
         // Local struct that will implement the Geometry trait from the tangent generation lib
         struct TangentGenerator<'a> {
@@ -378,7 +377,7 @@ impl Mesh {
     // Clear the underlying mesh, making it invisible and dispose of the buffers
     pub fn clear(&mut self, ctx: &mut Context) {
         let mode = BufferMode::Static;
-        *self.indices_mut() = Buffer::empty(ctx, mode);
+        self.indices_mut().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Position>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(ctx, mode));
@@ -443,7 +442,7 @@ impl<'a> Asset<'a> for Mesh {
         let indices = Buffer::from_slice(ctx, &indices, mode);
 
         // Create a new mesh
-        let mut mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
+        let mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {

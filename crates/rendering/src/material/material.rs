@@ -9,17 +9,13 @@ use world::{Resource, Storage, World};
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::Mesh,
+    mesh::{Mesh, MeshFeatures},
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
 use super::Pipeline;
-
-pub struct MeshRequirements {
-
-}
 
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -28,8 +24,8 @@ pub trait Material<'w>: 'static + Sized {
     type Resources: 'w;
 
     // Get the mesh requirements needed to render out a singular surface
-    fn requires() -> MeshRequirements {
-        todo!()
+    fn requires() -> MeshFeatures {
+        MeshFeatures::POSITIONS
     }
 
     // Load in the shader that we will use for our material pipeline
