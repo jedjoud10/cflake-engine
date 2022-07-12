@@ -3,7 +3,7 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 use super::{Canvas, RasterError};
 use crate::{
     buffer::ElementBuffer, context::Context, object::ToGlName,
-    others::Comparison, prelude::Uniforms, mesh::{Mesh, MeshFeatures},
+    others::Comparison, prelude::Uniforms, mesh::{Mesh},
 };
 
 // Blend mode factor source
@@ -56,10 +56,11 @@ pub struct RasterSettings {
     pub blend: Option<BlendMode>,
 }
 
-// Depicts the exact primitives we will use to draw the mesh
+// Depicts the exact primitives we will use to draw the VAOs
 #[derive(Clone)]
 pub enum PrimitiveMode {
     Triangles { cull: Option<FaceCullMode> },
+    Lines { width: f32, smooth: bool },
     Points { diameter: f32 },
 }
 
@@ -82,31 +83,39 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
             PrimitiveMode::Points { .. } => gl::POINTS,
+            PrimitiveMode::Lines { .. } => gl::LINES,
         };
 
         // Set the OpenGL primitive parameters (along with face culling)
         match &settings.primitive {
+            // Triangle primitive type
             PrimitiveMode::Triangles { cull } => unsafe {
                 if let Some(cull) = cull {
                     gl::Enable(gl::CULL_FACE);
-
-                    // Get the face culling direction, either front or back, and winding order
                     let (direction, ccw) = match cull {
                         FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
                         FaceCullMode::Back(ccw) => (gl::BACK, ccw),
                     };
-
-                    // Set the face culling direction
                     gl::CullFace(direction);
-
-                    // And set winding order
                     gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
                 } else {
                     gl::Disable(gl::CULL_FACE);
                 };
             },
+
+            // Point primitive type
             PrimitiveMode::Points { diameter } => unsafe {
                 gl::PointSize(*diameter);
+            },
+
+            // Line primitive type
+            PrimitiveMode::Lines { width, smooth } => unsafe {
+                if *smooth {
+                    gl::Enable(gl::LINE_SMOOTH);
+                } else {
+                    gl::Disable(gl::LINE_SMOOTH);
+                }
+                gl::LineWidth(*width);
             },
         }
 
@@ -169,37 +178,50 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         self.ctx
     }
 
-    /*
-    // Draw a vao directly onto the rasterizer
-    pub unsafe fn draw_vao(
+    // Draw a ray VAO as if it had no EBO
+    pub unsafe fn draw_vao_arrays(
         &mut self,
         vao: u32,
-        count: usize,
-        elements: bool,
+        primitive_count: usize,
         uniforms: &mut Uniforms
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
-        if count > 0 {
+        if primitive_count > 0 {
             gl::BindVertexArray(vao);
-
-            if elements {
-                gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
-            } else {
-                gl::DrawArrays(self.primitive, 0, count as i32);
-            }
+            gl::DrawArrays(self.primitive, 0, primitive_count as i32);
         }
 
         Ok(())
     }
 
-    // Draw a 3D engine mesh directly 
-    pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
-        unsafe {
-            let ebo = mesh.contains(MeshFeatures::ELEMENT_BUFFER);
-            let count = mesh.indices().map(||   )
-            self.draw_vao(mesh.vao, mesh.indices(), ebo, uniforms)
+    // Draw a raw VAO is if it had a valid EBO
+    pub unsafe fn draw_vao_elements(
+        &mut self,
+        vao: u32,
+        primitive_count: usize,
+        element_type: u32,
+        uniforms: &mut Uniforms
+    ) -> Result<(), RasterError> {
+        uniforms.validate().map_err(RasterError::Uniforms)?;
+
+        if primitive_count > 0 {
+            gl::BindVertexArray(vao);
+            gl::DrawElements(self.primitive, primitive_count as i32, element_type, null());
         }
-    } 
-    */
+
+        Ok(())
+    }
+
+    // Draw a mesh, but only if it's indices are valid
+    pub fn draw(
+        &mut self,
+        mesh: &Mesh,
+        uniforms: &mut Uniforms
+    ) -> Result<(), RasterError> {
+        unsafe {
+            let count = mesh.indices().len();
+            self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_BYTE, uniforms)
+        }
+    }
 }

@@ -7,7 +7,7 @@ use rendering::canvas::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Window};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::MipMaps;
+use rendering::prelude::{MipMaps};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -179,9 +179,19 @@ impl Painter {
         );
 
         for mesh in meshes {
-            // Update the buffers using data from the clipped mesh
-            self.vertices.write(mesh.1.vertices.as_slice());
-            self.indices.write(mesh.1.indices.as_slice());
+            self.vertices.clear();
+            self.indices.clear();
+            self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
+            self.indices.extend_from_slice(mesh.1.indices.as_slice());
+
+            unsafe {
+                rasterizer.draw_vao_elements(
+                    self.vao,
+                    self.indices.len(),
+                    gl::UNSIGNED_BYTE,
+                    &mut uniforms
+                ).unwrap();
+            }
 
             /*
             unsafe {

@@ -15,34 +15,29 @@ use crate::{
 // Contains the underlying array buffer for a specific attribute
 type AttribBuffer<A> = MaybeUninit<ArrayBuffer<<A as Attribute>::Out>>;
 
-// This specifies what attributes / buffers are enabled from within the mesh
 bitflags::bitflags! {
-    pub struct MeshFeatures: u8 {
+    // This specifies the buffers that the mesh uses internally
+    pub struct MeshBuffers: u8 {
         const POSITIONS = 1;
         const NORMALS = 1 << 1;
         const TANGENTS = 1 << 2;
         const COLORS = 1 << 3;
-        const TEX_COORD_0 = 1 << 4;
-        const ELEMENT_BUFFER = 1 << 5;
+        const TEX_COORD = 1 << 4;
+        const INDICES = 1 << 5;
     }
 }
 
-impl Default for MeshFeatures {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
 
 // A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct Mesh {
-    // Layout and GL name
+    // Buffers, and GL name
     pub(crate) vao: u32,
-    features: MeshFeatures,
+    pub(crate) buffers: MeshBuffers,
 
     // This specifies some buffers that might've been reassigned externally
     // This hints the mesh that it should try to rebind the attribute's buffer to the VAO
-    maybe_reassigned: MeshFeatures,
+    maybe_reassigned: MeshBuffers,
 
     // Vertex attribute buffers
     pub(super) positions: AttribBuffer<Position>,
@@ -69,8 +64,8 @@ impl Mesh {
         unsafe {
             let mut mesh = Self { 
                 vao: 0,
-                features: MeshFeatures::empty(),
-                maybe_reassigned: MeshFeatures::empty(),
+                buffers: MeshBuffers::empty(),
+                maybe_reassigned: MeshBuffers::empty(),
                 positions: MaybeUninit::uninit(),
                 normals: MaybeUninit::uninit(),
                 tangents: MaybeUninit::uninit(),
@@ -95,48 +90,34 @@ impl Mesh {
             mesh.optimize();
             mesh.len().map(|_| mesh)
         }
-    } 
-    
-    // Get the mesh features that are enabled
-    pub fn features(&self) -> MeshFeatures {
-        self.features
-    }
-
-    // Check if the features contains a feature
-    pub fn contains(&self, feature: MeshFeatures) -> bool {
-        self.features.contains(feature)
     }
 
     // Check if we have a vertex attribute that is enabled and active
     pub fn is_attribute_active<T: Attribute>(&self) -> bool {
-        self.contains(T::LAYOUT)
-    }
-
-    // Check if we have an index buffer enabled
-    pub fn is_ebo_active(&self) -> bool {
-        self.contains(MeshFeatures::ELEMENT_BUFFER)
+        self.buffers.contains(T::LAYOUT)
     }
 
     // Get the underlying index buffer immutably
-    pub fn indices(&self) -> Option<&ElementBuffer<u32>> {
-        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_ref() })
+    pub fn indices(&self) -> &ElementBuffer<u32> {
+        unsafe { self.indices.assume_init_ref() }
     }
 
     // Get the underlying index buffer mutably
-    pub fn indices_mut(&mut self) -> Option<&mut ElementBuffer<u32>> {
-        self.is_ebo_active().then(|| unsafe { self.indices.assume_init_mut() })
+    pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
+        self.maybe_reassigned.insert(MeshBuffers::INDICES);
+        unsafe { self.indices.assume_init_mut() }
     }
 
     // Set a new element buffer, dropping the old one
     pub fn set_indices(&mut self, buffer: Option<ElementBuffer<u32>>) {
         if let Some(buffer) = buffer {
             self.indices = MaybeUninit::new(buffer);
-            self.maybe_reassigned.insert(MeshFeatures::ELEMENT_BUFFER);
-            self.features.insert(MeshFeatures::ELEMENT_BUFFER);
+            self.maybe_reassigned.insert(MeshBuffers::INDICES);
+            self.buffers.insert(MeshBuffers::INDICES);
         } else {
             self.indices = MaybeUninit::uninit();
-            self.maybe_reassigned.remove(MeshFeatures::ELEMENT_BUFFER);
-            self.features.remove(MeshFeatures::ELEMENT_BUFFER);
+            self.maybe_reassigned.remove(MeshBuffers::INDICES);
+            self.buffers.insert(MeshBuffers::INDICES);
         }
     }
 
@@ -171,7 +152,7 @@ impl Mesh {
             }
             
             // Enable the vertex attribute and specify it's format
-            self.features.insert(T::LAYOUT);
+            self.buffers.insert(T::LAYOUT);
             self.maybe_reassigned.insert(T::LAYOUT);
             unsafe {
                 gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
@@ -185,7 +166,7 @@ impl Mesh {
             }
         } else {
             // Disable the vertex attribute
-            self.features.remove(T::LAYOUT);
+            self.buffers.remove(T::LAYOUT);
             self.maybe_reassigned.remove(T::LAYOUT);
             unsafe {
                 gl::DisableVertexArrayAttrib(self.vao, T::attribute_index())
@@ -221,10 +202,10 @@ impl Mesh {
         }
 
         // Rebind the EBO to the VAO
-        if self.maybe_reassigned.contains(MeshFeatures::ELEMENT_BUFFER) {
+        if self.maybe_reassigned.contains(MeshBuffers::INDICES) {
             gl::VertexArrayElementBuffer(self.vao, self.indices.assume_init_ref().name());
         }
-        self.maybe_reassigned = MeshFeatures::empty();
+        self.maybe_reassigned = MeshBuffers::empty();
     }
 
     // Optimize the mesh for rendering (this is called once a frame, for each unique mesh)
@@ -237,14 +218,13 @@ impl Mesh {
     // Recalculate the vertex normals procedurally; based on position attribute
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
-        assert!(self.is_ebo_active(), "Index buffer is not enabled");
         
         // Get positions buffer and mapping
         let mapped_positions = self.attribute::<Position>().unwrap().map();
         let positions = mapped_positions.as_slice();
 
         // Get index buffer and mapping
-        let mapped_indices = self.indices().unwrap().map();
+        let mapped_indices = self.indices().map();
         let indices = mapped_indices.as_slice();
         assert!(indices.len() % 3 == 0, "Index count is not multiple of 3");
         
@@ -291,7 +271,6 @@ impl Mesh {
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
     pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
-        assert!(self.is_ebo_active(), "Index buffer is not enabled");
 
         // Get positions slice
         let mapped_positions = self.attribute::<Position>().unwrap().map();
@@ -306,7 +285,7 @@ impl Mesh {
         let uvs = mapped_tex_coords.as_slice();
 
         // Get index slice
-        let mapped_indices = self.indices().unwrap().map();
+        let mapped_indices = self.indices().map();
         let indices = mapped_indices.as_slice();
         assert!(indices.len() % 3 == 0, "Index count is not multiple of 3");
 
@@ -377,7 +356,7 @@ impl Mesh {
     // Clear the underlying mesh, making it invisible and dispose of the buffers
     pub fn clear(&mut self, ctx: &mut Context) {
         let mode = BufferMode::Static;
-        self.indices_mut().map(|buf| *buf = Buffer::empty(ctx, mode));
+        *self.indices_mut() = Buffer::empty(ctx, mode);
         self.attribute_mut::<Position>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(ctx, mode));
         self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(ctx, mode));

@@ -5,7 +5,7 @@ use crate::{
     object::{Shared, ToGlName},
 };
 
-use super::{Mesh, MeshFeatures};
+use super::{Mesh, MeshBuffers};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -80,7 +80,7 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait Attribute {
     type Out: RawAttribute + Shared;
-    const LAYOUT: MeshFeatures;
+    const LAYOUT: MeshBuffers;
     const NORMALIZED: bool;
 
     // Get the corresponding buffer for this attribute from the mesh
@@ -118,7 +118,7 @@ pub trait Attribute {
 // An untyped attribute wrapper that contains all the basic information about attributes
 // Only used internally for now 
 pub struct AttributeFormatAny {
-    layout: MeshFeatures,
+    layout: MeshBuffers,
     normalized: bool,
     stride: usize,
     attribute_index: u32,
@@ -126,7 +126,7 @@ pub struct AttributeFormatAny {
 
 impl AttributeFormatAny {
     // Get the underlying layout of our attribute
-    pub fn layout(&self) -> MeshFeatures {
+    pub fn layout(&self) -> MeshBuffers {
         self.layout
     }
     
@@ -166,7 +166,7 @@ pub struct TexCoord;
 
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT: MeshFeatures = MeshFeatures::POSITIONS;
+    const LAYOUT: MeshBuffers = MeshBuffers::POSITIONS;
     const NORMALIZED: bool = false;
     
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -188,7 +188,7 @@ impl Attribute for Position {
 
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT: MeshFeatures = MeshFeatures::NORMALS;
+    const LAYOUT: MeshBuffers = MeshBuffers::NORMALS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -210,7 +210,7 @@ impl Attribute for Normal {
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT: MeshFeatures = MeshFeatures::TANGENTS;
+    const LAYOUT: MeshBuffers = MeshBuffers::TANGENTS;
     const NORMALIZED: bool= true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -232,7 +232,7 @@ impl Attribute for Tangent {
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT: MeshFeatures = MeshFeatures::COLORS;
+    const LAYOUT: MeshBuffers = MeshBuffers::COLORS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -254,7 +254,7 @@ impl Attribute for Color {
 
 impl Attribute for TexCoord {
     type Out = vek::Vec2<u8>;
-    const LAYOUT: MeshFeatures = MeshFeatures::TEX_COORD_0;
+    const LAYOUT: MeshBuffers = MeshBuffers::TEX_COORD;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {

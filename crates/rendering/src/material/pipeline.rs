@@ -2,7 +2,7 @@ use super::Material;
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
     context::Context,
-    mesh::Surface,
+    mesh::{Surface, Mesh},
     prelude::Shader,
     scene::{Camera, Directional, Renderer},
 };
@@ -117,7 +117,11 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-            //rasterizer.draw(mesh, &mut uniforms).unwrap();
+            if mesh.buffers.contains(M::required()) {
+                unsafe {
+                    rasterizer.draw(mesh, &mut uniforms).unwrap();                
+                }
+            }
         }
         None
     }
