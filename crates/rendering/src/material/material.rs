@@ -46,11 +46,11 @@ pub trait Material<'w>: 'static + Sized {
         None
     }
 
-    // Get the face culling mode
-    fn face_cull_mode() -> Option<FaceCullMode> {
-        Some(FaceCullMode::Back(true))
+    // Get the rasterizer primitive mode
+    fn primitive_mode() -> PrimitiveMode {
+        PrimitiveMode::Triangles { cull: Some(FaceCullMode::Back(true)) }
     }
-
+    
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
         world: &'w mut World,

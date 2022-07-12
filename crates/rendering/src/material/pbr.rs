@@ -6,7 +6,7 @@ use world::{Handle, Storage};
 use crate::{
     canvas::Canvas,
     context::{Context, Window},
-    mesh::Mesh,
+    mesh::{Mesh, MeshBuffers},
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
@@ -29,11 +29,9 @@ pub struct Standard {
     albedo: Option<Handle<AlbedoMap>>,
     normal: Option<Handle<NormalMap>>,
     mask: Option<Handle<MaskMap>>,
-
     bumpiness: f32,
     roughness: f32,
     metallic: f32,
-
     tint: vek::Rgb<f32>,
 }
 

@@ -224,7 +224,8 @@ fn rendering(world: &mut World) {
 
     // Render all the surfaces using their respective pipelines
     ctx.extract_pipelines().into_iter().for_each(|pipe| {
-        pipe.render(world);
+        let stats = pipe.render(world);
+        //dbg!(stats);
     });
 }
 

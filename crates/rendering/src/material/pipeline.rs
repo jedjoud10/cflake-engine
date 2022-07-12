@@ -8,11 +8,18 @@ use crate::{
 };
 use assets::Assets;
 use math::Transform;
-use std::marker::PhantomData;
+use std::{marker::PhantomData, any::type_name};
 use world::{Handle, Resource, Storage, World};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
-pub struct Stats {}
+#[derive(Debug)]
+pub struct PipelineStats {
+    indices: u128,
+    vertices: u128,
+    material_instance_calls: u128,
+    mesh_draw_calls: u128,
+    material_name: &'static str,
+}
 
 // Marker that tells us that we have a registered valid pipeline
 pub struct PipeId<M: for<'w> Material<'w>>(pub(crate) PhantomData<Pipeline<M>>);
@@ -28,8 +35,7 @@ impl<M: for<'w> Material<'w>> Copy for PipeId<M> {}
 // Pipeline trait that will be boxed and stored from within the world
 // TODO: Redesign to allow for user defined pipelines
 pub(crate) trait SpecializedPipeline: 'static {
-    // Render all the materialized surfaces
-    fn render(&self, world: &mut World) -> Option<Stats>;
+    fn render(&self, world: &mut World) -> PipelineStats;
 }
 
 // Main material pipeline that shall use one single material shader
@@ -40,7 +46,7 @@ pub struct Pipeline<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
-    fn render(&self, world: &mut World) -> Option<Stats> {
+    fn render(&self, world: &mut World) -> PipelineStats {
         let (scene, ecs, materials, meshes, shaders, window, ctx, mut property_block_resources) =
             <M as Material<'_>>::fetch(world);
 
@@ -48,19 +54,29 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let settings: RasterSettings = RasterSettings {
             depth_test: M::depth_comparison(),
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles {
-                cull: M::face_cull_mode(),
-            },
+            primitive: M::primitive_mode(),
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
 
-        // Create a valid rasterizer and start rendering
+        // Fetch the shader and enable stats
         let shader = shaders.get_mut(&self.shader);
+        let mut stats = PipelineStats {
+            indices: 0,
+            vertices: 0,
+            material_instance_calls: 0,
+            mesh_draw_calls: 0,
+            material_name: type_name::<M>(),
+        };
 
-        // Find all the surfaces that use this material type (and that have a valid renderer component)
+        // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
         let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
-        let query = query.filter(|(renderer, _)| renderer.enabled());
+        let query = query.filter(|(renderer, surface)| {
+            let renderer = renderer.enabled();
+            let mesh = meshes.get(&surface.mesh()); 
+            let buffers = mesh.buffers.contains(M::required()) && mesh.len().is_some();
+            renderer && buffers
+        });
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
@@ -93,6 +109,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             // Check if we changed material instances
             if old != Some(surface.material().clone()) {
                 old = Some(surface.material().clone());
+                stats.material_instance_calls += 1;
                 let instance = materials.get(old.as_ref().unwrap());
 
                 // Update the material property block uniforms
@@ -117,12 +134,11 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-            if mesh.buffers.contains(M::required()) {
-                unsafe {
-                    rasterizer.draw(mesh, &mut uniforms).unwrap();                
-                }
-            }
+            rasterizer.draw(mesh, &mut uniforms).unwrap();
+            stats.mesh_draw_calls += 1;
+            stats.vertices += mesh.len().unwrap() as u128;
+            stats.indices += mesh.indices().len() as u128;
         }
-        None
+        stats
     }
 }

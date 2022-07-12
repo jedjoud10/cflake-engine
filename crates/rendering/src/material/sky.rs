@@ -4,7 +4,7 @@ use time::Time;
 use world::{Handle, Storage};
 
 use crate::{
-    canvas::{Canvas, FaceCullMode},
+    canvas::{Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
     mesh::Mesh,
     prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
@@ -69,8 +69,8 @@ impl<'w> Material<'w> for Sky {
         )
     }
 
-    fn face_cull_mode() -> Option<FaceCullMode> {
-        Some(FaceCullMode::Front(true))
+    fn primitive_mode() -> PrimitiveMode {
+        PrimitiveMode::Triangles { cull: None }
     }
 
     // This method will be called once right before we start rendering the batches

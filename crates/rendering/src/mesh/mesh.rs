@@ -85,7 +85,7 @@ impl Mesh {
             mesh.set_attribute::<TexCoord>(tex_coord);
             
             // Set required index buffer
-            mesh.set_indices(Some(indices));
+            mesh.set_indices(indices);
 
             mesh.optimize();
             mesh.len().map(|_| mesh)
@@ -109,16 +109,10 @@ impl Mesh {
     }
 
     // Set a new element buffer, dropping the old one
-    pub fn set_indices(&mut self, buffer: Option<ElementBuffer<u32>>) {
-        if let Some(buffer) = buffer {
-            self.indices = MaybeUninit::new(buffer);
-            self.maybe_reassigned.insert(MeshBuffers::INDICES);
-            self.buffers.insert(MeshBuffers::INDICES);
-        } else {
-            self.indices = MaybeUninit::uninit();
-            self.maybe_reassigned.remove(MeshBuffers::INDICES);
-            self.buffers.insert(MeshBuffers::INDICES);
-        }
+    pub fn set_indices(&mut self, buffer: ElementBuffer<u32>) {
+        self.indices = MaybeUninit::new(buffer);
+        self.maybe_reassigned.insert(MeshBuffers::INDICES);
+        self.buffers.insert(MeshBuffers::INDICES);
     }
 
     // Get a vertex attribute buffer immutably
@@ -156,7 +150,8 @@ impl Mesh {
             self.maybe_reassigned.insert(T::LAYOUT);
             unsafe {
                 gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
-                gl::VertexAttribFormat(
+                gl::VertexArrayAttribFormat(
+                    self.vao,
                     T::attribute_index(),
                     T::Out::COUNT_PER_VERTEX as i32,
                     T::Out::GL_TYPE,
@@ -402,7 +397,7 @@ impl<'a> Asset<'a> for Mesh {
 
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
-            positions.push(Vec3::from_slice(&vertex.position));
+            positions.push(Vec3::from_slice(&vertex.position) * settings.scale);
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
         }        
