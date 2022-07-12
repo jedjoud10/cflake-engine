@@ -75,9 +75,32 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a buffer using a slice of elements
-    pub fn from_slice(ctx: &mut Context, slice: &[T], mode: BufferMode) -> Self {
-        // Enable mapping by default
-        todo!()
+    pub fn from_slice(_ctx: &mut Context, slice: &[T], mode: BufferMode) -> Self {
+        unsafe {
+            // Create OpenGL buffer and fetch pointer
+            let mut buffer = 0;
+            gl::CreateBuffers(1, &mut buffer);
+            let bytes = (slice.len() * size_of::<T>()) as isize;
+            let ptr = if bytes == 0 { null() } else { slice.as_ptr() as *const c_void };
+
+            // Initialize the buffer with the data
+            match mode {
+                BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, gl::MAP_READ_BIT),
+                BufferMode::Dynamic => gl::NamedBufferStorage(buffer, bytes, ptr, gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::DYNAMIC_STORAGE_BIT),
+                BufferMode::Parital => gl::NamedBufferStorage(buffer, bytes, ptr, gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::DYNAMIC_STORAGE_BIT),
+                BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
+            }
+
+            // Create the buffer object
+            Self { 
+                buffer,
+                length: slice.len(),
+                capacity: slice.len(),
+                mode,
+                _phantom: Default::default(),
+                _phantom2: Default::default()
+            }
+        }
     }
 
     // Create an empty buffer. Only used internally
@@ -114,12 +137,12 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         };
 
         let end = match range.end_bound() {
-            std::ops::Bound::Included(end) => *end,
-            std::ops::Bound::Excluded(end) => *end - 1,
-            std::ops::Bound::Unbounded => self.length - 1,
+            std::ops::Bound::Included(end) => *end + 1,
+            std::ops::Bound::Excluded(end) => *end,
+            std::ops::Bound::Unbounded => self.length,
         };
 
-        if start < self.length - 1 && end <= self.length {
+        if start < self.length - 1 && end <= self.length && end >= start {
             Some((start, end))
         } else {
             None
@@ -128,14 +151,60 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Clear the values specified by the range to a new value
     pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
-        todo!()
+        unsafe {
+            assert!(self.mode.write_permission(), "Cannot write to buffer");
+            let (start, end) = self.convert_range_bounds(range).expect("Buffer splat range is invalid");
+
+            if start == end {
+                return;
+            }
+
+            let borrow = &val;
+            let offset = (start * size_of::<T>()) as isize;
+            let size = ((end - start) * size_of::<T>()) as isize;
+            gl::ClearNamedBufferSubData(self.buffer, gl::R8, offset, size, gl::RED, gl::UNSIGNED_BYTE, borrow as *const T as *const c_void);
+        }
     }
 
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
-        todo!()
+        unsafe {
+            let ptr = if !slice.is_empty() {
+                slice.as_ptr() as *const c_void
+            } else {
+                return;
+            };
+
+            assert!(self.mode().write_permission(), "Cannot write to buffer");
+            assert!(self.mode().modify_length_permission(), "Cannot extend buffer");
+
+            if slice.len() + self.length > self.capacity {
+                assert!(self.mode().reallocate_permission(), "Cannot reallocate buffer");
+
+
+                let new_capacity = self.capacity + slice.len();
+                let new_capacity_byte_size = (new_capacity * size_of::<T>()) as isize;
+                let old_capacity_byte_size = (self.capacity * size_of::<T>()) as isize;
+                let slice_byte_size = (slice.len() * size_of::<T>()) as isize;
+
+                let mut temp = 0;
+                gl::CreateBuffers(1, &mut temp);
+                gl::NamedBufferStorage(temp, old_capacity_byte_size, null(), 0);
+                gl::CopyNamedBufferSubData(self.buffer, temp, 0, 0, old_capacity_byte_size);
+
+                gl::NamedBufferData(self.buffer, new_capacity_byte_size, null(), gl::DYNAMIC_DRAW);
+                gl::CopyNamedBufferSubData(temp, self.buffer, 0, 0, old_capacity_byte_size);
+                gl::BufferSubData(self.buffer, old_capacity_byte_size, slice_byte_size, ptr);
+                gl::DeleteBuffers(1, &temp);
+            } else {
+                let size = (slice.len() * size_of::<T>()) as isize;
+                let offset = (self.length * size_of::<T>()) as isize;
+                gl::NamedBufferSubData(self.buffer, offset, size, ptr);
+            }
+        }
     }
 
+    /*
     // Push a single element into the buffer (slow!)
     pub fn push(&mut self, value: T) {
         todo!()
@@ -145,25 +214,45 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     pub fn pop(&mut self) {
         todo!()
     }
+    */
 
     // Overwrite a region of the buffer using a slice and a range
     pub fn write_range(&mut self, slice: &[T], range: impl RangeBounds<usize>) {
-        todo!()
+        assert!(self.mode.write_permission(), "Cannot write to buffer");
+        let (start, end) = self.convert_range_bounds(range).expect("Buffer write range is invalid");
+        assert_eq!(end - start, slice.len(), "Buffer write range is not equal to slice length");
+
+        let ptr = if !slice.is_empty() {
+            slice.as_ptr() as *const c_void
+        } else {
+            return;
+        };
+
+        let offset = (start * size_of::<T>()) as isize;
+        let size = ((end - start) * size_of::<T>()) as isize;
+
+        unsafe {
+            gl::NamedBufferSubData(self.buffer, offset, size, ptr);
+        }
     }
 
     // Read a region of the buffer into a mutable slice
     pub fn read_range(&mut self, slice: &mut [T], range: impl RangeBounds<usize>) {
-        todo!()
-    }
+        let (start, end) = self.convert_range_bounds(range).expect("Buffer read range is invalid");
+        assert_eq!(end - start, slice.len(), "Buffer read range is not equal to slice length");
 
-    // Copy the buffer contents of Self into Other
-    pub fn copy_into<U: Shared, const OTHER: u32>(&self, other: &mut Buffer<U, OTHER>) {
-        todo!()
+        let offset = (start * size_of::<T>()) as isize;
+        let size = ((end - start) * size_of::<T>()) as isize;
+
+        unsafe {
+            gl::GetNamedBufferSubData(self.buffer, offset, size, slice.as_mut_ptr() as *mut c_void);
+        }
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
     pub fn clear(&mut self) {
-        todo!()
+        assert!(self.mode().modify_length_permission(), "Cannot clear buffer");
+        self.length = 0;
     }
 
     // Get an untyped buffer reference of the current buffer
@@ -194,12 +283,30 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Map a region of the buffer temporarily for reading
     pub fn map_range(&self, range: impl RangeBounds<usize>) -> Mapped<T, TARGET> {
-        todo!()
+        let (start, end) = self.convert_range_bounds(range).expect("Buffer map range is invalid");
+
+        let offset = (start * size_of::<T>()) as isize;
+        let size = ((end - start) * size_of::<T>()) as isize;
+
+        let ptr = unsafe {
+            gl::MapNamedBufferRange(self.buffer, offset, size, gl::MAP_READ_BIT) as *const T
+        };
+
+        Mapped { buffer: self, len: end - start, ptr }
     }
 
     // Map a region of the buffer temporarily for reading and writing
     pub fn map_range_mut(&mut self, range: impl RangeBounds<usize>) -> MappedMut<T, TARGET> {
-        todo!()
+        let (start, end) = self.convert_range_bounds(range).expect("Buffer map range mut is invalid");
+
+        let offset = (start * size_of::<T>()) as isize;
+        let size = ((end - start) * size_of::<T>()) as isize;
+
+        let ptr = unsafe {
+            gl::MapNamedBufferRange(self.buffer, offset, size, gl::MAP_READ_BIT | gl::MAP_WRITE_BIT) as *mut T
+        };
+
+        MappedMut { buffer: self, len: end - start, ptr }
     }
 
     // Map the whole buffer temporarily for reading
@@ -303,6 +410,11 @@ pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
 
 
 impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
+    // Get the length of the mapped region
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
     // Convert the mapped pointer into an immutable slice
     pub fn as_slice(&self) -> &[T] {
         unsafe {
@@ -311,7 +423,20 @@ impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
     }
 }
 
+impl<'a, T: Shared, const TARGET: u32> Drop for Mapped<'a, T, TARGET> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::UnmapNamedBuffer(self.buffer.buffer);
+        }
+    }
+}
+
 impl<'a, T: Shared, const TARGET: u32> MappedMut<'a, T, TARGET> {
+    // Get the length of the mapped region
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
     // Convert the mapped buffer into an immutable slice
     pub fn as_slice(&self) -> &[T] {
         unsafe {
@@ -323,6 +448,14 @@ impl<'a, T: Shared, const TARGET: u32> MappedMut<'a, T, TARGET> {
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         unsafe {
             std::slice::from_raw_parts_mut(self.ptr, self.len)
+        }
+    }
+}
+
+impl<'a, T: Shared, const TARGET: u32> Drop for MappedMut<'a, T, TARGET> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::UnmapNamedBuffer(self.buffer.buffer);
         }
     }
 }

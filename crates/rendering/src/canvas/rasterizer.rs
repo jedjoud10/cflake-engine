@@ -169,37 +169,24 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         self.ctx
     }
 
-    // Draw a raw vertex array object, and an element array object
-    pub unsafe fn draw_ebo_vao(
-        &mut self,
-        vao: u32,
-        ebo: u32,
-        count: usize,
-        uniforms: &mut Uniforms,
-    ) -> Result<(), RasterError> {
-        uniforms.validate().map_err(RasterError::Uniforms)?;
-
-        if count > 0 {
-            gl::BindVertexArray(vao);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-            gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
-        }
-
-        Ok(())
-    }
-
-    // Draw a raw vertex array object by itself
+    // Draw a vao directly onto the rasterizer
     pub unsafe fn draw_vao(
         &mut self,
         vao: u32,
         count: usize,
+        elements: bool,
         uniforms: &mut Uniforms
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
         if count > 0 {
             gl::BindVertexArray(vao);
-            gl::DrawArrays(self.primitive, 0, count as i32);
+
+            if elements {
+                gl::DrawElements(self.primitive, count as i32, gl::UNSIGNED_INT, null());
+            } else {
+                gl::DrawArrays(self.primitive, 0, count as i32);
+            }
         }
 
         Ok(())
@@ -208,7 +195,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // Draw a 3D engine mesh directly 
     pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
         unsafe {
-            self.draw_ebo_vao(mesh.vao, mesh.indices().name(), mesh.indices().len(), uniforms)
+            self.draw_vao(mesh.vao, mesh.indices().len(), true, uniforms)
         }
     } 
 }

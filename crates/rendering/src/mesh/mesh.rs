@@ -72,7 +72,9 @@ impl Mesh {
             mesh.set_attribute::<TexCoord>(tex_coord);
             
             // Set required index buffer
+            gl::VertexArrayElementBuffer(mesh.vao, indices.name());
             mesh.set_indices(indices);
+
             mesh.optimize();
             mesh.len().map(|_| mesh)
         }
@@ -209,12 +211,12 @@ impl Mesh {
         self.is_valid().then_some(())?;
         
         // Get positions buffer and mapping
-        let mapped = self.attribute::<Position>().unwrap().map();
-        let positions = mapped.as_slice();
+        let mapped_positions = self.attribute::<Position>().unwrap().map();
+        let positions = mapped_positions.as_slice();
 
         // Get index buffer and mapping
-        let mapped = self.indices().map();
-        let indices = mapped.as_slice();
+        let mapped_indices = self.indices().map();
+        let indices = mapped_indices.as_slice();
         
         // Create pre-allocated normal buffer
         let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
@@ -245,8 +247,14 @@ impl Mesh {
                 n.normalized()
                 .map(|e| (e * 127.0) as i8)
             ).collect::<_>();
+        let buffer = Some(Buffer::from_slice(ctx, normals.as_slice(), mode));
 
-        self.set_attribute::<Normal>(Some(Buffer::from_slice(ctx, normals.as_slice(), mode)));
+        // Drop the buffers manually
+        drop(mapped_positions);
+        drop(mapped_indices);
+
+        // Insert the new buffer
+        self.set_attribute::<Normal>(buffer);
         Some(())
     }
 
@@ -256,20 +264,20 @@ impl Mesh {
         self.is_valid().then_some(())?;
 
         // Get positions slice
-        let mapped = self.attribute::<Position>().unwrap().map();
-        let positions = mapped.as_slice();
+        let mapped_positions = self.attribute::<Position>().unwrap().map();
+        let positions = mapped_positions.as_slice();
 
         // Get normals slice
-        let mapped = self.attribute::<Normal>().unwrap().map();
-        let normals = mapped.as_slice();
+        let mapped_normals = self.attribute::<Normal>().unwrap().map();
+        let normals = mapped_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped = self.attribute::<TexCoord>().unwrap().map();
-        let uvs = mapped.as_slice();
+        let mapped_tex_coords = self.attribute::<TexCoord>().unwrap().map();
+        let uvs = mapped_tex_coords.as_slice();
 
         // Get index slice
-        let mapped = self.indices().map();
-        let indices = mapped.as_slice();
+        let mapped_indices = self.indices().map();
+        let indices = mapped_indices.as_slice();
 
         // Local struct that will implement the Geometry trait from the tangent generation lib
         struct TangentGenerator<'a> {
@@ -322,7 +330,16 @@ impl Mesh {
 
         // Generate the procedural tangents and store them
         mikktspace::generate_tangents(&mut gen).then_some(())?;
-        self.set_attribute::<Tangent>(Some(Buffer::from_slice(ctx, tangents.as_slice(), mode)));
+        let buffer = Some(Buffer::from_slice(ctx, tangents.as_slice(), mode));
+
+        // Drop the mapped buffers manually
+        drop(mapped_positions);
+        drop(mapped_normals);
+        drop(mapped_tex_coords);
+        drop(mapped_indices);
+
+        // Insert the new buffer
+        self.set_attribute::<Tangent>(buffer);
         Some(())
     }
 
@@ -342,6 +359,15 @@ impl Mesh {
         todo!()
     }
 }
+
+impl Drop for Mesh {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteVertexArrays(1, &self.vao);
+        }
+    }
+}
+
 impl<'a> Asset<'a> for Mesh {
     type Args = (&'a mut Context, MeshImportSettings);
 

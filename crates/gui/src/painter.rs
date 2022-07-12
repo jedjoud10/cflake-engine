@@ -183,6 +183,7 @@ impl Painter {
             self.vertices.write(mesh.1.vertices.as_slice());
             self.indices.write(mesh.1.indices.as_slice());
 
+            /*
             unsafe {
                 rasterizer
                     .draw_ebo_vao(
@@ -193,6 +194,7 @@ impl Painter {
                     )
                     .unwrap();
             }
+            */
         }
     }
 }
