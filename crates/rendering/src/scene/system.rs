@@ -192,11 +192,13 @@ fn postinit(world: &mut World) {
     let surface = Surface::new(settings.sphere(), material, pipeid);
 
     // Insert it as a new entity
+    /*
     ecs.insert((
         renderer,
         surface,
         Transform::default().scaled(vek::Vec3::one() * 5000.0),
     )).unwrap();
+    */
 }
 
 // Rendering event that will try to render the 3D scene each frame

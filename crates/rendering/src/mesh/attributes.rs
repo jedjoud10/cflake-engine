@@ -5,7 +5,7 @@ use crate::{
     object::{Shared, ToGlName},
 };
 
-use super::{Mesh};
+use super::{Mesh, MeshFeatures};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -80,7 +80,7 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait Attribute {
     type Out: RawAttribute + Shared;
-    const LAYOUT: VertexLayout;
+    const LAYOUT: MeshFeatures;
     const NORMALIZED: bool;
 
     // Get the corresponding buffer for this attribute from the mesh
@@ -118,7 +118,7 @@ pub trait Attribute {
 // An untyped attribute wrapper that contains all the basic information about attributes
 // Only used internally for now 
 pub struct AttributeFormatAny {
-    layout: VertexLayout,
+    layout: MeshFeatures,
     normalized: bool,
     stride: usize,
     attribute_index: u32,
@@ -126,7 +126,7 @@ pub struct AttributeFormatAny {
 
 impl AttributeFormatAny {
     // Get the underlying layout of our attribute
-    pub fn layout(&self) -> VertexLayout {
+    pub fn layout(&self) -> MeshFeatures {
         self.layout
     }
     
@@ -147,24 +147,7 @@ impl AttributeFormatAny {
 }
 
 // This is the maximum number of active attributes that we can have inside a mesh
-pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = VertexLayout::all().bits().trailing_ones() as usize;
-
-// This specifies what attributes are enabled from within the mesh
-bitflags::bitflags! {
-    pub struct VertexLayout: u8 {
-        const POSITIONS = 1;
-        const NORMALS = 1 << 1;
-        const TANGENTS = 1 << 2;
-        const COLORS = 1 << 3;
-        const TEX_COORD_0 = 1 << 4;
-    }
-}
-
-impl Default for VertexLayout {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
+pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = 5;
 
 // Position attribute for vertices. Uses Vec3<f32> internally
 pub struct Position;
@@ -183,7 +166,7 @@ pub struct TexCoord;
 
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT: VertexLayout = VertexLayout::POSITIONS;
+    const LAYOUT: MeshFeatures = MeshFeatures::POSITIONS;
     const NORMALIZED: bool = false;
     
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -205,7 +188,7 @@ impl Attribute for Position {
 
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::NORMALS;
+    const LAYOUT: MeshFeatures = MeshFeatures::NORMALS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -227,7 +210,7 @@ impl Attribute for Normal {
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT: VertexLayout = VertexLayout::TANGENTS;
+    const LAYOUT: MeshFeatures = MeshFeatures::TANGENTS;
     const NORMALIZED: bool= true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -249,7 +232,7 @@ impl Attribute for Tangent {
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::COLORS;
+    const LAYOUT: MeshFeatures = MeshFeatures::COLORS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -271,7 +254,7 @@ impl Attribute for Color {
 
 impl Attribute for TexCoord {
     type Out = vek::Vec2<u8>;
-    const LAYOUT: VertexLayout = VertexLayout::TEX_COORD_0;
+    const LAYOUT: MeshFeatures = MeshFeatures::TEX_COORD_0;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {

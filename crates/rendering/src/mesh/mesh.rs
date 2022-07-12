@@ -15,16 +15,34 @@ use crate::{
 // Contains the underlying array buffer for a specific attribute
 type AttribBuffer<A> = MaybeUninit<ArrayBuffer<<A as Attribute>::Out>>;
 
+// This specifies what attributes / buffers are enabled from within the mesh
+bitflags::bitflags! {
+    pub struct MeshFeatures: u8 {
+        const POSITIONS = 1;
+        const NORMALS = 1 << 1;
+        const TANGENTS = 1 << 2;
+        const COLORS = 1 << 3;
+        const TEX_COORD_0 = 1 << 4;
+        const ELEMENT_BUFFER = 1 << 5;
+    }
+}
+
+impl Default for MeshFeatures {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 // A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct Mesh {
     // Layout and GL name
     pub(crate) vao: u32,
-    layout: VertexLayout,
+    features: MeshFeatures,
 
     // This specifies some buffers that might've been reassigned externally
     // This hints the mesh that it should try to rebind the attribute's buffer to the VAO
-    maybe_reassigned: VertexLayout,
+    maybe_reassigned: MeshFeatures,
 
     // Vertex attribute buffers
     pub(super) positions: AttribBuffer<Position>,
@@ -51,8 +69,8 @@ impl Mesh {
         unsafe {
             let mut mesh = Self { 
                 vao: 0,
-                layout: VertexLayout::empty(),
-                maybe_reassigned: VertexLayout::empty(),
+                features: MeshFeatures::empty(),
+                maybe_reassigned: MeshFeatures::empty(),
                 positions: MaybeUninit::uninit(),
                 normals: MaybeUninit::uninit(),
                 tangents: MaybeUninit::uninit(),
@@ -72,8 +90,7 @@ impl Mesh {
             mesh.set_attribute::<TexCoord>(tex_coord);
             
             // Set required index buffer
-            gl::VertexArrayElementBuffer(mesh.vao, indices.name());
-            mesh.set_indices(indices);
+            mesh.set_indices(Some(indices));
 
             mesh.optimize();
             mesh.len().map(|_| mesh)
@@ -81,13 +98,13 @@ impl Mesh {
     } 
     
     // Get the vertex attrib layout that we are using
-    pub fn layout(&self) -> VertexLayout {
-        self.layout
+    pub fn layout(&self) -> MeshFeatures {
+        self.features
     }
 
     // Check if the layout contains a feature
-    pub fn contains(&self, feature: VertexLayout) -> bool {
-        self.layout.contains(feature)
+    pub fn contains(&self, feature: MeshFeatures) -> bool {
+        self.features.contains(feature)
     }
 
     // Check if we have a vertex attribute that is enabled and active
@@ -114,8 +131,16 @@ impl Mesh {
     }
 
     // Set a new element buffer, dropping the old one
-    pub fn set_indices(&mut self, buffer: ElementBuffer<u32>) {
-        self.indices = MaybeUninit::new(buffer);
+    pub fn set_indices(&mut self, buffer: Option<ElementBuffer<u32>>) {
+        if let Some(buffer) = buffer {
+            self.indices = MaybeUninit::new(buffer);
+            self.maybe_reassigned.insert(MeshFeatures::ELEMENT_BUFFER);
+            self.features.insert(MeshFeatures::ELEMENT_BUFFER);
+        } else {
+            self.indices = MaybeUninit::uninit();
+            self.maybe_reassigned.remove(MeshFeatures::ELEMENT_BUFFER);
+            self.features.remove(MeshFeatures::ELEMENT_BUFFER);
+        }
     }
 
     // Get a vertex attribute buffer immutably
@@ -149,7 +174,7 @@ impl Mesh {
             }
             
             // Enable the vertex attribute and specify it's format
-            self.layout.insert(T::LAYOUT);
+            self.features.insert(T::LAYOUT);
             self.maybe_reassigned.insert(T::LAYOUT);
             unsafe {
                 gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
@@ -163,7 +188,8 @@ impl Mesh {
             }
         } else {
             // Disable the vertex attribute
-            self.layout.remove(T::LAYOUT);
+            self.features.remove(T::LAYOUT);
+            self.maybe_reassigned.remove(T::LAYOUT);
             unsafe {
                 gl::DisableVertexArrayAttrib(self.vao, T::attribute_index())
             }
@@ -185,10 +211,10 @@ impl Mesh {
         valid.then(|| first)
     }
 
-    // Specify the buffer bindings for all the enabled vertex attributes
+    // Specify the buffer bindings for all the enabled vertex attributes and EBO
     // This will only re-bind the buffer that are marked as "maybe reassigned" since they might be unlinked
     unsafe fn bind_buffers(&mut self) {
-        // Bind all the active buffers at the start (create the binding indices)
+        // Bind all the active attribute buffers at the start (create the binding indices)
         let iter = self.attributes_any().into_iter().filter_map(|s| s).enumerate();
         for (i, (buffer, attrib)) in iter {
             if self.maybe_reassigned.contains(attrib.layout()) {
@@ -196,6 +222,12 @@ impl Mesh {
                 gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
             }
         }
+
+        // Rebind the EBO to the VAO
+        if self.maybe_reassigned.contains(MeshFeatures::ELEMENT_BUFFER) {
+            gl::VertexArrayElementBuffer(self.vao, self.indices.assume_init_ref().name());
+        }
+        self.maybe_reassigned = MeshFeatures::empty();
     }
 
     // Optimize the mesh for rendering (this is called once a frame, for each unique mesh)
@@ -415,7 +447,7 @@ impl<'a> Asset<'a> for Mesh {
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {
-            mesh.compute_tangents(ctx, mode).unwrap();
+            //mesh.compute_tangents(ctx, mode).unwrap();
         }
         mesh
     }

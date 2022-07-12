@@ -195,6 +195,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     // Draw a 3D engine mesh directly 
     pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
         unsafe {
+            //mesh.optimize();
             self.draw_vao(mesh.vao, mesh.indices().len(), true, uniforms)
         }
     } 
