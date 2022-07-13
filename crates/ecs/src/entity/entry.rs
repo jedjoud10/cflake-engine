@@ -139,7 +139,7 @@ impl<'a> MutEntry<'a> {
         }
 
         // Get the valid offsettedp pointers, return the safe tuple
-        let ptrs = Layout::get_base_ptrs(self.archetype);
+        let ptrs = Layout::get_base_ptrs_assume_init(self.archetype);
         Ok(Layout::offset(ptrs, self.bundle))
     }
 }

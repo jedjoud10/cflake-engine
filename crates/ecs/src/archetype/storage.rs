@@ -13,9 +13,6 @@ pub trait StorageVec {
     fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
     fn reserve(&mut self, additional: usize);
 
-    // Pointer shit
-    fn get_storage_ptr(&self) -> NonNull<c_void>;
-
     // Create a new boxed vector (empty)
     // TODO: Remove this whole unique storage shit since it makes it confusing
     fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
@@ -26,6 +23,7 @@ impl<T: Component> StorageVec for Vec<T> {
     fn as_any(&self) -> &dyn Any {
         self
     }
+
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
@@ -37,23 +35,23 @@ impl<T: Component> StorageVec for Vec<T> {
         let component = *component.downcast::<T>().unwrap();
         self.push(component);
     }
+    
     // Swap remove an element
     fn swap_remove(&mut self, bundle: usize) {
         self.swap_remove(bundle);
     }
+    
     // Swap remove an element, but box the result
     fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any> {
         let element = self.swap_remove(bundle);
         Box::new(element)
     }
+
+    // Reserve enough allocated memory to be able to fit "additional" number of elements
     fn reserve(&mut self, additional: usize) {
         self.reserve(additional)
     }
 
-    // Pointer shit
-    fn get_storage_ptr(&self) -> NonNull<c_void> {
-        NonNull::new(self.as_ptr() as *mut c_void).unwrap()
-    }
     // Create a new boxed component storage of an empty vec
     fn clone_unique_storage(&self) -> Box<dyn StorageVec> {
         Box::new(Vec::<T>::new())

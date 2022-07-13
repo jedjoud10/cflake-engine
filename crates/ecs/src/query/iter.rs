@@ -22,7 +22,7 @@ impl<'a, Layout: QueryLayout<'a>> Copy for Chunk<'a, Layout> {}
 
 impl<'a, Layout: QueryLayout<'a>> Chunk<'a, Layout> {
     // Load a component bundle from a chunk and also set it's respective mutation states
-    fn load(&self, bundle: usize) -> Layout {
+    unsafe fn load(&self, bundle: usize) -> Layout {
         Layout::offset(self.ptrs, bundle)
     }
 
@@ -75,7 +75,7 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
                     // Combine the archetype and pointers into a chunk
                     Chunk {
                         archetype,
-                        ptrs: Layout::get_base_ptrs(archetype),
+                        ptrs: /*Layout::get_base_ptrs_assume_init(archetype)*/ todo!(),
                     }
                 })
             })
