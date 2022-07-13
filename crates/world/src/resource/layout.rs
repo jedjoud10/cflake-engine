@@ -1,4 +1,5 @@
 use ahash::AHashSet;
+use utils::GenericReference;
 use std::{
     any::{type_name, TypeId},
     ptr::NonNull,
@@ -7,86 +8,24 @@ use std::{
 use crate::{Resource, ResourceError, World};
 
 // We store the type ID and name in their own struct since the handle might not even be mutable
-pub type HandleID = (TypeId, &'static str, bool);
-
-// Resource fetchers are just references to resources, like &mut T or Option<&mut T>
-trait PtrReader<'a>: Sized {
-    type Inner: Resource;
-    const MUTABLE: bool;
-
-    // Get the type ID of the iunner resource
-    fn id() -> HandleID {
-        (
-            TypeId::of::<Self::Inner>(),
-            type_name::<Self::Inner>(),
-            Self::MUTABLE,
-        )
-    }
-
-    // Convert the pointer into the proper handle
-    unsafe fn cast_unchecked(
-        ptr: Result<NonNull<Self::Inner>, ResourceError>,
-    ) -> Result<Self, ResourceError>;
-}
-
-impl<'a, T: Resource> PtrReader<'a> for &'a T {
-    type Inner = T;
-    const MUTABLE: bool = false;
-
-    unsafe fn cast_unchecked(
-        ptr: Result<NonNull<Self::Inner>, ResourceError>,
-    ) -> Result<Self, ResourceError> {
-        Ok(&*(ptr?.as_ptr() as *const T))
-    }
-}
-
-impl<'a, T: Resource> PtrReader<'a> for &'a mut T {
-    type Inner = T;
-    const MUTABLE: bool = true;
-
-    unsafe fn cast_unchecked(
-        ptr: Result<NonNull<Self::Inner>, ResourceError>,
-    ) -> Result<Self, ResourceError> {
-        Ok(&mut *(ptr?.as_ptr() as *mut T))
-    }
-}
-
-impl<'a, T: Resource> PtrReader<'a> for Option<&'a T> {
-    type Inner = T;
-    const MUTABLE: bool = false;
-
-    unsafe fn cast_unchecked(
-        ptr: Result<NonNull<Self::Inner>, ResourceError>,
-    ) -> Result<Self, ResourceError> {
-        let res = ptr.ok().map(|ptr| &*(ptr.as_ptr() as *const T));
-        Ok(res)
-    }
-}
-
-impl<'a, T: Resource> PtrReader<'a> for Option<&'a mut T> {
-    type Inner = T;
-    const MUTABLE: bool = true;
-
-    unsafe fn cast_unchecked(
-        ptr: Result<NonNull<Self::Inner>, ResourceError>,
-    ) -> Result<Self, ResourceError> {
-        let res = ptr.ok().map(|ptr| &mut *(ptr.as_ptr() as *mut T));
-        Ok(res)
-    }
-}
+pub struct ResourceReferenceDesc {
+    _type: TypeId,
+    name: &'static str,
+    mutable: bool,
+};
 
 // A layout simply multiple resource handles of different resources
 pub trait Layout<'a>: Sized {
     // Get a list of the Handle IDs of the underlying resources
-    fn types() -> Vec<HandleID>;
+    fn descriptions() -> Vec<ResourceReferenceDesc>;
 
     // Check if the layout is valid (no intersecting handles)
     fn validate() -> Result<(), ResourceError> {
-        let types = Self::types();
+        let types = Self::descriptions();
         let mut map = AHashSet::new();
         let name = types
             .iter()
-            .find(|(t, _, mutable)| !map.insert(t) && *mutable);
+            .find(|ResourceReferenceDesc { _type, name, mutable }| !map.insert(_type) && *mutable);
 
         // This is a certified inversion classic
         if let Some((_, name, _)) = name {
@@ -100,14 +39,25 @@ pub trait Layout<'a>: Sized {
     unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError>;
 }
 
-// Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
-unsafe fn fetch<'a, A: PtrReader<'a>>(world: &mut World) -> Result<A, ResourceError> {
-    A::cast_unchecked(A::Inner::fetch_ptr(world))
+// Get the handle ID of a resource generic reference 
+fn id<'a, A: GenericReference<'a>>() -> ResourceReferenceDesc where A::Inner: Resource {
+    (
+        TypeId::of::<A::Inner>(),
+        type_name::<A::Inner>(),
+        A::MUTABLE,
+    )
 }
 
-impl<'a, A: PtrReader<'a>> Layout<'a> for A {
-    fn types() -> Vec<HandleID> {
-        vec![A::id()]
+// Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
+unsafe fn fetch<'a, A: GenericReference<'a>>(world: &mut World) -> Result<A, ResourceError> where A::Inner: Resource {
+    let ptr = <A::Inner as Resource>::fetch_ptr(world);
+    let value = ptr.map(|ptr| A::_as_from_mut_ptr(ptr.as_ptr()));
+    value
+}
+
+impl<'a, A: GenericReference<'a>> Layout<'a> for A where A::Inner: Resource {
+    fn descriptions() -> Vec<ResourceReferenceDesc> {
+        vec![id::<A>()]
     }
 
     unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
@@ -115,251 +65,15 @@ impl<'a, A: PtrReader<'a>> Layout<'a> for A {
     }
 }
 
-impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> Layout<'a> for (A, B) {
-    fn types() -> Vec<HandleID> {
-        vec![A::id(), B::id()]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((fetch::<A>(world)?, fetch::<B>(world)?))
-    }
-}
-
-impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> Layout<'a> for (A, B, C) {
-    fn types() -> Vec<HandleID> {
-        vec![A::id(), B::id(), C::id()]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((fetch::<A>(world)?, fetch::<B>(world)?, fetch::<C>(world)?))
-    }
-}
-
-impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> Layout<'a>
-    for (A, B, C, D)
-{
-    fn types() -> Vec<HandleID> {
-        vec![A::id(), B::id(), C::id(), D::id()]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E)
-{
-    fn types() -> Vec<HandleID> {
-        vec![A::id(), B::id(), C::id(), D::id(), E::id()]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-        F: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E, F)
-{
-    fn types() -> Vec<HandleID> {
-        vec![A::id(), B::id(), C::id(), D::id(), E::id(), F::id()]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-            fetch::<F>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-        F: PtrReader<'a>,
-        G: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E, F, G)
-{
-    fn types() -> Vec<HandleID> {
-        vec![
-            A::id(),
-            B::id(),
-            C::id(),
-            D::id(),
-            E::id(),
-            F::id(),
-            G::id(),
-        ]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-            fetch::<F>(world)?,
-            fetch::<G>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-        F: PtrReader<'a>,
-        G: PtrReader<'a>,
-        H: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E, F, G, H)
-{
-    fn types() -> Vec<HandleID> {
-        vec![
-            A::id(),
-            B::id(),
-            C::id(),
-            D::id(),
-            E::id(),
-            F::id(),
-            G::id(),
-            H::id(),
-        ]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-            fetch::<F>(world)?,
-            fetch::<G>(world)?,
-            fetch::<H>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-        F: PtrReader<'a>,
-        G: PtrReader<'a>,
-        H: PtrReader<'a>,
-        I: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E, F, G, H, I)
-{
-    fn types() -> Vec<HandleID> {
-        vec![
-            A::id(),
-            B::id(),
-            C::id(),
-            D::id(),
-            E::id(),
-            F::id(),
-            G::id(),
-            H::id(),
-            I::id(),
-        ]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-            fetch::<F>(world)?,
-            fetch::<G>(world)?,
-            fetch::<H>(world)?,
-            fetch::<I>(world)?,
-        ))
-    }
-}
-
-impl<
-        'a,
-        A: PtrReader<'a>,
-        B: PtrReader<'a>,
-        C: PtrReader<'a>,
-        D: PtrReader<'a>,
-        E: PtrReader<'a>,
-        F: PtrReader<'a>,
-        G: PtrReader<'a>,
-        H: PtrReader<'a>,
-        I: PtrReader<'a>,
-        J: PtrReader<'a>,
-    > Layout<'a> for (A, B, C, D, E, F, G, H, I, J)
-{
-    fn types() -> Vec<HandleID> {
-        vec![
-            A::id(),
-            B::id(),
-            C::id(),
-            D::id(),
-            E::id(),
-            F::id(),
-            G::id(),
-            H::id(),
-            I::id(),
-            J::id(),
-        ]
-    }
-
-    unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
-        Ok((
-            fetch::<A>(world)?,
-            fetch::<B>(world)?,
-            fetch::<C>(world)?,
-            fetch::<D>(world)?,
-            fetch::<E>(world)?,
-            fetch::<F>(world)?,
-            fetch::<G>(world)?,
-            fetch::<H>(world)?,
-            fetch::<I>(world)?,
-            fetch::<J>(world)?,
-        ))
-    }
+macro_rules! tuple_impls {
+    ( $( $name:ident )+ ) => {
+        impl<'a, $($name: Bruh<'a>),+> Testio for ($($name,)+) where $($name::Inner: Testio),+
+        {
+            fn do_something(self) -> Self {
+                //let ($($name,)+) = self;
+                //($($name.do_something(),)+)
+                self
+            }
+        }
+    };
 }

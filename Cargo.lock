@@ -100,6 +100,7 @@ dependencies = [
  "rendering",
  "spin_sleep",
  "time",
+ "utils",
  "vek",
  "world",
 ]
@@ -823,6 +824,7 @@ dependencies = [
  "smallvec",
  "time",
  "tinyvec",
+ "utils",
  "world",
 ]
 
@@ -2863,6 +2865,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "utils"
+version = "0.1.0"
+
+[[package]]
 name = "vek"
 version = "0.15.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3211,6 +3217,7 @@ dependencies = [
  "glutin",
  "resources-derive",
  "slotmap",
+ "utils",
 ]
 
 [[package]]

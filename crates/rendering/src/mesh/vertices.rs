@@ -94,7 +94,3 @@ pub trait VertexLayout {
     // Push a new vertex into the fetched buffers
     fn push(buffers: &mut Self::Buffers, vertex: Self::OwnedIn);
 }
-
-impl VertexLayout for Position {}
-impl<A: VertexAttribute> VertexLayout for (Position, A) {}
-impl<A: VertexAttribute, B: VertexAttribute> VertexLayout for (Position, A, B) {}

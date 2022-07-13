@@ -101,6 +101,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     // Load the default cube and sphere meshes
+    /*
     let cube = assets
         .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
@@ -108,10 +109,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let sphere = assets
         .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
-
+    */
     // Insert the meshes and get their handles
-    let cube = meshes.insert(cube);
-    let sphere = meshes.insert(sphere);
+    let cube = meshes.insert(todo!());
+    let sphere = meshes.insert(todo!());
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(

@@ -20,11 +20,13 @@ pub struct Mesh {
     pub(crate) enabled: EnabledAttributes,
 
     // Vertex attribute buffers
+    /*
     pub(super) positions: AttribBuffer<Position>,
     pub(super) normals: AttribBuffer<Normal>,
     pub(super) tangents: AttribBuffer<Tangent>,
     pub(super) colors: AttribBuffer<Color>,
     pub(super) tex_coord: AttribBuffer<TexCoord>,
+    */
 
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
@@ -46,6 +48,7 @@ pub struct Mesh {
 */
 
 impl Mesh {
+    /*
     // Create a new mesh from the attribute buffers and the indices
     // The position buffer and index buffer are the only buffers that are required by default
     pub fn from_buffers(
@@ -347,6 +350,7 @@ impl Mesh {
         todo!()
     }
     */
+    */
 }
 
 impl Drop for Mesh {
@@ -357,6 +361,7 @@ impl Drop for Mesh {
     }
 }
 
+/*
 impl<'a> Asset<'a> for Mesh {
     type Args = (&'a mut Context, MeshImportSettings);
 
@@ -409,3 +414,4 @@ impl<'a> Asset<'a> for Mesh {
         mesh
     }
 }
+*/
