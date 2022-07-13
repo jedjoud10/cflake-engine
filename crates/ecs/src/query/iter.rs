@@ -1,81 +1,55 @@
-use crate::{Archetype, ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow};
+use std::marker::PhantomData;
 
-// The main threaded iterators used "chunks" to keep track of the currently loaded archetype and it's base storage pointers
-struct Chunk<'a, Layout: QueryLayout<'a>> {
-    // Loaded archetype
-    archetype: &'a Archetype,
+use crate::{Archetype, ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow, Mask, States};
 
-    // And respective layout ptrs
-    ptrs: Layout::PtrTuple,
-}
-
-impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
-    fn clone(&self) -> Self {
-        Self {
-            archetype: self.archetype,
-            ptrs: self.ptrs,
-        }
-    }
-}
-
-impl<'a, Layout: QueryLayout<'a>> Copy for Chunk<'a, Layout> {}
-
-impl<'a, Layout: QueryLayout<'a>> Chunk<'a, Layout> {
-    // Load a component bundle from a chunk and also set it's respective mutation states
-    unsafe fn load(&self, bundle: usize) -> Layout {
-        Layout::offset(self.ptrs, bundle)
-    }
-
-    // Check if a bundle index is valid
-    fn check_bundle(&self, bundle: usize) -> bool {
-        bundle < self.archetype.len()
-    }
-}
-
-// Return value of QueryIter
-pub struct QueryItem<'a, Layout: QueryLayout<'a>> {
-    // Values that will be read/written to
-    tuple: Layout,
-
-    // Current component states
+// This is what is returned from the iterator
+pub struct QueryItem<'a, L: QueryLayout<'a>> {
+    tuple: L,
     state: StateRow,
+    archetype_mask: Mask,
+    _phantom: PhantomData<&'a L>,
+}
 
-    // The archetype it came from
-    archetype: &'a Archetype,
+// Chunks contain basic information about the current archetype
+struct Chunk<'a, L: QueryLayout<'a>> {
+    archetype_mask: Mask,
+    ptrs: L::PtrTuple,
+    states: States,
+    len: usize,
+}
+
+impl<'a, L: QueryLayout<'a>> Clone for Chunk<'a, L> {
+    fn clone(&self) -> Self {
+        Self { archetype_mask: self.archetype_mask.clone(), ptrs: self.ptrs.clone(), states: self.states.clone(), len: self.len.clone() }
+    }
 }
 
 // Custom query iterator that will return QueryItem
-pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
-    // Chunks that contains the archetypes and base ptrs
-    chunks: Vec<Chunk<'a, Layout>>,
-
-    // How we shall access the components
+pub struct QueryIter<'a, L: QueryLayout<'a>> {
+    chunks: Vec<Chunk<'a, L>>,
     access: LayoutAccess,
-
-    // Indices
     bundle: usize,
     chunk: usize,
-
-    // Currently loaded archetype and base ptrs
-    loaded: Option<Chunk<'a, Layout>>,
+    loaded: Option<Chunk<'a, L>>,
 }
 
-impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
+impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
     // Create a new iterator from some archetypes
-    pub fn new(archetypes: &'a ArchetypeSet) -> Self {
+    pub fn new(archetypes: &'a mut ArchetypeSet) -> Self {
         // Cache the layout mask for later use
-        let access = Layout::combined();
+        let access = L::combined();
         let (mask, _) = (access.reading(), access.writing());
 
         // Load the archetypes that validate our layout masks, and get their pointers as well
         let chunks = archetypes
-            .iter()
+            .iter_mut()
             .filter_map(|(_, archetype)| {
                 (archetype.mask() & mask == mask).then(|| {
-                    // Combine the archetype and pointers into a chunk
                     Chunk {
-                        archetype,
-                        ptrs: /*Layout::get_base_ptrs_assume_init(archetype)*/ todo!(),
+                        archetype_mask: archetype.mask(),
+                        len: archetype.len(),
+                        states: archetype.states().clone(),
+                        ptrs: L::try_fetch_ptrs(archetype).unwrap(),
                     }
                 })
             })
@@ -94,30 +68,27 @@ impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
     }
 }
 
-impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
-    type Item = QueryItem<'a, Layout>;
+impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
+    type Item = QueryItem<'a, L>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Handle empty cases
-        self.loaded.as_ref()?;
-
-        // Check if the bundle index is valid, and move to the next archetype if it isn't
-        if !self.loaded.as_ref().unwrap().check_bundle(self.bundle) {
-            // Reached the end of the archetype chunk, move to the next one
+        // Move to the next chunk if possible, and return the new/old chunk reference
+        let chunk = if self.bundle == self.loaded.as_ref()?.len {
             self.chunk += 1;
             let chunk = *self.chunks.get(self.chunk)?;
             self.loaded.replace(chunk);
             self.bundle = 0;
-        }
+            self.loaded.as_ref()
+        } else {
+            self.loaded.as_ref()
+        }?;
 
-        // Load a component bundle
-        let chunk = self.loaded.as_ref().unwrap();
-        let bundle = chunk.load(self.bundle);
-
+        // Dereference the layout pointers
+        let bundle = unsafe { L::read_as_layout_at(chunk.ptrs, self.bundle) };
+        
         // Update the bundle states
         let old = chunk
-            .archetype
-            .states()
+            .states
             .update(self.bundle, |mutated, _| {
                 *mutated = *mutated | self.access.writing()
             })
@@ -128,22 +99,22 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         Some(QueryItem {
             tuple: bundle,
             state: old,
-            archetype: chunk.archetype,
+            archetype_mask: chunk.archetype_mask,
+            _phantom: Default::default(),
         })
     }
 }
 
-// Create a query without a filter
-pub fn query<'a, Layout: QueryLayout<'a> + 'a>(
-    archetypes: &'a ArchetypeSet,
-) -> impl Iterator<Item = Layout> + 'a {
+pub(super) fn query<'a, L: QueryLayout<'a> + 'a>(
+    archetypes: &'a mut ArchetypeSet,
+) -> impl Iterator<Item = L> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
-// Create a query with a filter
-pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
-    archetypes: &'a ArchetypeSet,
+
+pub(super) fn filtered<'a, L: QueryLayout<'a> + 'a, Filter: Evaluate>(
+    archetypes: &'a mut ArchetypeSet,
     _: Filter,
-) -> impl Iterator<Item = Layout> + 'a {
+) -> impl Iterator<Item = L> + 'a {
     let cache = Filter::setup();
 
     QueryIter::new(archetypes).filter_map(move |item| {
@@ -151,7 +122,7 @@ pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
             &cache,
             &ItemInput {
                 state_row: item.state,
-                mask: item.archetype.mask(),
+                mask: item.archetype_mask,
             },
         )
         .then_some(item.tuple)

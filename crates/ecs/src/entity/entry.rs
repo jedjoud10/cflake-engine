@@ -6,19 +6,17 @@ use crate::{registry, Archetype, Component, EcsManager, EntryError, Mask, QueryL
 // An entity entry that we can use to access multiple components on a single entity
 // This will take an immutable reference of the ECS manager, so we cannot mutate any of the underlying entity components
 pub struct Entry<'a> {
-    // Internal query for fetching components
-    //query: EntityEntryQuery<'a>,
-    archetype: &'a Archetype,
+    archetype: &'a mut Archetype,
     bundle: usize,
     _phantom: PhantomData<&'a EcsManager>,
 }
 
 impl<'a> Entry<'a> {
     // Create an entry from the Ecs manager and an entity
-    pub(crate) fn new(manager: &'a EcsManager, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
         Some(Self {
-            archetype: manager.archetypes.get(&linkings.mask)?,
+            archetype: manager.archetypes.get_mut(&linkings.mask)?,
             bundle: linkings.bundle,
             _phantom: Default::default(),
         })
@@ -40,7 +38,7 @@ impl<'a> Entry<'a> {
     // Get a pointer to a linked component
     pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntryError> {
         let mask = self.mask::<T>()?;
-        let ptr = self.archetype.storage()[&mask].get_storage_ptr();
+        let boxed = &self.archetype.storage()[&mask];
         Ok(ptr.cast::<T>().as_ptr().add(self.bundle))
     }
 

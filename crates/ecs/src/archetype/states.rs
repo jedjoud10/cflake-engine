@@ -1,5 +1,5 @@
 use crate::Mask;
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 
 // Component state chunk that contains the component states for a bundle
 #[derive(Clone, Copy, Debug)]
@@ -28,9 +28,9 @@ impl StateRow {
 }
 
 // Component states (their mutation state)
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct States {
-    rows: RefCell<Vec<StateRow>>,
+    rows: Rc<RefCell<Vec<StateRow>>>,
 }
 
 impl States {

@@ -140,6 +140,7 @@ impl EcsManager {
     // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
     // TODO: Make use of Rust's type system to check for immutable borrows instead
+    /*
     pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(
         &'a self,
     ) -> Option<impl Iterator<Item = Layout> + 'a> {
@@ -155,6 +156,7 @@ impl EcsManager {
         let valid = Layout::combined().writing().empty() && Layout::validate();
         valid.then(|| filtered(&self.archetypes, filter))
     }
+    */
 
     /* #endregion */
 }

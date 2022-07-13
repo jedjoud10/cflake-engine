@@ -81,6 +81,10 @@ impl<'a, T: Component> GenericQueryItemReference<'a> for &'a mut T {
     type Ptr = *mut T;
     const MUTABLE: bool = true;
 
+    fn read_write_access() -> LayoutAccess {
+        todo!()
+    }
+
     fn try_fetch_ptr(archetype: &Archetype) -> Option<*mut Self::Item> {
         todo!()
     }
@@ -88,8 +92,23 @@ impl<'a, T: Component> GenericQueryItemReference<'a> for &'a mut T {
     unsafe fn as_generic_ref(ptr: *const Self::Item, bundle: isize) -> Self {
         todo!()
     }
+}
+
+// Generic reference for shared entity references
+impl<'a> GenericQueryItemReference<'a> for &'a Entity {
+    type Item = Entity;
+    type Ptr = *mut Entity;
+    const MUTABLE: bool = false;
 
     fn read_write_access() -> LayoutAccess {
+        todo!()
+    }
+
+    fn try_fetch_ptr(archetype: &Archetype) -> Option<*mut Self::Item> {
+        todo!()
+    }
+
+    unsafe fn as_generic_ref(ptr: *const Self::Item, bundle: isize) -> Self {
         todo!()
     }
 }

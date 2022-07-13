@@ -4,16 +4,12 @@ use crate::{
     UniqueStoragesSet,
 };
 use std::any::Any;
-// Combination of multiple component types
-pub struct Archetype {
-    // Main
-    mask: Mask,
 
-    // Components
+// TODO: Comment
+pub struct Archetype {
+    mask: Mask,
     vectors: MaskMap<Box<dyn StorageVec>>,
     states: States,
-
-    // Entities
     entities: Vec<Entity>,
 }
 
