@@ -116,7 +116,6 @@ where
     }
 
     fn fetch(archetype: &Archetype) -> NonNull<Self::Item> {
-        // Idk if this is UB but it works fine
         NonNull::new(archetype.entities().as_ptr() as *mut Entity).unwrap()
     }
 }

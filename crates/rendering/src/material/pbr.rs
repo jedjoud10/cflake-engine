@@ -6,7 +6,7 @@ use world::{Handle, Storage};
 use crate::{
     canvas::Canvas,
     context::{Context, Window},
-    mesh::{Mesh, MeshBuffers},
+    mesh::{Mesh},
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},

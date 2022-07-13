@@ -9,7 +9,7 @@ use world::{Resource, Storage, World};
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::{Mesh, MeshBuffers},
+    mesh::{Mesh},
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
@@ -23,10 +23,12 @@ pub trait Material<'w>: 'static + Sized {
     // The resources that we need to fetch from the world to set the uniforms
     type Resources: 'w;
 
+    /*
     // Minimum mesh buffers required to render this material
     fn required() -> MeshBuffers {
         MeshBuffers::INDICES | MeshBuffers::POSITIONS
     }
+    */
 
     // Load in the shader that we will use for our material pipeline
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader;

@@ -10,7 +10,7 @@ use crate::{Resource, ResourceError, World};
 pub type HandleID = (TypeId, &'static str, bool);
 
 // Resource fetchers are just references to resources, like &mut T or Option<&mut T>
-pub trait ResHandle<'a>: Sized {
+trait PtrReader<'a>: Sized {
     type Inner: Resource;
     const MUTABLE: bool;
 
@@ -29,7 +29,7 @@ pub trait ResHandle<'a>: Sized {
     ) -> Result<Self, ResourceError>;
 }
 
-impl<'a, T: Resource> ResHandle<'a> for &'a T {
+impl<'a, T: Resource> PtrReader<'a> for &'a T {
     type Inner = T;
     const MUTABLE: bool = false;
 
@@ -40,7 +40,7 @@ impl<'a, T: Resource> ResHandle<'a> for &'a T {
     }
 }
 
-impl<'a, T: Resource> ResHandle<'a> for &'a mut T {
+impl<'a, T: Resource> PtrReader<'a> for &'a mut T {
     type Inner = T;
     const MUTABLE: bool = true;
 
@@ -51,7 +51,7 @@ impl<'a, T: Resource> ResHandle<'a> for &'a mut T {
     }
 }
 
-impl<'a, T: Resource> ResHandle<'a> for Option<&'a T> {
+impl<'a, T: Resource> PtrReader<'a> for Option<&'a T> {
     type Inner = T;
     const MUTABLE: bool = false;
 
@@ -63,7 +63,7 @@ impl<'a, T: Resource> ResHandle<'a> for Option<&'a T> {
     }
 }
 
-impl<'a, T: Resource> ResHandle<'a> for Option<&'a mut T> {
+impl<'a, T: Resource> PtrReader<'a> for Option<&'a mut T> {
     type Inner = T;
     const MUTABLE: bool = true;
 
@@ -101,11 +101,11 @@ pub trait Layout<'a>: Sized {
 }
 
 // Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
-unsafe fn fetch<'a, A: ResHandle<'a>>(world: &mut World) -> Result<A, ResourceError> {
+unsafe fn fetch<'a, A: PtrReader<'a>>(world: &mut World) -> Result<A, ResourceError> {
     A::cast_unchecked(A::Inner::fetch_ptr(world))
 }
 
-impl<'a, A: ResHandle<'a>> Layout<'a> for A {
+impl<'a, A: PtrReader<'a>> Layout<'a> for A {
     fn types() -> Vec<HandleID> {
         vec![A::id()]
     }
@@ -115,7 +115,7 @@ impl<'a, A: ResHandle<'a>> Layout<'a> for A {
     }
 }
 
-impl<'a, A: ResHandle<'a>, B: ResHandle<'a>> Layout<'a> for (A, B) {
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>> Layout<'a> for (A, B) {
     fn types() -> Vec<HandleID> {
         vec![A::id(), B::id()]
     }
@@ -125,7 +125,7 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>> Layout<'a> for (A, B) {
     }
 }
 
-impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A, B, C) {
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>> Layout<'a> for (A, B, C) {
     fn types() -> Vec<HandleID> {
         vec![A::id(), B::id(), C::id()]
     }
@@ -135,7 +135,7 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>> Layout<'a> for (A
     }
 }
 
-impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>> Layout<'a>
+impl<'a, A: PtrReader<'a>, B: PtrReader<'a>, C: PtrReader<'a>, D: PtrReader<'a>> Layout<'a>
     for (A, B, C, D)
 {
     fn types() -> Vec<HandleID> {
@@ -154,11 +154,11 @@ impl<'a, A: ResHandle<'a>, B: ResHandle<'a>, C: ResHandle<'a>, D: ResHandle<'a>>
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E)
 {
     fn types() -> Vec<HandleID> {
@@ -178,12 +178,12 @@ impl<
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
-        F: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
+        F: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E, F)
 {
     fn types() -> Vec<HandleID> {
@@ -204,13 +204,13 @@ impl<
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
-        F: ResHandle<'a>,
-        G: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
+        F: PtrReader<'a>,
+        G: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G)
 {
     fn types() -> Vec<HandleID> {
@@ -240,14 +240,14 @@ impl<
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
-        F: ResHandle<'a>,
-        G: ResHandle<'a>,
-        H: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
+        F: PtrReader<'a>,
+        G: PtrReader<'a>,
+        H: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G, H)
 {
     fn types() -> Vec<HandleID> {
@@ -279,15 +279,15 @@ impl<
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
-        F: ResHandle<'a>,
-        G: ResHandle<'a>,
-        H: ResHandle<'a>,
-        I: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
+        F: PtrReader<'a>,
+        G: PtrReader<'a>,
+        H: PtrReader<'a>,
+        I: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G, H, I)
 {
     fn types() -> Vec<HandleID> {
@@ -321,16 +321,16 @@ impl<
 
 impl<
         'a,
-        A: ResHandle<'a>,
-        B: ResHandle<'a>,
-        C: ResHandle<'a>,
-        D: ResHandle<'a>,
-        E: ResHandle<'a>,
-        F: ResHandle<'a>,
-        G: ResHandle<'a>,
-        H: ResHandle<'a>,
-        I: ResHandle<'a>,
-        J: ResHandle<'a>,
+        A: PtrReader<'a>,
+        B: PtrReader<'a>,
+        C: PtrReader<'a>,
+        D: PtrReader<'a>,
+        E: PtrReader<'a>,
+        F: PtrReader<'a>,
+        G: PtrReader<'a>,
+        H: PtrReader<'a>,
+        I: PtrReader<'a>,
+        J: PtrReader<'a>,
     > Layout<'a> for (A, B, C, D, E, F, G, H, I, J)
 {
     fn types() -> Vec<HandleID> {

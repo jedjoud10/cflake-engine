@@ -6,23 +6,18 @@ use math::AABB;
 use obj::TexturedVertex;
 use rayon::iter::Positions;
 
-use super::{attributes::*, MeshImportSettings};
+use super::{attributes::*, vertices::*, MeshImportSettings, EnabledAttributes, AttribBuffer};
 use crate::{
     buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
-    context::Context, mesh::{attributes::RawAttribute, MeshImportMode}, prelude::Array, object::{ToGlName, Shared},
+    context::Context, mesh::{MeshImportMode}, prelude::Array, object::{ToGlName, Shared},
 };
-
 
 // A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
 pub struct Mesh {
-    // Buffers, and GL name
+    // Enabled vertex attributes, and GL name
     pub(crate) vao: u32,
-    pub(crate) buffers: MeshBuffers,
-
-    // This specifies some buffers that might've been reassigned externally
-    // This hints the mesh that it should try to rebind the attribute's buffer to the VAO
-    maybe_reassigned: Cell<MeshBuffers>,
+    pub(crate) enabled: EnabledAttributes,
 
     // Vertex attribute buffers
     pub(super) positions: AttribBuffer<Position>,
@@ -94,7 +89,7 @@ impl Mesh {
     }
 
     // Check if we have a vertex attribute that is enabled and active
-    pub fn is_attribute_active<T: Attribute>(&self) -> bool {
+    pub fn is_attribute_active<T: VertexAttribute>(&self) -> bool {
         self.buffers.contains(T::ENABLED)
     }
 
@@ -120,7 +115,7 @@ impl Mesh {
     }
 
     // Set a new vertex attribute buffer, dropping the old one if there was one
-    pub fn set_attribute_buffer<T: Attribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
+    pub fn set_attribute_buffer<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
         if let Some(buffer) = buffer {
             // Insert the buffer into the mesh
             unsafe { 
