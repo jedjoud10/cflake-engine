@@ -5,7 +5,7 @@ use crate::{
     object::{Shared, ToGlName},
 };
 
-use super::{Mesh, MeshBuffers};
+use super::{Mesh, EnabledVertexBuffers};
 
 // Attribute base that will make up the elements of compound attributes.
 pub trait ScalarAttribute: Shared {
@@ -80,38 +80,23 @@ impl<T: ScalarAttribute> RawAttribute for vek::Rgba<T> {
 // A named attribute that has a specific name, like "Position", or "Normal"
 pub trait Attribute {
     type Out: RawAttribute + Shared;
-    const LAYOUT: MeshBuffers;
+
+    // The enabled state of this attribute represented by the mesh buffer bitfield
+    const ENABLED: EnabledVertexBuffers;
+
+    // Should we normalize the raw attribute data before we send it to the buffers?
     const NORMALIZED: bool;
 
-    // Get the corresponding buffer for this attribute from the mesh
-    // This assumes that the underlying buffer is indeed intialized
-    unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out>;
-    unsafe fn assume_init_get_mut(mesh: &mut Mesh) -> &mut ArrayBuffer<Self::Out>;
+    // Get the immutable and mutable pointers of the attribute's buffer from the mesh
+    fn get_ptr(mesh: &Mesh) -> *const MaybeUninit<ArrayBuffer<Self::Out>>;
+    fn get_ptr_mut(mesh: &mut Mesh) -> *mut MaybeUninit<ArrayBuffer<Self::Out>>;
 
     // Insert a buffer containing the raw attribute data into a mesh
     unsafe fn set_raw(mesh: &mut Mesh, buffer: ArrayBuffer<Self::Out>);
 
-    // This will set the default attribute values for a specific index
-    unsafe fn default();
-
     // Calculate the attribute index offset of self
     fn attribute_index() -> u32 {
-        Self::LAYOUT.bits().trailing_zeros()
-    }
-
-    // Calculate the buffer data stride for each raw element of this attribute
-    fn stride() -> usize {
-        size_of::<Self::Out>()
-    }
-
-    // Create a new homogeneous wrapper that contains all the basic information about this attribute
-    fn as_attribute_any() -> AttributeFormatAny {
-        AttributeFormatAny {
-            layout: Self::LAYOUT,
-            normalized: Self::NORMALIZED,
-            stride: Self::stride(),
-            attribute_index: Self::attribute_index(),
-        }
+        Self::ENABLED.bits().trailing_zeros()
     }
 }
 
@@ -164,9 +149,10 @@ pub struct Color;
 // TexCoord0 (UV) attribute for vertices. Uses Vec2<u8> internally
 pub struct TexCoord;
 
+/*
 impl Attribute for Position {
     type Out = vek::Vec3<f32>;
-    const LAYOUT: MeshBuffers = MeshBuffers::POSITIONS;
+    const ENABLED: MeshBuffers = MeshBuffers::POSITIONS;
     const NORMALIZED: bool = false;
     
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -188,7 +174,7 @@ impl Attribute for Position {
 
 impl Attribute for Normal {
     type Out = vek::Vec3<i8>;
-    const LAYOUT: MeshBuffers = MeshBuffers::NORMALS;
+    const ENABLED: MeshBuffers = MeshBuffers::NORMALS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -210,7 +196,7 @@ impl Attribute for Normal {
 
 impl Attribute for Tangent {
     type Out = vek::Vec4<i8>;
-    const LAYOUT: MeshBuffers = MeshBuffers::TANGENTS;
+    const ENABLED: MeshBuffers = MeshBuffers::TANGENTS;
     const NORMALIZED: bool= true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -232,7 +218,7 @@ impl Attribute for Tangent {
 
 impl Attribute for Color {
     type Out = vek::Rgb<u8>;
-    const LAYOUT: MeshBuffers = MeshBuffers::COLORS;
+    const ENABLED: MeshBuffers = MeshBuffers::COLORS;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -254,7 +240,7 @@ impl Attribute for Color {
 
 impl Attribute for TexCoord {
     type Out = vek::Vec2<u8>;
-    const LAYOUT: MeshBuffers = MeshBuffers::TEX_COORD;
+    const ENABLED: MeshBuffers = MeshBuffers::TEX_COORD;
     const NORMALIZED: bool = true;
 
     unsafe fn assume_init_get(mesh: &Mesh) -> &ArrayBuffer<Self::Out> {
@@ -280,3 +266,4 @@ pub type VeNormal = <Normal as Attribute>::Out;
 pub type VeTangent = <Tangent as Attribute>::Out;
 pub type VeColor = <Color as Attribute>::Out;
 pub type VeTexCoord0 = <TexCoord as Attribute>::Out;
+*/

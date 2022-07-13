@@ -221,8 +221,9 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     ) -> Result<(), RasterError> {
         
         unsafe {
-            let count = mesh.indices().len();
-            self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)
+            //let count = mesh.indices().len();
+            //self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)
+            Ok(())
         }
     }
 }

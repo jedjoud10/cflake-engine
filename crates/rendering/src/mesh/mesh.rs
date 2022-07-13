@@ -1,4 +1,4 @@
-use std::{mem::{MaybeUninit, size_of}, ptr::null};
+use std::{mem::{MaybeUninit, size_of}, ptr::null, cell::Cell};
 
 use arrayvec::ArrayVec;
 use assets::Asset;
@@ -12,21 +12,6 @@ use crate::{
     context::Context, mesh::{attributes::RawAttribute, MeshImportMode}, prelude::Array, object::{ToGlName, Shared},
 };
 
-// Contains the underlying array buffer for a specific attribute
-type AttribBuffer<A> = MaybeUninit<ArrayBuffer<<A as Attribute>::Out>>;
-
-bitflags::bitflags! {
-    // This specifies the buffers that the mesh uses internally
-    pub struct MeshBuffers: u8 {
-        const POSITIONS = 1;
-        const NORMALS = 1 << 1;
-        const TANGENTS = 1 << 2;
-        const COLORS = 1 << 3;
-        const TEX_COORD = 1 << 4;
-        const INDICES = 1 << 5;
-    }
-}
-
 
 // A mesh is a collection of 3D vertices connected by triangles
 // Each sub-mesh is associated with a single material
@@ -37,7 +22,7 @@ pub struct Mesh {
 
     // This specifies some buffers that might've been reassigned externally
     // This hints the mesh that it should try to rebind the attribute's buffer to the VAO
-    maybe_reassigned: MeshBuffers,
+    maybe_reassigned: Cell<MeshBuffers>,
 
     // Vertex attribute buffers
     pub(super) positions: AttribBuffer<Position>,
@@ -49,6 +34,21 @@ pub struct Mesh {
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
 }
+
+/*
+
+        let mut arr = self
+            .attributes_any()
+            .into_iter()
+            .map(|opt| 
+                opt.map(|(buf, _)| buf.len()
+            )
+        );
+
+        let first = arr.find(|opt| opt.is_some()).flatten()?;
+        let valid = arr.into_iter().flatten().all(|len| len == first);
+        valid.then(|| first)
+*/
 
 impl Mesh {
     // Create a new mesh from the attribute buffers and the indices
@@ -65,7 +65,7 @@ impl Mesh {
             let mut mesh = Self { 
                 vao: 0,
                 buffers: MeshBuffers::empty(),
-                maybe_reassigned: MeshBuffers::empty(),
+                maybe_reassigned: Cell::new(MeshBuffers::empty()),
                 positions: MaybeUninit::uninit(),
                 normals: MaybeUninit::uninit(),
                 tangents: MaybeUninit::uninit(),
@@ -76,6 +76,7 @@ impl Mesh {
             gl::CreateVertexArrays(1, &mut mesh.vao);
 
             // Set required positions buffer
+            /*
             mesh.set_attribute::<Position>(Some(positions));
 
             // Set the optional buffers
@@ -86,48 +87,27 @@ impl Mesh {
             
             // Set required index buffer
             mesh.set_indices(indices);
-
-            mesh.optimize();
             mesh.len().map(|_| mesh)
+            */
+            todo!()
         }
     }
 
     // Check if we have a vertex attribute that is enabled and active
     pub fn is_attribute_active<T: Attribute>(&self) -> bool {
-        self.buffers.contains(T::LAYOUT)
-    }
-
-    // Get the underlying index buffer immutably
-    pub fn indices(&self) -> &ElementBuffer<u32> {
-        unsafe { self.indices.assume_init_ref() }
-    }
-
-    // Get the underlying index buffer mutably
-    pub fn indices_mut(&mut self) -> &mut ElementBuffer<u32> {
-        self.maybe_reassigned.insert(MeshBuffers::INDICES);
-        unsafe { self.indices.assume_init_mut() }
+        self.buffers.contains(T::ENABLED)
     }
 
     // Set a new element buffer, dropping the old one
-    pub fn set_indices(&mut self, buffer: ElementBuffer<u32>) {
+    pub fn set_indices_buffer(&mut self, buffer: ElementBuffer<u32>) {
         self.indices = MaybeUninit::new(buffer);
-        self.maybe_reassigned.insert(MeshBuffers::INDICES);
+        self.maybe_reassigned.get_mut().insert(MeshBuffers::INDICES);
         self.buffers.insert(MeshBuffers::INDICES);
-    }
-
-    // Get a vertex attribute buffer immutably
-    pub fn attribute<T: Attribute>(&self) -> Option<&ArrayBuffer<T::Out>> {
-        self.is_attribute_active::<T>().then(|| unsafe { T::assume_init_get(self) })
-    }
-
-    // Get a vertex attribute buffer mutably (we can assume that the user assigns a new buffer here)
-    pub fn attribute_mut<T: Attribute>(&mut self) -> Option<&mut ArrayBuffer<T::Out>> {
-        self.maybe_reassigned.insert(T::LAYOUT);
-        self.is_attribute_active::<T>().then(|| unsafe { T::assume_init_get_mut(self) })
     }
 
     // Get an array containing all the buffer any ref and attribute format any
     pub fn attributes_any(&self) -> [Option<(BufferAnyRef, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+        /*
         [
             self.attribute::<Position>().map(|b| (Buffer::as_buffer_any_ref(b), Position::as_attribute_any())),
             self.attribute::<Normal>().map(|b| (Buffer::as_buffer_any_ref(b), Normal::as_attribute_any())),
@@ -135,10 +115,12 @@ impl Mesh {
             self.attribute::<Color>().map(|b| (Buffer::as_buffer_any_ref(b), Color::as_attribute_any())),
             self.attribute::<TexCoord>().map(|b| (Buffer::as_buffer_any_ref(b), TexCoord::as_attribute_any())),
         ]
+        */
+        todo!()
     }
 
     // Set a new vertex attribute buffer, dropping the old one if there was one
-    pub fn set_attribute<T: Attribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
+    pub fn set_attribute_buffer<T: Attribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
         if let Some(buffer) = buffer {
             // Insert the buffer into the mesh
             unsafe { 
@@ -146,8 +128,8 @@ impl Mesh {
             }
             
             // Enable the vertex attribute and specify it's format
-            self.buffers.insert(T::LAYOUT);
-            self.maybe_reassigned.insert(T::LAYOUT);
+            self.buffers.insert(T::ENABLED);
+            self.maybe_reassigned.get_mut().insert(T::ENABLED);
             unsafe {
                 gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
                 gl::VertexArrayAttribFormat(
@@ -161,55 +143,61 @@ impl Mesh {
             }
         } else {
             // Disable the vertex attribute
-            self.buffers.remove(T::LAYOUT);
-            self.maybe_reassigned.remove(T::LAYOUT);
+            self.buffers.remove(T::ENABLED);
+            self.maybe_reassigned.get_mut().remove(T::ENABLED);
             unsafe {
                 gl::DisableVertexArrayAttrib(self.vao, T::attribute_index())
             }
         }
     }
 
-    // Get the number of vertices that we have in total (this will return None if two or more vectors have different lengths)
-    pub fn len(&self) -> Option<usize> {
-        let mut arr = self
-            .attributes_any()
-            .into_iter()
-            .map(|opt| 
-                opt.map(|(buf, _)| buf.len()
-            )
-        );
-
-        let first = arr.find(|opt| opt.is_some()).flatten()?;
-        let valid = arr.into_iter().flatten().all(|len| len == first);
-        valid.then(|| first)
+    // Get the number of vertices that we have in total
+    pub fn len(&self) -> usize {
+        todo!()
     }
+
+    // Get an immutable reference to the vertex buffers wrapper
+    pub fn vertices(&self) {}
+    
+    // Get a mutable reference to the vertex buffers wrapper
+    pub fn vertices_mut(&mut self) {}
+    
+    // Get an immutable reference to the indices
+    pub fn indices(&self) {}
+    
+    // Get a mutable reference to the indices
+    pub fn indices_mut(&mut self) {}
 
     // Specify the buffer bindings for all the enabled vertex attributes and EBO
     // This will only re-bind the buffer that are marked as "maybe reassigned" since they might be unlinked
-    unsafe fn bind_buffers(&mut self) {
+    /*
+    pub(crate) unsafe fn bind_buffers_lazy(&self) {
+        // Check if we even need to rebind the buffers in the first place
+        let copy = self.maybe_reassigned.get();
+        if copy.is_empty() {
+           return; 
+        }
+
         // Bind all the active attribute buffers at the start (create the binding indices)
         let iter = self.attributes_any().into_iter().filter_map(|s| s).enumerate();
         for (i, (buffer, attrib)) in iter {
-            if self.maybe_reassigned.contains(attrib.layout()) {
+            if copy.contains(attrib.layout()) {
                 gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
                 gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
             }
         }
 
         // Rebind the EBO to the VAO
-        if self.maybe_reassigned.contains(MeshBuffers::INDICES) {
+        if copy.contains(MeshBuffers::INDICES) {
             gl::VertexArrayElementBuffer(self.vao, self.indices.assume_init_ref().name());
         }
-        self.maybe_reassigned = MeshBuffers::empty();
-    }
 
-    // Optimize the mesh for rendering (this is called once a frame, for each unique mesh)
-    pub fn optimize(&mut self) {
-        unsafe {
-            self.bind_buffers();
-        }
+        // Reset
+        self.maybe_reassigned.set(MeshBuffers::empty());
     }
+    */
 
+    /*
     // Recalculate the vertex normals procedurally; based on position attribute
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
@@ -363,6 +351,7 @@ impl Mesh {
     pub fn compute_bounds(&mut self) -> AABB {
         todo!()
     }
+    */
 }
 
 impl Drop for Mesh {
@@ -416,7 +405,7 @@ impl<'a> Asset<'a> for Mesh {
         let indices = Buffer::from_slice(ctx, &indices, mode);
 
         // Create a new mesh
-        let mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
+        let mut mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), indices).unwrap();
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {

@@ -74,8 +74,9 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
             let mesh = meshes.get(&surface.mesh()); 
-            let buffers = mesh.buffers.contains(M::required()) && mesh.len().is_some();
-            renderer && buffers
+            //let buffers = mesh.buffers.contains(M::required()) && mesh.len().is_some();
+            todo!();
+            renderer
         });
 
         // Get the main camera component (there has to be one for us to render)
@@ -136,8 +137,10 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             let mesh = meshes.get(&surface.mesh());
             rasterizer.draw(mesh, &mut uniforms).unwrap();
             stats.mesh_draw_calls += 1;
+            /*
             stats.vertices += mesh.len().unwrap() as u128;
             stats.indices += mesh.indices().len() as u128;
+            */
         }
         stats
     }
