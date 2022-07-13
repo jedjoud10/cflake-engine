@@ -1,21 +1,13 @@
 use ahash::AHashSet;
-use utils::GenericReference;
 use std::{
     any::{type_name, TypeId},
     ptr::NonNull,
 };
 
-use crate::{Resource, ResourceError, World};
-
-// We store the type ID and name in their own struct since the handle might not even be mutable
-pub struct ResourceReferenceDesc {
-    _type: TypeId,
-    name: &'static str,
-    mutable: bool,
-};
+use crate::{Resource, ResourceError, World, ResourceReferenceDesc, ResourceReference};
 
 // A layout simply multiple resource handles of different resources
-pub trait Layout<'a>: Sized {
+pub trait ResourceLayout<'a>: Sized {
     // Get a list of the Handle IDs of the underlying resources
     fn descriptions() -> Vec<ResourceReferenceDesc>;
 
@@ -28,7 +20,7 @@ pub trait Layout<'a>: Sized {
             .find(|ResourceReferenceDesc { _type, name, mutable }| !map.insert(_type) && *mutable);
 
         // This is a certified inversion classic
-        if let Some((_, name, _)) = name {
+        if let Some(ResourceReferenceDesc { name, .. }) = name {
             Err(ResourceError::Overlapping(name))
         } else {
             Ok(())
@@ -39,25 +31,16 @@ pub trait Layout<'a>: Sized {
     unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError>;
 }
 
-// Get the handle ID of a resource generic reference 
-fn id<'a, A: GenericReference<'a>>() -> ResourceReferenceDesc where A::Inner: Resource {
-    (
-        TypeId::of::<A::Inner>(),
-        type_name::<A::Inner>(),
-        A::MUTABLE,
-    )
-}
-
 // Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
-unsafe fn fetch<'a, A: GenericReference<'a>>(world: &mut World) -> Result<A, ResourceError> where A::Inner: Resource {
+unsafe fn fetch<'a, A: ResourceReference<'a>>(world: &mut World) -> Result<A, ResourceError> {
     let ptr = <A::Inner as Resource>::fetch_ptr(world);
-    let value = ptr.map(|ptr| A::_as_from_mut_ptr(ptr.as_ptr()));
+    let value = ptr.map(|ptr| A::from_non_null(ptr));
     value
 }
 
-impl<'a, A: GenericReference<'a>> Layout<'a> for A where A::Inner: Resource {
+impl<'a, A: ResourceReference<'a>> ResourceLayout<'a> for A {
     fn descriptions() -> Vec<ResourceReferenceDesc> {
-        vec![id::<A>()]
+        vec![A::descriptor()]
     }
 
     unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
@@ -67,13 +50,33 @@ impl<'a, A: GenericReference<'a>> Layout<'a> for A where A::Inner: Resource {
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+ ) => {
-        impl<'a, $($name: Bruh<'a>),+> Testio for ($($name,)+) where $($name::Inner: Testio),+
+        impl<'a, $($name: ResourceReference<'a>),+> Layout<'a> for ($($name,)+)
         {
-            fn do_something(self) -> Self {
-                //let ($($name,)+) = self;
-                //($($name.do_something(),)+)
-                self
+            fn descriptions() -> Vec<ResourceReferenceDesc> {
+                vec![$($name::descriptor()),+]
+            }
+        
+            unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
+                let data = ($(fetch::<$name>(world)?,)+);
+                Ok(data)
             }
         }
     };
 }
+
+// Heheheha
+tuple_impls! { A }
+tuple_impls! { A B }
+tuple_impls! { A B C }
+tuple_impls! { A B C D }
+tuple_impls! { A B C D E }
+tuple_impls! { A B C D E F }
+tuple_impls! { A B C D E F G }
+tuple_impls! { A B C D E F G H }
+tuple_impls! { A B C D E F G H I }
+tuple_impls! { A B C D E F G H I J }
+tuple_impls! { A B C D E F G H I J K }
+tuple_impls! { A B C D E F G H I J K L }
+tuple_impls! { A B C D E F G H I J K L M }
+tuple_impls! { A B C D E F G H I J K L M N }
+tuple_impls! { A B C D E F G H I J K L M N O }

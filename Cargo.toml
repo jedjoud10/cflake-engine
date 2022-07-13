@@ -20,7 +20,6 @@ members = [
     "crates/rendering",
     "crates/opengl",
     "crates/world",
-    "crates/utils",
 ]
 
 [profile.dev]

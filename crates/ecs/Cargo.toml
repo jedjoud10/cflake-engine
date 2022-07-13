@@ -18,4 +18,3 @@ ahash = "0.7.6"
 rayon = "1.5.1"
 time = { path = "../time" }
 ecs-derive = { path = "./ecs-derive"  }
-utils = { path = "../utils" }

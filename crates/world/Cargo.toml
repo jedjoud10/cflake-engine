@@ -10,4 +10,3 @@ slotmap = "1.0.6"
 glutin = "0.28.0"
 ahash = "0.7.6"
 resources-derive = { path = "./resources-derive" }
-utils = { path = "../utils" }

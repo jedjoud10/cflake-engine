@@ -1,5 +1,5 @@
 use crate::{
-    Entry, Events, Init, Layout, Resource, ResourceError, Stage, StorageSetDescriptor, Update,
+    Entry, Events, Init, ResourceLayout, Resource, ResourceError, Stage, StorageSetDescriptor, Update,
 };
 use ahash::AHashMap;
 use std::any::TypeId;
@@ -47,7 +47,7 @@ impl World {
     }
 
     // Fetch a tuple of certain resource handles from the set
-    pub fn get_mut<'a, L: Layout<'a>>(&'a mut self) -> Result<L, ResourceError> {
+    pub fn get_mut<'a, L: ResourceLayout<'a>>(&'a mut self) -> Result<L, ResourceError> {
         L::validate().map(|_| unsafe { L::fetch_unchecked(self) })?
     }
 
