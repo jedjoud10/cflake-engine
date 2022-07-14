@@ -3,8 +3,8 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec,
+    entity::Entity, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
+    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec, query, query_filtered, ViewLayout, view, view_filtered,
 };
 
 // Type aliases because I have gone insane
@@ -123,40 +123,35 @@ impl EcsManager {
 
     /* #region Main thread queries */
     // Normal query without filter
-    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(
+    pub fn try_query<'a, L: QueryLayout<'a> + 'a>(
         &'a mut self,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        Layout::validate().then(|| query(&self.archetypes))
+    ) -> Option<impl Iterator<Item = L> + 'a> {
+        L::validate().then(|| query(&mut self.archetypes))
     }
 
     // Create a query with a specific filter
-    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a>(
+    pub fn try_query_with<'a, L: QueryLayout<'a> + 'a>(
         &'a mut self,
         filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        Layout::validate().then(|| filtered(&self.archetypes, filter))
+    ) -> Option<impl Iterator<Item = L> + 'a> {
+        L::validate().then(|| query_filtered(&mut self.archetypes, filter))
     }
 
     // A view query that can only READ data, and never write to it
     // This will return None when it is unable to get a view query
-    // TODO: Make use of Rust's type system to check for immutable borrows instead
-    /*
-    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(
+    pub fn try_view<'a, L: ViewLayout<'a> + 'a>(
         &'a self,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty() && Layout::validate();
-        valid.then(|| query(&self.archetypes))
+    ) -> impl Iterator<Item = L> + 'a {
+        view(&self.archetypes)
     }
 
     // View query with a specific filter
-    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(
+    pub fn try_view_with<'a, L: ViewLayout<'a> + 'a>(
         &'a self,
         filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty() && Layout::validate();
-        valid.then(|| filtered(&self.archetypes, filter))
+    ) -> impl Iterator<Item = L> + 'a {
+        view_filtered(&self.archetypes, filter)
     }
-    */
 
     /* #endregion */
 }

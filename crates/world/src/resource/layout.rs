@@ -50,7 +50,7 @@ impl<'a, A: ResourceReference<'a>> ResourceLayout<'a> for A {
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+ ) => {
-        impl<'a, $($name: ResourceReference<'a>),+> Layout<'a> for ($($name,)+)
+        impl<'a, $($name: ResourceReference<'a>),+> ResourceLayout<'a> for ($($name,)+)
         {
             fn descriptions() -> Vec<ResourceReferenceDesc> {
                 vec![$($name::descriptor()),+]
@@ -65,18 +65,17 @@ macro_rules! tuple_impls {
 }
 
 // Heheheha
-tuple_impls! { A }
-tuple_impls! { A B }
-tuple_impls! { A B C }
-tuple_impls! { A B C D }
-tuple_impls! { A B C D E }
-tuple_impls! { A B C D E F }
-tuple_impls! { A B C D E F G }
-tuple_impls! { A B C D E F G H }
-tuple_impls! { A B C D E F G H I }
-tuple_impls! { A B C D E F G H I J }
-tuple_impls! { A B C D E F G H I J K }
-tuple_impls! { A B C D E F G H I J K L }
-tuple_impls! { A B C D E F G H I J K L M }
-tuple_impls! { A B C D E F G H I J K L M N }
-tuple_impls! { A B C D E F G H I J K L M N O }
+tuple_impls! { R1 R2 }
+tuple_impls! { R1 R2 R3 }
+tuple_impls! { R1 R2 R3 R4 }
+tuple_impls! { R1 R2 R3 R4 R5 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 }
+tuple_impls! { R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 }

@@ -6,9 +6,14 @@ use std::{
 
 // Layout access that contain the normal mask and writing mask
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct LayoutAccess(pub(super) Mask, pub(super) Mask);
+pub struct LayoutAccess(Mask, Mask);
 
 impl LayoutAccess {
+    // Create a new layout access
+    pub const fn new(reading: Mask, writing: Mask) -> Self {
+        Self(reading, writing)
+    }
+
     // No layout access at all
     pub const fn none() -> Self {
         Self(Mask::zero(), Mask::zero())

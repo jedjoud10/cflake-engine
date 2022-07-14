@@ -6,17 +6,17 @@ use crate::{registry, Archetype, Component, EcsManager, EntryError, Mask, QueryL
 // An entity entry that we can use to access multiple components on a single entity
 // This will take an immutable reference of the ECS manager, so we cannot mutate any of the underlying entity components
 pub struct Entry<'a> {
-    archetype: &'a mut Archetype,
+    archetype: &'a Archetype,
     bundle: usize,
     _phantom: PhantomData<&'a EcsManager>,
 }
 
 impl<'a> Entry<'a> {
     // Create an entry from the Ecs manager and an entity
-    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(manager: &'a EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
         Some(Self {
-            archetype: manager.archetypes.get_mut(&linkings.mask)?,
+            archetype: manager.archetypes.get(&linkings.mask)?,
             bundle: linkings.bundle,
             _phantom: Default::default(),
         })
@@ -24,27 +24,19 @@ impl<'a> Entry<'a> {
 
     // Try to get a component mask
     fn mask<T: Component>(&self) -> Result<Mask, EntryError> {
-        // Get le mask
         let mask = registry::mask::<T>();
-
-        // Handle unlinked components
         if self.archetype.mask() & mask != mask {
             return Err(EntryError::MissingComponent(registry::name::<T>()));
         }
-
         Ok(mask)
-    }
-
-    // Get a pointer to a linked component
-    pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntryError> {
-        let mask = self.mask::<T>()?;
-        let boxed = &self.archetype.storage()[&mask];
-        Ok(ptr.cast::<T>().as_ptr().add(self.bundle))
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Result<&T, EntryError> {
-        unsafe { self.get_ptr::<T>().map(|ptr| &*ptr) }
+        let mask = self.mask::<T>()?;
+        let boxed = self.archetype.storage().get(&mask).unwrap();
+        let vec = boxed.as_any().downcast_ref::<Vec<T>>().unwrap();
+        Ok(&vec[self.bundle])
     }
 
     // Check if a specific component was mutated
@@ -58,9 +50,7 @@ impl<'a> Entry<'a> {
 // An entity entry that we can use to access multiple components on a single entity
 // This will take a mutable reference of the ECS manager. Use Entry instead if you wish for an immutable entry
 pub struct MutEntry<'a> {
-    // Internal query for fetching components
-    //query: EntityEntryQuery<'a>,
-    archetype: &'a Archetype,
+    archetype: &'a mut Archetype,
     bundle: usize,
     _phantom: PhantomData<&'a mut EcsManager>,
 }
@@ -70,7 +60,7 @@ impl<'a> MutEntry<'a> {
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
         Some(Self {
-            archetype: manager.archetypes.get(&linkings.mask)?,
+            archetype: manager.archetypes.get_mut(&linkings.mask)?,
             bundle: linkings.bundle,
             _phantom: Default::default(),
         })
@@ -78,32 +68,23 @@ impl<'a> MutEntry<'a> {
 
     // Try to get a component mask
     fn mask<T: Component>(&self) -> Result<Mask, EntryError> {
-        // Get le mask
         let mask = registry::mask::<T>();
-
-        // Handle unlinked components
         if self.archetype.mask() & mask != mask {
             return Err(EntryError::MissingComponent(registry::name::<T>()));
         }
-
         Ok(mask)
-    }
-
-    // Get a pointer to a linked component
-    pub unsafe fn get_ptr<T: Component>(&self) -> Result<*mut T, EntryError> {
-        let mask = self.mask::<T>()?;
-        let ptr = self.archetype.storage()[&mask].get_storage_ptr();
-        Ok(ptr.cast::<T>().as_ptr().add(self.bundle))
     }
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Result<&T, EntryError> {
-        unsafe { self.get_ptr::<T>().map(|ptr| &*ptr) }
+        let mask = self.mask::<T>()?;
+        let boxed = self.archetype.storage().get(&mask).unwrap();
+        let vec = boxed.as_any().downcast_ref::<Vec<T>>().unwrap();
+        Ok(&vec[self.bundle])
     }
 
     // Get a mutable reference to a linked component
     pub fn get_mut<T: Component>(&mut self) -> Result<&mut T, EntryError> {
-        // Update the mutation state
         let mask = self.mask::<T>()?;
         self.archetype
             .states()
@@ -113,7 +94,10 @@ impl<'a> MutEntry<'a> {
 
     // Get a mutable reference to a linked component silently, without triggering a mutation state change
     pub fn get_mut_silent<T: Component>(&mut self) -> Result<&mut T, EntryError> {
-        unsafe { self.get_ptr::<T>().map(|ptr| &mut *ptr) }
+        let mask = self.mask::<T>()?;
+        let boxed = self.archetype.storage_mut().get_mut(&mask).unwrap();
+        let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
+        Ok(&mut vec[self.bundle])
     }
 
     // Check if a specific component was mutated
@@ -125,19 +109,16 @@ impl<'a> MutEntry<'a> {
 
     // Get a whole layout of components from the entity
     pub fn get_mut_layout<'b, Layout: QueryLayout<'b>>(&'b mut self) -> Result<Layout, EntryError> {
-        // Check for layout mask intersection
         if !Layout::validate() {
             return Err(EntryError::LayoutIntersectingMask);
         }
 
-        // Check for layout mask differences compared to archetype mask
         let mask = Layout::combined().both();
         if (mask | self.archetype.mask()) != mask {
             return Err(EntryError::LayoutMissingComponents);
         }
 
-        // Get the valid offsettedp pointers, return the safe tuple
-        let ptrs = Layout::get_base_ptrs_assume_init(self.archetype);
-        Ok(Layout::offset(ptrs, self.bundle))
+        let ptrs = Layout::try_fetch_ptrs(self.archetype).unwrap();
+        Ok(unsafe { Layout::read_as_layout_at(ptrs, self.bundle) })
     }
 }

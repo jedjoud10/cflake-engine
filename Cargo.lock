@@ -334,6 +334,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "casey"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fabe85130dda9cf267715582ce6cf1ab581c8dfe3cb33f7065fee0f14e3fea14"
+dependencies = [
+ "syn",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -813,12 +822,15 @@ name = "ecs"
 version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
+ "casey",
  "ecs-derive",
  "itertools",
  "lazy_static",
  "nohash-hasher",
  "parking_lot 0.12.1",
+ "paste",
  "rayon",
+ "seq-macro",
  "slotmap",
  "smallvec",
  "time",
@@ -2462,6 +2474,12 @@ name = "semver"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2333e6df6d6598f2b1974829f853c2b4c5f4a6e503c10af918081aa6f8564e1"
+
+[[package]]
+name = "seq-macro"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70d9841243dbc9928f5fed7946d2862292eebd823d96e13e556924d3db0120d2"
 
 [[package]]
 name = "serde"

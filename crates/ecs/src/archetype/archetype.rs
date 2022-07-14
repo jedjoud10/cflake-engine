@@ -90,9 +90,14 @@ impl Archetype {
         &self.states
     }
 
-    // Get the raw boxed storage vectors
+    // Get the raw boxed storage vectors immutably
     pub fn storage(&self) -> &MaskMap<Box<dyn StorageVec>> {
         &self.vectors
+    }
+
+    // Get the raw boxed storage vectors mutable
+    pub fn storage_mut(&mut self) -> &mut MaskMap<Box<dyn StorageVec>> {
+        &mut self.vectors
     }
 
     // Remove an entity from the archetype it is currently linked to

@@ -67,6 +67,14 @@ impl Mask {
     pub fn one_corresponding_bit(&self, other: Self) -> bool {
         *self & other != Mask::zero()
     }
+
+    // Check if all the bits from Other are present within Self
+    // other: 0100
+    // self:  1111
+    // true
+    pub fn contains(&self, other: Self) -> bool {
+        *self & other == other
+    }
 }
 
 // NoHash hasher that works with Mask

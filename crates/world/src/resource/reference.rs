@@ -10,7 +10,7 @@ pub struct ResourceReferenceDesc {
 }
 
 // Generic are either &T references or &mut references. They are "generic" because we hide their inner type
-pub trait ResourceReference<'a>: 'a {
+pub(crate) trait ResourceReference<'a>: 'a {
     type Inner: 'static + Sized + Resource;
     type Ptr: 'static + Copy;
     const MUTABLE: bool;
