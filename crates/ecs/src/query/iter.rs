@@ -49,19 +49,18 @@ impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
         let mask = access.shared() | access.unique();
 
         // Create a new vector containing the archetypes in arbitrary order
-        let mut len = 0;
         let mut chunks = archetypes
             .iter_mut()
             .filter(|(m, _)| m.contains(mask))
-            .map(|(_, archetype)| {
-                len += archetype.len();
-                Chunk {
-                    len: archetype.len(),
-                    states: archetype.states().clone(),
-                    ptrs: L::try_fetch_ptrs(archetype).unwrap(),
-                }
+            .map(|(_, archetype)| Chunk {
+                len: archetype.len(),
+                states: archetype.states().clone(),
+                ptrs: L::try_fetch_ptrs(archetype).unwrap(),
             })
             .collect::<Vec<_>>();
+
+        // Get the maximum number of bundles that we have
+        let len = chunks.iter().map(|chunk| chunk.len).sum();
 
         // Create and initiate the iterator            
         let last = chunks.pop();
@@ -91,19 +90,18 @@ impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
         let mask = L::combined();
         
         // Create a new vector containing the archetypes in arbitrary order
-        let mut len = 0;
         let mut chunks = archetypes
             .iter()
             .filter(|(m, _)| m.contains(mask))
-            .map(|(_, archetype)| {
-                len += archetype.len();
-                ViewChunk {
-                    len: archetype.len(),
-                    states: archetype.states().clone(),
-                    ptrs: unsafe { L::try_fetch_ptrs(archetype).unwrap() },
-                }
+            .map(|(_, archetype)| ViewChunk {
+                len: archetype.len(),
+                states: archetype.states().clone(),
+                ptrs: unsafe { L::try_fetch_ptrs(archetype).unwrap() },
             })
             .collect::<Vec<_>>();
+
+        // Get the maximum number of bundles that we have
+        let len = chunks.iter().map(|chunk| chunk.len).sum();
 
         // Create and initiate the iterator            
         let last = chunks.pop();
@@ -132,7 +130,7 @@ impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
         let chunk = self.loaded.as_ref()?;
         let bundle = unsafe { L::read_as_layout_at(chunk.ptrs, self.bundle) };
 
-        // Update the bundle states
+        // Update the bundle state
         let old = chunk
             .states
             .update(self.bundle, |mutated, _| {
@@ -172,6 +170,7 @@ impl<'a, L: ViewLayout<'a>> Iterator for ViewIter<'a, L> {
         let chunk = self.loaded.as_ref()?;
         let bundle = unsafe { L::read_as_layout_at(chunk.ptrs, self.bundle) };
 
+        // Get the bundle state
         let state = chunk.states.get(self.bundle).unwrap();
         self.bundle += 1;
 
