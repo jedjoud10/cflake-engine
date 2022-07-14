@@ -33,6 +33,8 @@ impl LayoutAccess {
     pub fn both(&self) -> Mask {
         self.reading() | self.writing()
     }
+
+    // Given a mask,
 }
 
 impl BitOr for LayoutAccess {
