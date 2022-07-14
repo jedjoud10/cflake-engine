@@ -1,4 +1,3 @@
-mod attributes;
 mod mesh;
 mod surface;
 mod settings;
@@ -6,7 +5,6 @@ mod indices;
 mod vertices;
 pub use mesh::*;
 pub use surface::*;
-pub use attributes::*;
 pub use settings::*;
 pub use vertices::*;
 pub use indices::*;

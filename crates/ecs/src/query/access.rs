@@ -4,44 +4,48 @@ use std::{
     ptr::NonNull,
 };
 
-// Layout access that contain the normal mask and writing mask
+// Layout access that contain the shared access mask and unique access mask
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct LayoutAccess(Mask, Mask);
+pub struct LayoutAccess {
+    shared: Mask,
+    unique: Mask,
+}
 
 impl LayoutAccess {
     // Create a new layout access
-    pub const fn new(reading: Mask, writing: Mask) -> Self {
-        Self(reading, writing)
+    pub const fn new(shared: Mask, unique: Mask) -> Self {
+        Self { shared, unique }
     }
 
     // No layout access at all
     pub const fn none() -> Self {
-        Self(Mask::zero(), Mask::zero())
+        Self { shared: Mask::zero(), unique: Mask::zero() }
     }
 
-    // Get the normal mask
-    pub fn reading(&self) -> Mask {
-        self.0
+    // Get the shared access mask
+    pub fn shared(&self) -> Mask {
+        self.shared
     }
 
-    // Get the writing mask
-    pub fn writing(&self) -> Mask {
-        self.1
+    // Get the unique access mask
+    pub fn unique(&self) -> Mask {
+        self.unique
     }
 
-    // Reading AND writing masks combined
-    pub fn both(&self) -> Mask {
-        self.reading() | self.writing()
+    // Check if the layout mask is valid (unique and shared are not intersecting)
+    pub fn valid(&self) -> bool {
+        self.unique & self.shared == Mask::zero()
     }
-
-    // Given a mask,
 }
 
 impl BitOr for LayoutAccess {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0, self.1 | rhs.1)
+        Self {
+            shared: self.shared | rhs.shared,
+            unique: self.unique | rhs.unique,
+        }
     }
 }
 
@@ -49,6 +53,9 @@ impl BitAnd for LayoutAccess {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0, self.1 & rhs.1)
+        Self {
+            shared: self.shared & rhs.shared,
+            unique: self.unique & rhs.unique,
+        }
     }
 }

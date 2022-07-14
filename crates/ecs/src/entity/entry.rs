@@ -56,7 +56,7 @@ pub struct MutEntry<'a> {
 }
 
 impl<'a> MutEntry<'a> {
-    // Create a mutable entry from the Ecs manager and an entity
+    // Create a mutable entry from the ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
         Some(Self {
@@ -107,14 +107,15 @@ impl<'a> MutEntry<'a> {
         Ok(mutated.mutated(mask.offset()))
     }
 
-    // Get a whole layout of components from the entity
+    // Get a tuple containing the specified components from this entity entry
     pub fn get_mut_layout<'b, Layout: QueryLayout<'b>>(&'b mut self) -> Result<Layout, EntryError> {
         if !Layout::validate() {
             return Err(EntryError::LayoutIntersectingMask);
         }
 
-        let mask = Layout::combined().both();
-        if (mask | self.archetype.mask()) != mask {
+        let access = Layout::combined();
+        let mask = access.shared() | access.unique();
+        if !self.archetype.mask().contains(mask) {
             return Err(EntryError::LayoutMissingComponents);
         }
 

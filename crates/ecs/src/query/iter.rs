@@ -44,7 +44,7 @@ impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
     // Create a new mutable query iterator that will iterate through the valid archetypes entities
     pub fn new(archetypes: &'a mut ArchetypeSet) -> Self {
         let access = L::combined();
-        let (mask, _) = (access.reading(), access.writing());
+        let mask = access.shared() | access.unique();
 
         // Create a new vector containing the archetypes in arbitrary order
         let mut chunks = archetypes
@@ -126,7 +126,7 @@ impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
         let old = chunk
             .states
             .update(self.bundle, |mutated, _| {
-                *mutated = *mutated | self.access.writing()
+                *mutated = *mutated | self.access.unique()
             })
             .unwrap();
         self.bundle += 1;
@@ -135,7 +135,7 @@ impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
         Some(QueryItem {
             tuple: bundle,
             state: old,
-            archetype_mask: self.access.reading(),
+            archetype_mask: self.access.shared() | self.access.unique(),
             _phantom: Default::default(),
         })
     }

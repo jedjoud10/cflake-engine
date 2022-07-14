@@ -42,6 +42,7 @@ mod tests {
 
             //let mut entry = manager.entry(entity).unwrap();
             manager.modify(entity, |_modifier| {});
+
         }
         /*
         for _i in 0..5 {

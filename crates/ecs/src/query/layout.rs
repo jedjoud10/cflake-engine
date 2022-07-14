@@ -19,9 +19,7 @@ where
     fn combined() -> LayoutAccess;
 
     // This must return "false" if any of the items have intersecting masks
-    fn validate() -> bool {
-        todo!()
-    }
+    fn validate() -> bool;
 
     // Convert the base ptr tuple to the safe borrows using a bundle offset
     unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self;
@@ -118,6 +116,16 @@ macro_rules! tuple_impls {
             fn combined() -> LayoutAccess {
                 ($($name::read_write_access())|+)
             }
+
+            fn validate() -> bool {
+                let intersecting = ($($name::read_write_access())&+);
+                
+                //    &A + &A      = valid
+                // &mut A + &mut A = invalid
+                //   &A + &mut A   = invalid
+                //   &A + &mut B   = valid
+                intersecting.unique() == Mask::zero()
+            }
         
             unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self {
                 seq!(N in 0..$max {
@@ -176,3 +184,4 @@ tuple_impls! { C0 C1 C2 C3, 4 }
 tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }

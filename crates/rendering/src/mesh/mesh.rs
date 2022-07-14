@@ -6,7 +6,7 @@ use math::AABB;
 use obj::TexturedVertex;
 use rayon::iter::Positions;
 
-use super::{attributes::*, vertices::*, MeshImportSettings, EnabledAttributes, AttributeBuffer};
+use super::{vertices::*, MeshImportSettings, EnabledAttributes, AttributeBuffer};
 use crate::{
     buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
     context::Context, mesh::{MeshImportMode}, object::{ToGlName, Shared},
