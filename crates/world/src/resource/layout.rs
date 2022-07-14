@@ -50,6 +50,7 @@ impl<'a, A: ResourceReference<'a>> ResourceLayout<'a> for A {
 
 macro_rules! tuple_impls {
     ( $( $name:ident )+ ) => {
+        // Implement the resource layout for all tuple types that contain resource references
         impl<'a, $($name: ResourceReference<'a>),+> ResourceLayout<'a> for ($($name,)+)
         {
             fn descriptions() -> Vec<ResourceReferenceDesc> {

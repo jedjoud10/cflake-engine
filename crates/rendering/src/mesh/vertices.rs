@@ -15,7 +15,7 @@ bitflags::bitflags! {
 }
 
 // Contains the underlying array buffer for a specific attribute
-pub type AttribBuffer<A> = MaybeUninit<ArrayBuffer<<A as VertexAttribute>::Out>>;
+pub type AttributeBuffer<A> = MaybeUninit<ArrayBuffer<<A as VertexAttribute>::Out>>;
 
 
 // A named attribute that has a specific name, like "Position", or "Normal"
@@ -28,17 +28,14 @@ pub trait VertexAttribute {
     const NORMALIZED: bool;
 
     // Get the immutable and mutable pointers of the attribute's buffer from the mesh
-    fn get_ptr(mesh: &Mesh) -> *const MaybeUninit<ArrayBuffer<Self::Out>>;
-    fn get_ptr_mut(mesh: &mut Mesh) -> *mut MaybeUninit<ArrayBuffer<Self::Out>>;
+    fn as_ptr(mesh: &Mesh) -> *const MaybeUninit<ArrayBuffer<Self::Out>>;
+    fn as_ptr_mut(mesh: &mut Mesh) -> *mut MaybeUninit<ArrayBuffer<Self::Out>>;
 
     // Calculate the attribute index offset of self
     fn attribute_index() -> u32 {
         Self::ENABLED.bits().trailing_zeros()
     }
 }
-
-
-
 
 // This is the maximum number of active attributes that we can have inside a mesh
 pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = 5;

@@ -59,37 +59,37 @@ impl Default for Transform {
 impl Transform {
     // Calculate the whole object matrix and return it
     pub fn matrix(&self) -> vek::Mat4<f32> {
-        self.translation() * self.rotation() * self.scaling()
+        self.translation_matrix() * self.rotation_matrix() * self.scaling_matrix()
     }
 
     // Calculate the translation matrix
-    pub fn translation(&self) -> vek::Mat4<f32> {
+    pub fn translation_matrix(&self) -> vek::Mat4<f32> {
         vek::Mat4::<f32>::translation_3d(self.position)
     }
 
     // Calculate the rotation matrix
-    pub fn rotation(&self) -> vek::Mat4<f32> {
+    pub fn rotation_matrix(&self) -> vek::Mat4<f32> {
         self.rotation.into()
     }
 
     // Calculate the scale matrix
-    pub fn scaling(&self) -> vek::Mat4<f32> {
+    pub fn scaling_matrix(&self) -> vek::Mat4<f32> {
         vek::Mat4::<f32>::scaling_3d(self.scale)
     }
 
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec3<f32> {
-        self.rotation().mul_point(-vek::Vec3::unit_z())
+        self.rotation_matrix().mul_point(-vek::Vec3::unit_z())
     }
 
     // Calculate the up vector (+Y)
     pub fn up(&self) -> vek::Vec3<f32> {
-        self.rotation().mul_point(vek::Vec3::unit_y())
+        self.rotation_matrix().mul_point(vek::Vec3::unit_y())
     }
 
     // Calculate the right vector (+X)
     pub fn right(&self) -> vek::Vec3<f32> {
-        self.rotation().mul_point(vek::Vec3::unit_x())
+        self.rotation_matrix().mul_point(vek::Vec3::unit_x())
     }
 
     // Construct a transform using an X rotation (radians)
