@@ -64,7 +64,7 @@ impl<'a, A: QueryItemReference<'a>> QueryLayout<'a> for A {
     }
 
     fn combined() -> LayoutAccess {
-        A::read_write_access()
+        A::access()
     }
 
     fn validate() -> bool {
@@ -114,17 +114,19 @@ macro_rules! tuple_impls {
             }
         
             fn combined() -> LayoutAccess {
-                ($($name::read_write_access())|+)
+                ($($name::access())|+)
             }
 
+
+            //    &A + &A      = valid
+            // &mut A + &mut A = invalid
+            //   &A + &mut A   = invalid
+            //   &A + &mut B   = valid
             fn validate() -> bool {
-                let intersecting = ($($name::read_write_access())&+);
-                
-                //    &A + &A      = valid
-                // &mut A + &mut A = invalid
-                //   &A + &mut A   = invalid
-                //   &A + &mut B   = valid
-                intersecting.unique() == Mask::zero()
+                let combined = Self::combined();
+                let intersecting = ($($name::access())&+);        
+                let self_intersect = combined.shared() & combined.unique() == Mask::zero();
+                intersecting.unique() == Mask::zero() && self_intersect
             }
         
             unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self {

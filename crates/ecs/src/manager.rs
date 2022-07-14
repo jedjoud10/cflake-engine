@@ -125,7 +125,7 @@ impl EcsManager {
     // Normal query without filter
     pub fn query<'a, L: QueryLayout<'a> + 'a>(
         &'a mut self,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
+    ) -> Option<impl ExactSizeIterator<Item = L> + 'a> {
         L::validate().then(|| query(&mut self.archetypes))
     }
 
@@ -140,7 +140,7 @@ impl EcsManager {
     // A view query that can only READ data, and never write to it
     pub fn view<'a, L: ViewLayout<'a> + 'a>(
         &'a self,
-    ) -> impl Iterator<Item = L> + 'a {
+    ) -> impl ExactSizeIterator<Item = L> + 'a {
         view(&self.archetypes)
     }
 

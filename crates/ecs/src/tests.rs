@@ -4,57 +4,26 @@ mod tests {
 
     #[test]
     fn test() {
-        // Empty manager
         let mut manager = EcsManager::default();
 
-        // Simple component
         #[derive(Component, Debug)]
-        struct Name(&'static str, [i32; 64]);
+        struct Name(&'static str);
         #[derive(Component, Debug)]
-        struct Tag(&'static str);
+        struct Health(i32);
         #[derive(Component, Debug)]
-        struct SimpleValue(i32);
+        struct Ammo(u32);
 
-        // Le entities
-        /*
-        for i in 0..u16::MAX {
-            manager.insert(|_entity, modif| {
-                modif.insert(Tag("Hello world tag!")).unwrap();
-                modif.insert(SimpleValue(i as i32)).unwrap();
-            });
-        }
+        manager.insert((Name("Red"), Health(100))).unwrap();
+        manager.insert((Name("Green"), Health(100))).unwrap();
+        manager.insert((Name("Blue"), Health(100))).unwrap();
 
-        for _i in 0..u16::MAX {
-            manager.insert(|_entity, modif| {
-                modif.insert(Tag("Hello world tag!")).unwrap();
-                modif.insert(SimpleValue(_i as i32)).unwrap();
-            });
-        }
-        */
-
-        for i in 0..1 {
-            let tuple = (
-                Tag("Hello world tag!"),
-                SimpleValue(i),
-                Name("Sususus amogus?", [0; 64]),
-            );
-            let entity = manager.insert(tuple).unwrap();
-
-            //let mut entry = manager.entry(entity).unwrap();
-            manager.modify(entity, |_modifier| {});
-
-        }
-        /*
-        for _i in 0..5 {
-            manager.prepare();
-            let _i = std::time::Instant::now();
-            type Layout<'a> = (&'a Tag, &'a SimpleValue);
-            let filter = added::<Tag>();
-            let query = manager.try_view_with::<Layout, _>(filter).unwrap();
-            dbg!(query.count());
-
-            //dbg!(query);
-        }
-        */
+        let success = manager.query::<(&mut Name, &Health)>();
+        assert_eq!(success.is_some(), true);
+        assert_eq!(success.unwrap().len(), 3);
+        let fail = manager.query::<(&mut Name, &mut Name)>();
+        assert_eq!(fail.is_some(), false);
+        drop(fail);
+        let success2 = manager.view::<(&Name, &Health, &Name)>();
+        assert_eq!(success2.len(), 3);
     }
 }

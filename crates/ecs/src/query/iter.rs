@@ -38,19 +38,23 @@ struct QueryIter<'a, L: QueryLayout<'a>> {
     access: LayoutAccess,
     bundle: usize,
     loaded: Option<Chunk<'a, L>>,
+    len: usize,
 }
 
 impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
     // Create a new mutable query iterator that will iterate through the valid archetypes entities
+    // TODO: Make this less ugly
     pub fn new(archetypes: &'a mut ArchetypeSet) -> Self {
         let access = L::combined();
         let mask = access.shared() | access.unique();
 
         // Create a new vector containing the archetypes in arbitrary order
+        let mut len = 0;
         let mut chunks = archetypes
             .iter_mut()
             .filter(|(m, _)| m.contains(mask))
             .map(|(_, archetype)| {
+                len += archetype.len();
                 Chunk {
                     len: archetype.len(),
                     states: archetype.states().clone(),
@@ -66,6 +70,7 @@ impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
             access,
             bundle: 0,
             loaded: last,
+            len,
         }
     }
 }
@@ -76,18 +81,22 @@ struct ViewIter<'a, L: ViewLayout<'a>> {
     mask: Mask,
     bundle: usize,
     loaded: Option<ViewChunk<'a, L>>,
+    len: usize,
 }
 
 impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
     // Create a new immutable query iterator that will iterate through the valid archetypes entities
+    // TODO: Make this less ugly
     pub fn new(archetypes: &'a ArchetypeSet) -> Self {
         let mask = L::combined();
         
         // Create a new vector containing the archetypes in arbitrary order
+        let mut len = 0;
         let mut chunks = archetypes
             .iter()
             .filter(|(m, _)| m.contains(mask))
             .map(|(_, archetype)| {
+                len += archetype.len();
                 ViewChunk {
                     len: archetype.len(),
                     states: archetype.states().clone(),
@@ -103,6 +112,7 @@ impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
             mask,
             bundle: 0,
             loaded: last,
+            len
         }
     }
 }
@@ -139,9 +149,13 @@ impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
             _phantom: Default::default(),
         })
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
+    }
 }
 
-
+impl<'a, L: QueryLayout<'a>> ExactSizeIterator for QueryIter<'a, L> {}
 
 // Implement the iterator trait for immutable view queries
 impl<'a, L: ViewLayout<'a>> Iterator for ViewIter<'a, L> {
@@ -169,18 +183,24 @@ impl<'a, L: ViewLayout<'a>> Iterator for ViewIter<'a, L> {
             _phantom: Default::default(),
         })
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
+    }
 }
+
+impl<'a, L: ViewLayout<'a>> ExactSizeIterator for ViewIter<'a, L> {}
 
 
 pub(crate) fn query<'a, L: QueryLayout<'a> + 'a>(
     archetypes: &'a mut ArchetypeSet,
-) -> impl Iterator<Item = L> + 'a {
+) -> impl ExactSizeIterator<Item = L> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
 
 pub(crate) fn view<'a, L: ViewLayout<'a> + 'a>(
     archetypes: &'a ArchetypeSet,
-) -> impl Iterator<Item = L> + 'a {
+) -> impl ExactSizeIterator<Item = L> + 'a {
     ViewIter::new(archetypes).map(|item| item.tuple)
 }
 

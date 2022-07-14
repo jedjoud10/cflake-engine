@@ -31,11 +31,6 @@ impl LayoutAccess {
     pub fn unique(&self) -> Mask {
         self.unique
     }
-
-    // Check if the layout mask is valid (unique and shared are not intersecting)
-    pub fn valid(&self) -> bool {
-        self.unique & self.shared == Mask::zero()
-    }
 }
 
 impl BitOr for LayoutAccess {

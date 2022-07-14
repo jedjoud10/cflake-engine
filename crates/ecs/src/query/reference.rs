@@ -58,7 +58,7 @@ pub trait QueryItemReference<'a>: 'a {
     const MUTABLE: bool;
 
     // Get the normal component mask and writing mask
-    fn read_write_access() -> LayoutAccess;
+    fn access() -> LayoutAccess;
 
     // Get the base pointer from the archetype
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr>;
@@ -73,7 +73,7 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a T {
     type Ptr = *const T;
     const MUTABLE: bool = false;
     
-    fn read_write_access() -> LayoutAccess {
+    fn access() -> LayoutAccess {
         LayoutAccess::new(mask::<T>(), Mask::zero())
     }
 
@@ -94,8 +94,8 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a mut T {
     type Ptr = *mut T;
     const MUTABLE: bool = true;
 
-    fn read_write_access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), mask::<T>())
+    fn access() -> LayoutAccess {
+        LayoutAccess::new(Mask::zero(), mask::<T>())
     }
 
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -115,7 +115,7 @@ impl<'a> QueryItemReference<'a> for &'a Entity {
     type Ptr = *const Entity;
     const MUTABLE: bool = false;
 
-    fn read_write_access() -> LayoutAccess {
+    fn access() -> LayoutAccess {
         LayoutAccess::none()
     }
 
