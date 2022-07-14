@@ -217,7 +217,7 @@ fn rendering(world: &mut World) {
     // Update the world matrices of renderer
     let filter = or(modified::<Transform>(), added::<Transform>());
     let query = ecs
-        .try_query_with::<(&mut Renderer, &Transform)>(filter)
+        .query_with::<(&mut Renderer, &Transform)>(filter)
         .unwrap();
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());

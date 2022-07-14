@@ -47,7 +47,7 @@ where
 }
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
-pub trait OwnedLayout
+pub trait OwnedComponentLayout
 where
     Self: Sized,
 {
@@ -94,8 +94,19 @@ impl<'a, A: ViewItemReference<'a>> ViewLayout<'a> for A {
     }
 }
 
+impl<A: Component> OwnedComponentLayout for A {
+    fn mask() -> Mask {
+        mask::<A>()
+    }
+
+    fn insert(self, modifier: &mut LinkModifier) -> Result<(), LinkError> {
+        modifier.insert(self)
+    }
+}
+
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {
+        // Implement the mutable query layout trait
         impl<'a, $($name: QueryItemReference<'a>),+> QueryLayout<'a> for ($($name,)+) {
             type PtrTuple = ($($name::Ptr),+);
         
@@ -119,7 +130,8 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<'a,  $($name: ViewItemReference<'a>),+> ViewLayout<'a> for ($($name,)+) {
+        // Implement the immutable view query layout trait
+        impl<'a, $($name: ViewItemReference<'a>),+> ViewLayout<'a> for ($($name,)+) {
             type PtrTuple = ($(*const $name::Item),+);
         
             fn combined() -> Mask {
@@ -127,11 +139,32 @@ macro_rules! tuple_impls {
             }
         
             unsafe fn try_fetch_ptrs(archetype: &Archetype) -> Option<Self::PtrTuple> {
-                A::try_fetch_ptr(archetype)
+                let data = ($($name::try_fetch_ptr(archetype)?,)+);
+                Some(data)
             }
         
             unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self {
-                A::as_ref(tuple, bundle)
+                seq!(N in 0..$max {
+                    let c~N: C~N = C~N::as_ref(tuple.N, bundle);
+                });
+                
+                ($(
+                    lower!($name)
+                ),+,)
+            }
+        }
+
+        // Implement the owned layout for component sets
+        impl<$($name: Component),+> OwnedComponentLayout for ($($name,)+) {
+            fn mask() -> Mask {
+                ($(mask::<$name>())|+)
+            }
+        
+            fn insert(self, modifier: &mut LinkModifier) -> Result<(), LinkError> {
+                seq!(N in 0..$max {
+                    modifier.insert(self.N)?;
+                });
+                Ok(())
             }
         }
     };    
@@ -142,3 +175,4 @@ tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
 tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
+tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }

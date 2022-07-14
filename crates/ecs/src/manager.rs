@@ -4,7 +4,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec, query, query_filtered, ViewLayout, view, view_filtered,
+    LinkModifier, Mask, MaskMap, MutEntry, OwnedComponentLayout, QueryLayout, StorageVec, query, query_filtered, ViewLayout, view, view_filtered,
 };
 
 // Type aliases because I have gone insane
@@ -73,12 +73,12 @@ impl EcsManager {
     }
 
     // Insert an entity with the given component set as a tuple
-    pub fn insert<T: OwnedLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
+    pub fn insert<T: OwnedComponentLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
         self.insert_with(|_| tuple)
     }
 
     // Insert an entity with the given component set as a tuple using a callback
-    pub fn insert_with<T: OwnedLayout>(
+    pub fn insert_with<T: OwnedComponentLayout>(
         &mut self,
         callback: impl FnOnce(Entity) -> T,
     ) -> Result<Entity, LinkError> {
@@ -123,14 +123,14 @@ impl EcsManager {
 
     /* #region Main thread queries */
     // Normal query without filter
-    pub fn try_query<'a, L: QueryLayout<'a> + 'a>(
+    pub fn query<'a, L: QueryLayout<'a> + 'a>(
         &'a mut self,
     ) -> Option<impl Iterator<Item = L> + 'a> {
         L::validate().then(|| query(&mut self.archetypes))
     }
 
     // Create a query with a specific filter
-    pub fn try_query_with<'a, L: QueryLayout<'a> + 'a>(
+    pub fn query_with<'a, L: QueryLayout<'a> + 'a>(
         &'a mut self,
         filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = L> + 'a> {
@@ -138,15 +138,14 @@ impl EcsManager {
     }
 
     // A view query that can only READ data, and never write to it
-    // This will return None when it is unable to get a view query
-    pub fn try_view<'a, L: ViewLayout<'a> + 'a>(
+    pub fn view<'a, L: ViewLayout<'a> + 'a>(
         &'a self,
     ) -> impl Iterator<Item = L> + 'a {
         view(&self.archetypes)
     }
 
     // View query with a specific filter
-    pub fn try_view_with<'a, L: ViewLayout<'a> + 'a>(
+    pub fn view_with<'a, L: ViewLayout<'a> + 'a>(
         &'a self,
         filter: impl Evaluate,
     ) -> impl Iterator<Item = L> + 'a {
