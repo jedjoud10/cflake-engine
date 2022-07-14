@@ -42,7 +42,7 @@ impl Default for EcsManager {
 }
 
 impl EcsManager {
-    // Modify an entity's component layout
+    // Modify an entity's component layout (add / remove components)
     // TODO: Make this more coherent with the new insert() method
     pub fn modify(
         &mut self,
@@ -63,12 +63,12 @@ impl EcsManager {
     }
 
     // Try to fetch a mutable entry for an entity
-    pub fn try_mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
+    pub fn mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
         MutEntry::new(self, entity)
     }
 
     // Try to fetch an immutable entry for an entity
-    pub fn try_entry(&self, entity: Entity) -> Option<Entry> {
+    pub fn entry(&self, entity: Entity) -> Option<Entry> {
         Entry::new(self, entity)
     }
 

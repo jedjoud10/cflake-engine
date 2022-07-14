@@ -4,26 +4,6 @@ use crate::{
 };
 use std::any::Any;
 
-// Make sure there is an emtpy unique component vector at our disposal
-pub(super) fn register_unique<T: Component>(manager: &mut EcsManager, mask: Mask) {
-    // Create a new unique component storage if it is missing
-    manager
-        .uniques
-        .entry(mask)
-        .or_insert_with(|| Box::new(Vec::<T>::new()));
-}
-
-// Make sure there is a valid archetype
-pub(super) fn register_archetype<'a>(
-    archetypes: &'a mut ArchetypeSet,
-    mask: Mask,
-    uniques: &UniqueStoragesSet,
-) -> &'a mut Archetype {
-    archetypes
-        .entry(mask)
-        .or_insert_with(|| Archetype::new(mask, uniques))
-}
-
 // A link modifier that will either link or remove components from an entity
 pub struct LinkModifier<'a> {
     manager: &'a mut EcsManager,
@@ -61,15 +41,14 @@ impl<'a> LinkModifier<'a> {
         let mask = registry::mask::<T>();
 
         // Always make sure there is a unique vector for this component
-        register_unique::<T>(self.manager, mask);
+        self.manager
+            .uniques
+            .entry(mask)
+            .or_insert_with(|| Box::new(Vec::<T>::new()));
 
-        // Input: 0110
-        // Ouput: 1110
-        // New: 1000
-
-        // The component might've been removed, and if it was we must not cancel that out
+        // The component might've been removed, and if it was, we must cancel it out
         if self.old & mask == mask {
-            // Cancel removal, and overwrite the internally stored component
+            // Cancel the removal, and overwrite the internally stored component
             let (_, boxed) = self.locals.iter_mut().find(|(m, _)| *m == mask).unwrap();
             *boxed.downcast_mut::<T>().unwrap() = component;
         } else {
@@ -79,12 +58,10 @@ impl<'a> LinkModifier<'a> {
                 self.locals.push((mask, Box::new(component)));
             } else {
                 // Overwrite the component
-                let mut entry = self.manager.try_mut_entry(self.entity).unwrap();
+                let mut entry = self.manager.mut_entry(self.entity).unwrap();
                 *entry.get_mut::<T>().unwrap() = component;
             }
         }
-
-        // Add nonetheless
         self.new = self.new | mask;
 
         Ok(())
@@ -118,11 +95,9 @@ impl<'a> LinkModifier<'a> {
         // Check if we even modified the entity
         if self.new != self.old {
             // Make sure the target archetype is valid
-            register_archetype(
-                &mut self.manager.archetypes,
-                self.new,
-                &self.manager.uniques,
-            );
+            self.manager.archetypes
+                .entry(self.new)
+                .or_insert_with(|| Archetype::new(self.new, &self.manager.uniques));
 
             // Move the entity to the new archetype
             Archetype::move_entity(

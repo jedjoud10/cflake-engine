@@ -20,13 +20,11 @@ pub struct Mesh {
     pub(crate) enabled: EnabledAttributes,
 
     // Vertex attribute buffers
-    /*
-    pub(super) positions: AttribBuffer<Position>,
-    pub(super) normals: AttribBuffer<Normal>,
-    pub(super) tangents: AttribBuffer<Tangent>,
-    pub(super) colors: AttribBuffer<Color>,
-    pub(super) tex_coord: AttribBuffer<TexCoord>,
-    */
+    pub(super) positions: AttributeBuffer<Position>,
+    pub(super) normals: AttributeBuffer<Normal>,
+    pub(super) tangents: AttributeBuffer<Tangent>,
+    pub(super) colors: AttributeBuffer<Color>,
+    pub(super) uvs: AttributeBuffer<TexCoord>,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
