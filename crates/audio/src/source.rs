@@ -3,9 +3,9 @@ use std::{
     time::Duration,
 };
 
-use crate::{AudioClip, AudioHead, GLOBAL_LISTENER};
+use crate::{AudioClip, GLOBAL_LISTENER};
 use ecs::Component;
-use rodio::{source::Spatial, Sink, Source, SpatialSink};
+use rodio::{source::Spatial, Sink, Source};
 use world::{Handle, Storage};
 
 // This component will be attached to entities that can play specific audio clips
@@ -101,7 +101,7 @@ impl AudioSource {
     pub fn try_play(&mut self, clips: &Storage<AudioClip>) -> Option<()> {
         // Fetch the global listener and the clip data
         let guard = GLOBAL_LISTENER.lock().unwrap();
-        let shared = (&*guard).as_ref()?;
+        let shared = (*guard).as_ref()?;
         let clip = clips.get(&self.clip);
         let data = clip.0.clone();
 

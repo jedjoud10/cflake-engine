@@ -22,9 +22,9 @@ fn init(world: &mut World) {
         settings,
         keyboard,
         standard_mats,
-        sky_mats,
+        _sky_mats,
         normal_maps,
-        albedo_maps,
+        _albedo_maps,
         assets,
         shaders,
     ) = world

@@ -184,14 +184,14 @@ impl<T: 'static> Storage<T> {
     pub fn get(&self, handle: &Handle<T>) -> &T {
         let slots = self.0.slots.borrow();
         let ptr = unsafe { &*slots[handle.idx].cell.get() };
-        &**ptr
+        ptr
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         let slots = self.0.slots.borrow_mut();
         let ptr = unsafe { &mut *slots[handle.idx].cell.get() };
-        &mut **ptr
+        ptr
     }
 
     // Execute a function over all valid values stored within (immutable)

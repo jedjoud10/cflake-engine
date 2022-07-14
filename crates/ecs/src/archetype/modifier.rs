@@ -1,6 +1,6 @@
 use crate::{
-    registry, Archetype, ArchetypeSet, Component, EcsManager, Entity, EntityLinkings, LinkError,
-    Mask, UniqueStoragesSet,
+    registry, Archetype, Component, EcsManager, Entity, EntityLinkings, LinkError,
+    Mask,
 };
 use std::any::Any;
 

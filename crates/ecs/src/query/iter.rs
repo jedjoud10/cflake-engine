@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Archetype, ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow, Mask, States, ViewLayout};
+use crate::{ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow, Mask, States, ViewLayout};
 
 // Raw data that is returned from the query (mutable)
 struct QueryItem<'a, L: QueryLayout<'a>> {

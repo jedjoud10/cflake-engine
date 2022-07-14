@@ -1,7 +1,6 @@
-use crate::{registry, Archetype, Component, Entity, Mask};
+use crate::{Mask};
 use std::{
     ops::{BitAnd, BitOr},
-    ptr::NonNull,
 };
 
 // Layout access that contain the shared access mask and unique access mask

@@ -1,5 +1,5 @@
 use crate::Component;
-use std::{any::Any, ffi::c_void, ptr::NonNull};
+use std::{any::Any};
 
 // A component storage that is implemented for Vec<T>
 pub trait StorageVec {

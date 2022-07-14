@@ -1,8 +1,5 @@
 use ahash::AHashSet;
-use std::{
-    any::{type_name, TypeId},
-    ptr::NonNull,
-};
+
 
 use crate::{Resource, ResourceError, World, ResourceReferenceDesc, ResourceReference};
 
@@ -17,7 +14,7 @@ pub trait ResourceLayout<'a>: Sized {
         let mut map = AHashSet::new();
         let name = types
             .iter()
-            .find(|ResourceReferenceDesc { _type, name, mutable }| !map.insert(_type) && *mutable);
+            .find(|ResourceReferenceDesc { _type, name: _, mutable }| !map.insert(_type) && *mutable);
 
         // This is a certified inversion classic
         if let Some(ResourceReferenceDesc { name, .. }) = name {
@@ -34,8 +31,8 @@ pub trait ResourceLayout<'a>: Sized {
 // Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
 unsafe fn fetch<'a, A: ResourceReference<'a>>(world: &mut World) -> Result<A, ResourceError> {
     let ptr = <A::Inner as Resource>::fetch_ptr(world);
-    let value = ptr.map(|ptr| A::from_non_null(ptr));
-    value
+    
+    ptr.map(|ptr| A::from_non_null(ptr))
 }
 
 impl<'a, A: ResourceReference<'a>> ResourceLayout<'a> for A {

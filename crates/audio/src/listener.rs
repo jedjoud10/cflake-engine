@@ -1,12 +1,11 @@
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 
 use ecs::Component;
 use math::Transform;
-use rodio::{OutputStream, OutputStreamHandle, Sink, SpatialSink};
-use world::Resource;
+use rodio::{OutputStream, OutputStreamHandle};
+
 
 #[derive(Clone, Copy)]
 // The global audio head of the main audio listener

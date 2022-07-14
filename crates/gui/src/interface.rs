@@ -5,7 +5,7 @@ use rendering::{
     gl,
     prelude::{Context, Window},
 };
-use world::{Events, Init, Resource, Stage, Update, World};
+use world::{Events, Resource, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
@@ -35,7 +35,7 @@ impl AsRef<egui::Context> for UserInterface {
 
 // This system will automatically insert the user interface and setup it's necessary events
 // This will create the init event, begin update event, draw update event, and window event
-pub fn system(events: &mut Events) {
+pub fn system(_events: &mut Events) {
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
         let (ctx, assets) = world.get_mut::<(&mut Context, &mut Assets)>().unwrap();
