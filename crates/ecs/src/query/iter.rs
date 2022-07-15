@@ -44,7 +44,7 @@ struct QueryIter<'a, L: QueryLayout<'a>> {
 impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
     // Create a new mutable query iterator that will iterate through the valid archetypes entities
     // TODO: Make this less ugly
-    pub fn new(archetypes: &'a mut ArchetypeSet) -> Self {
+    fn new(archetypes: &'a mut ArchetypeSet) -> Self {
         let access = L::combined();
         let mask = access.shared() | access.unique();
 
@@ -86,7 +86,7 @@ struct ViewIter<'a, L: ViewLayout<'a>> {
 impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
     // Create a new immutable query iterator that will iterate through the valid archetypes entities
     // TODO: Make this less ugly
-    pub fn new(archetypes: &'a ArchetypeSet) -> Self {
+    fn new(archetypes: &'a ArchetypeSet) -> Self {
         let mask = L::combined();
         
         // Create a new vector containing the archetypes in arbitrary order
@@ -190,20 +190,22 @@ impl<'a, L: ViewLayout<'a>> Iterator for ViewIter<'a, L> {
 
 impl<'a, L: ViewLayout<'a>> ExactSizeIterator for ViewIter<'a, L> {}
 
-
-pub(crate) fn query<'a, L: QueryLayout<'a> + 'a>(
+// Fetch a query, assuming that the layout is valid
+pub unsafe fn query_unchecked<'a, L: QueryLayout<'a> + 'a>(
     archetypes: &'a mut ArchetypeSet,
 ) -> impl ExactSizeIterator<Item = L> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
 
-pub(crate) fn view<'a, L: ViewLayout<'a> + 'a>(
+// Fetch a view query, assuming that the layout is valid (it is always valid)
+pub unsafe fn view<'a, L: ViewLayout<'a> + 'a>(
     archetypes: &'a ArchetypeSet,
 ) -> impl ExactSizeIterator<Item = L> + 'a {
     ViewIter::new(archetypes).map(|item| item.tuple)
 }
 
-pub(crate) fn query_filtered<'a, L: QueryLayout<'a> + 'a, Filter: Evaluate>(
+// Fetch a filtered query, assuming the the layout is valid
+pub unsafe fn query_filtered<'a, L: QueryLayout<'a> + 'a, Filter: Evaluate>(
     archetypes: &'a mut ArchetypeSet,
     _: Filter,
 ) -> impl Iterator<Item = L> + 'a {
@@ -221,7 +223,8 @@ pub(crate) fn query_filtered<'a, L: QueryLayout<'a> + 'a, Filter: Evaluate>(
     })
 }
 
-pub(crate) fn view_filtered<'a, L: ViewLayout<'a> + 'a, Filter: Evaluate>(
+// Fetch a filtered view query, assuming the layout is valid
+pub unsafe fn view_filtered<'a, L: ViewLayout<'a> + 'a, Filter: Evaluate>(
     archetypes: &'a ArchetypeSet,
     _: Filter,
 ) -> impl Iterator<Item = L> + 'a {

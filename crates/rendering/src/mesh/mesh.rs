@@ -4,11 +4,10 @@ use arrayvec::ArrayVec;
 use assets::Asset;
 use math::AABB;
 use obj::TexturedVertex;
-use rayon::iter::Positions;
 
-use super::{vertices::*, MeshImportSettings, EnabledAttributes, AttributeBuffer};
+use super::{MeshImportSettings, EnabledAttributes, AttributeBuffer, IndicesMut, IndicesRef, VerticesMut, VerticesRef, Position, Normal, Tangent, Color, TexCoord};
 use crate::{
-    buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
+    buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferFormatAny},
     context::Context, mesh::{MeshImportMode}, object::{ToGlName, Shared},
 };
 
@@ -46,6 +45,25 @@ pub struct Mesh {
 */
 
 impl Mesh {
+    // Get a reference to the vertices immutably
+    fn vertices(&self) -> VerticesRef {
+        todo!()
+    }
+    
+    // Get a reference to the vertices mutably
+    fn vertices_mut(&mut self) -> VerticesMut {
+        todo!()
+    }
+    
+    // Get a reference to the indices immutably
+    fn indices(&self) -> IndicesRef {
+        todo!()
+    }
+    
+    // Get a reference to the indices mutably
+    fn indices_mut(&mut self) -> IndicesMut {
+        todo!()    
+    }
     /*
     // Create a new mesh from the attribute buffers and the indices
     // The position buffer and index buffer are the only buffers that are required by default

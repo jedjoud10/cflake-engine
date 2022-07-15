@@ -1,7 +1,8 @@
 use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
+use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::MaybeUninit;
+use std::mem::{MaybeUninit, align_of};
 use std::ops::{Range, RangeBounds};
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
@@ -152,7 +153,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Clear the values specified by the range to a new value
     pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
         unsafe {
-            assert!(self.mode.write_permission(), "Cannot write to buffer");
+            assert!(self.mode.write_permission(), "Cannot write to buffer, missing permission");
             let (start, end) = self.convert_range_bounds(range).expect("Buffer splat range is invalid");
 
             if start == end {
@@ -175,11 +176,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 return;
             };
 
-            assert!(self.mode().write_permission(), "Cannot write to buffer");
-            assert!(self.mode().modify_length_permission(), "Cannot extend buffer");
+            assert!(self.mode().write_permission(), "Cannot write to buffer, missing permission");
+            assert!(self.mode().modify_length_permission(), "Cannot extend buffer, missing permission");
 
             if slice.len() + self.length > self.capacity {
-                assert!(self.mode().reallocate_permission(), "Cannot reallocate buffer");
+                assert!(self.mode().reallocate_permission(), "Cannot reallocate buffer, missing permission");
 
 
                 let new_capacity = self.capacity + slice.len();
@@ -218,7 +219,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Overwrite a region of the buffer using a slice and a range
     pub fn write_range(&mut self, slice: &[T], range: impl RangeBounds<usize>) {
-        assert!(self.mode.write_permission(), "Cannot write to buffer");
+        assert!(self.mode.write_permission(), "Cannot write to buffer, missing permissions");
         let (start, end) = self.convert_range_bounds(range).expect("Buffer write range is invalid");
         assert_eq!(end - start, slice.len(), "Buffer write range is not equal to slice length");
 
@@ -251,20 +252,30 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Clear the buffer contents, resetting the buffer's length down to zero
     pub fn clear(&mut self) {
-        assert!(self.mode().modify_length_permission(), "Cannot clear buffer");
+        assert!(self.mode().modify_length_permission(), "Cannot clear buffer, missing permission");
         self.length = 0;
     }
 
     // Get an untyped buffer reference of the current buffer
-    pub fn as_buffer_any_ref(&self) -> BufferAnyRef {
-        BufferAnyRef { target: TARGET, buffer: &self.buffer, length: &self.length, capacity: &self.capacity, mode: &self.mode, _type: TypeId::of::<T>(), stride: size_of::<T>() }
+    pub fn format_any(&self) -> BufferFormatAny {
+        BufferFormatAny { target: TARGET, buffer: self.buffer, length: self.length, capacity: self.capacity, mode: self.mode, _type: TypeId::of::<T>(), stride: size_of::<T>() }
     }
 
     // Cast the buffer to a buffer of another target / type
     // The type U and T must have the same exact size and alignment
     pub unsafe fn cast<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
+        assert_eq!(Layout::new::<T>(), Layout::new::<U>(), "Layout type mismatch, cannot cast buffer");
         Buffer::<U, OTHER> { buffer: self.buffer, length: self.length, capacity: self.capacity, mode: self.mode, _phantom: Default::default(), _phantom2: Default::default() }
     } 
+
+    // Copy the data from a buffer into this buffer
+    pub fn copy_from<const OTHER: u32>(&mut self, other: Buffer<T, OTHER>) {
+        assert_eq!(self.len(), other.len(), "Size mismatch, cannot copy from buffer");
+        unsafe {
+            let size = (self.length * size_of::<T>()) as isize;
+            gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
+        }
+    }
 
     // Clear the whole contents of the buffer to the specified value 
     pub fn splat(&mut self, val: T) {
@@ -340,36 +351,36 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
     }
 }
 
-// This is an immutable reference to a buffer that doesn't contain any type reference or target reference
-pub struct BufferAnyRef<'a> {
+// This is an untyped reference to the format of a specific buffer
+pub struct BufferFormatAny {
     target: u32,
-    buffer: &'a u32,
-    length: &'a usize,
-    capacity: &'a usize,
-    mode: &'a BufferMode,
+    buffer: u32,
+    length: usize,
+    capacity: usize,
+    mode: BufferMode,
     _type: TypeId,
     stride: usize,
 }
 
-impl<'a> BufferAnyRef<'a> {
+impl BufferFormatAny {
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
-        *self.length
+        self.length
     }
     
     // Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
-        *self.length == 0
+        self.length == 0
     }
     
     // Get the current capacity of the buffer
     pub fn capacity(&self) -> usize {
-        *self.capacity
+        self.capacity
     }
     
     // Get the buffer mode that we used to initialize this buffer
     pub fn mode(&self) -> BufferMode {
-        *self.mode
+        self.mode
     }
 
     // Get the buffer's stride (length of each element)
@@ -388,9 +399,9 @@ impl<'a> BufferAnyRef<'a> {
     }
 }
 
-impl<'a> ToGlName for BufferAnyRef<'a> {
+impl ToGlName for BufferFormatAny {
     fn name(&self) -> u32 {
-        *self.buffer
+        self.buffer
     }
 }
 
