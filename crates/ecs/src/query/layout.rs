@@ -1,5 +1,5 @@
 
-use crate::{Archetype, Component, LayoutAccess, LinkError, LinkModifier, Mask, QueryItemReference, ViewItemReference, mask};
+use crate::{Archetype, Component, LayoutAccess, LinkError, Mask, QueryItemReference, ViewItemReference, mask, MaskMap, ComponentStorage};
 use seq_macro::seq;
 use casey::lower;
 
@@ -45,17 +45,24 @@ where
 }
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
-pub trait OwnedComponentLayout
+pub trait OwnedComponentLayout<'a>
 where
     Self: Sized,
 {
+    // Mutable references to the required vectors stored within the archetypes
+    type Storages: 'a;
+
     // Get the combined mask of the owned layout
     fn mask() -> Mask;
 
-    // Consume the tuple and insert the components using a link modifier
-    fn insert(self, modifier: &mut LinkModifier) -> Result<(), LinkError>;
+    // Fetch the necessary storages from the archetype
+    fn storages_mut(archetype: &'a mut Archetype) -> Self::Storages;
+
+    // Insert a new element into the storages
+    fn insert(self, storages: &mut Self::Storages);
 }
 
+/*
 impl<'a, A: QueryItemReference<'a>> QueryLayout<'a> for A {
     type PtrTuple = A::Ptr;
 
@@ -187,3 +194,4 @@ tuple_impls! { C0 C1 C2 C3 C4, 5 }
 tuple_impls! { C0 C1 C2 C3 C4 C5, 6 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
+*/

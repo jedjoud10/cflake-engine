@@ -2,7 +2,7 @@ use crate::Component;
 use std::{any::Any};
 
 // A component storage that is implemented for Vec<T>
-pub trait StorageVec {
+pub trait ComponentStorage {
     // As any and as any mut
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -12,13 +12,9 @@ pub trait StorageVec {
     fn swap_remove(&mut self, bundle: usize);
     fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
     fn reserve(&mut self, additional: usize);
-
-    // Create a new boxed vector (empty)
-    // TODO: Remove this whole unique storage shit since it makes it confusing
-    fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
 }
 
-impl<T: Component> StorageVec for Vec<T> {
+impl<T: Component> ComponentStorage for Vec<T> {
     // As any and as any mut
     fn as_any(&self) -> &dyn Any {
         self
@@ -50,10 +46,5 @@ impl<T: Component> StorageVec for Vec<T> {
     // Reserve enough allocated memory to be able to fit "additional" number of elements
     fn reserve(&mut self, additional: usize) {
         self.reserve(additional)
-    }
-
-    // Create a new boxed component storage of an empty vec
-    fn clone_unique_storage(&self) -> Box<dyn StorageVec> {
-        Box::new(Vec::<T>::new())
     }
 }

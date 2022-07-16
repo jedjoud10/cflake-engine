@@ -1,73 +1,58 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, EntitySet, Mask, MaskMap, StateRow, States, StorageVec,
-    UniqueStoragesSet,
+    registry, ArchetypeSet, EntitySet, Mask, MaskMap, StateRow, States, ComponentStorage,
+    UniqueStoragesSet, Component, mask, OwnedComponentLayout,
 };
 use std::any::Any;
 
 // TODO: Comment
 pub struct Archetype {
     mask: Mask,
-    vectors: MaskMap<Box<dyn StorageVec>>,
+    storages: MaskMap<Box<dyn ComponentStorage>>,
     states: States,
     entities: Vec<Entity>,
 }
 
 impl Archetype {
-    // Create new a archetype based on it's main mask
-    pub(crate) fn new(mask: Mask, uniques: &UniqueStoragesSet) -> Self {
-        // We must decompose the combined mask into the individual masks and create the storages from that
-        let vectors = (0..(registry::count() as usize))
-            .into_iter()
-            .filter_map(|i| {
-                // Make sure the bit is valid
-                if (mask >> i) & Mask::one() != Mask::one() {
-                    return None;
-                }
-
-                // Create the archetype storage
-                let mask = Mask::one() << i;
-
-                Some((mask, uniques[&mask].clone_unique_storage()))
-            })
-            .collect::<_>();
-
-        Self {
-            vectors,
-            mask,
-            entities: Default::default(),
-            states: Default::default(),
-        }
+    // Create an empty archetype that contains no storage vectors
+    pub(crate) fn new(mask: Mask) -> Self {
+        Self { mask, storages: Default::default(), states: States::default(), entities: Vec::new() }
     }
-
-    // Add an entity into the archetype and update it's linkings
-    pub(crate) fn push(
+    
+    // Add multiple entities into the archetype with their corresponding owned components
+    // The layout mask for "O" must be equal to the layout mask that this archetype contains
+    pub(crate) fn extend_from_slice<O: for<'a> OwnedComponentLayout<'a>>(
         &mut self,
-        entity: Entity,
-        linkings: &mut EntityLinkings,
-        components: Vec<(Mask, Box<dyn Any>)>,
+        entities: Vec<(Entity, &mut EntityLinkings)>,
+        components: Vec<O>
     ) {
-        // Add the entity and update it's linkings
-        self.states.push(StateRow::new(self.mask));
-        self.entities.push(entity);
-        linkings.bundle = self.len() - 1;
-        linkings.mask = self.mask;
+        assert_eq!(entities.len(), components.len());
+        assert_eq!(O::mask(), self.mask);
 
-        // Add the components using their specific storages
-        for (mask, component) in components {
-            self.fetch_update(mask, |vec| vec.push(component));
+        self.reserve(entities.len());
+
+        for (entity, linkings) in entities {
+            self.states.push(StateRow::new(self.mask));
+            self.entities.push(entity);
+            linkings.bundle = self.len() - 1;
+            linkings.mask = self.mask;
+        }
+        
+        let mut storages = O::storages_mut(self);
+
+        for set in components {
+            O::insert(set, &mut storages);
         }
     }
 
-    // Update a single underlying storage
-    fn fetch_update(
-        &mut self,
-        mask: Mask,
-        function: impl FnOnce(&mut Box<dyn StorageVec>),
-    ) -> Option<()> {
-        let vec = self.vectors.get_mut(&mask)?;
-        function(vec);
-        Some(())
+    // Reserve enough memory space to be able to fit all the new entities in one allocation
+    pub fn reserve(&mut self, additional: usize) {
+        self.entities.reserve(additional);
+        self.states.reserve(additional);
+
+        for (_, storage) in &mut self.storages {
+            storage.reserve(additional);
+        }
     }
 
     // Get the number of entities that reference this archetype
@@ -91,15 +76,28 @@ impl Archetype {
     }
 
     // Get the raw boxed storage vectors immutably
-    pub fn storage(&self) -> &MaskMap<Box<dyn StorageVec>> {
-        &self.vectors
+    pub fn boxed_storage(&self) -> &MaskMap<Box<dyn ComponentStorage>> {
+        &self.storages
     }
 
     // Get the raw boxed storage vectors mutable
-    pub fn storage_mut(&mut self) -> &mut MaskMap<Box<dyn StorageVec>> {
-        &mut self.vectors
+    pub fn boxed_storage_mut(&mut self) -> &mut MaskMap<Box<dyn ComponentStorage>> {
+        &mut self.storages
     }
 
+    // Try to get an immutable reference to the storage for a specific component
+    pub fn storage<T: Component>(&self) -> Option<&Vec<T>> {
+        let boxed = self.storages.get(&mask::<T>())?;
+        Some(boxed.as_any().downcast_ref().unwrap())
+    }
+    
+    // Try to get a mutable reference to the storage for a specific component
+    pub fn storage_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+        let boxed = self.storages.get_mut(&mask::<T>())?;
+        Some(boxed.as_any_mut().downcast_mut().unwrap())
+    }
+
+    /*
     // Remove an entity from the archetype it is currently linked to
     // This will return the removed boxed components that validate the given mask
     pub(crate) fn remove(
@@ -143,7 +141,8 @@ impl Archetype {
 
         components
     }
-
+    */
+    /*
     // Move an entity from an archetype to another archetype, whilst adding extra components to the entity
     pub(crate) fn move_entity(
         archetypes: &mut ArchetypeSet,
@@ -166,4 +165,5 @@ impl Archetype {
         let new = archetypes.get_mut(&new).unwrap();
         new.push(entity, linkings, removed);
     }
+    */
 }

@@ -23,10 +23,7 @@ impl<'a, T: Component> ViewItemReference<'a> for &'a T {
     }
 
     fn try_fetch_ptr(archetype: &Archetype) -> Option<*const Self::Item> {
-        let mask = registry::mask::<T>();
-        let boxed = archetype.storage().get(&mask)?;
-        let ptr = boxed.as_any().downcast_ref::<Vec<T>>().unwrap().as_ptr();
-        Some(ptr)
+        archetype.storage::<T>().map(|vec| vec.as_ptr())
     }
 
     unsafe fn as_ref(ptr: *const Self::Item, bundle: usize) -> Self {
@@ -78,9 +75,7 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a T {
     }
 
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr> {
-        let boxed = archetype.storage().get(&mask::<T>())?;
-        let vec = boxed.as_any().downcast_ref::<Vec<T>>().unwrap();
-        Some(vec.as_ptr())
+        archetype.storage::<T>().map(|vec| vec.as_ptr())
     }
 
     unsafe fn as_self(ptr: *const Self::Item, bundle: usize) -> Self {
@@ -99,9 +94,7 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a mut T {
     }
 
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr> {
-        let boxed = archetype.storage_mut().get_mut(&mask::<T>())?;
-        let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
-        Some(vec.as_mut_ptr())
+        archetype.storage_mut::<T>().map(|vec| vec.as_mut_ptr())
     }
 
     unsafe fn as_self(ptr: Self::Ptr, bundle: usize) -> Self {

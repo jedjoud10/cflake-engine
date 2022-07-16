@@ -12,6 +12,7 @@ pub struct Entry<'a> {
 }
 
 impl<'a> Entry<'a> {
+    /*
     // Create an entry from the Ecs manager and an entity
     pub(crate) fn new(manager: &'a EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
@@ -45,6 +46,7 @@ impl<'a> Entry<'a> {
         let mutated = self.archetype.states().get(self.bundle).unwrap();
         Ok(mutated.mutated(mask.offset()))
     }
+    */
 }
 
 // An entity entry that we can use to access multiple components on a single entity
@@ -56,6 +58,7 @@ pub struct MutEntry<'a> {
 }
 
 impl<'a> MutEntry<'a> {
+    /*
     // Create a mutable entry from the ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
         let linkings = manager.entities.get(entity)?;
@@ -122,4 +125,5 @@ impl<'a> MutEntry<'a> {
         let ptrs = Layout::try_fetch_ptrs(self.archetype).unwrap();
         Ok(unsafe { Layout::read_as_layout_at(ptrs, self.bundle) })
     }
+    */
 }
