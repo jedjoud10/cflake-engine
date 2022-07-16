@@ -4,13 +4,13 @@ use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    LinkModifier, Mask, MaskMap, MutEntry, OwnedComponentLayout, QueryLayout, StorageVec, query, query_filtered, ViewLayout, view, view_filtered,
+    Mask, MaskMap, MutEntry, OwnedComponentLayout, QueryLayout, ComponentStorage, query, query_filtered, ViewLayout, view, view_filtered,
 };
 
 // Type aliases because I have gone insane
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
-pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
+pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn ComponentStorage>>;
 
 // TODO: Find a better name for this bozo
 #[derive(Resource)]
@@ -22,47 +22,25 @@ pub struct EcsManager {
     // Archetypes are a subset of entities that all share the same component mask
     // We use an archetypal ECS because it is a bit more efficient when iterating through components, though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
-
-    // The unique storage set serves as a base where we can store empty versions of the vectors that are stored within the archetypes
-    pub(crate) uniques: UniqueStoragesSet,
 }
 
 impl Default for EcsManager {
     fn default() -> Self {
         // Create the default empty archetype
-        let uniques: UniqueStoragesSet = Default::default();
-        let empty = Archetype::new(Mask::zero(), &uniques);
+        let empty = Archetype::new(Mask::zero());
 
         Self {
             entities: Default::default(),
             archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
-            uniques,
         }
     }
 }
 
 impl EcsManager {
-    // Modify an entity's component layout (add / remove components)
-    // TODO: Make this more coherent with the new insert() method
-    pub fn modify(
-        &mut self,
-        entity: Entity,
-        function: impl FnOnce(&mut LinkModifier),
-    ) -> Option<()> {
-        // Keep a copy of the linkings before we do anything
-        let mut copied = *self.entities.get(entity)?;
-
-        // Create a link modifier, so we can insert/remove components
-        let mut linker = LinkModifier::new(self, entity).unwrap();
-        function(&mut linker);
-
-        // Apply the changes
-        linker.apply(&mut copied);
-        *self.entities.get_mut(entity).unwrap() = copied;
-        Some(())
-    }
+    
 
     // Try to fetch a mutable entry for an entity
+    /*
     pub fn mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
         MutEntry::new(self, entity)
     }
@@ -76,7 +54,6 @@ impl EcsManager {
     pub fn insert<T: OwnedComponentLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
         self.insert_with(|_| tuple)
     }
-
     // Insert an entity with the given component set as a tuple using a callback
     pub fn insert_with<T: OwnedComponentLayout>(
         &mut self,
@@ -121,6 +98,7 @@ impl EcsManager {
         &self.archetypes
     }
 
+    /*
     /* #region Main thread queries */
     // Normal query without filter
     pub fn query<'a, L: QueryLayout<'a> + 'a>(
@@ -151,12 +129,14 @@ impl EcsManager {
     ) -> impl Iterator<Item = L> + 'a {
         view_filtered(&self.archetypes, filter)
     }
-
+    */
+    */
     /* #endregion */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(events: &mut Events) {
+    /*
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let (ecs, _time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
@@ -186,4 +166,5 @@ pub fn system(events: &mut Events) {
                 .after("post user"),
         )
         .unwrap();
+    */
 }
