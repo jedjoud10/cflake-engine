@@ -18,6 +18,9 @@ mod tests {
         manager.insert((Name("Green"), Health(100))).unwrap();
         manager.insert((Name("Blue"), Health(100))).unwrap();
 
+        let modifier = manager.modify(entity);
+        modifier.insert::<>()
+
         let success = manager.query::<(&mut Name, &Health)>();
         assert_eq!(success.is_some(), true);
         assert_eq!(success.unwrap().len(), 3);
