@@ -2,49 +2,55 @@ use crate::Component;
 use std::{any::Any};
 
 // A component storage that is implemented for Vec<T>
-pub trait ComponentStorage {
-    // As any and as any mut
+// This type makes a lot of assumption about the parameters 
+// that are given to it, so it is only used internally
+pub(crate) trait ComponentTable {
+    // Runtime dynamic conversions
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
-    // Vector shit
-    fn push(&mut self, component: Box<dyn Any>);
-    fn swap_remove(&mut self, bundle: usize);
-    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
+    // Remove a component from the storage, and move the last element into it's place instead
+    fn swap_remove(&mut self, index: usize);
+
+    // Remove a component from the storage, and insert the return value into another component storage
+    // This assumes that "other" is of the same type as Self
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentTable);
+
+    // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
+
+    // This will create an empty ComponentTable vector using another one
+    fn default(&self) -> Box<dyn ComponentTable>;
 }
 
-impl<T: Component> ComponentStorage for Vec<T> {
-    // As any and as any mut
+impl<T: Component> ComponentTable for Vec<T> {
+    // Convert to immutably Any trait object
     fn as_any(&self) -> &dyn Any {
         self
     }
 
+    // Convert to mutable Any trait object
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 
-    // Push a component into the vector
-    // We are 100% sure that the component is of type T
-    fn push(&mut self, component: Box<dyn Any>) {
-        // Cast the boxed component to T and insert it
-        let component = *component.downcast::<T>().unwrap();
-        self.push(component);
-    }
-    
-    // Swap remove an element
-    fn swap_remove(&mut self, bundle: usize) {
-        self.swap_remove(bundle);
-    }
-    
-    // Swap remove an element, but box the result
-    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any> {
-        let element = self.swap_remove(bundle);
-        Box::new(element)
+    // Calls to Vec::swap_remove but typeless
+    fn swap_remove(&mut self, index: usize) {
+        self.swap_remove(index);
     }
 
-    // Reserve enough allocated memory to be able to fit "additional" number of elements
+    // Calls to Vec::swap_remove, and inserts the result into another storage
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentTable) {
+        let removed = self.swap_remove(index);
+        let other = other.as_any_mut().downcast_mut::<Self>().unwrap();
+        other.push(removed);
+    }
+
     fn reserve(&mut self, additional: usize) {
-        self.reserve(additional)
+        self.reserve(additional);
+    }
+
+    fn default(&self) -> Box<dyn ComponentTable> {
+        Box::new(Vec::<T>::new())
     }
 }

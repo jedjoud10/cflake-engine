@@ -7,18 +7,27 @@ new_key_type! {
 // Entity linking data that we will use to link entities to their specified components
 #[derive(Clone, Copy)]
 pub struct EntityLinkings {
-    // The component mask of this entity
-    pub mask: Mask,
+    pub(crate) mask: Mask,
+    pub(crate) index: usize,
+}
 
-    // The index of the components in said archetype
-    pub bundle: usize,
+impl EntityLinkings {
+    // Get the mask of the entity (the mask of it's current archetype)
+    pub fn mask(&self) -> Mask {
+        self.mask
+    } 
+
+    // Get the index of the entity in it's current archetype
+    pub fn index(&self) -> usize {
+        self.index
+    }
 }
 
 impl Default for EntityLinkings {
     fn default() -> Self {
         Self {
             mask: Mask::zero(),
-            bundle: Default::default(),
+            index: Default::default(),
         }
     }
 }

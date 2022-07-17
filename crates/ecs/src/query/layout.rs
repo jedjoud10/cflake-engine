@@ -1,5 +1,5 @@
 
-use crate::{Archetype, Component, LayoutAccess, LinkError, Mask, QueryItemReference, ViewItemReference, mask, MaskMap, ComponentStorage};
+use crate::{Archetype, Component, LayoutAccess, LinkError, Mask, QueryItemReference, ViewItemReference, mask, MaskMap, ComponentTable};
 use seq_macro::seq;
 use casey::lower;
 
@@ -18,8 +18,8 @@ where
     // Get the final layout access masks
     fn combined() -> LayoutAccess;
 
-    // This must return "false" if any of the items have intersecting masks
-    fn validate() -> bool;
+    // Check if this layout is valid (a layout is invalid if it has intersecting components)
+    fn is_valid() -> bool;
 
     // Convert the base ptr tuple to the safe borrows using a bundle offset
     unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self;
@@ -45,7 +45,7 @@ where
 }
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components
-pub trait OwnedComponentLayout<'a>
+pub trait OwnedBundle<'a>
 where
     Self: Sized,
 {
@@ -53,13 +53,19 @@ where
     type Storages: 'a;
 
     // Get the combined mask of the owned layout
-    fn mask() -> Mask;
+    fn combined() -> Mask;
+
+    // Check if this bundle is valid (a bundle is invalid if it has intersecting components)
+    fn is_valid() -> bool;
 
     // Fetch the necessary storages from the archetype
-    fn storages_mut(archetype: &'a mut Archetype) -> Self::Storages;
+    fn fetch(archetype: &'a mut Archetype) -> Self::Storages;
 
-    // Insert a new element into the storages
-    fn insert(self, storages: &mut Self::Storages);
+    // Push a new bundle into the storages
+    fn push(storages: &mut Self::Storages, bundle: Self);
+
+    // Create the default maskmap tables for a default archetype
+    fn default() -> MaskMap<Box<dyn ComponentTable>>;
 }
 
 /*

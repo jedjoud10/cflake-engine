@@ -4,13 +4,11 @@ use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    Mask, MaskMap, MutEntry, OwnedComponentLayout, QueryLayout, ComponentStorage, query, query_filtered, ViewLayout, view, view_filtered,
+    Mask, MaskMap, MutEntry, OwnedBundle, QueryLayout, ComponentTable, query, query_filtered, ViewLayout, view, view_filtered,
 };
 
-// Type aliases because I have gone insane
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
-pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn ComponentStorage>>;
 
 // TODO: Find a better name for this bozo
 #[derive(Resource)]
@@ -26,17 +24,20 @@ pub struct EcsManager {
 
 impl Default for EcsManager {
     fn default() -> Self {
-        // Create the default empty archetype
-        let empty = Archetype::new(Mask::zero());
-
         Self {
             entities: Default::default(),
-            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), Archetype::new_empty()))),
         }
     }
 }
 
 impl EcsManager {
+    // Add an entity
+    // Add a batch of entities
+    // Remove an entity, and discard it's components
+    // Remove an entity, and fetch it's removed components as a new bundle
+    // Remove multiple entities, and discard their components
+    // Remove multiple entities, and fetch their removed components as new bundles
     
 
     // Try to fetch a mutable entry for an entity
