@@ -19,8 +19,8 @@ pub(crate) trait ComponentTable {
     // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
 
-    // This will create an empty ComponentTable vector using another one
-    fn default(&self) -> Box<dyn ComponentTable>;
+    // This will create an empty ComponentTable vector using another one (to keep the trait object safe)
+    fn clone_default(&self) -> Box<dyn ComponentTable>;
 }
 
 impl<T: Component> ComponentTable for Vec<T> {
@@ -50,7 +50,7 @@ impl<T: Component> ComponentTable for Vec<T> {
         self.reserve(additional);
     }
 
-    fn default(&self) -> Box<dyn ComponentTable> {
+    fn clone_default(&self) -> Box<dyn ComponentTable> {
         Box::new(Vec::<T>::new())
     }
 }

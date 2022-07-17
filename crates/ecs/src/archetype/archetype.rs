@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
-    StateRow, States,
+    StateRow, States, OwnedBundleTableAccessor,
 };
 use std::any::Any;
 
@@ -104,8 +104,8 @@ impl Archetype {
         let index = linkings.index();
 
         // Remove the components from the tables
-        for (_, storages) in self.tables.iter_mut() {
-            storages.swap_remove(index)
+        for (_, table) in self.tables.iter_mut() {
+            table.swap_remove(index)
         }
 
         // Remove the entity and get the entity that was swapped with it
@@ -147,24 +147,129 @@ impl Archetype {
     */
 }
 
+// This will get two different archetypes using their masks
+// This assumes that the archetypes exist already in the set, and that we are using different masks
+fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &mut Archetype) {
+    assert_ne!(mask1, mask2);    
+    let a1 = set.get_mut(&mask1).unwrap() as *mut Archetype;
+    let a2 = set.get_mut(&mask2).unwrap() as *mut Archetype;
+    unsafe {
+        let a1 = &mut *a1;
+        let a2 = &mut *a2;
+        (a1, a2)
+    }
+} 
+
 // Add some new components onto an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a>>(
+pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
-    linkings: &mut EntityLinkings,
-) {
-    let old_mask = linkings.mask;
-    let new_mask = linkings.mask | B::combined();
-    None
+    entities: &mut EntitySet,
+    bundle: B,
+) -> Option<()> {
+    // Get the old and new masks
+    let old = entities[entity].mask;
+    let new = entities[entity].mask | B::combined();
+    
+    // Create the new target archetype if needed
+    if archetypes.contains_key(&new) {
+        let current = archetypes.get_mut(&old).unwrap();
+        let tables = current.tables.iter().map(|(mask, table)| (*mask, table.clone_default()));
+        let archetype = Archetype {
+            mask: new,
+            tables: MaskMap::from_iter(tables),
+            states: Default::default(),
+            entities: Default::default(),
+        };
+        archetypes.insert(new, archetype);
+    }
+
+    // Get the current and target archetypes that we will modify
+    let (current, target) = split(archetypes, old, new);
+    let linkings = entities.remove(entity)?;
+    let index = linkings.index();
+
+    // Move the components from one archetype to the other
+    for (mask, input) in current.tables.iter_mut() {
+        let output = target.tables.get_mut(mask).unwrap();
+        input.swap_remove_move(index, output.as_mut());
+    }
+
+    // Add the extra components as well
+    <B as OwnedBundleTableAccessor>::push(&mut target.tables, bundle);    
+
+    // Handle swap-remove logic in the current archetype
+    current.entities.swap_remove(index);
+    current.states.swap_remove(index);
+    if let Some(entity) = current.entities.get(index).cloned() {
+        let swapped = entities.get_mut(entity).unwrap();
+        swapped.index = index;
+    }
+    
+    // Insert the new entity in the target archetype
+    let linkings = entities.get_mut(entity).unwrap();
+    target.states.push(StateRow::new(target.mask));
+    target.entities.push(entity);
+    linkings.index = target.len() - 1;
+    linkings.mask = target.mask;
+
+    Some(())
 }
 
 // Remove some old components from an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a>>(
+pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(
     archetypes: &mut ArchetypeSet,
     entities: &mut EntitySet,
     entity: Entity,
 ) -> Option<B> {
-    None
+    // Get the old and new masks
+    let old = entities[entity].mask;
+    let new = entities[entity].mask & !B::combined();
+    
+    // Create the new target archetype if needed
+    if archetypes.contains_key(&new) {
+        let current = archetypes.get_mut(&old).unwrap();
+        let tables = current.tables.iter().map(|(mask, table)| (*mask, table.clone_default()));
+        let filtered = tables.filter(|(mask, _)| Mask::contains(&new, *mask));
+        let archetype = Archetype {
+            mask: new,
+            tables: MaskMap::from_iter(filtered),
+            states: Default::default(),
+            entities: Default::default(),
+        };
+        archetypes.insert(new, archetype);
+    }
+
+    // Get the current and target archetypes that we will modify
+    let (current, target) = split(archetypes, old, new);
+    let linkings = entities.remove(entity)?;
+    let index = linkings.index();
+
+    // Move the components from one archetype to the other (swapped)
+    for (mask, output) in target.tables.iter_mut() {
+        let input = current.tables.get_mut(mask).unwrap();
+        input.swap_remove_move(index, output.as_mut());
+    }
+
+    // Create the return bundle
+    let bundle = <B as OwnedBundleTableAccessor>::swap_remove(&mut current.tables, index);   
+
+    // Handle swap-remove logic in the current archetype
+    current.entities.swap_remove(index);
+    current.states.swap_remove(index);
+    if let Some(entity) = current.entities.get(index).cloned() {
+        let swapped = entities.get_mut(entity).unwrap();
+        swapped.index = index;
+    }
+    
+    // Insert the new entity in the target archetype
+    let linkings = entities.get_mut(entity).unwrap();
+    target.states.push(StateRow::new(target.mask));
+    target.entities.push(entity);
+    linkings.index = target.len() - 1;
+    linkings.mask = target.mask;
+
+    Some(bundle)
 }

@@ -65,9 +65,18 @@ where
 
     // Push a new bundle into the storages
     fn push(storages: &mut Self::Storages, bundle: Self);
+}
 
-    // Create the default archetype with the pre-initialized tables for this bundle
-    fn default() -> Archetype;
+// Internal owned bundle that we will only use to create archetypes and their storeages
+pub(crate) trait OwnedBundleTableAccessor: for<'a> OwnedBundle<'a> {
+    // Get the default component tables that correspond to this bundle
+    fn default_tables() -> MaskMap<Box<dyn ComponentTable>>;
+
+    // Steal the underlying bundle from the given component tables
+    fn swap_remove(tables: &mut MaskMap<Box<dyn ComponentTable>>, index: usize) -> Self;
+
+    // Insert a new bundle into the given component tables
+    fn push(storages: &mut MaskMap<Box<dyn ComponentTable>>, bundle: Self) -> Self;
 }
 
 /*
