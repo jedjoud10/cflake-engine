@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, EntitySet, Mask, MaskMap, StateRow, States, ComponentTable,
-    UniqueStoragesSet, Component, mask, OwnedBundle,
+    mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
+    StateRow, States,
 };
 use std::any::Any;
 
@@ -15,25 +15,25 @@ pub struct Archetype {
 
 impl Archetype {
     // Create the unit archetype that contains no tables and has a zeroed mask
-    pub(crate) fn new_empty() -> Self {
-        Self { mask: Mask::zero(), tables: Default::default(), states: States::default(), entities: Default::default() }
-    }
-
-    // Create an archetype using a specific owned bundle
-    pub(crate) fn from_owned_bundle<O: for<'a> OwnedBundle<'a>>() -> Self {
-        let storages = O::default();
-        Self { mask: O::combined(), tables: storages, states: Default::default(), entities: Default::default() }
+    pub(crate) fn empty() -> Self {
+        Self {
+            mask: Mask::zero(),
+            tables: Default::default(),
+            states: States::default(),
+            entities: Default::default(),
+        }
     }
 
     // Add multiple entities into the archetype with their corresponding owned components
-    // The layout mask for "O" must be equal to the layout mask that this archetype contains
-    pub(crate) fn extend_from_slice<O: for<'a> OwnedBundle<'a>>(
+    // The layout mask for "B" must be equal to the layout mask that this archetype contains
+    pub(crate) fn extend_from_slice<B: for<'a> OwnedBundle<'a>>(
         &mut self,
         entities: Vec<(Entity, &mut EntityLinkings)>,
-        components: Vec<O>
+        components: Vec<B>,
     ) {
+        assert!(B::is_valid());
         assert_eq!(entities.len(), components.len());
-        assert_eq!(O::combined(), self.mask);
+        assert_eq!(B::combined(), self.mask);
 
         self.reserve(entities.len());
 
@@ -44,10 +44,9 @@ impl Archetype {
             linkings.mask = self.mask;
         }
         
-        let mut storages = O::fetch(self);
-
+        let mut storages = B::fetch(self);
         for set in components {
-            O::push(&mut storages, set);
+            B::push(&mut storages, set);
         }
     }
 
@@ -86,7 +85,7 @@ impl Archetype {
         let boxed = self.tables.get(&mask::<T>())?;
         Some(boxed.as_any().downcast_ref().unwrap())
     }
-    
+
     // Try to get a mutable reference to the table for a specific component
     pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         let boxed = self.tables.get_mut(&mask::<T>())?;
@@ -149,4 +148,23 @@ impl Archetype {
 }
 
 // Add some new components onto an entity, forcing it to switch archetypes
+// This assumes that the OwnedBundle type is valid for this use case
+pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a>>(
+    archetypes: &mut ArchetypeSet,
+    entity: Entity,
+    linkings: &mut EntityLinkings,
+) {
+    let old_mask = linkings.mask;
+    let new_mask = linkings.mask | B::combined();
+    None
+}
+
 // Remove some old components from an entity, forcing it to switch archetypes
+// This assumes that the OwnedBundle type is valid for this use case
+pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a>>(
+    archetypes: &mut ArchetypeSet,
+    entities: &mut EntitySet,
+    entity: Entity,
+) -> Option<B> {
+    None
+}
