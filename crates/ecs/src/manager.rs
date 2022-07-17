@@ -3,8 +3,9 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    Mask, MaskMap, MutEntry, OwnedBundle, QueryLayout, ComponentTable, query, query_filtered, ViewLayout, view, view_filtered,
+    entity::Entity, query, query_filtered, view, view_filtered, Archetype, ComponentTable,
+    EntityLinkings, Entry, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle, QueryLayout,
+    ViewLayout,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -26,113 +27,81 @@ impl Default for EcsManager {
     fn default() -> Self {
         Self {
             entities: Default::default(),
-            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), Archetype::new_empty()))),
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
         }
     }
 }
 
 impl EcsManager {
-    // Add an entity
-    // Add a batch of entities
+    // Spawn an entity with specific components
+    pub fn insert<B: for<'a> OwnedBundle<'a>>(&mut self, components: B) -> Entity {
+        todo!()
+    }
+
+    // Spawn an entity using a specific callback
+    pub fn insert_with<B: for<'a> OwnedBundle<'a>>(&mut self, callback: impl FnOnce(Entity) -> B) -> Entity {
+        todo!()
+    }
+
+    // Spawn a batch of entities with specific components
+    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+        todo!()
+    }
+
+    // Spawn a batch of entities with specific componnets by calling a callback for each one
+    pub fn insert_from_iter_with<B: for<'a> OwnedBundle<'a>>(&mut self, count: usize, callback: impl FnOnce(Entity, usize) -> B) -> Vec<Entity> {
+        todo!()
+    }
+
     // Remove an entity, and discard it's components
-    // Remove an entity, and fetch it's removed components as a new bundle
-    // Remove multiple entities, and discard their components
-    // Remove multiple entities, and fetch their removed components as new bundles
-    
-
-    // Try to fetch a mutable entry for an entity
-    /*
-    pub fn mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
-        MutEntry::new(self, entity)
-    }
-
-    // Try to fetch an immutable entry for an entity
-    pub fn entry(&self, entity: Entity) -> Option<Entry> {
-        Entry::new(self, entity)
-    }
-
-    // Insert an entity with the given component set as a tuple
-    pub fn insert<T: OwnedComponentLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
-        self.insert_with(|_| tuple)
-    }
-    // Insert an entity with the given component set as a tuple using a callback
-    pub fn insert_with<T: OwnedComponentLayout>(
-        &mut self,
-        callback: impl FnOnce(Entity) -> T,
-    ) -> Result<Entity, LinkError> {
-        let entity = self.entities.insert(EntityLinkings::default());
-
-        // Create the modifier and insert the components
-        let mut linker = LinkModifier::new(self, entity).unwrap();
-        T::insert(callback(entity), &mut linker)?;
-
-        // Create the linkings and apply the modifier
-        let mut linkings = EntityLinkings::default();
-        linker.apply(&mut linkings);
-        *self.entities.get_mut(entity).unwrap() = linkings;
-
-        Ok(entity)
-    }
-
-    // Remove an entity from the world
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Remove the entity from it's current archetype first
-        Archetype::remove(
-            &mut self.archetypes,
-            &mut self.entities,
-            entity,
-            Mask::zero(),
-        );
-
-        // Then remove it from the manager
-        self.entities.remove(entity).unwrap();
-        Some(())
+        todo!()
     }
 
-    // Get all the entities that are stored within the manager
-    pub fn entities(&self) -> &EntitySet {
-        &self.entities
+    // Remove an entity, and fetch it's removed components as a new bundle
+    pub fn remove_then<B: for<'a> OwnedBundle<'a>>(&mut self, entity: Entity) -> Option<B> {
+        todo!()
     }
 
-    // Get the archetypes
+    // Remove multiple entities, and discard their components
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<()> {
+        todo!()
+    }
+
+    // Remove multiple entities, and fetch their removed components as new bundles
+    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<B> {
+        todo!()
+    }
+
+    // Get the immutable entity entry for a specific entity
+    pub fn entry(&self) -> Option<Entry> {
+        todo!()
+    }
+
+    // Get the mutable entity entry for a specific entity
+    pub fn entry_mut(&mut self) -> Option<EntryMut> {
+        todo!()
+    }
+
+    // Get a immutable reference to the archetype set
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
-
-    /*
-    /* #region Main thread queries */
-    // Normal query without filter
-    pub fn query<'a, L: QueryLayout<'a> + 'a>(
-        &'a mut self,
-    ) -> Option<impl ExactSizeIterator<Item = L> + 'a> {
-        L::validate().then(|| query(&mut self.archetypes))
+    
+    // Get a mutable reference to the archetype set
+    pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
+        &mut self.archetypes
     }
-
-    // Create a query with a specific filter
-    pub fn query_with<'a, L: QueryLayout<'a> + 'a>(
-        &'a mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        L::validate().then(|| query_filtered(&mut self.archetypes, filter))
+    
+    // Get an immutable reference to the entity set
+    pub fn entities(&self) -> &EntitySet {
+        &self.entities
     }
-
-    // A view query that can only READ data, and never write to it
-    pub fn view<'a, L: ViewLayout<'a> + 'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = L> + 'a {
-        view(&self.archetypes)
+    
+    // Get a mutable reference to the entity set
+    pub fn entities_mut(&mut self) -> &mut EntitySet {
+        &mut self.entities
     }
-
-    // View query with a specific filter
-    pub fn view_with<'a, L: ViewLayout<'a> + 'a>(
-        &'a self,
-        filter: impl Evaluate,
-    ) -> impl Iterator<Item = L> + 'a {
-        view_filtered(&self.archetypes, filter)
-    }
-    */
-    */
-    /* #endregion */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

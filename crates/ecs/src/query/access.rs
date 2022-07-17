@@ -1,7 +1,5 @@
-use crate::{Mask};
-use std::{
-    ops::{BitAnd, BitOr},
-};
+use crate::Mask;
+use std::ops::{BitAnd, BitOr};
 
 // Layout access that contain the shared access mask and unique access mask
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -18,7 +16,10 @@ impl LayoutAccess {
 
     // No layout access at all
     pub const fn none() -> Self {
-        Self { shared: Mask::zero(), unique: Mask::zero() }
+        Self {
+            shared: Mask::zero(),
+            unique: Mask::zero(),
+        }
     }
 
     // Get the shared access mask

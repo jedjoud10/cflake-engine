@@ -1,7 +1,6 @@
 use ahash::AHashSet;
 
-
-use crate::{Resource, ResourceError, World, ResourceReferenceDesc, ResourceReference};
+use crate::{Resource, ResourceError, ResourceReference, ResourceReferenceDesc, World};
 
 // A layout simply multiple resource handles of different resources
 pub trait ResourceLayout<'a>: Sized {
@@ -12,9 +11,13 @@ pub trait ResourceLayout<'a>: Sized {
     fn validate() -> Result<(), ResourceError> {
         let types = Self::descriptions();
         let mut map = AHashSet::new();
-        let name = types
-            .iter()
-            .find(|ResourceReferenceDesc { _type, name: _, mutable }| !map.insert(_type) && *mutable);
+        let name = types.iter().find(
+            |ResourceReferenceDesc {
+                 _type,
+                 name: _,
+                 mutable,
+             }| !map.insert(_type) && *mutable,
+        );
 
         // This is a certified inversion classic
         if let Some(ResourceReferenceDesc { name, .. }) = name {
@@ -31,7 +34,7 @@ pub trait ResourceLayout<'a>: Sized {
 // Simple wrapping function that just gets the handle from the world, and makes it so the lifetime of the handle is different than the one of the world
 unsafe fn fetch<'a, A: ResourceReference<'a>>(world: &mut World) -> Result<A, ResourceError> {
     let ptr = <A::Inner as Resource>::fetch_ptr(world);
-    
+
     ptr.map(|ptr| A::from_non_null(ptr))
 }
 
@@ -53,7 +56,7 @@ macro_rules! tuple_impls {
             fn descriptions() -> Vec<ResourceReferenceDesc> {
                 vec![$($name::descriptor()),+]
             }
-        
+
             unsafe fn fetch_unchecked(world: &'a mut World) -> Result<Self, ResourceError> {
                 let data = ($(fetch::<$name>(world)?,)+);
                 Ok(data)

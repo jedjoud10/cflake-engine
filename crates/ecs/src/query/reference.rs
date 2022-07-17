@@ -1,4 +1,4 @@
-use crate::{Component, Entity, Archetype, registry, LayoutAccess, Mask, mask};
+use crate::{mask, registry, Archetype, Component, Entity, LayoutAccess, Mask};
 
 // Shared references are implemented for &T only
 // Only used for View Queries
@@ -23,7 +23,7 @@ impl<'a, T: Component> ViewItemReference<'a> for &'a T {
     }
 
     fn try_fetch_ptr(archetype: &Archetype) -> Option<*const Self::Item> {
-        archetype.storage::<T>().map(|vec| vec.as_ptr())
+        archetype.table::<T>().map(|vec| vec.as_ptr())
     }
 
     unsafe fn as_ref(ptr: *const Self::Item, bundle: usize) -> Self {
@@ -69,13 +69,13 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a T {
     type Item = T;
     type Ptr = *const T;
     const MUTABLE: bool = false;
-    
+
     fn access() -> LayoutAccess {
         LayoutAccess::new(mask::<T>(), Mask::zero())
     }
 
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr> {
-        archetype.storage::<T>().map(|vec| vec.as_ptr())
+        archetype.table::<T>().map(|vec| vec.as_ptr())
     }
 
     unsafe fn as_self(ptr: *const Self::Item, bundle: usize) -> Self {
@@ -94,7 +94,7 @@ impl<'a, T: Component> QueryItemReference<'a> for &'a mut T {
     }
 
     fn try_fetch_ptr(archetype: &mut Archetype) -> Option<Self::Ptr> {
-        archetype.storage_mut::<T>().map(|vec| vec.as_mut_ptr())
+        archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr())
     }
 
     unsafe fn as_self(ptr: Self::Ptr, bundle: usize) -> Self {

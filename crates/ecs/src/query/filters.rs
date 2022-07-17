@@ -27,7 +27,7 @@ pub struct Added<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);
 pub struct Contains<T: Component>(PhantomData<T>);
 
-// Constant source that always fails / succeeds the test
+// Constant source that always fail / succeed the test
 pub struct Always(());
 pub struct Never(());
 

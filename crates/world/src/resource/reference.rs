@@ -1,4 +1,7 @@
-use std::{any::{TypeId, type_name}, ptr::NonNull};
+use std::{
+    any::{type_name, TypeId},
+    ptr::NonNull,
+};
 
 use crate::Resource;
 

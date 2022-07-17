@@ -1,15 +1,15 @@
-use math::AABB;
 use crate::buffer::BufferMode;
+use math::AABB;
 
 // The mesh mode tells use what are the modes for each specific vertex attribute
 #[derive(Clone, Copy)]
 pub enum MeshImportMode {
-    // Static meshes are created only once and they cannot be modified later on 
+    // Static meshes are created only once and they cannot be modified later on
     Static,
-    
+
     // Dynamic meshes can be modified by changing each attribute's properties, but the number of vertices stays constant
     Dynamic,
-    
+
     // Procedural meshes can change the number of vertices and triangles from within them
     Procedural,
 }
@@ -24,10 +24,10 @@ pub struct MeshImportSettings {
 
 impl Default for MeshImportSettings {
     fn default() -> Self {
-        Self { 
+        Self {
             mode: MeshImportMode::Dynamic,
             generate_tangents: true,
-            scale: 1.0
+            scale: 1.0,
         }
     }
 }

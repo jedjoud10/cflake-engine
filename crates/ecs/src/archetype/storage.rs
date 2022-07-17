@@ -1,8 +1,8 @@
 use crate::Component;
-use std::{any::Any};
+use std::any::Any;
 
 // A component storage that is implemented for Vec<T>
-// This type makes a lot of assumption about the parameters 
+// This type makes a lot of assumption about the parameters
 // that are given to it, so it is only used internally
 pub(crate) trait ComponentTable {
     // Runtime dynamic conversions

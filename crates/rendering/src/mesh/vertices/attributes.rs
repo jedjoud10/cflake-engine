@@ -1,7 +1,6 @@
 use std::mem::MaybeUninit;
 
-use crate::{buffer::ArrayBuffer, object::Shared, mesh::Mesh};
-
+use crate::{buffer::ArrayBuffer, mesh::Mesh, object::Shared};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -15,7 +14,8 @@ bitflags::bitflags! {
 }
 
 // This is the maximum number of active attributes that we can have inside a mesh
-pub const MAX_MESH_VERTEX_ATTRIBUTES: usize = EnabledAttributes::all().bits.trailing_ones() as usize;
+pub const MAX_MESH_VERTEX_ATTRIBUTES: usize =
+    EnabledAttributes::all().bits.trailing_ones() as usize;
 
 // Contains the underlying array buffer for a specific attribute
 pub type AttributeBuffer<A> = MaybeUninit<ArrayBuffer<<A as VertexAttribute>::Out>>;
@@ -50,7 +50,6 @@ pub struct Tangent(());
 pub struct Color(());
 pub struct TexCoord(());
 
-
 // An untyped attribute wrapper that contains all the basic information about attributes
 pub struct AttributeFormatAny {
     normalized: bool,
@@ -58,17 +57,17 @@ pub struct AttributeFormatAny {
     attribute_index: u32,
 }
 
-impl AttributeFormatAny {    
+impl AttributeFormatAny {
     // Get the normalization state of the attribute
     pub fn normalized(&self) -> bool {
         self.normalized
     }
-    
+
     // Get the width of each raw attribute element
     pub fn stride(&self) -> usize {
         self.stride
     }
-    
+
     // Get the final attribute index
     pub fn attribute_index(&self) -> u32 {
         self.attribute_index

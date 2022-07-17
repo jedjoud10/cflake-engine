@@ -1,5 +1,8 @@
-use crate::buffer::{ElementBuffer, BufferFormatAny, ArrayBuffer};
-use super::{EnabledAttributes, AttributeFormatAny, VertexAttribute, AttributeBuffer, TexCoord, Color, Tangent, Normal, Position};
+use super::{
+    AttributeBuffer, AttributeFormatAny, Color, EnabledAttributes, Normal, Position, Tangent,
+    TexCoord, VertexAttribute,
+};
+use crate::buffer::{ArrayBuffer, BufferFormatAny, ElementBuffer};
 
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {
@@ -21,9 +24,11 @@ impl<'a> VerticesRef<'a> {
     pub fn is_attribute_enabled<T: VertexAttribute>(&self) -> bool {
         todo!()
     }
-    
+
     // Get the BufferAnyRef and AttributeFormatAny wrappers for an attribute buffer
-    pub fn attribute_any<T: VertexAttribute>(&self) -> Option<(BufferFormatAny, AttributeFormatAny)> {
+    pub fn attribute_any<T: VertexAttribute>(
+        &self,
+    ) -> Option<(BufferFormatAny, AttributeFormatAny)> {
         todo!()
     }
 }

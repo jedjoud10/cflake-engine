@@ -197,7 +197,7 @@ impl<T: 'static> Storage<T> {
     // Execute a function over all valid values stored within (immutable)
     pub fn for_each<F: FnMut(&T)>(&self, mut func: F) {
         let slots = self.0.slots.borrow();
-        
+
         for slot in slots.iter() {
             if slot.counter.get() > 0 {
                 let ptr = unsafe { &*slot.cell.get() };
@@ -209,7 +209,7 @@ impl<T: 'static> Storage<T> {
     // Execute a function over all valid values stored within (mutable)
     pub fn for_each_mut<F: FnMut(&mut T)>(&mut self, mut func: F) {
         let slots = self.0.slots.borrow();
-        
+
         for slot in slots.iter() {
             if slot.counter.get() > 0 {
                 let ptr = unsafe { &mut *slot.cell.get() };

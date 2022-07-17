@@ -1,4 +1,4 @@
-use super::{Filter, Sampling, Texel, Wrap, TextureMode, MipMaps};
+use super::{Filter, MipMaps, Sampling, Texel, TextureMode, Wrap};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},

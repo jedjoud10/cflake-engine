@@ -1,11 +1,8 @@
-use std::sync::{
-    Arc, Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use ecs::Component;
 use math::Transform;
 use rodio::{OutputStream, OutputStreamHandle};
-
 
 #[derive(Clone, Copy)]
 // The global audio head of the main audio listener

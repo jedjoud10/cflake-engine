@@ -1,7 +1,9 @@
-
-use crate::{Archetype, Component, LayoutAccess, LinkError, Mask, QueryItemReference, ViewItemReference, mask, MaskMap, ComponentTable};
-use seq_macro::seq;
+use crate::{
+    mask, Archetype, Component, ComponentTable, LayoutAccess, LinkError, Mask, MaskMap,
+    QueryItemReference, ViewItemReference,
+};
 use casey::lower;
+use seq_macro::seq;
 
 // A query layout trait that will be implemented on tuples that contains different types of QueryItems (&T, &mut T, &Entity)
 pub trait QueryLayout<'a>
@@ -64,8 +66,8 @@ where
     // Push a new bundle into the storages
     fn push(storages: &mut Self::Storages, bundle: Self);
 
-    // Create the default maskmap tables for a default archetype
-    fn default() -> MaskMap<Box<dyn ComponentTable>>;
+    // Create the default archetype with the pre-initialized tables for this bundle
+    fn default() -> Archetype;
 }
 
 /*
@@ -120,12 +122,12 @@ macro_rules! tuple_impls {
         // Implement the mutable query layout trait
         impl<'a, $($name: QueryItemReference<'a>),+> QueryLayout<'a> for ($($name,)+) {
             type PtrTuple = ($($name::Ptr),+);
-        
+
             fn try_fetch_ptrs(archetype: &mut Archetype) -> Option<Self::PtrTuple> {
                 let data = ($($name::try_fetch_ptr(archetype)?,)+);
                 Some(data)
             }
-        
+
             fn combined() -> LayoutAccess {
                 ($($name::access())|+)
             }
@@ -137,16 +139,16 @@ macro_rules! tuple_impls {
             //   &A + &mut B   = valid
             fn validate() -> bool {
                 let combined = Self::combined();
-                let intersecting = ($($name::access())&+);        
+                let intersecting = ($($name::access())&+);
                 let self_intersect = combined.shared() & combined.unique() == Mask::zero();
                 intersecting.unique() == Mask::zero() && self_intersect
             }
-        
+
             unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N: C~N = C~N::as_self(tuple.N, bundle);
                 });
-                
+
                 ($(
                     lower!($name)
                 ),+,)
@@ -156,21 +158,21 @@ macro_rules! tuple_impls {
         // Implement the immutable view query layout trait
         impl<'a, $($name: ViewItemReference<'a>),+> ViewLayout<'a> for ($($name,)+) {
             type PtrTuple = ($(*const $name::Item),+);
-        
+
             fn combined() -> Mask {
                 ($($name::read_mask())|+)
             }
-        
+
             unsafe fn try_fetch_ptrs(archetype: &Archetype) -> Option<Self::PtrTuple> {
                 let data = ($($name::try_fetch_ptr(archetype)?,)+);
                 Some(data)
             }
-        
+
             unsafe fn read_as_layout_at(tuple: Self::PtrTuple, bundle: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N: C~N = C~N::as_ref(tuple.N, bundle);
                 });
-                
+
                 ($(
                     lower!($name)
                 ),+,)
@@ -182,7 +184,7 @@ macro_rules! tuple_impls {
             fn mask() -> Mask {
                 ($(mask::<$name>())|+)
             }
-        
+
             fn insert(self, modifier: &mut LinkModifier) -> Result<(), LinkError> {
                 seq!(N in 0..$max {
                     modifier.insert(self.N)?;
@@ -190,7 +192,7 @@ macro_rules! tuple_impls {
                 Ok(())
             }
         }
-    };    
+    };
 }
 
 tuple_impls! { C0 C1, 2 }

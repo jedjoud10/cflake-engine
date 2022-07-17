@@ -51,13 +51,13 @@ impl<'a> Entry<'a> {
 
 // An entity entry that we can use to access multiple components on a single entity
 // This will take a mutable reference of the ECS manager. Use Entry instead if you wish for an immutable entry
-pub struct MutEntry<'a> {
+pub struct EntryMut<'a> {
     archetype: &'a mut Archetype,
     bundle: usize,
     _phantom: PhantomData<&'a mut EcsManager>,
 }
 
-impl<'a> MutEntry<'a> {
+impl<'a> EntryMut<'a> {
     /*
     // Create a mutable entry from the ecs manager and an entity
     pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {

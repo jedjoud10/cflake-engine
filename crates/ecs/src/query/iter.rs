@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
 
-use crate::{ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow, Mask, States, ViewLayout};
+use crate::{
+    ArchetypeSet, Evaluate, ItemInput, LayoutAccess, Mask, QueryLayout, StateRow, States,
+    ViewLayout,
+};
 
 // Raw data that is returned from the query (mutable)
 struct QueryItem<'a, L: QueryLayout<'a>> {
@@ -62,7 +65,7 @@ impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
         // Get the maximum number of bundles that we have
         let len = chunks.iter().map(|chunk| chunk.len).sum();
 
-        // Create and initiate the iterator            
+        // Create and initiate the iterator
         let last = chunks.pop();
         Self {
             chunks,
@@ -88,7 +91,7 @@ impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
     // TODO: Make this less ugly
     fn new(archetypes: &'a ArchetypeSet) -> Self {
         let mask = L::combined();
-        
+
         // Create a new vector containing the archetypes in arbitrary order
         let mut chunks = archetypes
             .iter()
@@ -103,14 +106,14 @@ impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
         // Get the maximum number of bundles that we have
         let len = chunks.iter().map(|chunk| chunk.len).sum();
 
-        // Create and initiate the iterator            
+        // Create and initiate the iterator
         let last = chunks.pop();
         Self {
             chunks,
             mask,
             bundle: 0,
             loaded: last,
-            len
+            len,
         }
     }
 }

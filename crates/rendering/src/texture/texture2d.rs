@@ -1,6 +1,8 @@
 use assets::Asset;
 
-use super::{ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureMode, TextureImportSettings};
+use super::{
+    ImageTexel, MipMaps, Region, Sampling, Texel, Texture, TextureImportSettings, TextureMode,
+};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},

@@ -15,7 +15,7 @@ impl EntityLinkings {
     // Get the mask of the entity (the mask of it's current archetype)
     pub fn mask(&self) -> Mask {
         self.mask
-    } 
+    }
 
     // Get the index of the entity in it's current archetype
     pub fn index(&self) -> usize {

@@ -9,14 +9,13 @@ use world::{Resource, Storage, World};
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::{Mesh},
+    mesh::Mesh,
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
 };
 
 use super::Pipeline;
-
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
@@ -50,9 +49,11 @@ pub trait Material<'w>: 'static + Sized {
 
     // Get the rasterizer primitive mode
     fn primitive_mode() -> PrimitiveMode {
-        PrimitiveMode::Triangles { cull: Some(FaceCullMode::Back(true)) }
+        PrimitiveMode::Triangles {
+            cull: Some(FaceCullMode::Back(true)),
+        }
     }
-    
+
     // Fetch the default rendering resources and the material property block resources as well
     fn fetch(
         world: &'w mut World,

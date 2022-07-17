@@ -1,10 +1,10 @@
 mod errors;
 mod layout;
+mod reference;
 mod resource;
 mod storage;
-mod reference;
-pub use reference::*;
 pub use errors::*;
 pub use layout::*;
+pub use reference::*;
 pub use resource::*;
 pub use storage::*;

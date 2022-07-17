@@ -15,6 +15,7 @@ pub mod prelude {
     pub use super::buffer::*;
     pub use super::canvas::*;
     pub use super::context::*;
+    pub use super::gl;
     pub use super::material::*;
     pub use super::mesh::*;
     pub use super::object::*;
@@ -22,5 +23,4 @@ pub mod prelude {
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
-    pub use super::gl;
 }

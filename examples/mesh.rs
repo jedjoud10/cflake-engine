@@ -62,14 +62,11 @@ fn init(world: &mut World) {
         mipmaps: MipMaps::AutomaticAniso {
             samples: NonZeroU8::new(4).unwrap(),
         },
-        mode: TextureMode::Static,  
+        mode: TextureMode::Static,
     };
 
     let texture = assets
-        .load_with::<NormalMap>(
-            "user/textures/normal.png",
-            (ctx, import_settings),
-        )
+        .load_with::<NormalMap>("user/textures/normal.png", (ctx, import_settings))
         .unwrap();
     let texture = normal_maps.insert(texture);
 
