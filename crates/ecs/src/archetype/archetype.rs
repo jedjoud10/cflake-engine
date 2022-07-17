@@ -14,6 +14,12 @@ pub struct Archetype {
 }
 
 impl Archetype {
+    // Create a new archetype from a owned bundle accessor
+    // This assumes that B is a valid bundle
+    pub(crate) fn from_table_accessor<B: OwnedBundleTableAccessor>() -> Self {
+        Self { mask: B::combined(), tables: B::default_tables(), states: Vec::new(), entities: Vec::new() }
+    }
+
     // Create the unit archetype that contains no tables and has a zeroed mask
     pub(crate) fn empty() -> Self {
         Self {
@@ -28,26 +34,34 @@ impl Archetype {
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
     pub(crate) fn extend_from_slice<B: for<'a> OwnedBundle<'a>>(
         &mut self,
-        entities: Vec<(Entity, &mut EntityLinkings)>,
+        entities: &mut EntitySet,
         components: Vec<B>,
-    ) {
+    ) -> Vec<Entity> {
         assert!(B::is_valid());
-        assert_eq!(entities.len(), components.len());
         assert_eq!(B::combined(), self.mask);
-
         self.reserve(entities.len());
+        let mut output = Vec::new();
 
-        for (entity, linkings) in entities {
+        // Add the entities internally and externally
+        for _ in 0..components.len() {
+            let linkings = EntityLinkings {
+                mask: self.mask,
+                index: self.len(),
+            };
+            let entity = entities.insert(linkings);
             self.states.push(StateRow::new(self.mask, self.mask));
             self.entities.push(entity);
-            linkings.mask = self.mask;
-            linkings.index = self.len() - 1;
+            output.push(entity)
         }
         
+        // Add the storage bundles to their respective tables
         let mut storages = B::fetch(self);
         for set in components {
             B::push(&mut storages, set);
         }
+
+        // Return the newly added entity IDs
+        output
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation

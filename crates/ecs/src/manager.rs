@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
@@ -5,7 +6,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 use crate::{
     entity::Entity, query, Archetype, ComponentTable,
     EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle, QueryLayout,
-    ViewLayout,
+    ViewLayout, OwnedBundleTableAccessor,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -34,36 +35,35 @@ impl Default for EcsManager {
 
 impl EcsManager {
     // Spawn an entity with specific components
-    pub fn insert<B: for<'a> OwnedBundle<'a>>(&mut self, components: B) -> Entity {
-        self.insert_with::<B>(|_| components)
-    }
-
-    // Spawn an entity using a specific callback
-    pub fn insert_with<B: for<'a> OwnedBundle<'a>>(&mut self, callback: impl FnOnce(Entity) -> B) -> Entity {
-        self.insert_from_iter_with(1, |entity, _| callback(entity))[0]
+    pub fn insert<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(&mut self, components: B) -> Entity {
+        assert!(B::is_valid());
+        self.insert_from_iter(std::iter::once(components))[0]
     }
 
     // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
-        let mut vec = iter.into_iter().collect::<Vec<B>>();
-        // TODO: benchmark and optimize if needed
-        vec.reverse();
+    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+        assert!(B::is_valid());
 
-        self.insert_from_iter_with(vec.len(), |_, _| vec.pop().unwrap())
-    }
+        // Try to get the archetype, and create a default one if it does not exist
+        let mask = B::combined();
+        let archetype = self.archetypes.entry(mask).or_insert_with(|| Archetype::from_table_accessor::<B>());
+        let components = iter.into_iter().collect::<Vec<_>>();
 
-    // Spawn a batch of entities with specific componnets by calling a callback for each one
-    pub fn insert_from_iter_with<B: for<'a> OwnedBundle<'a>>(&mut self, count: usize, callback: impl FnOnce(Entity, usize) -> B) -> Vec<Entity> {
-        todo!()
+        // Extend the archetype with the new bundles
+        archetype.extend_from_slice::<B>(&mut self.entities, components)
     }
 
     // Remove an entity, and discard it's components
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        todo!()
+        let linkings = *self.entities.get(entity)?;
+        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+        archetype.remove(&mut self.entities, entity).unwrap();
+        Some(())
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
     pub fn remove_then<B: for<'a> OwnedBundle<'a>>(&mut self, entity: Entity) -> Option<B> {
+        assert!(B::is_valid());
         todo!()
     }
 
@@ -73,7 +73,8 @@ impl EcsManager {
     }
 
     // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<B> {
+    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+        assert!(B::is_valid());
         todo!()
     }
 
@@ -107,13 +108,25 @@ impl EcsManager {
         &mut self.entities
     }
 
-    // Create a new mutable query iterator    
+    // Create a new mutable query iterator
+    pub fn query(&mut self) {
+        todo!()
+    }    
 
     // Create a new mutable query iterator with a filter
+    pub fn query_filter(&mut self, filter: impl Evaluate) {
+        todo!()
+    }
     
     // Create a new immutable query iterator
+    pub fn view(&self) {
+        todo!()
+    }
 
     // Create a new immutable query iterator with a filter
+    pub fn view_filter(&self, filter: impl Evaluate) {
+        todo!()
+    }
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

@@ -4,7 +4,7 @@ use std::any::Any;
 // A component storage that is implemented for Vec<T>
 // This type makes a lot of assumption about the parameters
 // that are given to it, so it is only used internally
-pub(crate) trait ComponentTable {
+pub trait ComponentTable {
     // Runtime dynamic conversions
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;

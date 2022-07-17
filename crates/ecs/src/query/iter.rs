@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    ArchetypeSet, Evaluate, ItemInput, LayoutAccess, Mask, QueryLayout, StateRow,
+    ArchetypeSet, Evaluate, LayoutAccess, Mask, QueryLayout, StateRow,
     ViewLayout,
 };
 
