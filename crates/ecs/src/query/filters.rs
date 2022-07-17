@@ -45,7 +45,7 @@ impl<T: Component> Evaluate for Added<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.state_row.added(cached.offset())
+        input.state_row.was_added_with_offset(cached.offset())
     }
 }
 
@@ -57,7 +57,7 @@ impl<T: Component> Evaluate for Modified<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.state_row.mutated(cached.offset())
+        input.state_row.was_mutated_with_offset(cached.offset())
     }
 }
 
@@ -69,7 +69,7 @@ impl<T: Component> Evaluate for Contains<T> {
     }
 
     fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.mask.one_corresponding_bit(*cached)
+        input.mask.contains(*cached)
     }
 }
 
@@ -142,20 +142,20 @@ pub fn contains<T: Component>() -> Contains<T> {
 }
 
 // Constant sources
-pub const fn always() -> Always {
+pub fn always() -> Always {
     Always(())
 }
-pub const fn never() -> Never {
+pub fn never() -> Never {
     Never(())
 }
 
 // Modifiers
-pub const fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {
+pub fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {
     And(a, b)
 }
-pub const fn or<A: Evaluate, B: Evaluate>(a: A, b: B) -> Or<A, B> {
+pub fn or<A: Evaluate, B: Evaluate>(a: A, b: B) -> Or<A, B> {
     Or(a, b)
 }
-pub const fn not<A: Evaluate>(a: A) -> Not<A> {
+pub fn not<A: Evaluate>(a: A) -> Not<A> {
     Not(a)
 }

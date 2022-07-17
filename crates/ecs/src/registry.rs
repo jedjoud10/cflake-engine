@@ -10,10 +10,6 @@ pub trait Component
 where
     Self: 'static + Sized,
 {
-    // Get the bitfield mask of this component
-    fn mask() -> Mask {
-        mask::<Self>()
-    }
 }
 
 // Registered components

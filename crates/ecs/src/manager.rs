@@ -3,8 +3,8 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, query, query_filtered, view, view_filtered, Archetype, ComponentTable,
-    EntityLinkings, Entry, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle, QueryLayout,
+    entity::Entity, query, Archetype, ComponentTable,
+    EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle, QueryLayout,
     ViewLayout,
 };
 
@@ -35,17 +35,21 @@ impl Default for EcsManager {
 impl EcsManager {
     // Spawn an entity with specific components
     pub fn insert<B: for<'a> OwnedBundle<'a>>(&mut self, components: B) -> Entity {
-        todo!()
+        self.insert_with::<B>(|_| components)
     }
 
     // Spawn an entity using a specific callback
     pub fn insert_with<B: for<'a> OwnedBundle<'a>>(&mut self, callback: impl FnOnce(Entity) -> B) -> Entity {
-        todo!()
+        self.insert_from_iter_with(1, |entity, _| callback(entity))[0]
     }
 
     // Spawn a batch of entities with specific components
     pub fn insert_from_iter<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
-        todo!()
+        let mut vec = iter.into_iter().collect::<Vec<B>>();
+        // TODO: benchmark and optimize if needed
+        vec.reverse();
+
+        self.insert_from_iter_with(vec.len(), |_, _| vec.pop().unwrap())
     }
 
     // Spawn a batch of entities with specific componnets by calling a callback for each one
@@ -74,13 +78,13 @@ impl EcsManager {
     }
 
     // Get the immutable entity entry for a specific entity
-    pub fn entry(&self) -> Option<Entry> {
-        todo!()
+    pub fn entry(&self, entity: Entity) -> Option<EntryRef> {
+        EntryRef::new(self, entity)
     }
 
     // Get the mutable entity entry for a specific entity
-    pub fn entry_mut(&mut self) -> Option<EntryMut> {
-        todo!()
+    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut> {
+        EntryMut::new(self, entity)
     }
 
     // Get a immutable reference to the archetype set
@@ -102,6 +106,14 @@ impl EcsManager {
     pub fn entities_mut(&mut self) -> &mut EntitySet {
         &mut self.entities
     }
+
+    // Create a new mutable query iterator    
+
+    // Create a new mutable query iterator with a filter
+    
+    // Create a new immutable query iterator
+
+    // Create a new immutable query iterator with a filter
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

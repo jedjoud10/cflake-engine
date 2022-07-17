@@ -1,4 +1,4 @@
-use crate::Mask;
+use crate::{Mask, Component, mask};
 use std::{cell::RefCell, rc::Rc};
 
 // Component state chunk that contains the component states for a bundle
@@ -6,77 +6,35 @@ use std::{cell::RefCell, rc::Rc};
 pub struct StateRow(Mask, Mask);
 
 impl StateRow {
-    // Create a chunk for newly added bundles using it's linked mask
-    pub const fn new(mask: Mask) -> Self {
-        Self(mask, mask)
+    // Create a new state row with raw values
+    pub fn new(added: Mask, mutated: Mask) -> Self {
+        Self(added, mutated)
     }
 
-    // Check if a component was added during the current frame
-    pub fn added(&self, offset: usize) -> bool {
+    // Check if a component (with a specific mask index) was linked to the entity
+    pub fn was_added_with_offset(&self, offset: usize) -> bool {
         self.1.get(offset)
     }
 
-    // Check if a component was mutated since the start of the current frame
-    pub fn mutated(&self, offset: usize) -> bool {
+    // Check if a component (with a specific mask index) was mutated
+    pub fn was_mutated_with_offset(&self, offset: usize) -> bool {
         self.0.get(offset)
     }
 
-    // Modify the two states
-    pub fn update(&mut self, f: impl FnOnce(&mut Mask, &mut Mask)) {
+    // Check if a component was linked to the entity
+    pub fn was_added<T: Component>(&self) -> bool {
+        self.was_added_with_offset(mask::<T>().offset())
+    }
+
+    // Check if a component was mutated
+    pub fn was_mutated<T: Component>(&self) -> bool {
+        self.was_mutated_with_offset(mask::<T>().offset())
+    }
+
+    // Execute a callback that will modify both masks, and return their old values
+    pub fn update(&mut self, f: impl FnOnce(&mut Mask, &mut Mask)) -> StateRow {
+        let old = *self;
         f(&mut self.0, &mut self.1);
-    }
-}
-
-// Component states (their mutation state)
-#[derive(Default, Clone)]
-pub struct States {
-    rows: Rc<RefCell<Vec<StateRow>>>,
-}
-
-impl States {
-    // Reset the component states to their default values
-    pub fn reset(&self) {
-        self.rows.borrow_mut().iter_mut().for_each(|row| {
-            row.update(|a, b| {
-                *a = Mask::zero();
-                *b = Mask::zero();
-            })
-        });
-    }
-
-    // Add a new component states row
-    pub fn push(&self, state: StateRow) {
-        self.rows.borrow_mut().push(state);
-    }
-
-    // Remove a row and replace the empty spot with the last element in the set
-    pub fn swap_remove(&self, bundle: usize) {
-        self.rows.borrow_mut().swap_remove(bundle);
-    }
-
-    // Update the value of a row. This will return the old row state
-    pub fn update(
-        &self,
-        bundle: usize,
-        function: impl FnOnce(&mut Mask, &mut Mask),
-    ) -> Option<StateRow> {
-        // Fetch the element
-        let mut borrowed = self.rows.borrow_mut();
-        let row = borrowed.get_mut(bundle)?;
-
-        // Update
-        let copy = *row;
-        row.update(function);
-        Some(copy)
-    }
-
-    // Reserve enough capacity to hold "additional" more rows
-    pub fn reserve(&self, additional: usize) {
-        self.rows.borrow_mut().reserve(additional);
-    }
-
-    // Get all the component states for a specific row
-    pub fn get(&self, bundle: usize) -> Option<StateRow> {
-        self.rows.borrow().get(bundle).cloned()
+        old
     }
 }

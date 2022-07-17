@@ -10,12 +10,12 @@ pub struct LayoutAccess {
 
 impl LayoutAccess {
     // Create a new layout access
-    pub const fn new(shared: Mask, unique: Mask) -> Self {
+    pub fn new(shared: Mask, unique: Mask) -> Self {
         Self { shared, unique }
     }
 
     // No layout access at all
-    pub const fn none() -> Self {
+    pub fn none() -> Self {
         Self {
             shared: Mask::zero(),
             unique: Mask::zero(),

@@ -1,9 +1,11 @@
 use std::marker::PhantomData;
 
 use crate::{
-    ArchetypeSet, Evaluate, ItemInput, LayoutAccess, Mask, QueryLayout, StateRow, States,
+    ArchetypeSet, Evaluate, ItemInput, LayoutAccess, Mask, QueryLayout, StateRow,
     ViewLayout,
 };
+
+/*
 
 // Raw data that is returned from the query (mutable)
 struct QueryItem<'a, L: QueryLayout<'a>> {
@@ -244,3 +246,4 @@ pub unsafe fn view_filtered<'a, L: ViewLayout<'a> + 'a, Filter: Evaluate>(
         .then_some(item.tuple)
     })
 }
+*/

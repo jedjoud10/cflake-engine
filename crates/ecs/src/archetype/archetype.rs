@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
-    StateRow, States, OwnedBundleTableAccessor,
+    StateRow, OwnedBundleTableAccessor,
 };
 use std::any::Any;
 
@@ -9,7 +9,7 @@ use std::any::Any;
 pub struct Archetype {
     mask: Mask,
     tables: MaskMap<Box<dyn ComponentTable>>,
-    states: States,
+    states: Vec<StateRow>,
     entities: Vec<Entity>,
 }
 
@@ -19,7 +19,7 @@ impl Archetype {
         Self {
             mask: Mask::zero(),
             tables: Default::default(),
-            states: States::default(),
+            states: Default::default(),
             entities: Default::default(),
         }
     }
@@ -38,10 +38,10 @@ impl Archetype {
         self.reserve(entities.len());
 
         for (entity, linkings) in entities {
-            self.states.push(StateRow::new(self.mask));
+            self.states.push(StateRow::new(self.mask, self.mask));
             self.entities.push(entity);
-            linkings.index = self.len() - 1;
             linkings.mask = self.mask;
+            linkings.index = self.len() - 1;
         }
         
         let mut storages = B::fetch(self);
@@ -65,7 +65,7 @@ impl Archetype {
         self.entities.len()
     }
 
-    // Get a list of the entities that are stored within this archetype
+    // Get the entity slice immutably
     pub fn entities(&self) -> &[Entity] {
         &self.entities
     }
@@ -75,9 +75,14 @@ impl Archetype {
         self.mask
     }
 
-    // Get the current component states immutably
-    pub fn states(&self) -> &States {
+    // Get the state row slice immutably
+    pub fn states(&self) -> &[StateRow] {
         &self.states
+    }
+
+    // Get the state row slice mutably
+    pub(crate) fn states_mut(&mut self) -> &mut [StateRow] {
+        &mut self.states
     }
 
     // Try to get an immutable reference to the table for a specific component
@@ -87,7 +92,7 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to the table for a specific component
-    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+    pub(crate) fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
@@ -209,7 +214,7 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTable
     
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.push(StateRow::new(target.mask));
+    target.states.push(StateRow::new(target.mask, target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
@@ -266,7 +271,7 @@ pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTa
     
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.push(StateRow::new(target.mask));
+    target.states.push(StateRow::new(target.mask, target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
