@@ -4,12 +4,6 @@ use crate::{
 };
 use std::marker::PhantomData;
 
-// Input data given to the filter
-pub struct ItemInput {
-    pub(super) state_row: StateRow,
-    pub(super) mask: Mask,
-}
-
 // Basic evaluator that will be implemented for the filter sources and modifiers
 pub trait Evaluate: 'static {
     // Cached data for fast traversal
@@ -19,7 +13,7 @@ pub trait Evaluate: 'static {
     fn setup() -> Self::Cached;
 
     // Evaluate the filter using the proper filter input
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool;
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool;
 }
 
 // Filter sources
@@ -27,7 +21,7 @@ pub struct Added<T: Component>(PhantomData<T>);
 pub struct Modified<T: Component>(PhantomData<T>);
 pub struct Contains<T: Component>(PhantomData<T>);
 
-// Constant source that always fails / succeeds the test
+// Constant source that always fail / succeed the test
 pub struct Always(());
 pub struct Never(());
 
@@ -44,8 +38,8 @@ impl<T: Component> Evaluate for Added<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.state_row.added(cached.offset())
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        states.was_added_with_offset(cached.offset())
     }
 }
 
@@ -56,8 +50,8 @@ impl<T: Component> Evaluate for Modified<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.state_row.mutated(cached.offset())
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        states.was_mutated_with_offset(cached.offset())
     }
 }
 
@@ -68,8 +62,8 @@ impl<T: Component> Evaluate for Contains<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        input.mask.one_corresponding_bit(*cached)
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        mask.contains(*cached)
     }
 }
 
@@ -78,7 +72,7 @@ impl Evaluate for Always {
 
     fn setup() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, _input: &ItemInput) -> bool {
+    fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
         true
     }
 }
@@ -88,7 +82,7 @@ impl Evaluate for Never {
 
     fn setup() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, _input: &ItemInput) -> bool {
+    fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
         false
     }
 }
@@ -101,8 +95,8 @@ impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
         (A::setup(), B::setup())
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        A::eval(&cached.0, input) && B::eval(&cached.1, input)
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        A::eval(&cached.0, states, mask) && B::eval(&cached.1, states, mask)
     }
 }
 
@@ -113,8 +107,8 @@ impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
         (A::setup(), B::setup())
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        A::eval(&cached.0, input) || B::eval(&cached.1, input)
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        A::eval(&cached.0, states, mask) || B::eval(&cached.1, states, mask)
     }
 }
 
@@ -125,8 +119,8 @@ impl<A: Evaluate> Evaluate for Not<A> {
         A::setup()
     }
 
-    fn eval(cached: &Self::Cached, input: &ItemInput) -> bool {
-        !A::eval(cached, input)
+    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+        !A::eval(cached, states, mask)
     }
 }
 
@@ -142,20 +136,20 @@ pub fn contains<T: Component>() -> Contains<T> {
 }
 
 // Constant sources
-pub const fn always() -> Always {
+pub fn always() -> Always {
     Always(())
 }
-pub const fn never() -> Never {
+pub fn never() -> Never {
     Never(())
 }
 
 // Modifiers
-pub const fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {
+pub fn and<A: Evaluate, B: Evaluate>(a: A, b: B) -> And<A, B> {
     And(a, b)
 }
-pub const fn or<A: Evaluate, B: Evaluate>(a: A, b: B) -> Or<A, B> {
+pub fn or<A: Evaluate, B: Evaluate>(a: A, b: B) -> Or<A, B> {
     Or(a, b)
 }
-pub const fn not<A: Evaluate>(a: A) -> Not<A> {
+pub fn not<A: Evaluate>(a: A) -> Not<A> {
     Not(a)
 }

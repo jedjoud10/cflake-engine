@@ -1,15 +1,23 @@
-use std::{mem::{MaybeUninit, size_of}, ptr::null, cell::Cell};
+use std::{
+    cell::Cell,
+    mem::{size_of, MaybeUninit},
+    ptr::null,
+};
 
 use arrayvec::ArrayVec;
 use assets::Asset;
 use math::AABB;
 use obj::TexturedVertex;
-use rayon::iter::Positions;
 
-use super::{attributes::*, vertices::*, MeshImportSettings, EnabledAttributes, AttribBuffer};
+use super::{
+    AttributeBuffer, Color, EnabledAttributes, IndicesMut, IndicesRef, MeshImportSettings, Normal,
+    Position, Tangent, TexCoord, VerticesMut, VerticesRef,
+};
 use crate::{
-    buffer::{Buffer, ElementBuffer, ArrayBuffer, BufferMode, BufferAnyRef},
-    context::Context, mesh::{MeshImportMode}, prelude::Array, object::{ToGlName, Shared},
+    buffer::{ArrayBuffer, Buffer, BufferFormatAny, BufferMode, ElementBuffer},
+    context::Context,
+    mesh::MeshImportMode,
+    object::{Shared, ToGlName},
 };
 
 // A mesh is a collection of 3D vertices connected by triangles
@@ -20,11 +28,11 @@ pub struct Mesh {
     pub(crate) enabled: EnabledAttributes,
 
     // Vertex attribute buffers
-    pub(super) positions: AttribBuffer<Position>,
-    pub(super) normals: AttribBuffer<Normal>,
-    pub(super) tangents: AttribBuffer<Tangent>,
-    pub(super) colors: AttribBuffer<Color>,
-    pub(super) tex_coord: AttribBuffer<TexCoord>,
+    pub(super) positions: AttributeBuffer<Position>,
+    pub(super) normals: AttributeBuffer<Normal>,
+    pub(super) tangents: AttributeBuffer<Tangent>,
+    pub(super) colors: AttributeBuffer<Color>,
+    pub(super) uvs: AttributeBuffer<TexCoord>,
 
     // The index buffer (PS: Supports only triangles rn)
     indices: MaybeUninit<ElementBuffer<u32>>,
@@ -35,7 +43,7 @@ pub struct Mesh {
         let mut arr = self
             .attributes_any()
             .into_iter()
-            .map(|opt| 
+            .map(|opt|
                 opt.map(|(buf, _)| buf.len()
             )
         );
@@ -46,6 +54,26 @@ pub struct Mesh {
 */
 
 impl Mesh {
+    // Get a reference to the vertices immutably
+    fn vertices(&self) -> VerticesRef {
+        todo!()
+    }
+
+    // Get a reference to the vertices mutably
+    fn vertices_mut(&mut self) -> VerticesMut {
+        todo!()
+    }
+
+    // Get a reference to the indices immutably
+    fn indices(&self) -> IndicesRef {
+        todo!()
+    }
+
+    // Get a reference to the indices mutably
+    fn indices_mut(&mut self) -> IndicesMut {
+        todo!()
+    }
+    /*
     // Create a new mesh from the attribute buffers and the indices
     // The position buffer and index buffer are the only buffers that are required by default
     pub fn from_buffers(
@@ -53,11 +81,11 @@ impl Mesh {
         normals: Option<ArrayBuffer<VeNormal>>,
         tangents: Option<ArrayBuffer<VeTangent>>,
         colors: Option<ArrayBuffer<VeColor>>,
-        tex_coord: Option<ArrayBuffer<VeTexCoord0>>,    
+        tex_coord: Option<ArrayBuffer<VeTexCoord0>>,
         indices: ElementBuffer<u32>,
     ) -> Option<Self> {
         unsafe {
-            let mut mesh = Self { 
+            let mut mesh = Self {
                 vao: 0,
                 buffers: MeshBuffers::empty(),
                 maybe_reassigned: Cell::new(MeshBuffers::empty()),
@@ -79,7 +107,7 @@ impl Mesh {
             mesh.set_attribute::<Tangent>(tangents);
             mesh.set_attribute::<Color>(colors);
             mesh.set_attribute::<TexCoord>(tex_coord);
-            
+
             // Set required index buffer
             mesh.set_indices(indices);
             mesh.len().map(|_| mesh)
@@ -118,10 +146,10 @@ impl Mesh {
     pub fn set_attribute_buffer<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
         if let Some(buffer) = buffer {
             // Insert the buffer into the mesh
-            unsafe { 
+            unsafe {
                 T::set_raw(self, buffer);
             }
-            
+
             // Enable the vertex attribute and specify it's format
             self.buffers.insert(T::ENABLED);
             self.maybe_reassigned.get_mut().insert(T::ENABLED);
@@ -153,13 +181,13 @@ impl Mesh {
 
     // Get an immutable reference to the vertex buffers wrapper
     pub fn vertices(&self) {}
-    
+
     // Get a mutable reference to the vertex buffers wrapper
     pub fn vertices_mut(&mut self) {}
-    
+
     // Get an immutable reference to the indices
     pub fn indices(&self) {}
-    
+
     // Get a mutable reference to the indices
     pub fn indices_mut(&mut self) {}
 
@@ -170,7 +198,7 @@ impl Mesh {
         // Check if we even need to rebind the buffers in the first place
         let copy = self.maybe_reassigned.get();
         if copy.is_empty() {
-           return; 
+           return;
         }
 
         // Bind all the active attribute buffers at the start (create the binding indices)
@@ -196,7 +224,7 @@ impl Mesh {
     // Recalculate the vertex normals procedurally; based on position attribute
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
-        
+
         // Get positions buffer and mapping
         let mapped_positions = self.attribute::<Position>().unwrap().map();
         let positions = mapped_positions.as_slice();
@@ -205,7 +233,7 @@ impl Mesh {
         let mapped_indices = self.indices().map();
         let indices = mapped_indices.as_slice();
         assert!(indices.len() % 3 == 0, "Index count is not multiple of 3");
-        
+
         // Create pre-allocated normal buffer
         let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
 
@@ -231,7 +259,7 @@ impl Mesh {
         // Normalized + conversion to i8
         let normals: Vec<vek::Vec3<i8>> = normals
             .into_iter()
-            .map(|n| 
+            .map(|n|
                 n.normalized()
                 .map(|e| (e * 127.0) as i8)
             ).collect::<_>();
@@ -280,26 +308,26 @@ impl Mesh {
             fn num_faces(&self) -> usize {
                 self.indices.len() / 3
             }
-        
+
             fn num_vertices_of_face(&self, _face: usize) -> usize {
                 3
             }
-        
+
             fn position(&self, face: usize, vert: usize) -> [f32; 3] {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.positions[i].into_array()
             }
-        
+
             fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.normals[i].map(|x| x as f32 / 127.0).into_array()
             }
-        
+
             fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.uvs[i].map(|x| x as f32 / 255.0).into_array()
             }
-        
+
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
                 let i = self.indices[face * 3 + vert] as usize;
                 self.tangents[i] =
@@ -347,6 +375,7 @@ impl Mesh {
         todo!()
     }
     */
+    */
 }
 
 impl Drop for Mesh {
@@ -357,6 +386,7 @@ impl Drop for Mesh {
     }
 }
 
+/*
 impl<'a> Asset<'a> for Mesh {
     type Args = (&'a mut Context, MeshImportSettings);
 
@@ -369,7 +399,7 @@ impl<'a> Asset<'a> for Mesh {
 
         // Load the .Obj mesh
         let parsed = obj::load_obj::<TexturedVertex, &[u8], u32>(data.bytes()).unwrap();
-        
+
         // Create temporary vectors containing the vertex attributes
         let capacity = parsed.vertices.len();
         let mut positions = Vec::with_capacity(capacity);
@@ -384,7 +414,7 @@ impl<'a> Asset<'a> for Mesh {
             positions.push(Vec3::from_slice(&vertex.position) * settings.scale);
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
-        }        
+        }
 
         // Convert the mesh mode into the valid buffer modes
         let mode = match settings.mode {
@@ -409,3 +439,4 @@ impl<'a> Asset<'a> for Mesh {
         mesh
     }
 }
+*/

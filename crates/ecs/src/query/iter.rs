@@ -1,125 +1,140 @@
-use crate::{Archetype, ArchetypeSet, Evaluate, ItemInput, LayoutAccess, QueryLayout, StateRow};
 
-// The main threaded iterators used "chunks" to keep track of the currently loaded archetype and it's base storage pointers
-struct Chunk<'a, Layout: QueryLayout<'a>> {
-    // Loaded archetype
-    archetype: &'a Archetype,
 
-    // And respective layout ptrs
-    ptrs: Layout::PtrTuple,
-}
+/*
 
-impl<'a, Layout: QueryLayout<'a>> Clone for Chunk<'a, Layout> {
-    fn clone(&self) -> Self {
-        Self {
-            archetype: self.archetype,
-            ptrs: self.ptrs,
-        }
-    }
-}
-
-impl<'a, Layout: QueryLayout<'a>> Copy for Chunk<'a, Layout> {}
-
-impl<'a, Layout: QueryLayout<'a>> Chunk<'a, Layout> {
-    // Load a component bundle from a chunk and also set it's respective mutation states
-    fn load(&self, bundle: usize) -> Layout {
-        Layout::offset(self.ptrs, bundle)
-    }
-
-    // Check if a bundle index is valid
-    fn check_bundle(&self, bundle: usize) -> bool {
-        bundle < self.archetype.len()
-    }
-}
-
-// Return value of QueryIter
-pub struct QueryItem<'a, Layout: QueryLayout<'a>> {
-    // Values that will be read/written to
-    tuple: Layout,
-
-    // Current component states
+// Raw data that is returned from the query (mutable)
+struct QueryItem<'a, L: QueryLayout<'a>> {
+    tuple: L,
     state: StateRow,
-
-    // The archetype it came from
-    archetype: &'a Archetype,
+    archetype_mask: Mask,
+    _phantom: PhantomData<&'a L>,
 }
 
-// Custom query iterator that will return QueryItem
-pub struct QueryIter<'a, Layout: QueryLayout<'a>> {
-    // Chunks that contains the archetypes and base ptrs
-    chunks: Vec<Chunk<'a, Layout>>,
+// Raw data that is returned from the view query (immutable)
+struct ViewItem<'a, L: ViewLayout<'a>> {
+    tuple: L,
+    state: StateRow,
+    archetype_mask: Mask,
+    _phantom: PhantomData<&'a L>,
+}
 
-    // How we shall access the components
+// Chunk used for mutable query
+struct Chunk<'a, L: QueryLayout<'a>> {
+    ptrs: L::PtrTuple,
+    states: States,
+    len: usize,
+}
+
+// Chunk used for immutable query
+struct ViewChunk<'a, L: ViewLayout<'a>> {
+    ptrs: L::PtrTuple,
+    states: States,
+    len: usize,
+}
+
+// Custom mutable archetype iterator.
+struct QueryIter<'a, L: QueryLayout<'a>> {
+    chunks: Vec<Chunk<'a, L>>,
     access: LayoutAccess,
-
-    // Indices
     bundle: usize,
-    chunk: usize,
-
-    // Currently loaded archetype and base ptrs
-    loaded: Option<Chunk<'a, Layout>>,
+    loaded: Option<Chunk<'a, L>>,
+    len: usize,
 }
 
-impl<'a, Layout: QueryLayout<'a>> QueryIter<'a, Layout> {
-    // Create a new iterator from some archetypes
-    pub fn new(archetypes: &'a ArchetypeSet) -> Self {
-        // Cache the layout mask for later use
-        let access = Layout::combined();
-        let (mask, _) = (access.reading(), access.writing());
+impl<'a, L: QueryLayout<'a>> QueryIter<'a, L> {
+    // Create a new mutable query iterator that will iterate through the valid archetypes entities
+    // TODO: Make this less ugly
+    fn new(archetypes: &'a mut ArchetypeSet) -> Self {
+        let access = L::combined();
+        let mask = access.shared() | access.unique();
 
-        // Load the archetypes that validate our layout masks, and get their pointers as well
-        let chunks = archetypes
-            .iter()
-            .filter_map(|(_, archetype)| {
-                (archetype.mask() & mask == mask).then(|| {
-                    // Combine the archetype and pointers into a chunk
-                    Chunk {
-                        archetype,
-                        ptrs: Layout::get_base_ptrs(archetype),
-                    }
-                })
+        // Create a new vector containing the archetypes in arbitrary order
+        let mut chunks = archetypes
+            .iter_mut()
+            .filter(|(m, _)| m.contains(mask))
+            .map(|(_, archetype)| Chunk {
+                len: archetype.len(),
+                states: archetype.states().clone(),
+                ptrs: L::try_fetch_ptrs(archetype).unwrap(),
             })
             .collect::<Vec<_>>();
 
-        // Load the first chunk that is valid (order is irrelevant)
-        let first = chunks.first().cloned();
+        // Get the maximum number of bundles that we have
+        let len = chunks.iter().map(|chunk| chunk.len).sum();
 
+        // Create and initiate the iterator
+        let last = chunks.pop();
         Self {
             chunks,
             access,
             bundle: 0,
-            chunk: 0,
-            loaded: first,
+            loaded: last,
+            len,
         }
     }
 }
 
-impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
-    type Item = QueryItem<'a, Layout>;
+// Custom immutable archetype iterator.
+struct ViewIter<'a, L: ViewLayout<'a>> {
+    chunks: Vec<ViewChunk<'a, L>>,
+    mask: Mask,
+    bundle: usize,
+    loaded: Option<ViewChunk<'a, L>>,
+    len: usize,
+}
+
+impl<'a, L: ViewLayout<'a>> ViewIter<'a, L> {
+    // Create a new immutable query iterator that will iterate through the valid archetypes entities
+    // TODO: Make this less ugly
+    fn new(archetypes: &'a ArchetypeSet) -> Self {
+        let mask = L::combined();
+
+        // Create a new vector containing the archetypes in arbitrary order
+        let mut chunks = archetypes
+            .iter()
+            .filter(|(m, _)| m.contains(mask))
+            .map(|(_, archetype)| ViewChunk {
+                len: archetype.len(),
+                states: archetype.states().clone(),
+                ptrs: unsafe { L::try_fetch_ptrs(archetype).unwrap() },
+            })
+            .collect::<Vec<_>>();
+
+        // Get the maximum number of bundles that we have
+        let len = chunks.iter().map(|chunk| chunk.len).sum();
+
+        // Create and initiate the iterator
+        let last = chunks.pop();
+        Self {
+            chunks,
+            mask,
+            bundle: 0,
+            loaded: last,
+            len,
+        }
+    }
+}
+
+// Implement the iterator trait for mutable queries
+impl<'a, L: QueryLayout<'a>> Iterator for QueryIter<'a, L> {
+    type Item = QueryItem<'a, L>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Handle empty cases
-        self.loaded.as_ref()?;
-
-        // Check if the bundle index is valid, and move to the next archetype if it isn't
-        if !self.loaded.as_ref().unwrap().check_bundle(self.bundle) {
-            // Reached the end of the archetype chunk, move to the next one
-            self.chunk += 1;
-            let chunk = *self.chunks.get(self.chunk)?;
-            self.loaded.replace(chunk);
+        // Move to the next chunk if possible
+        if self.bundle == self.loaded.as_ref()?.len {
+            self.loaded = self.chunks.pop();
             self.bundle = 0;
         }
 
-        // Load a component bundle
-        let chunk = self.loaded.as_ref().unwrap();
-        let bundle = chunk.load(self.bundle);
+        // Dereference the pointer
+        let chunk = self.loaded.as_ref()?;
+        let bundle = unsafe { L::read_as_layout_at(chunk.ptrs, self.bundle) };
 
-        // Update the bundle states
+        // Update the bundle state
         let old = chunk
-            .archetype
-            .states()
+            .states
             .update(self.bundle, |mutated, _| {
-                *mutated = *mutated | self.access.writing()
+                *mutated = *mutated | self.access.unique()
             })
             .unwrap();
         self.bundle += 1;
@@ -128,22 +143,72 @@ impl<'a, Layout: QueryLayout<'a>> Iterator for QueryIter<'a, Layout> {
         Some(QueryItem {
             tuple: bundle,
             state: old,
-            archetype: chunk.archetype,
+            archetype_mask: self.access.shared() | self.access.unique(),
+            _phantom: Default::default(),
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
     }
 }
 
-// Create a query without a filter
-pub fn query<'a, Layout: QueryLayout<'a> + 'a>(
-    archetypes: &'a ArchetypeSet,
-) -> impl Iterator<Item = Layout> + 'a {
+impl<'a, L: QueryLayout<'a>> ExactSizeIterator for QueryIter<'a, L> {}
+
+// Implement the iterator trait for immutable view queries
+impl<'a, L: ViewLayout<'a>> Iterator for ViewIter<'a, L> {
+    type Item = ViewItem<'a, L>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Move to the next chunk if possible
+        if self.bundle == self.loaded.as_ref()?.len {
+            self.loaded = self.chunks.pop();
+            self.bundle = 0;
+        }
+
+        // Dereference the pointer
+        let chunk = self.loaded.as_ref()?;
+        let bundle = unsafe { L::read_as_layout_at(chunk.ptrs, self.bundle) };
+
+        // Get the bundle state
+        let state = chunk.states.get(self.bundle).unwrap();
+        self.bundle += 1;
+
+        // Create the query item and return it
+        Some(ViewItem {
+            tuple: bundle,
+            state,
+            archetype_mask: self.mask,
+            _phantom: Default::default(),
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
+    }
+}
+
+impl<'a, L: ViewLayout<'a>> ExactSizeIterator for ViewIter<'a, L> {}
+
+// Fetch a query, assuming that the layout is valid
+pub unsafe fn query_unchecked<'a, L: QueryLayout<'a> + 'a>(
+    archetypes: &'a mut ArchetypeSet,
+) -> impl ExactSizeIterator<Item = L> + 'a {
     QueryIter::new(archetypes).map(|item| item.tuple)
 }
-// Create a query with a filter
-pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
+
+// Fetch a view query, assuming that the layout is valid (it is always valid)
+pub unsafe fn view<'a, L: ViewLayout<'a> + 'a>(
     archetypes: &'a ArchetypeSet,
+) -> impl ExactSizeIterator<Item = L> + 'a {
+    ViewIter::new(archetypes).map(|item| item.tuple)
+}
+
+// Fetch a filtered query, assuming the the layout is valid
+pub unsafe fn query_filtered<'a, L: QueryLayout<'a> + 'a, Filter: Evaluate>(
+    archetypes: &'a mut ArchetypeSet,
     _: Filter,
-) -> impl Iterator<Item = Layout> + 'a {
+) -> impl Iterator<Item = L> + 'a {
     let cache = Filter::setup();
 
     QueryIter::new(archetypes).filter_map(move |item| {
@@ -151,9 +216,29 @@ pub fn filtered<'a, Layout: QueryLayout<'a> + 'a, Filter: Evaluate>(
             &cache,
             &ItemInput {
                 state_row: item.state,
-                mask: item.archetype.mask(),
+                mask: item.archetype_mask,
             },
         )
         .then_some(item.tuple)
     })
 }
+
+// Fetch a filtered view query, assuming the layout is valid
+pub unsafe fn view_filtered<'a, L: ViewLayout<'a> + 'a, Filter: Evaluate>(
+    archetypes: &'a ArchetypeSet,
+    _: Filter,
+) -> impl Iterator<Item = L> + 'a {
+    let cache = Filter::setup();
+
+    ViewIter::new(archetypes).filter_map(move |item| {
+        Filter::eval(
+            &cache,
+            &ItemInput {
+                state_row: item.state,
+                mask: item.archetype_mask,
+            },
+        )
+        .then_some(item.tuple)
+    })
+}
+*/

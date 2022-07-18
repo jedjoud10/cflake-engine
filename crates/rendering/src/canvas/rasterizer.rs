@@ -2,8 +2,8 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
 use super::{Canvas, RasterError};
 use crate::{
-    buffer::ElementBuffer, context::Context, object::ToGlName,
-    others::Comparison, prelude::Uniforms, mesh::{Mesh},
+    buffer::ElementBuffer, context::Context, mesh::Mesh, object::ToGlName, others::Comparison,
+    prelude::Uniforms,
 };
 
 // Blend mode factor source
@@ -183,7 +183,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         &mut self,
         vao: u32,
         primitive_count: usize,
-        uniforms: &mut Uniforms
+        uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
@@ -201,7 +201,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         vao: u32,
         primitive_count: usize,
         element_type: u32,
-        uniforms: &mut Uniforms
+        uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
         uniforms.validate().map_err(RasterError::Uniforms)?;
 
@@ -214,12 +214,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     }
 
     // Draw a mesh, but only if it's indices are valid
-    pub fn draw(
-        &mut self,
-        mesh: &Mesh,
-        uniforms: &mut Uniforms
-    ) -> Result<(), RasterError> {
-        
+    pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
         unsafe {
             //let count = mesh.indices().len();
             //self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)

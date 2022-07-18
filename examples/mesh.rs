@@ -22,9 +22,9 @@ fn init(world: &mut World) {
         settings,
         keyboard,
         standard_mats,
-        sky_mats,
+        _sky_mats,
         normal_maps,
-        albedo_maps,
+        _albedo_maps,
         assets,
         shaders,
     ) = world
@@ -62,14 +62,11 @@ fn init(world: &mut World) {
         mipmaps: MipMaps::AutomaticAniso {
             samples: NonZeroU8::new(4).unwrap(),
         },
-        mode: TextureMode::Static,  
+        mode: TextureMode::Static,
     };
 
     let texture = assets
-        .load_with::<NormalMap>(
-            "user/textures/normal.png",
-            (ctx, import_settings),
-        )
+        .load_with::<NormalMap>("user/textures/normal.png", (ctx, import_settings))
         .unwrap();
     let texture = normal_maps.insert(texture);
 
@@ -111,7 +108,7 @@ fn update(world: &mut World) {
     window.raw().set_cursor_grab(true).unwrap();
     window.raw().set_cursor_visible(false);
 
-    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.try_mut_entry(c)) {
+    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.mut_entry(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();
         let mut velocity = vek::Vec3::<f32>::zero();
         let forward = transform.forward();

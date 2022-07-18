@@ -1,16 +1,16 @@
+use itertools::Itertools;
 use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, filtered, query, Archetype, EntityLinkings, Entry, Evaluate, LinkError,
-    LinkModifier, Mask, MaskMap, MutEntry, OwnedLayout, QueryLayout, StorageVec,
+    entity::Entity, query, Archetype, ComponentTable,
+    EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
+    OwnedBundleAnyTableAccessor, archetype::remove_bundle_unchecked,
 };
 
-// Type aliases because I have gone insane
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
-pub(crate) type UniqueStoragesSet = MaskMap<Box<dyn StorageVec>>;
 
 // TODO: Find a better name for this bozo
 #[derive(Resource)]
@@ -22,145 +22,126 @@ pub struct EcsManager {
     // Archetypes are a subset of entities that all share the same component mask
     // We use an archetypal ECS because it is a bit more efficient when iterating through components, though it is slower when modifying entity component layouts
     pub(crate) archetypes: ArchetypeSet,
-
-    // The unique storage set serves as a base where we can store empty versions of the vectors that are stored within the archetypes
-    pub(crate) uniques: UniqueStoragesSet,
 }
 
 impl Default for EcsManager {
     fn default() -> Self {
-        // Create the default empty archetype
-        let uniques: UniqueStoragesSet = Default::default();
-        let empty = Archetype::new(Mask::zero(), &uniques);
-
         Self {
             entities: Default::default(),
-            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), empty))),
-            uniques,
+            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
         }
     }
 }
 
 impl EcsManager {
-    // Modify an entity's component layout
-    // TODO: Make this more coherent with the new insert() method
-    pub fn modify(
-        &mut self,
-        entity: Entity,
-        function: impl FnOnce(&mut LinkModifier),
-    ) -> Option<()> {
-        // Keep a copy of the linkings before we do anything
-        let mut copied = *self.entities.get(entity)?;
-
-        // Create a link modifier, so we can insert/remove components
-        let mut linker = LinkModifier::new(self, entity).unwrap();
-        function(&mut linker);
-
-        // Apply the changes
-        linker.apply(&mut copied);
-        *self.entities.get_mut(entity).unwrap() = copied;
-        Some(())
+    // Spawn an entity with specific components
+    pub fn insert<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, components: B) -> Entity {
+        assert!(B::is_valid());
+        self.insert_from_iter(std::iter::once(components))[0]
     }
 
-    // Try to fetch a mutable entry for an entity
-    pub fn try_mut_entry(&mut self, entity: Entity) -> Option<MutEntry> {
-        MutEntry::new(self, entity)
+    // Spawn a batch of entities with specific components
+    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+        assert!(B::is_valid());
+
+        // Try to get the archetype, and create a default one if it does not exist
+        let mask = B::combined();
+        let archetype = self.archetypes.entry(mask).or_insert_with(|| Archetype::from_table_accessor::<B>());
+        let components = iter.into_iter().collect::<Vec<_>>();
+
+        // Extend the archetype with the new bundles
+        archetype.extend_from_slice::<B>(&mut self.entities, components)
     }
 
-    // Try to fetch an immutable entry for an entity
-    pub fn try_entry(&self, entity: Entity) -> Option<Entry> {
-        Entry::new(self, entity)
-    }
-
-    // Insert an entity with the given component set as a tuple
-    pub fn insert<T: OwnedLayout>(&mut self, tuple: T) -> Result<Entity, LinkError> {
-        self.insert_with(|_| tuple)
-    }
-
-    // Insert an entity with the given component set as a tuple using a callback
-    pub fn insert_with<T: OwnedLayout>(
-        &mut self,
-        callback: impl FnOnce(Entity) -> T,
-    ) -> Result<Entity, LinkError> {
-        let entity = self.entities.insert(EntityLinkings::default());
-
-        // Create the modifier and insert the components
-        let mut linker = LinkModifier::new(self, entity).unwrap();
-        T::insert(callback(entity), &mut linker)?;
-
-        // Create the linkings and apply the modifier
-        let mut linkings = EntityLinkings::default();
-        linker.apply(&mut linkings);
-        *self.entities.get_mut(entity).unwrap() = linkings;
-
-        Ok(entity)
-    }
-
-    // Remove an entity from the world
+    // Remove an entity, and discard it's components
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        // Remove the entity from it's current archetype first
-        Archetype::remove(
-            &mut self.archetypes,
-            &mut self.entities,
-            entity,
-            Mask::zero(),
-        );
+        self.remove_from_iter(std::iter::once(entity))
+    }
 
-        // Then remove it from the manager
-        self.entities.remove(entity).unwrap();
+    // Remove an entity, and fetch it's removed components as a new bundle
+    pub fn remove_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, entity: Entity) -> Option<B> {
+        assert!(B::is_valid());
+        self.remove_from_iter_then::<B>(std::iter::once(entity)).map(|mut vec| vec.pop().unwrap())
+    }
+
+    // Remove multiple entities, and discard their components
+    pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<()> {
+        for entity in iter.into_iter() {
+            let linkings = *self.entities.get(entity)?;
+            let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+            archetype.remove(&mut self.entities, entity).unwrap();
+        }
+
         Some(())
     }
 
-    // Get all the entities that are stored within the manager
-    pub fn entities(&self) -> &EntitySet {
-        &self.entities
+    // Remove multiple entities, and fetch their removed components as new bundles
+    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+        assert!(B::is_valid());
+
+        iter.into_iter().map(|entity| {
+            // Move the entity from it's current archetype to the unit archetype
+            remove_bundle_unchecked::<B>(&mut self.archetypes, &mut self.entities, entity).map(|bundle| {
+                self.entities.remove(entity).unwrap();
+                bundle
+            })
+        }).collect::<Option<Vec<B>>>()
     }
 
-    // Get the archetypes
+    // Get the immutable entity entry for a specific entity
+    pub fn entry(&self, entity: Entity) -> Option<EntryRef> {
+        EntryRef::new(self, entity)
+    }
+
+    // Get the mutable entity entry for a specific entity
+    pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut> {
+        EntryMut::new(self, entity)
+    }
+
+    // Get a immutable reference to the archetype set
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
-
-    /* #region Main thread queries */
-    // Normal query without filter
-    pub fn try_query<'a, Layout: QueryLayout<'a> + 'a>(
-        &'a mut self,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        Layout::validate().then(|| query(&self.archetypes))
+    
+    // Get a mutable reference to the archetype set
+    pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
+        &mut self.archetypes
+    }
+    
+    // Get an immutable reference to the entity set
+    pub fn entities(&self) -> &EntitySet {
+        &self.entities
+    }
+    
+    // Get a mutable reference to the entity set
+    pub fn entities_mut(&mut self) -> &mut EntitySet {
+        &mut self.entities
     }
 
-    // Create a query with a specific filter
-    pub fn try_query_with<'a, Layout: QueryLayout<'a> + 'a>(
-        &'a mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        Layout::validate().then(|| filtered(&self.archetypes, filter))
+    // Create a new mutable query iterator
+    pub fn query(&mut self) {
+        todo!()
+    }    
+
+    // Create a new mutable query iterator with a filter
+    pub fn query_filter(&mut self, filter: impl Evaluate) {
+        todo!()
+    }
+    
+    // Create a new immutable query iterator
+    pub fn view(&self) {
+        todo!()
     }
 
-    // A view query that can only READ data, and never write to it
-    // This will return None when it is unable to get a view query
-    // TODO: Make use of Rust's type system to check for immutable borrows instead
-    pub fn try_view<'a, Layout: QueryLayout<'a> + 'a>(
-        &'a self,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty() && Layout::validate();
-        valid.then(|| query(&self.archetypes))
+    // Create a new immutable query iterator with a filter
+    pub fn view_filter(&self, filter: impl Evaluate) {
+        todo!()
     }
-
-    // View query with a specific filter
-    pub fn try_view_with<'a, Layout: QueryLayout<'a> + 'a>(
-        &'a self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = Layout> + 'a> {
-        let valid = Layout::combined().writing().empty() && Layout::validate();
-        valid.then(|| filtered(&self.archetypes, filter))
-    }
-
-    /* #endregion */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(events: &mut Events) {
+    /*
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let (ecs, _time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
@@ -190,4 +171,5 @@ pub fn system(events: &mut Events) {
                 .after("post user"),
         )
         .unwrap();
+    */
 }

@@ -1,61 +1,56 @@
 use crate::Component;
-use std::{any::Any, ffi::c_void, ptr::NonNull};
+use std::any::Any;
 
 // A component storage that is implemented for Vec<T>
-pub trait StorageVec {
-    // As any and as any mut
+// This type makes a lot of assumption about the parameters
+// that are given to it, so it is only used internally
+pub trait ComponentTable {
+    // Runtime dynamic conversions
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
-    // Vector shit
-    fn push(&mut self, component: Box<dyn Any>);
-    fn swap_remove(&mut self, bundle: usize);
-    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any>;
+    // Remove a component from the storage, and move the last element into it's place instead
+    fn swap_remove(&mut self, index: usize);
+
+    // Remove a component from the storage, and insert the return value into another component storage
+    // This assumes that "other" is of the same type as Self
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentTable);
+
+    // Reserve some allocation space for the storage
     fn reserve(&mut self, additional: usize);
 
-    // Pointer shit
-    fn get_storage_ptr(&self) -> NonNull<c_void>;
-
-    // Create a new boxed vector (empty)
-    // TODO: Remove this whole unique storage shit since it makes it confusing
-    fn clone_unique_storage(&self) -> Box<dyn StorageVec>;
+    // This will create an empty ComponentTable vector using another one (to keep the trait object safe)
+    fn clone_default(&self) -> Box<dyn ComponentTable>;
 }
 
-impl<T: Component> StorageVec for Vec<T> {
-    // As any and as any mut
+impl<T: Component> ComponentTable for Vec<T> {
+    // Convert to immutably Any trait object
     fn as_any(&self) -> &dyn Any {
         self
     }
+
+    // Convert to mutable Any trait object
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 
-    // Push a component into the vector
-    // We are 100% sure that the component is of type T
-    fn push(&mut self, component: Box<dyn Any>) {
-        // Cast the boxed component to T and insert it
-        let component = *component.downcast::<T>().unwrap();
-        self.push(component);
-    }
-    // Swap remove an element
-    fn swap_remove(&mut self, bundle: usize) {
-        self.swap_remove(bundle);
-    }
-    // Swap remove an element, but box the result
-    fn swap_remove_boxed(&mut self, bundle: usize) -> Box<dyn Any> {
-        let element = self.swap_remove(bundle);
-        Box::new(element)
-    }
-    fn reserve(&mut self, additional: usize) {
-        self.reserve(additional)
+    // Calls to Vec::swap_remove but typeless
+    fn swap_remove(&mut self, index: usize) {
+        self.swap_remove(index);
     }
 
-    // Pointer shit
-    fn get_storage_ptr(&self) -> NonNull<c_void> {
-        NonNull::new(self.as_ptr() as *mut c_void).unwrap()
+    // Calls to Vec::swap_remove, and inserts the result into another storage
+    fn swap_remove_move(&mut self, index: usize, other: &mut dyn ComponentTable) {
+        let removed = self.swap_remove(index);
+        let other = other.as_any_mut().downcast_mut::<Self>().unwrap();
+        other.push(removed);
     }
-    // Create a new boxed component storage of an empty vec
-    fn clone_unique_storage(&self) -> Box<dyn StorageVec> {
+
+    fn reserve(&mut self, additional: usize) {
+        self.reserve(additional);
+    }
+
+    fn clone_default(&self) -> Box<dyn ComponentTable> {
         Box::new(Vec::<T>::new())
     }
 }

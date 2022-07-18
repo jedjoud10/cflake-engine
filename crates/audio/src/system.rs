@@ -7,9 +7,9 @@ use world::{Events, Stage, Update, World};
 fn update(world: &mut World) {
     let ecs = world.get_mut::<&mut EcsManager>().unwrap();
 
+    // Get the audio listener's ear locations
     let head = ecs
-        .try_view::<(&Transform, &Listener)>()
-        .unwrap()
+        .view::<(&Transform, &Listener)>()
         .next()
         .map(|(transform, _)| AudioHead {
             left: -transform.right(),
@@ -26,7 +26,7 @@ fn update(world: &mut World) {
         // Update emitter locations
         let filter = or(modified::<Transform>(), added::<Transform>());
         let sources = ecs
-            .try_query_with::<(&mut AudioSource, &Transform)>(filter)
+            .query_with::<(&mut AudioSource, &Transform)>(filter)
             .unwrap();
         for (source, transform) in sources {
             if let Some(pos) = &source.position {

@@ -2,13 +2,13 @@ use super::Material;
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
     context::Context,
-    mesh::{Surface, Mesh},
+    mesh::{Mesh, Surface},
     prelude::Shader,
     scene::{Camera, Directional, Renderer},
 };
 use assets::Assets;
 use math::Transform;
-use std::{marker::PhantomData, any::type_name};
+use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Resource, Storage, World};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
@@ -70,25 +70,23 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         };
 
         // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
-        let query = ecs.try_view::<(&Renderer, &Surface<M>)>().unwrap();
+        let query = ecs.view::<(&Renderer, &Surface<M>)>();
         let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
-            let mesh = meshes.get(&surface.mesh()); 
+            let mesh = meshes.get(&surface.mesh());
             //let buffers = mesh.buffers.contains(M::required()) && mesh.len().is_some();
             todo!();
             renderer
         });
 
         // Get the main camera component (there has to be one for us to render)
-        let camera_entry = ecs.try_entry(scene.main_camera().unwrap()).unwrap();
+        let camera_entry = ecs.entry(scene.main_camera().unwrap()).unwrap();
         let camera_transform = camera_entry.get::<Transform>().unwrap();
         let camera_data = camera_entry.get::<Camera>().unwrap();
         let camera = (camera_data, camera_transform);
 
         // Get the main directional light
-        let light_entry = ecs
-            .try_entry(scene.main_directional_light().unwrap())
-            .unwrap();
+        let light_entry = ecs.entry(scene.main_directional_light().unwrap()).unwrap();
         let light_transform = light_entry.get::<Transform>().unwrap();
         let light_data = light_entry.get::<Directional>().unwrap();
         let light = (light_data, light_transform);

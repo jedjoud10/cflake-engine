@@ -1,13 +1,14 @@
 use super::{Camera, Renderer, SceneSettings};
 use crate::{
+    buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
-    mesh::{Mesh, Surface, MeshImportSettings, MeshImportMode},
+    mesh::{Mesh, MeshImportMode, MeshImportSettings, Surface},
     prelude::{
-        Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureMode, Wrap, RG, RGB,
-        RGBA, TextureImportSettings,
+        Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
+        TextureMode, Wrap, RG, RGB, RGBA,
     },
-    shader::Shader, buffer::BufferMode,
+    shader::Shader,
 };
 
 use assets::Assets;
@@ -23,13 +24,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let (mut window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
-    let (
-        albedo_maps,
-        normal_maps,
-        mask_maps,
-        meshes,
-        assets
-    ) = world
+    let (albedo_maps, normal_maps, mask_maps, meshes, assets) = world
         .get_mut::<(
             &mut Storage<AlbedoMap>,
             &mut Storage<NormalMap>,
@@ -78,16 +73,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     let debug = assets
-        .load_with::<NormalMap>(
-            "engine/textures/bumps.png",
-            (ctx, settings),
-        )
+        .load_with::<NormalMap>("engine/textures/bumps.png", (ctx, settings))
         .unwrap();
     let missing = assets
-        .load_with::<AlbedoMap>(
-            "engine/textures/missing.png",
-            (ctx, settings),
-        )
+        .load_with::<AlbedoMap>("engine/textures/missing.png", (ctx, settings))
         .unwrap();
 
     // Convert them to map handles
@@ -101,6 +90,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     // Load the default cube and sphere meshes
+    /*
     let cube = assets
         .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
@@ -108,10 +98,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let sphere = assets
         .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
-
+    */
     // Insert the meshes and get their handles
-    let cube = meshes.insert(cube);
-    let sphere = meshes.insert(sphere);
+    let cube = meshes.insert(todo!());
+    let sphere = meshes.insert(todo!());
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -134,15 +124,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
 // This event will create the main skysphere and pre-register the pipelines
 fn postinit(world: &mut World) {
-    let (
-        assets,
-        ctx,
-        settings,
-        textures,
-        shaders,
-        sky_mats,
-        ecs,
-    ) = world
+    let (assets, ctx, settings, textures, shaders, sky_mats, ecs) = world
         .get_mut::<(
             &mut Assets,
             &mut Context,
@@ -165,12 +147,10 @@ fn postinit(world: &mut World) {
     };
 
     // Load in the texture
-    let texture = textures.insert(assets
-        .load_with::<AlbedoMap>(
-            "engine/textures/sky_gradient.png",
-            (ctx, import_settings),
-        )
-        .unwrap()
+    let texture = textures.insert(
+        assets
+            .load_with::<AlbedoMap>("engine/textures/sky_gradient.png", (ctx, import_settings))
+            .unwrap(),
     );
 
     // Create the default sky material
@@ -216,7 +196,7 @@ fn rendering(world: &mut World) {
     // Update the world matrices of renderer
     let filter = or(modified::<Transform>(), added::<Transform>());
     let query = ecs
-        .try_query_with::<(&mut Renderer, &Transform)>(filter)
+        .query_with::<(&mut Renderer, &Transform)>(filter)
         .unwrap();
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
@@ -276,7 +256,7 @@ fn main_camera(world: &mut World) {
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
-        let mut entry = ecs.try_mut_entry(entity).unwrap();
+        let mut entry = ecs.mut_entry(entity).unwrap();
 
         // Fetch it's components, and update them
         let (camera, transform) = entry
@@ -321,7 +301,8 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         Stage::new("main camera update")
             .after("user")
             .before("post user"),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert scene renderer event
     reg.insert_with(
@@ -329,13 +310,15 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         Stage::new("scene rendering")
             .after("main camera update")
             .after("post user"),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert window buffer swap event
     reg.insert_with(
         swap,
         Stage::new("window back buffer swap").after("scene rendering"),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);

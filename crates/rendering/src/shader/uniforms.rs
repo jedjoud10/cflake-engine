@@ -160,16 +160,21 @@ macro_rules! impl_matrices {
         }
     };
 }
-// A uniform variable trait that will set a unique uniform within a shader
-pub trait SetRawUniform {
-    unsafe fn set(self, loc: i32, program: u32);
+
+mod raw {
+    // A uniform variable trait that will set a unique uniform within a shader
+    pub trait SetRawUniform {
+        unsafe fn set(self, loc: i32, program: u32);
+    }
+
+    // Wrapper traits
+    pub trait Scalar: SetRawUniform {}
+    pub trait Array: SetRawUniform {}
+    pub trait Vector<const SIZE: u32>: SetRawUniform {}
+    pub trait Matrix<const HEIGHT: u32, const WIDTH: u32>: SetRawUniform {}
 }
 
-// Wrapper traits
-pub trait Scalar: SetRawUniform {}
-pub trait Array: SetRawUniform {}
-pub trait Vector<const SIZE: u32>: SetRawUniform {}
-pub trait Matrix<const HEIGHT: u32, const WIDTH: u32>: SetRawUniform {}
+use raw::*;
 
 // Scalar implementations
 impl_scalars!(f, f32);

@@ -7,44 +7,38 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
-// A simple mask
+
+// A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
+// The ECS registry system uses masks to annotate each different type that might be a component, so in total
+// In total, there is only 64 different components that can be implemented using this ECS implementation 
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mask(pub(crate) u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
-    // 0, 1
-    pub const fn one() -> Mask {
-        Mask(1)
-    }
-    pub const fn zero() -> Mask {
-        Mask(0)
+    // Create a mask that has it's bitfield set to one
+    pub fn one() -> Mask {
+        Mask(0b1)
     }
 
-    // All bits set
-    pub const fn all() -> Mask {
+    // Create a mask that has it's bitfield set to zero
+    pub fn zero() -> Mask {
+        Mask(0b0)
+    }
+
+    // Create a mask that has all of it's bits set
+    pub fn all() -> Mask {
         Mask(u64::MAX)
     }
 
-    // Calculate mask from left shift bit offset
-    pub const fn from_offset(offset: usize) -> Mask {
-        Mask(1 << offset)
-    }
-    pub const fn offset(&self) -> usize {
+    // Get the offset of this mask, assuming that it is a unit mask
+    pub fn offset(&self) -> usize {
         self.0.trailing_zeros() as usize
     }
 
     // Check if a mask is empty
-    pub fn empty(&self) -> bool {
+    pub fn is_zero(&self) -> bool {
         *self == Self::zero()
-    }
-
-    // Count
-    pub const fn count_ones(&self) -> u32 {
-        self.0.count_ones()
-    }
-    pub const fn count_zeros(&self) -> u32 {
-        self.0.count_zeros()
     }
 
     // Set a single bit to either true or false
@@ -59,13 +53,16 @@ impl Mask {
     }
 
     // Get a specific bit using an offset
-    pub const fn get(&self, offset: usize) -> bool {
+    pub fn get(&self, offset: usize) -> bool {
         (self.0 >> offset) & 1 == 1
     }
 
-    // Check if we have at least one corresponding bit with Other
-    pub fn one_corresponding_bit(&self, other: Self) -> bool {
-        *self & other != Mask::zero()
+    // Check if all the bits from Other are present within Self
+    // other: 0100
+    // self:  1111
+    // true
+    pub fn contains(&self, other: Self) -> bool {
+        *self & other == other
     }
 }
 

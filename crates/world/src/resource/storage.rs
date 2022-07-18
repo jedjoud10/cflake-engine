@@ -92,6 +92,7 @@ pub struct StorageSetDescriptor {
 // When inserting a new value into a storage, we receive a Handle to that value
 // Handles can be cloned around to be able to share values and save memory,
 // though if the last handle of a specific value gets dropped, the value will also get dropped
+// TODO: Refactor this
 pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 
 // Create a new default storage using the world
@@ -184,20 +185,20 @@ impl<T: 'static> Storage<T> {
     pub fn get(&self, handle: &Handle<T>) -> &T {
         let slots = self.0.slots.borrow();
         let ptr = unsafe { &*slots[handle.idx].cell.get() };
-        &**ptr
+        ptr
     }
 
     // Get an mutable reference to a value stored within the stored using it's handle
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         let slots = self.0.slots.borrow_mut();
         let ptr = unsafe { &mut *slots[handle.idx].cell.get() };
-        &mut **ptr
+        ptr
     }
 
     // Execute a function over all valid values stored within (immutable)
     pub fn for_each<F: FnMut(&T)>(&self, mut func: F) {
         let slots = self.0.slots.borrow();
-        
+
         for slot in slots.iter() {
             if slot.counter.get() > 0 {
                 let ptr = unsafe { &*slot.cell.get() };
@@ -209,7 +210,7 @@ impl<T: 'static> Storage<T> {
     // Execute a function over all valid values stored within (mutable)
     pub fn for_each_mut<F: FnMut(&mut T)>(&mut self, mut func: F) {
         let slots = self.0.slots.borrow();
-        
+
         for slot in slots.iter() {
             if slot.counter.get() > 0 {
                 let ptr = unsafe { &mut *slot.cell.get() };
