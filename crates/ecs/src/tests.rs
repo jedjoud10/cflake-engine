@@ -1,20 +1,22 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-
     
 
     #[test]
     fn test() {
-        /*
         let mut manager = EcsManager::default();
-
+        
         #[derive(Component, Debug)]
         struct Name(&'static str);
         #[derive(Component, Debug)]
         struct Health(i32);
         #[derive(Component, Debug)]
         struct Ammo(u32);
+
+        //manager.insert((Name("Red"), Health(100)));
+        /*
+
 
         manager.insert((Name("Red"), Health(100))).unwrap();
         manager.insert((Name("Green"), Health(100))).unwrap();

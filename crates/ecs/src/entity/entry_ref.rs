@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, QueryLayout, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
+use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
 // This data can represent the archetype of the entity or even an immutable reference to a component

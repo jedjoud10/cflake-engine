@@ -5,8 +5,8 @@ use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, query, Archetype, ComponentTable,
-    EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle, QueryLayout,
-    ViewLayout, OwnedBundleTableAccessor,
+    EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
+    OwnedBundleTableAccessor, archetype::remove_bundle_unchecked,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -55,27 +55,37 @@ impl EcsManager {
 
     // Remove an entity, and discard it's components
     pub fn remove(&mut self, entity: Entity) -> Option<()> {
-        let linkings = *self.entities.get(entity)?;
-        let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
-        archetype.remove(&mut self.entities, entity).unwrap();
-        Some(())
+        self.remove_from_iter(std::iter::once(entity))
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
-    pub fn remove_then<B: for<'a> OwnedBundle<'a>>(&mut self, entity: Entity) -> Option<B> {
+    pub fn remove_then<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(&mut self, entity: Entity) -> Option<B> {
         assert!(B::is_valid());
-        todo!()
+        self.remove_from_iter_then::<B>(std::iter::once(entity)).map(|mut vec| vec.pop().unwrap())
     }
 
     // Remove multiple entities, and discard their components
     pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<()> {
-        todo!()
+        for entity in iter.into_iter() {
+            let linkings = *self.entities.get(entity)?;
+            let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
+            archetype.remove(&mut self.entities, entity).unwrap();
+        }
+
+        Some(())
     }
 
     // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a>>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
         assert!(B::is_valid());
-        todo!()
+
+        iter.into_iter().map(|entity| {
+            // Move the entity from it's current archetype to the unit archetype
+            remove_bundle_unchecked::<B>(&mut self.archetypes, &mut self.entities, entity).map(|bundle| {
+                self.entities.remove(entity).unwrap();
+                bundle
+            })
+        }).collect::<Option<Vec<B>>>()
     }
 
     // Get the immutable entity entry for a specific entity

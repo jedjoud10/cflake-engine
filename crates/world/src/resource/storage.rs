@@ -92,6 +92,7 @@ pub struct StorageSetDescriptor {
 // When inserting a new value into a storage, we receive a Handle to that value
 // Handles can be cloned around to be able to share values and save memory,
 // though if the last handle of a specific value gets dropped, the value will also get dropped
+// TODO: Refactor this
 pub struct Storage<T: 'static>(Rc<InnerStorage<T>>);
 
 // Create a new default storage using the world

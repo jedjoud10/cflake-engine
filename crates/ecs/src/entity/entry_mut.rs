@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, QueryLayout, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
+use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
