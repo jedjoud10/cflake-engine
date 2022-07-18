@@ -101,7 +101,7 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
         // Get the bundle state and update them
         let mut states = chunk.states.borrow_mut();
         let row = states.get_mut(self.index).unwrap();
-        let state = row.update(|added, mutated, removed| {
+        let state = row.update(|_, _, mutated| {
             *mutated = *mutated | self.access.unique();
         });
         self.index += 1;

@@ -6,7 +6,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 use crate::{
     entity::Entity, query, Archetype, ComponentTable,
     EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
-    archetype::remove_bundle_unchecked, Bundle,
+    archetype::remove_bundle_unchecked, Bundle, MutQueryLayout, RefQueryLayout,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -119,36 +119,44 @@ impl EcsManager {
     }
 
     // Create a new mutable query iterator
-    pub fn query(&mut self) {
-        todo!()
-    }    
+    pub fn query<'a, L: MutQueryLayout<'a>>(&mut self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_mut(&mut self.archetypes)
+    }  
 
     // Create a new mutable query iterator with a filter
-    pub fn query_filter(&mut self, filter: impl Evaluate) {
-        todo!()
+    pub fn query_with<'a, L: MutQueryLayout<'a>>(&mut self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_mut_filter(&mut self.archetypes, filter)
     }
     
     // Create a new immutable query iterator
-    pub fn view(&self) {
-        todo!()
+    pub fn view<'a, L: RefQueryLayout<'a>>(&self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_ref(&self.archetypes)
     }
 
     // Create a new immutable query iterator with a filter
-    pub fn view_filter(&self, filter: impl Evaluate) {
-        todo!()
+    pub fn view_with<'a, L: RefQueryLayout<'a>>(&self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_ref_filter(&self.archetypes, filter)
     }
+  
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(events: &mut Events) {
-    /*
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let (ecs, _time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {
-            archetype.states().reset();
+            let cloned = archetype.states();
+            let mut states = cloned.borrow_mut();
+            for state in states.iter_mut() {
+                state.update(|added, removed, mutated| {
+                    *added = Mask::zero();
+                    *mutated = Mask::zero();
+                    *removed = Mask::zero();
+                });
+            }
         }
     }
 
@@ -171,5 +179,4 @@ pub fn system(events: &mut Events) {
                 .after("post user"),
         )
         .unwrap();
-    */
 }

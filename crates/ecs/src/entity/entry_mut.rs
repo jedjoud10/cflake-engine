@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked};
+use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked, RefQueryLayout, MutQueryLayout};
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
@@ -66,7 +66,7 @@ impl<'a> EntryMut<'a> {
         let states = self.archetype_mut().states();
         let mut slice = states.borrow_mut();
         let row = &mut slice[index];
-        row.update(|added, mutated, removed| mutated.set(mask::<T>().offset(), true));
+        row.update(|added, removed, mutated| mutated.set(mask::<T>().offset(), true));
         let val = self.get_mut_silent::<T>().unwrap();        
         Ok(val)
     }
@@ -99,5 +99,21 @@ impl<'a> EntryMut<'a> {
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {
         self.archetype().mask().contains(mask::<T>())
+    }
+
+    // Read certain components from the entry as if they were used in an immutable query
+    pub fn as_view<'b, L: RefQueryLayout<'b>>(&self) -> Option<L> {
+        let index = self.linkings().index;
+        let ptrs = L::prepare(self.archetype())?;
+        let layout = unsafe { L::read(ptrs, index) };
+        Some(layout)
+    }
+
+    // Read certain components from the entry as if they were used in an mutable query
+    pub fn as_query<'b, L: MutQueryLayout<'b>>(&mut self) -> Option<L> {
+        let index = self.linkings().index;
+        let ptrs = L::prepare(self.archetype_mut())?;
+        let layout = unsafe { L::read(ptrs, index) };
+        Some(layout)
     }
 }
