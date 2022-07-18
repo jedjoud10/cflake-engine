@@ -10,6 +10,7 @@ fn update(world: &mut World) {
     // Get the audio listener's ear locations
     let head = ecs
         .view::<(&Transform, &Listener)>()
+        .unwrap()
         .next()
         .map(|(transform, _)| AudioHead {
             left: -transform.right(),

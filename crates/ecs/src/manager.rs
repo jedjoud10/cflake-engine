@@ -6,7 +6,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 use crate::{
     entity::Entity, query, Archetype, ComponentTable,
     EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
-    OwnedBundleAnyTableAccessor, archetype::remove_bundle_unchecked,
+    archetype::remove_bundle_unchecked, Bundle, MutQueryLayout, RefQueryLayout,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -35,13 +35,13 @@ impl Default for EcsManager {
 
 impl EcsManager {
     // Spawn an entity with specific components
-    pub fn insert<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, components: B) -> Entity {
+    pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
         assert!(B::is_valid());
         self.insert_from_iter(std::iter::once(components))[0]
     }
 
     // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+    pub fn insert_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
         assert!(B::is_valid());
 
         // Try to get the archetype, and create a default one if it does not exist
@@ -59,7 +59,7 @@ impl EcsManager {
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
-    pub fn remove_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, entity: Entity) -> Option<B> {
+    pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
         assert!(B::is_valid());
         self.remove_from_iter_then::<B>(std::iter::once(entity)).map(|mut vec| vec.pop().unwrap())
     }
@@ -76,12 +76,12 @@ impl EcsManager {
     }
 
     // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+    pub fn remove_from_iter_then<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
         assert!(B::is_valid());
 
         iter.into_iter().map(|entity| {
             // Move the entity from it's current archetype to the unit archetype
-            remove_bundle_unchecked::<B>(&mut self.archetypes, &mut self.entities, entity).map(|bundle| {
+            remove_bundle_unchecked::<B>(&mut self.archetypes, entity, &mut self.entities).map(|bundle| {
                 self.entities.remove(entity).unwrap();
                 bundle
             })
@@ -119,36 +119,44 @@ impl EcsManager {
     }
 
     // Create a new mutable query iterator
-    pub fn query(&mut self) {
-        todo!()
-    }    
+    pub fn query<'a, L: MutQueryLayout<'a>>(&mut self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_mut(&mut self.archetypes)
+    }  
 
     // Create a new mutable query iterator with a filter
-    pub fn query_filter(&mut self, filter: impl Evaluate) {
-        todo!()
+    pub fn query_with<'a, L: MutQueryLayout<'a>>(&mut self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_mut_filter(&mut self.archetypes, filter)
     }
     
     // Create a new immutable query iterator
-    pub fn view(&self) {
-        todo!()
+    pub fn view<'a, L: RefQueryLayout<'a>>(&self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_ref(&self.archetypes)
     }
 
     // Create a new immutable query iterator with a filter
-    pub fn view_filter(&self, filter: impl Evaluate) {
-        todo!()
+    pub fn view_with<'a, L: RefQueryLayout<'a>>(&self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_ref_filter(&self.archetypes, filter)
     }
+  
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)
 pub fn system(events: &mut Events) {
-    /*
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let (ecs, _time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {
-            archetype.states().reset();
+            let cloned = archetype.states();
+            let mut states = cloned.borrow_mut();
+            for state in states.iter_mut() {
+                state.update(|added, removed, mutated| {
+                    *added = Mask::zero();
+                    *mutated = Mask::zero();
+                    *removed = Mask::zero();
+                });
+            }
         }
     }
 
@@ -171,5 +179,4 @@ pub fn system(events: &mut Events) {
                 .after("post user"),
         )
         .unwrap();
-    */
 }

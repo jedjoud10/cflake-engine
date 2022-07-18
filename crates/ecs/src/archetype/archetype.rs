@@ -1,23 +1,23 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
-    StateRow, OwnedBundleAnyTableAccessor,
+    StateRow, Bundle,
 };
-use std::any::Any;
+use std::{any::Any, rc::Rc, cell::{RefCell, Ref, RefMut}};
 
 // TODO: Comment
 pub struct Archetype {
     mask: Mask,
     tables: MaskMap<Box<dyn ComponentTable>>,
-    states: Vec<StateRow>,
+    states: Rc<RefCell<Vec<StateRow>>>,
     entities: Vec<Entity>,
 }
 
 impl Archetype {
     // Create a new archetype from a owned bundle accessor
     // This assumes that B is a valid bundle
-    pub(crate) fn from_table_accessor<B: OwnedBundleAnyTableAccessor>() -> Self {
-        Self { mask: B::combined(), tables: B::default_tables(), states: Vec::new(), entities: Vec::new() }
+    pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
+        Self { mask: B::combined(), tables: B::default_tables(), states: Rc::new(RefCell::new(Vec::new())), entities: Vec::new() }
     }
 
     // Create the unit archetype that contains no tables and has a zeroed mask
@@ -32,7 +32,7 @@ impl Archetype {
 
     // Add multiple entities into the archetype with their corresponding owned components
     // The layout mask for "B" must be equal to the layout mask that this archetype contains
-    pub(crate) fn extend_from_slice<B: for<'a> OwnedBundle<'a>>(
+    pub(crate) fn extend_from_slice<B: Bundle>(
         &mut self,
         entities: &mut EntitySet,
         components: Vec<B>,
@@ -49,7 +49,7 @@ impl Archetype {
                 index: self.len(),
             };
             let entity = entities.insert(linkings);
-            self.states.push(StateRow::new(self.mask, self.mask));
+            self.states.borrow_mut().push(StateRow::new(self.mask, Mask::zero(), self.mask,));
             self.entities.push(entity);
             output.push(entity)
         }
@@ -67,7 +67,7 @@ impl Archetype {
     // Reserve enough memory space to be able to fit all the new entities in one allocation
     pub fn reserve(&mut self, additional: usize) {
         self.entities.reserve(additional);
-        self.states.reserve(additional);
+        self.states.borrow_mut().reserve(additional);
 
         for (_, table) in &mut self.tables {
             table.reserve(additional);
@@ -89,14 +89,9 @@ impl Archetype {
         self.mask
     }
 
-    // Get the state row slice immutably
-    pub fn states(&self) -> &[StateRow] {
-        &self.states
-    }
-
-    // Get the state row slice mutably
-    pub(crate) fn states_mut(&mut self) -> &mut [StateRow] {
-        &mut self.states
+    // Get a copy of the archetype states
+    pub fn states(&self) -> Rc<RefCell<Vec<StateRow>>> {
+        self.states.clone()
     }
 
     // Try to get an immutable reference to the table for a specific component
@@ -129,7 +124,7 @@ impl Archetype {
 
         // Remove the entity and get the entity that was swapped with it
         self.entities.swap_remove(index);
-        self.states.swap_remove(index);
+        self.states.borrow_mut().swap_remove(index);
         let entity = self.entities.get(index).cloned();
 
         // Swap might've failed if we swapped with the last element in the vector
@@ -181,7 +176,7 @@ fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &
 
 // Add some new components onto an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(
+pub(crate) fn add_bundle_unchecked<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
@@ -190,6 +185,11 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTa
     // Get the old and new masks
     let old = entities[entity].mask;
     let new = entities[entity].mask | B::combined();
+
+    // Nothing changed, don't execute
+    if new == old {
+        return Some(());
+    }
     
     // Create the new target archetype if needed
     if archetypes.contains_key(&new) {
@@ -216,11 +216,13 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTa
     }
 
     // Add the extra components as well
-    <B as OwnedBundleAnyTableAccessor>::push(&mut target.tables, bundle);    
+    let mut storages = B::prepare(target)?;
+    B::push(&mut storages, bundle);
+    drop(storages);    
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.swap_remove(index);
+    current.states.borrow_mut().swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -228,7 +230,7 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTa
     
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.push(StateRow::new(target.mask, target.mask));
+    target.states.borrow_mut().push(StateRow::new(target.mask, Mask::zero(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
@@ -238,10 +240,10 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTa
 
 // Remove some old components from an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(
+pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     archetypes: &mut ArchetypeSet,
-    entities: &mut EntitySet,
     entity: Entity,
+    entities: &mut EntitySet,
 ) -> Option<B> {
     // Get the old and new masks
     let old = entities[entity].mask;
@@ -273,11 +275,11 @@ pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAn
     }
 
     // Create the return bundle
-    let bundle = <B as OwnedBundleAnyTableAccessor>::swap_remove(&mut current.tables, index);   
+    let bundle = B::try_swap_remove(&mut current.tables, index);   
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
-    current.states.swap_remove(index);
+    current.states.borrow_mut().swap_remove(index);
     if let Some(entity) = current.entities.get(index).cloned() {
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
@@ -285,7 +287,7 @@ pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAn
     
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.push(StateRow::new(target.mask, target.mask));
+    target.states.borrow_mut().push(StateRow::new(target.mask, B::combined(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;

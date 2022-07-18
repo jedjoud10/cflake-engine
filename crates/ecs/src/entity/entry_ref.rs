@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
+use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings, RefQueryLayout};
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
 // This data can represent the archetype of the entity or even an immutable reference to a component
@@ -38,16 +38,24 @@ impl<'a> EntryRef<'a> {
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Result<&T, EntryError> {
-        self.table::<T>().map(|vec| &vec[self.linkings.index()])
+        self.table::<T>().map(|vec| &vec[self.linkings().index()])
     }
     
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
-        *self.archetype().states().get(self.linkings.index()).unwrap()
+        *self.archetype().states().borrow().get(self.linkings().index()).unwrap()
     }
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {
         self.archetype().mask().contains(mask::<T>())
+    }
+
+    // Read certain components from the entry as if they were used in an immutable query
+    pub fn as_view<'b, L: RefQueryLayout<'b>>(&self) -> Option<L> {
+        let index = self.linkings().index;
+        let ptrs = L::prepare(&self.archetype)?;
+        let layout = unsafe { L::read(ptrs, index) };
+        Some(layout)
     }
 }

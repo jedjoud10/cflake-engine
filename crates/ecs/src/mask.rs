@@ -12,7 +12,7 @@ use nohash_hasher::{IsEnabled, NoHashHasher};
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total
 // In total, there is only 64 different components that can be implemented using this ECS implementation 
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Mask(pub(crate) u64);
+pub struct Mask(u64);
 impl IsEnabled for Mask {}
 
 impl Mask {
@@ -63,6 +63,20 @@ impl Mask {
     // true
     pub fn contains(&self, other: Self) -> bool {
         *self & other == other
+    }
+}
+
+// Convert to raw bitfield
+impl Into<u64> for Mask {
+    fn into(self) -> u64 {
+        self.0
+    }
+}
+
+// Convert from raw bitfield
+impl From<u64> for Mask {
+    fn from(bits: u64) -> Self {
+        Self(bits)
     }
 }
 

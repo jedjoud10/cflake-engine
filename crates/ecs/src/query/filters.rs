@@ -10,7 +10,7 @@ pub trait Evaluate: 'static {
     type Cached;
 
     // Create the cache
-    fn setup() -> Self::Cached;
+    fn prepare() -> Self::Cached;
 
     // Evaluate the filter using the proper filter input
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool;
@@ -34,31 +34,31 @@ pub struct Not<A: Evaluate>(A);
 impl<T: Component> Evaluate for Added<T> {
     type Cached = Mask;
 
-    fn setup() -> Self::Cached {
+    fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
-        states.was_added_with_offset(cached.offset())
+        states.added().get(cached.offset())
     }
 }
 
 impl<T: Component> Evaluate for Modified<T> {
     type Cached = Mask;
 
-    fn setup() -> Self::Cached {
+    fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
-        states.was_mutated_with_offset(cached.offset())
+        states.mutated().get(cached.offset())
     }
 }
 
 impl<T: Component> Evaluate for Contains<T> {
     type Cached = Mask;
 
-    fn setup() -> Self::Cached {
+    fn prepare() -> Self::Cached {
         registry::mask::<T>()
     }
 
@@ -70,7 +70,7 @@ impl<T: Component> Evaluate for Contains<T> {
 impl Evaluate for Always {
     type Cached = ();
 
-    fn setup() -> Self::Cached {}
+    fn prepare() -> Self::Cached {}
 
     fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
         true
@@ -80,7 +80,7 @@ impl Evaluate for Always {
 impl Evaluate for Never {
     type Cached = ();
 
-    fn setup() -> Self::Cached {}
+    fn prepare() -> Self::Cached {}
 
     fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
         false
@@ -91,8 +91,8 @@ impl Evaluate for Never {
 impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
     type Cached = (A::Cached, B::Cached);
 
-    fn setup() -> Self::Cached {
-        (A::setup(), B::setup())
+    fn prepare() -> Self::Cached {
+        (A::prepare(), B::prepare())
     }
 
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
@@ -103,8 +103,8 @@ impl<A: Evaluate, B: Evaluate> Evaluate for And<A, B> {
 impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
     type Cached = (A::Cached, B::Cached);
 
-    fn setup() -> Self::Cached {
-        (A::setup(), B::setup())
+    fn prepare() -> Self::Cached {
+        (A::prepare(), B::prepare())
     }
 
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
@@ -115,8 +115,8 @@ impl<A: Evaluate, B: Evaluate> Evaluate for Or<A, B> {
 impl<A: Evaluate> Evaluate for Not<A> {
     type Cached = A::Cached;
 
-    fn setup() -> Self::Cached {
-        A::setup()
+    fn prepare() -> Self::Cached {
+        A::prepare()
     }
 
     fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {

@@ -12,11 +12,9 @@ where
     fn is_valid() -> bool;
     fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages>;
     fn push(storages: &mut Self::Storages, bundle: Self);
+    fn default_tables() -> MaskMap<Box<dyn ComponentTable>>;
+    fn try_swap_remove(tables: &mut MaskMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self>;
 }
 
-// Internal owned bundle that we will only use to create archetypes and their storages
-pub trait OwnedBundleAnyTableAccessor: for<'a> OwnedBundle<'a> {
-    fn default_tables() -> MaskMap<Box<dyn ComponentTable>>;
-    fn swap_remove(tables: &mut MaskMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self>;
-    fn push(tables: &mut MaskMap<Box<dyn ComponentTable>>, bundle: Self) -> Option<()>;
-}
+// Same as owned bundle, but simply a wrapper to eliminate the 'a lifetime
+pub trait Bundle: for<'a> OwnedBundle<'a> {}

@@ -44,7 +44,7 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
-    let camera = ecs.insert((camera, Transform::default())).unwrap();
+    let camera = ecs.insert((camera, Transform::default()));
     settings.set_main_camera(camera);
 
     // We will also register some new keybinds for the camera controller
@@ -80,14 +80,12 @@ fn init(world: &mut World) {
 
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material, pipeid);
-    ecs.insert((renderer, surface, Transform::default()))
-        .unwrap();
+    ecs.insert((renderer, surface, Transform::default()));
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
     let entity = ecs
-        .insert((light, Transform::rotation_x(45f32.to_radians())))
-        .unwrap();
+        .insert((light, Transform::rotation_x(45f32.to_radians())));
     settings.set_main_directional_light(entity);
 }
 
@@ -108,7 +106,7 @@ fn update(world: &mut World) {
     window.raw().set_cursor_grab(true).unwrap();
     window.raw().set_cursor_visible(false);
 
-    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.mut_entry(c)) {
+    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.entry_mut(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();
         let mut velocity = vek::Vec3::<f32>::zero();
         let forward = transform.forward();

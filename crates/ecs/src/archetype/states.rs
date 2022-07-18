@@ -2,39 +2,35 @@ use crate::{Mask, Component, mask};
 use std::{cell::RefCell, rc::Rc};
 
 // Component state chunk that contains the component states for a bundle
+// TODO: Description
 #[derive(Clone, Copy, Debug)]
-pub struct StateRow(Mask, Mask);
+pub struct StateRow(Mask, Mask, Mask);
 
 impl StateRow {
     // Create a new state row with raw values
-    pub fn new(added: Mask, mutated: Mask) -> Self {
-        Self(added, mutated)
+    pub fn new(added: Mask, removed: Mask, mutated: Mask) -> Self {
+        Self(added, removed, mutated)
     }
 
-    // Check if a component (with a specific mask index) was linked to the entity
-    pub fn was_added_with_offset(&self, offset: usize) -> bool {
-        self.1.get(offset)
+    // Get the added state mask
+    pub fn added(&self) -> Mask {
+        self.0
     }
 
-    // Check if a component (with a specific mask index) was mutated
-    pub fn was_mutated_with_offset(&self, offset: usize) -> bool {
-        self.0.get(offset)
+    // Get the removed mask
+    pub fn removed(&self) -> Mask {
+        self.1
+    }
+    
+    // Get the mutated state mask
+    pub fn mutated(&self) -> Mask {
+        self.2
     }
 
-    // Check if a component was linked to the entity
-    pub fn was_added<T: Component>(&self) -> bool {
-        self.was_added_with_offset(mask::<T>().offset())
-    }
-
-    // Check if a component was mutated
-    pub fn was_mutated<T: Component>(&self) -> bool {
-        self.was_mutated_with_offset(mask::<T>().offset())
-    }
-
-    // Execute a callback that will modify both masks, and return their old values
-    pub fn update(&mut self, f: impl FnOnce(&mut Mask, &mut Mask)) -> StateRow {
+    // Execute a callback that will modify the masks, and return their old values
+    pub fn update(&mut self, f: impl FnOnce(&mut Mask, &mut Mask, &mut Mask)) -> StateRow {
         let old = *self;
-        f(&mut self.0, &mut self.1);
+        f(&mut self.0, &mut self.1, &mut self.2);
         old
     }
 }

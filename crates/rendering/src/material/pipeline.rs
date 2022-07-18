@@ -70,7 +70,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         };
 
         // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
-        let query = ecs.view::<(&Renderer, &Surface<M>)>();
+        let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
         let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
             let mesh = meshes.get(&surface.mesh());
