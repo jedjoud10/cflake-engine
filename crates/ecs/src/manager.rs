@@ -6,7 +6,7 @@ use world::{Events, Init, Resource, Stage, Update, World};
 use crate::{
     entity::Entity, query, Archetype, ComponentTable,
     EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
-    OwnedBundleAnyTableAccessor, archetype::remove_bundle_unchecked,
+    archetype::remove_bundle_unchecked, Bundle,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -35,13 +35,13 @@ impl Default for EcsManager {
 
 impl EcsManager {
     // Spawn an entity with specific components
-    pub fn insert<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, components: B) -> Entity {
+    pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
         assert!(B::is_valid());
         self.insert_from_iter(std::iter::once(components))[0]
     }
 
     // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+    pub fn insert_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
         assert!(B::is_valid());
 
         // Try to get the archetype, and create a default one if it does not exist
@@ -59,7 +59,7 @@ impl EcsManager {
     }
 
     // Remove an entity, and fetch it's removed components as a new bundle
-    pub fn remove_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, entity: Entity) -> Option<B> {
+    pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
         assert!(B::is_valid());
         self.remove_from_iter_then::<B>(std::iter::once(entity)).map(|mut vec| vec.pop().unwrap())
     }
@@ -76,12 +76,12 @@ impl EcsManager {
     }
 
     // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+    pub fn remove_from_iter_then<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
         assert!(B::is_valid());
 
         iter.into_iter().map(|entity| {
             // Move the entity from it's current archetype to the unit archetype
-            remove_bundle_unchecked::<B>(&mut self.archetypes, &mut self.entities, entity).map(|bundle| {
+            remove_bundle_unchecked::<B>(&mut self.archetypes, entity, &mut self.entities).map(|bundle| {
                 self.entities.remove(entity).unwrap();
                 bundle
             })

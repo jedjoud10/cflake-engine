@@ -15,6 +15,9 @@ mod tests {
         struct Ammo(u32);
 
         //manager.insert((Name("Red"), Health(100)));
+        
+        
+        
         /*
 
 

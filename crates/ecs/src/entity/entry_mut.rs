@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings};
+use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked};
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
@@ -63,9 +63,10 @@ impl<'a> EntryMut<'a> {
         }
 
         let index = self.linkings().index();
-        let states = self.archetype_mut().states_mut();
-        let row = &mut states[index];
-        row.update(|added, mutated| mutated.set(mask::<T>().offset(), true));
+        let states = self.archetype_mut().states();
+        let mut slice = states.borrow_mut();
+        let row = &mut slice[index];
+        row.update(|added, mutated, removed| mutated.set(mask::<T>().offset(), true));
         let val = self.get_mut_silent::<T>().unwrap();        
         Ok(val)
     }
@@ -77,33 +78,26 @@ impl<'a> EntryMut<'a> {
     }
 
     // Add a new component bundle to the entity, forcing it to switch archetypes
+    pub fn insert_bundle<B: Bundle>(&mut self, bundle: B) -> Option<()> {
+        add_bundle_unchecked(self.archetypes, self.entity, self.entities, bundle)?;
+        self.linkings = self.entities[self.entity];
+        Some(())
+    }
+
     // Remove an old component bundle from the entity, forcing it to switch archetypes
-    
+    pub fn remove_bundle<B: Bundle>(&mut self) -> Option<B> {
+        let bundle = remove_bundle_unchecked(self.archetypes, self.entity, self.entities)?;
+        self.linkings = self.entities[self.entity];
+        Some(bundle)
+    }
+
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
-        *self.archetype().states().get(self.linkings().index()).unwrap()
+        *self.archetype().states().borrow().get(self.linkings().index()).unwrap()
     }
 
     // Check if the entity has a component linked to it
     pub fn contains<T: Component>(&self) -> bool {
         self.archetype().mask().contains(mask::<T>())
     }
-
-    // Get a tuple containing the specified components from this entity entry
-    /*
-    pub fn get_mut_layout<'b, Layout: QueryLayout<'b>>(&'b mut self) -> Result<Layout, EntryError> {
-        if !Layout::validate() {
-            return Err(EntryError::LayoutIntersectingMask);
-        }
-
-        let access = Layout::combined();
-        let mask = access.shared() | access.unique();
-        if !self.archetype.mask().contains(mask) {
-            return Err(EntryError::LayoutMissingComponents);
-        }
-
-        let ptrs = Layout::try_fetch_ptrs(self.archetype).unwrap();
-        Ok(unsafe { Layout::read_as_layout_at(ptrs, self.bundle) })
-    }
-    */
 }

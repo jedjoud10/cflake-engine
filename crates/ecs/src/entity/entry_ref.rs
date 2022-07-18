@@ -38,12 +38,12 @@ impl<'a> EntryRef<'a> {
 
     // Get an immutable reference to a linked component
     pub fn get<T: Component>(&self) -> Result<&T, EntryError> {
-        self.table::<T>().map(|vec| &vec[self.linkings.index()])
+        self.table::<T>().map(|vec| &vec[self.linkings().index()])
     }
     
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
-        *self.archetype().states().get(self.linkings.index()).unwrap()
+        *self.archetype().states().borrow().get(self.linkings().index()).unwrap()
     }
 
     // Check if the entity has a component linked to it
