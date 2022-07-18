@@ -38,7 +38,7 @@ impl<T: Component> Evaluate for Added<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+    fn eval(cached: &Self::Cached, states: StateRow, _mask: Mask) -> bool {
         states.added().get(cached.offset())
     }
 }
@@ -50,7 +50,7 @@ impl<T: Component> Evaluate for Modified<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+    fn eval(cached: &Self::Cached, states: StateRow, _mask: Mask) -> bool {
         states.mutated().get(cached.offset())
     }
 }
@@ -62,7 +62,7 @@ impl<T: Component> Evaluate for Contains<T> {
         registry::mask::<T>()
     }
 
-    fn eval(cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+    fn eval(cached: &Self::Cached, _states: StateRow, mask: Mask) -> bool {
         mask.contains(*cached)
     }
 }
@@ -72,7 +72,7 @@ impl Evaluate for Always {
 
     fn prepare() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+    fn eval(_cached: &Self::Cached, _states: StateRow, _mask: Mask) -> bool {
         true
     }
 }
@@ -82,7 +82,7 @@ impl Evaluate for Never {
 
     fn prepare() -> Self::Cached {}
 
-    fn eval(_cached: &Self::Cached, states: StateRow, mask: Mask) -> bool {
+    fn eval(_cached: &Self::Cached, _states: StateRow, _mask: Mask) -> bool {
         false
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Archetype, Component, LayoutAccess, mask, Mask};
+use crate::{Archetype, Component, LayoutAccess};
 
 // Mutable query layouts that might contain mutable references
 // This must take a mutable reference to the current archetype 

@@ -4,8 +4,8 @@ use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
-    entity::Entity, query, Archetype, ComponentTable,
-    EntityLinkings, EntryRef, Evaluate, LinkError, Mask, MaskMap, EntryMut, OwnedBundle,
+    entity::Entity, Archetype,
+    EntityLinkings, EntryRef, Evaluate, Mask, MaskMap, EntryMut, OwnedBundle,
     archetype::remove_bundle_unchecked, Bundle, MutQueryLayout, RefQueryLayout,
 };
 

@@ -5,7 +5,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut manager = EcsManager::default();
+        let _manager = EcsManager::default();
         
         #[derive(Component, Debug)]
         struct Name(&'static str);

@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
+
 use super::Entity;
-use crate::{registry::{self, mask, name}, Archetype, Component, EcsManager, EntryError, Mask, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked, RefQueryLayout, MutQueryLayout};
+use crate::{registry::{mask, name}, Archetype, Component, EcsManager, EntryError, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked, RefQueryLayout, MutQueryLayout};
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
@@ -66,7 +66,7 @@ impl<'a> EntryMut<'a> {
         let states = self.archetype_mut().states();
         let mut slice = states.borrow_mut();
         let row = &mut slice[index];
-        row.update(|added, removed, mutated| mutated.set(mask::<T>().offset(), true));
+        row.update(|_added, _removed, mutated| mutated.set(mask::<T>().offset(), true));
         let val = self.get_mut_silent::<T>().unwrap();        
         Ok(val)
     }

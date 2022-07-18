@@ -1,9 +1,9 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
+    mask, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
     StateRow, Bundle,
 };
-use std::{any::Any, rc::Rc, cell::{RefCell, Ref, RefMut}};
+use std::{rc::Rc, cell::{RefCell}};
 
 // TODO: Comment
 pub struct Archetype {

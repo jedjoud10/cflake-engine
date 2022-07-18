@@ -1,5 +1,5 @@
 use crate::{
-    mask, Archetype, Component, ComponentTable, LayoutAccess, LinkError, Mask, MaskMap, OwnedBundle, RefQueryItem, RefQueryLayout, MutQueryLayout, MutQueryItem, Bundle
+    mask, Archetype, Component, ComponentTable, LayoutAccess, Mask, MaskMap, OwnedBundle, RefQueryItem, RefQueryLayout, MutQueryLayout, MutQueryItem, Bundle
 };
 
 use seq_macro::seq;

@@ -1,5 +1,5 @@
 use crate::{
-    mask, Archetype, Component, ComponentTable, LayoutAccess, LinkError, Mask, MaskMap,
+    Archetype, ComponentTable, Mask, MaskMap,
 };
 
 // An owned layout trait will be implemented for owned tuples that contain a set of components

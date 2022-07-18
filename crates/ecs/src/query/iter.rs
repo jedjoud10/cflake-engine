@@ -1,5 +1,5 @@
 use std::{marker::PhantomData, cell::RefCell, rc::Rc};
-use crate::{StateRow, RefQueryLayout, Mask, EcsManager, MutQueryLayout, ArchetypeSet, LayoutAccess, Evaluate};
+use crate::{StateRow, RefQueryLayout, Mask, MutQueryLayout, ArchetypeSet, LayoutAccess, Evaluate};
 
 // Raw data that is returned from the query (immutable)
 struct RefQueryItemResult<'a, L: RefQueryLayout<'a>> {
@@ -130,7 +130,7 @@ fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQue
         .filter(|(m, _)| m.contains(mask))
         .map(|(_, archetype)| RefQueryChunk {
             len: archetype.len(),
-            states: archetype.states().clone(),
+            states: archetype.states(),
             ptrs: L::prepare(archetype).unwrap(),
             mask,
         })
@@ -156,7 +156,7 @@ fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> Mu
         .filter(|(m, _)| m.contains(mask))
         .map(|(_, archetype)| MutQueryChunk {
             len: archetype.len(),
-            states: archetype.states().clone(),
+            states: archetype.states(),
             ptrs: L::prepare(archetype).unwrap(),
             mask,
         })
@@ -188,7 +188,7 @@ pub(crate) fn query_mut<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet
 }
 
 // Immutable query that returns the layout tuple, filtered
-pub(crate) fn query_ref_filter<'a, L: RefQueryLayout<'a>, E: Evaluate>(archetypes: &ArchetypeSet, filter: E) -> Option<impl Iterator<Item = L> + 'a> {
+pub(crate) fn query_ref_filter<'a, L: RefQueryLayout<'a>, E: Evaluate>(archetypes: &ArchetypeSet, _filter: E) -> Option<impl Iterator<Item = L> + 'a> {
     L::is_valid().then(|| {
         let cached = E::prepare();
         query_ref_raw::<L>(archetypes).filter(move |item| E::eval(&cached, item.state, item.archetype_mask)).map(|item| item.tuple)
@@ -196,7 +196,7 @@ pub(crate) fn query_ref_filter<'a, L: RefQueryLayout<'a>, E: Evaluate>(archetype
 }
 
 // Mutable query that returns the layout tuple, filtered
-pub(crate) fn query_mut_filter<'a, L: MutQueryLayout<'a>, E: Evaluate>(archetypes: &mut ArchetypeSet, filter: E) -> Option<impl Iterator<Item = L> + 'a> {
+pub(crate) fn query_mut_filter<'a, L: MutQueryLayout<'a>, E: Evaluate>(archetypes: &mut ArchetypeSet, _filter: E) -> Option<impl Iterator<Item = L> + 'a> {
     L::is_valid().then(|| {
         let cached = E::prepare();
         query_mut_raw::<L>(archetypes).filter(move |item| E::eval(&cached, item.state, item.archetype_mask)).map(|item| item.tuple)
