@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     mask, registry, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
-    StateRow, OwnedBundleTableAccessor,
+    StateRow, OwnedBundleAnyTableAccessor,
 };
 use std::any::Any;
 
@@ -16,7 +16,7 @@ pub struct Archetype {
 impl Archetype {
     // Create a new archetype from a owned bundle accessor
     // This assumes that B is a valid bundle
-    pub(crate) fn from_table_accessor<B: OwnedBundleTableAccessor>() -> Self {
+    pub(crate) fn from_table_accessor<B: OwnedBundleAnyTableAccessor>() -> Self {
         Self { mask: B::combined(), tables: B::default_tables(), states: Vec::new(), entities: Vec::new() }
     }
 
@@ -55,7 +55,7 @@ impl Archetype {
         }
         
         // Add the storage bundles to their respective tables
-        let mut storages = B::fetch(self);
+        let mut storages = B::prepare(self).unwrap();
         for set in components {
             B::push(&mut storages, set);
         }
@@ -181,7 +181,7 @@ fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &
 
 // Add some new components onto an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(
+pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,
     entities: &mut EntitySet,
@@ -216,7 +216,7 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTable
     }
 
     // Add the extra components as well
-    <B as OwnedBundleTableAccessor>::push(&mut target.tables, bundle);    
+    <B as OwnedBundleAnyTableAccessor>::push(&mut target.tables, bundle);    
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -238,7 +238,7 @@ pub(crate) fn add_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTable
 
 // Remove some old components from an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
-pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTableAccessor>(
+pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleAnyTableAccessor>(
     archetypes: &mut ArchetypeSet,
     entities: &mut EntitySet,
     entity: Entity,
@@ -273,7 +273,7 @@ pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTa
     }
 
     // Create the return bundle
-    let bundle = <B as OwnedBundleTableAccessor>::swap_remove(&mut current.tables, index);   
+    let bundle = <B as OwnedBundleAnyTableAccessor>::swap_remove(&mut current.tables, index);   
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -290,5 +290,5 @@ pub(crate) fn remove_bundle_unchecked<B: for<'a> OwnedBundle<'a> + OwnedBundleTa
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
 
-    Some(bundle)
+    bundle
 }

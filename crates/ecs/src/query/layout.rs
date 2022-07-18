@@ -84,37 +84,3 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
         &mut slice[i]
     }
 } 
-
-// Implementation of ref query layout for single component
-impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
-    type Slices = &'a [T::Item];
-
-    fn prepare(archetype: &'a Archetype) -> Option<Self::Slices> {
-        T::get(archetype)
-    }
-
-    fn is_valid() -> bool {
-        true
-    }
-
-    fn read(cache: &'a Self::Slices, i: usize) -> Self {
-        T::read(cache, i)
-    }
-}
-
-// Implementation of mut query layout for single component 
-impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
-    type Slices = &'a mut [T::Item];
-
-    fn prepare(archetype: &'a mut Archetype) -> Option<Self::Slices> {
-        T::get(archetype)
-    }
-
-    fn is_valid() -> bool {
-        true
-    }
-
-    fn read(cache: &'a mut Self::Slices, i: usize) -> Self {
-        T::read(cache, i)
-    }
-}

@@ -66,6 +66,7 @@ macro_rules! tuple_impls {
 }
 
 // Heheheha
+// TODO: Fix
 tuple_impls! { R1 R2 }
 tuple_impls! { R1 R2 R3 }
 tuple_impls! { R1 R2 R3 R4 }
