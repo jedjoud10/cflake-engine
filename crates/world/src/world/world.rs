@@ -1,6 +1,6 @@
 use crate::{
     Events, Init, Resource, Stage,
-    Update,
+    Update, Read, Write,
 };
 use ahash::AHashMap;
 use std::{any::{TypeId, Any}, cell::{RefCell, Ref, RefMut}};
@@ -10,7 +10,6 @@ use std::{any::{TypeId, Any}, cell::{RefCell, Ref, RefMut}};
 pub struct World(pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>);
 
 // This is the main world state that the user can manually update to force the engine to stop running
-#[derive(Resource)]
 pub enum State {
     // This is the default state for frame 0
     Initializing,
@@ -35,22 +34,20 @@ impl World {
     }
 
     // Get an immutable reference (read guard) to a resource
-    pub fn get<R: Resource>(&self) -> Option<Ref<R>> {
+    pub fn get<R: Resource>(&self) -> Option<Read<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow();
             let borrowed = Ref::map(borrowed, |boxed| boxed.as_any().downcast_ref::<R>().unwrap());
-            borrowed.read_guard_init();
-            borrowed
+            Read(borrowed)
         })
     }
 
     // Get a mutable reference (write guard) to a resource
-    pub fn get_mut<R: Resource>(&self) -> Option<RefMut<R>> {
+    pub fn get_mut<R: Resource>(&self) -> Option<Write<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
-            let mut borrowed = RefMut::map(borrowed, |boxed| boxed.as_any_mut().downcast_mut::<R>().unwrap());
-            borrowed.write_guard_init();
-            borrowed
+            let borrowed = RefMut::map(borrowed, |boxed| boxed.as_any_mut().downcast_mut::<R>().unwrap());
+            Write(borrowed)
         })
     }
 

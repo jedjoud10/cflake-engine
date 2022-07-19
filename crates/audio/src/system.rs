@@ -5,6 +5,7 @@ use world::{Events, Stage, Update, World};
 
 // This will update the audio listener ear positions and audio sources emitter positions
 fn update(world: &mut World) {
+    /*
     let ecs = world.get_mut::<&mut EcsManager>().unwrap();
 
     // Get the audio listener's ear locations
@@ -35,6 +36,7 @@ fn update(world: &mut World) {
             }
         }
     }
+    */
 }
 
 // Main audio system

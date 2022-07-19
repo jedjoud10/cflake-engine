@@ -34,39 +34,8 @@ impl<'w> Material<'w> for Sky {
 
     fn fetch(
         world: &'w mut world::World,
-    ) -> (
-        &'w SceneSettings,
-        &'w EcsManager,
-        &'w Storage<Self>,
-        &'w Storage<Mesh>,
-        &'w mut Storage<Shader>,
-        &'w mut Window,
-        &'w mut Context,
-        Self::Resources,
-    ) {
-        let (settings, ecs, mats, meshes, shaders, window, context, albedo_maps, time) = world
-            .get_mut::<(
-                &SceneSettings,
-                &EcsManager,
-                &Storage<Self>,
-                &Storage<Mesh>,
-                &mut Storage<Shader>,
-                &mut Window,
-                &mut Context,
-                &Storage<AlbedoMap>,
-                &Time,
-            )>()
-            .unwrap();
-        (
-            settings,
-            ecs,
-            mats,
-            meshes,
-            shaders,
-            window,
-            context,
-            (albedo_maps, time),
-        )
+    ) -> Self::Resources {
+        todo!()
     }
 
     fn primitive_mode() -> PrimitiveMode {

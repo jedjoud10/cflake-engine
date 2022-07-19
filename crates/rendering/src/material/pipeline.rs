@@ -40,14 +40,24 @@ pub(crate) trait SpecializedPipeline: 'static {
 }
 
 // Main material pipeline that shall use one single material shader
-#[derive(Resource)]
 pub struct Pipeline<M: for<'w> Material<'w>> {
     pub(crate) shader: Handle<Shader>,
     pub(crate) _phantom: PhantomData<M>,
 }
 
+impl<M: for<'w> Material<'w>> Resource for Pipeline<M> {
+    fn as_any(&self) -> &dyn std::any::Any {
+        todo!()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        todo!()
+    }
+}
+
 impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> PipelineStats {
+        /*
         let property_block_resources = M::fetch(world);
         let scene = world.get::<SceneSettings>().unwrap();
         let ecs = world.get::<EcsManager>().unwrap();
@@ -148,5 +158,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             */
         }
         stats
+        */
+        todo!()
     }
 }

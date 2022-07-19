@@ -36,6 +36,7 @@ impl AsRef<egui::Context> for UserInterface {
 // This system will automatically insert the user interface and setup it's necessary events
 // This will create the init event, begin update event, draw update event, and window event
 pub fn system(_events: &mut Events) {
+    /*/
     // Create a new GUI manager using an asset loader and OpenGL context at the start of the program
     fn init(world: &mut World) {
         let (ctx, assets) = world.get_mut::<(&mut Context, &mut Assets)>().unwrap();
@@ -104,5 +105,6 @@ pub fn system(_events: &mut Events) {
         )
         .unwrap();
     events.registry::<WindowEvent>().insert(window);
+    */
     */
 }

@@ -32,16 +32,6 @@ impl<T: 'static> Default for Storage<T> {
     }
 }
 
-impl<T> Resource for Storage<T> {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-}
-
 impl<T: 'static> Storage<T> {
     // Insert a new value into the storage, returning it's handle
     pub fn insert(&mut self, value: T) -> Handle<T> {

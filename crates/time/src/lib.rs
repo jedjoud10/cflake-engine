@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 use world::{Events, Init, Resource, Stage, Update, World};
 
 // Global resource that defines the time since the start of the engine and the current frame data
-#[derive(Resource)]
 pub struct Time {
     // The difference in seconds between the last frame and the current frame
     delta: Duration,

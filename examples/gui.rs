@@ -4,10 +4,10 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_window_title("cflake engine GUI example")
-        .insert_system(system)
+//        .insert_system(system)
         .execute();
 }
-
+/*
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
     let ui = world.get_mut::<&mut UserInterface>().unwrap();
@@ -49,3 +49,4 @@ fn system(events: &mut Events) {
     events.registry::<Init>().insert(init);
     events.registry::<Update>().insert(update);
 }
+*/

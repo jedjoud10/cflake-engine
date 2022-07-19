@@ -17,7 +17,7 @@ use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 
 use world::{Events, Init, Stage, Storage, Update, World};
-
+/*
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
@@ -322,4 +322,9 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);
+}
+*/
+
+pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
+    
 }

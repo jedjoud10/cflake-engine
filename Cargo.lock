@@ -823,7 +823,6 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
  "casey",
- "ecs-derive",
  "itertools",
  "lazy_static",
  "nohash-hasher",
@@ -836,14 +835,6 @@ dependencies = [
  "time",
  "tinyvec",
  "world",
-]
-
-[[package]]
-name = "ecs-derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -2397,14 +2388,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "resources-derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
 name = "rodio"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3227,7 +3210,6 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.7.6",
  "glutin",
- "resources-derive",
  "slotmap",
 ]
 

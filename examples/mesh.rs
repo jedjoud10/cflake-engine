@@ -4,6 +4,8 @@ use cflake_engine::prelude::*;
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 
+fn main() {}
+/*
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
     App::default()
@@ -132,3 +134,4 @@ fn update(world: &mut World) {
         transform.rotation = rot;
     }
 }
+*/

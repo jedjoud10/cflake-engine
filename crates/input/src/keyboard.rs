@@ -1,9 +1,7 @@
 use crate::{Key, KeyState};
 use ahash::AHashMap;
-use world::Resource;
 
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
-#[derive(Resource)]
 pub struct Keyboard {
     // "forward_key_bind" -> Key::W
     pub(crate) binds: AHashMap<&'static str, Key>,

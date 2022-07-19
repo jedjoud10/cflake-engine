@@ -153,9 +153,11 @@ impl App {
                 events.execute::<Update>(&mut world);
 
                 // Update the current control flow based on the world state
+                /*
                 if let world::State::Stopped = world.get_mut::<&mut world::State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
+                */
             }
             glutin::event::Event::WindowEvent {
                 window_id: _,
