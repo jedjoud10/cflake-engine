@@ -46,21 +46,20 @@ unsafe fn compile(username: String, names: &[u32]) -> Program {
     let introspection = introspect(program);
 
     // Fetch all the uniform locations
-    let uniform_locations: AHashMap<String, (u32, bool)> = introspection
+    let uniform_locations: AHashMap<String, u32> = introspection
         .uniforms()
         .iter()
-        .map(|uniform| (uniform.name().to_string(), (uniform.location(), false)))
+        .map(|uniform| (uniform.name().to_string(), (uniform.location())))
         .collect();
 
-    // Fetch all binding points (for buffers / blocks)
+    // TODO: Implement buffers
 
     Program {
         username,
         name: program,
         introspection,
         _phantom: Default::default(),
-        texture_units: Default::default(),
-        binding_points: Default::default(),
+        buffer_binding_points: Default::default(),
         uniform_locations,
     }
 }

@@ -1,7 +1,7 @@
 use ecs::EcsManager;
 use math::Transform;
 use time::Time;
-use world::{Handle, Storage};
+use world::{Handle, Storage, Read};
 
 use crate::{
     canvas::{Canvas, FaceCullMode, PrimitiveMode},
@@ -30,29 +30,29 @@ pub struct Sky {
 }
 
 impl<'w> Material<'w> for Sky {
-    type Resources = (&'w Storage<AlbedoMap>, &'w Time);
+    type Resources = (Read<'w, Storage<AlbedoMap>>, Read<'w, Time>);
 
     fn fetch(
-        world: &'w mut world::World,
+        world: &'w world::World,
     ) -> Self::Resources {
-        todo!()
+        let maps = world.get::<Storage<AlbedoMap>>().unwrap();
+        let time = world.get::<Time>().unwrap();
+        (maps, time)
     }
 
     fn primitive_mode() -> PrimitiveMode {
         PrimitiveMode::Triangles { cull: None }
     }
-
+    
     // This method will be called once right before we start rendering the batches
-    fn set_static_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
+    fn set_static_properties(
+        uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
         uniforms.set_vec3("sun_dir", light.1.forward());
@@ -61,28 +61,24 @@ impl<'w> Material<'w> for Sky {
     }
 
     // This method will be called for each surface that we have to render
-    fn set_render_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
+    fn set_render_properties(
+        uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         renderer: &Renderer,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
-    fn set_instance_properties<'u>(
-        &'w self,
-        uniforms: &mut Uniforms<'u>,
+    fn set_instance_properties(
+        &self,
+        uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
         _scene: &SceneSettings,
         _camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);
         uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);

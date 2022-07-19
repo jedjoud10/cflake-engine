@@ -133,3 +133,9 @@ impl<T: 'static> Drop for Handle<T> {
         }
     }
 }
+
+impl<T: 'static> Default for Handle<T> {
+    fn default() -> Self {
+        Self { _phantom: Default::default(), trackers: todo!(), key: Default::default() }
+    }
+}

@@ -20,6 +20,12 @@ pub struct Block {
     size: usize,
 }
 
+impl Block {
+    // Get the block's name
+    // Get the block's byte size
+    // Get the block's index
+}
+
 // A single uniform value stored within the shader
 pub struct Uniform {
     // Full name of the uniform

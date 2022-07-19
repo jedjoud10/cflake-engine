@@ -174,6 +174,7 @@ mod raw {
     pub trait Matrix<const HEIGHT: u32, const WIDTH: u32>: SetRawUniform {}
 }
 
+use ahash::{AHashMap, AHashSet};
 use raw::*;
 
 // Scalar implementations
@@ -199,50 +200,74 @@ impl_math_vectors!(ui, u32);
 // Matrix implementations
 impl_matrices!();
 
+struct TextureUnit {
+    unit: u32,
+    texture: u32,
+}
+
 // The main struct that will allow us to set the shader uniforms before it's execution
-// We must set ALL the uniforms before each shader execution
-// Shader uniforms can be fetched from a compute shader using the scheduler() method and from a painter using the uniforms() method
-// When we drop the uniforms, we have to assume that we unbind the values that have a specific lifetime, like buffers and samplers
 // Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
-pub struct Uniforms<'uniforms>(pub(crate) &'uniforms mut Program);
+pub struct Uniforms<'uniforms> {
+    program: &'uniforms mut Program,
+    texture_units: AHashMap<String, TextureUnit>,
+    bound_uniforms: AHashSet<String>,
+    bound_buffer_bindings: AHashMap<String, u32>,
+}
 
 impl<'uniforms> Uniforms<'uniforms> {
-    // Make sure the user set all the proper shader variables before executing
-    pub(crate) fn validate(&mut self) -> Result<(), UniformsError> {
-        // Find the first missing uniforms
-        let uniforms = &self.0.uniform_locations;
-        let missing_uniform = uniforms.iter().find(|(_, (_, set))| !set);
-        let bindings = &self.0.binding_points;
-        let missing_binding = bindings.iter().find(|(_, (_, set))| !set);
-
-        // If we have a missing uniform or missing binding, the uniform binder is invalid
-        let valid = missing_uniform.is_none() && missing_binding.is_none();
-
-        // Le erron throwing
-        if !valid {
-            // If we have a missing uniform AND a missing binding, prioritize the error for the missing uniform
-            Err(match (missing_uniform, missing_binding) {
-                (None, Some((name, _))) => UniformsError::IncompleteBinding(name.clone()),
-                (Some((name, _)), None) => UniformsError::IncompleteUniform(name.clone()),
-                (Some((name, _)), Some(_)) => UniformsError::IncompleteUniform(name.clone()),
-                _ => todo!(),
-            })
-        } else {
-            Ok(())
+    // Create a temporary uniforms wrapper using a program and it's inner introspection data
+    pub(crate) fn new(program: &'uniforms mut Program) -> Self {
+        Self {
+            texture_units: AHashMap::with_capacity(program.uniform_locations.len()),
+            bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
+            bound_buffer_bindings: AHashMap::with_capacity(program.buffer_binding_points.len()),
+            program,
         }
+    }
+
+    // Make sure the user set all the proper shader variables before executing
+    pub(crate) fn execute(&mut self) -> Result<(), UniformsError> {
+        let missing_uniform = self.program.uniform_locations.keys().find(|name| !self.bound_uniforms.contains(*name) && !self.texture_units.contains_key(*name));
+        let missing_buffer_binding = self.program.buffer_binding_points.keys().find(|name| !self.bound_buffer_bindings.contains_key(*name));
+        
+        if let Some(name) = missing_uniform {
+            return Err(UniformsError::IncompleteUniform(name.clone()));
+        }
+
+        if let Some(name) = missing_buffer_binding {
+            return Err(UniformsError::IncompleteBufferBinding(name.clone()));
+        }
+
+        let destroyed_texture = self.texture_units.iter().find(|(_, unit)| {
+            unsafe {
+                gl::IsTexture(unit.texture) == 0
+            }
+        });
+
+        let destroyed_buffer = self.bound_buffer_bindings.iter().find(|(_, &unit)| {
+            unsafe {
+                gl::IsBuffer(unit) == 0
+            }
+        });
+
+        if let Some((name, _)) = destroyed_texture {
+            return Err(UniformsError::InvalidTexture(name.clone()));
+        }
+
+        if let Some((name, _)) = destroyed_buffer {
+            return Err(UniformsError::InvalidBuffer(name.clone()));
+        }
+
+        Ok(())
     }
 
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
-        let locations = &mut self.0.uniform_locations;
-        if locations.contains_key(name) {
-            // Get the location and set it's "set" flag to true
-            let (loc, set) = locations.get_mut(name).unwrap();
-            *set = true;
-            unsafe { val.set(*loc as i32, self.0.name()) }
-        } else {
-            // Silently ignore uniforms that cannot be set
-            // TODO: Find a better solution??
+        let location = self.program.uniform_locations.get(name);
+        if let Some(name) = location {
+            // TODO: Optimize
+            self.bound_uniforms.insert(name.to_string());
+            unsafe { val.set(*name as i32, self.program.name()) }
         }
     }
 
@@ -286,61 +311,20 @@ impl<'uniforms> Uniforms<'uniforms> {
         self.set_raw_uniform(name, mat);
     }
 
-    /*
-
-    // Set a texture sampler, assuming that it uses normal texture binding and not bindless textures
-    unsafe fn set_normal_sampler_unchecked(
-        &mut self,
-        name: &'static str,
-        target: u32,
-        texture: u32,
-    ) {
-
-    }
-
-    // Set a texture sampler, assuming that it uses bindless textures
-    unsafe fn set_bindless_sampler_unchecked(&mut self, name: &'static str, bindless: &Bindless) {
-        // If the texture isn't resident, we have to make it resident
-        bindless.last_residency_instant.set(Instant::now());
-        if !bindless.resident.get() {
-            // Make the bindless texture a resident bindless texture
-            bindless.set_residency(true);
-        } else {
-            // The bindless texture handle is already resident, we just need to set the uniform
-            if let Some(loc) = self.location(name) {
-                gl::ProgramUniformHandleui64ARB(self.0.name(), loc as i32, bindless.handle);
-            }
-        }
-    }
-    */
-
     // Set a texture sampler uniform
-    // Since the lifetime of this sampler *must* outlive the uniforms, we can make sure the program does not contain invalid sampler references
-    pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &'uniforms T) {
-        let count = self.0.texture_units.len() as u32;
-        let offset = *self
-            .0
+    pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &T) {
+        let count = self.texture_units.len() as u32;
+        let offset = self
             .texture_units
             .entry(name.to_string())
-            .or_insert(count);
+            .or_insert(TextureUnit { texture: u32::MAX, unit: count })
+            .unit;
 
         unsafe {
+            self.texture_units.get_mut(name).unwrap().texture = sampler.name();
             gl::ActiveTexture(gl::TEXTURE0 + offset);
             gl::BindTexture(T::target(), sampler.name());
-
-            // Set the corresponding sampler uniform
             self.set_scalar(name, offset as i32);
         }
-    }
-}
-
-impl<'uniforms> Drop for Uniforms<'uniforms> {
-    fn drop(&mut self) {
-        // This will clear all the "set" states of the user defined inputs
-        self.0
-            .binding_points
-            .iter_mut()
-            .chain(self.0.uniform_locations.iter_mut())
-            .for_each(|(_, (_, set))| *set = false);
     }
 }

@@ -49,45 +49,39 @@ pub trait Material<'w>: 'static + Sized {
 
     // Fetch the property block resources
     fn fetch(
-        world: &'w mut World,
+        world: &'w World,
     ) -> Self::Resources;
 
     // Set the global and static instance properties when we start batch rendering
-    fn set_static_properties<'u>(
-        _uniforms: &mut Uniforms<'u>,
+    fn set_static_properties(
+        _uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
     }
 
     // Set the uniforms for this property block right before we render our surface
-    fn set_render_properties<'u>(
-        _uniforms: &mut Uniforms<'u>,
+    fn set_render_properties(
+        _uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         _renderer: &Renderer,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
     }
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
-    fn set_instance_properties<'u>(
-        &'w self,
-        _uniforms: &mut Uniforms<'u>,
+    fn set_instance_properties(
+        &self,
+        _uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         _scene: &SceneSettings,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
     }
 }

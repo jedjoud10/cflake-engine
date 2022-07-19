@@ -1,3 +1,5 @@
+use ahash::{AHashMap, AHashSet};
+
 use crate::context::Context;
 
 use super::{Program, Uniforms};
@@ -12,7 +14,7 @@ impl ComputeShader {
         &'s mut self,
         ctx: &'c mut Context,
     ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
-        (ComputeScheduler { ctx }, Uniforms(self.as_mut()))
+        (ComputeScheduler { ctx }, Uniforms::new(&mut self.0))
     }
 }
 
@@ -42,7 +44,7 @@ impl<'c> ComputeScheduler<'c> {
         }
 
         // Validate the uniforms
-        uniforms.validate().unwrap();
+        uniforms.execute().unwrap();
 
         // Execute le compute
         Ok(())

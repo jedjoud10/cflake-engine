@@ -185,7 +185,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         primitive_count: usize,
         uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
-        uniforms.validate().map_err(RasterError::Uniforms)?;
+        uniforms.execute().map_err(RasterError::Uniforms)?;
 
         if primitive_count > 0 {
             gl::BindVertexArray(vao);
@@ -203,7 +203,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         element_type: u32,
         uniforms: &mut Uniforms,
     ) -> Result<(), RasterError> {
-        uniforms.validate().map_err(RasterError::Uniforms)?;
+        uniforms.execute().map_err(RasterError::Uniforms)?;
 
         if primitive_count > 0 {
             gl::BindVertexArray(vao);

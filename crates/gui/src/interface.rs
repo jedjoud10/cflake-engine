@@ -9,7 +9,6 @@ use world::{Events, Resource, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
-#[derive(Resource)]
 pub struct UserInterface {
     // This is the egui context that will handle everything related to egui
     egui: egui::Context,

@@ -1,7 +1,7 @@
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use world::{Handle, Storage};
+use world::{Handle, Storage, Read};
 
 use crate::{
     canvas::Canvas,
@@ -37,15 +37,18 @@ pub struct Standard {
 
 impl<'w> Material<'w> for Standard {
     type Resources = (
-        &'w Storage<AlbedoMap>,
-        &'w Storage<NormalMap>,
-        &'w Storage<MaskMap>,
+        Read<'w, Storage<AlbedoMap>>,
+        Read<'w, Storage<NormalMap>>,
+        Read<'w, Storage<MaskMap>>,
     );
 
     fn fetch(
-            world: &'w mut world::World,
+            world: &'w world::World,
         ) -> Self::Resources {
-        todo!()
+        let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
+        let normal_map = world.get::<Storage<NormalMap>>().unwrap();
+        let mask_map = world.get::<Storage<MaskMap>>().unwrap();
+        (albedo_map, normal_map, mask_map)
     }
 
     // This method will be called once right before we start rendering the batches
@@ -56,9 +59,7 @@ impl<'w> Material<'w> for Standard {
         _scene: &SceneSettings,
         camera: (&Camera, &Transform),
         light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
         uniforms.set_vec3("camera", camera.1.position);
@@ -67,29 +68,25 @@ impl<'w> Material<'w> for Standard {
     }
 
     // This method will be called for each surface that we have to render
-    fn set_render_properties<'u>(
-        uniforms: &mut Uniforms<'u>,
+    fn set_render_properties(
+        uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         renderer: &Renderer,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
     // This method will be called whenever we detect a material instance change
-    fn set_instance_properties<'u>(
-        &'w self,
-        uniforms: &mut Uniforms<'u>,
+    fn set_instance_properties(
+        &self,
+        uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
         scene: &SceneSettings,
         _camera: (&Camera, &Transform),
         _light: (&Directional, &Transform),
-    ) where
-        'w: 'u,
-    {
+    ) {
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
         fn fallback<'a, T: 'static>(
