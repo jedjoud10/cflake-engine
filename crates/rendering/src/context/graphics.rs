@@ -5,7 +5,6 @@ use glutin::{
     window::{Fullscreen, WindowBuilder},
     ContextBuilder, GlProfile, GlRequest,
 };
-use world::Resource;
 
 // These settings will be needed to be able to create the underlying graphics pipeline
 // This is a resource that will be automatically added onto the world by our main app

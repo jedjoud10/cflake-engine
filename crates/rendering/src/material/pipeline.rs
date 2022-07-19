@@ -45,16 +45,6 @@ pub struct Pipeline<M: for<'w> Material<'w>> {
     pub(crate) _phantom: PhantomData<M>,
 }
 
-impl<M: for<'w> Material<'w>> Resource for Pipeline<M> {
-    fn as_any(&self) -> &dyn std::any::Any {
-        todo!()
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        todo!()
-    }
-}
-
 impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> PipelineStats {
         /*

@@ -6,16 +6,14 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use world::Resource;
 
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
-#[derive(Resource)]
 pub struct Assets {
     // Byte caching (the key is the relative path of the asset)
     cached: AHashMap<PathBuf, Vec<u8>>,
 
-    // GLobal path to the user defined assets folder
+    // Global path to the user defined assets folder
     user: Option<PathBuf>,
 }
 

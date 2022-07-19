@@ -1,6 +1,5 @@
 use super::{get_static_str, Context};
 use crate::canvas::Canvas;
-use world::Resource;
 
 // A device is a software/hardware renderer that will be responsible for dealing with a specific window
 pub struct Device {
@@ -21,7 +20,6 @@ impl Device {
 }
 
 // This is the main window that we will use to render the game
-#[derive(Resource)]
 pub struct Window {
     glutin: glutin::window::Window,
     canvas: Canvas,

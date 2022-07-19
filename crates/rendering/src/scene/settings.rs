@@ -12,7 +12,6 @@ type Image = Texture2D<RGBA<Ranged<u8>>>;
 // The global scene settings that specifies how we should render the surfaces
 // This resource will contain the handles to the default PBR textures
 // This resource will contain the entity ID of the main camera and the main directional light
-#[derive(Resource)]
 pub struct SceneSettings {
     // Main camera entity that we will use for rendering
     camera: Option<Entity>,
