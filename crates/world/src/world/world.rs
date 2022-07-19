@@ -1,6 +1,6 @@
 use crate::{
     Events, Init, Resource, Stage,
-    Update, Read, Write,
+    Update,
 };
 use ahash::AHashMap;
 use std::{any::{TypeId, Any}, cell::{RefCell, Ref, RefMut}};
@@ -35,22 +35,22 @@ impl World {
     }
 
     // Get an immutable reference (read guard) to a resource
-    pub fn get<R: Resource>(&self) -> Option<Read<R>> {
+    pub fn get<R: Resource>(&self) -> Option<Ref<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow();
             let borrowed = Ref::map(borrowed, |boxed| boxed.as_any().downcast_ref::<R>().unwrap());
             borrowed.read_guard_init();
-            Read(borrowed)
+            borrowed
         })
     }
 
     // Get a mutable reference (write guard) to a resource
-    pub fn get_mut<R: Resource>(&self) -> Option<Write<R>> {
+    pub fn get_mut<R: Resource>(&self) -> Option<RefMut<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
             let mut borrowed = RefMut::map(borrowed, |boxed| boxed.as_any_mut().downcast_mut::<R>().unwrap());
             borrowed.write_guard_init();
-            Write(borrowed)
+            borrowed
         })
     }
 
@@ -59,7 +59,10 @@ impl World {
         self.0.remove(&TypeId::of::<R>()).map(|_| ())
     }
 
-    // Create a new resource entry
+    // Check if a resource is present in the world
+    pub fn contains<R: Resource>(&self) -> bool {
+        self.0.contains_key(&TypeId::of::<R>())
+    }
 }
 
 // This trait will be implemented for types that can be instantiated from the world

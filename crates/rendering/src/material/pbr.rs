@@ -43,52 +43,9 @@ impl<'w> Material<'w> for Standard {
     );
 
     fn fetch(
-        world: &'w mut world::World,
-    ) -> (
-        &'w SceneSettings,
-        &'w EcsManager,
-        &'w Storage<Self>,
-        &'w Storage<Mesh>,
-        &'w mut Storage<Shader>,
-        &'w mut Window,
-        &'w mut Context,
-        Self::Resources,
-    ) {
-        let (
-            ecs_manager,
-            materials,
-            mesh,
-            shaders,
-            window,
-            ctx,
-            albedo_maps,
-            normal_maps,
-            mask_maps,
-            scene,
-        ) = world
-            .get_mut::<(
-                &EcsManager,
-                &Storage<Self>,
-                &Storage<Mesh>,
-                &mut Storage<Shader>,
-                &mut Window,
-                &mut Context,
-                &Storage<AlbedoMap>,
-                &Storage<NormalMap>,
-                &Storage<MaskMap>,
-                &SceneSettings,
-            )>()
-            .unwrap();
-        (
-            scene,
-            ecs_manager,
-            materials,
-            mesh,
-            shaders,
-            window,
-            ctx,
-            (albedo_maps, normal_maps, mask_maps),
-        )
+            world: &'w mut world::World,
+        ) -> Self::Resources {
+        todo!()
     }
 
     // This method will be called once right before we start rendering the batches

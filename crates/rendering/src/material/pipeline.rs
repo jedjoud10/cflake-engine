@@ -1,12 +1,13 @@
 use super::Material;
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
-    context::Context,
+    context::{Context, Window},
     mesh::{Mesh, Surface},
     prelude::Shader,
-    scene::{Camera, Directional, Renderer},
+    scene::{Camera, Directional, Renderer, SceneSettings},
 };
 use assets::Assets;
+use ecs::EcsManager;
 use math::Transform;
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Resource, Storage, World};
@@ -47,8 +48,14 @@ pub struct Pipeline<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> PipelineStats {
-        let (scene, ecs, materials, meshes, shaders, window, ctx, mut property_block_resources) =
-            <M as Material<'_>>::fetch(world);
+        let property_block_resources = M::fetch(world);
+        let scene = world.get::<SceneSettings>().unwrap();
+        let ecs = world.get::<EcsManager>().unwrap();
+        let materials = world.get_mut::<Storage<M>>().unwrap();
+        let meshes = world.get::<Storage<Mesh>>().unwrap();
+        let shaders = world.get_mut::<Storage<Shader>>().unwrap();
+        let window = world.get_mut::<Window>().unwrap();
+        let ctx = world.get_mut::<Context>().unwrap();
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {

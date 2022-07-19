@@ -47,19 +47,10 @@ pub trait Material<'w>: 'static + Sized {
         }
     }
 
-    // Fetch the default rendering resources and the material property block resources as well
+    // Fetch the property block resources
     fn fetch(
         world: &'w mut World,
-    ) -> (
-        &'w SceneSettings,
-        &'w EcsManager,
-        &'w Storage<Self>,
-        &'w Storage<Mesh>,
-        &'w mut Storage<Shader>,
-        &'w mut Window,
-        &'w mut Context,
-        Self::Resources,
-    );
+    ) -> Self::Resources;
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties<'u>(

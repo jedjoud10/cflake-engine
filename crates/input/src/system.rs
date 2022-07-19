@@ -21,7 +21,8 @@ pub fn system(events: &mut Events) {
 
     // Glutin window event (called by handler when needed)
     fn event(world: &mut World, ev: &DeviceEvent) {
-        let (keyboard, mouse) = world.get_mut::<(&mut Keyboard, &mut Mouse)>().unwrap();
+        let mut keyboard = world.get_mut::<Keyboard>().unwrap();
+        let mut mouse = world.get_mut::<Mouse>().unwrap();
 
         match ev {
             // Update mouse position delta and summed  pos
@@ -53,7 +54,7 @@ pub fn system(events: &mut Events) {
 
     // Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
     fn update(world: &mut World) {
-        let keyboard = world.get_mut::<&mut Keyboard>().unwrap();
+        let mut keyboard = world.get_mut::<Keyboard>().unwrap();
         for (_, state) in keyboard.keys.iter_mut() {
             *state = match state {
                 crate::KeyState::Pressed => KeyState::Held,

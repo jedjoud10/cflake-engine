@@ -69,12 +69,12 @@ pub fn system(events: &mut Events) {
             frame_count: 0,
             startup: Instant::now(),
             frame_start: Instant::now(),
-        })
+        }).unwrap();
     }
 
     // Update event (called per frame)
     fn update(world: &mut World) {
-        let time = world.get_mut::<&mut Time>().unwrap();
+        let mut time = world.get_mut::<Time>().unwrap();
         let now = Instant::now();
         time.delta = now - time.frame_start;
         time.frame_start = now;

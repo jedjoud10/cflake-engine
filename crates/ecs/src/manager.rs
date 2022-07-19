@@ -143,7 +143,8 @@ impl EcsManager {
 pub fn system(events: &mut Events) {
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
-        let (ecs, _time) = world.get_mut::<(&mut EcsManager, &Time)>().unwrap();
+        let ecs = world.get_mut::<EcsManager>().unwrap();
+        let time = world.get::<Time>().unwrap();
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {
