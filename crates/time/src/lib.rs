@@ -68,7 +68,7 @@ pub fn system(events: &mut Events) {
             frame_count: 0,
             startup: Instant::now(),
             frame_start: Instant::now(),
-        }).unwrap();
+        });
     }
 
     // Update event (called per frame)

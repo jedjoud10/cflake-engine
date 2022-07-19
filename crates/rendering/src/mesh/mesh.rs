@@ -35,7 +35,7 @@ pub struct Mesh {
     pub(super) uvs: AttributeBuffer<TexCoord>,
 
     // The index buffer (PS: Supports only triangles rn)
-    indices: MaybeUninit<ElementBuffer<u32>>,
+    indices: ElementBuffer<u32>,
 }
 
 /*
@@ -56,22 +56,42 @@ pub struct Mesh {
 impl Mesh {
     // Get a reference to the vertices immutably
     fn vertices(&self) -> VerticesRef {
-        todo!()
+        VerticesRef {
+            positions: &self.positions,
+            normals: &self.normals,
+            tangents: &self.tangents,
+            colors: &self.colors,
+            uvs: &self.uvs,
+            bitfield: &self.enabled,
+        }
     }
 
     // Get a reference to the vertices mutably
     fn vertices_mut(&mut self) -> VerticesMut {
-        todo!()
+        VerticesMut {
+            vao: self.vao,
+            positions: &mut self.positions,
+            normals: &mut self.normals,
+            tangents: &mut self.tangents,
+            colors: &mut self.colors,
+            uvs: &mut self.uvs,
+            bitfield: &mut self.enabled,
+        }
     }
 
     // Get a reference to the indices immutably
     fn indices(&self) -> IndicesRef {
-        todo!()
+        IndicesRef {
+            buffer: &self.indices
+        }
     }
 
     // Get a reference to the indices mutably
     fn indices_mut(&mut self) -> IndicesMut {
-        todo!()
+        IndicesMut { 
+            vao: self.vao,
+            buffer: &mut self.indices
+        }
     }
     /*
     // Create a new mesh from the attribute buffers and the indices

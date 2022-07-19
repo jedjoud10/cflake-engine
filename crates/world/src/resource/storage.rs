@@ -13,6 +13,7 @@ use std::{
 struct Trackers {
     dropped: RefCell<Vec<DefaultKey>>,
     counters: RefCell<SecondaryMap<DefaultKey, u32>>,
+    cleaned: Cell<bool>,
 }
 
 // Storages automatically get inserted into the world when we try to access them, so we must write that custom logic when implementing the resource trait
@@ -26,7 +27,8 @@ impl<T: 'static> Default for Storage<T> {
         Self { map: Default::default(), trackers: Rc::new(
             Trackers {
                 dropped: RefCell::new(Default::default()),
-                counters: RefCell::new(Default::default())
+                counters: RefCell::new(Default::default()),
+                cleaned: Cell::new(true),
             })
         }
     }
@@ -35,6 +37,7 @@ impl<T: 'static> Default for Storage<T> {
 impl<T: 'static> Storage<T> {
     // Insert a new value into the storage, returning it's handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
+        self.clean();
         let key = self.map.insert(value);
         self.trackers.counters.borrow_mut().insert(key, 1).unwrap();
 
@@ -55,14 +58,17 @@ impl<T: 'static> Storage<T> {
         self.map.get_mut(handle.key).unwrap()
     }
 
-    // Clean the storage of any dangling values
-    pub fn clean(&mut self) {
-        let mut dropped = self.trackers.dropped.borrow_mut();
-        let mut counters = self.trackers.counters.borrow_mut();
-        for i in dropped.drain(..) {
-            self.map.remove(i);
-            counters.remove(i);
-        }
+    // Clean the storage of any dangling values. This will keep the same memory footprint as before
+    pub fn clean(&mut self) {        
+        if !self.trackers.cleaned.get() {
+            self.trackers.cleaned.set(true);
+            let mut dropped = self.trackers.dropped.borrow_mut();
+            let mut counters = self.trackers.counters.borrow_mut();
+            for i in dropped.drain(..) {
+                self.map.remove(i);
+                counters.remove(i);
+            }
+        }         
     }
 }
 
@@ -130,6 +136,7 @@ impl<T: 'static> Drop for Handle<T> {
         // If the counter reaches 0, it means that we must drop the inner value
         if unsafe { self.decrement_count() } == 0 {
             self.trackers.dropped.borrow_mut().push(self.key);
+            self.trackers.cleaned.set(false);
         }
     }
 }

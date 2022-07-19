@@ -2,7 +2,7 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard, PipelineStats},
     mesh::{Mesh, MeshImportMode, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
@@ -17,22 +17,33 @@ use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 
 use world::{Events, Init, Stage, Storage, Update, World};
-/*
+
+
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
-    let (mut window, mut context) = crate::context::new(settings, el);
-    let ctx = &mut context;
+    let (mut window, mut ctx) = crate::context::new(settings, el);
+    let ctx = &mut ctx;
 
-    let (albedo_maps, normal_maps, mask_maps, meshes, assets) = world
-        .get_mut::<(
-            &mut Storage<AlbedoMap>,
-            &mut Storage<NormalMap>,
-            &mut Storage<MaskMap>,
-            &mut Storage<Mesh>,
-            &mut Assets,
-        )>()
-        .unwrap();
+    // Insert the default storages
+    world.insert(Storage::<AlbedoMap>::default());
+    world.insert(Storage::<NormalMap>::default());
+    world.insert(Storage::<MaskMap>::default());
+    world.insert(Storage::<Mesh>::default());
+    world.insert(Storage::<Shader>::default());
+    world.insert(Storage::<Standard>::default());
+    world.insert(Storage::<Sky>::default());
+
+    // Get mutable references to the data that we must use
+    let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+    let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
+    let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
+    let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
+    let mut assets = world.get_mut::<Assets>().unwrap();
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
 
     // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -116,26 +127,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         sphere,
     );
 
-    // Insert the newly created resources
-    world.insert(scene);
-    world.insert(window);
-    world.insert(context);
-}
-
-// This event will create the main skysphere and pre-register the pipelines
-fn postinit(world: &mut World) {
-    let (assets, ctx, settings, textures, shaders, sky_mats, ecs) = world
-        .get_mut::<(
-            &mut Assets,
-            &mut Context,
-            &mut SceneSettings,
-            &mut Storage<AlbedoMap>,
-            &mut Storage<Shader>,
-            &mut Storage<Sky>,
-            &mut EcsManager,
-        )>()
-        .unwrap();
-
     // Sky gradient texture import settings
     let import_settings = TextureImportSettings {
         sampling: Sampling {
@@ -147,7 +138,7 @@ fn postinit(world: &mut World) {
     };
 
     // Load in the texture
-    let texture = textures.insert(
+    let texture = albedo_maps.insert(
         assets
             .load_with::<AlbedoMap>("engine/textures/sky_gradient.png", (ctx, import_settings))
             .unwrap(),
@@ -163,50 +154,55 @@ fn postinit(world: &mut World) {
         cloud_speed: 0.0,
     };
 
-    // Get material handle and PipeId
-    let material = sky_mats.insert(material);
-    let pipeid = ctx.pipeline::<Sky>(shaders, assets);
+    // Create the default Standard material pipeline
+    ctx.pipeline::<Standard>(&mut shaders, &mut assets);
 
-    // Create a default skysphere that is pretty large
+    // Create the default Sky material pipeline and default Sky sphere surface
+    let material = sky_materials.insert(material);
+    let pipeid = ctx.pipeline::<Sky>(&mut shaders, &mut assets);
     let renderer = Renderer::default();
-    let surface = Surface::new(settings.sphere(), material, pipeid);
+    let surface = Surface::new(scene.sphere(), material, pipeid);
 
     // Insert it as a new entity
-    /*
     ecs.insert((
         renderer,
         surface,
         Transform::default().scaled(vek::Vec3::one() * 5000.0),
-    )).unwrap();
-    */
+    ));
+
+    // Insert the new resources
+    world.insert(scene);
+    world.insert(window);
+    world.insert(ctx);    
 }
 
-// Rendering event that will try to render the 3D scene each frame
-// This will also update the world matrices of each renderer
-fn rendering(world: &mut World) {
-    let (ecs, ctx, settings) = world
-        .get_mut::<(&mut EcsManager, &mut Context, &SceneSettings)>()
-        .unwrap();
+// Update the global mesh matrices of objects that have been modified
+fn update_matrices(world: &mut World) {
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
 
-    // Don't render if we don't have a camera or a main directional light
-    if !settings.can_render() {
-        return;
-    }
-
-    // Update the world matrices of renderer
-    let filter = or(modified::<Transform>(), added::<Transform>());
+    let filter = or(or(modified::<Transform>(), added::<Transform>()), added::<Renderer>());
     let query = ecs
         .query_with::<(&mut Renderer, &Transform)>(filter)
         .unwrap();
+    
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
     }
+}
 
-    // Render all the surfaces using their respective pipelines
-    ctx.extract_pipelines().into_iter().for_each(|pipe| {
-        let stats = pipe.render(world);
-        //dbg!(stats);
-    });
+// Rendering event that will try to render the 3D scene each frame
+fn rendering(world: &mut World) {
+    if !world.get::<SceneSettings>().unwrap().can_render() {
+        return;
+    }
+    
+    let pipelines = world
+        .get::<Context>()
+        .unwrap()
+        .extract_pipelines()
+        .into_iter();
+
+    let stats = pipelines.into_iter().map(|p| p.render(world)).collect::<Vec<PipelineStats>>();
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -219,14 +215,14 @@ fn window(world: &mut World, event: &mut WindowEvent) {
             }
 
             // Resize the main window canvas when we resize the window
-            let window = world.get_mut::<&mut Window>().unwrap();
+            let mut window = world.get_mut::<Window>().unwrap();
             window
                 .canvas_mut()
                 .resize(vek::Extent2::new(size.width as u16, size.height as u16));
         }
         WindowEvent::CloseRequested => {
             // Stop the game engine
-            *world.get_mut::<&mut world::State>().unwrap() = world::State::Stopped;
+            **world.get_mut::<&mut world::State>().unwrap() = world::State::Stopped;
         }
         _ => {}
     }
@@ -234,7 +230,7 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
-    let window = world.get_mut::<&mut Window>().unwrap();
+    let mut window = world.get_mut::<Window>().unwrap();
     window
         .canvas_mut()
         .clear(Some(vek::Rgb::black()), Some(1.0), None);
@@ -242,7 +238,7 @@ fn clear(world: &mut World) {
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
 fn swap(world: &mut World) {
-    let ctx = world.get_mut::<&mut Context>().unwrap();
+    let ctx = world.get_mut::<Context>().unwrap();
     ctx.raw().swap_buffers().unwrap();
 }
 
@@ -250,9 +246,8 @@ fn swap(world: &mut World) {
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
-    let (ecs, scene) = world
-        .get_mut::<(&mut EcsManager, &mut SceneSettings)>()
-        .unwrap();
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let scene = world.get::<SceneSettings>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = scene.main_camera() {
@@ -279,17 +274,6 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         )
         .unwrap();
 
-    // Insert post init event
-    events
-        .registry::<Init>()
-        .insert_with(
-            postinit,
-            Stage::new("graphics post init")
-                .after("graphics insert")
-                .before("user"),
-        )
-        .unwrap();
-
     // Insert update events (fetch the registry)
     let reg = events.registry::<Update>();
     reg.insert_with(clear, Stage::new("window clear").before("user"))
@@ -304,12 +288,20 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
+    // Insert update renderer event
+    reg.insert_with(
+        update_matrices,
+        Stage::new("update renderer matrices")
+            .before("scene rendering"),
+    )
+    .unwrap();
+
     // Insert scene renderer event
     reg.insert_with(
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
-            .after("post user"),
+            .after("update renderer matrices"),
     )
     .unwrap();
 
@@ -322,9 +314,4 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert window event
     events.registry::<WindowEvent>().insert(window);
-}
-*/
-
-pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
-    
 }

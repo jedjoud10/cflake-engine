@@ -1,12 +1,16 @@
-use crate::{AudioHead, AudioSource, Listener, GLOBAL_LISTENER};
+use crate::{AudioHead, AudioSource, Listener, GLOBAL_LISTENER, AudioClip};
 use ecs::{added, modified, or, EcsManager};
 use math::Transform;
-use world::{Events, Stage, Update, World};
+use world::{Events, Stage, Update, World, Init, Storage};
+
+// This will insert the default audio clip storage
+fn init(world: &mut World) {
+    world.insert(Storage::<AudioClip>::default());
+}
 
 // This will update the audio listener ear positions and audio sources emitter positions
 fn update(world: &mut World) {
-    /*
-    let ecs = world.get_mut::<&mut EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
 
     // Get the audio listener's ear locations
     let head = ecs
@@ -36,7 +40,6 @@ fn update(world: &mut World) {
             }
         }
     }
-    */
 }
 
 // Main audio system
@@ -45,4 +48,8 @@ pub fn system(events: &mut Events) {
         .registry::<Update>()
         .insert_with(update, Stage::new("audio update").after("post user"))
         .unwrap();
+
+    events
+        .registry::<Init>()
+        .insert_with(init, Stage::new("insert storage audio").before("user"));
 }

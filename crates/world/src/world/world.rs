@@ -23,14 +23,16 @@ pub enum State {
 
 impl World {
     // Insert a new resource into the world
-    pub fn insert<R: Resource>(&mut self, resource: R) -> Option<()> {
+    pub fn insert<R: Resource>(&mut self, resource: R) {
         let id = TypeId::of::<R>();
-        if !self.0.contains_key(&id) {
-            self.0.insert(id, RefCell::new(Box::new(resource)));
-            Some(())
-        } else {
-            None
-        }
+        let returned = self.0.insert(id, RefCell::new(Box::new(resource)));
+        assert!(returned.is_none());
+    }
+
+    // Insert a new resource into the world, by instantiating it *using* the world
+    pub fn insert_with_world<R: Resource + FromWorld>(&mut self) {
+        let resource = R::from_world(self);
+        self.insert(resource)
     }
 
     // Get an immutable reference (read guard) to a resource
@@ -49,11 +51,6 @@ impl World {
             let borrowed = RefMut::map(borrowed, |boxed| boxed.as_any_mut().downcast_mut::<R>().unwrap());
             Write(borrowed)
         })
-    }
-
-    // Remove a resource from the world
-    pub fn remove<R: Resource>(&mut self) -> Option<()> {
-        self.0.remove(&TypeId::of::<R>()).map(|_| ())
     }
 
     // Check if a resource is present in the world
