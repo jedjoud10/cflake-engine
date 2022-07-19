@@ -9,13 +9,13 @@ impl<R: Resource> Deref for Read<'_, R> {
     type Target = R;
 
     fn deref(&self) -> &Self::Target {
-        &*self.0
+        &self.0
     }
 }
 
 impl<R: Resource> AsRef<R> for Read<'_, R> {
     fn as_ref(&self) -> &R {
-        &*self.0
+        &self.0
     }
 }
 
@@ -26,24 +26,24 @@ impl<R: Resource> Deref for Write<'_, R> {
     type Target = R;
 
     fn deref(&self) -> &Self::Target {
-        &*self.0
+        &self.0
     }
 }
 
 impl<R: Resource> DerefMut for Write<'_, R> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.0
+        &mut self.0
     }
 }
 
 impl<R: Resource> AsMut<R> for Write<'_, R> {
     fn as_mut(&mut self) -> &mut R {
-        &mut *self.0
+        &mut self.0
     }
 }
 
 impl<R: Resource> AsRef<R> for Write<'_, R> {
     fn as_ref(&self) -> &R {
-        &*self.0
+        &self.0
     }
 }

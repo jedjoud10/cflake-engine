@@ -1,6 +1,6 @@
 use slotmap::SlotMap;
 use time::Time;
-use world::{Events, Init, Resource, Stage, Update, World};
+use world::{Events, Init, Stage, Update, World};
 
 use crate::{
     entity::Entity, Archetype,
@@ -143,7 +143,7 @@ pub fn system(events: &mut Events) {
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
         let ecs = world.get_mut::<EcsManager>().unwrap();
-        let time = world.get::<Time>().unwrap();
+        let _time = world.get::<Time>().unwrap();
 
         // Clear all the archetype states that were set last frame
         for (_, archetype) in ecs.archetypes() {

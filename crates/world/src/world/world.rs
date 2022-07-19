@@ -1,9 +1,8 @@
 use crate::{
-    Events, Init, Resource, Stage,
-    Update, Read, Write,
+    Events, Init, Resource, Stage, Read, Write,
 };
 use ahash::AHashMap;
-use std::{any::{TypeId, Any}, cell::{RefCell, Ref, RefMut}};
+use std::{any::{TypeId}, cell::{RefCell, Ref, RefMut}};
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App

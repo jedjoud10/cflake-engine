@@ -10,5 +10,5 @@ struct Test {
 }
 
 fn test(world: &mut World) {
-    let t = world.get_mut::<Test>().unwrap();
+    let _t = world.get_mut::<Test>().unwrap();
 }

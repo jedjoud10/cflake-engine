@@ -1,6 +1,6 @@
 use glutin::{
     event::{DeviceEvent, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{EventLoop},
 };
 use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;
@@ -147,7 +147,7 @@ impl App {
         events.registry::<DeviceEvent>().sort().unwrap();
 
         // We must now start the game engine (start the glutin event loop)
-        el.run(move |event, _, cf| match event {
+        el.run(move |event, _, _cf| match event {
             glutin::event::Event::MainEventsCleared => {
                 // Call the update events
                 events.execute::<Update>(&mut world);

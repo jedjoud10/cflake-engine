@@ -1,11 +1,8 @@
 use crate::painter::Painter;
-use assets::Assets;
-use egui_winit::winit::event::WindowEvent;
-use rendering::{
-    gl,
-    prelude::{Context, Window},
-};
-use world::{Events, Resource, World};
+
+
+
+use world::{Events};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz

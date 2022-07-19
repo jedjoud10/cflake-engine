@@ -1,12 +1,10 @@
 use slotmap::{SlotMap, DefaultKey, SecondaryMap};
 
-use crate::{self as world};
-use crate::{FromWorld, Resource};
+
+
 use std::{
-    cell::{Cell, RefCell, UnsafeCell},
+    cell::{Cell, RefCell},
     marker::PhantomData,
-    mem::ManuallyDrop,
-    ptr::NonNull,
     rc::Rc,
 };
 
@@ -124,7 +122,7 @@ impl<T: 'static> Clone for Handle<T> {
         Self {
             _phantom: PhantomData::default(),
             trackers: self.trackers.clone(),
-            key: self.key.clone(),
+            key: self.key,
         }
     }
 }
