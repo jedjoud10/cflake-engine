@@ -48,9 +48,7 @@ pub trait Material<'w>: 'static + Sized {
     }
 
     // Fetch the property block resources
-    fn fetch(
-        world: &'w World,
-    ) -> Self::Resources;
+    fn fetch(world: &'w World) -> Self::Resources;
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties(

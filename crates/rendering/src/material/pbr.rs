@@ -1,7 +1,7 @@
 use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
-use world::{Handle, Storage, Read};
+use world::{Handle, Read, Storage};
 
 use crate::{
     canvas::Canvas,
@@ -42,9 +42,7 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<MaskMap>>,
     );
 
-    fn fetch(
-            world: &'w world::World,
-        ) -> Self::Resources {
+    fn fetch(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
         let mask_map = world.get::<Storage<MaskMap>>().unwrap();

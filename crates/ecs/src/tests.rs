@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod tests {
     use crate::*;
-    
 
     #[test]
     fn test() {
         let _manager = EcsManager::default();
-        
+
         #[derive(Component, Debug)]
         struct Name(&'static str);
         #[derive(Component, Debug)]
@@ -15,9 +14,7 @@ mod tests {
         struct Ammo(u32);
 
         //manager.insert((Name("Red"), Health(100)));
-        
-        
-        
+
         /*
 
 

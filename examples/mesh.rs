@@ -1,7 +1,3 @@
-
-
-
-
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 
 fn main() {}

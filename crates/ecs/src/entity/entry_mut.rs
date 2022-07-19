@@ -1,6 +1,10 @@
-
 use super::Entity;
-use crate::{registry::{mask, name}, Archetype, Component, EcsManager, EntryError, ArchetypeSet, EntitySet, StateRow, EntityLinkings, Bundle, add_bundle_unchecked, remove_bundle_unchecked, RefQueryLayout, MutQueryLayout};
+use crate::{
+    add_bundle_unchecked,
+    registry::{mask, name},
+    remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle, Component, EcsManager,
+    EntityLinkings, EntitySet, EntryError, MutQueryLayout, RefQueryLayout, StateRow,
+};
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
 // They also allow the user to be able to add/remove certain component bundles from the entity
@@ -25,7 +29,7 @@ impl<'a> EntryMut<'a> {
             linkings,
         })
     }
-    
+
     // Get the entity linkings of the current entity
     pub fn linkings(&self) -> EntityLinkings {
         self.linkings
@@ -35,7 +39,7 @@ impl<'a> EntryMut<'a> {
     pub fn archetype(&self) -> &Archetype {
         self.archetypes.get(&self.linkings().mask()).unwrap()
     }
-    
+
     // Get a mutable reference to the enitity's archetype
     pub fn archetype_mut(&mut self) -> &mut Archetype {
         self.archetypes.get_mut(&self.linkings().mask()).unwrap()
@@ -43,12 +47,16 @@ impl<'a> EntryMut<'a> {
 
     // Get an immutable reference to a table
     pub fn table<T: Component>(&self) -> Result<&Vec<T>, EntryError> {
-        self.archetype().table::<T>().ok_or_else(|| EntryError::MissingComponent(name::<T>()))
+        self.archetype()
+            .table::<T>()
+            .ok_or_else(|| EntryError::MissingComponent(name::<T>()))
     }
 
     // Get a mutable reference to a table
     pub fn table_mut<T: Component>(&mut self) -> Result<&mut Vec<T>, EntryError> {
-        self.archetype_mut().table_mut::<T>().ok_or_else(|| EntryError::MissingComponent(name::<T>()))
+        self.archetype_mut()
+            .table_mut::<T>()
+            .ok_or_else(|| EntryError::MissingComponent(name::<T>()))
     }
 
     // Get an immutable reference to a linked component
@@ -67,7 +75,7 @@ impl<'a> EntryMut<'a> {
         let mut slice = states.borrow_mut();
         let row = &mut slice[index];
         row.update(|_added, _removed, mutated| mutated.set(mask::<T>().offset(), true));
-        let val = self.get_mut_silent::<T>().unwrap();        
+        let val = self.get_mut_silent::<T>().unwrap();
         Ok(val)
     }
 
@@ -93,7 +101,12 @@ impl<'a> EntryMut<'a> {
 
     // Get the current state row of our entity
     pub fn states(&self) -> StateRow {
-        *self.archetype().states().borrow().get(self.linkings().index()).unwrap()
+        *self
+            .archetype()
+            .states()
+            .borrow()
+            .get(self.linkings().index())
+            .unwrap()
     }
 
     // Check if the entity has a component linked to it

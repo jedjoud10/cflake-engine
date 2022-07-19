@@ -1,9 +1,10 @@
 use crate::{
-    mask, Archetype, Component, ComponentTable, LayoutAccess, Mask, MaskMap, OwnedBundle, RefQueryItem, RefQueryLayout, MutQueryLayout, MutQueryItem, Bundle
+    mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskMap, MutQueryItem,
+    MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
 };
 
-use seq_macro::seq;
 use casey::lower;
+use seq_macro::seq;
 
 // Implementations of ref query item for &T
 impl<'a, T: Component> RefQueryItem<'a> for &'a T {
@@ -20,7 +21,7 @@ impl<'a, T: Component> RefQueryItem<'a> for &'a T {
     unsafe fn read(ptr: *const Self::Item, i: usize) -> Self {
         &*ptr.add(i)
     }
-} 
+}
 
 // Implementations of mut query item for &T
 impl<'a, T: Component> MutQueryItem<'a> for &'a T {
@@ -37,7 +38,7 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a T {
     unsafe fn read(ptr: *mut Self::Item, i: usize) -> Self {
         &*ptr.add(i)
     }
-} 
+}
 
 // Implementations of mut query item for &mut T
 impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
@@ -54,7 +55,7 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
     unsafe fn read(ptr: *mut Self::Item, i: usize) -> Self {
         &mut *ptr.add(i)
     }
-} 
+}
 
 // Implement the owned bundle for single component
 impl<'a, T: Component> OwnedBundle<'a> for T {
@@ -82,7 +83,10 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
         MaskMap::from_iter(std::iter::once((mask, boxed)))
     }
 
-    fn try_swap_remove(tables: &mut MaskMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
+    fn try_swap_remove(
+        tables: &mut MaskMap<Box<dyn ComponentTable>>,
+        index: usize,
+    ) -> Option<Self> {
         let boxed = tables.get_mut(&mask::<T>())?;
         let vec = boxed.as_any_mut().downcast_mut::<Vec<T>>().unwrap();
         Some(vec.swap_remove(index))
@@ -110,7 +114,7 @@ impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
     }
 }
 
-// Implementation of mut query layout for single component 
+// Implementation of mut query layout for single component
 impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
     type PtrTuple = *mut T::Item;
 
@@ -217,7 +221,7 @@ macro_rules! tuple_impls {
                     lower!($name)
                 ),+,))
             }
-            
+
             unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N = C~N::read(ptrs.N, i);
@@ -252,7 +256,7 @@ macro_rules! tuple_impls {
                     lower!($name)
                 ),+,))
             }
-            
+
             unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N = C~N::read(ptrs.N, i);

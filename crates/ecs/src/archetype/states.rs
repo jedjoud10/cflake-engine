@@ -1,5 +1,4 @@
-use crate::{Mask};
-
+use crate::Mask;
 
 // Component state chunk that contains the component states for a bundle
 // TODO: Description
@@ -21,7 +20,7 @@ impl StateRow {
     pub fn removed(&self) -> Mask {
         self.1
     }
-    
+
     // Get the mutated state mask
     pub fn mutated(&self) -> Mask {
         self.2

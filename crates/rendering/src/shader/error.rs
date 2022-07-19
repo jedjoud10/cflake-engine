@@ -13,8 +13,12 @@ impl std::fmt::Debug for UniformsError {
             UniformsError::IncompleteBufferBinding(name) => {
                 write!(f, "The binding buffer point '{name}' was not set")
             }
-            UniformsError::InvalidTexture(name) => write!(f, "The texture at location '{name}' was destroyed"),
-            UniformsError::InvalidBuffer(name) => write!(f, "The buffer at binding '{name}' was destroyed"),
+            UniformsError::InvalidTexture(name) => {
+                write!(f, "The texture at location '{name}' was destroyed")
+            }
+            UniformsError::InvalidBuffer(name) => {
+                write!(f, "The buffer at binding '{name}' was destroyed")
+            }
         }
     }
 }

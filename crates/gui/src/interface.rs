@@ -1,8 +1,6 @@
 use crate::painter::Painter;
 
-
-
-use world::{Events};
+use world::Events;
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz

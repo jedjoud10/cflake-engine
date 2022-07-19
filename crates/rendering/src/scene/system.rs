@@ -2,7 +2,7 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard, PipelineStats},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, PipelineStats, Sky, Standard},
     mesh::{Mesh, MeshImportMode, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
@@ -17,7 +17,6 @@ use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::Transform;
 
 use world::{Events, Init, Stage, Storage, Update, World};
-
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -173,18 +172,21 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Insert the new resources
     world.insert(scene);
     world.insert(window);
-    world.insert(ctx);    
+    world.insert(ctx);
 }
 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
 
-    let filter = or(or(modified::<Transform>(), added::<Transform>()), added::<Renderer>());
+    let filter = or(
+        or(modified::<Transform>(), added::<Transform>()),
+        added::<Renderer>(),
+    );
     let query = ecs
         .query_with::<(&mut Renderer, &Transform)>(filter)
         .unwrap();
-    
+
     for (renderer, transform) in query {
         renderer.set_matrix(transform.matrix());
     }
@@ -195,14 +197,17 @@ fn rendering(world: &mut World) {
     if !world.get::<SceneSettings>().unwrap().can_render() {
         return;
     }
-    
+
     let pipelines = world
         .get::<Context>()
         .unwrap()
         .extract_pipelines()
         .into_iter();
 
-    let stats = pipelines.into_iter().map(|p| p.render(world)).collect::<Vec<PipelineStats>>();
+    let stats = pipelines
+        .into_iter()
+        .map(|p| p.render(world))
+        .collect::<Vec<PipelineStats>>();
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -254,9 +259,7 @@ fn main_camera(world: &mut World) {
         let mut entry = ecs.entry_mut(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry
-            .as_query::<(&mut Camera, &mut Transform)>()
-            .unwrap();
+        let (camera, transform) = entry.as_query::<(&mut Camera, &mut Transform)>().unwrap();
         camera.update(transform);
     }
 }
@@ -291,8 +294,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert update renderer event
     reg.insert_with(
         update_matrices,
-        Stage::new("update renderer matrices")
-            .before("scene rendering"),
+        Stage::new("update renderer matrices").before("scene rendering"),
     )
     .unwrap();
 

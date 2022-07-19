@@ -1,6 +1,4 @@
-use slotmap::{SlotMap, DefaultKey, SecondaryMap};
-
-
+use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 
 use std::{
     cell::{Cell, RefCell},
@@ -22,12 +20,13 @@ pub struct Storage<T: 'static> {
 
 impl<T: 'static> Default for Storage<T> {
     fn default() -> Self {
-        Self { map: Default::default(), trackers: Rc::new(
-            Trackers {
+        Self {
+            map: Default::default(),
+            trackers: Rc::new(Trackers {
                 dropped: RefCell::new(Default::default()),
                 counters: RefCell::new(Default::default()),
                 cleaned: Cell::new(true),
-            })
+            }),
         }
     }
 }
@@ -45,19 +44,19 @@ impl<T: 'static> Storage<T> {
             key,
         }
     }
-    
+
     // Get an immutable reference to a value using it's a handle
     pub fn get(&self, handle: &Handle<T>) -> &T {
         self.map.get(handle.key).unwrap()
     }
-    
+
     // Get a mutable reference to a value using it's handle
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         self.map.get_mut(handle.key).unwrap()
     }
 
     // Clean the storage of any dangling values. This will keep the same memory footprint as before
-    pub fn clean(&mut self) {        
+    pub fn clean(&mut self) {
         if !self.trackers.cleaned.get() {
             self.trackers.cleaned.set(true);
             let mut dropped = self.trackers.dropped.borrow_mut();
@@ -66,10 +65,9 @@ impl<T: 'static> Storage<T> {
                 self.map.remove(i);
                 counters.remove(i);
             }
-        }         
+        }
     }
 }
-
 
 // A handle is what keeps the values within Storage<T> alive
 pub struct Handle<T: 'static> {
@@ -141,6 +139,10 @@ impl<T: 'static> Drop for Handle<T> {
 
 impl<T: 'static> Default for Handle<T> {
     fn default() -> Self {
-        Self { _phantom: Default::default(), trackers: todo!(), key: Default::default() }
+        Self {
+            _phantom: Default::default(),
+            trackers: todo!(),
+            key: Default::default(),
+        }
     }
 }

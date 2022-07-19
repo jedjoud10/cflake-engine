@@ -1,4 +1,4 @@
-use super::{Material, AlbedoMap};
+use super::{AlbedoMap, Material};
 use crate::{
     canvas::{PrimitiveMode, RasterSettings},
     context::{Context, Window},
@@ -10,7 +10,7 @@ use assets::Assets;
 use ecs::EcsManager;
 use math::Transform;
 use std::{any::type_name, marker::PhantomData};
-use world::{Handle, Resource, Storage, World, Read};
+use world::{Handle, Read, Resource, Storage, World};
 
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
 #[derive(Debug)]
@@ -56,7 +56,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let mut ctx = world.get_mut::<Context>().unwrap();
         let mut property_block_resources = M::fetch(world);
 
-
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
             depth_test: M::depth_comparison(),
@@ -99,8 +98,9 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let light = (light_data, light_transform);
 
         // Create a new rasterizer so we can draw the objects onto the world
-        let (mut rasterizer, mut uniforms) = window.canvas_mut().rasterizer(&mut ctx, shader, settings);
-        
+        let (mut rasterizer, mut uniforms) =
+            window.canvas_mut().rasterizer(&mut ctx, shader, settings);
+
         /*
         M::set_static_properties(
             &mut uniforms,

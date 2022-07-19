@@ -1,9 +1,8 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap,
-    StateRow, Bundle,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskMap, StateRow,
 };
-use std::{rc::Rc, cell::{RefCell}};
+use std::{cell::RefCell, rc::Rc};
 
 // TODO: Comment
 pub struct Archetype {
@@ -17,7 +16,12 @@ impl Archetype {
     // Create a new archetype from a owned bundle accessor
     // This assumes that B is a valid bundle
     pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
-        Self { mask: B::combined(), tables: B::default_tables(), states: Rc::new(RefCell::new(Vec::new())), entities: Vec::new() }
+        Self {
+            mask: B::combined(),
+            tables: B::default_tables(),
+            states: Rc::new(RefCell::new(Vec::new())),
+            entities: Vec::new(),
+        }
     }
 
     // Create the unit archetype that contains no tables and has a zeroed mask
@@ -49,11 +53,13 @@ impl Archetype {
                 index: self.len(),
             };
             let entity = entities.insert(linkings);
-            self.states.borrow_mut().push(StateRow::new(self.mask, Mask::zero(), self.mask,));
+            self.states
+                .borrow_mut()
+                .push(StateRow::new(self.mask, Mask::zero(), self.mask));
             self.entities.push(entity);
             output.push(entity)
         }
-        
+
         // Add the storage bundles to their respective tables
         let mut storages = B::prepare(self).unwrap();
         for set in components {
@@ -164,7 +170,7 @@ impl Archetype {
 // This will get two different archetypes using their masks
 // This assumes that the archetypes exist already in the set, and that we are using different masks
 fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &mut Archetype) {
-    assert_ne!(mask1, mask2);    
+    assert_ne!(mask1, mask2);
     let a1 = set.get_mut(&mask1).unwrap() as *mut Archetype;
     let a2 = set.get_mut(&mask2).unwrap() as *mut Archetype;
     unsafe {
@@ -172,7 +178,7 @@ fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &
         let a2 = &mut *a2;
         (a1, a2)
     }
-} 
+}
 
 // Add some new components onto an entity, forcing it to switch archetypes
 // This assumes that the OwnedBundle type is valid for this use case
@@ -190,11 +196,14 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     if new == old {
         return Some(());
     }
-    
+
     // Create the new target archetype if needed
     if archetypes.contains_key(&new) {
         let current = archetypes.get_mut(&old).unwrap();
-        let tables = current.tables.iter().map(|(mask, table)| (*mask, table.clone_default()));
+        let tables = current
+            .tables
+            .iter()
+            .map(|(mask, table)| (*mask, table.clone_default()));
         let archetype = Archetype {
             mask: new,
             tables: MaskMap::from_iter(tables),
@@ -218,7 +227,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
     // Add the extra components as well
     let mut storages = B::prepare(target)?;
     B::push(&mut storages, bundle);
-    drop(storages);    
+    drop(storages);
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -227,10 +236,13 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
     }
-    
+
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.borrow_mut().push(StateRow::new(target.mask, Mask::zero(), target.mask));
+    target
+        .states
+        .borrow_mut()
+        .push(StateRow::new(target.mask, Mask::zero(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;
@@ -248,11 +260,14 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     // Get the old and new masks
     let old = entities[entity].mask;
     let new = entities[entity].mask & !B::combined();
-    
+
     // Create the new target archetype if needed
     if archetypes.contains_key(&new) {
         let current = archetypes.get_mut(&old).unwrap();
-        let tables = current.tables.iter().map(|(mask, table)| (*mask, table.clone_default()));
+        let tables = current
+            .tables
+            .iter()
+            .map(|(mask, table)| (*mask, table.clone_default()));
         let filtered = tables.filter(|(mask, _)| Mask::contains(&new, *mask));
         let archetype = Archetype {
             mask: new,
@@ -275,7 +290,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
     }
 
     // Create the return bundle
-    let bundle = B::try_swap_remove(&mut current.tables, index);   
+    let bundle = B::try_swap_remove(&mut current.tables, index);
 
     // Handle swap-remove logic in the current archetype
     current.entities.swap_remove(index);
@@ -284,10 +299,13 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
         let swapped = entities.get_mut(entity).unwrap();
         swapped.index = index;
     }
-    
+
     // Insert the new entity in the target archetype
     let linkings = entities.get_mut(entity).unwrap();
-    target.states.borrow_mut().push(StateRow::new(target.mask, B::combined(), target.mask));
+    target
+        .states
+        .borrow_mut()
+        .push(StateRow::new(target.mask, B::combined(), target.mask));
     target.entities.push(entity);
     linkings.index = target.len() - 1;
     linkings.mask = target.mask;

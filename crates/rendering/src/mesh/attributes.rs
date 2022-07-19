@@ -1,6 +1,8 @@
-use std::mem::MaybeUninit;
+use std::mem::{size_of, MaybeUninit};
 
 use crate::{buffer::ArrayBuffer, mesh::Mesh, object::Shared};
+
+use super::{VerticesMut, VerticesRef};
 
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
@@ -9,7 +11,7 @@ bitflags::bitflags! {
         const NORMALS = 1 << 1;
         const TANGENTS = 1 << 2;
         const COLORS = 1 << 3;
-        const TEX_COORD = 1 << 4;
+        const TEX_COORDS = 1 << 4;
     }
 }
 
@@ -36,19 +38,32 @@ pub trait VertexAttribute {
     // Should we normalize the data before we send it?
     const NORMALIZED: bool;
 
-    // Get an immutable reference to the attribute buffer
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self>;
+    // Get the proper reference from the wrapper vertex types
+    fn from_vertices_ref_as_ref<'a>(vertices: &'a VerticesRef) -> &'a AttributeBuffer<Self>;
+    fn from_vertices_mut_as_ref<'a>(vertices: &'a VerticesMut) -> &'a AttributeBuffer<Self>;
+    fn from_vertices_mut_as_mut<'a>(vertices: &'a mut VerticesMut)
+        -> &'a mut AttributeBuffer<Self>;
 
-    // Get a mutable reference to the attribute buffer
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self>;
+    // Insert an attribute buffer into the vertices
+    fn insert(vertices: &mut VerticesMut, buffer: ArrayBuffer<Self::Out>);
+
+    // Remove an attribute from the vertices
+    fn remove(vertices: &mut VerticesMut);
+
+    // Get the attribute's index
+    fn index() -> u32 {
+        Self::ENABLED.bits().trailing_zeros()
+    }
+
+    // Get the attribute's format
+    fn format() -> AttributeFormatAny {
+        AttributeFormatAny {
+            normalized: Self::NORMALIZED,
+            stride: size_of::<Self::Out>(),
+            attribute_index: Self::index(),
+        }
+    }
 }
-
-// Mesh vertex attributes type wrappers
-pub struct Position(());
-pub struct Normal(());
-pub struct Tangent(());
-pub struct Color(());
-pub struct TexCoord(());
 
 // An untyped attribute wrapper that contains all the basic information about attributes
 pub struct AttributeFormatAny {
@@ -74,90 +89,59 @@ impl AttributeFormatAny {
     }
 }
 
-// Position (Vec3<f32>) vertex attribute
-impl VertexAttribute for Position {
-    type Out = vek::Vec3<f32>;
-    const COUNT_PER_VERTEX: usize = 3;
-    const GL_TYPE: u32 = gl::FLOAT;
-    const ENABLED: EnabledAttributes = EnabledAttributes::POSITIONS;
-    const NORMALIZED: bool = false;
+// Macro for easier implementations
+use gl::*;
+use paste::paste;
+macro_rules! impl_vertex_attribute {
+    ($attribute:ident, $name:ident, $count:tt, $enabled:ident, $normalized:ident, $out:ident, $gltype:ident) => {
+        paste! {
+            pub struct $attribute(());
 
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self> {
-        &mesh.positions
-    }
+            impl VertexAttribute for $attribute {
+                type Out = vek::[<Vec $count>]<$out>;
+                const COUNT_PER_VERTEX: usize = $count;
+                const GL_TYPE: u32 = $gltype;
+                const ENABLED: EnabledAttributes = EnabledAttributes::[<$enabled>];
+                const NORMALIZED: bool = false;
 
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self> {
-        &mut mesh.positions
-    }
+                fn from_vertices_ref_as_ref<'a>(vertices: &'a VerticesRef) -> &'a AttributeBuffer<Self> {
+                    vertices.$name
+                }
+
+                fn from_vertices_mut_as_ref<'a>(vertices: &'a VerticesMut) -> &'a AttributeBuffer<Self> {
+                    vertices.$name
+                }
+
+                fn from_vertices_mut_as_mut<'a>(vertices: &'a mut VerticesMut) -> &'a mut AttributeBuffer<Self> {
+                    vertices.$name
+                }
+
+                fn insert(vertices: &mut VerticesMut, buffer: ArrayBuffer<Self::Out>) {
+                    if vertices.bitfield.contains(Self::ENABLED) {
+                        *vertices.$name = MaybeUninit::new(buffer);
+                    } else {
+                        vertices.$name.write(buffer);
+                    }
+
+                    vertices.bitfield.insert(Self::ENABLED);
+                    vertices.maybe_reassigned.insert(Self::ENABLED);
+                }
+
+                fn remove(vertices: &mut VerticesMut) {
+                    vertices.bitfield.remove(Self::ENABLED);
+                    vertices.maybe_reassigned.remove(Self::ENABLED);
+                }
+            }
+        }
+    };
 }
 
-// Normal (Vec3<i8>) vertex attribute
-impl VertexAttribute for Normal {
-    type Out = vek::Vec3<i8>;
-    const COUNT_PER_VERTEX: usize = 3;
-    const GL_TYPE: u32 = gl::BYTE;
-    const ENABLED: EnabledAttributes = EnabledAttributes::NORMALS;
-    const NORMALIZED: bool = true;
-
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self> {
-        &mesh.normals
-    }
-
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self> {
-        &mut mesh.normals
-    }
-}
-
-// Tangent (Vec4<i8>) vertex attribute
-impl VertexAttribute for Tangent {
-    type Out = vek::Vec4<i8>;
-    const COUNT_PER_VERTEX: usize = 4;
-    const GL_TYPE: u32 = gl::BYTE;
-    const ENABLED: EnabledAttributes = EnabledAttributes::TANGENTS;
-    const NORMALIZED: bool = true;
-
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self> {
-        &mesh.tangents
-    }
-
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self> {
-        &mut mesh.tangents
-    }
-}
-
-// Color (Vec3<u8>) vertex attribute
-impl VertexAttribute for Color {
-    type Out = vek::Vec3<u8>;
-    const COUNT_PER_VERTEX: usize = 3;
-    const GL_TYPE: u32 = gl::UNSIGNED_BYTE;
-    const ENABLED: EnabledAttributes = EnabledAttributes::COLORS;
-    const NORMALIZED: bool = true;
-
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self> {
-        &mesh.colors
-    }
-
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self> {
-        &mut mesh.colors
-    }
-}
-
-// Texture coordinates (Vec2<u8>) vertex attribute
-impl VertexAttribute for TexCoord {
-    type Out = vek::Vec2<u8>;
-    const COUNT_PER_VERTEX: usize = 2;
-    const GL_TYPE: u32 = gl::UNSIGNED_BYTE;
-    const ENABLED: EnabledAttributes = EnabledAttributes::COLORS;
-    const NORMALIZED: bool = true;
-
-    fn as_ref(mesh: &Mesh) -> &AttributeBuffer<Self> {
-        &mesh.uvs
-    }
-
-    fn as_mut(mesh: &mut Mesh) -> &mut AttributeBuffer<Self> {
-        &mut mesh.uvs
-    }
-}
+// Imeplement the common vertex attributes wrapper types
+impl_vertex_attribute!(Position, positions, 3, POSITIONS, false, f32, FLOAT);
+impl_vertex_attribute!(Normal, normals, 3, NORMALS, true, i8, BYTE);
+impl_vertex_attribute!(Tangent, tangents, 4, TANGENTS, true, i8, BYTE);
+impl_vertex_attribute!(Color, colors, 3, COLORS, true, u8, UNSIGNED_BYTE);
+impl_vertex_attribute!(TexCoord, uvs, 2, TEX_COORDS, true, u8, UNSIGNED_BYTE);
 
 // All the raw types used by the attributes
 pub type VePosition = <Position as VertexAttribute>::Out;

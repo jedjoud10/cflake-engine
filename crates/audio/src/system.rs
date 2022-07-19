@@ -1,7 +1,7 @@
-use crate::{AudioHead, AudioSource, Listener, GLOBAL_LISTENER, AudioClip};
+use crate::{AudioClip, AudioHead, AudioSource, Listener, GLOBAL_LISTENER};
 use ecs::{added, modified, or, EcsManager};
 use math::Transform;
-use world::{Events, Stage, Update, World, Init, Storage};
+use world::{Events, Init, Stage, Storage, Update, World};
 
 // This will insert the default audio clip storage
 fn init(world: &mut World) {

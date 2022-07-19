@@ -227,9 +227,15 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Make sure the user set all the proper shader variables before executing
     pub(crate) fn execute(&mut self) -> Result<(), UniformsError> {
-        let missing_uniform = self.program.uniform_locations.keys().find(|name| !self.bound_uniforms.contains(*name) && !self.texture_units.contains_key(*name));
-        let missing_buffer_binding = self.program.buffer_binding_points.keys().find(|name| !self.bound_buffer_bindings.contains_key(*name));
-        
+        let missing_uniform = self.program.uniform_locations.keys().find(|name| {
+            !self.bound_uniforms.contains(*name) && !self.texture_units.contains_key(*name)
+        });
+        let missing_buffer_binding = self
+            .program
+            .buffer_binding_points
+            .keys()
+            .find(|name| !self.bound_buffer_bindings.contains_key(*name));
+
         if let Some(name) = missing_uniform {
             return Err(UniformsError::IncompleteUniform(name.clone()));
         }
@@ -238,17 +244,15 @@ impl<'uniforms> Uniforms<'uniforms> {
             return Err(UniformsError::IncompleteBufferBinding(name.clone()));
         }
 
-        let destroyed_texture = self.texture_units.iter().find(|(_, unit)| {
-            unsafe {
-                gl::IsTexture(unit.texture) == 0
-            }
-        });
+        let destroyed_texture = self
+            .texture_units
+            .iter()
+            .find(|(_, unit)| unsafe { gl::IsTexture(unit.texture) == 0 });
 
-        let destroyed_buffer = self.bound_buffer_bindings.iter().find(|(_, &unit)| {
-            unsafe {
-                gl::IsBuffer(unit) == 0
-            }
-        });
+        let destroyed_buffer = self
+            .bound_buffer_bindings
+            .iter()
+            .find(|(_, &unit)| unsafe { gl::IsBuffer(unit) == 0 });
 
         if let Some((name, _)) = destroyed_texture {
             return Err(UniformsError::InvalidTexture(name.clone()));
@@ -317,7 +321,10 @@ impl<'uniforms> Uniforms<'uniforms> {
         let offset = self
             .texture_units
             .entry(name.to_string())
-            .or_insert(TextureUnit { texture: u32::MAX, unit: count })
+            .or_insert(TextureUnit {
+                texture: u32::MAX,
+                unit: count,
+            })
             .unit;
 
         unsafe {

@@ -1,7 +1,7 @@
 use crate::{Archetype, Component, LayoutAccess};
 
 // Mutable query layouts that might contain mutable references
-// This must take a mutable reference to the current archetype 
+// This must take a mutable reference to the current archetype
 pub trait MutQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
     fn is_valid() -> bool;

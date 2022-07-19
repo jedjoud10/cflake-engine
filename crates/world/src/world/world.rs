@@ -1,8 +1,9 @@
-use crate::{
-    Events, Init, Resource, Stage, Read, Write,
-};
+use crate::{Events, Init, Read, Resource, Stage, Write};
 use ahash::AHashMap;
-use std::{any::{TypeId}, cell::{RefCell, Ref, RefMut}};
+use std::{
+    any::TypeId,
+    cell::{Ref, RefCell, RefMut},
+};
 
 // The world is a unique container for multiple resources like ECS and assets
 // Each World can be created using the builder pattern with the help of an App
@@ -38,7 +39,9 @@ impl World {
     pub fn get<R: Resource>(&self) -> Option<Read<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow();
-            let borrowed = Ref::map(borrowed, |boxed| boxed.as_any().downcast_ref::<R>().unwrap());
+            let borrowed = Ref::map(borrowed, |boxed| {
+                boxed.as_any().downcast_ref::<R>().unwrap()
+            });
             Read(borrowed)
         })
     }
@@ -47,7 +50,9 @@ impl World {
     pub fn get_mut<R: Resource>(&self) -> Option<Write<R>> {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
-            let borrowed = RefMut::map(borrowed, |boxed| boxed.as_any_mut().downcast_mut::<R>().unwrap());
+            let borrowed = RefMut::map(borrowed, |boxed| {
+                boxed.as_any_mut().downcast_mut::<R>().unwrap()
+            });
             Write(borrowed)
         })
     }

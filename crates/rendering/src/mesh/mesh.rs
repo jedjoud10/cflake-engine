@@ -76,21 +76,22 @@ impl Mesh {
             colors: &mut self.colors,
             uvs: &mut self.uvs,
             bitfield: &mut self.enabled,
+            maybe_reassigned: todo!(),
         }
     }
 
     // Get a reference to the indices immutably
     fn indices(&self) -> IndicesRef {
         IndicesRef {
-            buffer: &self.indices
+            buffer: &self.indices,
         }
     }
 
     // Get a reference to the indices mutably
     fn indices_mut(&mut self) -> IndicesMut {
-        IndicesMut { 
+        IndicesMut {
             vao: self.vao,
-            buffer: &mut self.indices
+            buffer: &mut self.indices,
         }
     }
     /*
@@ -164,34 +165,7 @@ impl Mesh {
 
     // Set a new vertex attribute buffer, dropping the old one if there was one
     pub fn set_attribute_buffer<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
-        if let Some(buffer) = buffer {
-            // Insert the buffer into the mesh
-            unsafe {
-                T::set_raw(self, buffer);
-            }
 
-            // Enable the vertex attribute and specify it's format
-            self.buffers.insert(T::ENABLED);
-            self.maybe_reassigned.get_mut().insert(T::ENABLED);
-            unsafe {
-                gl::EnableVertexArrayAttrib(self.vao, T::attribute_index());
-                gl::VertexArrayAttribFormat(
-                    self.vao,
-                    T::attribute_index(),
-                    T::Out::COUNT_PER_VERTEX as i32,
-                    T::Out::GL_TYPE,
-                    T::NORMALIZED.into(),
-                    0
-                );
-            }
-        } else {
-            // Disable the vertex attribute
-            self.buffers.remove(T::ENABLED);
-            self.maybe_reassigned.get_mut().remove(T::ENABLED);
-            unsafe {
-                gl::DisableVertexArrayAttrib(self.vao, T::attribute_index())
-            }
-        }
     }
 
     // Get the number of vertices that we have in total

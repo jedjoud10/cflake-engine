@@ -7,10 +7,9 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
-
 // A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
 // The ECS registry system uses masks to annotate each different type that might be a component, so in total
-// In total, there is only 64 different components that can be implemented using this ECS implementation 
+// In total, there is only 64 different components that can be implemented using this ECS implementation
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mask(u64);
 impl IsEnabled for Mask {}

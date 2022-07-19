@@ -1,7 +1,7 @@
 use ecs::EcsManager;
 use math::Transform;
 use time::Time;
-use world::{Handle, Storage, Read};
+use world::{Handle, Read, Storage};
 
 use crate::{
     canvas::{Canvas, FaceCullMode, PrimitiveMode},
@@ -32,9 +32,7 @@ pub struct Sky {
 impl<'w> Material<'w> for Sky {
     type Resources = (Read<'w, Storage<AlbedoMap>>, Read<'w, Time>);
 
-    fn fetch(
-        world: &'w world::World,
-    ) -> Self::Resources {
+    fn fetch(world: &'w world::World) -> Self::Resources {
         let maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let time = world.get::<Time>().unwrap();
         (maps, time)
@@ -43,7 +41,7 @@ impl<'w> Material<'w> for Sky {
     fn primitive_mode() -> PrimitiveMode {
         PrimitiveMode::Triangles { cull: None }
     }
-    
+
     // This method will be called once right before we start rendering the batches
     fn set_static_properties(
         uniforms: &mut Uniforms,

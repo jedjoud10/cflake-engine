@@ -3,9 +3,8 @@ use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    entity::Entity, Archetype,
-    EntityLinkings, EntryRef, Evaluate, Mask, MaskMap, EntryMut,
-    archetype::remove_bundle_unchecked, Bundle, MutQueryLayout, RefQueryLayout,
+    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
+    EntryMut, EntryRef, Evaluate, Mask, MaskMap, MutQueryLayout, RefQueryLayout,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -39,12 +38,18 @@ impl EcsManager {
     }
 
     // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> Vec<Entity> {
+    pub fn insert_from_iter<B: Bundle>(
+        &mut self,
+        iter: impl IntoIterator<Item = B>,
+    ) -> Vec<Entity> {
         assert!(B::is_valid());
 
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::combined();
-        let archetype = self.archetypes.entry(mask).or_insert_with(|| Archetype::from_table_accessor::<B>());
+        let archetype = self
+            .archetypes
+            .entry(mask)
+            .or_insert_with(|| Archetype::from_table_accessor::<B>());
         let components = iter.into_iter().collect::<Vec<_>>();
 
         // Extend the archetype with the new bundles
@@ -59,7 +64,8 @@ impl EcsManager {
     // Remove an entity, and fetch it's removed components as a new bundle
     pub fn remove_then<B: Bundle>(&mut self, entity: Entity) -> Option<B> {
         assert!(B::is_valid());
-        self.remove_from_iter_then::<B>(std::iter::once(entity)).map(|mut vec| vec.pop().unwrap())
+        self.remove_from_iter_then::<B>(std::iter::once(entity))
+            .map(|mut vec| vec.pop().unwrap())
     }
 
     // Remove multiple entities, and discard their components
@@ -74,16 +80,23 @@ impl EcsManager {
     }
 
     // Remove multiple entities, and fetch their removed components as new bundles
-    pub fn remove_from_iter_then<B: Bundle>(&mut self, iter: impl IntoIterator<Item = Entity>) -> Option<Vec<B>> {
+    pub fn remove_from_iter_then<B: Bundle>(
+        &mut self,
+        iter: impl IntoIterator<Item = Entity>,
+    ) -> Option<Vec<B>> {
         assert!(B::is_valid());
 
-        iter.into_iter().map(|entity| {
-            // Move the entity from it's current archetype to the unit archetype
-            remove_bundle_unchecked::<B>(&mut self.archetypes, entity, &mut self.entities).map(|bundle| {
-                self.entities.remove(entity).unwrap();
-                bundle
+        iter.into_iter()
+            .map(|entity| {
+                // Move the entity from it's current archetype to the unit archetype
+                remove_bundle_unchecked::<B>(&mut self.archetypes, entity, &mut self.entities).map(
+                    |bundle| {
+                        self.entities.remove(entity).unwrap();
+                        bundle
+                    },
+                )
             })
-        }).collect::<Option<Vec<B>>>()
+            .collect::<Option<Vec<B>>>()
     }
 
     // Get the immutable entity entry for a specific entity
@@ -100,17 +113,17 @@ impl EcsManager {
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
-    
+
     // Get a mutable reference to the archetype set
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
-    
+
     // Get an immutable reference to the entity set
     pub fn entities(&self) -> &EntitySet {
         &self.entities
     }
-    
+
     // Get a mutable reference to the entity set
     pub fn entities_mut(&mut self) -> &mut EntitySet {
         &mut self.entities
@@ -119,23 +132,28 @@ impl EcsManager {
     // Create a new mutable query iterator
     pub fn query<'a, L: MutQueryLayout<'a>>(&mut self) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_mut(&mut self.archetypes)
-    }  
+    }
 
     // Create a new mutable query iterator with a filter
-    pub fn query_with<'a, L: MutQueryLayout<'a>>(&mut self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+    pub fn query_with<'a, L: MutQueryLayout<'a>>(
+        &mut self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_mut_filter(&mut self.archetypes, filter)
     }
-    
+
     // Create a new immutable query iterator
     pub fn view<'a, L: RefQueryLayout<'a>>(&self) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_ref(&self.archetypes)
     }
 
     // Create a new immutable query iterator with a filter
-    pub fn view_with<'a, L: RefQueryLayout<'a>>(&self, filter: impl Evaluate) -> Option<impl Iterator<Item = L> + 'a> {
+    pub fn view_with<'a, L: RefQueryLayout<'a>>(
+        &self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_ref_filter(&self.archetypes, filter)
     }
-  
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

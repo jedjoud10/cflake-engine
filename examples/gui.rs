@@ -4,7 +4,7 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_window_title("cflake engine GUI example")
-//        .insert_system(system)
+        //        .insert_system(system)
         .execute();
 }
 /*

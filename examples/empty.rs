@@ -6,7 +6,7 @@ fn main() {
 }
 
 struct Test {
-    prop: u32
+    prop: u32,
 }
 
 fn test(world: &mut World) {

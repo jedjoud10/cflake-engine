@@ -1,6 +1,6 @@
 use glutin::{
     event::{DeviceEvent, WindowEvent},
-    event_loop::{EventLoop},
+    event_loop::EventLoop,
 };
 use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;

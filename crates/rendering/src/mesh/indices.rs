@@ -9,7 +9,7 @@ impl IndicesRef<'_> {
     // Get an immutable reference to the inner buffer
     pub fn data(&self) -> &ElementBuffer<u32> {
         todo!()
-    }    
+    }
 
     // Get the number of indices that we have (triangles * 3)
     pub fn len(&self) -> usize {
@@ -34,11 +34,11 @@ impl IndicesMut<'_> {
         todo!()
     }
 
-    // Get a mutable reference to the inner buffer 
+    // Get a mutable reference to the inner buffer
     pub fn data_mut(&mut self) -> &mut ElementBuffer<u32> {
         todo!()
     }
-    
+
     // Get the number of indices that we have
     pub fn len(&self) -> usize {
         todo!()
