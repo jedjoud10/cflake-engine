@@ -10,9 +10,7 @@ pub fn setup() -> (World, Events) {
     if !INITIALIZED.fetch_or(true, Ordering::Relaxed) {
         (
             // Create a single instance of the world
-            World {
-                resources: Default::default(),
-            },
+            World(Default::default()),
             // Create a single instance of the events
             Events {
                 window: Default::default(),

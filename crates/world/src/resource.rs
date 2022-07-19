@@ -1,10 +1,8 @@
-mod errors;
-mod layout;
-mod reference;
+mod guards;
+mod entry;
 mod resource;
 mod storage;
-pub use errors::*;
-pub use layout::*;
-pub use reference::*;
+pub use entry::*;
+pub use guards::*;
 pub use resource::*;
 pub use storage::*;

@@ -8,34 +8,7 @@ use std::{
     rc::Rc,
 };
 
-// A FIFO queue that doesn't take a mutable reference to itself
-// Only used internally for the InnerStorage that will be shared around
-struct Queue<T>(RefCell<Vec<T>>);
-
-impl<T> Default for Queue<T> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
-impl<T> Queue<T> {
-    // Push a new value to the end of the queue
-    fn push(&self, value: T) {
-        self.0.borrow_mut().push(value);
-    }
-
-    // Try to get the last value that is stored within the queue
-    fn pop(&self) -> Option<T> {
-        self.0.borrow_mut().pop()
-    }
-}
-
-// This trait will implemented for all InnerStorage<T> types
-// This will automatically be called at the very very end of each frame, automatically, to clean all the storages of any dangling values that might be stored within them
-pub(crate) trait Clean {
-    fn remove_dangling(&self);
-}
-
+/*
 // A slot contains some raw data and the amount of references (aka strong handles) exist for it
 struct Slot<T> {
     // The unsafe cell value
@@ -124,21 +97,6 @@ impl<T: 'static> Resource for Storage<T> {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-
-    fn fetch_ptr(world: &mut world::World) -> Result<std::ptr::NonNull<Self>, world::ResourceError>
-    where
-        Self: Sized,
-    {
-        let mutref = if world.contains::<Self>() {
-            world.get_mut_unique::<Self>().unwrap()
-        } else {
-            let storage = Self::from_world(world);
-            world.insert(storage);
-            world.get_mut_unique::<Self>().unwrap()
-        };
-
-        Ok(NonNull::new(mutref as *mut Self).unwrap())
     }
 }
 
@@ -288,3 +246,4 @@ impl<T: 'static> Drop for Handle<T> {
         }
     }
 }
+*/

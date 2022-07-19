@@ -1,6 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap, OwnedBundle,
+    mask, ArchetypeSet, Component, ComponentTable, EntitySet, Mask, MaskMap,
     StateRow, Bundle,
 };
 use std::{rc::Rc, cell::{RefCell}};

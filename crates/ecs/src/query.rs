@@ -7,5 +7,5 @@ mod macros;
 pub use layout::*;
 pub use access::*;
 pub use filters::*;
-pub use iter::*;
+pub(crate) use iter::*;
 pub use bundle::*;

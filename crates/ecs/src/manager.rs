@@ -1,11 +1,10 @@
-use itertools::Itertools;
 use slotmap::SlotMap;
 use time::Time;
 use world::{Events, Init, Resource, Stage, Update, World};
 
 use crate::{
     entity::Entity, Archetype,
-    EntityLinkings, EntryRef, Evaluate, Mask, MaskMap, EntryMut, OwnedBundle,
+    EntityLinkings, EntryRef, Evaluate, Mask, MaskMap, EntryMut,
     archetype::remove_bundle_unchecked, Bundle, MutQueryLayout, RefQueryLayout,
 };
 
