@@ -13,17 +13,8 @@ pub struct Program {
 
     // Complete shader introspection (even though the values are stored directly in the following fields)
     pub(super) introspection: Introspection,
-
-    // The texture units, alongside the name of the texture uniform that they are bound to
-    pub(super) texture_units: AHashMap<String, u32>,
-
-    // A list of binding points (for buffers / ssbos) that are created during shader compilation time
-    // The boolean tells us if the user set the binding point or not
-    pub(super) binding_points: AHashMap<String, (u32, bool)>,
-
-    // A list of uniform location that are created during shader compilation time
-    // The boolean tells us if the user set the uniform or not
-    pub(super) uniform_locations: AHashMap<String, (u32, bool)>,
+    pub(super) buffer_binding_points: AHashMap<String, u32>,
+    pub(super) uniform_locations: AHashMap<String, u32>,
 
     // Unsync + unsend
     pub(super) _phantom: PhantomData<*const ()>,
