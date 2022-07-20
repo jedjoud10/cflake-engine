@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use super::{Program, UniformsError};
 use crate::{object::ToGlName, texture::Texture};
 
@@ -206,27 +208,46 @@ struct TextureUnit {
 }
 
 // The main struct that will allow us to set the shader uniforms before it's execution
-// Since the only way to set the uniforms is to fill them completely, we are sure that the user will never execute a shader with dangling null references to destroyed objects and shit like that
+// If debug assertions are enabled, the safe execution functions will check if the uniforms are valid
+// You can always use the "_unchecked" variant of the execution functions to override this behavior 
+// debug_assertions on -> verify uniform completion
+// debug_assertions off -> assume uniforms are valid
 pub struct Uniforms<'uniforms> {
     program: &'uniforms mut Program,
     texture_units: AHashMap<String, TextureUnit>,
+
+    #[cfg(debug_assertions)]
     bound_uniforms: AHashSet<String>,
+
+    #[cfg(debug_assertions)]
     bound_buffer_bindings: AHashMap<String, u32>,
 }
+
+// Valid uniforms are the only way we can render the uniforms normally
+pub struct ValidUniforms<'uniforms>(PhantomData<&'uniforms mut Program>);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Create a temporary uniforms wrapper using a program and it's inner introspection data
     pub(crate) fn new(program: &'uniforms mut Program) -> Self {
+        unsafe {
+            gl::UseProgram(program.name());
+        }
+
         Self {
             texture_units: AHashMap::with_capacity(program.uniform_locations.len()),
+            
+            #[cfg(debug_assertions)]
             bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
+
+            #[cfg(debug_assertions)]
             bound_buffer_bindings: AHashMap::with_capacity(program.buffer_binding_points.len()),
             program,
         }
     }
 
-    // Make sure the user set all the proper shader variables before executing
-    pub(crate) fn execute(&mut self) -> Result<(), UniformsError> {
+    // Check for any missing / invalid uniforms and panic if we find any
+    #[cfg(debug_assertions)]
+    fn check_completion(&mut self) -> Result<(), UniformsError> {
         let missing_uniform = self.program.uniform_locations.keys().find(|name| {
             !self.bound_uniforms.contains(*name) && !self.texture_units.contains_key(*name)
         });
@@ -265,12 +286,28 @@ impl<'uniforms> Uniforms<'uniforms> {
         Ok(())
     }
 
+    // Validate the underlying uniforms
+    // If debug assertions are off, this function will always return Ok
+    pub fn validate(&mut self) -> Result<ValidUniforms<'uniforms>, UniformsError> {
+        #[cfg(debug_assertions)]
+        self.check_completion()?;
+        
+        Ok(unsafe { self.assume_valid() })
+    }
+
+    // Assume that the underlying uniforms are valid without checking
+    pub unsafe fn assume_valid(&mut self) -> ValidUniforms<'uniforms> {
+        ValidUniforms(PhantomData::default())
+    }
+
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
         let location = self.program.uniform_locations.get(name);
         if let Some(name) = location {
-            // TODO: Optimize
+
+            #[cfg(debug_assertions)]
             self.bound_uniforms.insert(name.to_string());
+
             unsafe { val.set(*name as i32, self.program.name()) }
         }
     }

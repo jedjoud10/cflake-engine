@@ -56,6 +56,7 @@ impl BufferMode {
 // Common OpenGL buffer types
 pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
 pub type ElementBuffer<T> = Buffer<T, { gl::ELEMENT_ARRAY_BUFFER }>;
+pub type TriangleBuffer<T> = ElementBuffer<(T, T, T)>;
 pub type AtomicBuffer<T> = Buffer<T, { gl::ATOMIC_COUNTER_BUFFER }>;
 pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
 pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
@@ -449,6 +450,7 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
 }
 
 // This is an untyped reference to the format of a specific buffer
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct BufferFormatAny {
     target: u32,
     buffer: u32,

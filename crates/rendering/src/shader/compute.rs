@@ -36,6 +36,17 @@ pub struct ComputeScheduler<'c> {
 }
 
 impl<'c> ComputeScheduler<'c> {
+    /*
+    // Execute the compute scheduler without verifying the state of the uniforms
+    pub unsafe fn run_unchecked(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
+
+    }
+    
+    // Execute the compute shceduler by verifying the state of the uniforms
+    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
+
+    }
+
     // Execute the compute scheduler with the compute shader axii parameter and the valid uniforms
     pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) -> Result<(), ()> {
         // Return an error if any of the axii is 0
@@ -44,9 +55,10 @@ impl<'c> ComputeScheduler<'c> {
         }
 
         // Validate the uniforms
-        uniforms.execute().unwrap();
+        //uniforms.execute().unwrap();
 
         // Execute le compute
         Ok(())
     }
+    */
 }

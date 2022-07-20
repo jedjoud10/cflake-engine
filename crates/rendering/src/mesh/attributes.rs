@@ -56,19 +56,22 @@ pub trait VertexAttribute {
     }
 
     // Get the attribute's format
-    fn format() -> AttributeFormatAny {
+    fn format_any() -> AttributeFormatAny {
         AttributeFormatAny {
             normalized: Self::NORMALIZED,
             stride: size_of::<Self::Out>(),
+            enabled: Self::ENABLED,
             attribute_index: Self::index(),
         }
     }
 }
 
 // An untyped attribute wrapper that contains all the basic information about attributes
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AttributeFormatAny {
     normalized: bool,
     stride: usize,
+    enabled: EnabledAttributes,
     attribute_index: u32,
 }
 
@@ -86,6 +89,11 @@ impl AttributeFormatAny {
     // Get the final attribute index
     pub fn attribute_index(&self) -> u32 {
         self.attribute_index
+    }
+
+    // Get the attribute enabled bitfield tag
+    pub fn tag(&self) -> EnabledAttributes {
+        self.enabled
     }
 }
 

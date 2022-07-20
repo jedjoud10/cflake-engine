@@ -9,7 +9,7 @@ use world::{Resource, Storage, World};
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::Mesh,
+    mesh::{Mesh, EnabledAttributes},
     others::Comparison,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{Shader, Uniforms},
@@ -24,6 +24,12 @@ pub trait Material<'w>: 'static + Sized {
 
     // Load in the shader that we will use for our material pipeline
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader;
+
+    // These are the minimum mesh attributes that must be enabled to be able to render the surface
+    // The EnabledAttributes::POSITIONS attribute will always be required 
+    fn requirements() -> EnabledAttributes {
+        EnabledAttributes::POSITIONS
+    }
 
     // Get the depth comparison setting
     fn depth_comparison() -> Option<Comparison> {

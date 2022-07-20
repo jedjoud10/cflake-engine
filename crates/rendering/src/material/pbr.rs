@@ -42,6 +42,7 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<MaskMap>>,
     );
 
+    // Get the PBR material resources from the world
     fn fetch(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
@@ -111,6 +112,7 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_sampler("mask", mask_map);
     }
 
+    // Load in the PBR shader from it's paths and compile it
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {
         let vs = assets
             .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")

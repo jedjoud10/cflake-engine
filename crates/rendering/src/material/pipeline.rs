@@ -15,7 +15,7 @@ use world::{Handle, Read, Resource, Storage, World};
 // Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
 #[derive(Debug)]
 pub struct PipelineStats {
-    indices: u128,
+    triangles: u128,
     vertices: u128,
     material_instance_calls: u128,
     mesh_draw_calls: u128,
@@ -49,7 +49,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
     fn render(&self, world: &mut World) -> PipelineStats {
         let scene = world.get::<SceneSettings>().unwrap();
         let ecs = world.get::<EcsManager>().unwrap();
-        let mut materials = world.get_mut::<Storage<M>>().unwrap();
+        let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut window = world.get_mut::<Window>().unwrap();
@@ -68,7 +68,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         // Fetch the shader and enable stats
         let shader = shaders.get_mut(&self.shader);
         let mut stats = PipelineStats {
-            indices: 0,
+            triangles: 0,
             vertices: 0,
             material_instance_calls: 0,
             mesh_draw_calls: 0,
@@ -80,9 +80,8 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
             let mesh = meshes.get(&surface.mesh());
-            //let buffers = mesh.buffers.contains(M::required()) && mesh.len().is_some();
-            todo!();
-            renderer
+            let buffers = mesh.vertices().layout().contains(M::requirements()) && mesh.vertices().len().is_some();
+            renderer && buffers
         });
 
         // Get the main camera component (there has to be one for us to render)
@@ -101,7 +100,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let (mut rasterizer, mut uniforms) =
             window.canvas_mut().rasterizer(&mut ctx, shader, settings);
 
-        /*
         M::set_static_properties(
             &mut uniforms,
             &mut property_block_resources,
@@ -110,9 +108,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             camera,
             light,
         );
-        */
-
-        let mut textures = world.get_mut::<Storage<AlbedoMap>>().unwrap();
 
         // Render each surface that is present in the query
         let mut old: Option<Handle<M>> = None;
@@ -145,12 +140,10 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-            rasterizer.draw(mesh, &mut uniforms).unwrap();
+            rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
             stats.mesh_draw_calls += 1;
-            /*
-            stats.vertices += mesh.len().unwrap() as u128;
-            stats.indices += mesh.indices().len() as u128;
-            */
+            stats.vertices += mesh.vertices().len().unwrap() as u128;
+            stats.triangles += mesh.triangles().len() as u128;
         }
         stats
     }

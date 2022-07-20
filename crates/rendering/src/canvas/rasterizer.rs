@@ -1,9 +1,9 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{Canvas, RasterError};
+use super::{Canvas};
 use crate::{
     buffer::ElementBuffer, context::Context, mesh::Mesh, object::ToGlName, others::Comparison,
-    prelude::Uniforms,
+    prelude::{Uniforms, ValidUniforms},
 };
 
 // Blend mode factor source
@@ -178,47 +178,36 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         self.ctx
     }
 
-    // Draw a ray VAO as if it had no EBO
-    pub unsafe fn draw_vao_arrays(
+    pub unsafe fn draw_vao_arrays<'a>(
         &mut self,
         vao: u32,
         primitive_count: usize,
-        uniforms: &mut Uniforms,
-    ) -> Result<(), RasterError> {
-        uniforms.execute().map_err(RasterError::Uniforms)?;
-
+        uniforms: ValidUniforms,
+    ) {        
         if primitive_count > 0 {
             gl::BindVertexArray(vao);
             gl::DrawArrays(self.primitive, 0, primitive_count as i32);
         }
-
-        Ok(())
     }
 
-    // Draw a raw VAO is if it had a valid EBO
-    pub unsafe fn draw_vao_elements(
+    pub unsafe fn draw_vao_elements<'a>(
         &mut self,
         vao: u32,
         primitive_count: usize,
         element_type: u32,
-        uniforms: &mut Uniforms,
-    ) -> Result<(), RasterError> {
-        uniforms.execute().map_err(RasterError::Uniforms)?;
-
+        uniforms: ValidUniforms,
+    ) {
         if primitive_count > 0 {
             gl::BindVertexArray(vao);
             gl::DrawElements(self.primitive, primitive_count as i32, element_type, null());
         }
-
-        Ok(())
     }
 
-    // Draw a mesh, but only if it's indices are valid
-    pub fn draw(&mut self, mesh: &Mesh, uniforms: &mut Uniforms) -> Result<(), RasterError> {
+    // Draw a 3D engine mesh
+    pub fn draw<'a>(&mut self, mesh: &Mesh, uniforms: ValidUniforms) {
         unsafe {
-            //let count = mesh.indices().len();
-            //self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)
-            Ok(())
+            let count = mesh.triangles().len();
+            self.draw_vao_elements(mesh.vao, count * 3, gl::UNSIGNED_INT, uniforms)
         }
     }
 }

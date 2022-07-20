@@ -1,62 +1,62 @@
-use crate::buffer::ElementBuffer;
+use crate::{buffer::{ElementBuffer, TriangleBuffer}, object::ToGlName};
 
 // Immutable access to the mesh indices
-pub struct IndicesRef<'a> {
-    pub(super) buffer: &'a ElementBuffer<u32>,
+pub struct TrianglesRef<'a> {
+    pub(super) buffer: &'a TriangleBuffer<u32>,
 }
 
-impl IndicesRef<'_> {
+impl TrianglesRef<'_> {
     // Get an immutable reference to the inner buffer
-    pub fn data(&self) -> &ElementBuffer<u32> {
-        todo!()
+    pub fn data(&self) -> &TriangleBuffer<u32> {
+        &self.buffer
     }
 
-    // Get the number of indices that we have (triangles * 3)
+    // Get the number of triangles that we have
     pub fn len(&self) -> usize {
-        todo!()
-    }
-
-    // Check if the indices are valid (multiple of 3)
-    pub fn is_valid(&self) -> bool {
-        self.len() % 3 == 0
+        self.buffer.len()
     }
 }
 
 // Mutable access to the mesh indices
-pub struct IndicesMut<'a> {
+pub struct TrianglesMut<'a> {
     pub(super) vao: u32,
-    pub(super) buffer: &'a mut ElementBuffer<u32>,
+    pub(super) buffer: &'a mut TriangleBuffer<u32>,
+    pub(super) maybe_reassigned: bool,
 }
 
-impl IndicesMut<'_> {
+impl TrianglesMut<'_> {
     // Get an immutable reference to the inner buffer
-    pub fn data(&self) -> &ElementBuffer<u32> {
-        todo!()
+    pub fn data(&self) -> &TriangleBuffer<u32> {
+        &self.buffer
     }
 
     // Get a mutable reference to the inner buffer
-    pub fn data_mut(&mut self) -> &mut ElementBuffer<u32> {
-        todo!()
+    pub fn data_mut(&mut self) -> &mut TriangleBuffer<u32> {
+        &mut self.buffer
     }
 
-    // Get the number of indices that we have
+    // Get the number of triangles that we have
     pub fn len(&self) -> usize {
-        todo!()
+        self.buffer.len()
     }
 
     // Add some new triangles into the buffer
-    pub fn push(&mut self, trianlge: (u32, u32, u32)) {
-        todo!()
+    pub fn push(&mut self, triangle: (u32, u32, u32)) {
+        self.buffer.extend_from_slice(&[triangle])
     }
 
     // Add multiple triangles into the buffer
     pub fn extend_from_slice(&mut self, triangles: &[(u32, u32, u32)]) {
-        todo!()
+        self.buffer.extend_from_slice(triangles);
     }
 }
 
-impl Drop for IndicesMut<'_> {
+impl Drop for TrianglesMut<'_> {
     fn drop(&mut self) {
-        todo!()
+        if self.maybe_reassigned {
+            unsafe {
+                gl::VertexArrayElementBuffer(self.vao, self.buffer.name());
+            }
+        }
     }
 }

@@ -190,9 +190,8 @@ impl Painter {
                         self.vao,
                         self.indices.len(),
                         gl::UNSIGNED_BYTE,
-                        &mut uniforms,
-                    )
-                    .unwrap();
+                        uniforms.validate().unwrap(),
+                    );
             }
 
             /*
