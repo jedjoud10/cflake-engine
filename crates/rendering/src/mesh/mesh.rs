@@ -61,7 +61,7 @@ impl Mesh {
         tangents: Option<ArrayBuffer<VeTangent>>,
         colors: Option<ArrayBuffer<VeColor>>,
         tex_coord: Option<ArrayBuffer<VeTexCoord>>,
-        triangles: ElementBuffer<u32>,
+        triangles: TriangleBuffer<u32>,
     ) -> Option<Self> {
         todo!()
     }
@@ -108,57 +108,61 @@ impl Mesh {
         }
     }
 
-    // Specify the buffer bindings for all the enabled vertex attributes and EBO
-    // This will only re-bind the buffer that are marked as "maybe reassigned" since they might be unlinked
-    /*
-    pub(crate) unsafe fn bind_buffers_lazy(&self) {
-        // Check if we even need to rebind the buffers in the first place
-        let copy = self.maybe_reassigned.get();
-        if copy.is_empty() {
-           return;
-        }
-
-        // Bind all the active attribute buffers at the start (create the binding triangles)
-        let iter = self.attributes_any().into_iter().filter_map(|s| s).enumerate();
-        for (i, (buffer, attrib)) in iter {
-            if copy.contains(attrib.layout()) {
-                gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
-                gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32)
-            }
-        }
-
-        // Rebind the EBO to the VAO
-        if copy.contains(MeshBuffers::INDICES) {
-            gl::VertexArrayElementBuffer(self.vao, self.triangles.assume_init_ref().name());
-        }
-
-        // Reset
-        self.maybe_reassigned.set(MeshBuffers::empty());
+    // Get the triangles and vertices both at the same time, immutably
+    pub fn both(&self) -> (TrianglesRef, VerticesRef) {
+        (TrianglesRef {
+            buffer: &self.triangles,
+        }, VerticesRef {
+            positions: &self.positions,
+            normals: &self.normals,
+            tangents: &self.tangents,
+            colors: &self.colors,
+            uvs: &self.uvs,
+            bitfield: self.enabled,
+        })
     }
-    */
+    
+    // Get thr triangles and vertices both at the same time, mutably
+    pub fn both_mut(&mut self) -> (TrianglesMut, VerticesMut) {
+        (TrianglesMut {
+            vao: self.vao,
+            buffer: &mut self.triangles,
+            maybe_reassigned: false,
+        }, VerticesMut {
+            vao: self.vao,
+            positions: &mut self.positions,
+            normals: &mut self.normals,
+            tangents: &mut self.tangents,
+            colors: &mut self.colors,
+            uvs: &mut self.uvs,
+            bitfield: &mut self.enabled,
+            maybe_reassigned: EnabledAttributes::empty(),
+        })
+    }
 
-    /*
     // Recalculate the vertex normals procedurally; based on position attribute
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
-        assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
+        let (triangles, mut vertices) = if self.vertices().is_enabled::<Position>() {
+            self.both_mut()
+        } else {
+            return None;
+        };
 
-        // Get positions buffer and mapping
-        let mapped_positions = self.attribute::<Position>().unwrap().map();
+        // Fetch the buffers and map them
+        let mapped_positions = vertices.attribute::<Position>().unwrap().map();
         let positions = mapped_positions.as_slice();
-
-        // Get index buffer and mapping
-        let mapped_indices = self.triangles().map();
-        let triangles = mapped_indices.as_slice();
-        assert!(triangles.len() % 3 == 0, "Index count is not multiple of 3");
+        let mapped_triangles = triangles.data().map();
+        let triangles = mapped_triangles.as_slice();
 
         // Create pre-allocated normal buffer
         let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
 
         // Normal calculations
         for i in 0..(triangles.len() / 3) {
-            let i1 = triangles[i * 3] as usize;
-            let i2 = triangles[i * 3 + 1] as usize;
-            let i3 = triangles[i * 3 + 2] as usize;
+            let tri = triangles[i];
+            let i1 = tri[0] as usize;
+            let i2 = tri[1] as usize;
+            let i3 = tri[2] as usize;
 
             let a = positions[i1];
             let b = positions[i2];
@@ -180,42 +184,46 @@ impl Mesh {
                 n.normalized()
                 .map(|e| (e * 127.0) as i8)
             ).collect::<_>();
-        let buffer = Some(Buffer::from_slice(ctx, normals.as_slice(), mode));
+        let buffer = Buffer::from_slice(ctx, normals.as_slice(), mode);
 
         // Drop the buffers manually
         drop(mapped_positions);
-        drop(mapped_indices);
+        drop(mapped_triangles);
 
         // Insert the new buffer
-        self.set_attribute::<Normal>(buffer);
+        vertices.set_attribute::<Normal>(Some(buffer));
         Some(())
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
-    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
-        assert!(self.is_attribute_active::<Position>(), "Position attribute is not enabled");
+    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {       
+        let valid_attributes = self.vertices().layout().contains(EnabledAttributes::POSITIONS | EnabledAttributes::NORMALS | EnabledAttributes::TEX_COORDS);
+        let (triangles, mut vertices) = if valid_attributes {
+            self.both_mut()
+        } else {
+            return None;
+        };
 
         // Get positions slice
-        let mapped_positions = self.attribute::<Position>().unwrap().map();
+        let mapped_positions = vertices.attribute::<Position>().unwrap().map();
         let positions = mapped_positions.as_slice();
 
         // Get normals slice
-        let mapped_normals = self.attribute::<Normal>().unwrap().map();
+        let mapped_normals = vertices.attribute::<Normal>().unwrap().map();
         let normals = mapped_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped_tex_coords = self.attribute::<TexCoord>().unwrap().map();
+        let mapped_tex_coords = vertices.attribute::<TexCoord>().unwrap().map();
         let uvs = mapped_tex_coords.as_slice();
 
-        // Get index slice
-        let mapped_indices = self.triangles().map();
-        let triangles = mapped_indices.as_slice();
-        assert!(triangles.len() % 3 == 0, "Index count is not multiple of 3");
+        // Get triangles slice
+        let mapped_triangles = triangles.data().map();
+        let triangles = mapped_triangles.as_slice();
 
         // Local struct that will implement the Geometry trait from the tangent generation lib
         struct TangentGenerator<'a> {
             positions: &'a [vek::Vec3<f32>],
-            triangles: &'a [u32],
+            triangles: &'a [[u32; 3]],
             normals: &'a [vek::Vec3<i8>],
             uvs: &'a [vek::Vec2<u8>],
             tangents: &'a mut [vek::Vec4<i8>],
@@ -223,7 +231,7 @@ impl Mesh {
 
         impl<'a> mikktspace::Geometry for TangentGenerator<'a> {
             fn num_faces(&self) -> usize {
-                self.triangles.len() / 3
+                self.triangles.len()
             }
 
             fn num_vertices_of_face(&self, _face: usize) -> usize {
@@ -231,22 +239,22 @@ impl Mesh {
             }
 
             fn position(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = self.triangles[face * 3 + vert] as usize;
+                let i = self.triangles[face][vert] as usize;
                 self.positions[i].into_array()
             }
 
             fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = self.triangles[face * 3 + vert] as usize;
+                let i = self.triangles[face][vert] as usize;
                 self.normals[i].map(|x| x as f32 / 127.0).into_array()
             }
 
             fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
-                let i = self.triangles[face * 3 + vert] as usize;
+                let i = self.triangles[face][vert] as usize;
                 self.uvs[i].map(|x| x as f32 / 255.0).into_array()
             }
 
             fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-                let i = self.triangles[face * 3 + vert] as usize;
+                let i = self.triangles[face][vert] as usize;
                 self.tangents[i] =
                     vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
             }
@@ -263,35 +271,23 @@ impl Mesh {
 
         // Generate the procedural tangents and store them
         mikktspace::generate_tangents(&mut gen).then_some(())?;
-        let buffer = Some(Buffer::from_slice(ctx, tangents.as_slice(), mode));
+        let buffer = Buffer::from_slice(ctx, tangents.as_slice(), mode);
 
         // Drop the mapped buffers manually
         drop(mapped_positions);
         drop(mapped_normals);
         drop(mapped_tex_coords);
-        drop(mapped_indices);
+        drop(mapped_triangles);
 
         // Insert the new buffer
-        self.set_attribute::<Tangent>(buffer);
+        vertices.set_attribute::<Tangent>(Some(buffer));
         Some(())
-    }
-
-    // Clear the underlying mesh, making it invisible and dispose of the buffers
-    pub fn clear(&mut self, ctx: &mut Context) {
-        let mode = BufferMode::Static;
-        *self.indices_mut() = Buffer::empty(ctx, mode);
-        self.attribute_mut::<Position>().map(|buf| *buf = Buffer::empty(ctx, mode));
-        self.attribute_mut::<Normal>().map(|buf| *buf = Buffer::empty(ctx, mode));
-        self.attribute_mut::<Tangent>().map(|buf| *buf = Buffer::empty(ctx, mode));
-        self.attribute_mut::<Color>().map(|buf| *buf = Buffer::empty(ctx, mode));
-        self.attribute_mut::<TexCoord>().map(|buf| *buf = Buffer::empty(ctx, mode));
     }
 
     // Recalculate the AABB bounds of this mesh
     pub fn compute_bounds(&mut self) -> AABB {
         todo!()
     }
-    */
 }
 
 impl Drop for Mesh {
@@ -302,7 +298,6 @@ impl Drop for Mesh {
     }
 }
 
-/*
 impl<'a> Asset<'a> for Mesh {
     type Args = (&'a mut Context, MeshImportSettings);
 
@@ -321,7 +316,8 @@ impl<'a> Asset<'a> for Mesh {
         let mut positions = Vec::with_capacity(capacity);
         let mut normals = Vec::with_capacity(capacity);
         let mut tex_coords_0 = Vec::with_capacity(capacity);
-        let triangles = parsed.triangles;
+        let mut triangles = Vec::with_capacity(parsed.indices.len() / 3);
+        let indices = parsed.indices;
 
         use vek::{Vec2, Vec3};
 
@@ -330,6 +326,11 @@ impl<'a> Asset<'a> for Mesh {
             positions.push(Vec3::from_slice(&vertex.position) * settings.scale);
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
+        }
+
+        // Convert the indices to triangles
+        for triangle in indices.windows(3) {
+            triangles.push(triangle.try_into().unwrap());
         }
 
         // Convert the mesh mode into the valid buffer modes
@@ -341,18 +342,22 @@ impl<'a> Asset<'a> for Mesh {
 
         // Create the buffers
         let positions = Buffer::from_slice(ctx, &positions, mode);
-        let normals = Buffer::from_slice(ctx, &normals, mode);
-        let tex_coord = Buffer::from_slice(ctx, &tex_coords_0, mode);
+        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, mode));
+        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, mode));
         let triangles = Buffer::from_slice(ctx, &triangles, mode);
 
         // Create a new mesh
-        let mut mesh = Mesh::from_buffers(positions, Some(normals), None, None, Some(tex_coord), triangles).unwrap();
+        let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();
+
+        // Generate procedural normals if requested
+        if settings.generate_normals {
+            mesh.compute_normals(ctx, mode).unwrap();
+        }
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {
-            //mesh.compute_tangents(ctx, mode).unwrap();
+            mesh.compute_tangents(ctx, mode).unwrap();
         }
         mesh
     }
 }
-*/

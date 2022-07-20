@@ -36,7 +36,7 @@ impl<T: 'static> Storage<T> {
     pub fn insert(&mut self, value: T) -> Handle<T> {
         self.clean();
         let key = self.map.insert(value);
-        self.trackers.counters.borrow_mut().insert(key, 1).unwrap();
+        self.trackers.counters.borrow_mut().insert(key, 1);
 
         Handle {
             _phantom: PhantomData::default(),

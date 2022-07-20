@@ -106,7 +106,7 @@ impl VerticesMut<'_> {
     } 
 
     // Set a new attribute buffer
-    pub fn set_data<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
+    pub fn set_attribute<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
         if let Some(buffer) = buffer {
             unsafe {
                 T::insert(self, buffer);

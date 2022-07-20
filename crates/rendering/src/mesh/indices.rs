@@ -41,12 +41,12 @@ impl TrianglesMut<'_> {
     }
 
     // Add some new triangles into the buffer
-    pub fn push(&mut self, triangle: (u32, u32, u32)) {
+    pub fn push(&mut self, triangle: [u32; 3]) {
         self.buffer.extend_from_slice(&[triangle])
     }
 
     // Add multiple triangles into the buffer
-    pub fn extend_from_slice(&mut self, triangles: &[(u32, u32, u32)]) {
+    pub fn extend_from_slice(&mut self, triangles: &[[u32; 3]]) {
         self.buffer.extend_from_slice(triangles);
     }
 }

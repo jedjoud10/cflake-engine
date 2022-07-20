@@ -40,7 +40,7 @@ impl World {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow();
             let borrowed = Ref::map(borrowed, |boxed| {
-                boxed.as_any().downcast_ref::<R>().unwrap()
+                boxed.as_ref().as_any().downcast_ref::<R>().unwrap()
             });
             Read(borrowed)
         })
@@ -51,7 +51,7 @@ impl World {
         self.0.get(&TypeId::of::<R>()).map(|cell| {
             let borrowed = cell.borrow_mut();
             let borrowed = RefMut::map(borrowed, |boxed| {
-                boxed.as_any_mut().downcast_mut::<R>().unwrap()
+                boxed.as_mut().as_any_mut().downcast_mut::<R>().unwrap()
             });
             Write(borrowed)
         })

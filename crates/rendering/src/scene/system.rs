@@ -20,9 +20,9 @@ use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
-fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
-    let (mut window, mut ctx) = crate::context::new(settings, el);
-    let ctx = &mut ctx;
+fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) -> (Window, Context, SceneSettings) {
+    let (mut window, mut context) = crate::context::new(settings, el);
+    let ctx = &mut context;
 
     // Insert the default storages
     world.insert(Storage::<AlbedoMap>::default());
@@ -93,14 +93,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let missing = albedo_maps.insert(missing);
     let debug = normal_maps.insert(debug);
 
-    let import = MeshImportSettings {
-        mode: MeshImportMode::Static,
-        generate_tangents: true,
-        scale: 1.0,
-    };
+    let import = MeshImportSettings::default();
 
     // Load the default cube and sphere meshes
-    /*
     let cube = assets
         .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
@@ -108,10 +103,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let sphere = assets
         .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
-    */
+
     // Insert the meshes and get their handles
-    let cube = meshes.insert(todo!());
-    let sphere = meshes.insert(todo!());
+    let cube = meshes.insert(cube);
+    let sphere = meshes.insert(sphere);
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -169,10 +164,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         Transform::default().scaled(vek::Vec3::one() * 5000.0),
     ));
 
-    // Insert the new resources
-    world.insert(scene);
-    world.insert(window);
-    world.insert(ctx);
+    (window, context, scene)
 }
 
 // Update the global mesh matrices of objects that have been modified
@@ -270,7 +262,12 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     events
         .registry::<Init>()
         .insert_with(
-            |world: &mut World, el: &EventLoop<()>| init(world, settings, el),
+            |world: &mut World, el: &EventLoop<()>| {
+                let (window, ctx, scene) = init(world, settings, el);
+                world.insert(window);
+                world.insert(ctx);
+                world.insert(scene);
+            },
             Stage::new("graphics insert")
                 .after("asset loader insert")
                 .before("user"),
