@@ -218,8 +218,7 @@ fn window(world: &mut World, event: &mut WindowEvent) {
                 .resize(vek::Extent2::new(size.width as u16, size.height as u16));
         }
         WindowEvent::CloseRequested => {
-            // Stop the game engine
-            **world.get_mut::<&mut world::State>().unwrap() = world::State::Stopped;
+            *world.get_mut::<world::State>().unwrap() = world::State::Stopped;
         }
         _ => {}
     }
@@ -283,15 +282,15 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     reg.insert_with(
         main_camera,
         Stage::new("main camera update")
-            .after("user")
-            .before("post user"),
+            .after("post user"),
     )
     .unwrap();
 
     // Insert update renderer event
     reg.insert_with(
         update_matrices,
-        Stage::new("update renderer matrices").before("scene rendering"),
+        Stage::new("update renderer matrices")
+            .after("post user"),
     )
     .unwrap();
 
@@ -300,6 +299,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
+            .after("update renderer matrices")
     )
     .unwrap();
 

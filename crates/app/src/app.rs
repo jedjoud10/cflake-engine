@@ -1,10 +1,12 @@
+use ahash::AHashSet;
 use glutin::{
     event::{DeviceEvent, WindowEvent},
-    event_loop::EventLoop,
+    event_loop::{EventLoop, ControlFlow},
 };
+use gui::egui::util::id_type_map::TypeId;
 use rendering::prelude::GraphicsSetupSettings;
 use std::path::PathBuf;
-use world::{Event, Events, Init, System, Update, World};
+use world::{Event, Events, Init, System, Update, World, State};
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
@@ -19,13 +21,13 @@ pub struct App {
 
     // Main app resources
     events: Events,
+    systems: AHashSet<TypeId>,
     world: World,
     el: EventLoop<()>,
 }
 
 impl Default for App {
     fn default() -> Self {
-        // Only called once
         let (world, events) = world::setup();
 
         Self {
@@ -35,6 +37,7 @@ impl Default for App {
             vsync: false,
             user_assets_folder: None,
             events,
+            systems: Default::default(),
             el: EventLoop::new(),
             world,
         }
@@ -78,8 +81,10 @@ impl App {
 
     // Insert a new system into the app and execute it immediately
     // This will register all the necessary events automatically
-    pub fn insert_system(mut self, system: impl System) -> Self {
-        system.insert(&mut self.events);
+    pub fn insert_system<S: System>(mut self, system: S) -> Self {
+        if self.systems.insert(TypeId::of::<S>()) {
+            system.insert(&mut self.events);
+        }
         self
     }
 
@@ -147,30 +152,29 @@ impl App {
         events.registry::<DeviceEvent>().sort().unwrap();
 
         // We must now start the game engine (start the glutin event loop)
-        el.run(move |event, _, _cf| match event {
+        el.run(move |event, _, cf| match event {            
+            // Call the update events
             glutin::event::Event::MainEventsCleared => {
-                // Call the update events
                 events.execute::<Update>(&mut world);
 
-                // Update the current control flow based on the world state
-                /*
-                if let world::State::Stopped = world.get_mut::<&mut world::State>().unwrap() {
+                if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
-                */
             }
+            
+            // Call the window events
             glutin::event::Event::WindowEvent {
                 window_id: _,
                 mut event,
             } => {
-                // Call the window events
                 events.execute::<WindowEvent>((&mut world, &mut event));
             }
+
+            // Call the device events
             glutin::event::Event::DeviceEvent {
                 device_id: _,
                 event,
             } => {
-                // Call the device events
                 events.execute::<DeviceEvent>((&mut world, &event));
             }
             _ => {}

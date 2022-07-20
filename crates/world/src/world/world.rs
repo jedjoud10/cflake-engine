@@ -71,7 +71,6 @@ pub trait FromWorld {
 
 // Global world system for cleaning and handling world state
 pub fn system(events: &mut Events) {
-    // Insert the default world state event
     fn insert(world: &mut World) {
         world.insert(State::Initializing);
     }

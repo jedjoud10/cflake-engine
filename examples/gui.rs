@@ -4,14 +4,15 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_window_title("cflake engine GUI example")
-        //        .insert_system(system)
+        .insert_init(init)
+        .insert_update(update)
         .execute();
 }
-/*
+
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let ui = world.get_mut::<&mut UserInterface>().unwrap();
-    let ctx = ui.as_mut();
+    let mut ui = world.get_mut::<UserInterface>().unwrap();
+    let ctx = ui.as_mut().as_mut();
     let mut style = (*ctx.style()).clone();
     use cflake_engine::gui::egui::*;
     use FontFamily::Proportional;
@@ -29,8 +30,9 @@ fn init(world: &mut World) {
 
 // Update the UI and render some cool text
 fn update(world: &mut World) {
-    let (ui, time) = world.get_mut::<(&mut UserInterface, &mut Time)>().unwrap();
-    let ctx = ui.as_mut();
+    let mut ui = world.get_mut::<UserInterface>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    let ctx = ui.as_mut().as_mut();
     egui::Window::new("Test window").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.label("Delta (s/f): ");
@@ -43,10 +45,3 @@ fn update(world: &mut World) {
         });
     });
 }
-
-// This is an example system that will register specific events
-fn system(events: &mut Events) {
-    events.registry::<Init>().insert(init);
-    events.registry::<Update>().insert(update);
-}
-*/

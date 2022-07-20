@@ -69,11 +69,13 @@ impl<M: Descriptor> Registry<M> {
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
+        let i = std::time::Instant::now();
         let indices = sort(&mut self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.events
             .sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
+
 
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
