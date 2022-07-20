@@ -6,7 +6,7 @@ use crate::{StageError, RESERVED};
 pub type StageKey = Rc<str>;
 
 // A rule that depicts the arrangement and the location of the stages relative to other stages
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Rule {
     // This hints that the stage should be executed before other
     Before(StageKey),

@@ -1,31 +1,31 @@
 use crate::StageKey;
 
 // Error that gets thrown whenever we fail to sort the event stages
-pub enum PipelineSortingError {
+pub enum RegistrySortingError {
     CyclicReference,
     CyclicRuleReference(StageKey),
     MissingStage(StageKey, StageKey),
 }
 
-impl std::fmt::Debug for PipelineSortingError {
+impl std::fmt::Debug for RegistrySortingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PipelineSortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages; aborting"),
-            PipelineSortingError::CyclicRuleReference(name) => {
+            RegistrySortingError::CyclicReference => write!(f, "Detected a cyclic reference when trying to sort stages"),
+            RegistrySortingError::CyclicRuleReference(name) => {
                 write!(f, "Detcted a cyclic reference for rules of stage '{name}'")
             }
-            PipelineSortingError::MissingStage(current, name) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
+            RegistrySortingError::MissingStage(current, name) => write!(f, "Stage '{current}' tried to reference stage '{name}', but the latter does not exist"),
         }
     }
 }
 
-impl std::fmt::Display for PipelineSortingError {
+impl std::fmt::Display for RegistrySortingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self, f)
     }
 }
 
-impl std::error::Error for PipelineSortingError {}
+impl std::error::Error for RegistrySortingError {}
 
 // Error that gets thrown whenever we fail to create a valid stage
 pub enum StageError {

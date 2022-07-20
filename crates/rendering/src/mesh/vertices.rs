@@ -136,10 +136,13 @@ impl VerticesMut<'_> {
         let valid = min == max;
         valid.then(|| min)
     }
-}
 
-impl Drop for VerticesMut<'_> {
-    fn drop(&mut self) {
+    // Re-bind the vertex buffers to the main VAO, assuming that they are valid
+    pub fn rebind(&mut self) -> bool {
+        if !self.len().is_some() {
+            return false;
+        }
+
         for (i, (buffer, attrib)) in self.as_any().into_iter().filter_map(|s| s).enumerate() {
             if self.maybe_reassigned.contains(attrib.tag()) {
                 unsafe {
@@ -148,5 +151,15 @@ impl Drop for VerticesMut<'_> {
                 }
             }           
         }
+
+        self.maybe_reassigned = EnabledAttributes::empty();
+
+        true
+    }
+}
+
+impl Drop for VerticesMut<'_> {
+    fn drop(&mut self) {
+        assert!(self.rebind());
     }
 }

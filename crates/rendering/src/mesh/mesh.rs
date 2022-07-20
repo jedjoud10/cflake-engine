@@ -63,7 +63,31 @@ impl Mesh {
         tex_coord: Option<ArrayBuffer<VeTexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Option<Self> {
-        todo!()
+        let mut mesh = Self { 
+            vao: unsafe {
+                let mut vao = 0;
+                gl::CreateVertexArrays(1, &mut vao);
+                vao
+            },
+            enabled: EnabledAttributes::POSITIONS,
+            positions: MaybeUninit::new(positions),
+            normals: MaybeUninit::uninit(),
+            tangents: MaybeUninit::uninit(),
+            colors: MaybeUninit::uninit(),
+            uvs: MaybeUninit::uninit(),
+            triangles,
+        };
+
+        // Set the optional buffers
+        let mut vertices = mesh.vertices_mut();
+        vertices.set_attribute::<Normal>(normals);
+        vertices.set_attribute::<Tangent>(tangents);
+        vertices.set_attribute::<Color>(colors);
+        vertices.set_attribute::<TexCoord>(tex_coord);
+        
+        let valid = vertices.rebind();
+        std::mem::forget(vertices);
+        valid.then_some(mesh)
     }
 
     // Get a reference to the vertices immutably

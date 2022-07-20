@@ -1,5 +1,5 @@
-use crate::{Descriptor, Event, PipelineSortingError, Rule, Stage, StageError, StageKey};
-use ahash::AHashMap;
+use crate::{Descriptor, Event, RegistrySortingError, Rule, Stage, StageError, StageKey};
+use ahash::{AHashMap, AHashSet};
 use std::rc::Rc;
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
@@ -68,7 +68,7 @@ impl<M: Descriptor> Registry<M> {
     }
 
     // Sort all the events stored in the registry using the stages
-    pub fn sort(&mut self) -> Result<(), PipelineSortingError> {
+    pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
         let indices = sort(&mut self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
@@ -84,13 +84,14 @@ impl<M: Descriptor> Registry<M> {
 // This returns a hashmap containing the new indices of the sorted stages
 fn sort(
     map: &AHashMap<StageKey, Vec<Rule>>,
-) -> Result<AHashMap<StageKey, usize>, PipelineSortingError> {
+) -> Result<AHashMap<StageKey, usize>, RegistrySortingError> {
     // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
     let mut map: AHashMap<StageKey, Vec<Rule>> = map.clone();
 
     // We might need to sort the keys to make sure they are deterministic
     let mut keys = map.keys().cloned().collect::<Vec<_>>();
     keys.sort();
+
 
     let mut indices = AHashMap::<StageKey, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
@@ -106,18 +107,21 @@ fn sort(
         key: StageKey,
         indices: &mut AHashMap<StageKey, usize>,
         dedupped: &mut AHashMap<StageKey, Vec<Rule>>,
+        current_tree: &mut AHashSet<StageKey>,
         vec: &mut Vec<Vec<Rule>>,
         iter: usize,
         caller: Option<StageKey>,
-    ) -> Result<usize, PipelineSortingError> {
+    ) -> Result<usize, RegistrySortingError> {
+
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
-            return Err(PipelineSortingError::CyclicReference);
+            return Err(RegistrySortingError::CyclicReference);
         }
 
         if dedupped.contains_key(&key) {
             // We must insert the stage into the main vector
             let rules = dedupped.remove(&key).unwrap();
+            current_tree.insert(key.clone());
 
             // Restrict the index of the stage based on it's rules
             let mut changed = true;
@@ -136,6 +140,7 @@ fn sort(
                         parent.clone(),
                         indices,
                         dedupped,
+                        current_tree,
                         vec,
                         iter + 1,
                         Some(key.clone()),
@@ -163,7 +168,7 @@ fn sort(
                 // Check for a cyclic reference when constraining the stage
                 count += 1;
                 if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
-                    return Err(PipelineSortingError::CyclicRuleReference(key));
+                    return Err(RegistrySortingError::CyclicRuleReference(key));
                 }
             }
 
@@ -190,7 +195,11 @@ fn sort(
         } else {
             // We must check if the stage referenced by "called" is even valid
             if !indices.contains_key(&key) {
-                return Err(PipelineSortingError::MissingStage(caller.unwrap(), key));
+                if current_tree.contains(&key) {
+                    return Err(RegistrySortingError::CyclicReference);
+                } else {
+                    return Err(RegistrySortingError::MissingStage(caller.unwrap(), key));
+                }
             }
 
             // Fetch the cached location instead
@@ -200,7 +209,8 @@ fn sort(
 
     // Add the stages into the vector and start sorting them
     for key in keys {
-        calc(key, &mut indices, &mut map, &mut vec, 0, None)?;
+        let mut tree = AHashSet::new();
+        calc(key, &mut indices, &mut map, &mut tree, &mut vec, 0, None)?;
     }
 
     Ok(indices)

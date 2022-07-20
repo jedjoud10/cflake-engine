@@ -300,7 +300,6 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
-            .after("update renderer matrices"),
     )
     .unwrap();
 
