@@ -249,8 +249,9 @@ impl<'uniforms> Uniforms<'uniforms> {
     #[cfg(debug_assertions)]
     fn check_completion(&mut self) -> Result<(), UniformsError> {
         let missing_uniform = self.program.uniform_locations.keys().find(|name| {
-            !self.bound_uniforms.contains(*name) && !self.texture_units.contains_key(*name)
+            !self.bound_uniforms.contains(*name)
         });
+
         let missing_buffer_binding = self
             .program
             .buffer_binding_points
@@ -303,12 +304,12 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Set the type for any object, as long as it implements SetRawUniform
     fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
         let location = self.program.uniform_locations.get(name);
-        if let Some(name) = location {
+        if let Some(location) = location {
 
             #[cfg(debug_assertions)]
             self.bound_uniforms.insert(name.to_string());
 
-            unsafe { val.set(*name as i32, self.program.name()) }
+            unsafe { val.set(*location as i32, self.program.name()) }
         }
     }
 
@@ -363,6 +364,9 @@ impl<'uniforms> Uniforms<'uniforms> {
                 unit: count,
             })
             .unit;
+
+        #[cfg(debug_assertions)]
+        self.bound_uniforms.insert(name.to_string());
 
         unsafe {
             self.texture_units.get_mut(name).unwrap().texture = sampler.name();

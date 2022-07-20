@@ -28,7 +28,7 @@ pub(crate) extern "system" fn callback(
     _user: *mut c_void,
 ) {
     if severity == gl::DEBUG_SEVERITY_NOTIFICATION {
-        //return;
+        return;
     }
 
     // Convert the source type to a user safe name

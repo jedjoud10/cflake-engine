@@ -3,12 +3,14 @@ use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
 use crate::object::ToGlName;
 
 // The type of block that we have stored
+#[derive(Debug)]
 pub enum Index {
     UniformBlock(u32),
     ShaderStorageBlock(u32),
 }
 
 // A single block, can represent a uniform block or an SSBO block
+#[derive(Debug)]
 pub struct Block {
     // Full name of this block
     name: String,
@@ -22,11 +24,23 @@ pub struct Block {
 
 impl Block {
     // Get the block's name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     // Get the block's byte size
+    pub fn size(&self) -> usize {
+        self.size
+    }
+    
     // Get the block's index
+    pub fn index(&self) -> &Index {
+        &self.index
+    }
 }
 
 // A single uniform value stored within the shader
+#[derive(Debug)]
 pub struct Uniform {
     // Full name of the uniform
     name: String,

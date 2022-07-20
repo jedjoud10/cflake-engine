@@ -81,6 +81,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             // Create OpenGL buffer and fetch pointer
             let mut buffer = 0;
             gl::CreateBuffers(1, &mut buffer);
+            gl::BindBuffer(TARGET, buffer);
             let bytes = (slice.len() * size_of::<T>()) as isize;
             let ptr = if bytes == 0 {
                 null()
@@ -196,32 +197,45 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
+        assert!(
+            self.mode().write_permission(),
+            "Cannot write to buffer, missing permission"
+        );
+        assert!(
+            self.mode().modify_length_permission(),
+            "Cannot extend buffer, missing permission"
+        );
+        
         unsafe {
             let ptr = if !slice.is_empty() {
                 slice.as_ptr() as *const c_void
             } else {
                 return;
             };
+            
+            let slice_byte_size = (slice.len() * size_of::<T>()) as isize;
 
-            assert!(
-                self.mode().write_permission(),
-                "Cannot write to buffer, missing permission"
-            );
-            assert!(
-                self.mode().modify_length_permission(),
-                "Cannot extend buffer, missing permission"
-            );
-
-            if slice.len() + self.length > self.capacity {
+            if self.length == 0 && self.capacity == 0 {  
+                // Allocate the buffer for the first time
+                gl::NamedBufferData(
+                    self.buffer,
+                    slice_byte_size,
+                    ptr,
+                    gl::DYNAMIC_DRAW,
+                );                
+            } else if slice.len() + self.length > self.capacity {
+                // Reallocate the buffer
                 assert!(
                     self.mode().reallocate_permission(),
                     "Cannot reallocate buffer, missing permission"
                 );
 
                 let new_capacity = self.capacity + slice.len();
+                let new_length = self.length + slice.len();
                 let new_capacity_byte_size = (new_capacity * size_of::<T>()) as isize;
                 let old_capacity_byte_size = (self.capacity * size_of::<T>()) as isize;
-                let slice_byte_size = (slice.len() * size_of::<T>()) as isize;
+                dbg!(new_capacity_byte_size);
+                dbg!(old_capacity_byte_size);
 
                 let mut temp = 0;
                 gl::CreateBuffers(1, &mut temp);
@@ -237,25 +251,17 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 gl::CopyNamedBufferSubData(temp, self.buffer, 0, 0, old_capacity_byte_size);
                 gl::BufferSubData(self.buffer, old_capacity_byte_size, slice_byte_size, ptr);
                 gl::DeleteBuffers(1, &temp);
+
+                self.length = new_length;
+                self.capacity = new_capacity;
             } else {
+                // Update range sub-data
                 let size = (slice.len() * size_of::<T>()) as isize;
                 let offset = (self.length * size_of::<T>()) as isize;
                 gl::NamedBufferSubData(self.buffer, offset, size, ptr);
             }
         }
     }
-
-    /*
-    // Push a single element into the buffer (slow!)
-    pub fn push(&mut self, value: T) {
-        todo!()
-    }
-
-    // Remove the last element from the buffer (slow!)
-    pub fn pop(&mut self) {
-        todo!()
-    }
-    */
 
     // Overwrite a region of the buffer using a slice and a range
     pub fn write_range(&mut self, slice: &[T], range: impl RangeBounds<usize>) {

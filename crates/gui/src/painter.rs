@@ -193,19 +193,6 @@ impl Painter {
                         uniforms.validate().unwrap(),
                     );
             }
-
-            /*
-            unsafe {
-                rasterizer
-                    .draw_ebo_vao(
-                        self.vao,
-                        self.indices.name(),
-                        self.indices.len(),
-                        &mut uniforms,
-                    )
-                    .unwrap();
-            }
-            */
         }
     }
 }
