@@ -6,12 +6,13 @@ use crate::{
 use casey::lower;
 use seq_macro::seq;
 
-// Implementations of ref query item for &T
+// Impl of ref query item for &T
 impl<'a, T: Component> RefQueryItem<'a> for &'a T {
     type Item = T;
+    type Ptr = *const T;
 
-    fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(mask::<T>() & m, Mask::zero())
     }
 
     fn prepare(archetype: &Archetype) -> Option<*const Self::Item> {
@@ -23,37 +24,93 @@ impl<'a, T: Component> RefQueryItem<'a> for &'a T {
     }
 }
 
-// Implementations of mut query item for &T
+// Impl of ref query item for Option<&T>
+impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
+    type Item = Option<T>;
+    type Ptr = Option<*const T>;
+
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(mask::<T>() & m, Mask::zero())
+    }
+
+    fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
+        Some(archetype.table::<T>().map(|vec| vec.as_ptr()))
+    }
+
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
+        ptr.map(|ptr| &*ptr.add(i))
+    }
+}
+
+// Impl of mut query item for &T
 impl<'a, T: Component> MutQueryItem<'a> for &'a T {
     type Item = T;
+    type Ptr = *const T;
 
-    fn access() -> LayoutAccess {
-        LayoutAccess::new(mask::<T>(), Mask::zero())
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(mask::<T>() & m, Mask::zero())
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<*mut Self::Item> {
-        archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr())
+    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+        archetype.table_mut::<T>().map(|vec| vec.as_ptr())
     }
 
-    unsafe fn read(ptr: *mut Self::Item, i: usize) -> Self {
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
         &*ptr.add(i)
     }
 }
 
-// Implementations of mut query item for &mut T
-impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
-    type Item = T;
+// Impl of mut query item for Option<&T>
+impl<'a, T: Component> MutQueryItem<'a> for Option<&'a T> {
+    type Item = Option<T>;
+    type Ptr = Option<*const T>;
 
-    fn access() -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>())
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(mask::<T>() & m, Mask::zero())
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<*mut Self::Item> {
+    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+        Some(archetype.table::<T>().map(|vec| vec.as_ptr()))
+    }
+
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
+        ptr.map(|ptr| &*ptr.add(i))
+    }
+}
+
+// Impl of mut query item for &mut T
+impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
+    type Item = T;
+    type Ptr = *mut T;
+
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(Mask::zero(), mask::<T>() & m)
+    }
+
+    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
         archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr())
     }
 
-    unsafe fn read(ptr: *mut Self::Item, i: usize) -> Self {
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
         &mut *ptr.add(i)
+    }
+}
+
+// Impl of mut query item for Option<&mut T>
+impl<'a, T: Component> MutQueryItem<'a> for Option<&'a mut T> {
+    type Item = Option<T>;
+    type Ptr = Option<*mut T>;
+
+    fn access(m: Mask) -> LayoutAccess {
+        LayoutAccess::new(Mask::zero(), mask::<T>() & m)
+    }
+
+    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+        Some(archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr()))
+    }
+
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
+        ptr.map(|ptr| &mut *ptr.add(i))
     }
 }
 
@@ -95,9 +152,9 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
 
 impl<T: Component> Bundle for T {}
 
-// Implementation of ref query layout for single component
+// Impl of ref query layout for single component
 impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
-    type PtrTuple = *const T::Item;
+    type PtrTuple = T::Ptr;
 
     fn is_valid() -> bool {
         true
@@ -111,14 +168,14 @@ impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
         <T as RefQueryItem<'a>>::read(ptr, i)
     }
 
-    fn access() -> LayoutAccess {
-        <T as RefQueryItem<'a>>::access()
+    fn access(m: Mask) -> LayoutAccess {
+        <T as RefQueryItem<'a>>::access(m)
     }
 }
 
-// Implementation of mut query layout for single component
+// Impl of mut query layout for single component
 impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
-    type PtrTuple = *mut T::Item;
+    type PtrTuple = T::Ptr;
 
     fn is_valid() -> bool {
         true
@@ -132,8 +189,8 @@ impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
         <T as MutQueryItem<'a>>::read(ptr, i)
     }
 
-    fn access() -> LayoutAccess {
-        <T as MutQueryItem<'a>>::access()
+    fn access(m: Mask) -> LayoutAccess {
+        <T as MutQueryItem<'a>>::access(m)
     }
 }
 
@@ -272,6 +329,7 @@ macro_rules! tuple_impls {
     };
 }
 
+/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -281,3 +339,4 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+*/

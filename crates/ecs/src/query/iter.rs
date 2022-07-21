@@ -69,7 +69,7 @@ struct MutQueryItemResult<'a, L: MutQueryLayout<'a>> {
 // Chunk used for mutable query
 struct MutQueryChunk<'a, L: MutQueryLayout<'a>> {
     ptrs: L::PtrTuple,
-    mask: Mask,
+    access: LayoutAccess,
     states: Rc<RefCell<Vec<StateRow>>>,
     len: usize,
 }
@@ -77,7 +77,6 @@ struct MutQueryChunk<'a, L: MutQueryLayout<'a>> {
 // Custom immutable archetype iterator.
 struct MutQueryIter<'a, L: MutQueryLayout<'a>> {
     chunks: Vec<MutQueryChunk<'a, L>>,
-    access: LayoutAccess,
     index: usize,
     loaded: Option<MutQueryChunk<'a, L>>,
     len: usize,
@@ -102,7 +101,7 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
         let mut states = chunk.states.borrow_mut();
         let row = states.get_mut(self.index).unwrap();
         let state = row.update(|_, _, mutated| {
-            *mutated = *mutated | self.access.unique();
+            *mutated = *mutated | chunk.access.unique();
         });
         self.index += 1;
 
@@ -110,7 +109,7 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
         Some(MutQueryItemResult {
             tuple: bundle,
             state,
-            archetype_mask: chunk.mask,
+            archetype_mask: chunk.access.shared() | chunk.access.unique(),
             _phantom: Default::default(),
         })
     }
@@ -122,12 +121,11 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
 
 // Immutable query that returns RefQueryItemResult
 fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQueryIter<'a, L> {
-    let access = L::access();
-    let mask = access.shared() | access.unique();
+    //let mask = access.shared() | access.unique();
+    let mask = todo!();
 
     let mut chunks = archetypes
         .iter()
-        .filter(|(m, _)| m.contains(mask))
         .map(|(_, archetype)| RefQueryChunk {
             len: archetype.len(),
             states: archetype.states(),
@@ -148,17 +146,23 @@ fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQue
 
 // Mutable query that returns MutQueryItemResult
 fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> MutQueryIter<'a, L> {
-    let access = L::access();
-    let mask = access.shared() | access.unique();
-
     let mut chunks = archetypes
         .iter_mut()
-        .filter(|(m, _)| m.contains(mask))
-        .map(|(_, archetype)| MutQueryChunk {
+        .filter_map(|(m, archetype)| {
+            let access = L::access(*m);
+            let combined = access.shared() | access.unique();
+
+            if combined == Mask::zero() {
+                None
+            } else {
+                Some((access, archetype))
+            }
+        })
+        .map(|(access, archetype)| MutQueryChunk {
             len: archetype.len(),
             states: archetype.states(),
             ptrs: L::prepare(archetype).unwrap(),
-            mask,
+            access,
         })
         .collect::<Vec<_>>();
 
@@ -168,7 +172,6 @@ fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> Mu
         chunks,
         loaded: last,
         len,
-        access: L::access(),
         index: 0,
     }
 }

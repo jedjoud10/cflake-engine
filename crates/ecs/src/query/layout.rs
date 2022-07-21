@@ -1,11 +1,13 @@
-use crate::{Archetype, Component, LayoutAccess};
+use std::ptr::NonNull;
+
+use crate::{Archetype, Component, LayoutAccess, Mask};
 
 // Mutable query layouts that might contain mutable references
 // This must take a mutable reference to the current archetype
 pub trait MutQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
     fn is_valid() -> bool;
-    fn access() -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> LayoutAccess;
     fn prepare(archetype: &mut Archetype) -> Option<Self::PtrTuple>;
     unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self;
 }
@@ -14,24 +16,32 @@ pub trait MutQueryLayout<'a>: 'a + Sized {
 // This simply takes an immutable reference to the archetype
 pub trait RefQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
-    fn access() -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> LayoutAccess;
     fn is_valid() -> bool;
     fn prepare(archetype: &Archetype) -> Option<Self::PtrTuple>;
     unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self;
 }
 
+
+pub trait GenericQueryItemPtrReader {
+    type Item: 'static;
+    type Ptr: 'static + Copy;
+}
+
 // Mutable component items that will be stored within the archetypes
 pub trait MutQueryItem<'a>: 'a + Sized {
-    type Item: 'static + Component;
-    fn access() -> LayoutAccess;
-    fn prepare(archetype: &mut Archetype) -> Option<*mut Self::Item>;
-    unsafe fn read(slice: *mut Self::Item, i: usize) -> Self;
+    type Item: 'static;
+    type Ptr: 'static + Copy;
+    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr>;
+    unsafe fn read(slice: Self::Ptr, i: usize) -> Self;
 }
 
 // Immutable component items that will be stored within the archetype
 pub trait RefQueryItem<'a>: 'a + Sized {
-    type Item: 'static + Component;
-    fn access() -> LayoutAccess;
-    fn prepare(archetype: &Archetype) -> Option<*const Self::Item>;
-    unsafe fn read(ptr: *const Self::Item, i: usize) -> Self;
+    type Item: 'static;
+    type Ptr: 'static + Copy;
+    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn prepare(archetype: &Archetype) -> Option<Self::Ptr>;
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self;
 }
