@@ -207,9 +207,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     pub fn draw<'a>(&mut self, mesh: &Mesh, uniforms: ValidUniforms) {
         unsafe {
             let count = mesh.triangles().len();
-            //self.draw_vao_arrays(mesh.vao, mesh.vertices().len().unwrap(), uniforms);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.triangles().data().name());
-            self.draw_vao_elements(mesh.vao, 1, gl::UNSIGNED_INT, uniforms)
+            self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)
         }
     }
 }

@@ -1,11 +1,11 @@
 mod attributes;
-mod indices;
+mod triangles;
 mod mesh;
 mod settings;
 mod surface;
 mod vertices;
 pub use attributes::*;
-pub use indices::*;
+pub use triangles::*;
 pub use mesh::*;
 pub use settings::*;
 pub use surface::*;

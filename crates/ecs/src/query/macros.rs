@@ -93,6 +93,8 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
     }
 }
 
+impl<T: Component> Bundle for T {}
+
 // Implementation of ref query layout for single component
 impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
     type PtrTuple = *const T::Item;

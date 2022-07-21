@@ -137,14 +137,15 @@ impl VerticesMut<'_> {
         valid.then(|| min)
     }
 
-    // Re-bind the vertex buffers to the main VAO, assuming that they are valid
-    pub fn rebind(&mut self) -> bool {
+    // Re-bind the vertex buffers to the VAO, assuming that they are valid
+    // This is done automatically when "self is dropped"
+    pub fn rebind(&mut self, force: bool) -> bool {
         if !self.len().is_some() {
             return false;
         }
 
         for (i, (buffer, attrib)) in self.as_any().into_iter().filter_map(|s| s).enumerate() {
-            if self.maybe_reassigned.contains(attrib.tag()) {
+            if self.maybe_reassigned.contains(attrib.tag()) || force {
                 unsafe {
                     gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32);
                     gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
@@ -160,6 +161,6 @@ impl VerticesMut<'_> {
 
 impl Drop for VerticesMut<'_> {
     fn drop(&mut self) {
-        assert!(self.rebind());
+        assert!(self.rebind(false));
     }
 }

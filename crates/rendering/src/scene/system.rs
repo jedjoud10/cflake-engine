@@ -3,7 +3,7 @@ use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, PipelineStats, Sky, Standard},
-    mesh::{Mesh, MeshImportMode, MeshImportSettings, Surface},
+    mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
         TextureMode, Wrap, RG, RGB, RGBA,
@@ -93,20 +93,25 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let missing = albedo_maps.insert(missing);
     let debug = normal_maps.insert(debug);
 
-    let import = MeshImportSettings::default();
+    let import = MeshImportSettings {
+        mode: BufferMode::Resizable,
+        generate_normals: false,
+        generate_tangents: false,
+        scale: 1.0,
+    };
 
     // Load the default cube and sphere meshes
     let cube = assets
         .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
-
+    /*
     let sphere = assets
         .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
-
+    */
     // Insert the meshes and get their handles
     let cube = meshes.insert(cube);
-    let sphere = meshes.insert(sphere);
+    //let sphere = meshes.insert(sphere);
 
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -117,8 +122,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         mask_map,
         missing,
         debug,
+        cube.clone(),
         cube,
-        sphere,
     );
 
     // Sky gradient texture import settings

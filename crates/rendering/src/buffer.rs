@@ -358,7 +358,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Cast the buffer to a buffer of another target / type
     // The type U and T must have the same exact size and alignment
-    pub unsafe fn cast<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
+    pub unsafe fn transmute<U: Shared, const OTHER: u32>(self) -> Buffer<U, OTHER> {
         assert_eq!(
             Layout::new::<T>(),
             Layout::new::<U>(),
@@ -374,8 +374,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
-    // Copy the data from a buffer into this buffer
-    pub fn copy_from<const OTHER: u32>(&mut self, other: Buffer<T, OTHER>) {
+    // Copy the data from another buffer into this buffer
+    pub fn copy_from<const OTHER: u32>(&mut self, other: &Buffer<T, OTHER>) {
         assert_eq!(
             self.len(),
             other.len(),
@@ -385,6 +385,18 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             let size = (self.length * size_of::<T>()) as isize;
             gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
         }
+    }
+
+    // Copy the data from another buffer into this buffer, but transmute the other buffer as well
+    pub unsafe fn copy_from_transmute<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) {
+        assert_eq!(
+            self.len() * size_of::<T>(),
+            other.len()* size_of::<U>(),
+            "Byte size mismatch, cannot copy from buffer"
+        );
+        
+        let size = (self.length * size_of::<T>()) as isize;
+        gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
     }
 
     // Clear the whole contents of the buffer to the specified value

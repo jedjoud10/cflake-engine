@@ -49,14 +49,22 @@ impl TrianglesMut<'_> {
     pub fn extend_from_slice(&mut self, triangles: &[[u32; 3]]) {
         self.buffer.extend_from_slice(triangles);
     }
+
+    // Re-bind the triangle buffer to the VAO
+    // This is done automatically when "self" is dropped
+    pub fn rebind(&mut self, force: bool) {
+        if self.maybe_reassigned || force {
+            unsafe {
+                gl::VertexArrayElementBuffer(self.vao,self.buffer.name());
+            }
+        }
+
+        self.maybe_reassigned = false;
+    }
 }
 
 impl Drop for TrianglesMut<'_> {
     fn drop(&mut self) {
-        if self.maybe_reassigned {
-            unsafe {
-                gl::VertexArrayElementBuffer(self.vao, self.buffer.name());
-            }
-        }
+        self.rebind(false);
     }
 }

@@ -77,6 +77,7 @@ pub fn system(events: &mut Events) {
         let now = Instant::now();
         time.delta = now - time.frame_start;
         time.frame_start = now;
+        time.frame_count += 1;
     }
 
     // Register the events

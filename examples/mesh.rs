@@ -1,7 +1,9 @@
+use std::num::NonZeroU8;
+
+use cflake_engine::prelude::*;
+
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 
-fn main() {}
-/*
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
     App::default()
@@ -14,31 +16,15 @@ fn main() {
 
 // This is an init event that will be called at the start of the game
 fn init(world: &mut World) {
-    let (
-        ecs,
-        ctx,
-        settings,
-        keyboard,
-        standard_mats,
-        _sky_mats,
-        normal_maps,
-        _albedo_maps,
-        assets,
-        shaders,
-    ) = world
-        .get_mut::<(
-            &mut EcsManager,
-            &mut Context,
-            &mut SceneSettings,
-            &mut Keyboard,
-            &mut Storage<Standard>,
-            &mut Storage<Sky>,
-            &mut Storage<NormalMap>,
-            &mut Storage<AlbedoMap>,
-            &mut Assets,
-            &mut Storage<Shader>,
-        )>()
-        .unwrap();
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ctx = world.get_mut::<Context>().unwrap();
+    let mut settings = world.get_mut::<SceneSettings>().unwrap();
+    let mut keyboard = world.get_mut::<Keyboard>().unwrap();
+    let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
+    let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut assets = world.get_mut::<Assets>().unwrap();
+    let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
@@ -50,6 +36,13 @@ fn init(world: &mut World) {
     keyboard.bind("backward", Key::S);
     keyboard.bind("left", Key::A);
     keyboard.bind("right", Key::D);
+
+    // Create a directional light insert it as a light entity (and update the scene settings)
+    let light = Directional::default();
+    let entity = ecs
+        .insert((light, Transform::rotation_x(45f32.to_radians())));
+    settings.set_main_directional_light(entity);
+    /*
 
     // Load the persistent textures like the debug texture and missing texture
     let import_settings = TextureImportSettings {
@@ -64,7 +57,7 @@ fn init(world: &mut World) {
     };
 
     let texture = assets
-        .load_with::<NormalMap>("user/textures/normal.png", (ctx, import_settings))
+        .load_with::<NormalMap>("user/textures/normal.png", (&mut ctx, import_settings))
         .unwrap();
     let texture = normal_maps.insert(texture);
 
@@ -72,39 +65,32 @@ fn init(world: &mut World) {
         .with_normal(&texture)
         .with_bumpiness(1.4)
         .build();
-    let material = standard_mats.insert(material);
+    let material = standard_materials.insert(material);
 
-    let pipeid = ctx.pipeline::<Standard>(shaders, assets);
+    let pipeid = ctx.pipeline::<Standard>(&mut shaders, &mut assets);
 
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material, pipeid);
     ecs.insert((renderer, surface, Transform::default()));
-
-    // Create a directional light insert it as a light entity (and update the scene settings)
-    let light = Directional::default();
-    let entity = ecs
-        .insert((light, Transform::rotation_x(45f32.to_radians())));
-    settings.set_main_directional_light(entity);
+    */
 }
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let (ecs, scene, keyboard, mouse, window, time) = world
-        .get_mut::<(
-            &mut EcsManager,
-            &SceneSettings,
-            &Keyboard,
-            &Mouse,
-            &mut Window,
-            &Time,
-        )>()
-        .unwrap();
+    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let settings = world.get::<SceneSettings>().unwrap();
+    let keyboard = world.get::<Keyboard>().unwrap();
+    let mouse = world.get::<Mouse>().unwrap();
+    let window = world.get_mut::<Window>().unwrap();
+    let time = world.get::<Time>().unwrap();
+
+    println!("{}", time.frame_count());
 
     // Lock the cursor basically
-    window.raw().set_cursor_grab(true).unwrap();
-    window.raw().set_cursor_visible(false);
-
-    if let Some(mut entry) = scene.main_camera().and_then(|c| ecs.entry_mut(c)) {
+    //window.raw().set_cursor_grab(true).unwrap();
+    //window.raw().set_cursor_visible(false);
+    /*
+    if let Some(mut entry) = settings.main_camera().and_then(|c| ecs.entry_mut(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();
         let mut velocity = vek::Vec3::<f32>::zero();
         let forward = transform.forward();
@@ -129,5 +115,5 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
     }
+    */
 }
-*/

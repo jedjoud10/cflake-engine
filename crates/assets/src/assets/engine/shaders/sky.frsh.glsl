@@ -18,5 +18,6 @@ uniform float cloud_coverage;
 in vec2 m_tex_coord_0;
 
 void main() {
-    frag = texture(gradient, vec2(0.0, m_tex_coord_0.y));
+    //frag = texture(gradient, vec2(0.0, m_tex_coord_0.y));
+    frag = vec4(1);
 }

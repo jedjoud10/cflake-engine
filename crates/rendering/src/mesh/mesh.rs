@@ -16,7 +16,6 @@ use super::attributes::*;
 use crate::{
     buffer::{ArrayBuffer, Buffer, BufferFormatAny, BufferMode, ElementBuffer, TriangleBuffer},
     context::Context,
-    mesh::MeshImportMode,
     object::{Shared, ToGlName},
 };
 
@@ -84,9 +83,14 @@ impl Mesh {
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
         vertices.set_attribute::<TexCoord>(tex_coord);
-        
-        let valid = vertices.rebind();
+    
+        // Bind the vertex buffers and check for valididity
+        let valid = vertices.rebind(true);
         std::mem::forget(vertices);
+
+        // Bind the triangle buffer
+        mesh.triangles_mut().rebind(true);
+        
         valid.then_some(mesh)
     }
 
@@ -357,30 +361,23 @@ impl<'a> Asset<'a> for Mesh {
             triangles.push(triangle.try_into().unwrap());
         }
 
-        // Convert the mesh mode into the valid buffer modes
-        let mode = match settings.mode {
-            MeshImportMode::Static => BufferMode::Static,
-            MeshImportMode::Dynamic => BufferMode::Dynamic,
-            MeshImportMode::Procedural => BufferMode::Resizable,
-        };
-
         // Create the buffers
-        let positions = Buffer::from_slice(ctx, &positions, mode).unwrap();
-        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, mode).unwrap());
-        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, mode).unwrap());
-        let triangles = Buffer::from_slice(ctx, &triangles, mode).unwrap();
+        let positions = Buffer::from_slice(ctx, &positions, settings.mode).unwrap();
+        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, settings.mode).unwrap());
+        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, settings.mode).unwrap());
+        let triangles = Buffer::from_slice(ctx, &triangles, settings.mode).unwrap();
 
         // Create a new mesh
         let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();
 
         // Generate procedural normals if requested
         if settings.generate_normals {
-            mesh.compute_normals(ctx, mode).unwrap();
+            mesh.compute_normals(ctx, settings.mode).unwrap();
         }
 
         // Generate procedural tangents if requested
         if settings.generate_tangents {
-            mesh.compute_tangents(ctx, mode).unwrap();
+            mesh.compute_tangents(ctx, settings.mode).unwrap();
         }
         mesh
     }
