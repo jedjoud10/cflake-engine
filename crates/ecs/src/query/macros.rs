@@ -8,25 +8,25 @@ use seq_macro::seq;
 
 // Impl of ref query item for &T
 impl<'a, T: Component> RefQueryItem<'a> for &'a T {
-    type Item = T;
+    type Component = T;
     type Ptr = *const T;
 
     fn access(m: Mask) -> LayoutAccess {
         LayoutAccess::new(mask::<T>() & m, Mask::zero())
     }
 
-    fn prepare(archetype: &Archetype) -> Option<*const Self::Item> {
+    fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
         archetype.table::<T>().map(|vec| vec.as_ptr())
     }
 
-    unsafe fn read(ptr: *const Self::Item, i: usize) -> Self {
+    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
         &*ptr.add(i)
     }
 }
 
 // Impl of ref query item for Option<&T>
 impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
-    type Item = Option<T>;
+    type Component = T;
     type Ptr = Option<*const T>;
 
     fn access(m: Mask) -> LayoutAccess {
@@ -44,7 +44,7 @@ impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
 
 // Impl of mut query item for &T
 impl<'a, T: Component> MutQueryItem<'a> for &'a T {
-    type Item = T;
+    type Component = T;
     type Ptr = *const T;
 
     fn access(m: Mask) -> LayoutAccess {
@@ -62,7 +62,7 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a T {
 
 // Impl of mut query item for Option<&T>
 impl<'a, T: Component> MutQueryItem<'a> for Option<&'a T> {
-    type Item = Option<T>;
+    type Component = T;
     type Ptr = Option<*const T>;
 
     fn access(m: Mask) -> LayoutAccess {
@@ -80,7 +80,7 @@ impl<'a, T: Component> MutQueryItem<'a> for Option<&'a T> {
 
 // Impl of mut query item for &mut T
 impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
-    type Item = T;
+    type Component = T;
     type Ptr = *mut T;
 
     fn access(m: Mask) -> LayoutAccess {
@@ -98,7 +98,7 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
 
 // Impl of mut query item for Option<&mut T>
 impl<'a, T: Component> MutQueryItem<'a> for Option<&'a mut T> {
-    type Item = Option<T>;
+    type Component = T;
     type Ptr = Option<*mut T>;
 
     fn access(m: Mask) -> LayoutAccess {
@@ -254,26 +254,25 @@ macro_rules! tuple_impls {
 
         // Implement the mutable query layout for the tuples
         impl<'a, $($name: MutQueryItem<'a>),+> MutQueryLayout<'a> for ($($name,)+) {
-            type PtrTuple = ($(*mut $name::Item),+);
+            type PtrTuple = ($($name::Ptr),+);
 
             fn is_valid() -> bool {
-                let intersecting = ($(mask::<$name::Item>())&+);
-                let combined = ($($name::access())|+);
+                let intersecting = ($(mask::<$name::Component>())&+);
+                let combined = ($($name::access(Mask::one()))|+);
 
                 let a = intersecting == Mask::zero();
                 let b = combined.shared() & combined.unique() == Mask::zero();
                 a && b
             }
 
-            fn access() -> LayoutAccess {
-                ($($name::access())|+)
+            fn access(m: Mask) -> LayoutAccess {
+                ($($name::access(m))|+)
             }
 
             fn prepare(archetype: &mut Archetype) -> Option<Self::PtrTuple> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let table = archetype.table_mut::<C~N::Item>()?;
-                    let c~N = table.as_mut_slice().as_mut_ptr();
+                    let c~N = C~N::prepare(archetype)?;
                 });
 
                 Some(($(
@@ -294,21 +293,20 @@ macro_rules! tuple_impls {
 
         // Implement the immutable query layout for the tuples
         impl<'a, $($name: RefQueryItem<'a>),+> RefQueryLayout<'a> for ($($name,)+) {
-            type PtrTuple = ($(*const $name::Item),+);
+            type PtrTuple = ($($name::Ptr),+);
 
             fn is_valid() -> bool {
-                ($(mask::<$name::Item>())&+) == Mask::zero()
+                ($(mask::<$name::Component>())&+) == Mask::zero()
             }
 
-            fn access() -> LayoutAccess {
-                ($($name::access())|+)
+            fn access(m: Mask) -> LayoutAccess {
+                ($($name::access(m))|+)
             }
 
             fn prepare(archetype: &Archetype) -> Option<Self::PtrTuple> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    let table = archetype.table::<C~N::Item>()?;
-                    let c~N = table.as_slice().as_ptr();
+                    let c~N = C~N::prepare(archetype)?;
                 });
 
                 Some(($(
@@ -329,7 +327,6 @@ macro_rules! tuple_impls {
     };
 }
 
-/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -339,4 +336,3 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
-*/

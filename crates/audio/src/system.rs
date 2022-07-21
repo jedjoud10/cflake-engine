@@ -51,5 +51,6 @@ pub fn system(events: &mut Events) {
 
     events
         .registry::<Init>()
-        .insert_with(init, Stage::new("insert storage audio").before("user"));
+        .insert_with(init, Stage::new("insert storage audio").before("user"))
+        .unwrap();
 }

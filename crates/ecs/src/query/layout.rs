@@ -22,15 +22,9 @@ pub trait RefQueryLayout<'a>: 'a + Sized {
     unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self;
 }
 
-
-pub trait GenericQueryItemPtrReader {
-    type Item: 'static;
-    type Ptr: 'static + Copy;
-}
-
 // Mutable component items that will be stored within the archetypes
 pub trait MutQueryItem<'a>: 'a + Sized {
-    type Item: 'static;
+    type Component: 'static + Component;
     type Ptr: 'static + Copy;
     fn access(archetype_mask: Mask) -> LayoutAccess;
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr>;
@@ -39,7 +33,7 @@ pub trait MutQueryItem<'a>: 'a + Sized {
 
 // Immutable component items that will be stored within the archetype
 pub trait RefQueryItem<'a>: 'a + Sized {
-    type Item: 'static;
+    type Component: 'static + Component;
     type Ptr: 'static + Copy;
     fn access(archetype_mask: Mask) -> LayoutAccess;
     fn prepare(archetype: &Archetype) -> Option<Self::Ptr>;
