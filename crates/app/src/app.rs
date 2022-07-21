@@ -4,9 +4,13 @@ use glutin::{
     event_loop::{EventLoop, ControlFlow},
 };
 use gui::egui::util::id_type_map::TypeId;
-use rendering::prelude::GraphicsSetupSettings;
+use mimalloc::MiMalloc;
+use rendering::prelude::{GraphicsSetupSettings, FrameRateLimit};
 use std::path::PathBuf;
 use world::{Event, Events, Init, System, Update, World, State};
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 // An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
 pub struct App {
@@ -14,7 +18,7 @@ pub struct App {
     title: String,
     screensize: vek::Extent2<u16>,
     fullscreen: bool,
-    vsync: bool,
+    limit: Option<FrameRateLimit>,
 
     // Asset and IO
     user_assets_folder: Option<PathBuf>,
@@ -34,7 +38,7 @@ impl Default for App {
             title: "Default title".to_string(),
             screensize: vek::Extent2::new(1280, 720),
             fullscreen: false,
-            vsync: false,
+            limit: None,
             user_assets_folder: None,
             events,
             systems: Default::default(),
@@ -63,9 +67,9 @@ impl App {
         self
     }
 
-    // Set the window vsync toggle
-    pub fn set_window_vsync(mut self, enabled: bool) -> Self {
-        self.vsync = enabled;
+    // Set the window's frame limiter
+    pub fn set_framerate_limit(mut self, limit: Option<FrameRateLimit>) -> Self {
+        self.limit = limit;
         self
     }
 
@@ -132,7 +136,7 @@ impl App {
             title: self.title.clone(),
             size: self.screensize,
             fullscreen: self.fullscreen,
-            vsync: self.vsync,
+            limit: self.limit,
         };
         self = self.insert_system(|e: &mut Events| rendering::scene::system(e, settings));
 
@@ -151,6 +155,14 @@ impl App {
         events.registry::<WindowEvent>().sort().unwrap();
         events.registry::<DeviceEvent>().sort().unwrap();
 
+        // Create the spin sleeper for frame limiting
+        let builder = spin_sleep::LoopHelper::builder();
+        let mut sleeper = if let Some(FrameRateLimit::Limited(limit)) = self.limit {
+            builder.build_with_target_rate(limit)
+        } else {
+            builder.build_without_target_rate()
+        };
+
         // We must now start the game engine (start the glutin event loop)
         el.run(move |event, _, cf| match event {            
             // Call the update events
@@ -160,6 +172,8 @@ impl App {
                 if let State::Stopped = *world.get::<State>().unwrap() {
                     *cf = ControlFlow::Exit;
                 }
+
+                sleeper.loop_sleep();
             }
             
             // Call the window events

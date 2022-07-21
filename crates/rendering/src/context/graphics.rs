@@ -6,13 +6,20 @@ use glutin::{
     ContextBuilder, GlProfile, GlRequest,
 };
 
+// FPS cap setting that limits the number of redraws per second
+#[derive(Clone, Copy, PartialEq)]
+pub enum FrameRateLimit {
+    VSync,
+    Limited(u32),
+}
+
 // These settings will be needed to be able to create the underlying graphics pipeline
 // This is a resource that will be automatically added onto the world by our main app
 pub struct GraphicsSetupSettings {
     pub title: String,
     pub size: vek::Extent2<u16>,
     pub fullscreen: bool,
-    pub vsync: bool,
+    pub limit: Option<FrameRateLimit>,
 }
 
 // Create a new graphics pipeline using the approriate settings
@@ -23,7 +30,7 @@ pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> (Win
         title,
         size,
         fullscreen,
-        vsync,
+        limit,
     } = settings;
 
     // Build a valid window
@@ -38,14 +45,13 @@ pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> (Win
         .with_double_buffer(None)
         .with_gl_profile(GlProfile::Core)
         .with_gl_debug_flag(true)
-        .with_vsync(vsync)
+        .with_vsync(limit == Some(FrameRateLimit::VSync))
         .with_gl(GlRequest::Latest)
         .build_windowed(wb, el)
         .unwrap();
 
     // Split the context wrapper into the window and the raw OpenGL context
     let (context, window) = unsafe { wc.make_current().unwrap().split() };
-
     // Initialize OpenGL
     gl::load_with(|x| context.get_proc_address(x));
 

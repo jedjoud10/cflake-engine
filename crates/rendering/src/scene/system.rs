@@ -94,7 +94,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let debug = normal_maps.insert(debug);
 
     let import = MeshImportSettings {
-        mode: BufferMode::Resizable,
+        mode: BufferMode::Static,
         generate_normals: false,
         generate_tangents: false,
         scale: 1.0,
@@ -104,16 +104,14 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let cube = assets
         .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
         .unwrap();
-    /*
     let sphere = assets
         .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
         .unwrap();
-    */
     
     // Insert the meshes and get their handles
     let cube = meshes.insert(cube);
-    //let sphere = meshes.insert(sphere);
-    let sphere = cube.clone();
+    let sphere = meshes.insert(sphere);
+    
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
         black,
