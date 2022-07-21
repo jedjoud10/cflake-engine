@@ -30,7 +30,7 @@ fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
 
         // Iterate through each alpha pixel and create a full color from it
         ImageData::Alpha(alpha) => {
-            let mut texels = Vec::<vek::Vec4<u8>>::with_capacity(alpha.pixels.len() * 4);
+            let mut texels = Vec::<vek::Vec4<u8>>::with_capacity(alpha.pixels.len());
             for alpha in alpha.pixels.iter() {
                 texels.push(vek::Vec4::broadcast(*alpha));
             }
@@ -158,11 +158,14 @@ impl Painter {
             depth_test: None,
             scissor_test: None,
             primitive: PrimitiveMode::Triangles { cull: None },
-            srgb: true,
-            blend: Some(BlendMode {
+            srgb: false,
+            blend: None,
+            /*
+            Some(BlendMode {
                 src: Factor::One,
                 dest: Factor::OneMinusSrcAlpha,
-            }),
+            })
+            */
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
@@ -192,7 +195,7 @@ impl Painter {
                         self.vao,
                         self.indices.len(),
                         gl::UNSIGNED_INT,
-                        uniforms.validate().unwrap(),
+                        uniforms.assume_valid(),
                     );
             }
         }
