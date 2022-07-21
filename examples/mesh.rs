@@ -42,7 +42,6 @@ fn init(world: &mut World) {
     let entity = ecs
         .insert((light, Transform::rotation_x(45f32.to_radians())));
     settings.set_main_directional_light(entity);
-    /*
 
     // Load the persistent textures like the debug texture and missing texture
     let import_settings = TextureImportSettings {
@@ -72,7 +71,6 @@ fn init(world: &mut World) {
     let renderer = Renderer::default();
     let surface = Surface::new(settings.cube(), material, pipeid);
     ecs.insert((renderer, surface, Transform::default()));
-    */
 }
 
 // We will use this update event to move the camera around
@@ -84,12 +82,10 @@ fn update(world: &mut World) {
     let window = world.get_mut::<Window>().unwrap();
     let time = world.get::<Time>().unwrap();
 
-    println!("{}", time.frame_count());
-
     // Lock the cursor basically
-    //window.raw().set_cursor_grab(true).unwrap();
-    //window.raw().set_cursor_visible(false);
-    /*
+    window.raw().set_cursor_grab(true).unwrap();
+    window.raw().set_cursor_visible(false);
+    
     if let Some(mut entry) = settings.main_camera().and_then(|c| ecs.entry_mut(c)) {
         let transform = entry.get_mut::<Transform>().unwrap();
         let mut velocity = vek::Vec3::<f32>::zero();
@@ -115,5 +111,4 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         transform.rotation = rot;
     }
-    */
 }

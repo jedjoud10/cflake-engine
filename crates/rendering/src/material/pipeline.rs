@@ -141,7 +141,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
 
-            //dbg!(mesh.triangles().data().map().unwrap().as_slice());
             rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
             stats.mesh_draw_calls += 1;
             stats.vertices += mesh.vertices().len().unwrap() as u128;

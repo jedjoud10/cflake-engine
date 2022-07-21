@@ -68,8 +68,8 @@ impl Mesh {
                 gl::CreateVertexArrays(1, &mut vao);
                 vao
             },
-            enabled: EnabledAttributes::POSITIONS,
-            positions: MaybeUninit::new(positions),
+            enabled: EnabledAttributes::empty(),
+            positions: MaybeUninit::uninit(),
             normals: MaybeUninit::uninit(),
             tangents: MaybeUninit::uninit(),
             colors: MaybeUninit::uninit(),
@@ -77,8 +77,9 @@ impl Mesh {
             triangles,
         };
 
-        // Set the optional buffers
+        // Set the vertex buffers (including the position buffer)
         let mut vertices = mesh.vertices_mut();
+        vertices.set_attribute::<Position>(Some(positions));
         vertices.set_attribute::<Normal>(normals);
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
@@ -357,7 +358,7 @@ impl<'a> Asset<'a> for Mesh {
         }
 
         // Convert the indices to triangles
-        for triangle in indices.windows(3) {
+        for triangle in indices.chunks_exact(3) {
             triangles.push(triangle.try_into().unwrap());
         }
 

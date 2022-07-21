@@ -207,7 +207,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     pub fn draw<'a>(&mut self, mesh: &Mesh, uniforms: ValidUniforms) {
         unsafe {
             let count = mesh.triangles().len();
-            self.draw_vao_elements(mesh.vao, count, gl::UNSIGNED_INT, uniforms)
+            self.draw_vao_elements(mesh.vao, count * 3, gl::UNSIGNED_INT, uniforms)
         }
     }
 }
