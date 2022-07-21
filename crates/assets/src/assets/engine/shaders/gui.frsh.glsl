@@ -26,7 +26,8 @@ vec4 linear_from_srgba(vec4 srgba) {
 }
 void main() {
     // Need to convert from SRGBA to linear.
-    vec4 texture_rgba = linear_from_srgba(texture(u_sampler, v_tc) * 255.0);
-    f_color = v_rgba * texture_rgba;
-    //f_color = vec4(1, 1, 1, 1);
+    vec4 texture_rgba = linear_from_srgba(texture(u_sampler, vec2(v_tc.x, 1.0 - v_tc.y)) * 255.0);
+    //f_color = v_rgba * texture_rgba;
+    //f_color = vec4(1);
+    f_color = vec4(texture(u_sampler, v_tc).r);
 }

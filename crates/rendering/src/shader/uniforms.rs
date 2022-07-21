@@ -365,9 +365,6 @@ impl<'uniforms> Uniforms<'uniforms> {
             })
             .unit;
 
-        #[cfg(debug_assertions)]
-        self.bound_uniforms.insert(name.to_string());
-
         unsafe {
             self.texture_units.get_mut(name).unwrap().texture = sampler.name();
             gl::ActiveTexture(gl::TEXTURE0 + offset);
