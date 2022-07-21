@@ -23,14 +23,14 @@ in vec3 m_normal;
 in vec3 m_tangent;
 in vec3 m_bitangent;
 in vec3 m_color;
-in vec2 m_tex_coord_0;
+in vec2 m_tex_coord;
 
 void main() {
     // Fetch the main albedo/diffuse color
-    vec3 diffuse = texture(albedo, m_tex_coord_0).xyz;
+    vec3 diffuse = texture(albedo, m_tex_coord).xyz;
 
     // Calculate the normal mapped bumpiness
-	vec3 bumps = texture(normal, m_tex_coord_0).xyz * 2.0 - 1.0;
+	vec3 bumps = texture(normal, m_tex_coord).xyz * 2.0 - 1.0;
 	bumps.xy *= bumpiness;
 
 	// Calculate the world space normals
@@ -47,6 +47,8 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32);
 
+	vec3 color = vec3((diffuse * light) + spec);
+
     // This sets the color for the current fragment
-    frag = vec4(m_normal, 0.0);
+    frag = vec4(color, 1.0);
 }

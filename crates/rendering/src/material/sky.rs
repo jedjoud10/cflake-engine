@@ -18,11 +18,10 @@ use super::{AlbedoMap, Material, Pipeline};
 pub struct Sky {
     // Main sky color
     pub gradient: Handle<AlbedoMap>,
-    pub offset: f32,
 
     // Sun settings
     pub sun_intensity: f32,
-    pub sun_radius: f32,
+    pub sun_size: f32,
 
     // Cloud settings
     pub cloud_coverage: f32,
@@ -55,7 +54,7 @@ impl<'w> Material<'w> for Sky {
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
         uniforms.set_vec3("sun_dir", light.1.forward());
         uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
-        uniforms.set_scalar("time", resources.1.secs_since_startup_f32());
+        uniforms.set_scalar("time_since_startup", resources.1.secs_since_startup_f32());
     }
 
     // This method will be called for each surface that we have to render
@@ -80,7 +79,7 @@ impl<'w> Material<'w> for Sky {
         let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);
         uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);
-        uniforms.set_scalar("sun_radius", self.sun_radius);
+        uniforms.set_scalar("sun_size", self.sun_size);
         uniforms.set_scalar("cloud_speed", self.cloud_speed);
         uniforms.set_scalar("cloud_coverage", self.cloud_coverage);
     }

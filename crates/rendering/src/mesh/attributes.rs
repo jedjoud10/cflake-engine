@@ -110,7 +110,7 @@ macro_rules! impl_vertex_attribute {
                 const COUNT_PER_VERTEX: usize = $count;
                 const GL_TYPE: u32 = $gltype;
                 const ENABLED: EnabledAttributes = EnabledAttributes::[<$enabled>];
-                const NORMALIZED: bool = false;
+                const NORMALIZED: bool = $normalized;
 
                 fn from_vertices_ref_as_ref<'a>(vertices: &'a VerticesRef) -> &'a AttributeBuffer<Self> {
                     vertices.$name

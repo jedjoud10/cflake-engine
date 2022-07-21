@@ -145,9 +145,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the default sky material
     let material = Sky {
         gradient: texture,
-        offset: 0.0,
-        sun_intensity: 10.0,
-        sun_radius: 1.0,
+        sun_intensity: 15.0,
+        sun_size: 1.05,
         cloud_coverage: 0.0,
         cloud_speed: 0.0,
     };

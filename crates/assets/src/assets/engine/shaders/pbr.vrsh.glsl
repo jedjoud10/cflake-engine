@@ -18,7 +18,7 @@ out vec3 m_normal;
 out vec3 m_tangent;
 out vec3 m_bitangent;
 out vec3 m_color;
-out vec2 m_tex_coord_0;
+out vec2 m_tex_coord;
 void main()
 {
     // Model space -> World space -> Clip space
@@ -28,9 +28,9 @@ void main()
 
     // Set the output variables
     m_position = world_pos.xyz;
-    m_normal = (world_matrix * vec4(normal, 0)).xyz;
-    m_tangent = (world_matrix * vec4(tangent.xyz, 0)).xyz;
-    m_tex_coord_0 = tex_coord;
+    m_normal = normalize((world_matrix * vec4(normal, 0)).xyz);
+    m_tangent = normalize((world_matrix * vec4(tangent.xyz, 0)).xyz);
+    m_tex_coord = tex_coord;
 
     // Calculate world space bitangent
 	vec3 bitangent = cross(normalize(m_normal), normalize(tangent.xyz)) * tangent.w;

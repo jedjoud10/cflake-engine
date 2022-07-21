@@ -13,7 +13,6 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
-        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
