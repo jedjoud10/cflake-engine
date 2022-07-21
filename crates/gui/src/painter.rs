@@ -1,5 +1,6 @@
 use assets::Assets;
 use egui::ClippedMesh;
+use egui::epaint::Vertex;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
@@ -51,7 +52,7 @@ pub struct Painter {
 
     // Dynamic buffers that we will update each frame
     indices: ElementBuffer<u32>,
-    vertices: ArrayBuffer<egui::epaint::Vertex>,
+    vertices: ArrayBuffer<Vertex>,
 }
 
 impl Painter {
@@ -76,13 +77,12 @@ impl Painter {
         }
 
         // Resizable buffers for vertices and indices
-        let vertices =
-            ArrayBuffer::<egui::epaint::Vertex>::from_slice(ctx, &[], BufferMode::Resizable);
-        let indices = ElementBuffer::<u32>::from_slice(ctx, &[], BufferMode::Resizable);
+        let vertices = ArrayBuffer::<Vertex>::from_slice(ctx, &[], BufferMode::Resizable).unwrap();
+        let indices = ElementBuffer::<u32>::from_slice(ctx, &[], BufferMode::Resizable).unwrap();
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
         unsafe {
-            const STRIDE: i32 = size_of::<egui::epaint::Vertex>() as i32;
+            const STRIDE: i32 = size_of::<Vertex>() as i32;
             gl::BindBuffer(gl::ARRAY_BUFFER, vertices.name());
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
@@ -104,6 +104,7 @@ impl Painter {
                 STRIDE,
                 (size_of::<f32>() * 4) as isize as _,
             );
+            gl::VertexArrayElementBuffer(vao, indices.name());
             gl::BindVertexArray(0);
         }
 
@@ -181,6 +182,7 @@ impl Painter {
         for mesh in meshes {
             self.vertices.clear();
             self.indices.clear();
+            
             self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
             self.indices.extend_from_slice(mesh.1.indices.as_slice());
 
@@ -189,7 +191,7 @@ impl Painter {
                     .draw_vao_elements(
                         self.vao,
                         self.indices.len(),
-                        gl::UNSIGNED_BYTE,
+                        gl::UNSIGNED_INT,
                         uniforms.validate().unwrap(),
                     );
             }

@@ -89,6 +89,7 @@ pub fn system(events: &mut Events) {
         let deltas = output.textures_delta;
         let meshes = ui.egui.tessellate(clipped_shapes);
 
+        
         if !meshes.is_empty() {
             ui.painter.draw(&mut window, &mut ctx, meshes, &mut assets, deltas);
         }

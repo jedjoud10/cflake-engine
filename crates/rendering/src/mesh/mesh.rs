@@ -173,9 +173,9 @@ impl Mesh {
         };
 
         // Fetch the buffers and map them
-        let mapped_positions = vertices.attribute::<Position>().unwrap().map();
+        let mapped_positions = vertices.attribute::<Position>().unwrap().map().unwrap();
         let positions = mapped_positions.as_slice();
-        let mapped_triangles = triangles.data().map();
+        let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
         // Create pre-allocated normal buffer
@@ -208,7 +208,7 @@ impl Mesh {
                 n.normalized()
                 .map(|e| (e * 127.0) as i8)
             ).collect::<_>();
-        let buffer = Buffer::from_slice(ctx, normals.as_slice(), mode);
+        let buffer = Buffer::from_slice(ctx, normals.as_slice(), mode).unwrap();
 
         // Drop the buffers manually
         drop(mapped_positions);
@@ -229,19 +229,19 @@ impl Mesh {
         };
 
         // Get positions slice
-        let mapped_positions = vertices.attribute::<Position>().unwrap().map();
+        let mapped_positions = vertices.attribute::<Position>().unwrap().map().unwrap();
         let positions = mapped_positions.as_slice();
 
         // Get normals slice
-        let mapped_normals = vertices.attribute::<Normal>().unwrap().map();
+        let mapped_normals = vertices.attribute::<Normal>().unwrap().map().unwrap();
         let normals = mapped_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped_tex_coords = vertices.attribute::<TexCoord>().unwrap().map();
+        let mapped_tex_coords = vertices.attribute::<TexCoord>().unwrap().map().unwrap();
         let uvs = mapped_tex_coords.as_slice();
 
         // Get triangles slice
-        let mapped_triangles = triangles.data().map();
+        let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
         // Local struct that will implement the Geometry trait from the tangent generation lib
@@ -295,7 +295,7 @@ impl Mesh {
 
         // Generate the procedural tangents and store them
         mikktspace::generate_tangents(&mut gen).then_some(())?;
-        let buffer = Buffer::from_slice(ctx, tangents.as_slice(), mode);
+        let buffer = Buffer::from_slice(ctx, tangents.as_slice(), mode).unwrap();
 
         // Drop the mapped buffers manually
         drop(mapped_positions);
@@ -365,10 +365,10 @@ impl<'a> Asset<'a> for Mesh {
         };
 
         // Create the buffers
-        let positions = Buffer::from_slice(ctx, &positions, mode);
-        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, mode));
-        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, mode));
-        let triangles = Buffer::from_slice(ctx, &triangles, mode);
+        let positions = Buffer::from_slice(ctx, &positions, mode).unwrap();
+        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, mode).unwrap());
+        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, mode).unwrap());
+        let triangles = Buffer::from_slice(ctx, &triangles, mode).unwrap();
 
         // Create a new mesh
         let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();

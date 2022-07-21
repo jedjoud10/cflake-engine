@@ -76,8 +76,16 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a buffer using a slice of elements
-    pub fn from_slice(_ctx: &mut Context, slice: &[T], mode: BufferMode) -> Self {
+    pub fn from_slice(_ctx: &mut Context, slice: &[T], mode: BufferMode) -> Option<Self> {
         unsafe {
+            // Return none if we are trying to make an empty static / dynamic / partial buffer
+            if slice.is_empty() {
+                match mode {
+                    BufferMode::Static | BufferMode::Dynamic | BufferMode::Parital => return None,
+                    _ => {}
+                };
+            }
+
             // Create OpenGL buffer and fetch pointer
             let mut buffer = 0;
             gl::CreateBuffers(1, &mut buffer);
@@ -108,19 +116,19 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             }
 
             // Create the buffer object
-            Self {
+            Some(Self {
                 buffer,
                 length: slice.len(),
                 capacity: slice.len(),
                 mode,
                 _phantom: Default::default(),
                 _phantom2: Default::default(),
-            }
+            })
         }
     }
 
     // Create an empty buffer. Only used internally
-    pub fn empty(ctx: &mut Context, mode: BufferMode) -> Self {
+    pub fn empty(ctx: &mut Context, mode: BufferMode) -> Option<Self> {
         Self::from_slice(ctx, &[], mode)
     }
 
@@ -145,6 +153,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Convert a range bounds type into the range indices
+    // This will return None if the returning indices have a length of 0
     pub fn convert_range_bounds(&self, range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
         let start = match range.start_bound() {
             std::ops::Bound::Included(start) => *start,
@@ -158,11 +167,18 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             std::ops::Bound::Unbounded => self.length,
         };
 
-        if start < self.length - 1 && end <= self.length && end >= start {
-            Some((start, end))
-        } else {
-            None
+        let valid_start_index = start < self.length;
+        let valid_end_index = end <= self.length && end >= start;
+        
+        if !valid_start_index || !valid_end_index {
+            return None;
         }
+    
+        if (end - start) == 0 {
+            return None;
+        }
+
+        Some((start, end))
     }
 
     // Clear the values specified by the range to a new value
@@ -223,6 +239,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                     ptr,
                     gl::DYNAMIC_DRAW,
                 );                
+                self.length = slice.len();
+                self.capacity = slice.len();
             } else if slice.len() + self.length > self.capacity {
                 // Reallocate the buffer
                 assert!(
@@ -230,14 +248,14 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                     "Cannot reallocate buffer, missing permission"
                 );
 
-                let new_capacity = self.capacity + slice.len();
+                let new_capacity = (self.capacity + slice.len()) * 2;
                 let new_length = self.length + slice.len();
                 let new_capacity_byte_size = (new_capacity * size_of::<T>()) as isize;
                 let old_capacity_byte_size = (self.capacity * size_of::<T>()) as isize;
                 dbg!(new_capacity_byte_size);
                 dbg!(old_capacity_byte_size);
 
-                let mut temp = 0;
+                let mut temp = 0;                
                 gl::CreateBuffers(1, &mut temp);
                 gl::NamedBufferStorage(temp, old_capacity_byte_size, null(), 0);
                 gl::CopyNamedBufferSubData(self.buffer, temp, 0, 0, old_capacity_byte_size);
@@ -248,10 +266,14 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                     null(),
                     gl::DYNAMIC_DRAW,
                 );
+
+                
                 gl::CopyNamedBufferSubData(temp, self.buffer, 0, 0, old_capacity_byte_size);
-                gl::BufferSubData(self.buffer, old_capacity_byte_size, slice_byte_size, ptr);
+                gl::NamedBufferSubData(self.buffer, old_capacity_byte_size, slice_byte_size, ptr);
                 gl::DeleteBuffers(1, &temp);
 
+                gl::BindBuffer(gl::COPY_WRITE_BUFFER, 0);
+                gl::BindBuffer(gl::COPY_READ_BUFFER, 0);
                 self.length = new_length;
                 self.capacity = new_capacity;
             } else {
@@ -259,6 +281,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 let size = (slice.len() * size_of::<T>()) as isize;
                 let offset = (self.length * size_of::<T>()) as isize;
                 gl::NamedBufferSubData(self.buffer, offset, size, ptr);
+                self.length += slice.len();
             }
         }
     }
@@ -380,10 +403,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map a region of the buffer temporarily for reading
-    pub fn map_range(&self, range: impl RangeBounds<usize>) -> Mapped<T, TARGET> {
-        let (start, end) = self
-            .convert_range_bounds(range)
-            .expect("Buffer map range is invalid");
+    pub fn map_range(&self, range: impl RangeBounds<usize>) -> Option<Mapped<T, TARGET>> {
+        let (start, end) = self.convert_range_bounds(range)?;
 
         let offset = (start * size_of::<T>()) as isize;
         let size = ((end - start) * size_of::<T>()) as isize;
@@ -392,18 +413,16 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             gl::MapNamedBufferRange(self.buffer, offset, size, gl::MAP_READ_BIT) as *const T
         };
 
-        Mapped {
+        Some(Mapped {
             buffer: self,
             len: end - start,
             ptr,
-        }
+        })
     }
 
     // Map a region of the buffer temporarily for reading and writing
-    pub fn map_range_mut(&mut self, range: impl RangeBounds<usize>) -> MappedMut<T, TARGET> {
-        let (start, end) = self
-            .convert_range_bounds(range)
-            .expect("Buffer map range mut is invalid");
+    pub fn map_range_mut(&mut self, range: impl RangeBounds<usize>) -> Option<MappedMut<T, TARGET>> {
+        let (start, end) = self.convert_range_bounds(range)?;
 
         let offset = (start * size_of::<T>()) as isize;
         let size = ((end - start) * size_of::<T>()) as isize;
@@ -417,20 +436,20 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             ) as *mut T
         };
 
-        MappedMut {
+        Some(MappedMut {
             buffer: self,
             len: end - start,
             ptr,
-        }
+        })
     }
 
     // Map the whole buffer temporarily for reading
-    pub fn map(&self) -> Mapped<T, TARGET> {
+    pub fn map(&self) -> Option<Mapped<T, TARGET>> {
         self.map_range(..)
     }
 
     // Map the whole buffer temporarily for reading and writing
-    pub fn map_mut(&mut self) -> MappedMut<T, TARGET> {
+    pub fn map_mut(&mut self) -> Option<MappedMut<T, TARGET>> {
         self.map_range_mut(..)
     }
 }
