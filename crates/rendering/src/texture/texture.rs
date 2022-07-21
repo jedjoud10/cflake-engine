@@ -246,22 +246,21 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 }
             }
 
-            // Appply the sampling parameters for this texture
-            let min = match sampling.filter {
-                Filter::Nearest => gl::NEAREST_MIPMAP_NEAREST,
-                Filter::Linear => gl::LINEAR_MIPMAP_LINEAR,
-            };
+            // The texture minifcation filter
+            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, match (sampling.filter, levels.get() > 1) {
+                (Filter::Nearest, false) => gl::NEAREST,
+                (Filter::Linear, false) => gl::LINEAR,
+                (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
+                (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
+            } as i32);
 
-            let mag = match sampling.filter {
+            // Set the texture magnification filter
+            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, match sampling.filter {
                 Filter::Nearest => gl::NEAREST,
                 Filter::Linear => gl::LINEAR,
-            };
+            } as i32);
 
-            // Set the filters
-            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, min as i32);
-            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, mag as i32);
-
-            // Convert the wrapping mode enum to the raw opengl type
+            // Convert the wrapping mode enum to the raw OpenGL type
             let (wrap, border) = match sampling.wrap {
                 Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
                 Wrap::ClampToBorder(b) => (gl::CLAMP_TO_BORDER, Some(b)),
@@ -280,7 +279,6 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // Apply the mipmapping settings (and anisostropic filtering)
-            // This will automatically generate the
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
                 if let Some(samples) = anisotropy_samples {

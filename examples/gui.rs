@@ -25,7 +25,7 @@ fn init(world: &mut World) {
         (Small, FontId::new(10.0, Proportional)),
     ]
     .into();
-    //ctx.set_style(style);
+    ctx.set_style(style);
 }
 
 // Update the UI and render some cool text

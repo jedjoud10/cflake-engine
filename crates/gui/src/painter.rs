@@ -143,7 +143,7 @@ impl Painter {
                     TextureMode::Resizable,
                     dimensions,
                     Sampling {
-                        filter: Filter::Nearest,
+                        filter: Filter::Linear,
                         wrap: Wrap::ClampToEdge,
                     },
                     MipMaps::Disabled,
@@ -158,14 +158,11 @@ impl Painter {
             depth_test: None,
             scissor_test: None,
             primitive: PrimitiveMode::Triangles { cull: None },
-            srgb: false,
-            blend: None,
-            /*
-            Some(BlendMode {
+            srgb: true,
+            blend: Some(BlendMode {
                 src: Factor::One,
                 dest: Factor::OneMinusSrcAlpha,
             })
-            */
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
@@ -176,7 +173,7 @@ impl Painter {
 
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
-        uniforms.set_sampler("u_sampler", texture);
+        uniforms.set_sampler("test", texture);
         uniforms.set_vec2::<vek::Vec2<i32>>(
             "resolution",
             rasterizer.canvas().size().as_::<i32>().into(),
