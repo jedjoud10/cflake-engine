@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
-use crate::{object::ToGlName, texture::Texture};
+use crate::{object::ToGlName, texture::Texture, context::Context};
 
 // IMplement the scalar trait for single, scalar uniform types
 macro_rules! impl_scalars {
@@ -228,10 +228,12 @@ pub struct ValidUniforms<'uniforms>(PhantomData<&'uniforms mut Program>);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Create a temporary uniforms wrapper using a program and it's inner introspection data
-    pub(crate) fn new(program: &'uniforms mut Program) -> Self {
-        unsafe {
-            gl::UseProgram(program.name());
-        }
+    pub(crate) fn new(program: &'uniforms mut Program, ctx: &mut Context) -> Self {
+        // Bind the program to the global state
+        ctx.bind(gl::PROGRAM, program.name(), |obj| unsafe {
+            gl::UseProgram(obj)
+        });
+
 
         Self {
             texture_units: AHashMap::with_capacity(program.uniform_locations.len()),

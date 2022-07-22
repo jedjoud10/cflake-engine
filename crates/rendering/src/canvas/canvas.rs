@@ -1,4 +1,6 @@
-use crate::{context::Context, object::ToGlName, prelude::Uniforms, shader::Shader};
+use world::{UntypedHandle, Handle};
+
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel}, shader::Shader};
 use std::marker::PhantomData;
 
 use super::{RasterSettings, Rasterizer};
@@ -12,41 +14,42 @@ pub struct Canvas {
     // The size of the framebuffer, in pixels
     size: vek::Extent2<u16>,
 
+    // Color attachements and depth/stencil attachements
+    color_attachements: Vec<UntypedHandle>,
+    depth_attachement: Option<UntypedHandle>,
+    stencil_attachement: Option<UntypedHandle>,
+
     // Unsend + Unsync
     _phantom: PhantomData<*const ()>,
 }
 impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
     pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
-        Self {
-            name,
-            size,
-            _phantom: Default::default(),
-        }
-    }
-
-    // Create a new canvas with a specific size (size must be valid)
-    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
-        // Validate size first
         assert_ne!(
             size,
             vek::Extent2::default(),
             "Size of canvas cannot be zero"
         );
 
-        // Create the raw OpenGL framebuffer
+        Self {
+            name,
+            size,
+            color_attachements: Default::default(),
+            depth_attachement: None,
+            stencil_attachement: None,
+            _phantom: Default::default(),
+        }
+    }
+
+    // Create a new canvas with a specific size (size must be valid)
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
         let name = unsafe {
             let mut name = 0u32;
             gl::CreateFramebuffers(1, &mut name);
             name
         };
 
-        // Then we can create the canvas object
-        Self {
-            name,
-            size,
-            _phantom: Default::default(),
-        }
+        unsafe { Self::from_raw_parts(_ctx, name, size) }
     }
 
     // Resize the canvas to a new size
@@ -104,6 +107,17 @@ impl Canvas {
         }
     }
 
+    // Verify if the inner framebuffer is valid
+    pub fn validate(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.name);
+            let state = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+            if state != gl::FRAMEBUFFER_COMPLETE {
+                panic!("Framebuffer is incomplete, error code: {state}");
+            }
+        }        
+    }
+
     // Create a new canvas rasterizer that we can use to draw some 3D or 2D objects
     pub fn rasterizer<'shader: 'uniforms, 'canvas, 'context, 'uniforms>(
         &'canvas mut self,
@@ -117,15 +131,14 @@ impl Canvas {
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
         }
 
-        // Bind the program, and set it's uniforms
-        ctx.bind(gl::PROGRAM, shader.as_ref().name(), |obj| unsafe {
-            gl::UseProgram(obj)
-        });
-
         // Create the new rasterizer and it's corresponding uniforms
-        (
-            Rasterizer::new(self, ctx, settings),
-            Uniforms::new(shader.as_mut()),
-        )
+        let uniforms = Uniforms::new(shader.as_mut(), ctx);
+        let rasterizer = Rasterizer::new(self, ctx, settings);
+        (rasterizer, uniforms)
+    }
+
+    // Bind a new color texture as a color attachement
+    pub fn attach_render_target_texture<T: Texel>(&mut self, texture: Handle<Texture2D<T>>) {
+        
     }
 }

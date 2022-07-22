@@ -228,15 +228,21 @@ fn window(world: &mut World, event: &mut WindowEvent) {
     match event {
         WindowEvent::Resized(size) => {
             // We might get null dimensions when the user minimizes the window
-            if size.height == 0 || size.width == 0 {
+            let extent = if size.height > 0 && size.width > 0 {
+                vek::Extent2::new(size.width as u16, size.height as u16)
+            } else {
                 return;
-            }
+            };
 
-            // Resize the main window canvas when we resize the window
+            // Resize the default canvas when we resize the window
             let mut window = world.get_mut::<Window>().unwrap();
-            window
-                .canvas_mut()
-                .resize(vek::Extent2::new(size.width as u16, size.height as u16));
+            window.canvas_mut().resize(extent);
+
+            // Resize the main rendering canvas when we resize the window
+            let scene = world.get::<SceneSettings>().unwrap();
+            let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
+            let canvas = &mut canvases[scene.canvas()];
+            canvas.resize(extent);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;

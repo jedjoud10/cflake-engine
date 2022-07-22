@@ -40,19 +40,21 @@ impl<T: 'static> Storage<T> {
 
         Handle {
             _phantom: PhantomData::default(),
-            trackers: self.trackers.clone(),
-            key,
+            untyped: UntypedHandle {
+                trackers: self.trackers.clone(),
+                key
+            }
         }
     }
 
     // Get an immutable reference to a value using it's a handle
     pub fn get(&self, handle: &Handle<T>) -> &T {
-        self.map.get(handle.key).unwrap()
+        self.map.get(handle.untyped.key).unwrap()
     }
 
     // Get a mutable reference to a value using it's handle
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
-        self.map.get_mut(handle.key).unwrap()
+        self.map.get_mut(handle.untyped.key).unwrap()
     }
 
     // Clean the storage of any dangling values. This will keep the same memory footprint as before
@@ -83,22 +85,21 @@ impl<T: 'static> IndexMut<Handle<T>> for Storage<T> {
     }
 }
 
-// A handle is what keeps the values within Storage<T> alive
-pub struct Handle<T: 'static> {
-    _phantom: PhantomData<*mut T>,
+// UntypedHandle is a handle that will keep a special value stored within a storage alive until the last handle gets dropped
+pub struct UntypedHandle {
     trackers: Rc<Trackers>,
     key: DefaultKey,
 }
 
-impl<T: 'static> PartialEq for Handle<T> {
+impl PartialEq for UntypedHandle {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
     }
 }
 
-impl<T: 'static> Eq for Handle<T> {}
+impl Eq for UntypedHandle {}
 
-impl<T: 'static> Handle<T> {
+impl UntypedHandle {
     // Get the current reference count for this handle
     pub fn count(&self) -> u32 {
         *self.trackers.counters.borrow().get(self.key).unwrap()
@@ -126,13 +127,12 @@ impl<T: 'static> Handle<T> {
 }
 
 // Cloning the handle will increase the reference count of that handle
-impl<T: 'static> Clone for Handle<T> {
+impl Clone for UntypedHandle {
     fn clone(&self) -> Self {
         unsafe {
             self.increment_count();
         }
         Self {
-            _phantom: PhantomData::default(),
             trackers: self.trackers.clone(),
             key: self.key,
         }
@@ -141,7 +141,7 @@ impl<T: 'static> Clone for Handle<T> {
 
 // Dropping the handle will decrease the reference count of that handle
 // If we drop the last valid handle, then the stored value will get dropped
-impl<T: 'static> Drop for Handle<T> {
+impl Drop for UntypedHandle {
     fn drop(&mut self) {
         // If the counter reaches 0, it means that we must drop the inner value
         if unsafe { self.decrement_count() } == 0 {
@@ -151,12 +151,53 @@ impl<T: 'static> Drop for Handle<T> {
     }
 }
 
-impl<T: 'static> Default for Handle<T> {
-    fn default() -> Self {
+// A handle is what keeps the values within Storage<T> alive
+pub struct Handle<T: 'static> {
+    _phantom: PhantomData<*mut T>,
+    untyped: UntypedHandle,
+}
+
+impl<T: 'static> PartialEq for Handle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.untyped == other.untyped
+    }
+}
+
+impl<T: 'static> Eq for Handle<T> {}
+
+impl<T: 'static> Handle<T> {
+    // Get the current reference count for this handle
+    pub fn count(&self) -> u32 {
+        self.untyped.count()
+    }
+
+    // Overwrite the current reference counted value directly
+    pub unsafe fn set_count(&self, count: u32) {
+        self.untyped.set_count(count);
+    }
+
+    // This will manually incremememnt the underlying reference counter
+    pub unsafe fn increment_count(&self) -> u32 {
+        self.untyped.increment_count()
+    }
+
+    // This will manually decrement the underlying reference counter
+    pub unsafe fn decrement_count(&self) -> u32 {
+        self.untyped.decrement_count()
+    }
+
+    // Get the inner untyped handle
+    pub fn untyped(&self) -> &UntypedHandle {
+        &self.untyped
+    }
+}
+
+// Cloning the handle will increase the reference count of that handle
+impl<T: 'static> Clone for Handle<T> {
+    fn clone(&self) -> Self {
         Self {
-            _phantom: Default::default(),
-            trackers: todo!(),
-            key: Default::default(),
+            _phantom: PhantomData::default(),
+            untyped: self.untyped.clone(),
         }
     }
 }

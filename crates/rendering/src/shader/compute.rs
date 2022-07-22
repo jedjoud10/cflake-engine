@@ -14,7 +14,9 @@ impl ComputeShader {
         &'s mut self,
         ctx: &'c mut Context,
     ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
-        (ComputeScheduler { ctx }, Uniforms::new(&mut self.0))
+        let uniforms = Uniforms::new(&mut self.0, ctx);
+        let scheduler = ComputeScheduler { ctx };
+        (scheduler, uniforms)
     }
 }
 
