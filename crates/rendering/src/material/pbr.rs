@@ -9,19 +9,19 @@ use crate::{
     mesh::Mesh,
     scene::{Camera, Directional, Renderer, SceneSettings},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA},
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, prelude::{Depth, RenderTarget},
 };
 
 use super::Material;
 
-// Albedo map (color data), rgba
+// PBR maps
 pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
-
-// Normal map (bumps), rgb
 pub type NormalMap = Texture2D<RGB<Ranged<u8>>>;
+pub type MaskMap = Texture2D<RG<Ranged<u8>>>; // (r = roughness, g = metallic)
 
-// Mask map (r = roughness, g = metallic), rg
-pub type MaskMap = Texture2D<RG<Ranged<u8>>>;
+// Framebuffer attachements
+type ColorAttachement = RenderTarget<RGBA<Ranged<u8>>>;
+type DepthTex = RenderTarget<<Depth<Ranged<u32>>>;
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality

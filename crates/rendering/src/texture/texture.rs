@@ -213,46 +213,39 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         };
 
         // Create the texture if the requirements are all valid
-        if !dims_valid || !len_valid {
-            return None;
-        }
+        (dims_valid && len_valid).then(|| unsafe {
+            // Convert some parameters to their raw counterpart
+            let ptr = (!data.is_empty())
+                .then(|| data.as_ptr())
+                .unwrap_or_else(null);
 
-        // Convert some parameters to their raw counterpart
-        let ptr = (!data.is_empty())
-            .then(|| data.as_ptr())
-            .unwrap_or_else(null);
+            // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
+            let auto = dimensions.levels();
+            let (levels, anisotropy_samples) = match mipmaps {
+                MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
+                MipMaps::Automatic => (auto, None),
+                MipMaps::Manual { levels } => (levels.min(auto), None),
+                MipMaps::AutomaticAniso { samples } => (auto, Some(samples)),
+                MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
+            };
 
-        // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
-        let auto = dimensions.levels();
-        let (levels, anisotropy_samples) = match mipmaps {
-            MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
-            MipMaps::Automatic => (auto, None),
-            MipMaps::Manual { levels } => (levels.min(auto), None),
-            MipMaps::AutomaticAniso { samples } => (auto, Some(samples)),
-            MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
-        };
-        unsafe {
             // Create a new raw OpenGL texture object
             let tex = {
                 let mut tex = 0u32;
                 gl::CreateTextures(Self::target(), 1, &mut tex);
                 tex
             };
-        
+
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
                 TextureMode::Dynamic | TextureMode::Static => {
                     Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _)
                 }
                 TextureMode::Resizable => {
-                    let success = Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _);
-                    if !success {
-                        gl::DeleteTextures(1, &tex);
-                        return None;
-                    }
+                    Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _)
                 }
             }
-        
+
             // The texture minifcation filter
             gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, match (sampling.filter, levels.get() > 1) {
                 (Filter::Nearest, false) => gl::NEAREST,
@@ -260,13 +253,13 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
                 (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
             } as i32);
-        
+
             // Set the texture magnification filter
             gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, match sampling.filter {
                 Filter::Nearest => gl::NEAREST,
                 Filter::Linear => gl::LINEAR,
             } as i32);
-        
+
             // Convert the wrapping mode enum to the raw OpenGL type
             let (wrap, border) = match sampling.wrap {
                 Wrap::ClampToEdge => (gl::CLAMP_TO_EDGE, None),
@@ -274,17 +267,17 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 Wrap::Repeat => (gl::REPEAT, None),
                 Wrap::MirroredRepeat => (gl::MIRRORED_REPEAT, None),
             };
-        
+
             // Set the wrapping mode (for all 3 axii)
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_S, wrap as i32);
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_T, wrap as i32);
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_R, wrap as i32);
-        
+
             // Set the border color (if needed)
             if let Some(border) = border {
                 gl::TextureParameterfv(tex, gl::TEXTURE_BORDER_COLOR, border.as_ptr());
             }
-        
+
             // Apply the mipmapping settings (and anisostropic filtering)
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
@@ -296,10 +289,10 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                     );
                 }
             }
-        
+
             // Create the texture object
-            Some(Self::from_raw_parts(tex, dimensions, mode, levels))
-        }
+            Self::from_raw_parts(tex, dimensions, mode, levels)
+        })
     }
 
     // Get the texture's region (origin state is default)
@@ -360,7 +353,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         extent: <Self::Region as Region>::E,
         unique_level: u8,
         ptr: *const c_void,
-    ) -> bool;
+    );
 
     // Update a sub-region of the raw texture
     unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);

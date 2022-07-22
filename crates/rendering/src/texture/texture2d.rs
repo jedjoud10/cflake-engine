@@ -107,7 +107,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         extent: <Self::Region as Region>::E,
         unique_level: u8,
         ptr: *const std::ffi::c_void,
-    ) -> bool {
+    ) {
         gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(
             gl::TEXTURE_2D,
@@ -120,19 +120,6 @@ impl<T: Texel> Texture for Texture2D<T> {
             T::TYPE,
             ptr,
         );
-        gl::TextureSubImage2D(
-            name,
-            0,
-            0,
-            0,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr,
-        );
-        true
-        //gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
     unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const std::ffi::c_void) {

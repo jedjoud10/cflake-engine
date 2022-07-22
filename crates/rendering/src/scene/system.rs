@@ -6,7 +6,7 @@ use crate::{
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
-        TextureMode, Wrap, RG, RGB, RGBA, RenderTexture, R, Depth,
+        TextureMode, Wrap, RG, RGB, RGBA, R, Depth, RenderTextureTuple,
     },
     shader::Shader, canvas::Canvas,
 };
@@ -29,6 +29,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<Canvas>::default());
+    world.insert(Storage::<DepthAttachment>::default());
 
     // Get mutable references to the data that we must use
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
@@ -126,11 +127,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let color: ColorTex = <ColorTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
 
     // Create the render depth texture
-    type DepthTex = Texture2D::<Depth<Ranged<u32>>>;
+
     let depth: DepthTex = <DepthTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     
     // Create the canvas that we will draw our 3D objects onto
-    let targets: Vec<Box<dyn RenderTexture>> = vec![Box::new(color), Box::new(depth)];
+    let targets: Vec<&dyn RenderTextureTuple> = vec![color, Box::new(depth)];
     let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
     let canvas = canvases.insert(canvas);
     

@@ -2,34 +2,40 @@ use world::{Handle, UntypedHandle, Storage};
 use crate::{canvas::Canvas, object::ToGlName};
 use super::{Texture2D, Texel, TexelFormat, Texture, TextureMode};
 
-// A render texture is a texture that will be used within a canvas
-// The render texture trait is implement for every type of Texture2D
-pub trait RenderTexture {
+pub struct RenderTarget<T: Target>(T);
+
+pub trait Target {
+
+}
+
+impl<T: Texel> Target for Texture2D<T> {
+    
+}
+
+pub trait RenderTextureTuple {
     fn texel_format(&self) -> TexelFormat;
     fn size(&self) -> vek::Extent2<u16>;
     fn mode(&self) -> TextureMode;
     fn name(&self) -> u32;
-    fn resize(&mut self, size: vek::Extent2<u16>);
 }
 
-impl<T: Texel> RenderTexture for Texture2D<T> {
+impl<T: Texel> RenderTextureTuple for (&'_ Storage<Texture2D<T>>, Handle<Texture2D<T>>) {
     fn texel_format(&self) -> TexelFormat {
         T::ENUM_FORMAT
     }
 
+    fn name(&self) -> u32 {
+        let tex = &self.0[&self.1];
+        tex.name()
+    }
+
     fn size(&self) -> vek::Extent2<u16> {
-        self.region().1
+        let tex = &self.0[&self.1];
+        tex.region().1
     }
 
     fn mode(&self) -> TextureMode {
-        <Self as Texture>::mode(self)
-    }
-
-    fn name(&self) -> u32 {
-        <Self as ToGlName>::name(self)
-    }
-
-    fn resize(&mut self, size: vek::Extent2<u16>) {
-        <Self as Texture>::resize(self, size)
+        let tex = &self.0[&self.1];
+        tex.mode()
     }
 }

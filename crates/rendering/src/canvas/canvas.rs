@@ -1,7 +1,7 @@
 use serde::__private::de;
 use world::{UntypedHandle, Handle};
 
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, RenderTexture, TexelFormat}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, TexelFormat, RenderTextureTuple}, shader::Shader};
 use std::marker::PhantomData;
 
 use super::{RasterSettings, Rasterizer};
@@ -39,7 +39,7 @@ impl Canvas {
     }
 
     // Create a new canvas with a specific size (size must be valid)
-    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, targets: Vec<Box<dyn RenderTexture>>) -> Option<Self> {
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, targets: Vec<&dyn RenderTextureTuple>) -> Option<Self> {
         /*
         let name = unsafe {
             let mut name = 0u32;
