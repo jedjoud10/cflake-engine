@@ -84,7 +84,7 @@ pub trait Extent: Copy {
     }
 }
 
-// Implementations of extent for 2D and 3D extents
+// Implementation of extent for 2D extent
 impl Extent for vek::Extent2<u16> {
     fn area(&self) -> u32 {
         self.as_::<u32>().product()
@@ -99,6 +99,7 @@ impl Extent for vek::Extent2<u16> {
     }
 }
 
+// Implementation of extent for 3D extent
 impl Extent for vek::Extent3<u16> {
     fn area(&self) -> u32 {
         self.as_::<u32>().product()

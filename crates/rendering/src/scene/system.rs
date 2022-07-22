@@ -6,9 +6,9 @@ use crate::{
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
-        TextureMode, Wrap, RG, RGB, RGBA, R, Depth, RenderTextureTuple,
+        TextureMode, Wrap, RG, RGB, RGBA, R, Depth,
     },
-    shader::Shader, canvas::Canvas,
+    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment},
 };
 
 use assets::Assets;
@@ -29,6 +29,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<Canvas>::default());
+    world.insert(Storage::<ColorAttachment>::default());
     world.insert(Storage::<DepthAttachment>::default());
 
     // Get mutable references to the data that we must use
@@ -42,6 +43,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
     let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
+    let mut color_attachments = world.get_mut::<Storage<ColorAttachment>>().unwrap();
+    let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
 
     // Create the window and graphical context
     let (mut window, mut context) = crate::context::new(settings, el);
@@ -123,15 +126,17 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mipmaps = MipMaps::Disabled;
 
     // Create the render color texture
-    type ColorTex = Texture2D::<RGBA<Ranged<u8>>>;
-    let color: ColorTex = <ColorTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let color = color_attachments.insert(color);
+    let t1 = (&*color_attachments, color);
 
     // Create the render depth texture
+    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let depth = depth_attachments.insert(depth);
+    let t2 = (&*depth_attachments, depth);
 
-    let depth: DepthTex = <DepthTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
-    
     // Create the canvas that we will draw our 3D objects onto
-    let targets: Vec<&dyn RenderTextureTuple> = vec![color, Box::new(depth)];
+    let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
     let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
     let canvas = canvases.insert(canvas);
     
