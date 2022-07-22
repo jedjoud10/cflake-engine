@@ -1,6 +1,6 @@
 use crate::{AudioClip, AudioHead, AudioSource, Listener, GLOBAL_LISTENER};
 use ecs::{added, modified, or, EcsManager};
-use math::Transform;
+use math::{Location, Rotation};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This will insert the default audio clip storage
@@ -14,12 +14,12 @@ fn update(world: &mut World) {
 
     // Get the audio listener's ear locations
     let head = ecs
-        .view::<(&Transform, &Listener)>()
+        .view::<(&Location, &Rotation, &Listener)>()
         .unwrap()
         .next()
-        .map(|(transform, _)| AudioHead {
-            left: -transform.right(),
-            right: transform.right(),
+        .map(|(location, rotation, _)| AudioHead {
+            left: **location - rotation.right(),
+            right: **location + rotation.right(),
         });
 
     if let Some(new) = head {
@@ -30,13 +30,13 @@ fn update(world: &mut World) {
         head.right = new.right;
 
         // Update emitter locations
-        let filter = or(modified::<Transform>(), added::<Transform>());
+        let filter = or(modified::<Location>(), added::<Location>());
         let sources = ecs
-            .query_with::<(&mut AudioSource, &Transform)>(filter)
+            .query_with::<(&mut AudioSource, &Location)>(filter)
             .unwrap();
         for (source, transform) in sources {
             if let Some(pos) = &source.position {
-                *pos.lock().unwrap() = transform.position;
+                *pos.lock().unwrap() = **transform;
             }
         }
     }

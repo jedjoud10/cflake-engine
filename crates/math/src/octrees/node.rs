@@ -10,28 +10,14 @@ slotmap::new_key_type! {
 // Simple node in the octree
 #[derive(Clone, Debug, Getters, CopyGetters, MutGetters)]
 pub struct Node {
-    // The curent position of the node. Note: Multiple nodes can have the same position, but not the same center
-    #[getset(get_copy = "pub")]
+    // Positioning and size
     position: vek::Vec3<i64>,
-
-    // Half extents of the node
-    #[getset(get_copy = "pub")]
     half_extent: u64,
 
-    // Depth of the node. 0 means that is is the root node
-    #[getset(get_copy = "pub")]
+    // Hierarchy fields
     depth: u8,
-
-    // Parent of the node. This could be null if the node is the root node
-    #[getset(get_copy = "pub")]
     parent: NodeKey,
-
-    // The internal key index that this node uses
-    #[getset(get_copy = "pub")]
     key: NodeKey,
-
-    // Children
-    #[getset(get = "pub", get_mut = "pub(super)")]
     children: Option<[NodeKey; 8]>,
 }
 

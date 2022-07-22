@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
-
 use ecs::Component;
-use math::Transform;
+use math::{Location, Rotation};
 use rodio::{OutputStream, OutputStreamHandle};
 
 #[derive(Clone, Copy)]
@@ -27,15 +26,15 @@ pub struct Listener {
 
 impl Listener {
     // Try to create a new listener and return Some. If there is already a new listener that is active, this will simply return None
-    pub fn try_new(transform: &Transform) -> Option<Self> {
+    pub fn try_new(location: &Location, rotation: &Rotation) -> Option<Self> {
         let mut guard = GLOBAL_LISTENER.lock().unwrap();
         if let None = *guard {
             let (stream, handle) = OutputStream::try_default().unwrap();
             *guard = Some(SharedListener {
                 handle,
                 head: Arc::new(Mutex::new(AudioHead {
-                    left: -transform.right(),
-                    right: transform.right(),
+                    left: **location - rotation.right(),
+                    right: **location + rotation.right(),
                 })),
             });
             Some(Self { stream })

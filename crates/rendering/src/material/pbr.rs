@@ -1,6 +1,6 @@
 use assets::Assets;
 use ecs::EcsManager;
-use math::Transform;
+use math::{Location, Rotation};
 use world::{Handle, Read, Storage};
 
 use crate::{
@@ -56,13 +56,13 @@ impl<'w> Material<'w> for Standard {
         _resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        camera: (&Camera, &Location, &Rotation),
+        light: (&Directional, &Rotation),
     ) {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
-        uniforms.set_vec3("camera", camera.1.position);
-        uniforms.set_vec3("forward", camera.1.forward());
+        uniforms.set_vec3::<vek::Vec3<f32>>("camera", camera.1.into());
+        uniforms.set_vec3("forward", camera.2.forward());
         uniforms.set_vec3("light_dir", light.1.forward());
     }
 
@@ -71,8 +71,8 @@ impl<'w> Material<'w> for Standard {
         uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         renderer: &Renderer,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
@@ -83,8 +83,8 @@ impl<'w> Material<'w> for Standard {
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
         scene: &SceneSettings,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
         let (albedo_maps, normal_maps, mask_maps) = resources;
 

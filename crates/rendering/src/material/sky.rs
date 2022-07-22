@@ -1,5 +1,5 @@
 use ecs::EcsManager;
-use math::Transform;
+use math::{Location, Rotation};
 use time::Time;
 use world::{Handle, Read, Storage};
 
@@ -47,8 +47,8 @@ impl<'w> Material<'w> for Sky {
         resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
-        camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        camera: (&Camera, &Location, &Rotation),
+        light: (&Directional, &Rotation),
     ) {
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
@@ -62,8 +62,8 @@ impl<'w> Material<'w> for Sky {
         uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         renderer: &Renderer,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
@@ -73,8 +73,8 @@ impl<'w> Material<'w> for Sky {
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
         _scene: &SceneSettings,
-        _camera: (&Camera, &Transform),
-        light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        light: (&Directional, &Rotation),
     ) {
         let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);

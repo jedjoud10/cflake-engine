@@ -35,7 +35,7 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
-    let camera = ecs.insert((camera, Transform::default(), Velocity::default()));
+    let camera = ecs.insert((camera, Location::default(), Rotation::default(), Velocity::default()));
     settings.set_main_camera(camera);
 
     // We will also register some new keybinds for the camera controller
@@ -47,7 +47,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = Directional::default();
     let entity = ecs
-        .insert((light, Transform::rotation_x(45f32.to_radians())));
+        .insert((light, Rotation::rotation_x(45f32.to_radians())));
     settings.set_main_directional_light(entity);
 
     // Create some import settings for our albedo and normal map textures
@@ -80,7 +80,7 @@ fn init(world: &mut World) {
     let surface = Surface::new(settings.cube(), material, pipeid);
 
     // Insert a new entity that contains the valid surface
-    ecs.insert((surface, Renderer::default(), Transform::default()));
+    ecs.insert((surface, Renderer::default()));
 }
 
 #[derive(Component, Default)]
@@ -107,43 +107,37 @@ fn update(world: &mut World) {
     window.raw().set_cursor_visible(false);
     
     if let Some(mut entry) = settings.main_camera().and_then(|c| ecs.entry_mut(c)) {
-
-        // Get the transform since we will update it
-        let transform = entry.get::<Transform>().unwrap();
+        // Get the location and rotation since we will update them
+        let (location, rotation, velocity) = entry.as_query::<(&mut Location, &mut Rotation, &mut Velocity)>().unwrap();
 
         // Forward and right vectors relative to the camera
-        let forward = transform.forward();
-        let right = transform.right();
-
-        let vel = entry.get_mut::<Velocity>().unwrap();
-        let mut velocity = vek::Vec3::<f32>::default();
+        let forward = rotation.forward();
+        let right = rotation.right();
+        let mut temp = vek::Vec3::<f32>::default();
 
         // Update the velocity in the forward and backward directions
         if keyboard.held("forward") {
-            velocity += forward;
+            temp += forward;
         } else if keyboard.held("backward") {
-            velocity += -forward;
+            temp += -forward;
         }
 
         // Update the velocity in the left and right directions
         if keyboard.held("left") {
-            velocity += -right;
+            temp += -right;
         } else if keyboard.held("right") {
-            velocity += right;
+            temp += right;
         }
 
-        vel.velocity = vek::Vec3::lerp_unclamped_precise(vel.velocity, velocity, time.delta_f32() * VELOCITY_SMOOTH_SPEED);
-        let velocity = vel.velocity;
+        velocity.velocity = vek::Vec3::lerp_unclamped_precise(velocity.velocity, temp, time.delta_f32() * VELOCITY_SMOOTH_SPEED);
 
-        // Update the transform with the new velocity
-        let transform = entry.get_mut::<Transform>().unwrap();    
-        transform.position += velocity * time.delta_f32() * SPEED;    
+        // Update the location with the new velocity
+        **location += velocity.velocity * time.delta_f32() * SPEED;    
         
         // Calculate a new rotation and apply it
         let pos = mouse.position();
         let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
-        let transform = entry.get_mut::<Transform>().unwrap();
-        transform.rotation = vek::Quaternion::lerp_unclamped_precise(transform.rotation, rot, time.delta_f32() * ROTATION_SMOOTH_SPEED);
+        **rotation = vek::Quaternion::lerp_unclamped_precise(**rotation, rot, time.delta_f32() * ROTATION_SMOOTH_SPEED);
     }
 }

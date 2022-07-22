@@ -141,30 +141,6 @@ impl Archetype {
 
         Some(linkings)
     }
-    /*
-    // Move an entity from an archetype to another archetype, whilst adding extra components to the entity
-    pub(crate) fn move_entity(
-        archetypes: &mut ArchetypeSet,
-        entities: &mut EntitySet,
-        old: Mask,
-        new: Mask,
-        entity: Entity,
-        linkings: &mut EntityLinkings,
-        extra: Vec<(Mask, Box<dyn Any>)>,
-    ) {
-        // Remove the entity (this might fail in the case of the default empty archetype)
-        let mut removed = (old != Mask::zero())
-            .then(|| Archetype::remove(archetypes, entities, entity, old))
-            .unwrap_or_default();
-
-        // Combine the removed components with the extra components
-        removed.extend(extra);
-
-        // And insert into the new archetype
-        let new = archetypes.get_mut(&new).unwrap();
-        new.push(entity, linkings, removed);
-    }
-    */
 }
 
 // This will get two different archetypes using their masks

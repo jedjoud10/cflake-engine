@@ -1,7 +1,7 @@
 use crate::AABB;
 
 // A simple sphere that is represented by it's center and radius
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Sphere {
     // The 3D center of the sphere
     pub center: vek::Vec3<f32>,

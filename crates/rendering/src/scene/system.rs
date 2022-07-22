@@ -8,23 +8,20 @@ use crate::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
         TextureMode, Wrap, RG, RGB, RGBA,
     },
-    shader::Shader,
+    shader::Shader, canvas::Canvas,
 };
 
 use assets::Assets;
 use ecs::{added, modified, or, EcsManager};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::Transform;
-
+use math::{Scale, Location, Rotation, IntoMatrix};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) -> (Window, Context, SceneSettings) {
-    let (mut window, mut context) = crate::context::new(settings, el);
-    let ctx = &mut context;
-
     // Insert the default storages
+    world.insert(Storage::<Canvas>::default());
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
     world.insert(Storage::<MaskMap>::default());
@@ -34,6 +31,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Sky>::default());
 
     // Get mutable references to the data that we must use
+    let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
@@ -43,6 +41,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
+
+    // Create the window and graphical context
+    let (mut window, mut context) = crate::context::new(settings, el);
+    let ctx = &mut context;
 
     // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
     fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
@@ -111,6 +113,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Insert the meshes and get their handles
     let cube = meshes.insert(cube);
     let sphere = meshes.insert(sphere);
+
+    // Create a global canvas that we will draw our 3D objects onto
+    let canvas = Canvas::new(ctx, window.canvas().size());
+    let canvas = canvases.insert(canvas);
     
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -123,6 +129,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         debug,
         cube,
         sphere,
+        canvas,
     );
 
     // Sky gradient texture import settings
@@ -164,7 +171,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     ecs.insert((
         renderer,
         surface,
-        Transform::default().scaled(vek::Vec3::one() * 5000.0),
+        Scale::from(vek::Vec3::one() * 5000.0)
     ));
 
     (window, context, scene)
@@ -173,17 +180,28 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
-
-    let filter = or(
-        or(modified::<Transform>(), added::<Transform>()),
-        added::<Renderer>(),
-    );
+    
+    // TODO: Add filter
     let query = ecs
-        .query_with::<(&mut Renderer, &Transform)>(filter)
+        .query::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>()
         .unwrap();
 
-    for (renderer, transform) in query {
-        renderer.set_matrix(transform.matrix());
+    for (renderer, location, rotation, scale) in query {
+        let mut matrix = vek::Mat4::<f32>::identity();
+
+        if let Some(location) = location {
+            matrix *= location.into_matrix();
+        }
+
+        if let Some(rotation) = rotation {
+            matrix *= rotation.into_matrix();
+        }
+
+        if let Some(scale) = scale {
+            matrix *= scale.into_matrix();
+        }
+        
+        renderer.set_matrix(matrix);
     }
 }
 
@@ -253,8 +271,8 @@ fn main_camera(world: &mut World) {
         let mut entry = ecs.entry_mut(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry.as_query::<(&mut Camera, &mut Transform)>().unwrap();
-        camera.update(transform);
+        let (camera, location, rotation) = entry.as_query::<(&mut Camera, &Location, &Rotation)>().unwrap();
+        camera.update(location, rotation);
     }
 }
 

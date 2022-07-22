@@ -1,5 +1,3 @@
-use std::ptr::NonNull;
-
 use crate::{Archetype, Component, LayoutAccess, Mask};
 
 // Mutable query layouts that might contain mutable references
@@ -7,7 +5,7 @@ use crate::{Archetype, Component, LayoutAccess, Mask};
 pub trait MutQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
     fn is_valid() -> bool;
-    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> Option<LayoutAccess>;
     fn prepare(archetype: &mut Archetype) -> Option<Self::PtrTuple>;
     unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self;
 }
@@ -16,7 +14,7 @@ pub trait MutQueryLayout<'a>: 'a + Sized {
 // This simply takes an immutable reference to the archetype
 pub trait RefQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
-    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> Option<LayoutAccess>;
     fn is_valid() -> bool;
     fn prepare(archetype: &Archetype) -> Option<Self::PtrTuple>;
     unsafe fn read(ptrs: Self::PtrTuple, i: usize) -> Self;
@@ -26,7 +24,7 @@ pub trait RefQueryLayout<'a>: 'a + Sized {
 pub trait MutQueryItem<'a>: 'a + Sized {
     type Component: 'static + Component;
     type Ptr: 'static + Copy;
-    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> Option<LayoutAccess>;
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr>;
     unsafe fn read(slice: Self::Ptr, i: usize) -> Self;
 }
@@ -35,7 +33,7 @@ pub trait MutQueryItem<'a>: 'a + Sized {
 pub trait RefQueryItem<'a>: 'a + Sized {
     type Component: 'static + Component;
     type Ptr: 'static + Copy;
-    fn access(archetype_mask: Mask) -> LayoutAccess;
+    fn access(archetype_mask: Mask) -> Option<LayoutAccess>;
     fn prepare(archetype: &Archetype) -> Option<Self::Ptr>;
     unsafe fn read(ptr: Self::Ptr, i: usize) -> Self;
 }

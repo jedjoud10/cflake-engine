@@ -1,6 +1,6 @@
 use super::{AlbedoMap, Material};
 use crate::{
-    canvas::{PrimitiveMode, RasterSettings},
+    canvas::{PrimitiveMode, RasterSettings, Canvas},
     context::{Context, Window},
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
@@ -8,7 +8,7 @@ use crate::{
 };
 use assets::Assets;
 use ecs::EcsManager;
-use math::Transform;
+use math::{Location, Rotation};
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Read, Resource, Storage, World};
 
@@ -51,9 +51,10 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let ecs = world.get::<EcsManager>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
+        let window = world.get::<Window>().unwrap();
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
-        let mut window = world.get_mut::<Window>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
+        let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
         let mut property_block_resources = M::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -86,19 +87,14 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(scene.main_camera().unwrap()).unwrap();
-        let camera_transform = camera_entry.get::<Transform>().unwrap();
-        let camera_data = camera_entry.get::<Camera>().unwrap();
-        let camera = (camera_data, camera_transform);
+        let camera = camera_entry.as_view::<(&Camera, &Location, &Rotation)>().unwrap();
 
         // Get the main directional light
         let light_entry = ecs.entry(scene.main_directional_light().unwrap()).unwrap();
-        let light_transform = light_entry.get::<Transform>().unwrap();
-        let light_data = light_entry.get::<Directional>().unwrap();
-        let light = (light_data, light_transform);
+        let light = light_entry.as_view::<(&Directional, &Rotation)>().unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
-        let (mut rasterizer, mut uniforms) =
-            window.canvas_mut().rasterizer(&mut ctx, shader, settings);
+        let (mut rasterizer, mut uniforms) = canvases.get_mut(&scene.canvas()).rasterizer(&mut ctx, shader, settings);
 
         M::set_static_properties(
             &mut uniforms,

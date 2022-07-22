@@ -5,10 +5,12 @@ pub use sphere::*;
 
 use crate::AABB;
 
-// This trait will be implemented for well... shapes
-// Shapes are defined by their geometry
-// Each shape should be able to convert into an AABB
-pub trait Shape: Into<AABB> {
+// A shape is a 3D geometrical object that takes space
+// Shapes have no masses, they solely represent the geometry of certain pre-defined primitives
+pub trait Shape: Clone + Sync + Send {
     // Get the center position of the shape
     fn center(&self) -> vek::Vec3<f32>;
+
+    // Get the AABB bounds of the shape
+    fn bounds(&self) -> AABB;
 }
