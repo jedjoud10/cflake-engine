@@ -1,4 +1,12 @@
+mod location;
+mod rotation;
+mod scale;
 use ecs::Component;
+
+
+pub trait IntoMatrix {
+    fn matrix(self) -> vek::Mat4<f32>;
+}
 
 // A transform is a combination of a position, rotaion, and scale, all stored withint a single component
 #[derive(Component, Clone)]

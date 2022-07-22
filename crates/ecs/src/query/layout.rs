@@ -1,5 +1,4 @@
 use std::ptr::NonNull;
-
 use crate::{Archetype, Component, LayoutAccess, Mask};
 
 // Mutable query layouts that might contain mutable references

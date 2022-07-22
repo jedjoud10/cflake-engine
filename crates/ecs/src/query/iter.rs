@@ -41,6 +41,8 @@ impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
         let bundle = unsafe { L::read(chunk.ptrs, self.index) };
 
         // Get the bundle state
+        dbg!(chunk.states.borrow().len());
+        dbg!(self.index);
         let state = *chunk.states.borrow().get(self.index).unwrap();
         self.index += 1;
 
@@ -120,11 +122,16 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
 }
 
 // Immutable query that returns RefQueryItemResult
+// TODO: Fix code duplication
 fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQueryIter<'a, L> {
     let mut chunks = archetypes
     .iter()
     .filter_map(|(m, archetype)| {            
-        L::access(*m).map(|a| (a, archetype))
+        L::access(*m)
+        .and_then(|access| 
+            (*m != Mask::zero()).then_some(access)
+        )
+        .map(|a| (a, archetype))
     })
     .map(|(access, archetype)| RefQueryChunk {
         len: archetype.len(),
@@ -149,7 +156,11 @@ fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> Mu
     let mut chunks = archetypes
         .iter_mut()
         .filter_map(|(m, archetype)| {       
-            L::access(*m).map(|a| (a, archetype))
+            L::access(*m)
+            .and_then(|access| 
+                (*m != Mask::zero()).then_some(access)
+            )
+            .map(|a| (a, archetype))
         })
         .map(|(access, archetype)| MutQueryChunk {
             len: archetype.len(),

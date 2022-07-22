@@ -228,8 +228,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             } else {
                 return;
             };
-            
             let slice_byte_size = (slice.len() * size_of::<T>()) as isize;
+            
 
             if self.length == 0 && self.capacity == 0 {  
                 // Allocate the buffer for the first time
@@ -248,18 +248,21 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                     "Cannot reallocate buffer, missing permission"
                 );
 
+                // Some allocation values we need
                 let new_capacity = (self.capacity + slice.len()) * 2;
                 let new_length = self.length + slice.len();
                 let new_capacity_byte_size = (new_capacity * size_of::<T>()) as isize;
                 let old_capacity_byte_size = (self.capacity * size_of::<T>()) as isize;
-                dbg!(new_capacity_byte_size);
-                dbg!(old_capacity_byte_size);
 
+                // Create temporary buffer that will store our old data
                 let mut temp = 0;                
                 gl::CreateBuffers(1, &mut temp);
                 gl::NamedBufferStorage(temp, old_capacity_byte_size, null(), 0);
+
+                // Copy our current data into the temporary buffer
                 gl::CopyNamedBufferSubData(self.buffer, temp, 0, 0, old_capacity_byte_size);
 
+                // Reallocate the "self" buffer
                 gl::NamedBufferData(
                     self.buffer,
                     new_capacity_byte_size,
@@ -267,13 +270,12 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                     gl::DYNAMIC_DRAW,
                 );
 
-                
+                // Copy the data back from the temporary buffer
                 gl::CopyNamedBufferSubData(temp, self.buffer, 0, 0, old_capacity_byte_size);
                 gl::NamedBufferSubData(self.buffer, old_capacity_byte_size, slice_byte_size, ptr);
-                gl::DeleteBuffers(1, &temp);
 
-                gl::BindBuffer(gl::COPY_WRITE_BUFFER, 0);
-                gl::BindBuffer(gl::COPY_READ_BUFFER, 0);
+                // Delete the temporary buffer
+                gl::DeleteBuffers(1, &temp);
                 self.length = new_length;
                 self.capacity = new_capacity;
             } else {

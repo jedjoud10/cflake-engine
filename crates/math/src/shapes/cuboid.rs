@@ -1,7 +1,7 @@
 use crate::{Shape, AABB};
 
 // A 3D cuboid that is defined by it's center and it's extent
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Cuboid {
     // The 3D center of the cuboid
     pub center: vek::Vec3<f32>,
@@ -31,6 +31,10 @@ impl Cuboid {
 impl Shape for Cuboid {
     fn center(&self) -> vek::Vec3<f32> {
         self.center
+    }
+
+    fn bounds(&self) -> AABB {
+        (*self).into()
     }
 }
 
