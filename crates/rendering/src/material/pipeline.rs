@@ -1,6 +1,6 @@
 use super::{AlbedoMap, Material};
 use crate::{
-    canvas::{PrimitiveMode, RasterSettings, Canvas, SceneCanvasLayout},
+    canvas::{PrimitiveMode, RasterSettings, Canvas},
     context::{Context, Window},
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
@@ -23,7 +23,7 @@ pub struct PipelineStats {
 }
 
 // Marker that tells us that we have a registered valid pipeline
-pub struct PipeId<M: for<'w> Material<'w>>(pub(crate) PhantomData<Pipeline<M>>);
+pub struct PipeId<M: for<'w> Material<'w>>(pub(crate) PhantomData<Pipeline<M>>, );
 
 impl<M: for<'w> Material<'w>> Clone for PipeId<M> {
     fn clone(&self) -> Self {
@@ -54,7 +54,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let window = world.get::<Window>().unwrap();
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
-        let mut canvas = world.get_mut::<Canvas<SceneCanvasLayout>>().unwrap();
+        let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
         let mut property_block_resources = M::fetch(world);
 
         // How exactly we should rasterize the surfaces
@@ -94,6 +94,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let light = light_entry.as_view::<(&Directional, &Rotation)>().unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
+        let canvas = &mut canvases[scene.canvas()];
         let (mut rasterizer, mut uniforms) = canvas.rasterizer(&mut ctx, shader, settings);
 
         M::set_static_properties(

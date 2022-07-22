@@ -162,7 +162,7 @@ macro_rules! impl_color_texel_layout {
 // Implement the depth texel layout
 macro_rules! impl_depth_texel_layout {
     () => {
-        impl Texel for Scalar<Depth<Ranged<u16>>> {
+        impl Texel for Depth<Ranged<u16>> {
             const INTERNAL_FORMAT: u32 = gl::RED;
             const FORMAT: u32 = gl::DEPTH_COMPONENT16;
             const TYPE: u32 = gl::UNSIGNED_SHORT;
@@ -173,7 +173,7 @@ macro_rules! impl_depth_texel_layout {
             type Element = u16;
         }
 
-        impl Texel for Scalar<Depth<Ranged<u32>>> {
+        impl Texel for Depth<Ranged<u32>> {
             const INTERNAL_FORMAT: u32 = gl::RED;
             const FORMAT: u32 = gl::DEPTH_COMPONENT32;
             const TYPE: u32 = gl::UNSIGNED_INT;
@@ -184,7 +184,7 @@ macro_rules! impl_depth_texel_layout {
             type Element = u32;
         }
 
-        impl Texel for Scalar<Depth<f32>> {
+        impl Texel for Depth<f32> {
             const INTERNAL_FORMAT: u32 = gl::RED;
             const FORMAT: u32 = gl::DEPTH_COMPONENT32F;
             const TYPE: u32 = gl::FLOAT;
@@ -200,7 +200,7 @@ macro_rules! impl_depth_texel_layout {
 // Implement the stencil texel layout
 macro_rules! impl_stencil_texel_layout {
     () => {
-        impl Texel for Scalar<Stencil<u8>> {
+        impl Texel for Stencil<u8> {
             const INTERNAL_FORMAT: u32 = gl::RED;
             const FORMAT: u32 = gl::STENCIL_INDEX8;
             const TYPE: u32 = gl::UNSIGNED_BYTE;

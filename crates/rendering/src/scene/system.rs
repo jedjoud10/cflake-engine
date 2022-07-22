@@ -6,7 +6,7 @@ use crate::{
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
-        TextureMode, Wrap, RG, RGB, RGBA,
+        TextureMode, Wrap, RG, RGB, RGBA, RenderTexture, R, Depth,
     },
     shader::Shader, canvas::Canvas,
 };
@@ -28,6 +28,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Shader>::default());
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
+    world.insert(Storage::<Canvas>::default());
 
     // Get mutable references to the data that we must use
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
@@ -39,6 +40,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
 
     // Create the window and graphical context
     let (mut window, mut context) = crate::context::new(settings, el);
@@ -112,11 +114,25 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let cube = meshes.insert(cube);
     let sphere = meshes.insert(sphere);
 
-    // Create the render framebuffer textures (color and depth)
-    //let color = Texture2D::<RGBA<Ranged<u8>>>::new(ctx, Texture, dimensions, sampling, mipmaps, data)
+    // Settings for framebuffer textures
+    let sampling = Sampling {
+        filter: Filter::Linear,
+        wrap: Wrap::ClampToEdge,
+    };
+    let mipmaps = MipMaps::Disabled;
 
-    // Create a global canvas that we will draw our 3D objects onto
-    let canvas = Canvas::new(ctx, window.canvas().size(), ()).unwrap();
+    // Create the render color texture
+    type ColorTex = Texture2D::<RGBA<Ranged<u8>>>;
+    let color: ColorTex = <ColorTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+
+    // Create the render depth texture
+    type DepthTex = Texture2D::<Depth<Ranged<u32>>>;
+    let depth: DepthTex = <DepthTex as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    
+    // Create the canvas that we will draw our 3D objects onto
+    let targets: Vec<Box<dyn RenderTexture>> = vec![Box::new(color), Box::new(depth)];
+    let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
+    let canvas = canvases.insert(canvas);
     
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -129,6 +145,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         debug,
         cube,
         sphere,
+        canvas,
     );
 
     // Sky gradient texture import settings

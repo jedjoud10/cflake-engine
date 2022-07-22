@@ -1,14 +1,14 @@
 use serde::__private::de;
 use world::{UntypedHandle, Handle};
 
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, TexelFormat, TextureMode, RenderTexture}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, RenderTexture, TexelFormat}, shader::Shader};
 use std::marker::PhantomData;
 
-use super::{RasterSettings, Rasterizer, AttachmentLayout};
+use super::{RasterSettings, Rasterizer};
 
 // A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
 // We can access the main default canvas from the window using the canvas() function
-pub struct Canvas<L: AttachmentLayout> {
+pub struct Canvas {
     // The raw framebuffer name (This can be 0 to depict the default framebuffer)
     name: u32,
 
@@ -16,14 +16,14 @@ pub struct Canvas<L: AttachmentLayout> {
     size: vek::Extent2<u16>,
 
     // Color attachements and depth/stencil attachements
-    layout: L,
+    attachments: Vec<UntypedHandle>,
 
     // Unsend + Unsync
     _phantom: PhantomData<*const ()>,
 }
-impl<L: AttachmentLayout> Canvas<L> {
+impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
-    pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, layout: L, size: vek::Extent2<u16>) -> Self {
+    pub unsafe fn from_raw_parts(_ctx: &mut Context, name: u32, size: vek::Extent2<u16>) -> Self {
         assert_ne!(
             size,
             vek::Extent2::default(),
@@ -33,22 +33,23 @@ impl<L: AttachmentLayout> Canvas<L> {
         Self {
             name,
             size,
-            layout,
+            attachments: Default::default(),
             _phantom: Default::default(),
         }
     }
 
     // Create a new canvas with a specific size (size must be valid)
-    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, layout: L) -> Option<Self> {
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, targets: Vec<Box<dyn RenderTexture>>) -> Option<Self> {
         /*
+        let name = unsafe {
+            let mut name = 0u32;
+            gl::CreateFramebuffers(1, &mut name);
+            name
+        };
+
         let mut draw_buffers = 0;
         let mut depth_enabled = false;
         let mut stencil_enabled = false; 
-        let mut textures = Vec::<(u32, u32)>::default();
-
-        if targets.is_empty() {
-            return None;
-        }
 
         for target in targets {
             match target.texel_format() {
@@ -65,35 +66,16 @@ impl<L: AttachmentLayout> Canvas<L> {
                 },
             }
 
-            match target.mode() {
-                TextureMode::Static | TextureMode::Dynamic => return None,
-                _ => (),
-            }
-
-            let attachment = match target.texel_format() {
-                TexelFormat::Color => gl::COLOR_ATTACHMENT0 + (draw_buffers-1),
-                TexelFormat::Depth => gl::DEPTH_ATTACHMENT,
-                TexelFormat::Stencil => gl::STENCIL_ATTACHMENT,
-            };
-
             if target.size() != size {
                 return None;
             }
 
-            textures.push((attachment, target.name()));
+            unsafe {
+                gl::NamedFramebufferTexture(name, gl::COLOR_ATTACHMENT0 + draw_buffers as u32, target.name(), 0);
+            }
         }
-        
-        let name = unsafe {
-            let mut name = 0u32;
-            gl::CreateFramebuffers(1, &mut name);
-            name
-        };
 
         unsafe {
-            for (attachment, texture) in textures {
-                gl::NamedFramebufferTexture(name, attachment, texture, 0);
-            }
-
             let vec = (0..draw_buffers).map(|i| gl::COLOR_ATTACHMENT0 + i).collect::<Vec<u32>>();
             gl::NamedFramebufferDrawBuffers(name, draw_buffers as i32, vec.as_ptr());
         }        
@@ -170,7 +152,7 @@ impl<L: AttachmentLayout> Canvas<L> {
         ctx: &'context mut Context,
         shader: &'shader mut Shader,
         settings: RasterSettings,
-    ) -> (Rasterizer<'canvas, 'context, L>, Uniforms<'uniforms>) {
+    ) -> (Rasterizer<'canvas, 'context>, Uniforms<'uniforms>) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);

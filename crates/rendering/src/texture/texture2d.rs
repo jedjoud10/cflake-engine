@@ -107,7 +107,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         extent: <Self::Region as Region>::E,
         unique_level: u8,
         ptr: *const std::ffi::c_void,
-    ) {
+    ) -> bool {
         gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(
             gl::TEXTURE_2D,
@@ -131,6 +131,7 @@ impl<T: Texel> Texture for Texture2D<T> {
             T::TYPE,
             ptr,
         );
+        true
         //gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
