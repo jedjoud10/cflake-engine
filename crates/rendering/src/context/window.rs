@@ -23,6 +23,7 @@ impl Device {
 pub struct Window {
     glutin: glutin::window::Window,
     canvas: Canvas,
+    size: vek::Extent2<u16>,
     device: Device,
 }
 

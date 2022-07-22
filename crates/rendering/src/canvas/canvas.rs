@@ -1,7 +1,7 @@
 use serde::__private::de;
 use world::{UntypedHandle, Handle};
 
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, RenderTextureTuple, TexelFormat}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, RenderTextureTuple, TexelFormat, TextureMode}, shader::Shader};
 use std::marker::PhantomData;
 
 use super::{RasterSettings, Rasterizer};
@@ -40,15 +40,14 @@ impl Canvas {
 
     // Create a new canvas with a specific size (size must be valid)
     pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, targets: Vec<&dyn RenderTextureTuple>) -> Option<Self> {
-        let name = unsafe {
-            let mut name = 0u32;
-            gl::CreateFramebuffers(1, &mut name);
-            name
-        };
-
         let mut draw_buffers = 0;
         let mut depth_enabled = false;
         let mut stencil_enabled = false; 
+        let mut textures = Vec::<(u32, u32)>::default();
+
+        if targets.is_empty() {
+            return None;
+        }
 
         for target in targets {
             match target.texel_format() {
@@ -65,16 +64,35 @@ impl Canvas {
                 },
             }
 
+            match target.mode() {
+                TextureMode::Static | TextureMode::Dynamic => return None,
+                _ => (),
+            }
+
+            let attachment = match target.texel_format() {
+                TexelFormat::Color => gl::COLOR_ATTACHMENT0 + (draw_buffers-1),
+                TexelFormat::Depth => gl::DEPTH_ATTACHMENT,
+                TexelFormat::Stencil => gl::STENCIL_ATTACHMENT,
+            };
+
             if target.size() != size {
                 return None;
             }
 
-            unsafe {
-                gl::NamedFramebufferTexture(name, gl::COLOR_ATTACHMENT0 + draw_buffers as u32, target.name(), 0);
-            }
+            textures.push((attachment, target.name()));
         }
+        
+        let name = unsafe {
+            let mut name = 0u32;
+            gl::CreateFramebuffers(1, &mut name);
+            name
+        };
 
         unsafe {
+            for (attachment, texture) in textures {
+                gl::NamedFramebufferTexture(name, attachment, texture, 0);
+            }
+
             let vec = (0..draw_buffers).map(|i| gl::COLOR_ATTACHMENT0 + i).collect::<Vec<u32>>();
             gl::NamedFramebufferDrawBuffers(name, draw_buffers as i32, vec.as_ptr());
         }        

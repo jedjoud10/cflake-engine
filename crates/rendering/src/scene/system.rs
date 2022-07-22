@@ -114,6 +114,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let cube = meshes.insert(cube);
     let sphere = meshes.insert(sphere);
 
+    // Create the render framebuffer textures (color and depth)
+    //let color = Texture2D::<RGBA<Ranged<u8>>>::new(ctx, Texture, dimensions, sampling, mipmaps, data)
+
     // Create a global canvas that we will draw our 3D objects onto
     let canvas = Canvas::new(ctx, window.canvas().size(), Vec::default()).unwrap();
     let canvas = canvases.insert(canvas);
