@@ -1,11 +1,11 @@
 mod bounds;
 mod intersect;
-mod octrees;
+//mod octrees;
 mod shapes;
 mod tests;
 mod transform;
 pub use bounds::*;
 pub use intersect::*;
-pub use octrees::*;
+//pub use octrees::*;
 pub use shapes::*;
 pub use transform::*;

@@ -14,8 +14,7 @@ use crate::{
 use assets::Assets;
 use ecs::{added, modified, or, EcsManager};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::Transform;
-
+use math::{Scale, Location, Rotation, IntoMatrix};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -164,7 +163,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     ecs.insert((
         renderer,
         surface,
-        Transform::default().scaled(vek::Vec3::one() * 5000.0),
+        Scale::from(vek::Vec3::one() * 5000.0)
     ));
 
     (window, context, scene)
@@ -173,17 +172,28 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<EcsManager>().unwrap();
-
-    let filter = or(
-        or(modified::<Transform>(), added::<Transform>()),
-        added::<Renderer>(),
-    );
+    
+    // TODO: Add filter
     let query = ecs
-        .query_with::<(&mut Renderer, &Transform)>(filter)
+        .query::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>()
         .unwrap();
 
-    for (renderer, transform) in query {
-        renderer.set_matrix(transform.matrix());
+    for (renderer, location, rotation, scale) in query {
+        let mut matrix = vek::Mat4::<f32>::identity();
+
+        if let Some(location) = location {
+            matrix *= location.into_matrix();
+        }
+
+        if let Some(rotation) = rotation {
+            matrix *= rotation.into_matrix();
+        }
+
+        if let Some(scale) = scale {
+            matrix *= scale.into_matrix();
+        }
+        
+        renderer.set_matrix(matrix);
     }
 }
 
@@ -253,8 +263,8 @@ fn main_camera(world: &mut World) {
         let mut entry = ecs.entry_mut(entity).unwrap();
 
         // Fetch it's components, and update them
-        let (camera, transform) = entry.as_query::<(&mut Camera, &mut Transform)>().unwrap();
-        camera.update(transform);
+        let (camera, location, rotation) = entry.as_query::<(&mut Camera, &Location, &Rotation)>().unwrap();
+        camera.update(location, rotation);
     }
 }
 

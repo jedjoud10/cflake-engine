@@ -2,8 +2,7 @@ use std::{any::TypeId, marker::PhantomData};
 
 use assets::Assets;
 use ecs::EcsManager;
-use math::Transform;
-
+use math::{Location, Rotation};
 use world::{Resource, Storage, World};
 
 use crate::{
@@ -62,8 +61,8 @@ pub trait Material<'w>: 'static + Sized {
         _resources: &mut Self::Resources,
         _canvas: &Canvas,
         _scene: &SceneSettings,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
     }
 
@@ -72,8 +71,8 @@ pub trait Material<'w>: 'static + Sized {
         _uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         _renderer: &Renderer,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
     }
 
@@ -84,8 +83,8 @@ pub trait Material<'w>: 'static + Sized {
         _uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
         _scene: &SceneSettings,
-        _camera: (&Camera, &Transform),
-        _light: (&Directional, &Transform),
+        _camera: (&Camera, &Location, &Rotation),
+        _light: (&Directional, &Rotation),
     ) {
     }
 }

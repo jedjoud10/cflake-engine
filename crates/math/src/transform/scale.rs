@@ -1,7 +1,8 @@
 use std::ops::{Deref, DerefMut};
+use ecs::Component;
 use crate::IntoMatrix;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 pub struct Scale(vek::Vec3<f32>);
 
 impl Default for Scale {
@@ -33,7 +34,7 @@ impl Scale {
 }
 
 impl IntoMatrix for Scale {
-    fn matrix(self) -> vek::Mat4<f32> {
+    fn into_matrix(self) -> vek::Mat4<f32> {
         vek::Mat4::<f32>::scaling_3d(self.0)
     }
 }

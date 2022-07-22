@@ -1,5 +1,5 @@
 use ecs::Component;
-use math::Transform;
+use math::{Location, Rotation};
 
 // A perspective camera component that will be used to render the main scene
 // The camera entity does not *need* to have a transform to render, since we can set the matrices directly
@@ -33,12 +33,12 @@ fn new_projection_matrix(hfov: f32, aspect_ratio: f32, near: f32, far: f32) -> v
     vek::Mat4::<f32>::perspective_rh_no(vfov, aspect_ratio, near, far)
 }
 
-// Create a new view matrix using a transform
-fn new_view_matrix(transform: &Transform) -> vek::Mat4<f32> {
+// Create a new view matrix using a location and rotation
+fn new_view_matrix(location: &Location, rotation: &Rotation) -> vek::Mat4<f32> {
     vek::Mat4::<f32>::look_at_rh(
-        transform.position,
-        transform.forward() + transform.position,
-        transform.up(),
+        **location,
+        rotation.forward() + **location,
+        rotation.up(),
     )
 }
 
@@ -55,9 +55,9 @@ impl Camera {
         }
     }
 
-    // Update the view matrix using a transform
-    pub fn update_view(&mut self, transform: &Transform) {
-        self.view = new_view_matrix(transform);
+    // Update the view matrix using a location and rotation
+    pub fn update_view(&mut self, location: &Location, rotation: &Rotation) {
+        self.view = new_view_matrix(location, rotation);
     }
 
     // Update the projection matrix using the currently stored values
@@ -65,9 +65,9 @@ impl Camera {
         self.projection = new_projection_matrix(self.hfov, self.aspect_ratio, self.near, self.far);
     }
 
-    // Update the inner matrices (view & projection) using a transform
-    pub fn update(&mut self, transform: &Transform) {
-        self.update_view(transform);
+    // Update the inner matrices (view & projection) using a location and rotation
+    pub fn update(&mut self, location: &Location, rotation: &Rotation) {
+        self.update_view(location, rotation);
         self.update_projection()
     }
 

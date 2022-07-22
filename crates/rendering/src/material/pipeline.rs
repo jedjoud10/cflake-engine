@@ -8,7 +8,7 @@ use crate::{
 };
 use assets::Assets;
 use ecs::EcsManager;
-use math::Transform;
+use math::{Location, Rotation};
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Read, Resource, Storage, World};
 
@@ -86,15 +86,11 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(scene.main_camera().unwrap()).unwrap();
-        let camera_transform = camera_entry.get::<Transform>().unwrap();
-        let camera_data = camera_entry.get::<Camera>().unwrap();
-        let camera = (camera_data, camera_transform);
+        let camera = camera_entry.as_view::<(&Camera, &Location, &Rotation)>().unwrap();
 
         // Get the main directional light
         let light_entry = ecs.entry(scene.main_directional_light().unwrap()).unwrap();
-        let light_transform = light_entry.get::<Transform>().unwrap();
-        let light_data = light_entry.get::<Directional>().unwrap();
-        let light = (light_data, light_transform);
+        let light = light_entry.as_view::<(&Directional, &Rotation)>().unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
         let (mut rasterizer, mut uniforms) =

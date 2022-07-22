@@ -42,7 +42,7 @@ pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> (Win
 
     // Build a valid Glutin context
     let wc = ContextBuilder::new()
-        .with_double_buffer(None)
+        .with_double_buffer(Some(true))
         .with_gl_profile(GlProfile::Core)
         .with_gl_debug_flag(true)
         .with_vsync(limit == Some(FrameRateLimit::VSync))

@@ -1,23 +1,24 @@
 use std::ops::{Deref, DerefMut};
+use ecs::Component;
 use crate::IntoMatrix;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Component)]
 pub struct Rotation(vek::Quaternion<f32>);
 
 impl Rotation {
     // Calculate the forward vector (-Z)
     pub fn forward(&self) -> vek::Vec3<f32> {
-        self.matrix().mul_point(-vek::Vec3::unit_z())
+        self.into_matrix().mul_point(-vek::Vec3::unit_z())
     }
 
     // Calculate the up vector (+Y)
     pub fn up(&self) -> vek::Vec3<f32> {
-        self.matrix().mul_point(vek::Vec3::unit_y())
+        self.into_matrix().mul_point(vek::Vec3::unit_y())
     }
 
     // Calculate the right vector (+X)
     pub fn right(&self) -> vek::Vec3<f32> {
-        self.matrix().mul_point(vek::Vec3::unit_x())
+        self.into_matrix().mul_point(vek::Vec3::unit_x())
     }
 
     // Construct a scale using an X rotation (radians)
@@ -54,7 +55,7 @@ impl Rotation {
 }
 
 impl IntoMatrix for Rotation {
-    fn matrix(self) -> vek::Mat4<f32> {
+    fn into_matrix(self) -> vek::Mat4<f32> {
         self.0.into()
     }
 }

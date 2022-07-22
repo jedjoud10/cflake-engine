@@ -1,7 +1,8 @@
 use std::ops::{Deref, DerefMut};
+use ecs::Component;
 use crate::IntoMatrix;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Component)]
 pub struct Location(vek::Vec3<f32>);
 
 impl Location {
@@ -27,7 +28,7 @@ impl Location {
 }
 
 impl IntoMatrix for Location {
-    fn matrix(self) -> vek::Mat4<f32> {
+    fn into_matrix(self) -> vek::Mat4<f32> {
         vek::Mat4::<f32>::translation_3d(self.0)
     }
 }
@@ -65,6 +66,18 @@ impl Into<vek::Vec3<f32>> for Location {
 }
 
 impl Into<(f32, f32, f32)> for Location {
+    fn into(self) -> (f32, f32, f32) {
+        self.0.into_tuple()
+    }
+}
+
+impl Into<vek::Vec3<f32>> for &'_ Location {
+    fn into(self) -> vek::Vec3<f32> {
+        self.0
+    }
+}
+
+impl Into<(f32, f32, f32)> for &'_ Location {
     fn into(self) -> (f32, f32, f32) {
         self.0.into_tuple()
     }

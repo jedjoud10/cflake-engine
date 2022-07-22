@@ -41,8 +41,6 @@ impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
         let bundle = unsafe { L::read(chunk.ptrs, self.index) };
 
         // Get the bundle state
-        dbg!(chunk.states.borrow().len());
-        dbg!(self.index);
         let state = *chunk.states.borrow().get(self.index).unwrap();
         self.index += 1;
 
