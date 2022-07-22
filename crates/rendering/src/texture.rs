@@ -2,6 +2,8 @@ mod settings;
 mod texel;
 mod texture;
 mod texture2d;
+mod render;
+pub use render::*;
 pub use settings::*;
 pub use texel::*;
 pub use texture::*;

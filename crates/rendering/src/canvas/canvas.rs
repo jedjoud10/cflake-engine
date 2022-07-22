@@ -1,6 +1,7 @@
+use serde::__private::de;
 use world::{UntypedHandle, Handle};
 
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, RenderTextureTuple, TexelFormat}, shader::Shader};
 use std::marker::PhantomData;
 
 use super::{RasterSettings, Rasterizer};
@@ -15,9 +16,7 @@ pub struct Canvas {
     size: vek::Extent2<u16>,
 
     // Color attachements and depth/stencil attachements
-    color_attachements: Vec<UntypedHandle>,
-    depth_attachement: Option<UntypedHandle>,
-    stencil_attachement: Option<UntypedHandle>,
+    attachments: Vec<UntypedHandle>,
 
     // Unsend + Unsync
     _phantom: PhantomData<*const ()>,
@@ -34,22 +33,52 @@ impl Canvas {
         Self {
             name,
             size,
-            color_attachements: Default::default(),
-            depth_attachement: None,
-            stencil_attachement: None,
+            attachments: Default::default(),
             _phantom: Default::default(),
         }
     }
 
     // Create a new canvas with a specific size (size must be valid)
-    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>) -> Self {
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, targets: Vec<&dyn RenderTextureTuple>) -> Option<Self> {
         let name = unsafe {
             let mut name = 0u32;
             gl::CreateFramebuffers(1, &mut name);
             name
         };
 
-        unsafe { Self::from_raw_parts(_ctx, name, size) }
+        let mut color_count = 0;
+        let mut depth_enabled = false;
+        let mut stencil_enabled = false; 
+
+        for target in targets {
+            match target.texel_format() {
+                TexelFormat::Color => color_count += 1,
+                TexelFormat::Depth => if !depth_enabled {
+                    depth_enabled = true;
+                } else {
+                    return None;
+                },
+                TexelFormat::Stencil => if !stencil_enabled {
+                    stencil_enabled = true
+                } else {
+                    return None;
+                },
+            }
+
+            unsafe {
+                gl::NamedFramebufferTexture(name, 0, target.name(), 0);
+            }
+        }
+
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
+            let state = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+            if state != gl::FRAMEBUFFER_COMPLETE {
+                return None;
+            }
+        }    
+
+        Some(unsafe { Self::from_raw_parts(_ctx, name, size) })
     }
 
     // Resize the canvas to a new size
@@ -74,7 +103,6 @@ impl Canvas {
         depth: Option<f32>,
         stencil: Option<i32>,
     ) {
-        // Accumulated bitwise flags that we will reset later
         let mut flags = 0u32;
 
         // Set the background color values
@@ -106,18 +134,6 @@ impl Canvas {
             gl::Clear(flags);
         }
     }
-
-    // Verify if the inner framebuffer is valid
-    pub fn validate(&self) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, self.name);
-            let state = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-            if state != gl::FRAMEBUFFER_COMPLETE {
-                panic!("Framebuffer is incomplete, error code: {state}");
-            }
-        }        
-    }
-
     // Create a new canvas rasterizer that we can use to draw some 3D or 2D objects
     pub fn rasterizer<'shader: 'uniforms, 'canvas, 'context, 'uniforms>(
         &'canvas mut self,
@@ -125,7 +141,6 @@ impl Canvas {
         shader: &'shader mut Shader,
         settings: RasterSettings,
     ) -> (Rasterizer<'canvas, 'context>, Uniforms<'uniforms>) {
-        // Make sure the framebuffer is bound, and that the viewport is valid
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.name);
             gl::Viewport(0, 0, self.size.w as i32, self.size.h as i32);
@@ -135,10 +150,5 @@ impl Canvas {
         let uniforms = Uniforms::new(shader.as_mut(), ctx);
         let rasterizer = Rasterizer::new(self, ctx, settings);
         (rasterizer, uniforms)
-    }
-
-    // Bind a new color texture as a color attachement
-    pub fn attach_render_target_texture<T: Texel>(&mut self, texture: Handle<Texture2D<T>>) {
-        
     }
 }

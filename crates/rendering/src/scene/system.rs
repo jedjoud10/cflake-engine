@@ -115,7 +115,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let sphere = meshes.insert(sphere);
 
     // Create a global canvas that we will draw our 3D objects onto
-    let canvas = Canvas::new(ctx, window.canvas().size());
+    let canvas = Canvas::new(ctx, window.canvas().size(), Vec::default()).unwrap();
     let canvas = canvases.insert(canvas);
     
     // Create the new scene renderer from these values and insert it into the world

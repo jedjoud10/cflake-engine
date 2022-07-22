@@ -85,6 +85,18 @@ impl<T: 'static> IndexMut<Handle<T>> for Storage<T> {
     }
 }
 
+impl<T: 'static> Drop for Storage<T> {
+    fn drop(&mut self) {
+        let counters = self.trackers.counters.borrow();
+
+        for count in counters.values() {
+            if *count != 0 {
+                panic!("Cannot drop storage that has dangling handles");
+            }
+        }
+    }
+}
+
 // UntypedHandle is a handle that will keep a special value stored within a storage alive until the last handle gets dropped
 pub struct UntypedHandle {
     trackers: Rc<Trackers>,

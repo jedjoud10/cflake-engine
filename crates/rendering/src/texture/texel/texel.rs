@@ -1,37 +1,31 @@
 use vek::Vec2;
 use vek::Vec3;
 use vek::Vec4;
-
 use super::channels::*;
 use super::element::*;
 use crate::object::Shared;
-
 use std::mem::size_of;
+
+// The "type" of texel layout we're dealing with
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub enum TexelFormat {
+    Color, Depth, Stencil,
+}
 
 // This trait defines the layout for a single texel that will be stored within textures1
 pub trait Texel: 'static {
-    // Corresponds to the OpenGL internal format parameter
+    // Main OpenGL wrapper enums / values
     const INTERNAL_FORMAT: u32;
-
-    // Corresponds to the OpenGl format parameter
     const FORMAT: u32;
-
-    // Corresponds to the OpenGL data type parameter
     const TYPE: u32;
-
-    // The number of channels that we have stored within the texel
     const CHANNELS: u32;
-
-    // The number of bytes per channel
     const BYTES_PER_CHANNEL: u32;
+    const ENUM_FORMAT: TexelFormat;
 
-    // Raw texel type that we store internally and that the user will interact with
+    // Storage is the blit type, like Vec3 or Scalar that contains Element
     type Storage: Shared;
-
-    // A single element that we internally store
     type Element: Shared;
 
-    // Count the number of bytes that make each texel
     fn bytes() -> u32 {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
     }
@@ -47,6 +41,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_INT;
                 const BYTES_PER_CHANNEL: u32 = u32::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u32>;
                 type Element = u32;
             }
@@ -57,6 +52,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::INT;
                 const BYTES_PER_CHANNEL: u32 = i32::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i32>;
                 type Element = i32;
             }
@@ -67,6 +63,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u16>;
                 type Element = u16;
             }
@@ -77,6 +74,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::SHORT;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i16>;
                 type Element = i16;
             }
@@ -87,6 +85,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u8>;
                 type Element = u8;
             }
@@ -97,6 +96,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::BYTE;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i8>;
                 type Element = i8;
             }
@@ -107,6 +107,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::FLOAT;
                 const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<f32>;
                 type Element = f32;
             }
@@ -117,6 +118,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u16>;
                 type Element = u16;
             }
@@ -127,6 +129,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::SHORT;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i16>;
                 type Element = i16;
             }
@@ -137,6 +140,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u8>;
                 type Element = u8;
             }
@@ -147,6 +151,7 @@ macro_rules! impl_color_texel_layout {
                 const CHANNELS: u32 = $count;
                 const TYPE: u32 = gl::BYTE;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS / 8;
+                const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i8>;
                 type Element = i8;
             }
@@ -163,6 +168,7 @@ macro_rules! impl_depth_texel_layout {
             const TYPE: u32 = gl::UNSIGNED_SHORT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = u16::BITS / 8 ;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::Depth;
             type Storage = Scalar<u16>;
             type Element = u16;
         }
@@ -173,6 +179,7 @@ macro_rules! impl_depth_texel_layout {
             const TYPE: u32 = gl::UNSIGNED_INT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = u32::BITS / 8 ;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::Depth;
             type Storage = Scalar<u32>;
             type Element = u32;
         }
@@ -183,6 +190,7 @@ macro_rules! impl_depth_texel_layout {
             const TYPE: u32 = gl::FLOAT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::Depth;
             type Storage = Scalar<f32>;
             type Element = f32;
         }
@@ -197,7 +205,8 @@ macro_rules! impl_stencil_texel_layout {
             const FORMAT: u32 = gl::STENCIL_INDEX8;
             const TYPE: u32 = gl::UNSIGNED_BYTE;
             const CHANNELS: u32 = 1;
-            const BYTES_PER_CHANNEL: u32 = u8::BITS / 8 ;
+            const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::Stencil;
             type Storage = Scalar<u8>;
             type Element = u8;
         }
