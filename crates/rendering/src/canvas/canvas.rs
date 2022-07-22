@@ -46,13 +46,13 @@ impl Canvas {
             name
         };
 
-        let mut color_count = 0;
+        let mut draw_buffers = 0;
         let mut depth_enabled = false;
         let mut stencil_enabled = false; 
 
         for target in targets {
             match target.texel_format() {
-                TexelFormat::Color => color_count += 1,
+                TexelFormat::Color => draw_buffers += 1,
                 TexelFormat::Depth => if !depth_enabled {
                     depth_enabled = true;
                 } else {
@@ -65,16 +65,24 @@ impl Canvas {
                 },
             }
 
+            if target.size() != size {
+                return None;
+            }
+
             unsafe {
-                gl::NamedFramebufferTexture(name, 0, target.name(), 0);
+                gl::NamedFramebufferTexture(name, gl::COLOR_ATTACHMENT0 + draw_buffers as u32, target.name(), 0);
             }
         }
 
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
-            let state = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+            let vec = (0..draw_buffers).map(|i| gl::COLOR_ATTACHMENT0 + i).collect::<Vec<u32>>();
+            gl::NamedFramebufferDrawBuffers(name, draw_buffers as i32, vec.as_ptr());
+        }        
+
+        unsafe {
+            let state = gl::CheckNamedFramebufferStatus(name, gl::FRAMEBUFFER);
             if state != gl::FRAMEBUFFER_COMPLETE {
-                return None;
+                panic!();
             }
         }    
 

@@ -85,6 +85,20 @@ impl<T: 'static> IndexMut<Handle<T>> for Storage<T> {
     }
 }
 
+impl<T: 'static> Index<&'_ Handle<T>> for Storage<T> {
+    type Output = T;
+
+    fn index(&self, index: &Handle<T>) -> &Self::Output {
+        self.get(index)
+    }
+}
+
+impl<T: 'static> IndexMut<&'_ Handle<T>> for Storage<T> {
+    fn index_mut(&mut self, index: &Handle<T>) -> &mut Self::Output {
+        self.get_mut(index)
+    }
+}
+
 impl<T: 'static> Drop for Storage<T> {
     fn drop(&mut self) {
         let counters = self.trackers.counters.borrow();
