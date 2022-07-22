@@ -89,8 +89,4 @@ pub fn system(events: &mut Events) {
         .registry::<Update>()
         .insert_with(update, Stage::new("time update").before("user"))
         .unwrap();
-    /*
-    events.registry::<Init>().insert(init);
-    events.registry::<Update>().insert(update);
-    */
 }

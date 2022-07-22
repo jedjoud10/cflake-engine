@@ -3,7 +3,7 @@ use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 use std::{
     cell::{Cell, RefCell},
     marker::PhantomData,
-    rc::Rc,
+    rc::Rc, ops::{Index, IndexMut},
 };
 
 struct Trackers {
@@ -66,6 +66,20 @@ impl<T: 'static> Storage<T> {
                 counters.remove(i);
             }
         }
+    }
+}
+
+impl<T: 'static> Index<Handle<T>> for Storage<T> {
+    type Output = T;
+
+    fn index(&self, index: Handle<T>) -> &Self::Output {
+        self.get(&index)
+    }
+}
+
+impl<T: 'static> IndexMut<Handle<T>> for Storage<T> {
+    fn index_mut(&mut self, index: Handle<T>) -> &mut Self::Output {
+        self.get_mut(&index)
     }
 }
 

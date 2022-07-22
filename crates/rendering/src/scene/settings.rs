@@ -4,7 +4,7 @@ use world::{Handle, Resource};
 use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Standard},
     mesh::Mesh,
-    prelude::{Ranged, Texture2D, RGBA},
+    prelude::{Ranged, Texture2D, RGBA}, canvas::Canvas,
 };
 
 type Image = Texture2D<RGBA<Ranged<u8>>>;
@@ -35,6 +35,9 @@ pub struct SceneSettings {
     // Default cube and sphere meshes
     cube: Handle<Mesh>,
     sphere: Handle<Mesh>,
+
+    // Main renderer framebuffer
+    canvas: Handle<Canvas>, 
 }
 
 impl SceneSettings {
@@ -49,6 +52,7 @@ impl SceneSettings {
         debug: Handle<NormalMap>,
         cube: Handle<Mesh>,
         sphere: Handle<Mesh>,
+        canvas: Handle<Canvas>,
     ) -> Self {
         Self {
             camera: None,
@@ -62,6 +66,7 @@ impl SceneSettings {
             debug,
             cube,
             sphere,
+            canvas,
         }
     }
 
@@ -133,5 +138,10 @@ impl SceneSettings {
     // Get the handle for the default sphere mesh
     pub fn sphere(&self) -> Handle<Mesh> {
         self.sphere.clone()
+    }
+
+    // Get the handle for the 3D rendering canvas
+    pub fn canvas(&self) -> Handle<Canvas> {
+        self.canvas.clone()
     }
 }
