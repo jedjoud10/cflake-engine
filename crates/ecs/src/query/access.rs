@@ -2,7 +2,7 @@ use crate::Mask;
 use std::ops::{BitAnd, BitOr};
 
 // Layout access that contain the shared access mask and unique access mask
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutAccess {
     shared: Mask,
     unique: Mask,

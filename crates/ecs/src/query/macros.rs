@@ -11,8 +11,9 @@ impl<'a, T: Component> RefQueryItem<'a> for &'a T {
     type Component = T;
     type Ptr = *const T;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(mask::<T>() & m, Mask::zero())
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        let cm = mask::<T>();
+        m.contains(cm).then_some(LayoutAccess::new(cm, Mask::zero()))
     }
 
     fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
@@ -29,8 +30,8 @@ impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
     type Component = T;
     type Ptr = Option<*const T>;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(mask::<T>() & m, Mask::zero())
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        Some(LayoutAccess::new(mask::<T>() & m, Mask::zero()))
     }
 
     fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
@@ -47,8 +48,9 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a T {
     type Component = T;
     type Ptr = *const T;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(mask::<T>() & m, Mask::zero())
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        let cm = mask::<T>();
+        m.contains(cm).then_some(LayoutAccess::new(cm, Mask::zero()))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -65,8 +67,8 @@ impl<'a, T: Component> MutQueryItem<'a> for Option<&'a T> {
     type Component = T;
     type Ptr = Option<*const T>;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(mask::<T>() & m, Mask::zero())
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        Some(LayoutAccess::new(mask::<T>() & m, Mask::zero()))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -83,8 +85,9 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
     type Component = T;
     type Ptr = *mut T;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>() & m)
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        let cm = mask::<T>();
+        m.contains(cm).then_some(LayoutAccess::new(Mask::zero(), cm))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -101,8 +104,8 @@ impl<'a, T: Component> MutQueryItem<'a> for Option<&'a mut T> {
     type Component = T;
     type Ptr = Option<*mut T>;
 
-    fn access(m: Mask) -> LayoutAccess {
-        LayoutAccess::new(Mask::zero(), mask::<T>() & m)
+    fn access(m: Mask) -> Option<LayoutAccess> {
+        Some(LayoutAccess::new(Mask::zero(), m & mask::<T>()))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -168,7 +171,7 @@ impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
         <T as RefQueryItem<'a>>::read(ptr, i)
     }
 
-    fn access(m: Mask) -> LayoutAccess {
+    fn access(m: Mask) -> Option<LayoutAccess> {
         <T as RefQueryItem<'a>>::access(m)
     }
 }
@@ -189,7 +192,7 @@ impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
         <T as MutQueryItem<'a>>::read(ptr, i)
     }
 
-    fn access(m: Mask) -> LayoutAccess {
+    fn access(m: Mask) -> Option<LayoutAccess> {
         <T as MutQueryItem<'a>>::access(m)
     }
 }
@@ -258,15 +261,15 @@ macro_rules! tuple_impls {
 
             fn is_valid() -> bool {
                 let intersecting = ($(mask::<$name::Component>())&+);
-                let combined = ($($name::access(Mask::one()))|+);
+                let combined = ($($name::access(Mask::all()).unwrap())|+);
 
                 let a = intersecting == Mask::zero();
                 let b = combined.shared() & combined.unique() == Mask::zero();
                 a && b
             }
 
-            fn access(m: Mask) -> LayoutAccess {
-                ($($name::access(m))|+)
+            fn access(m: Mask) -> Option<LayoutAccess> {
+                Some(($($name::access(m)?)|+))
             }
 
             fn prepare(archetype: &mut Archetype) -> Option<Self::PtrTuple> {
@@ -299,8 +302,8 @@ macro_rules! tuple_impls {
                 ($(mask::<$name::Component>())&+) == Mask::zero()
             }
 
-            fn access(m: Mask) -> LayoutAccess {
-                ($($name::access(m))|+)
+            fn access(m: Mask) -> Option<LayoutAccess> {
+                Some(($($name::access(m)?)|+))
             }
 
             fn prepare(archetype: &Archetype) -> Option<Self::PtrTuple> {

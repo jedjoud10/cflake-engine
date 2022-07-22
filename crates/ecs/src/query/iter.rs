@@ -12,7 +12,7 @@ struct RefQueryItemResult<'a, L: RefQueryLayout<'a>> {
 // Chunk used for immutable query
 struct RefQueryChunk<'a, L: RefQueryLayout<'a>> {
     ptrs: L::PtrTuple,
-    mask: Mask,
+    access: LayoutAccess,
     states: Rc<RefCell<Vec<StateRow>>>,
     len: usize,
 }
@@ -48,7 +48,7 @@ impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
         Some(RefQueryItemResult {
             tuple: bundle,
             state,
-            archetype_mask: chunk.mask,
+            archetype_mask: chunk.access.shared(),
             _phantom: Default::default(),
         })
     }
@@ -121,18 +121,18 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
 
 // Immutable query that returns RefQueryItemResult
 fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQueryIter<'a, L> {
-    //let mask = access.shared() | access.unique();
-    let mask = todo!();
-
     let mut chunks = archetypes
-        .iter()
-        .map(|(_, archetype)| RefQueryChunk {
-            len: archetype.len(),
-            states: archetype.states(),
-            ptrs: L::prepare(archetype).unwrap(),
-            mask,
-        })
-        .collect::<Vec<_>>();
+    .iter()
+    .filter_map(|(m, archetype)| {            
+        L::access(*m).map(|a| (a, archetype))
+    })
+    .map(|(access, archetype)| RefQueryChunk {
+        len: archetype.len(),
+        states: archetype.states(),
+        ptrs: L::prepare(archetype).unwrap(),
+        access,
+    })
+    .collect::<Vec<_>>();
 
     let len = chunks.iter().map(|chunk| chunk.len).sum();
     let last = chunks.pop();
@@ -148,15 +148,8 @@ fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQue
 fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> MutQueryIter<'a, L> {
     let mut chunks = archetypes
         .iter_mut()
-        .filter_map(|(m, archetype)| {
-            let access = L::access(*m);
-            let combined = access.shared() | access.unique();
-
-            if combined == Mask::zero() {
-                None
-            } else {
-                Some((access, archetype))
-            }
+        .filter_map(|(m, archetype)| {       
+            L::access(*m).map(|a| (a, archetype))
         })
         .map(|(access, archetype)| MutQueryChunk {
             len: archetype.len(),
