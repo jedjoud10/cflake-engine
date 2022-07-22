@@ -54,7 +54,7 @@ impl<'w> Material<'w> for Standard {
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
         _resources: &mut Self::Resources,
-        _canvas: &Canvas,
+        _viewport: vek::Extent2<u16>,
         _scene: &SceneSettings,
         camera: (&Camera, &Location, &Rotation),
         light: (&Directional, &Rotation),

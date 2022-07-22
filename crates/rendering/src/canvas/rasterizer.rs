@@ -1,6 +1,6 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{Canvas};
+use super::{Canvas, AttachmentLayout};
 use crate::{
     buffer::ElementBuffer, context::Context, mesh::Mesh, object::ToGlName, others::Comparison,
     prelude::{Uniforms, ValidUniforms},
@@ -66,16 +66,16 @@ pub enum PrimitiveMode {
 
 // A rasterizer will help us render specific shaded / colored objects onto the screen
 // Painters can be fetched from any mutable reference to a canvas
-pub struct Rasterizer<'canvas, 'context> {
-    canvas: &'canvas mut Canvas,
+pub struct Rasterizer<'canvas, 'context, L: AttachmentLayout> {
+    canvas: &'canvas mut Canvas<L>,
     ctx: &'context mut Context,
     primitive: u32,
 }
 
-impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
+impl<'canvas, 'context, L: AttachmentLayout> Rasterizer<'canvas, 'context, L> {
     // Create a new rasterizer with the specified raster self
     pub(crate) fn new(
-        canvas: &'canvas mut Canvas,
+        canvas: &'canvas mut Canvas<L>,
         ctx: &'context mut Context,
         settings: RasterSettings,
     ) -> Self {
@@ -169,7 +169,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     }
 
     // Get an immutable reference to the underlying canvas
-    pub fn canvas(&self) -> &Canvas {
+    pub fn canvas(&self) -> &Canvas<L> {
         self.canvas
     }
 
@@ -178,6 +178,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         self.ctx
     }
 
+    // Draw a VAO by assuming that it has no EBO
     pub unsafe fn draw_vao_arrays<'a>(
         &mut self,
         vao: u32,
@@ -190,6 +191,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         }
     }
 
+    // Draw a VAO by assuming that it has a valid EBO linked to it
     pub unsafe fn draw_vao_elements<'a>(
         &mut self,
         vao: u32,

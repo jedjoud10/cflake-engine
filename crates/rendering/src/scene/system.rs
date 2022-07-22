@@ -21,7 +21,6 @@ use world::{Events, Init, Stage, Storage, Update, World};
 // This will be called at the very start of the init of the engine
 fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) -> (Window, Context, SceneSettings) {
     // Insert the default storages
-    world.insert(Storage::<Canvas>::default());
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
     world.insert(Storage::<MaskMap>::default());
@@ -31,7 +30,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Sky>::default());
 
     // Get mutable references to the data that we must use
-    let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
@@ -118,8 +116,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     //let color = Texture2D::<RGBA<Ranged<u8>>>::new(ctx, Texture, dimensions, sampling, mipmaps, data)
 
     // Create a global canvas that we will draw our 3D objects onto
-    let canvas = Canvas::new(ctx, window.canvas().size(), Vec::default()).unwrap();
-    let canvas = canvases.insert(canvas);
+    let canvas = Canvas::new(ctx, window.canvas().size(), ()).unwrap();
     
     // Create the new scene renderer from these values and insert it into the world
     let scene = SceneSettings::new(
@@ -132,7 +129,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         debug,
         cube,
         sphere,
-        canvas,
     );
 
     // Sky gradient texture import settings
@@ -242,10 +238,12 @@ fn window(world: &mut World, event: &mut WindowEvent) {
             window.canvas_mut().resize(extent);
 
             // Resize the main rendering canvas when we resize the window
+            /*
             let scene = world.get::<SceneSettings>().unwrap();
             let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
             let canvas = &mut canvases[scene.canvas()];
             canvas.resize(extent);
+            */
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;

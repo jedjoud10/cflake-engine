@@ -1,5 +1,5 @@
 use super::{get_static_str, Context};
-use crate::canvas::Canvas;
+use crate::canvas::{Canvas, DefaultCanvasLayout};
 
 // A device is a software/hardware renderer that will be responsible for dealing with a specific window
 pub struct Device {
@@ -22,8 +22,7 @@ impl Device {
 // This is the main window that we will use to render the game
 pub struct Window {
     glutin: glutin::window::Window,
-    canvas: Canvas,
-    size: vek::Extent2<u16>,
+    canvas: Canvas<DefaultCanvasLayout>,
     device: Device,
 }
 
@@ -34,7 +33,7 @@ impl Window {
 
         Self {
             glutin,
-            canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size) },
+            canvas: unsafe { Canvas::from_raw_parts(ctx, 0, (), size) },
             device: unsafe {
                 Device {
                     name: get_static_str(gl::RENDERER),
@@ -45,18 +44,18 @@ impl Window {
     }
 
     // Get the default window canvas
-    pub fn canvas(&self) -> &Canvas {
+    pub fn canvas(&self) -> &Canvas<DefaultCanvasLayout> {
         &self.canvas
+    }
+
+    // Get the default window canvas mutably
+    pub fn canvas_mut(&mut self) -> &mut Canvas<DefaultCanvasLayout> {
+        &mut self.canvas
     }
 
     // Get the raw glutin window
     pub fn raw(&self) -> &glutin::window::Window {
         &self.glutin
-    }
-
-    // Get the default window canvas mutably
-    pub fn canvas_mut(&mut self) -> &mut Canvas {
-        &mut self.canvas
     }
 
     // Get the window's device (OpenGL software/hardware that will be responsible for rendering onto this window)

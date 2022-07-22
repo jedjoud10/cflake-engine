@@ -45,7 +45,7 @@ impl<'w> Material<'w> for Sky {
     fn set_static_properties(
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
-        _canvas: &Canvas,
+        _viewport: vek::Extent2<u16>,
         _scene: &SceneSettings,
         camera: (&Camera, &Location, &Rotation),
         light: (&Directional, &Rotation),

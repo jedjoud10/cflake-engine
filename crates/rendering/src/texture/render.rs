@@ -7,30 +7,27 @@ use super::{Texture2D, Texel, TexelFormat, Texture, TextureMode};
 // Handle trait implemented for all (Handle<T>, Storage<T>) of RenderTextures
 
 // TODO: Fix comments
-pub trait RenderTextureTuple {
+pub trait RenderTexture {
     fn texel_format(&self) -> TexelFormat;
     fn size(&self) -> vek::Extent2<u16>;
     fn mode(&self) -> TextureMode;
     fn name(&self) -> u32;
 }
 
-impl<T: Texel> RenderTextureTuple for (&'_ Storage<Texture2D<T>>, Handle<Texture2D<T>>) {
+impl<T: Texel> RenderTexture for Texture2D<T> {
     fn texel_format(&self) -> TexelFormat {
         T::ENUM_FORMAT
     }
 
     fn name(&self) -> u32 {
-        let tex = &self.0[&self.1];
-        tex.name()
+        <Self as ToGlName>::name(self)
     }
 
     fn size(&self) -> vek::Extent2<u16> {
-        let tex = &self.0[&self.1];
-        tex.region().1
+        self.region().1
     }
 
     fn mode(&self) -> TextureMode {
-        let tex = &self.0[&self.1];
-        tex.mode()
+        <Self as Texture>::mode(self)
     }
 }
