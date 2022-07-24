@@ -163,8 +163,8 @@ macro_rules! impl_color_texel_layout {
 macro_rules! impl_depth_texel_layout {
     () => {
         impl Texel for Depth<Ranged<u16>> {
-            const INTERNAL_FORMAT: u32 = gl::RED;
-            const FORMAT: u32 = gl::DEPTH_COMPONENT16;
+            const INTERNAL_FORMAT: u32 = gl::DEPTH_COMPONENT16;
+            const FORMAT: u32 = gl::DEPTH_COMPONENT;
             const TYPE: u32 = gl::UNSIGNED_SHORT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = u16::BITS / 8 ;
@@ -174,8 +174,8 @@ macro_rules! impl_depth_texel_layout {
         }
 
         impl Texel for Depth<Ranged<u32>> {
-            const INTERNAL_FORMAT: u32 = gl::RED;
-            const FORMAT: u32 = gl::DEPTH_COMPONENT32;
+            const INTERNAL_FORMAT: u32 = gl::DEPTH_COMPONENT32;
+            const FORMAT: u32 = gl::DEPTH_COMPONENT;
             const TYPE: u32 = gl::UNSIGNED_INT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = u32::BITS / 8 ;
@@ -185,8 +185,8 @@ macro_rules! impl_depth_texel_layout {
         }
 
         impl Texel for Depth<f32> {
-            const INTERNAL_FORMAT: u32 = gl::RED;
-            const FORMAT: u32 = gl::DEPTH_COMPONENT32F;
+            const INTERNAL_FORMAT: u32 = gl::DEPTH_COMPONENT32F;
+            const FORMAT: u32 = gl::DEPTH_COMPONENT;
             const TYPE: u32 = gl::FLOAT;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
@@ -201,8 +201,8 @@ macro_rules! impl_depth_texel_layout {
 macro_rules! impl_stencil_texel_layout {
     () => {
         impl Texel for Stencil<u8> {
-            const INTERNAL_FORMAT: u32 = gl::RED;
-            const FORMAT: u32 = gl::STENCIL_INDEX8;
+            const INTERNAL_FORMAT: u32 = gl::STENCIL_INDEX8;
+            const FORMAT: u32 = gl::STENCIL_INDEX;
             const TYPE: u32 = gl::UNSIGNED_BYTE;
             const CHANNELS: u32 = 1;
             const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;

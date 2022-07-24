@@ -60,7 +60,7 @@ impl<T: Texel> Texture for RenderTarget2D<T> {
         mode: TextureMode,
         levels: NonZeroU8,
     ) -> Self {
-        assert_eq!(levels.get(), 0);
+        assert_eq!(levels.get(), 1);
         Self {
             name,
             dimensions,

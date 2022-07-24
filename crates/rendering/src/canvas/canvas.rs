@@ -24,7 +24,9 @@ pub trait ToCanvasAttachment {
 
 impl<T: Texel> ToCanvasAttachment for (&'_ Storage<RenderTarget2D<T>>, Handle<RenderTarget2D<T>>) {
     fn into(&self) -> CanvasAttachment {
-        todo!()
+        let (storage, handle) = self;
+        let tex = &storage[handle];
+        CanvasAttachment { handle: handle.untyped().clone(), name: tex.name(), format: T::ENUM_FORMAT }
     }
 }
 
@@ -67,6 +69,7 @@ impl Canvas {
         let name = unsafe {
             let mut name = 0u32;
             gl::CreateFramebuffers(1, &mut name);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, name);
             name
         };
 
@@ -75,23 +78,25 @@ impl Canvas {
         let mut depth_enabled = false;
         let mut stencil_enabled = false; 
 
-        for attachment in attachments.iter() {
-            match attachment.format {
-                TexelFormat::Color => draw_buffers += 1,
+        for canvas_attachment in attachments.iter() {
+            let attachment = match canvas_attachment.format {
+                TexelFormat::Color => { draw_buffers += 1; gl::COLOR_ATTACHMENT0 + draw_buffers },
                 TexelFormat::Depth => if !depth_enabled {
                     depth_enabled = true;
+                    gl::DEPTH_ATTACHMENT
                 } else {
                     return None;
                 },
                 TexelFormat::Stencil => if !stencil_enabled {
-                    stencil_enabled = true
+                    stencil_enabled = true;
+                    gl::STENCIL_ATTACHMENT
                 } else {
                     return None;
                 },
-            }
+            };
 
             unsafe {
-                gl::NamedFramebufferTexture(name, gl::COLOR_ATTACHMENT0 + draw_buffers as u32, attachment.name, 0);
+                gl::NamedFramebufferTexture(name, attachment, canvas_attachment.name, 0);
             }
         }
 
@@ -103,7 +108,7 @@ impl Canvas {
         unsafe {
             let state = gl::CheckNamedFramebufferStatus(name, gl::FRAMEBUFFER);
             if state != gl::FRAMEBUFFER_COMPLETE {
-                panic!();
+                panic!("Framebuffer initialization error {state}");
             }
         }    
 

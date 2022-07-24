@@ -134,7 +134,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let depth = depth_attachments.insert(depth);
     let t2 = (&*depth_attachments, depth);
-
+    
     // Create the canvas that we will draw our 3D objects onto
     let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
     let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();

@@ -22,30 +22,22 @@ pub struct PipelineStats {
     material_name: &'static str,
 }
 
-// Marker that tells us that we have a registered valid pipeline
-pub struct PipeId<M: for<'w> Material<'w>>(pub(crate) PhantomData<Pipeline<M>>, );
-
-impl<M: for<'w> Material<'w>> Clone for PipeId<M> {
-    fn clone(&self) -> Self {
-        Self(PhantomData::default())
-    }
-}
-
-impl<M: for<'w> Material<'w>> Copy for PipeId<M> {}
+// Marker type that tells us we registered a specific generic pipeline
+pub struct PipeId<P: Pipeline>(pub(crate) PhantomData<P>);
 
 // Pipeline trait that will be boxed and stored from within the world
-// TODO: Redesign to allow for user defined pipelines
-pub(crate) trait SpecializedPipeline: 'static {
+// Pipelines are user defined to allow the user to write their own logic
+pub(crate) trait Pipeline: 'static {
     fn render(&self, world: &mut World) -> PipelineStats;
 }
 
-// Main material pipeline that shall use one single material shader
-pub struct Pipeline<M: for<'w> Material<'w>> {
+// The standardized pipeline will use the default rendering canvas to render to
+pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
     pub(crate) shader: Handle<Shader>,
     pub(crate) _phantom: PhantomData<M>,
 }
 
-impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
+impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
     fn render(&self, world: &mut World) -> PipelineStats {
         let scene = world.get::<SceneSettings>().unwrap();
         let ecs = world.get::<EcsManager>().unwrap();
@@ -97,6 +89,7 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
         let canvas = &mut canvases[scene.canvas()];
         let (mut rasterizer, mut uniforms) = canvas.rasterizer(&mut ctx, shader, settings);
 
+        // Set global properties
         M::set_static_properties(
             &mut uniforms,
             &mut property_block_resources,
@@ -106,7 +99,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
             light,
         );
 
-        // Render each surface that is present in the query
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
             // Check if we changed material instances
@@ -137,7 +129,6 @@ impl<M: for<'w> Material<'w>> SpecializedPipeline for Pipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-
             rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
             stats.mesh_draw_calls += 1;
             stats.vertices += mesh.vertices().len().unwrap() as u128;
