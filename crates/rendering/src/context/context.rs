@@ -24,7 +24,7 @@ pub struct Context {
     pub(crate) bound: BindingHashMap,
 
     // A list of material surface renderers that we will use
-    pipelines: AHashMap<TypeId, Rc<dyn SpecializedPipeline>>,
+    pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
 }
 
 impl Context {
@@ -64,7 +64,7 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
-    // Register a material pipeline if it is missing, and return it's specific PipeId
+    // Register a specialized material pipeline if it is missing, and return it's specific PipeId
     pub fn pipeline<M: for<'w> Material<'w>>(
         &mut self,
         shaders: &mut Storage<Shader>,
@@ -72,7 +72,7 @@ impl Context {
     ) -> PipeId<M> {
         let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
-            let pipeline: Rc<dyn SpecializedPipeline> = Rc::new(Pipeline::<M> {
+            let pipeline: Rc<dyn Pipeline> = Rc::new(SpecializedPipeline::<M> {
                 shader: shaders.insert(M::shader(self, assets)),
                 _phantom: Default::default(),
             });
@@ -82,8 +82,11 @@ impl Context {
         PipeId(Default::default())
     }
 
+    // Register a specific pipeline if it is missing an return it's specific PipeID
+    pub fn register_pipeline_lazy<P: Pipeline>(&mut self, callback: impl FnOnce() -> P) -> PipeId<>
+
     // Extract all the internally stored material pipelines
-    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn SpecializedPipeline>> {
+    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {
         self.pipelines
             .iter()
             .map(|(_key, value)| value.clone())
