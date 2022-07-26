@@ -76,7 +76,7 @@ fn init(world: &mut World) {
     let material = standard_materials.insert(material);
     
     // Create a new material surface for rendering
-    let pipeid = ctx.pipeline::<Standard>(&mut shaders, &mut assets);
+    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
     let surface = Surface::new(settings.cube(), material, pipeid);
 
     // Insert a new entity that contains the valid surface

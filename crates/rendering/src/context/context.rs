@@ -6,7 +6,7 @@ use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null
 use world::{Resource, Storage};
 
 use crate::{
-    material::{Material, PipeId, Pipeline, SpecializedPipeline},
+    material::{Material, PipeId, Pipeline, SpecializedPipeline, PipelineInitData},
     prelude::Shader,
 };
 
@@ -64,26 +64,21 @@ impl Context {
         *self.bound.entry(target).or_insert(object) = object;
     }
 
-    // Register a specialized material pipeline if it is missing, and return it's specific PipeId
-    pub fn pipeline<M: for<'w> Material<'w>>(
-        &mut self,
-        shaders: &mut Storage<Shader>,
-        assets: &mut Assets,
-    ) -> PipeId<M> {
-        let key = TypeId::of::<M>();
+    // Register a new pipeline with the specified init settings
+    pub fn init_pipe_id<P: Pipeline>(&mut self, init: &mut PipelineInitData) -> PipeId<P> {
+        let key = TypeId::of::<P>();
         if !self.pipelines.contains_key(&key) {
-            let pipeline: Rc<dyn Pipeline> = Rc::new(SpecializedPipeline::<M> {
-                shader: shaders.insert(M::shader(self, assets)),
-                _phantom: Default::default(),
-            });
+            let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(init, self));
             self.pipelines.insert(key, pipeline);
         }
-
         PipeId(Default::default())
     }
 
-    // Register a specific pipeline if it is missing an return it's specific PipeID
-    pub fn register_pipeline_lazy<P: Pipeline>(&mut self, callback: impl FnOnce() -> P) -> PipeId<>
+    // Get a PipeId from a pre-initialized pipeline
+    pub fn get_pipe_id<P: Pipeline>(&self) -> Option<PipeId<P>> {
+        let key = TypeId::of::<P>();
+        self.pipelines.get(&key).map(|_| PipeId(Default::default()))
+    }
 
     // Extract all the internally stored material pipelines
     pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {

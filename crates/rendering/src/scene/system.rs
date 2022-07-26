@@ -2,7 +2,7 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, PipelineStats, Sky, Standard},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard, PipelineInitData, SpecializedPipeline},
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
@@ -181,11 +181,15 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     // Create the default Standard material pipeline
-    ctx.pipeline::<Standard>(&mut shaders, &mut assets);
+    let mut init = PipelineInitData {
+        shaders: &mut shaders,
+        assets: &mut assets,
+    };
+    let _ = ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
+    let pipeid = ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
 
     // Create the default Sky material pipeline and default Sky sphere surface
     let material = sky_materials.insert(material);
-    let pipeid = ctx.pipeline::<Sky>(&mut shaders, &mut assets);
     let renderer = Renderer::default();
     let surface = Surface::new(scene.sphere(), material, pipeid);
 
@@ -239,10 +243,9 @@ fn rendering(world: &mut World) {
         .extract_pipelines()
         .into_iter();
 
-    let stats = pipelines
-        .into_iter()
-        .map(|p| p.render(world))
-        .collect::<Vec<PipelineStats>>();
+    for render in pipelines {
+        render.render(world);
+    }
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -261,12 +264,10 @@ fn window(world: &mut World, event: &mut WindowEvent) {
             window.canvas_mut().resize(extent);
 
             // Resize the main rendering canvas when we resize the window
-            /*
             let scene = world.get::<SceneSettings>().unwrap();
             let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
             let canvas = &mut canvases[scene.canvas()];
             canvas.resize(extent);
-            */
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;
