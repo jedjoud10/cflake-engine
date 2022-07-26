@@ -8,8 +8,10 @@ use super::{RasterSettings, Rasterizer};
 pub type ColorAttachment = RenderTarget2D<RGBA<Ranged<u8>>>;
 pub type DepthAttachment = RenderTarget2D<Depth<Ranged<u32>>>;
 
+
 // A canvas attachment is something that we can link to a canvas to be able to draw onto it
 // I only implemented canvas attachments for RenderTarget2D, though that might change later
+#[derive(Clone)]
 pub struct CanvasAttachment {
     handle: UntypedHandle,
     name: u32,
@@ -128,6 +130,11 @@ impl Canvas {
     // Get the current size of the canvas
     pub fn size(&self) -> vek::Extent2<u16> {
         self.size
+    }
+
+    // Get the internal attachments (None if it is the default main canvas)
+    pub fn attachments(&self) -> Option<&[CanvasAttachment]> {
+        (self.name != 0).then(|| self.attachments.as_slice())
     }
 
     // Clear the whole framebuffer using the proper flags
