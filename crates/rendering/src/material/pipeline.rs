@@ -6,20 +6,15 @@ use crate::{
     prelude::{Shader, Uniforms},
     scene::{Camera, Directional, Renderer, SceneSettings}, buffer::ElementBuffer,
 };
-use assets::Assets;
+use assets::{Assets, Asset};
 use ecs::EcsManager;
 use math::{Location, Rotation};
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Read, Resource, Storage, World};
 
-// Statistics that tell us what exactly happened when we rendered the material surfaces through the pipeline
-#[derive(Debug)]
-pub struct PipelineStats {
-    triangles: u128,
-    vertices: u128,
-    material_instance_calls: u128,
-    mesh_draw_calls: u128,
-    material_name: &'static str,
+pub struct PipelineInitData<'a> {
+    pub shaders: &'a mut Storage<Shader>,
+    pub assets: &'a mut Assets,
 }
 
 // Marker type that tells us we registered a specific generic pipeline
@@ -27,8 +22,9 @@ pub struct PipeId<P: Pipeline>(pub(crate) PhantomData<P>);
 
 // Pipeline trait that will be boxed and stored from within the world
 // Pipelines are user defined to allow the user to write their own logic
-pub(crate) trait Pipeline: 'static {
-    fn render(&self, world: &mut World) -> PipelineStats;
+pub trait Pipeline: 'static {
+    fn init(init: &mut PipelineInitData, ctx: &mut Context) -> Self where Self: Sized;
+    fn render(&self, world: &mut World);
 }
 
 // The standardized pipeline will use the default rendering canvas to render to
@@ -38,7 +34,14 @@ pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
-    fn render(&self, world: &mut World) -> PipelineStats {
+    fn init(init: &mut PipelineInitData, ctx: &mut Context) -> Self where Self: Sized {
+        let shader = M::shader(ctx, init.assets);
+        let handle = init.shaders.insert(shader);
+
+        Self { shader: handle, _phantom: Default::default() }
+    }
+
+    fn render(&self, world: &mut World) {
         let scene = world.get::<SceneSettings>().unwrap();
         let ecs = world.get::<EcsManager>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
@@ -58,15 +61,8 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             blend: M::blend_mode(),
         };
 
-        // Fetch the shader and enable stats
+        // Fetch the shader
         let shader = shaders.get_mut(&self.shader);
-        let mut stats = PipelineStats {
-            triangles: 0,
-            vertices: 0,
-            material_instance_calls: 0,
-            mesh_draw_calls: 0,
-            material_name: type_name::<M>(),
-        };
 
         // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
         let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
@@ -104,7 +100,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             // Check if we changed material instances
             if old != Some(surface.material().clone()) {
                 old = Some(surface.material().clone());
-                stats.material_instance_calls += 1;
                 let instance = materials.get(old.as_ref().unwrap());
 
                 // Update the material property block uniforms
@@ -130,10 +125,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
             rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
-            stats.mesh_draw_calls += 1;
-            stats.vertices += mesh.vertices().len().unwrap() as u128;
-            stats.triangles += mesh.triangles().len() as u128;
         }
-        stats
     }
 }
