@@ -2,7 +2,8 @@ use super::{Camera, Renderer, SceneSettings};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Pipeline, Sky, Standard, PipelineInitData, SpecializedPipeline},
+    material::{AlbedoMap, MaskMap, Material, NormalMap, Sky, Standard},
+    pipeline::{PipeId, Pipeline, PipelineInitData, SpecializedPipeline},
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,

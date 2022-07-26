@@ -10,6 +10,7 @@ pub mod others;
 pub mod scene;
 pub mod shader;
 pub mod texture;
+pub mod pipeline;
 
 pub mod prelude {
     pub use super::buffer::*;
@@ -23,4 +24,5 @@ pub mod prelude {
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
+    pub use super::pipeline::*;
 }

@@ -1,5 +1,6 @@
 use super::Mesh;
-use crate::material::{Material, PipeId, Pipeline, SpecializedPipeline};
+use crate::material::{Material};
+use crate::pipeline::{PipeId, Pipeline, SpecializedPipeline};
 use ecs::Component;
 
 use math::AABB;

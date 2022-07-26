@@ -6,12 +6,11 @@ use world::{Handle, Read, Storage};
 use crate::{
     canvas::{Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
+    material::{AlbedoMap, Material},
     mesh::Mesh,
     prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     scene::{Camera, Directional, Renderer, SceneSettings},
 };
-
-use super::{AlbedoMap, Material, Pipeline};
 
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit

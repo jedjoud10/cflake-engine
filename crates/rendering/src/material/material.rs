@@ -14,13 +14,6 @@ use crate::{
     shader::{Shader, Uniforms},
 };
 
-use super::Pipeline;
-
-/*
-pub struct PipelineStaticData<'a> {}
-pub struct PipelineRenderData<'a> {}
-pub struct PipelineInstanceData<'a> {}
-*/
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {

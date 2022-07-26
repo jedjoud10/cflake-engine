@@ -6,7 +6,8 @@ use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null
 use world::{Resource, Storage};
 
 use crate::{
-    material::{Material, PipeId, Pipeline, SpecializedPipeline, PipelineInitData},
+    material::{Material},
+    pipeline::{PipeId, Pipeline, SpecializedPipeline, PipelineInitData},
     prelude::Shader,
 };
 
