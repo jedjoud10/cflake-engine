@@ -11,8 +11,6 @@ pub mod scene;
 pub mod shader;
 pub mod texture;
 pub mod pipeline;
-mod pass;
-
 pub mod prelude {
     pub use super::buffer::*;
     pub use super::canvas::*;
