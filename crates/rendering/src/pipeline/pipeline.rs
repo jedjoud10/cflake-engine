@@ -7,7 +7,7 @@ use crate::{
     scene::{Camera, Directional, Renderer, SceneSettings}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
-use ecs::EcsManager;
+use ecs::Scene;
 use math::{Location, Rotation};
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Read, Resource, Storage, World};

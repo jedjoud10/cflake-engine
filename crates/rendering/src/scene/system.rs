@@ -13,7 +13,7 @@ use crate::{
 };
 
 use assets::Assets;
-use ecs::{added, modified, or, EcsManager};
+use ecs::{added, modified, or, Scene};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::{Scale, Location, Rotation, IntoMatrix};
 use world::{Events, Init, Stage, Storage, Update, World};
@@ -42,7 +42,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
     let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
     let mut color_attachments = world.get_mut::<Storage<ColorAttachment>>().unwrap();
     let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
@@ -206,7 +206,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
     
     // TODO: Add filter
     let query = ecs
@@ -295,7 +295,7 @@ fn swap(world: &mut World) {
 // The main camera entity is stored in the Scene renderer
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
     let scene = world.get::<SceneSettings>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer

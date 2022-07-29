@@ -10,8 +10,8 @@ use crate::{
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub type ArchetypeSet = MaskMap<Archetype>;
 
-// TODO: Find a better name for this bozo
-pub struct EcsManager {
+// The scene is what will contain the multiple ECS entities and archetypes 
+pub struct Scene {
     // Entities are just objects that contain an ID and some component masks
     // Entities are linked to multiple components, but they don't store the component data by themselves
     pub(crate) entities: EntitySet,
@@ -21,7 +21,7 @@ pub struct EcsManager {
     pub(crate) archetypes: ArchetypeSet,
 }
 
-impl Default for EcsManager {
+impl Default for Scene {
     fn default() -> Self {
         Self {
             entities: Default::default(),
@@ -30,7 +30,7 @@ impl Default for EcsManager {
     }
 }
 
-impl EcsManager {
+impl Scene {
     // Spawn an entity with specific components
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
         assert!(B::is_valid());
@@ -160,7 +160,7 @@ impl EcsManager {
 pub fn system(events: &mut Events) {
     // Late update event that will cleanup the ECS manager states
     fn cleanup(world: &mut World) {
-        let ecs = world.get_mut::<EcsManager>().unwrap();
+        let ecs = world.get_mut::<Scene>().unwrap();
         let _time = world.get::<Time>().unwrap();
 
         // Clear all the archetype states that were set last frame
@@ -179,7 +179,7 @@ pub fn system(events: &mut Events) {
 
     // Init event that will insert the ECS resource
     fn init(world: &mut World) {
-        world.insert(EcsManager::default());
+        world.insert(Scene::default());
     }
 
     // Register the events

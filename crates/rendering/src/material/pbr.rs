@@ -1,5 +1,5 @@
 use assets::Assets;
-use ecs::EcsManager;
+use ecs::Scene;
 use math::{Location, Rotation};
 use world::{Handle, Read, Storage};
 

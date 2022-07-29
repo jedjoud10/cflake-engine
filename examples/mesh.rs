@@ -29,7 +29,7 @@ fn init(world: &mut World) {
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     
     // Get the other resources
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut keyboard = world.get_mut::<Keyboard>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
@@ -99,7 +99,7 @@ fn update(world: &mut World) {
     let mouse = world.get::<Mouse>().unwrap();
 
     // Get the other resources
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
     let time = world.get::<Time>().unwrap();
 
     // Lock the cursor to the center of the screen

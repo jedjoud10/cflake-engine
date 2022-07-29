@@ -7,7 +7,7 @@ use crate::{
     scene::{Camera, Directional, Renderer, SceneSettings}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
-use ecs::EcsManager;
+use ecs::Scene;
 use math::{Location, Rotation};
 use std::{any::type_name, marker::PhantomData};
 use world::{Handle, Read, Resource, Storage, World};
@@ -30,7 +30,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
     fn render(&self, world: &mut World) {
         let scene = world.get::<SceneSettings>().unwrap();
-        let ecs = world.get::<EcsManager>().unwrap();
+        let ecs = world.get::<Scene>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
         let window = world.get::<Window>().unwrap();

@@ -1,5 +1,5 @@
 use crate::{AudioClip, AudioHead, AudioSource, Listener, GLOBAL_LISTENER};
-use ecs::{added, modified, or, EcsManager};
+use ecs::{added, modified, or, Scene};
 use math::{Location, Rotation};
 use world::{Events, Init, Stage, Storage, Update, World};
 
@@ -10,7 +10,7 @@ fn init(world: &mut World) {
 
 // This will update the audio listener ear positions and audio sources emitter positions
 fn update(world: &mut World) {
-    let mut ecs = world.get_mut::<EcsManager>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
 
     // Get the audio listener's ear locations
     let head = ecs

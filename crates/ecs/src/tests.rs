@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let _manager = EcsManager::default();
+        let _manager = Scene::default();
 
         #[derive(Component, Debug)]
         struct Name(&'static str);

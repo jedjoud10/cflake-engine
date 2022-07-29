@@ -2,7 +2,7 @@ use super::Entity;
 use crate::{
     add_bundle_unchecked,
     registry::{mask, name},
-    remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle, Component, EcsManager,
+    remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle, Component, Scene,
     EntityLinkings, EntitySet, EntryError, MutQueryLayout, RefQueryLayout, StateRow,
 };
 
@@ -17,7 +17,7 @@ pub struct EntryMut<'a> {
 
 impl<'a> EntryMut<'a> {
     // Create a mutable entry from the ecs manager and an entity
-    pub(crate) fn new(manager: &'a mut EcsManager, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(manager: &'a mut Scene, entity: Entity) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
         let archetypes = &mut manager.archetypes;
         let entities = &mut manager.entities;

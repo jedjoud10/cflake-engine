@@ -1,4 +1,4 @@
-use ecs::EcsManager;
+use ecs::Scene;
 use math::{Location, Rotation};
 use time::Time;
 use world::{Handle, Read, Storage};

@@ -1,7 +1,7 @@
 use std::{any::TypeId, marker::PhantomData};
 
 use assets::Assets;
-use ecs::EcsManager;
+use ecs::Scene;
 use math::{Location, Rotation};
 use world::{Resource, Storage, World};
 

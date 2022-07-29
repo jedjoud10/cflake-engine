@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EcsManager, EntityLinkings, EntryError, RefQueryLayout, StateRow,
+    Archetype, Component, Scene, EntityLinkings, EntryError, RefQueryLayout, StateRow,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -13,7 +13,7 @@ pub struct EntryRef<'a> {
 
 impl<'a> EntryRef<'a> {
     // Create an immutable entity entry from the ecs manager and an entity
-    pub(crate) fn new(manager: &'a EcsManager, entity: Entity) -> Option<Self> {
+    pub(crate) fn new(manager: &'a Scene, entity: Entity) -> Option<Self> {
         let linkings = *manager.entities.get(entity)?;
         let archetype = manager.archetypes.get(&linkings.mask()).unwrap();
 

@@ -1,13 +1,13 @@
 #![feature(int_roundings)]
 mod archetype;
 mod entity;
-mod manager;
+mod scene;
 mod mask;
 mod query;
 mod registry;
 pub use archetype::*;
 pub use entity::*;
-pub use manager::*;
+pub use scene::*;
 pub use mask::*;
 pub use query::*;
 pub use registry::*;
