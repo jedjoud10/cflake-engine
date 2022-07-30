@@ -35,7 +35,7 @@ impl<'w> Material<'w> for Standard {
     type Resources = (
         Read<'w, Storage<AlbedoMap>>,
         Read<'w, Storage<NormalMap>>,
-        Read<'w, Storage<MaskMap>>,
+        Read<'w, Storage<MaskMap>>,  
     );
 
     // Get the PBR material resources from the world

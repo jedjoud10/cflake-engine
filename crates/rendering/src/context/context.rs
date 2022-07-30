@@ -7,7 +7,7 @@ use world::{Resource, Storage};
 
 use crate::{
     material::{Material},
-    pipeline::{PipeId, Pipeline, SpecializedPipeline, PipelineInitData},
+    pipeline::{PipeId, Pipeline, SpecializedPipeline, CreatePipeline},
     prelude::Shader,
 };
 
@@ -66,10 +66,10 @@ impl Context {
     }
 
     // Register a new pipeline with the specified init settings
-    pub fn init_pipe_id<P: Pipeline>(&mut self, init: &mut PipelineInitData) -> PipeId<P> {
+    pub fn init_pipe_id<'a, P: Pipeline + CreatePipeline<'a>>(&mut self, init: &mut P::Args) -> PipeId<P> {
         let key = TypeId::of::<P>();
         if !self.pipelines.contains_key(&key) {
-            let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(init, self));
+            let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(self, init));
             self.pipelines.insert(key, pipeline);
         }
         PipeId(Default::default())

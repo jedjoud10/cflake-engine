@@ -9,7 +9,7 @@ use crate::{
     material::{AlbedoMap, Material},
     mesh::Mesh,
     prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    scene::{Camera, DirectionalLight, Renderer, SceneSettings},
+    scene::{Camera, DirectionalLight, Renderer},
 };
 
 // This is the material that our skysphere/skybox will use for rendering
