@@ -45,7 +45,7 @@ fn init(world: &mut World) {
     keyboard.bind("right", Key::D);
 
     // Create a directional light insert it as a light entity (and update the scene settings)
-    let light = Directional::default();
+    let light = DirectionalLight::default();
     let entity = ecs
         .insert((light, Rotation::rotation_x(45f32.to_radians())));
     settings.set_main_directional_light(entity);

@@ -1,10 +1,4 @@
-mod camera;
-mod light;
-mod renderer;
-mod settings;
-mod system;
-pub use camera::*;
-pub use light::*;
-pub use renderer::*;
-pub use settings::*;
-pub use system::*;
+mod components;
+mod composites;
+pub use components::*;
+pub use composites::*;

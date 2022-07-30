@@ -5,7 +5,7 @@ type Color = vek::Rgb<u8>;
 
 // A directional light is a type of light that emits light in a single direction (like the sun)
 #[derive(Component)]
-pub struct Directional {
+pub struct DirectionalLight {
     // The color of the light
     pub color: Color,
 
@@ -13,7 +13,7 @@ pub struct Directional {
     pub strength: f32,
 }
 
-impl Default for Directional {
+impl Default for DirectionalLight {
     fn default() -> Self {
         Self {
             color: Color::broadcast(255),
@@ -24,7 +24,7 @@ impl Default for Directional {
 
 // A point light is a type of light that emits light in all direction, coming from a single point (depicted from the Transform of this entity)
 #[derive(Component)]
-pub struct Point {
+pub struct PointLight {
     // The color of the light
     pub color: Color,
 
@@ -35,7 +35,7 @@ pub struct Point {
     pub radius: f32,
 }
 
-impl Default for Point {
+impl Default for PointLight {
     fn default() -> Self {
         Self {
             color: Color::broadcast(255),

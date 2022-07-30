@@ -4,7 +4,7 @@ use crate::{
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
     material::{AlbedoMap, Material},
-    scene::{Camera, Directional, Renderer, SceneSettings}, buffer::ElementBuffer,
+    scene::{Camera, DirectionalLight, Renderer, SceneSettings}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
 use ecs::Scene;

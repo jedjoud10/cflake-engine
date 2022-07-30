@@ -1,4 +1,5 @@
 use ecs::Component;
+use math::AABB;
 
 // This is the main render component that we will add to entities that contain the surface components
 // This render component simply tells us how exactly we should render the mesh, and if it should be culled or not
@@ -8,7 +9,7 @@ pub struct Renderer {
     matrix: vek::Mat4<f32>,
 
     // The current AABB bounds that this renderer will use for culling
-    //bounds: AABB,
+    bounds: AABB,
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
     enabled: bool,
@@ -18,6 +19,7 @@ impl Default for Renderer {
     fn default() -> Self {
         Self {
             matrix: vek::Mat4::identity(),
+            bounds: AABB::default(),
             enabled: true,
         }
     }
@@ -26,7 +28,7 @@ impl Default for Renderer {
 impl Renderer {
     // Create a new entity renderer with it's raw data
     pub fn new(matrix: vek::Mat4<f32>, enabled: bool) -> Self {
-        Self { matrix, enabled }
+        Self { matrix, enabled, bounds: Default::default() }
     }
 
     // Get the current mesh matrix that we will use for rendering
@@ -40,12 +42,9 @@ impl Renderer {
     }
 
     // Get the current bounds of the model
-    /*
     pub fn bounds(&self) -> &AABB {
         &self.bounds
     }
-    */
-
     // Check if we should render the model
     pub fn enabled(&self) -> bool {
         self.enabled

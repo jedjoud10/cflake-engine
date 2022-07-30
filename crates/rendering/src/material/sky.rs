@@ -9,7 +9,7 @@ use crate::{
     material::{AlbedoMap, Material},
     mesh::Mesh,
     prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    scene::{Camera, Directional, Renderer, SceneSettings},
+    scene::{Camera, DirectionalLight, Renderer, SceneSettings},
 };
 
 // This is the material that our skysphere/skybox will use for rendering
@@ -44,25 +44,21 @@ impl<'w> Material<'w> for Sky {
     fn set_static_properties(
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
-        _viewport: vek::Extent2<u16>,
-        _scene: &SceneSettings,
-        camera: (&Camera, &Location, &Rotation),
-        light: (&Directional, &Rotation),
     ) {
+        /*
         uniforms.set_mat4x4("view_matrix", camera.0.view());
         uniforms.set_mat4x4("proj_matrix", camera.0.projection());
         uniforms.set_vec3("sun_dir", light.1.forward());
         uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
         uniforms.set_scalar("time_since_startup", resources.1.secs_since_startup_f32());
+        */
     }
 
     // This method will be called for each surface that we have to render
     fn set_render_properties(
         uniforms: &mut Uniforms,
         _resources: &mut Self::Resources,
-        renderer: &Renderer,
-        _camera: (&Camera, &Location, &Rotation),
-        _light: (&Directional, &Rotation),
+        renderer: &Renderer
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
@@ -71,16 +67,15 @@ impl<'w> Material<'w> for Sky {
         &self,
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
-        _scene: &SceneSettings,
-        _camera: (&Camera, &Location, &Rotation),
-        light: (&Directional, &Rotation),
     ) {
+        /*
         let texture = resources.0.get(&self.gradient);
         uniforms.set_sampler("gradient", texture);
         uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);
         uniforms.set_scalar("sun_size", self.sun_size);
         uniforms.set_scalar("cloud_speed", self.cloud_speed);
         uniforms.set_scalar("cloud_coverage", self.cloud_coverage);
+        */
     }
 
     fn shader(

@@ -10,10 +10,17 @@ use crate::{
     context::{Context, Window},
     mesh::{Mesh, EnabledAttributes},
     others::Comparison,
-    scene::{Camera, Directional, Renderer, SceneSettings},
+    scene::{Camera, DirectionalLight, Renderer},
     shader::{Shader, Uniforms},
 };
 
+pub struct PipelineDefaultResources<'a> {
+    camera: &'a Camera,
+    camera_location: &'a Location,
+    camera_rotation: &'a Rotation,
+    directional_light: &'a DirectionalLight,
+    directional_light_rotation: &'a Rotation,
+}
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
@@ -56,34 +63,22 @@ pub trait Material<'w>: 'static + Sized {
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties(
-        _uniforms: &mut Uniforms,
-        _resources: &mut Self::Resources,
-        _viewport: vek::Extent2<u16>,
-        _scene: &SceneSettings,
-        _camera: (&Camera, &Location, &Rotation),
-        _light: (&Directional, &Rotation),
-    ) {
-    }
+        uniforms: &mut Uniforms,
+        resources: &mut Self::Resources,
+    );
 
     // Set the uniforms for this property block right before we render our surface
     fn set_render_properties(
-        _uniforms: &mut Uniforms,
-        _resources: &mut Self::Resources,
-        _renderer: &Renderer,
-        _camera: (&Camera, &Location, &Rotation),
-        _light: (&Directional, &Rotation),
-    ) {
-    }
+        uniforms: &mut Uniforms,
+        resources: &mut Self::Resources,
+        renderer: &Renderer,
+    );
 
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn set_instance_properties(
         &self,
-        _uniforms: &mut Uniforms,
-        _resources: &mut Self::Resources,
-        _scene: &SceneSettings,
-        _camera: (&Camera, &Location, &Rotation),
-        _light: (&Directional, &Rotation),
-    ) {
-    }
+        uniforms: &mut Uniforms,
+        resources: &mut Self::Resources,
+    );
 }

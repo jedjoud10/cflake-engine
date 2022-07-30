@@ -4,7 +4,7 @@ use crate::{
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
     material::{AlbedoMap, Material},
-    scene::{Camera, Directional, Renderer, SceneSettings}, buffer::ElementBuffer,
+    scene::{Camera, DirectionalLight, Renderer, ClusteredShading}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
 use ecs::Scene;
@@ -29,11 +29,11 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
     }
 
     fn render(&self, world: &mut World) {
-        let scene = world.get::<SceneSettings>().unwrap();
         let ecs = world.get::<Scene>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
         let window = world.get::<Window>().unwrap();
+        let mut shader = world.get_mut::<ClusteredShading>().unwrap();
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
         let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
@@ -47,7 +47,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
-
         // Fetch the shader
         let shader = shaders.get_mut(&self.shader);
 
@@ -61,12 +60,12 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         });
 
         // Get the main camera component (there has to be one for us to render)
-        let camera_entry = ecs.entry(scene.main_camera().unwrap()).unwrap();
+        let camera_entry = ecs.entry(sha.main_camera().unwrap()).unwrap();
         let camera = camera_entry.as_view::<(&Camera, &Location, &Rotation)>().unwrap();
 
         // Get the main directional light
         let light_entry = ecs.entry(scene.main_directional_light().unwrap()).unwrap();
-        let light = light_entry.as_view::<(&Directional, &Rotation)>().unwrap();
+        let light = light_entry.as_view::<(&DirectionalLight, &Rotation)>().unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
         let canvas = &mut canvases[scene.canvas()];
