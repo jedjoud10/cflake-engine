@@ -352,7 +352,7 @@ impl<'a> Asset<'a> for Mesh {
 
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
-            positions.push(Vec3::from_slice(&vertex.position) * settings.scale);
+            positions.push(Vec3::from_slice(&vertex.position) * settings.position_scale);
             normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
             tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
         }

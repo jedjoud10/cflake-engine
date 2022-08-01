@@ -64,7 +64,7 @@ impl<'w> Material<'w> for Sky {
     }
 
     fn set_instance_properties(
-        &self,
+        instance: &Self,
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
     ) {

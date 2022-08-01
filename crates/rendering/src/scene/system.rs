@@ -1,9 +1,9 @@
-use super::{Camera, Renderer, SceneSettings};
+use super::{Camera, Renderer, ClusteredShading};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Sky, Standard},
-    pipeline::{PipeId, Pipeline, PipelineInitData, SpecializedPipeline},
+    pipeline::{PipeId, Pipeline, SpecializedPipeline},
     mesh::{Mesh, MeshImportSettings, Surface},
     prelude::{
         Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
@@ -20,7 +20,7 @@ use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
-fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) -> (Window, Context, SceneSettings) {
+fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) {
     // Insert the default storages
     world.insert(Storage::<AlbedoMap>::default());
     world.insert(Storage::<NormalMap>::default());
@@ -51,74 +51,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let (mut window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
-    // This function creates a 1x1 Texture2D with default settings that we can store within the scene renderer
-    fn create<T: Texel>(ctx: &mut Context, texel: T::Storage) -> Texture2D<T> {
-        Texture2D::<T>::new(
-            ctx,
-            TextureMode::Static,
-            vek::Extent2::one(),
-            Sampling {
-                filter: Filter::Nearest,
-                wrap: Wrap::Repeat,
-            },
-            MipMaps::Disabled,
-            &[texel],
-        )
-        .unwrap()
-    }
-
-    // Create the 1x1 default textures
-    let black = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::zero());
-    let white = create::<RGBA<Ranged<u8>>>(ctx, vek::Vec4::broadcast(255));
-    let normal_map = create::<RGB<Ranged<u8>>>(ctx, vek::Vec3::new(128, 128, 255));
-    let mask_map = create::<RG<Ranged<u8>>>(ctx, vek::Vec2::new(255, 51));
-
-    // Convert the texture maps into texture map handles
-    let black = albedo_maps.insert(black);
-    let white = albedo_maps.insert(white);
-    let normal_map = normal_maps.insert(normal_map);
-    let mask_map = mask_maps.insert(mask_map);
-
-    // Load the persistent textures like the debug texture and missing texture
-    let settings = TextureImportSettings {
-        sampling: Sampling {
-            filter: Filter::Nearest,
-            wrap: Wrap::Repeat,
-        },
-        mode: TextureMode::Static,
-        mipmaps: MipMaps::Automatic,
-    };
-
-    let debug = assets
-        .load_with::<NormalMap>("engine/textures/bumps.png", (ctx, settings))
-        .unwrap();
-    let missing = assets
-        .load_with::<AlbedoMap>("engine/textures/missing.png", (ctx, settings))
-        .unwrap();
-
-    // Convert them to map handles
-    let missing = albedo_maps.insert(missing);
-    let debug = normal_maps.insert(debug);
-
-    let import = MeshImportSettings {
-        mode: BufferMode::Static,
-        generate_normals: false,
-        generate_tangents: false,
-        scale: 1.0,
-    };
-
-    // Load the default cube and sphere meshes
-    let cube = assets
-        .load_with::<Mesh>("engine/meshes/cube.obj", (ctx, import))
-        .unwrap();
-    let sphere = assets
-        .load_with::<Mesh>("engine/meshes/sphere.obj", (ctx, import))
-        .unwrap();
-    
-    // Insert the meshes and get their handles
-    let cube = meshes.insert(cube);
-    let sphere = meshes.insert(sphere);
-
     // Settings for framebuffer textures
     let sampling = Sampling {
         filter: Filter::Linear,
@@ -140,20 +72,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
     let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
     let canvas = canvases.insert(canvas);
-    
-    // Create the new scene renderer from these values and insert it into the world
-    let scene = SceneSettings::new(
-        black,
-        white.clone(),
-        white,
-        normal_map,
-        mask_map,
-        missing,
-        debug,
-        cube,
-        sphere,
-        canvas,
-    );
 
     // Sky gradient texture import settings
     let import_settings = TextureImportSettings {
@@ -163,6 +81,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         },
         mode: TextureMode::Static,
         mipmaps: MipMaps::Disabled,
+        srgb: true,
     };
 
     // Load in the texture
@@ -182,17 +101,14 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     // Create the default Standard material pipeline
-    let mut init = PipelineInitData {
-        shaders: &mut shaders,
-        assets: &mut assets,
-    };
+    let mut init = (&mut *shaders, &mut *assets);
     let _ = ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
     let pipeid = ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
 
     // Create the default Sky material pipeline and default Sky sphere surface
     let material = sky_materials.insert(material);
     let renderer = Renderer::default();
-    let surface = Surface::new(scene.sphere(), material, pipeid);
+    let surface = Surface::new(todo!(), material, pipeid);
 
     // Insert it as a new entity
     ecs.insert((
@@ -200,8 +116,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         surface,
         Scale::from(vek::Vec3::one() * 5000.0)
     ));
-
-    (window, context, scene)
 }
 
 // Update the global mesh matrices of objects that have been modified
@@ -234,10 +148,6 @@ fn update_matrices(world: &mut World) {
 
 // Rendering event that will try to render the 3D scene each frame
 fn rendering(world: &mut World) {
-    if !world.get::<SceneSettings>().unwrap().can_render() {
-        return;
-    }
-
     let pipelines = world
         .get::<Context>()
         .unwrap()
@@ -263,12 +173,6 @@ fn window(world: &mut World, event: &mut WindowEvent) {
             // Resize the default canvas when we resize the window
             let mut window = world.get_mut::<Window>().unwrap();
             window.canvas_mut().resize(extent);
-
-            // Resize the main rendering canvas when we resize the window
-            let scene = world.get::<SceneSettings>().unwrap();
-            let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
-            let canvas = &mut canvases[scene.canvas()];
-            canvas.resize(extent);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;
@@ -296,10 +200,10 @@ fn swap(world: &mut World) {
 fn main_camera(world: &mut World) {
     // Get the ecs, window, and scene renderer
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let scene = world.get::<SceneSettings>().unwrap();
+    let shading = world.get::<ClusteredShading>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
-    if let Some(entity) = scene.main_camera() {
+    if let Some(entity) = shading.main_camera {
         let mut entry = ecs.entry_mut(entity).unwrap();
 
         // Fetch it's components, and update them
@@ -314,12 +218,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     events
         .registry::<Init>()
         .insert_with(
-            |world: &mut World, el: &EventLoop<()>| {
-                let (window, ctx, scene) = init(world, settings, el);
-                world.insert(window);
-                world.insert(ctx);
-                world.insert(scene);
-            },
+            |world: &mut World, el: &EventLoop<()>| init(world, settings, el),
             Stage::new("graphics insert")
                 .after("asset loader insert")
                 .before("user"),

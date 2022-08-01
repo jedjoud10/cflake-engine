@@ -22,10 +22,11 @@ fn main() {
 fn init(world: &mut World) {
     // Get the graphics resources
     let mut ctx = world.get_mut::<Context>().unwrap();
-    let mut settings = world.get_mut::<SceneSettings>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
     let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     
     // Get the other resources
@@ -36,7 +37,6 @@ fn init(world: &mut World) {
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
     let camera = ecs.insert((camera, Location::default(), Rotation::default(), Velocity::default()));
-    settings.set_main_camera(camera);
 
     // We will also register some new keybinds for the camera controller
     keyboard.bind("forward", Key::W);
@@ -48,7 +48,6 @@ fn init(world: &mut World) {
     let light = DirectionalLight::default();
     let entity = ecs
         .insert((light, Rotation::rotation_x(45f32.to_radians())));
-    settings.set_main_directional_light(entity);
 
     // Create some import settings for our albedo and normal map textures
     let import_settings = TextureImportSettings {
@@ -63,18 +62,35 @@ fn init(world: &mut World) {
     };
 
     // Load a normal map texture
-    let texture = assets
+    let normal_map = assets
         .load_with::<NormalMap>("user/textures/normal.png", (&mut ctx, import_settings))
         .unwrap();
-    let texture = normal_maps.insert(texture);
+    let normal_map = normal_maps.insert(normal_map);
+
+    // Create the default albedo and mask textures
+    let albedo_map = AlbedoMap::new(
+        &mut ctx,
+        TextureMode::Static,
+        vek::Extent2::one(),
+        Sampling::default(),
+        MipMaps::Disabled,
+        &[vek::Vec4::one()]
+    ).unwrap();
+
+    // Create the default cube primitive mesh
+    let cube = Procedural::cube
 
     // Create a new material instance with the normal map texture
-    let material = Standard::builder()
-        .with_normal(&texture)
-        .with_bumpiness(1.4)
-        .build();
-    let material = standard_materials.insert(material);
-    
+    let material = standard_materials.insert(Standard { 
+        albedo_map,
+        normal_map,
+        mask_map: (),
+        bumpiness: 1.4,
+        roughness: 0.,
+        metallic: 0.,
+        tint: vek::Rgb::white()
+    });
+
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
     let surface = Surface::new(settings.cube(), material, pipeid);

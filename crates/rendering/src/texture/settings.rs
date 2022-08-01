@@ -70,10 +70,30 @@ pub struct Sampling {
     pub wrap: Wrap,
 }
 
+impl Default for Sampling {
+    fn default() -> Self {
+        Self {
+            filter: Filter::Linear, wrap: Wrap::Repeat
+        }
+    }
+}
+
 // Texture settings that we shall use when loading in a new texture
 #[derive(Clone, Copy)]
 pub struct TextureImportSettings {
     pub sampling: Sampling,
     pub mode: TextureMode,
     pub mipmaps: MipMaps,
+    pub srgb: bool,
+}
+
+impl Default for TextureImportSettings {
+    fn default() -> Self {
+        Self { 
+            sampling: Sampling::default(),
+            mode: TextureMode::Static,
+            mipmaps: MipMaps::Automatic,
+            srgb: false
+        }
+    }
 }

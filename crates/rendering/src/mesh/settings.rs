@@ -7,7 +7,11 @@ pub struct MeshImportSettings {
     pub mode: BufferMode,
     pub generate_normals: bool,
     pub generate_tangents: bool,
-    pub scale: f32,
+    pub position_scale: f32,
+    pub invert_normal: bool,
+    pub invert_tangents: bool,
+    pub invert_vertical_uv: bool,
+    pub invert_horizontal_uv: bool,
 }
 
 impl Default for MeshImportSettings {
@@ -16,7 +20,11 @@ impl Default for MeshImportSettings {
             mode: BufferMode::Dynamic,
             generate_normals: false,
             generate_tangents: true,
-            scale: 1.0,
+            position_scale: 1.0,
+            invert_normal: false,
+            invert_tangents: false,
+            invert_vertical_uv: false,
+            invert_horizontal_uv: false,
         }
     }
 }

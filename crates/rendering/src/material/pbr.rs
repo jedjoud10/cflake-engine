@@ -22,9 +22,9 @@ pub type MaskMap = Texture2D<RG<Ranged<u8>>>; // (r = roughness, g = metallic)
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
 pub struct Standard {
-    pub albedo: Handle<AlbedoMap>,
-    pub normal: Handle<NormalMap>,
-    pub mask: Handle<MaskMap>,
+    pub albedo_map: Handle<AlbedoMap>,
+    pub normal_map: Handle<NormalMap>,
+    pub mask_map: Handle<MaskMap>,
     pub bumpiness: f32,
     pub roughness: f32,
     pub metallic: f32,
@@ -71,7 +71,7 @@ impl<'w> Material<'w> for Standard {
 
     // This method will be called whenever we detect a material instance change
     fn set_instance_properties(
-        &self,
+        instance: &Self,
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
     ) {

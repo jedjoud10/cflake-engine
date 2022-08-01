@@ -77,7 +77,7 @@ pub trait Material<'w>: 'static + Sized {
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn set_instance_properties(
-        &self,
+        instance: &Self,
         uniforms: &mut Uniforms,
         resources: &mut Self::Resources,
     );
