@@ -344,7 +344,7 @@ impl<'a> Asset<'a> for Mesh {
         let capacity = parsed.vertices.len();
         let mut positions = Vec::with_capacity(capacity);
         let mut normals = Vec::with_capacity(capacity);
-        let mut tex_coords_0 = Vec::with_capacity(capacity);
+        let mut tex_coords = Vec::with_capacity(capacity);
         let mut triangles = Vec::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
 
@@ -352,9 +352,15 @@ impl<'a> Asset<'a> for Mesh {
 
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
-            positions.push(Vec3::from_slice(&vertex.position) * settings.position_scale);
-            normals.push(Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8));
-            tex_coords_0.push(Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8));
+            // Read the attributes from the vertex
+            let read_position = Vec3::from_slice(&vertex.position);
+            let read_normal = Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8);
+            let read_tex_coord = Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8);
+
+            // Add them to their respective buffer
+            positions.push(read_position);
+            normals.push(read_normal);
+            tex_coords.push(read_tex_coord);
         }
 
         // Convert the indices to triangles
@@ -365,21 +371,54 @@ impl<'a> Asset<'a> for Mesh {
         // Create the buffers
         let positions = Buffer::from_slice(ctx, &positions, settings.mode).unwrap();
         let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, settings.mode).unwrap());
-        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords_0, settings.mode).unwrap());
+        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords, settings.mode).unwrap());
         let triangles = Buffer::from_slice(ctx, &triangles, settings.mode).unwrap();
 
         // Create a new mesh
         let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();
 
-        // Generate procedural normals if requested
+        // Generate procedural normals if needed
         if settings.generate_normals {
             mesh.compute_normals(ctx, settings.mode).unwrap();
         }
 
-        // Generate procedural tangents if requested
+        // Generate procedural tangents if needed
         if settings.generate_tangents {
             mesh.compute_tangents(ctx, settings.mode).unwrap();
         }
+
+        // Invert normals if needed
+        if settings.invert_normals {
+            let mut verts = mesh.vertices_mut();
+            let normals = verts.attribute_mut::<Normal>().unwrap();
+            let mut mapped = normals.map_mut().unwrap();
+            mapped.as_slice_mut().iter_mut().for_each(|n| *n *= -1);
+        }
+
+        // Invert tangents if needed
+        if settings.generate_tangents && settings.invert_tangents {
+            let mut verts = mesh.vertices_mut();
+            let tangents = verts.attribute_mut::<Tangent>().unwrap();
+            let mut mapped = tangents.map_mut().unwrap();
+            mapped.as_slice_mut().iter_mut().for_each(|t| *t *= -1);
+        }
+
+        // Invert UVs in both/one direction if needed
+        if settings.invert_horizontal_tex_coord || settings.invert_vertical_tex_coord {
+            let mut verts = mesh.vertices_mut();
+            let uvs = verts.attribute_mut::<TexCoord>().unwrap();
+            let mut mapped = uvs.map_mut().unwrap();
+            let slice = mapped.as_slice_mut();            
+
+            if settings.invert_horizontal_tex_coord {
+                slice.iter_mut().for_each(|uv| uv.x = 255 - uv.x);
+            }
+
+            if settings.invert_vertical_tex_coord {
+                slice.iter_mut().for_each(|uv| uv.y = 255 - uv.x);
+            }
+        }
+
         mesh
     }
 }

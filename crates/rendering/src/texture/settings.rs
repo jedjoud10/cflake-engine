@@ -15,6 +15,12 @@ pub enum TextureMode {
     Resizable,
 }
 
+impl Default for TextureMode {
+    fn default() -> Self {
+        Self::Resizable
+    }
+}
+
 // This enum tells the texture how exactly it should create it's mipmaps
 // Default mode for mipmap generation is MipMaps::AutomaticAniso
 #[derive(Clone, Copy)]
@@ -33,10 +39,8 @@ pub enum MipMaps {
     },
 
     // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
-    // If samples is less than 2m then anisotropic filtering will be disabled
-    AutomaticAniso {
-        samples: NonZeroU8,
-    },
+    // The number of anisotropic samples will be decided automatically
+    AutomaticAniso,
 
     // Manual mipmap generation, but with a specified number of anisotropy sampler
     // If levels is less than 2, then mipmapping will be disabled
@@ -45,6 +49,12 @@ pub enum MipMaps {
         levels: NonZeroU8,
         samples: NonZeroU8,
     },
+}
+
+impl Default for MipMaps {
+    fn default() -> Self {
+        Self::AutomaticAniso
+    }
 }
 
 // Texel filters that are applied to the texture's mininifcation and magnification parameters

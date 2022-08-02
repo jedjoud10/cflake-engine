@@ -81,8 +81,8 @@ impl From<u64> for Mask {
 
 // NoHash hasher that works with Mask
 type MaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
-pub type MaskMap<E> = HashMap<Mask, E, MaskHasher>;
-pub type MaskSet = HashSet<Mask, MaskHasher>;
+pub(crate) type MaskMap<E> = HashMap<Mask, E, MaskHasher>;
+pub(crate) type MaskSet = HashSet<Mask, MaskHasher>;
 
 impl BitAnd for Mask {
     type Output = Self;

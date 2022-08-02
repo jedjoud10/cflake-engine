@@ -80,12 +80,15 @@ impl<T: Texel> Texture for Texture2D<T> {
         name: u32,
         extent: <Self::Region as Region>::E,
         levels: u8,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
         ptr: *const std::ffi::c_void,
     ) {
         gl::TextureStorage2D(
             name,
             levels as i32,
-            T::INTERNAL_FORMAT,
+            internal_format,
             extent.w as i32,
             extent.h as i32,
         );
@@ -96,8 +99,8 @@ impl<T: Texel> Texture for Texture2D<T> {
             0,
             extent.w as i32,
             extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
+            format,
+            data_type,
             ptr,
         );
     }
@@ -106,23 +109,33 @@ impl<T: Texel> Texture for Texture2D<T> {
         name: u32,
         extent: <Self::Region as Region>::E,
         unique_level: u8,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
         ptr: *const std::ffi::c_void,
     ) {
         gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(
             gl::TEXTURE_2D,
             unique_level as i32,
-            T::INTERNAL_FORMAT as i32,
+            internal_format as i32,
             extent.w as i32,
             extent.h as i32,
             0,
-            T::FORMAT,
-            T::TYPE,
+            format,
+            data_type,
             ptr,
         );
     }
 
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const std::ffi::c_void) {
+    unsafe fn update_subregion(
+        name: u32,
+        region: Self::Region,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
+        ptr: *const std::ffi::c_void
+    ) {
         let origin = region.origin();
         let extent = region.extent();
         gl::TextureSubImage2D(
@@ -132,8 +145,8 @@ impl<T: Texel> Texture for Texture2D<T> {
             origin.y as i32,
             extent.w as i32,
             extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
+            format,
+            data_type,
             ptr,
         );
     }
@@ -158,6 +171,7 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
             dimensions,
             settings.sampling,
             settings.mipmaps,
+            settings.srgb,
             texels.as_slice(),
         )
         .unwrap()

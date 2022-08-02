@@ -4,6 +4,8 @@ mod mesh;
 mod settings;
 mod surface;
 mod vertices;
+mod primitive;
+pub use primitive::*;
 pub use attributes::*;
 pub use triangles::*;
 pub use mesh::*;

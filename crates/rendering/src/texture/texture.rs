@@ -201,6 +201,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
         mipmaps: MipMaps,
+        srgb: bool,
         data: &[<Self::T as Texel>::Storage],
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
@@ -226,7 +227,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
                 MipMaps::Automatic => (auto, None),
                 MipMaps::Manual { levels } => (levels.min(auto), None),
-                MipMaps::AutomaticAniso { samples } => (auto, Some(samples)),
+                MipMaps::AutomaticAniso => (auto, { 
+                    let mut val = 0.0;
+                    gl::GetFloatv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mut val);
+                    NonZeroU8::new(val as u8)
+                }),
                 MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
             };
 
@@ -236,6 +241,13 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 gl::CreateTextures(Self::target(), 1, &mut tex);
                 tex
             };
+
+            // We must modify the internal format if we are using SRGB
+            if srgb {
+                
+            }
+
+            gl::SRGB
 
             // Pre-allocate storage using the texture mode (immutable vs mutable textures)
             match mode {
@@ -274,7 +286,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_T, wrap as i32);
             gl::TextureParameteri(tex, gl::TEXTURE_WRAP_R, wrap as i32);
 
-            // Set the border color (if needed)
+            // Set the border color if needed
             if let Some(border) = border {
                 gl::TextureParameterfv(tex, gl::TEXTURE_BORDER_COLOR, border.as_ptr());
             }
@@ -344,6 +356,9 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         name: u32,
         extent: <Self::Region as Region>::E,
         levels: u8,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
         ptr: *const c_void,
     );
 
@@ -353,9 +368,19 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         name: u32,
         extent: <Self::Region as Region>::E,
         unique_level: u8,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
         ptr: *const c_void,
     );
 
     // Update a sub-region of the raw texture
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);
+    unsafe fn update_subregion(
+        name: u32,
+        region: Self::Region,
+        internal_format: u32,
+        data_type: u32,
+        format: u32,
+        ptr: *const c_void
+    );
 }

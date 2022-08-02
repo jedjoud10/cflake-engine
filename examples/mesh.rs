@@ -49,25 +49,29 @@ fn init(world: &mut World) {
     let entity = ecs
         .insert((light, Rotation::rotation_x(45f32.to_radians())));
 
-    // Create some import settings for our albedo and normal map textures
-    let import_settings = TextureImportSettings {
-        sampling: Sampling {
-            filter: Filter::Linear,
-            wrap: Wrap::Repeat,
-        },
-        mipmaps: MipMaps::AutomaticAniso {
-            samples: NonZeroU8::new(4).unwrap(),
-        },
-        mode: TextureMode::Static,
+    // Import settings for our albedo map textures
+    let import_settings_albedo = TextureImportSettings {
+        sampling: Sampling::default(),
+        mode: TextureMode::default(),
+        mipmaps: MipMaps::default(),
+        srgb: true,
+    };
+
+    // Import settings for our normal map texture
+    let import_settings_normal = TextureImportSettings {
+        sampling: Sampling::default(),
+        mode: TextureMode::default(),
+        mipmaps: MipMaps::default(),
+        srgb: false,
     };
 
     // Load a normal map texture
     let normal_map = assets
-        .load_with::<NormalMap>("user/textures/normal.png", (&mut ctx, import_settings))
+        .load_with::<NormalMap>("user/textures/normal.png", (&mut ctx, import_settings_normal))
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
-    // Create the default albedo and mask textures
+    // Create the default albedo map texture
     let albedo_map = AlbedoMap::new(
         &mut ctx,
         TextureMode::Static,
@@ -76,9 +80,25 @@ fn init(world: &mut World) {
         MipMaps::Disabled,
         &[vek::Vec4::one()]
     ).unwrap();
+    let albedo_map = albedo_maps.insert(albedo_map);
+
+    // Create the default normal map texture
+    let normal_map = NormalMap::new(
+        &mut ctx,
+        TextureMode::Static,
+        vek::Extent2::one(),
+        Sampling::default(),
+        MipMaps::Disabled,
+        &[vek::Vec3::new(127, 255, 127)]
+    ).unwrap();
+    let normal_map = normal_maps.insert(normal_map);
 
     // Create the default cube primitive mesh
-    let cube = Procedural::cube
+    let generator = PrimitiveCuboidSettings {
+        geom: Cuboid { center: vek::Vec3::zero(), extent: vek::Extent3::one() },
+        settings: MeshImportSettings::default(),
+        ctx: &mut ctx,
+    };
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard { 

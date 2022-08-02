@@ -59,12 +59,12 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mipmaps = MipMaps::Disabled;
 
     // Create the render color texture
-    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, false, &[]).unwrap();
     let color = color_attachments.insert(color);
     let t1 = (&*color_attachments, color);
 
     // Create the render depth texture
-    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, false, &[]).unwrap();
     let depth = depth_attachments.insert(depth);
     let t2 = (&*depth_attachments, depth);
     
