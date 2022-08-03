@@ -9,13 +9,13 @@ use crate::{
     mesh::Mesh,
     scene::{Camera, DirectionalLight, Renderer},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, prelude::{Depth, RenderTarget2D},
+    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, prelude::{Depth, RenderTarget2D, SRGBA},
 };
 
 use super::Material;
 
 // PBR maps
-pub type AlbedoMap = Texture2D<RGBA<Ranged<u8>>>;
+pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
 pub type NormalMap = Texture2D<RGB<Ranged<u8>>>;
 pub type MaskMap = Texture2D<RG<Ranged<u8>>>; // (r = roughness, g = metallic)
 

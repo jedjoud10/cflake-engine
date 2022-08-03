@@ -11,3 +11,7 @@ pub struct RGBA<T: Element>(PhantomData<Vec4<T>>);
 // Unique depth and stencil channels for depth render textures and stencil render textures
 pub struct Depth<T: Element>(PhantomData<T>);
 pub struct Stencil<T: Element>(PhantomData<T>);
+
+// Gamma corrected RGB and RGBA channels
+pub struct SRGB<T: Element>(PhantomData<T>);
+pub struct SRGBA<T: Element>(PhantomData<T>);

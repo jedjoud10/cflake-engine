@@ -9,7 +9,7 @@ use std::mem::size_of;
 // The "type" of texel layout we're dealing with
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TexelFormat {
-    Color, Depth, Stencil,
+    Color, Depth, Stencil, GammaCorrectedColor,
 }
 
 // This trait defines the layout for a single texel that will be stored within textures1
@@ -36,10 +36,10 @@ macro_rules! impl_color_texel_layout {
     ($t:ident, $count:expr, $f: ident, $vec: ident) => {
         paste::paste! {
             impl Texel for $t<u32> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 32UI>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::UNSIGNED_INT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u32::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u32>;
@@ -47,10 +47,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<i32> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 32I>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::INT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i32::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i32>;
@@ -58,10 +58,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<u16> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 16UI>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u16>;
@@ -69,10 +69,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<i16> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 16I>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::SHORT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i16>;
@@ -80,10 +80,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<u8> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 8UI>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u8>;
@@ -91,10 +91,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<i8> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 8I>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::BYTE;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i8>;
@@ -102,10 +102,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<f32> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 32F>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::FLOAT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = size_of::<f32>() as _;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<f32>;
@@ -113,10 +113,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<Ranged<u16>> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 16>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::UNSIGNED_SHORT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u16::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u16>;
@@ -124,10 +124,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<Normalized<i16>> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 16_SNORM>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::SHORT;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i16::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i16>;
@@ -135,10 +135,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<Ranged<u8>> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 8>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::UNSIGNED_BYTE;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<u8>;
@@ -146,10 +146,10 @@ macro_rules! impl_color_texel_layout {
             }
 
             impl Texel for $t<Normalized<i8>> {
-                const FORMAT: u32 = gl::[<$f>];
                 const INTERNAL_FORMAT: u32 = gl::[<$t 8_SNORM>];
-                const CHANNELS: u32 = $count;
+                const FORMAT: u32 = gl::[<$f>];
                 const TYPE: u32 = gl::BYTE;
+                const CHANNELS: u32 = $count;
                 const BYTES_PER_CHANNEL: u32 = i8::BITS / 8;
                 const ENUM_FORMAT: TexelFormat = TexelFormat::Color;
                 type Storage = $vec<i8>;
@@ -213,6 +213,33 @@ macro_rules! impl_stencil_texel_layout {
     };
 }
 
+// Implement the gamma corrected texel layout
+macro_rules! impl_gamma_corrected_texel_layout {
+    () => {
+        impl Texel for SRGB<Ranged<u8>> {
+            const INTERNAL_FORMAT: u32 = gl::SRGB;
+            const FORMAT: u32 = gl::RGB;
+            const TYPE: u32 = gl::UNSIGNED_BYTE;
+            const CHANNELS: u32 = 3;
+            const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::GammaCorrectedColor;
+            type Storage = Vec3<u8>;
+            type Element = u8;
+        }
+
+        impl Texel for SRGBA<Ranged<u8>> {
+            const FORMAT: u32 = gl::RGBA;
+            const INTERNAL_FORMAT: u32 = gl::SRGB_ALPHA;
+            const TYPE: u32 = gl::UNSIGNED_BYTE;
+            const CHANNELS: u32 = 4;
+            const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;
+            const ENUM_FORMAT: TexelFormat = TexelFormat::GammaCorrectedColor;
+            type Storage = Vec4<u8>;
+            type Element = u8;
+        }
+    };
+}
+
 // Need this for the macro to work
 type Scalar<T> = T;
 
@@ -225,4 +252,5 @@ impl_color_texel_layout!(RGBA, 4, RGBA, Vec4);
 // Others
 impl_depth_texel_layout!();
 impl_stencil_texel_layout!();
+impl_gamma_corrected_texel_layout!();
 
