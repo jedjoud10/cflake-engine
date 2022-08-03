@@ -105,7 +105,8 @@ impl<T: 'static> Drop for Storage<T> {
 
         for count in counters.values() {
             if *count != 0 {
-                panic!("Cannot drop storage that has dangling handles");
+                // TODO: Handle this
+                //panic!("Cannot drop storage that has dangling handles");
             }
         }
     }

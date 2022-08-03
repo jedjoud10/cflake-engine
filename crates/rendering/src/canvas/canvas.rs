@@ -1,6 +1,6 @@
 use serde::__private::de;
 use world::{UntypedHandle, Handle, Storage};
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, TexelFormat, RenderTarget2D, Depth, Ranged, RGBA}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, TexelFormat, RenderTarget2D, Depth, Ranged, RGBA, Stencil}, shader::Shader};
 use std::marker::PhantomData;
 use super::{RasterSettings, Rasterizer};
 

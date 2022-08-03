@@ -54,7 +54,6 @@ fn init(world: &mut World) {
         sampling: Sampling::default(),
         mode: TextureMode::default(),
         mipmaps: MipMaps::default(),
-        srgb: true,
     };
 
     // Import settings for our normal map texture
@@ -62,7 +61,6 @@ fn init(world: &mut World) {
         sampling: Sampling::default(),
         mode: TextureMode::default(),
         mipmaps: MipMaps::default(),
-        srgb: false,
     };
 
     // Load a normal map texture

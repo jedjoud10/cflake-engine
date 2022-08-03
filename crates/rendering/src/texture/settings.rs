@@ -89,21 +89,9 @@ impl Default for Sampling {
 }
 
 // Texture settings that we shall use when loading in a new texture
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct TextureImportSettings {
     pub sampling: Sampling,
     pub mode: TextureMode,
     pub mipmaps: MipMaps,
-    pub srgb: bool,
-}
-
-impl Default for TextureImportSettings {
-    fn default() -> Self {
-        Self { 
-            sampling: Sampling::default(),
-            mode: TextureMode::Static,
-            mipmaps: MipMaps::Automatic,
-            srgb: false
-        }
-    }
 }

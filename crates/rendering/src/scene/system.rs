@@ -1,4 +1,4 @@
-use super::{Camera, Renderer, ClusteredShading};
+use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats};
 use crate::{
     buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
@@ -34,16 +34,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<DepthAttachment>::default());
 
     // Get mutable references to the data that we must use
-    let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
-    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
-    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
-    let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
-    let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
-    let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
     let mut color_attachments = world.get_mut::<Storage<ColorAttachment>>().unwrap();
     let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
 
@@ -59,63 +51,61 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mipmaps = MipMaps::Disabled;
 
     // Create the render color texture
-    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, false, &[]).unwrap();
+    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let color = color_attachments.insert(color);
     let t1 = (&*color_attachments, color);
 
     // Create the render depth texture
-    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, false, &[]).unwrap();
+    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let depth = depth_attachments.insert(depth);
     let t2 = (&*depth_attachments, depth);
     
     // Create the canvas that we will draw our 3D objects onto
     let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
     let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
-    let canvas = canvases.insert(canvas);
 
-    // Sky gradient texture import settings
-    let import_settings = TextureImportSettings {
-        sampling: Sampling {
-            filter: Filter::Linear,
-            wrap: Wrap::ClampToEdge,
-        },
-        mode: TextureMode::Static,
-        mipmaps: MipMaps::Disabled,
-        srgb: true,
-    };
-
-    // Load in the texture
-    let texture = albedo_maps.insert(
-        assets
-            .load_with::<AlbedoMap>("engine/textures/sky_gradient.png", (ctx, import_settings))
-            .unwrap(),
-    );
-
-    // Create the default sky material
-    let material = Sky {
-        gradient: texture,
-        sun_intensity: 15.0,
-        sun_size: 1.05,
-        cloud_coverage: 0.0,
-        cloud_speed: 0.0,
-    };
-
-    // Create the default Standard material pipeline
+    // Create the default pipelines
     let mut init = (&mut *shaders, &mut *assets);
-    let _ = ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
-    let pipeid = ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
+    ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
+    ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
 
-    // Create the default Sky material pipeline and default Sky sphere surface
-    let material = sky_materials.insert(material);
-    let renderer = Renderer::default();
-    let surface = Surface::new(todo!(), material, pipeid);
+    // Create the clustered shading rendererer
+    let clustered_shading = ClusteredShading {
+        main_camera: None,
+        main_directional_light: None,
+        canvas,
+    };
 
-    // Insert it as a new entity
-    ecs.insert((
-        renderer,
-        surface,
-        Scale::from(vek::Vec3::one() * 5000.0)
-    ));
+    // Create the post-processing settings
+    let postprocessing = PostProcessing {
+        tonemapping_strength: 1.0,
+        exposure: 1.0,
+        vignette_strength: 1.0,
+        vignette_size: 1.0,
+    };
+    
+    // Create the frame-to-frame basis stats
+    let stats = RenderedFrameStats {
+        tris: 0,
+        verts: 0,
+        unique_materials: 0,
+        material_instances: 0,
+        surfaces: 0,
+        current: false,
+    };
+    
+    // Drop the old write/read handles
+    drop(shaders);
+    drop(assets);
+    drop(color_attachments);
+    drop(depth_attachments);
+
+    // Insert the newly made resources
+    world.insert(window);
+    world.insert(context);
+    world.insert(clustered_shading);
+    world.insert(postprocessing);
+    world.insert(stats);
 }
 
 // Update the global mesh matrices of objects that have been modified
@@ -127,36 +117,41 @@ fn update_matrices(world: &mut World) {
         .query::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>()
         .unwrap();
 
+    // Update the matrices of objects that might contain location, rotation, or scale
     for (renderer, location, rotation, scale) in query {
         let mut matrix = vek::Mat4::<f32>::identity();
-
-        if let Some(location) = location {
-            matrix *= location.into_matrix();
-        }
-
-        if let Some(rotation) = rotation {
-            matrix *= rotation.into_matrix();
-        }
-
-        if let Some(scale) = scale {
-            matrix *= scale.into_matrix();
-        }
-        
+        matrix = location.map_or(matrix, |l| matrix * l.into_matrix());
+        matrix *= rotation.map_or(matrix, |r| matrix * r.into_matrix());
+        matrix *= scale.map_or(matrix, |s| matrix * s.into_matrix());
         renderer.set_matrix(matrix);
     }
 }
 
 // Rendering event that will try to render the 3D scene each frame
 fn rendering(world: &mut World) {
+    
+    // Check if we can even render the scene in the first place
+    let shading = world.get::<ClusteredShading>().unwrap();
+    if shading.main_camera().is_none() || shading.main_directional_light().is_none() {
+        return;
+    } drop(shading);
+    
+    // Extract the pipelines and render them
+    let mut stats = *world.get::<RenderedFrameStats>().unwrap();
     let pipelines = world
         .get::<Context>()
         .unwrap()
         .extract_pipelines()
         .into_iter();
 
+    // Render the pipelines one by one
     for render in pipelines {
-        render.render(world);
+        render.render(world, &mut stats);
     }
+
+    let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
+    *old_stats = stats; 
+    old_stats.current = true;
 }
 
 // Window event for updating the current main canvas and world state if needed

@@ -4,7 +4,7 @@ use crate::{
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
     material::{AlbedoMap, Material},
-    scene::{Camera, DirectionalLight, Renderer, ClusteredShading}, buffer::ElementBuffer,
+    scene::{Camera, DirectionalLight, Renderer, ClusteredShading, RenderedFrameStats}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
 use ecs::Scene;
@@ -20,7 +20,7 @@ pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
-    fn render(&self, world: &mut World) {
+    fn render(&self, world: &mut World, stats: &mut RenderedFrameStats) {
         let mut property_block_resources = M::fetch(world);
         let ecs = world.get::<Scene>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
@@ -92,7 +92,14 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
             // Draw the surface object using the current rasterizer pass
             let mesh = meshes.get(&surface.mesh());
-            rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
+
+            // Sometimes, meshes can be invalid
+            if let Some(len) = mesh.vertices().len() {
+                rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
+                stats.surfaces += 1;
+                stats.verts += len as u32;
+                stats.tris += mesh.triangles().len() as u32;
+            }
         }
     }
 }

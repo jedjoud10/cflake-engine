@@ -8,32 +8,36 @@ fn main() {
         .execute();
 }
 
+#[derive(Default, Clone, Copy, Debug)]
+struct MyData {
+    temperature: f32,
+    humidity: f32,
+    pressure: f32,
+}
+
 fn init(world: &mut World) {
-    world.insert::<Storage<ArrayBuffer<u32>>>(Storage::default());
+    world.insert::<Storage<ArrayBuffer<MyData>>>(Storage::default());
     let mut ctx = world.get_mut::<Context>().unwrap();
-    let mut storage = world.get_mut::<Storage<ArrayBuffer<u32>>>().unwrap();
-    let mut buffer = ArrayBuffer::<u32>::from_slice(&mut ctx, &[0, 0, 0, 0], BufferMode::Resizable).unwrap();
+    let mut storage = world.get_mut::<Storage<ArrayBuffer<MyData>>>().unwrap();
+    let mut buffer = ArrayBuffer::<MyData>::from_slice(&mut ctx, &[MyData::default(), MyData::default(), MyData::default(), MyData::default()], BufferMode::Resizable).unwrap();
     let mut mapped = buffer.map_mut().unwrap();
     let slice = mapped.as_slice_mut();
-    slice[0] = 1;
-    slice[3] = 1;
+    slice[0].humidity = 1.0;
+    slice[3].humidity = 1.0;
     drop(mapped);
     let mut mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
 
-    buffer.extend_from_slice(&[2, 3, 4, 5]);
+    buffer.extend_from_slice(&[MyData::default()]);
     let mut mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
 
-    buffer.extend_from_slice(&[2, 3, 4, 5]);
+    buffer.extend_from_slice(&[MyData::default()]);
     let mut mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
-
-
-    buffer.extend_from_slice(vec![0; u16::MAX as usize].as_slice());
 
     let handle = storage.insert(buffer);
     unsafe { handle.increment_count() };

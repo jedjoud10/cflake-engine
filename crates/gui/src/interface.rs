@@ -96,7 +96,7 @@ pub fn system(events: &mut Events) {
     }
 
     // Register all the events
-    events.registry::<Init>().insert(init);
+    events.registry::<Init>().insert_with(init, Stage::new("ui insert").after("graphics insert")).unwrap();
     events.registry::<Update>().insert(begin);
     events
         .registry::<Update>()
