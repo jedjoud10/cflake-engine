@@ -1,4 +1,4 @@
-use crate::{Shape, AABB, Movable, Boundable, Volume, Area};
+use crate::{AABB, Movable, Boundable, Volume, Area};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone, Copy)]

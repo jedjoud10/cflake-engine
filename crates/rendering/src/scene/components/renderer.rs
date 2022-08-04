@@ -19,7 +19,7 @@ impl Default for Renderer {
     fn default() -> Self {
         Self {
             matrix: vek::Mat4::identity(),
-            bounds: AABB::default(),
+            bounds: AABB { min: vek::Vec3::one() / -2.0, max: vek::Vec3::one() / 2.0 },
             enabled: true,
         }
     }
@@ -27,8 +27,8 @@ impl Default for Renderer {
 
 impl Renderer {
     // Create a new entity renderer with it's raw data
-    pub fn new(matrix: vek::Mat4<f32>, enabled: bool) -> Self {
-        Self { matrix, enabled, bounds: Default::default() }
+    pub fn new(matrix: vek::Mat4<f32>, enabled: bool, bounds: AABB) -> Self {
+        Self { matrix, enabled, bounds }
     }
 
     // Get the current mesh matrix that we will use for rendering
@@ -45,6 +45,12 @@ impl Renderer {
     pub fn bounds(&self) -> &AABB {
         &self.bounds
     }
+
+    // Set the current bounds of the renderer
+    pub fn set_bounds(&mut self, aabb: AABB) {
+        self.bounds = aabb;
+    }
+
     // Check if we should render the model
     pub fn enabled(&self) -> bool {
         self.enabled

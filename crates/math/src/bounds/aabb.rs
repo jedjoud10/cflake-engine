@@ -1,4 +1,4 @@
-use std::ops::Index;
+
 
 use crate::{Movable, Boundable};
 
@@ -49,7 +49,7 @@ impl Boundable for AABB {
         *self
     }
 
-    fn scale_by(&mut self, scale: f32) {
+    fn scale_by(&mut self, _scale: f32) {
         todo!()
     }
 

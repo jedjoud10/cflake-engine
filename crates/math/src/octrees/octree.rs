@@ -49,11 +49,11 @@ impl Octree {
         let heuristic = match heuristic {
             OctreeHeuristic::ManualBoxed(b) => b,
             OctreeHeuristic::Manual(x) => Box::new(x),
-            OctreeHeuristic::LodHeuristic { min_radius_lod, falloff, exp_falloff } => {
-                Box::new(|node: &Node, loc: &vek::Vec3<f32>| { false })
+            OctreeHeuristic::LodHeuristic { min_radius_lod: _, falloff: _, exp_falloff: _ } => {
+                Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| { false })
             },
-            OctreeHeuristic::ShereHeuristic { radius } => {
-                Box::new(|node: &Node, loc: &vek::Vec3<f32>| { false })
+            OctreeHeuristic::ShereHeuristic { radius: _ } => {
+                Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| { false })
             },
             OctreeHeuristic::AABBHeuristic { extent } => {
                 Box::new(move |node: &Node, loc: &vek::Vec3<f32>| {
