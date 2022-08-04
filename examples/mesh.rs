@@ -28,6 +28,7 @@ fn init(world: &mut World) {
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
+    let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
     
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
@@ -91,18 +92,30 @@ fn init(world: &mut World) {
     ).unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
+    // Create the default mask map texture
+    let mask_map = MaskMap::new(
+        &mut ctx,
+        TextureMode::Static,
+        vek::Extent2::one(),
+        Sampling::default(),
+        MipMaps::Disabled,
+        &[vek::Vec2::zero()]
+    ).unwrap();
+    let mask_map = mask_maps.insert(mask_map);
+
     // Create the default cube primitive mesh
     let generator = PrimitiveCuboidSettings {
         geom: Cuboid { center: vek::Vec3::zero(), extent: vek::Extent3::one() },
         settings: MeshImportSettings::default(),
         ctx: &mut ctx,
     };
+    let cube = meshes.insert(generator.generate());
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard { 
         albedo_map,
         normal_map,
-        mask_map: (),
+        mask_map,
         bumpiness: 1.4,
         roughness: 0.,
         metallic: 0.,
@@ -111,7 +124,7 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
-    let surface = Surface::new(settings.cube(), material, pipeid);
+    let surface = Surface::new(cube, material, pipeid);
 
     // Insert a new entity that contains the valid surface
     ecs.insert((surface, Renderer::default()));
@@ -124,8 +137,7 @@ struct Velocity {
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    // Get the graphic resources
-    let settings = world.get::<SceneSettings>().unwrap();
+    let shading = world.get::<ClusteredShading>().unwrap();
     let window = world.get_mut::<Window>().unwrap();
     
     // Get the input resources
@@ -140,7 +152,7 @@ fn update(world: &mut World) {
     window.raw().set_cursor_grab(true).unwrap();
     window.raw().set_cursor_visible(false);
     
-    if let Some(mut entry) = settings.main_camera().and_then(|c| ecs.entry_mut(c)) {
+    if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them
         let (location, rotation, velocity) = entry.as_query::<(&mut Location, &mut Rotation, &mut Velocity)>().unwrap();
 

@@ -1,5 +1,5 @@
 use crate::{
-    mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskMap, MutQueryItem,
+    mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap, MutQueryItem,
     MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
 };
 
@@ -137,14 +137,14 @@ impl<'a, T: Component> OwnedBundle<'a> for T {
         storages.push(bundle)
     }
 
-    fn default_tables() -> MaskMap<Box<dyn ComponentTable>> {
+    fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
         let boxed: Box<dyn ComponentTable> = Box::new(Vec::<T>::new());
         let mask = mask::<T>();
-        MaskMap::from_iter(std::iter::once((mask, boxed)))
+        MaskHashMap::from_iter(std::iter::once((mask, boxed)))
     }
 
     fn try_swap_remove(
-        tables: &mut MaskMap<Box<dyn ComponentTable>>,
+        tables: &mut MaskHashMap<Box<dyn ComponentTable>>,
         index: usize,
     ) -> Option<Self> {
         let boxed = tables.get_mut(&mask::<T>())?;
@@ -231,15 +231,15 @@ macro_rules! tuple_impls {
                 });
             }
 
-            fn default_tables() -> MaskMap<Box<dyn ComponentTable>> {
-                let mut map = MaskMap::<Box<dyn ComponentTable>>::default();
+            fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
+                let mut map = MaskHashMap::<Box<dyn ComponentTable>>::default();
                 ($(
                     map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
                 ),+);
                 map
             }
 
-            fn try_swap_remove(tables: &mut MaskMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
+            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
                 seq!(N in 0..$max {
                     let boxed = tables.get_mut(&mask::<C~N>())?;
                     let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();

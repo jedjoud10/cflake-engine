@@ -4,11 +4,11 @@ use world::{Events, Init, Stage, Update, World};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
-    EntryMut, EntryRef, Evaluate, Mask, MaskMap, MutQueryLayout, RefQueryLayout,
+    EntryMut, EntryRef, Evaluate, Mask, MaskHashMap, MutQueryLayout, RefQueryLayout,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
-pub type ArchetypeSet = MaskMap<Archetype>;
+pub type ArchetypeSet = MaskHashMap<Archetype>;
 
 // The scene is what will contain the multiple ECS entities and archetypes 
 pub struct Scene {
@@ -25,7 +25,7 @@ impl Default for Scene {
     fn default() -> Self {
         Self {
             entities: Default::default(),
-            archetypes: MaskMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
+            archetypes: MaskHashMap::from_iter(std::iter::once((Mask::zero(), Archetype::empty()))),
         }
     }
 }

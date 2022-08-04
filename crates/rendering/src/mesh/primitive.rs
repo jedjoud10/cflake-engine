@@ -13,6 +13,12 @@ pub struct PrimitiveCuboidSettings<'a> {
     pub ctx: &'a mut Context,
 }
 
+impl<'a> PrimitiveGenerator<'a> for PrimitiveCuboidSettings<'a> {
+    fn generate(self) -> Mesh {
+        todo!()
+    }
+}
+
 // Settings used when generating a uv sphere
 pub struct PrimitiveUvSphereSettings<'a> {
     pub geom: math::Sphere,
@@ -20,6 +26,12 @@ pub struct PrimitiveUvSphereSettings<'a> {
     pub vertical_subdivions: u32,
     pub settings: MeshImportSettings,
     pub ctx: &'a mut Context,
+}
+
+impl<'a> PrimitiveGenerator<'a> for PrimitiveUvSphereSettings<'a> {
+    fn generate(self) -> Mesh {
+        todo!()
+    }
 }
 
 // Settings used when generting an ico sphere
@@ -30,3 +42,8 @@ pub struct PrimitiveIcoSphereSettings<'a> {
     pub ctx: &'a mut Context,
 }
 
+impl<'a> PrimitiveGenerator<'a> for PrimitiveIcoSphereSettings<'a> {
+    fn generate(self) -> Mesh {
+        todo!()
+    }
+}

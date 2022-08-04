@@ -1,13 +1,13 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskMap, StateRow,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow,
 };
 use std::{cell::RefCell, rc::Rc};
 
 // TODO: Comment
 pub struct Archetype {
     mask: Mask,
-    tables: MaskMap<Box<dyn ComponentTable>>,
+    tables: MaskHashMap<Box<dyn ComponentTable>>,
     states: Rc<RefCell<Vec<StateRow>>>,
     entities: Vec<Entity>,
 }
@@ -182,7 +182,7 @@ pub(crate) fn add_bundle_unchecked<B: Bundle>(
             .map(|(mask, table)| (*mask, table.clone_default()));
         let archetype = Archetype {
             mask: new,
-            tables: MaskMap::from_iter(tables),
+            tables: MaskHashMap::from_iter(tables),
             states: Default::default(),
             entities: Default::default(),
         };
@@ -247,7 +247,7 @@ pub(crate) fn remove_bundle_unchecked<B: Bundle>(
         let filtered = tables.filter(|(mask, _)| Mask::contains(&new, *mask));
         let archetype = Archetype {
             mask: new,
-            tables: MaskMap::from_iter(filtered),
+            tables: MaskHashMap::from_iter(filtered),
             states: Default::default(),
             entities: Default::default(),
         };
