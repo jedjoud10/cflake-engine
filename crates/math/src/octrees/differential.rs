@@ -1,13 +1,10 @@
 use ahash::AHashSet;
 use super::{HeuristicSettings, Node, Octree};
 
-// A differential octree, so we can detect what nodes we have added/removes from this octree
+// A differential octree, so we can detect what nodes we have added/removed from it
 #[derive(Default)]
 pub struct DiffOctree {
-    // Underlying simple octree
     inner: Octree,
-
-    // A set containing all the nodes from the previous update
     previous: AHashSet<Node>,
 }
 

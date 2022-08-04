@@ -18,7 +18,7 @@ pub struct MeshImportSettings {
 impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
-            mode: BufferMode::Dynamic,
+            mode: BufferMode::Resizable,
             generate_normals: false,
             generate_tangents: true,
             position_scale: 1.0,
