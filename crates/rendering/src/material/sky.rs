@@ -1,15 +1,13 @@
-use ecs::Scene;
-use math::{Location, Rotation};
+
+
 use time::Time;
 use world::{Handle, Read, Storage};
 
 use crate::{
-    canvas::{Canvas, FaceCullMode, PrimitiveMode},
-    context::{Context, Window},
+    canvas::{PrimitiveMode},
     material::{AlbedoMap, Material},
-    mesh::Mesh,
-    prelude::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    scene::{Camera, DirectionalLight, Renderer},
+    prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage},
+    scene::{Renderer},
 };
 
 use super::DefaultMaterialResources;
@@ -55,8 +53,8 @@ impl<'w> Material<'w> for Sky {
 
     fn set_surface_properties(
         uniforms: &mut Uniforms,
-        main: &DefaultMaterialResources,
-        resources: &mut Self::Resources,
+        _main: &DefaultMaterialResources,
+        _resources: &mut Self::Resources,
         renderer: &Renderer
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());

@@ -1,10 +1,8 @@
 use std::{
-    cell::Cell,
-    mem::{size_of, MaybeUninit},
-    ptr::null,
+    mem::{MaybeUninit},
 };
 
-use arrayvec::ArrayVec;
+
 use assets::Asset;
 use math::AABB;
 use obj::TexturedVertex;
@@ -14,9 +12,8 @@ use super::{
 };
 use super::attributes::*;
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferFormatAny, BufferMode, ElementBuffer, TriangleBuffer},
+    buffer::{ArrayBuffer, Buffer, BufferMode, TriangleBuffer},
     context::Context,
-    object::{Shared, ToGlName},
 };
 
 // A mesh is a collection of 3D vertices connected by triangles

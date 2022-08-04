@@ -2,8 +2,8 @@ use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
 use super::{Canvas};
 use crate::{
-    buffer::ElementBuffer, context::Context, mesh::Mesh, object::ToGlName, others::Comparison,
-    prelude::{Uniforms, ValidUniforms},
+    context::Context, mesh::Mesh, others::Comparison,
+    prelude::{ValidUniforms},
 };
 
 // Blend mode factor source
@@ -183,7 +183,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         &mut self,
         vao: u32,
         primitive_count: usize,
-        uniforms: ValidUniforms,
+        _uniforms: ValidUniforms,
     ) {        
         if primitive_count > 0 {
             gl::BindVertexArray(vao);
@@ -197,7 +197,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         vao: u32,
         primitive_count: usize,
         element_type: u32,
-        uniforms: ValidUniforms,
+        _uniforms: ValidUniforms,
     ) {
         if primitive_count > 0 {
             gl::BindVertexArray(vao);

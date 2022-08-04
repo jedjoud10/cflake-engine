@@ -1,16 +1,16 @@
 use crate::{
-    canvas::{PrimitiveMode, RasterSettings, Canvas},
+    canvas::{RasterSettings},
     context::{Context, Window},
     mesh::{Mesh, Surface},
-    prelude::{Shader, Uniforms},
-    material::{AlbedoMap, Material, DefaultMaterialResources},
-    scene::{Camera, DirectionalLight, Renderer, ClusteredShading, RenderedFrameStats}, buffer::ElementBuffer,
+    prelude::{Shader},
+    material::{Material, DefaultMaterialResources},
+    scene::{Camera, DirectionalLight, Renderer, ClusteredShading, RenderedFrameStats},
 };
-use assets::{Assets, Asset};
+use assets::{Assets};
 use ecs::Scene;
 use math::{Location, Rotation};
-use std::{any::type_name, marker::PhantomData};
-use world::{Handle, Read, Resource, Storage, World};
+use std::{marker::PhantomData};
+use world::{Handle, Storage, World};
 use super::{Pipeline, CreatePipeline};
 
 // The standardized pipeline will use the default rendering canvas to render to

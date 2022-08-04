@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::context::Context;
+
 
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Clone, Copy, PartialEq, Eq)]

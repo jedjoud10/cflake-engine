@@ -1,6 +1,6 @@
-use serde::__private::de;
+
 use world::{UntypedHandle, Handle, Storage};
-use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texture2D, Texel, TexelFormat, RenderTarget2D, Depth, Ranged, RGBA, Stencil}, shader::Shader};
+use crate::{context::Context, object::ToGlName, prelude::{Uniforms, Texel, TexelFormat, RenderTarget2D, Depth, Ranged, RGBA}, shader::Shader};
 use std::marker::PhantomData;
 use super::{RasterSettings, Rasterizer};
 
@@ -75,7 +75,7 @@ impl Canvas {
             name
         };
 
-        let attachments = targets.into_iter().map(|a| ToCanvasAttachment::into(a)).collect::<Vec<_>>();
+        let attachments = targets.into_iter().map(ToCanvasAttachment::into).collect::<Vec<_>>();
         let mut draw_buffers = 0;
         let mut depth_enabled = false;
         let mut stencil_enabled = false; 

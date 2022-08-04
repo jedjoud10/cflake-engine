@@ -1,16 +1,12 @@
 use crate::{
-    canvas::{PrimitiveMode, RasterSettings, Canvas},
-    context::{Context, Window},
-    mesh::{Mesh, Surface},
-    prelude::{Shader, Uniforms},
-    material::{AlbedoMap, Material},
-    scene::{Camera, DirectionalLight, Renderer, RenderedFrameStats}, buffer::ElementBuffer,
+    context::{Context},
+    scene::{RenderedFrameStats},
 };
-use assets::{Assets, Asset};
-use ecs::Scene;
-use math::{Location, Rotation};
-use std::{any::type_name, marker::PhantomData};
-use world::{Handle, Read, Resource, Storage, World};
+
+
+
+use std::{marker::PhantomData};
+use world::{World};
 
 // Marker type that tells us we registered a specific generic pipeline
 pub struct PipeId<P: Pipeline>(pub(crate) PhantomData<P>);

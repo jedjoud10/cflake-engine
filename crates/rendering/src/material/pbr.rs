@@ -1,15 +1,13 @@
 use assets::Assets;
-use ecs::Scene;
-use math::{Location, Rotation};
+
+
 use world::{Handle, Read, Storage};
 
 use crate::{
-    canvas::Canvas,
-    context::{Context, Window},
-    mesh::Mesh,
-    scene::{Camera, DirectionalLight, Renderer},
+    context::{Context},
+    scene::{Renderer},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, prelude::{Depth, RenderTarget2D, SRGBA},
+    texture::{Ranged, Texture, Texture2D, RG, RGB}, prelude::{SRGBA},
 };
 
 use super::{Material, DefaultMaterialResources};
@@ -48,7 +46,7 @@ impl<'w> Material<'w> for Standard {
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
         main: &DefaultMaterialResources,
-        resources: &mut Self::Resources,
+        _resources: &mut Self::Resources,
     ) {
         uniforms.set_mat4x4("view_matrix", main.camera.view_matrix());
         uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
@@ -59,8 +57,8 @@ impl<'w> Material<'w> for Standard {
 
     fn set_surface_properties(
         uniforms: &mut Uniforms,
-        main: &DefaultMaterialResources,
-        resources: &mut Self::Resources,
+        _main: &DefaultMaterialResources,
+        _resources: &mut Self::Resources,
         renderer: &Renderer,
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
@@ -68,7 +66,7 @@ impl<'w> Material<'w> for Standard {
 
     fn set_instance_properties(
         uniforms: &mut Uniforms,
-        main: &DefaultMaterialResources,
+        _main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
         instance: &Self,
     ) {

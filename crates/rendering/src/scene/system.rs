@@ -2,18 +2,18 @@ use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameSta
 use crate::{
     buffer::{BufferMode, UniformBuffer},
     context::{Context, GraphicsSetupSettings, Window},
-    material::{AlbedoMap, MaskMap, Material, NormalMap, Sky, Standard},
-    pipeline::{PipeId, Pipeline, SpecializedPipeline},
-    mesh::{Mesh, MeshImportSettings, Surface},
+    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
+    pipeline::{Pipeline, SpecializedPipeline},
+    mesh::{Mesh},
     prelude::{
-        Filter, MipMaps, Ranged, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
-        TextureMode, Wrap, RG, RGB, RGBA, R, Depth,
+        Filter, MipMaps, Sampling, Texture,
+        TextureMode, Wrap,
     },
     shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment},
 };
 
 use assets::Assets;
-use ecs::{added, modified, or, Scene};
+use ecs::{Scene};
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::{Scale, Location, Rotation, IntoMatrix};
 use world::{Events, Init, Stage, Storage, Update, World};
@@ -40,7 +40,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
 
     // Create the window and graphical context
-    let (mut window, mut context) = crate::context::new(settings, el);
+    let (window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
     // Settings for framebuffer textures

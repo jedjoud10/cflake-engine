@@ -25,17 +25,17 @@ fn init(world: &mut World) {
     slice[0].humidity = 1.0;
     slice[3].humidity = 1.0;
     drop(mapped);
-    let mut mapped = buffer.map().unwrap();
+    let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
 
     buffer.extend_from_slice(&[MyData::default()]);
-    let mut mapped = buffer.map().unwrap();
+    let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
 
     buffer.extend_from_slice(&[MyData::default()]);
-    let mut mapped = buffer.map().unwrap();
+    let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
 

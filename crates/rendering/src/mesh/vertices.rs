@@ -1,4 +1,4 @@
-use arrayvec::ArrayVec;
+
 use crate::{buffer::{ArrayBuffer, BufferFormatAny, Buffer}, object::ToGlName};
 use super::attributes::*;
 
@@ -140,11 +140,11 @@ impl VerticesMut<'_> {
     // Re-bind the vertex buffers to the VAO, assuming that they are valid
     // This is done automatically when "self is dropped"
     pub fn rebind(&mut self, force: bool) -> bool {
-        if !self.len().is_some() {
+        if self.len().is_none() {
             return false;
         }
 
-        for (i, (buffer, attrib)) in self.as_any().into_iter().filter_map(|s| s).enumerate() {
+        for (i, (buffer, attrib)) in self.as_any().into_iter().flatten().enumerate() {
             if self.maybe_reassigned.contains(attrib.tag()) || force {
                 unsafe {
                     gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32);

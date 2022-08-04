@@ -1,14 +1,12 @@
 use ahash::AHashMap;
-use assets::Assets;
+
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
-use world::{Resource, Storage};
+
 
 use crate::{
-    material::{Material},
-    pipeline::{PipeId, Pipeline, SpecializedPipeline, CreatePipeline},
-    prelude::Shader,
+    pipeline::{PipeId, Pipeline, CreatePipeline},
 };
 
 use super::get_static_str;

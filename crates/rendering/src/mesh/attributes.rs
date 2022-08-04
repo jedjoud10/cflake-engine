@@ -1,6 +1,6 @@
 use std::mem::{size_of, MaybeUninit};
 
-use crate::{buffer::ArrayBuffer, mesh::Mesh, object::Shared};
+use crate::{buffer::ArrayBuffer, object::Shared};
 
 use super::{VerticesMut, VerticesRef};
 

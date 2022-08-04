@@ -7,7 +7,7 @@ use glutin::{
 };
 
 // FPS cap setting that limits the number of redraws per second
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
     VSync,
     Limited(u32),

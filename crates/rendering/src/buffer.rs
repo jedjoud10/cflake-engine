@@ -2,8 +2,8 @@ use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
 use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::{align_of, MaybeUninit};
-use std::ops::{Range, RangeBounds};
+use std::mem::{MaybeUninit};
+use std::ops::{RangeBounds};
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -162,7 +162,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     pub fn convert_range_bounds(&self, range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
         let start = match range.start_bound() {
             std::ops::Bound::Included(start) => *start,
-            std::ops::Bound::Excluded(start) => panic!(),
+            std::ops::Bound::Excluded(_) => panic!(),
             std::ops::Bound::Unbounded => 0,
         };
 

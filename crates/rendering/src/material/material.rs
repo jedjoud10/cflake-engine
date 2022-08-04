@@ -1,14 +1,14 @@
-use std::{any::TypeId, marker::PhantomData};
+
 
 use assets::Assets;
-use ecs::Scene;
+
 use math::{Location, Rotation};
-use world::{Resource, Storage, World};
+use world::{World};
 
 use crate::{
-    canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
+    canvas::{BlendMode, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::{Mesh, EnabledAttributes, Surface},
+    mesh::{EnabledAttributes},
     others::Comparison,
     scene::{Camera, DirectionalLight, Renderer, PointLight},
     shader::{Shader, Uniforms}, buffer::UniformBuffer,

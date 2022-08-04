@@ -1,8 +1,8 @@
 use std::{num::NonZeroU8, marker::PhantomData};
 
-use world::{Handle, UntypedHandle, Storage};
-use crate::{canvas::Canvas, object::{ToGlName, ToGlTarget}};
-use super::{Texture2D, Texel, TexelFormat, Texture, TextureMode, Region};
+
+use crate::{object::{ToGlName, ToGlTarget}};
+use super::{Texel, Texture, TextureMode, Region};
 
 // A 2D render target texture that we will draw to using a canvas
 // Render targets can be used as normal textures, but they cannot be loaded in

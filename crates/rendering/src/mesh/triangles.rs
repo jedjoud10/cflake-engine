@@ -1,4 +1,4 @@
-use crate::{buffer::{ElementBuffer, TriangleBuffer}, object::ToGlName};
+use crate::{buffer::{TriangleBuffer}, object::ToGlName};
 
 // Immutable access to the mesh indices
 pub struct TrianglesRef<'a> {
@@ -8,7 +8,7 @@ pub struct TrianglesRef<'a> {
 impl TrianglesRef<'_> {
     // Get an immutable reference to the inner buffer
     pub fn data(&self) -> &TriangleBuffer<u32> {
-        &self.buffer
+        self.buffer
     }
 
     // Get the number of triangles that we have
@@ -27,12 +27,12 @@ pub struct TrianglesMut<'a> {
 impl TrianglesMut<'_> {
     // Get an immutable reference to the inner buffer
     pub fn data(&self) -> &TriangleBuffer<u32> {
-        &self.buffer
+        self.buffer
     }
 
     // Get a mutable reference to the inner buffer
     pub fn data_mut(&mut self) -> &mut TriangleBuffer<u32> {
-        &mut self.buffer
+        self.buffer
     }
 
     // Get the number of triangles that we have
