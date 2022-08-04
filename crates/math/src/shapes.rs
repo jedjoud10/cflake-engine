@@ -5,7 +5,7 @@ pub use sphere::*;
 use crate::AABB;
 
 // A shape is a 3D geometrical object that takes space
-pub trait Shape: Movable + Boundable + Volume + Area + Clone + Copy + Sync + Send {
+pub trait Shape: Movable + Boundable + Volume + Area + Sync + Send {
 }
 
 // Shapes that have a concrete positions

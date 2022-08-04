@@ -77,6 +77,11 @@ impl Node {
         self.children.as_ref()
     }
 
+    // Get a mutable reference to the inner children keys (PS: Only used internally)
+    pub fn children_mut(&mut self) -> &mut Option<[NodeKey; 8]> {
+        &mut self.children
+    }
+
     // Get the depth of this node
     pub fn depth(&self) -> u8 {
         self.depth

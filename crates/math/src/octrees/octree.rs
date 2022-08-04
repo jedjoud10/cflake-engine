@@ -1,9 +1,12 @@
 use slotmap::{Key, SlotMap};
+use crate::AABB;
 use super::{node::Node, NodeKey};
 
+type BoxedHeuriticFunc = Box<dyn Fn(&Node, &vek::Vec3<f32>) -> bool>;
 
 // The octree heuristic is what we must use within the octree to specify what nodes will be further subdivided
 pub enum OctreeHeuristic {
+    ManualBoxed(BoxedHeuriticFunc),
     Manual(fn(&Node, &vek::Vec3<f32>) -> bool),
     LodHeuristic {
         min_radius_lod: f32,
@@ -13,7 +16,7 @@ pub enum OctreeHeuristic {
     ShereHeuristic {
         radius: f32,
     },
-    CubeHeauristic {
+    AABBHeuristic {
         extent: f32,
     }
 }
@@ -34,7 +37,7 @@ pub struct Octree {
     size: u64,
 
     // Some specific heuristic settings
-    heuristic: OctreeHeuristic,
+    heuristic: BoxedHeuriticFunc,
 }
 
 impl Octree {
@@ -42,6 +45,30 @@ impl Octree {
     pub fn new(depth: u8, size: u64, heuristic: OctreeHeuristic) -> Self {
         let mut nodes = SlotMap::<NodeKey, Node>::default();
         let root = nodes.insert_with_key(|key| Node::root(key, depth, size));
+
+        let heuristic = match heuristic {
+            OctreeHeuristic::ManualBoxed(b) => b,
+            OctreeHeuristic::Manual(x) => Box::new(x),
+            OctreeHeuristic::LodHeuristic { min_radius_lod, falloff, exp_falloff } => {
+                Box::new(|node: &Node, loc: &vek::Vec3<f32>| { false })
+            },
+            OctreeHeuristic::ShereHeuristic { radius } => {
+                Box::new(|node: &Node, loc: &vek::Vec3<f32>| { false })
+            },
+            OctreeHeuristic::AABBHeuristic { extent } => {
+                Box::new(move |node: &Node, loc: &vek::Vec3<f32>| {
+                    let user = AABB {
+                        min: loc - vek::Vec3::broadcast(extent / 2.0),
+                        max: loc + vek::Vec3::broadcast(extent / 2.0),
+                    };
+    
+                    let node = node.aabb();
+    
+                    crate::aabb_aabb(&user, &node)                
+                })
+            },
+        };
+
         Self {
             target: None,
             nodes,
@@ -94,9 +121,10 @@ impl Octree {
     }
     
     // Update the internal octree using the target point
-    pub fn update(&mut self, target: vek::Vec3<f32>) -> Option<()> {
+    // This will immediately return false if we cannot update the octree
+    pub fn update(&mut self, target: vek::Vec3<f32>) -> bool {
         if !self.must_update(target) {
-            return None;
+            return false;
         }
 
         // Evaluate each node
@@ -106,25 +134,25 @@ impl Octree {
         while !pending_nodes.is_empty() {
             // Get the current pending node
             let key = pending_nodes.remove(0);
-            let octree_node = self.nodes.get_mut(key).unwrap();
+            let node = self.nodes.get_mut(key).unwrap();
 
-            // If the node contains the position, subdivide it
-            if octree_node.can_subdivide(&target, self.depth, &self.hsettings) {
-                // Subidivide
-                let subdivided = octree_node.subdivide();
+            // Check if we can subdivide the node
+            if (self.heuristic)(node, &target) && node.depth() < self.depth - 1 {
+                let subdivided = node.subdivide();
 
                 // Insert the new nodes into the tree
-                let mut children_keys = [NodeKey::null(); 8];
+                let mut keys = [NodeKey::null(); 8];
                 for (i, node) in subdivided.into_iter().enumerate() {
-                    children_keys[i] = self.nodes.insert(node);
+                    keys[i] = self.nodes.insert(node);
                 }
-                *self.nodes.get_mut(key).unwrap().children_mut() = Some(children_keys);
-                pending_nodes.extend(children_keys);
+
+                *self.nodes.get_mut(key).unwrap().children_mut() = Some(keys);
+                pending_nodes.extend(keys);
             }
         }
 
         self.target = Some(target);
-        Some(())
+        true
     }
 
     // Recursively iterate through each node, and check it's children if the given function returns true
@@ -134,15 +162,14 @@ impl Octree {
         let mut passed: Vec<&'a Node> = Vec::new();
         
         while !pending_nodes.is_empty() {
-            let octree_node = pending_nodes.remove(0);
+            let node = pending_nodes.remove(0);
 
             // If the node function is true, we recursively iterate through it's children
-            if function(octree_node) {
-                passed.push(octree_node);
-                if let Some(children) = &octree_node.children() {
-                    // Add the children if we have them
-                    for child_id in children {
-                        pending_nodes.push(self.nodes.get(*child_id).unwrap())
+            if function(node) {
+                passed.push(node);
+                if let Some(children) = node.children() {
+                    for key in children {
+                        pending_nodes.push(self.nodes.get(*key).unwrap())
                     }
                 }
             }

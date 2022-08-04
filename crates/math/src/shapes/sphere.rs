@@ -1,3 +1,7 @@
+use std::f32::consts::PI;
+
+use vek::num_traits::Pow;
+
 use crate::{AABB, Volume, Area, Shape, Movable, Boundable};
 
 // A simple sphere that is represented by it's center and radius
@@ -36,13 +40,13 @@ impl Boundable for Sphere {
 
 impl Volume for Sphere {
     fn volume(&self) -> f32 {
-        todo!()
+        4.0 / 3.0 * PI * self.radius.pow(3.0)
     }
 }
 
 impl Area for Sphere {
     fn area(&self) -> f32 {
-        todo!()
+        4.0 * PI * self.radius.pow(2.0)
     }
 }
 
