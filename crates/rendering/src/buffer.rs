@@ -75,9 +75,14 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 }
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
-    // Create a buffer using a slice of elements
+    // Create a buffer using a slice of elements (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
     pub fn from_slice(_ctx: &mut Context, slice: &[T], mode: BufferMode) -> Option<Self> {
         unsafe {
+            // We cannot handle zero sized types
+            if size_of::<T>() == 0 {
+                return None;
+            }
+
             // Return none if we are trying to make an empty static / dynamic / partial buffer
             if slice.is_empty() {
                 match mode {

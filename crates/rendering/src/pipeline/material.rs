@@ -3,7 +3,7 @@ use crate::{
     context::{Context, Window},
     mesh::{Mesh, Surface},
     prelude::{Shader, Uniforms},
-    material::{AlbedoMap, Material},
+    material::{AlbedoMap, Material, DefaultMaterialResources},
     scene::{Camera, DirectionalLight, Renderer, ClusteredShading, RenderedFrameStats}, buffer::ElementBuffer,
 };
 use assets::{Assets, Asset};
@@ -21,15 +21,15 @@ pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
     fn render(&self, world: &mut World, stats: &mut RenderedFrameStats) {
-        let mut property_block_resources = M::fetch(world);
+        let mut property_block_resources = M::fetch_resources(world);
         let ecs = world.get::<Scene>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
         let window = world.get::<Window>().unwrap();
-        let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+        let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
+        let shading = &mut *_shading;
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
-        let mut canvases = world.get_mut::<Storage<Canvas>>().unwrap();
 
         // How exactly we should rasterize the surfaces
         let settings: RasterSettings = RasterSettings {
@@ -39,8 +39,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
-        // Fetch the shader
-        let shader = shaders.get_mut(&self.shader);
 
         // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
         let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
@@ -57,14 +55,26 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Get the main directional light
         let light_entry = ecs.entry(shading.main_directional_light.unwrap()).unwrap();
-        let (light, light_rotation) = light_entry.as_view::<(&DirectionalLight, &Rotation)>().unwrap();
+        let (directional_light, directional_light_rotation) = light_entry.as_view::<(&DirectionalLight, &Rotation)>().unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
+        let shader = shaders.get_mut(&self.shader);
         let (mut rasterizer, mut uniforms) = shading.canvas.rasterizer(&mut ctx, shader, settings);
+
+        let main = DefaultMaterialResources {
+            camera,
+            point_lights: &shading.point_lights,
+            camera_location,
+            camera_rotation,
+            directional_light,
+            directional_light_rotation,
+            window: &window,
+        };
 
         // Set global properties
         M::set_static_properties(
             &mut uniforms,
+            &main,
             &mut property_block_resources,
         );
 
@@ -77,15 +87,17 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
                 // Update the material property block uniforms
                 M::set_instance_properties(
-                    instance,
                     &mut uniforms,
+                    &main,
                     &mut property_block_resources,
+                    instance,
                 );
             }
 
             // Set the uniforms per renderer
-            M::set_render_properties(
+            M::set_surface_properties(
                 &mut uniforms,
+                &main,
                 &mut property_block_resources,
                 renderer,
             );

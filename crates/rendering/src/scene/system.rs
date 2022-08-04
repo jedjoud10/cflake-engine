@@ -1,6 +1,6 @@
 use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats};
 use crate::{
-    buffer::BufferMode,
+    buffer::{BufferMode, UniformBuffer},
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, Material, NormalMap, Sky, Standard},
     pipeline::{PipeId, Pipeline, SpecializedPipeline},
@@ -74,6 +74,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         main_camera: None,
         main_directional_light: None,
         canvas,
+        point_lights: UniformBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
     };
 
     // Create the post-processing settings

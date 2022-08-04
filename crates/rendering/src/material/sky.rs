@@ -12,6 +12,8 @@ use crate::{
     scene::{Camera, DirectionalLight, Renderer},
 };
 
+use super::DefaultMaterialResources;
+
 // This is the material that our skysphere/skybox will use for rendering
 // TODO: Implemented HDRi sky material and sheit
 pub struct Sky {
@@ -30,7 +32,7 @@ pub struct Sky {
 impl<'w> Material<'w> for Sky {
     type Resources = (Read<'w, Storage<AlbedoMap>>, Read<'w, Time>);
 
-    fn fetch(world: &'w world::World) -> Self::Resources {
+    fn fetch_resources(world: &'w world::World) -> Self::Resources {
         let maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let time = world.get::<Time>().unwrap();
         (maps, time)
@@ -40,42 +42,38 @@ impl<'w> Material<'w> for Sky {
         PrimitiveMode::Triangles { cull: None }
     }
 
-    // This method will be called once right before we start rendering the batches
     fn set_static_properties(
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
     ) {
-        /*
-        uniforms.set_mat4x4("view_matrix", camera.0.view());
-        uniforms.set_mat4x4("proj_matrix", camera.0.projection());
-        uniforms.set_vec3("sun_dir", light.1.forward());
-        uniforms.set_scalar("offset", (light.1.forward().y + 1.0) / 2.0);
+        uniforms.set_mat4x4("view_matrix", main.camera.view_matrix());
+        uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
+        uniforms.set_vec3("sun_dir", main.directional_light_rotation.forward());
         uniforms.set_scalar("time_since_startup", resources.1.secs_since_startup_f32());
-        */
     }
 
-    // This method will be called for each surface that we have to render
-    fn set_render_properties(
+    fn set_surface_properties(
         uniforms: &mut Uniforms,
-        _resources: &mut Self::Resources,
+        main: &DefaultMaterialResources,
+        resources: &mut Self::Resources,
         renderer: &Renderer
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
     fn set_instance_properties(
-        instance: &Self,
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
+        instance: &Self,
     ) {
-        /*
-        let texture = resources.0.get(&self.gradient);
+        let texture = resources.0.get(&instance.gradient);
         uniforms.set_sampler("gradient", texture);
-        uniforms.set_scalar("sun_intensity", light.0.strength * self.sun_intensity);
-        uniforms.set_scalar("sun_size", self.sun_size);
-        uniforms.set_scalar("cloud_speed", self.cloud_speed);
-        uniforms.set_scalar("cloud_coverage", self.cloud_coverage);
-        */
+        uniforms.set_scalar("sun_intensity", main.directional_light.strength * instance.sun_intensity);
+        uniforms.set_scalar("sun_size", instance.sun_size);
+        uniforms.set_scalar("cloud_speed", instance.cloud_speed);
+        uniforms.set_scalar("cloud_coverage", instance.cloud_coverage);
     }
 
     fn shader(

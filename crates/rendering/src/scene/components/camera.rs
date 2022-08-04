@@ -72,12 +72,12 @@ impl Camera {
     }
 
     // Get the view matrix
-    pub fn view(&self) -> &vek::Mat4<f32> {
+    pub fn view_matrix(&self) -> &vek::Mat4<f32> {
         &self.view
     }
 
     // Get the projection matrix
-    pub fn projection(&self) -> &vek::Mat4<f32> {
+    pub fn projection_matrix(&self) -> &vek::Mat4<f32> {
         &self.projection
     }
 

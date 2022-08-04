@@ -8,18 +8,21 @@ use world::{Resource, Storage, World};
 use crate::{
     canvas::{BlendMode, Canvas, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
-    mesh::{Mesh, EnabledAttributes},
+    mesh::{Mesh, EnabledAttributes, Surface},
     others::Comparison,
-    scene::{Camera, DirectionalLight, Renderer},
-    shader::{Shader, Uniforms},
+    scene::{Camera, DirectionalLight, Renderer, PointLight},
+    shader::{Shader, Uniforms}, buffer::UniformBuffer,
 };
 
-pub struct PipelineDefaultResources<'a> {
-    camera: &'a Camera,
-    camera_location: &'a Location,
-    camera_rotation: &'a Rotation,
-    directional_light: &'a DirectionalLight,
-    directional_light_rotation: &'a Rotation,
+// These are the default resources that we pass to any/each material
+pub struct DefaultMaterialResources<'a> {
+    pub(crate) camera: &'a Camera,
+    pub(crate) point_lights: &'a UniformBuffer<(PointLight, Location)>,
+    pub(crate) camera_location: &'a Location,
+    pub(crate) camera_rotation: &'a Rotation,
+    pub(crate) directional_light: &'a DirectionalLight,
+    pub(crate) directional_light_rotation: &'a Rotation,
+    pub(crate) window: &'a Window,
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
@@ -59,17 +62,19 @@ pub trait Material<'w>: 'static + Sized {
     }
 
     // Fetch the property block resources
-    fn fetch(world: &'w World) -> Self::Resources;
+    fn fetch_resources(world: &'w World) -> Self::Resources;
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties(
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
     );
 
     // Set the uniforms for this property block right before we render our surface
-    fn set_render_properties(
+    fn set_surface_properties(
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
         renderer: &Renderer,
     );
@@ -77,8 +82,9 @@ pub trait Material<'w>: 'static + Sized {
     // With the help of the fetched resources, set the uniform properties for a unique material instance
     // This will only be called whenever we switch instances
     fn set_instance_properties(
-        instance: &Self,
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
+        instance: &Self,
     );
 }

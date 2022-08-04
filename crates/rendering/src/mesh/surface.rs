@@ -16,6 +16,8 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
     // Bounds of the surface
     bounds: Option<AABB>,
+
+    // This does nothing and it has a size of 0, but let's keep it for clarity
     id: PipeId<SpecializedPipeline<M>>,
 }
 

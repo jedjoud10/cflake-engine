@@ -12,7 +12,7 @@ use crate::{
     texture::{Ranged, Texture, Texture2D, RG, RGB, RGBA}, prelude::{Depth, RenderTarget2D, SRGBA},
 };
 
-use super::Material;
+use super::{Material, DefaultMaterialResources};
 
 // PBR maps
 pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
@@ -38,72 +38,56 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<MaskMap>>,  
     );
 
-    // Get the PBR material resources from the world
-    fn fetch(world: &'w world::World) -> Self::Resources {
+    fn fetch_resources(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
         let mask_map = world.get::<Storage<MaskMap>>().unwrap();
         (albedo_map, normal_map, mask_map)
     }
 
-    // This method will be called once right before we start rendering the batches
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
-        _resources: &mut Self::Resources,
+        main: &DefaultMaterialResources,
+        resources: &mut Self::Resources,
     ) {
-        /*
-        uniforms.set_mat4x4("view_matrix", camera.0.view());
-        uniforms.set_mat4x4("proj_matrix", camera.0.projection());
-        uniforms.set_vec3::<vek::Vec3<f32>>("camera", camera.1.into());
-        uniforms.set_vec3("forward", camera.2.forward());
-        uniforms.set_vec3("light_dir", light.1.forward());
-        */
+        uniforms.set_mat4x4("view_matrix", main.camera.view_matrix());
+        uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
+        uniforms.set_vec3::<vek::Vec3<f32>>("camera", main.camera_location.into());
+        uniforms.set_vec3("forward", main.camera_rotation.forward());
+        uniforms.set_vec3("light_dir", main.directional_light_rotation.forward());
     }
 
-    // This method will be called for each surface that we have to render
-    fn set_render_properties(
+    fn set_surface_properties(
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
         renderer: &Renderer,
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
 
-    // This method will be called whenever we detect a material instance change
     fn set_instance_properties(
-        instance: &Self,
         uniforms: &mut Uniforms,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
+        instance: &Self,
     ) {
-        /*
         let (albedo_maps, normal_maps, mask_maps) = resources;
 
-        fn fallback<'a, T: 'static>(
-            storage: &'a Storage<T>,
-            opt: &Option<Handle<T>>,
-            fallback: Handle<T>,
-        ) -> &'a T {
-            opt.as_ref()
-                .map(|handle| storage.get(handle))
-                .unwrap_or_else(|| storage.get(&fallback))
-        }
+        uniforms.set_vec3("tint", instance.tint);
+        uniforms.set_scalar("bumpiness", instance.bumpiness);
+        uniforms.set_scalar("roughness", instance.roughness);
+        uniforms.set_scalar("metallic", instance.metallic);
 
-        uniforms.set_vec3("tint", self.tint);
-        uniforms.set_scalar("bumpiness", self.bumpiness);
-        uniforms.set_scalar("roughness", self.roughness);
-        uniforms.set_scalar("metallic", self.metallic);
-
-        let albedo_map = fallback(albedo_maps, &self.albedo, scene.missing());
-        let normal_map = fallback(normal_maps, &self.normal, scene.normal_map());
-        let mask_map = fallback(mask_maps, &self.mask, scene.mask_map());
+        let albedo_map = albedo_maps.get(&instance.albedo_map);
+        let normal_map = normal_maps.get(&instance.normal_map);
+        let mask_map = mask_maps.get(&instance.mask_map);
 
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
-        */
     }
 
-    // Load in the PBR shader from it's paths and compile it
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {
         let vs = assets
             .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")

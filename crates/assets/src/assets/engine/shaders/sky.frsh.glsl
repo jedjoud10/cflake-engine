@@ -21,6 +21,7 @@ in vec3 m_normal;
 
 void main() {
     // Get the main sky color
+    float offset = (sun_dir.y + 1.0) / 2.0;
     vec3 color = texture(gradient, vec2(offset, m_tex_coord.y)).rgb; 
 
     // Add the sun as a bright circle

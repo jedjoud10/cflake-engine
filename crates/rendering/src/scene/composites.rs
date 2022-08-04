@@ -1,6 +1,9 @@
 use ecs::Entity;
+use math::Location;
 
-use crate::canvas::Canvas;
+use crate::{canvas::Canvas, buffer::UniformBuffer};
+
+use super::PointLight;
 
 // Clustered shading is a method to render multiple lights
 // efficienty without losing image quality
@@ -11,6 +14,7 @@ pub struct ClusteredShading {
     pub(crate) main_camera: Option<Entity>,
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) canvas: Canvas,
+    pub(crate) point_lights: UniformBuffer<(PointLight, Location)>
 }
 
 impl ClusteredShading {
