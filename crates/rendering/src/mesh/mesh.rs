@@ -5,6 +5,7 @@ use std::{
 
 use assets::Asset;
 use math::AABB;
+use num::{Zero, One};
 use obj::TexturedVertex;
 
 use super::{
@@ -311,8 +312,11 @@ impl Mesh {
     }
 
     // Recalculate the AABB bounds of this mesh
-    pub fn compute_bounds(&mut self) -> AABB {
-        todo!()
+    pub fn compute_bounds(&mut self) -> Option<AABB> {
+        let vertices = self.vertices();
+        let positions = vertices.attribute::<Position>().unwrap();
+        let mapped = positions.map().unwrap();
+        AABB::from_points(mapped.as_slice())
     }
 }
 
@@ -384,6 +388,21 @@ impl<'a> Asset<'a> for Mesh {
             mesh.compute_tangents(ctx, settings.mode).unwrap();
         }
 
+        // Update the positions using the translation/rotation/scale matrices
+        if !settings.translation.is_zero() || !settings.scale.is_one() || settings.rotation != vek::Quaternion::identity() {
+            let mut verts = mesh.vertices_mut();
+            let positions = verts.attribute_mut::<Position>().unwrap();
+            let mut mapped = positions.map_mut().unwrap();
+            let translation: vek::Mat4<f32> =  vek::Mat4::translation_3d(settings.translation);
+            let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
+            let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
+            let matrix = translation * rotation * scale;
+
+            for pos in mapped.as_slice_mut() {
+                *pos = (matrix * vek::Vec4::new_point(pos.x, pos.y, pos.z)).xyz();
+            }
+        }
+
         // Invert normals if needed
         if settings.invert_normals {
             let mut verts = mesh.vertices_mut();
@@ -407,10 +426,12 @@ impl<'a> Asset<'a> for Mesh {
             let mut mapped = uvs.map_mut().unwrap();
             let slice = mapped.as_slice_mut();            
 
+            // Flip the uvs horizontally
             if settings.invert_horizontal_tex_coord {
                 slice.iter_mut().for_each(|uv| uv.x = 255 - uv.x);
             }
 
+            // Flip the uvs vertically
             if settings.invert_vertical_tex_coord {
                 slice.iter_mut().for_each(|uv| uv.y = 255 - uv.x);
             }
