@@ -9,7 +9,7 @@ use num::{Zero, One};
 use obj::TexturedVertex;
 
 use super::{
-    AttributeBuffer, EnabledAttributes, TrianglesMut, TrianglesRef, MeshImportSettings, VerticesMut, VerticesRef,
+    AttributeBuffer, EnabledAttributes, TrianglesMut, TrianglesRef, MeshImportSettings, VerticesMut, VerticesRef, MeshUtils,
 };
 use super::attributes::*;
 use crate::{
@@ -34,21 +34,6 @@ pub struct Mesh {
     // The triangle buffer (triangles * 3)
     triangles: TriangleBuffer<u32>,
 }
-
-/*
-
-        let mut arr = self
-            .attributes_any()
-            .into_iter()
-            .map(|opt|
-                opt.map(|(buf, _)| buf.len()
-            )
-        );
-
-        let first = arr.find(|opt| opt.is_some()).flatten()?;
-        let valid = arr.into_iter().flatten().all(|len| len == first);
-        valid.then(|| first)
-*/
 
 impl Mesh {
     // Create a new mesh from the attribute buffers and the triangles
@@ -181,36 +166,7 @@ impl Mesh {
         let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
-        // Create pre-allocated normal buffer
-        let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
-
-        // Normal calculations
-        for i in 0..(triangles.len() / 3) {
-            let tri = triangles[i];
-            let i1 = tri[0] as usize;
-            let i2 = tri[1] as usize;
-            let i3 = tri[2] as usize;
-
-            let a = positions[i1];
-            let b = positions[i2];
-            let c = positions[i3];
-
-            let d1 = b - a;
-            let d2 = c - a;
-            let cross = vek::Vec3::<f32>::cross(d1, d2).normalized();
-
-            normals[i1] += cross;
-            normals[i2] += cross;
-            normals[i3] += cross;
-        }
-
-        // Normalized + conversion to i8
-        let normals: Vec<vek::Vec3<i8>> = normals
-            .into_iter()
-            .map(|n|
-                n.normalized()
-                .map(|e| (e * 127.0) as i8)
-            ).collect::<_>();
+        
         let buffer = Buffer::from_slice(ctx, normals.as_slice(), mode).unwrap();
 
         // Drop the buffers manually
@@ -223,12 +179,12 @@ impl Mesh {
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
-    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {       
+    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {       
         let valid_attributes = self.vertices().layout().contains(EnabledAttributes::POSITIONS | EnabledAttributes::NORMALS | EnabledAttributes::TEX_COORDS);
         let (triangles, mut vertices) = if valid_attributes {
             self.both_mut()
         } else {
-            return None;
+            return false;
         };
 
         // Get positions slice
@@ -241,64 +197,21 @@ impl Mesh {
 
         // Get texture coordinate slice
         let mapped_tex_coords = vertices.attribute::<TexCoord>().unwrap().map().unwrap();
-        let uvs = mapped_tex_coords.as_slice();
+        let tex_coords = mapped_tex_coords.as_slice();
 
         // Get triangles slice
         let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
-        // Local struct that will implement the Geometry trait from the tangent generation lib
-        struct TangentGenerator<'a> {
-            positions: &'a [vek::Vec3<f32>],
-            triangles: &'a [[u32; 3]],
-            normals: &'a [vek::Vec3<i8>],
-            uvs: &'a [vek::Vec2<u8>],
-            tangents: &'a mut [vek::Vec4<i8>],
-        }
+        // Generate the tangents using the mesh utils 
+        let tangents = MeshUtils::compute_tangents(positions, normals, tex_coords, triangles);
 
-        impl<'a> mikktspace::Geometry for TangentGenerator<'a> {
-            fn num_faces(&self) -> usize {
-                self.triangles.len()
-            }
-
-            fn num_vertices_of_face(&self, _face: usize) -> usize {
-                3
-            }
-
-            fn position(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = self.triangles[face][vert] as usize;
-                self.positions[i].into_array()
-            }
-
-            fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
-                let i = self.triangles[face][vert] as usize;
-                self.normals[i].map(|x| x as f32 / 127.0).into_array()
-            }
-
-            fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
-                let i = self.triangles[face][vert] as usize;
-                self.uvs[i].map(|x| x as f32 / 255.0).into_array()
-            }
-
-            fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-                let i = self.triangles[face][vert] as usize;
-                self.tangents[i] =
-                    vek::Vec4::<f32>::from_slice(&tangent).map(|x| (x * 127.0) as i8);
-            }
-        }
-
-        let mut tangents = vec![vek::Vec4::<i8>::zero(); positions.len()];
-        let mut gen = TangentGenerator {
-            positions,
-            normals,
-            triangles,
-            uvs,
-            tangents: &mut tangents,
+        // Return false if we were not able to generate the tangents
+        let buffer = if tangents.is_none() {
+            return false;
+        } else {
+            Buffer::from_slice(ctx, tangents.unwrap().as_slice(), mode).unwrap()
         };
-
-        // Generate the procedural tangents and store them
-        mikktspace::generate_tangents(&mut gen).then_some(())?;
-        let buffer = Buffer::from_slice(ctx, tangents.as_slice(), mode).unwrap();
 
         // Drop the mapped buffers manually
         drop(mapped_positions);
@@ -308,7 +221,7 @@ impl Mesh {
 
         // Insert the new buffer
         vertices.set_attribute::<Tangent>(Some(buffer));
-        Some(())
+        true
     }
 
     // Recalculate the AABB bounds of this mesh
@@ -343,25 +256,37 @@ impl<'a> Asset<'a> for Mesh {
 
         // Create temporary vectors containing the vertex attributes
         let capacity = parsed.vertices.len();
-        let mut positions = Vec::with_capacity(capacity);
-        let mut normals = Vec::with_capacity(capacity);
-        let mut tex_coords = Vec::with_capacity(capacity);
-        let mut triangles = Vec::with_capacity(parsed.indices.len() / 3);
+        let mut positions = Vec::<vek::Vec3<f32>>::with_capacity(capacity);
+        let mut normals = settings.use_normals.then(|| Vec::<vek::Vec3<i8>>::with_capacity(capacity));
+        let mut tex_coords = settings.use_tex_coords.then(|| Vec::<vek::Vec2<u8>>::with_capacity(capacity));
+        let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
-
         use vek::{Vec2, Vec3};
+
+        // Convert the translation/rotation/scale settings to a unified matrix
+        let translation: vek::Mat4<f32> =  vek::Mat4::translation_3d(settings.translation);
+        let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
+        let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
+        let matrix = translation * rotation * scale;
 
         // Convert the vertices into the separate buffer
         for vertex in parsed.vertices {
-            // Read the attributes from the vertex
-            let read_position = Vec3::from_slice(&vertex.position);
-            let read_normal = Vec3::from_slice(&vertex.normal).map(|f| (f * 127.0) as i8);
-            let read_tex_coord = Vec2::from_slice(&vertex.texture).map(|f| (f * 255.0) as u8);
+            // Read and add the position
+            positions.push(vek::Vec3::from_slice(&vertex.position));
 
-            // Add them to their respective buffer
-            positions.push(read_position);
-            normals.push(read_normal);
-            tex_coords.push(read_tex_coord);
+            // Read and add the normal
+            if let Some(normals) = &mut normals {
+                let read = Vec3::from_slice(&vertex.normal);
+                let mapped = read.map(|f| (f * 127.0) as i8);
+                normals.push(mapped);
+            }
+
+            // Read and add the texture coordinate
+            if let Some(tex_coords) = &mut tex_coords {
+                let read = Vec2::from_slice(&vertex.texture);
+                let mapped = read.map(|f| (f * 255.0) as u8);
+                tex_coords.push(mapped);
+            }
         }
 
         // Convert the indices to triangles
@@ -369,74 +294,89 @@ impl<'a> Asset<'a> for Mesh {
             triangles.push(triangle.try_into().unwrap());
         }
 
-        // Create the buffers
-        let positions = Buffer::from_slice(ctx, &positions, settings.mode).unwrap();
-        let normals = (!settings.generate_normals).then(|| Buffer::from_slice(ctx, &normals, settings.mode).unwrap());
-        let tex_coord = Some(Buffer::from_slice(ctx, &tex_coords, settings.mode).unwrap());
-        let triangles = Buffer::from_slice(ctx, &triangles, settings.mode).unwrap();
+        // Optionally generate the tangents
+        let tangents = settings.use_tangents.then(|| MeshUtils::compute_tangents(&positions, &normals.unwrap(), &tex_coords.unwrap(), &triangles).unwrap());
+
+
+        /*
+
+        // Create the optional attribute vectors
+        let normals = settings.use
 
         // Create a new mesh
         let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();
 
-        // Generate procedural normals if needed
-        if settings.generate_normals {
-            mesh.compute_normals(ctx, settings.mode).unwrap();
-        }
-
-        // Generate procedural tangents if needed
-        if settings.generate_tangents {
-            mesh.compute_tangents(ctx, settings.mode).unwrap();
-        }
-
-        // Update the positions using the translation/rotation/scale matrices
-        if !settings.translation.is_zero() || !settings.scale.is_one() || settings.rotation != vek::Quaternion::identity() {
-            let mut verts = mesh.vertices_mut();
-            let positions = verts.attribute_mut::<Position>().unwrap();
-            let mut mapped = positions.map_mut().unwrap();
-            let translation: vek::Mat4<f32> =  vek::Mat4::translation_3d(settings.translation);
-            let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
-            let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
-            let matrix = translation * rotation * scale;
-
-            for pos in mapped.as_slice_mut() {
-                *pos = (matrix * vek::Vec4::new_point(pos.x, pos.y, pos.z)).xyz();
-            }
-        }
-
-        // Invert normals if needed
-        if settings.invert_normals {
-            let mut verts = mesh.vertices_mut();
-            let normals = verts.attribute_mut::<Normal>().unwrap();
-            let mut mapped = normals.map_mut().unwrap();
-            mapped.as_slice_mut().iter_mut().for_each(|n| *n *= -1);
-        }
-
-        // Invert tangents if needed
-        if settings.generate_tangents && settings.invert_tangents {
-            let mut verts = mesh.vertices_mut();
-            let tangents = verts.attribute_mut::<Tangent>().unwrap();
-            let mut mapped = tangents.map_mut().unwrap();
-            mapped.as_slice_mut().iter_mut().for_each(|t| *t *= -1);
-        }
-
-        // Invert UVs in both/one direction if needed
-        if settings.invert_horizontal_tex_coord || settings.invert_vertical_tex_coord {
-            let mut verts = mesh.vertices_mut();
-            let uvs = verts.attribute_mut::<TexCoord>().unwrap();
-            let mut mapped = uvs.map_mut().unwrap();
-            let slice = mapped.as_slice_mut();            
-
-            // Flip the uvs horizontally
-            if settings.invert_horizontal_tex_coord {
-                slice.iter_mut().for_each(|uv| uv.x = 255 - uv.x);
-            }
-
-            // Flip the uvs vertically
-            if settings.invert_vertical_tex_coord {
-                slice.iter_mut().for_each(|uv| uv.y = 255 - uv.x);
-            }
-        }
+        //apply_mesh_settings(settings, &mut mesh, ctx);
 
         mesh
+        */
+        todo!()
     }
 }
+/*
+fn apply_mesh_normals_attribute(mesh: &mut Mesh, normals: Vec<vek::Vec3<i8>>, matrix: vek::Mat4<f32>, invert: bool) {
+
+}
+
+fn generate_mesh_tangents_attribute(mesh: &mut Mesh, ctx: &mut Context, matrix: vek::Mat4<f32>, invert: bool) {
+
+}
+
+fn apply_mesh_positions_attribute(mesh: &mut Mesh, positions, matrix: vek::Mat4<f32>) {
+    // Update the positions using the translation/rotation/scale matrices
+    if !settings.translation.is_zero() || !settings.scale.is_one() || settings.rotation != vek::Quaternion::identity() {
+        let mut verts = mesh.vertices_mut();
+        let positions = verts.attribute_mut::<Position>().unwrap();
+        let mut mapped = positions.map_mut().unwrap();
+        
+
+        for pos in mapped.as_slice_mut() {
+            *pos = (matrix * vek::Vec4::new_point(pos.x, pos.y, pos.z)).xyz();
+        }
+    }
+}
+
+fn apply_mesh_tex_coord(mesh: &mut Mesh, flip_horizontal: bool, flip_vertical: bool) {
+    // Invert UVs in both/one direction if needed
+    if flip_horizontal || flip_vertical {
+        let mut verts = mesh.vertices_mut();
+        let uvs = verts.attribute_mut::<TexCoord>().unwrap();
+        let mut mapped = uvs.map_mut().unwrap();
+        let slice = mapped.as_slice_mut();            
+
+        // Flip the uvs horizontally
+        if flip_horizontal {
+            slice.iter_mut().for_each(|uv| uv.x = 255 - uv.x);
+        }
+
+        // Flip the uvs vertically
+        if settings.invert_vertical_tex_coord {
+            slice.iter_mut().for_each(|uv| uv.y = 255 - uv.x);
+        }
+    }
+}
+
+
+fn apply_mesh_settings(settings: MeshImportSettings, mesh: &mut Mesh, ctx: &mut Context) {
+    // Generate procedural tangents if needed
+    if settings.use_tangents {
+        mesh.compute_tangents(ctx, settings.mode).unwrap();
+    }
+
+    
+    // Invert normals if needed
+    if settings.use_normals && settings.invert_normals {
+        let mut verts = mesh.vertices_mut();
+        let normals = verts.attribute_mut::<Normal>().unwrap();
+        let mut mapped = normals.map_mut().unwrap();
+        mapped.as_slice_mut().iter_mut().for_each(|n| *n *= -1);
+    }
+    // Invert tangents if needed
+    if settings.use_tangents && settings.invert_tangents {
+        let mut verts = mesh.vertices_mut();
+        let tangents = verts.attribute_mut::<Tangent>().unwrap();
+        let mut mapped = tangents.map_mut().unwrap();
+        mapped.as_slice_mut().iter_mut().for_each(|t| *t *= -1);
+    }
+}
+*/
