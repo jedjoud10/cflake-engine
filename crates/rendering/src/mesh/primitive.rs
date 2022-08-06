@@ -14,10 +14,10 @@ impl PrimitiveGenerator for Cuboid {
     // Generate a cuboid mesh
     fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh {
         // Buffers we shall useth
-        let positions = Vec::with_capacity(24);
-        let normals = settings.use_normals.then(|| Vec::with_capacity(24));
-        let tangents = settings.use_tangents.then(|| Vec::with_capacity(24));
-        let tex_coords = settings.use_tex_coords.then(|| Vec::with_capacity(24));
+        let positions = Vec::<vek::Vec3<f32>>::with_capacity(24);
+        let normals = settings.use_normals.then(|| Vec::<vek::Vec3<i8>>::with_capacity(24));
+        let tangents = settings.use_tangents.then(|| Vec::<vek::Vec4<i8>>::with_capacity(24));
+        let tex_coords = settings.use_tex_coords.then(|| Vec::<vek::Vec2<u8>>::with_capacity(24));
 
         // Create the rotation quaternions
         let rotations: [vek::Quaternion<f32>; 6] = [

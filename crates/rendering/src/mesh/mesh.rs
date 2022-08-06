@@ -13,7 +13,7 @@ use super::{
 };
 use super::attributes::*;
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferMode, TriangleBuffer},
+    buffer::{ArrayBuffer, Buffer, BufferMode, TriangleBuffer, Triangle},
     context::Context,
 };
 
@@ -36,13 +36,33 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    // Create a new mesh from the attribute buffers and the triangles
+    // Create a new mesh from the attribute vectors, context, and buffer mode
+    pub fn from_vecs(
+        ctx: &mut Context,
+        mode: BufferMode,
+        positions: Vec<VePosition>,
+        normals: Option<Vec<VeNormal>>,
+        tangents: Option<Vec<VeTangent>>,
+        colors: Option<Vec<VeColor>>,
+        tex_coords: Option<Vec<VeTexCoord>>,
+        triangles: Vec<Triangle<u32>>,
+    ) -> Option<Self> {
+        let positions = ArrayBuffer::from_slice(ctx, &positions, mode).unwrap();
+        let normals = normals.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
+        let tangents = tangents.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
+        let colors = colors.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
+        let tex_coords = tex_coords.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
+        let triangles = TriangleBuffer::from_slice(ctx, &triangles, mode).unwrap();
+        Self::from_buffers(positions, normals, tangents, colors, tex_coords, triangles)
+    }
+
+    // Create a new mesh from the attribute buffers
     pub fn from_buffers(
         positions: ArrayBuffer<VePosition>,
         normals: Option<ArrayBuffer<VeNormal>>,
         tangents: Option<ArrayBuffer<VeTangent>>,
         colors: Option<ArrayBuffer<VeColor>>,
-        tex_coord: Option<ArrayBuffer<VeTexCoord>>,
+        tex_coords: Option<ArrayBuffer<VeTexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Option<Self> {
         let mut mesh = Self { 
@@ -66,7 +86,7 @@ impl Mesh {
         vertices.set_attribute::<Normal>(normals);
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
-        vertices.set_attribute::<TexCoord>(tex_coord);
+        vertices.set_attribute::<TexCoord>(tex_coords);
     
         // Bind the vertex buffers and check for valididity
         let valid = vertices.rebind(true);
@@ -153,11 +173,11 @@ impl Mesh {
     }
 
     // Recalculate the vertex normals procedurally; based on position attribute
-    pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
+    pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {
         let (triangles, mut vertices) = if self.vertices().is_enabled::<Position>() {
             self.both_mut()
         } else {
-            return None;
+            return false;
         };
 
         // Fetch the buffers and map them
@@ -166,8 +186,15 @@ impl Mesh {
         let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
-        
-        let buffer = Buffer::from_slice(ctx, normals.as_slice(), mode).unwrap();
+        // Mesh utils come to the rescue yet again
+        let normals = MeshUtils::compute_normals(positions, triangles);
+
+        // Return false if we were not able to generate the normals
+        let buffer = if normals.is_none() {
+            return false;
+        } else {
+            ArrayBuffer::from_slice(ctx, normals.unwrap().as_slice(), mode).unwrap()
+        };
 
         // Drop the buffers manually
         drop(mapped_positions);
@@ -175,7 +202,7 @@ impl Mesh {
 
         // Insert the new buffer
         vertices.set_attribute::<Normal>(Some(buffer));
-        Some(())
+        true
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
@@ -210,7 +237,7 @@ impl Mesh {
         let buffer = if tangents.is_none() {
             return false;
         } else {
-            Buffer::from_slice(ctx, tangents.unwrap().as_slice(), mode).unwrap()
+            ArrayBuffer::from_slice(ctx, tangents.unwrap().as_slice(), mode).unwrap()
         };
 
         // Drop the mapped buffers manually
@@ -295,88 +322,17 @@ impl<'a> Asset<'a> for Mesh {
         }
 
         // Optionally generate the tangents
-        let tangents = settings.use_tangents.then(|| MeshUtils::compute_tangents(&positions, &normals.unwrap(), &tex_coords.unwrap(), &triangles).unwrap());
+        let mut tangents = settings.use_tangents.then(|| 
+            MeshUtils::compute_tangents(
+                &positions,
+                normals.as_ref().unwrap(),
+                tex_coords.as_ref().unwrap(),
+                &triangles
+            ).unwrap()
+        );
 
-
-        /*
-
-        // Create the optional attribute vectors
-        let normals = settings.use
-
-        // Create a new mesh
-        let mut mesh = Mesh::from_buffers(positions, normals, None, None, tex_coord, triangles).unwrap();
-
-        //apply_mesh_settings(settings, &mut mesh, ctx);
-
-        mesh
-        */
-        todo!()
+        // Finally, create the mesh and generate it's new GPU data
+        MeshUtils::apply_vec_settings(settings, matrix, &mut positions, &mut normals, &mut tangents, &mut tex_coords, &mut triangles);        
+        Mesh::from_vecs(ctx, settings.mode, positions, normals, tangents, None, tex_coords, triangles).unwrap()
     }
 }
-/*
-fn apply_mesh_normals_attribute(mesh: &mut Mesh, normals: Vec<vek::Vec3<i8>>, matrix: vek::Mat4<f32>, invert: bool) {
-
-}
-
-fn generate_mesh_tangents_attribute(mesh: &mut Mesh, ctx: &mut Context, matrix: vek::Mat4<f32>, invert: bool) {
-
-}
-
-fn apply_mesh_positions_attribute(mesh: &mut Mesh, positions, matrix: vek::Mat4<f32>) {
-    // Update the positions using the translation/rotation/scale matrices
-    if !settings.translation.is_zero() || !settings.scale.is_one() || settings.rotation != vek::Quaternion::identity() {
-        let mut verts = mesh.vertices_mut();
-        let positions = verts.attribute_mut::<Position>().unwrap();
-        let mut mapped = positions.map_mut().unwrap();
-        
-
-        for pos in mapped.as_slice_mut() {
-            *pos = (matrix * vek::Vec4::new_point(pos.x, pos.y, pos.z)).xyz();
-        }
-    }
-}
-
-fn apply_mesh_tex_coord(mesh: &mut Mesh, flip_horizontal: bool, flip_vertical: bool) {
-    // Invert UVs in both/one direction if needed
-    if flip_horizontal || flip_vertical {
-        let mut verts = mesh.vertices_mut();
-        let uvs = verts.attribute_mut::<TexCoord>().unwrap();
-        let mut mapped = uvs.map_mut().unwrap();
-        let slice = mapped.as_slice_mut();            
-
-        // Flip the uvs horizontally
-        if flip_horizontal {
-            slice.iter_mut().for_each(|uv| uv.x = 255 - uv.x);
-        }
-
-        // Flip the uvs vertically
-        if settings.invert_vertical_tex_coord {
-            slice.iter_mut().for_each(|uv| uv.y = 255 - uv.x);
-        }
-    }
-}
-
-
-fn apply_mesh_settings(settings: MeshImportSettings, mesh: &mut Mesh, ctx: &mut Context) {
-    // Generate procedural tangents if needed
-    if settings.use_tangents {
-        mesh.compute_tangents(ctx, settings.mode).unwrap();
-    }
-
-    
-    // Invert normals if needed
-    if settings.use_normals && settings.invert_normals {
-        let mut verts = mesh.vertices_mut();
-        let normals = verts.attribute_mut::<Normal>().unwrap();
-        let mut mapped = normals.map_mut().unwrap();
-        mapped.as_slice_mut().iter_mut().for_each(|n| *n *= -1);
-    }
-    // Invert tangents if needed
-    if settings.use_tangents && settings.invert_tangents {
-        let mut verts = mesh.vertices_mut();
-        let tangents = verts.attribute_mut::<Tangent>().unwrap();
-        let mut mapped = tangents.map_mut().unwrap();
-        mapped.as_slice_mut().iter_mut().for_each(|t| *t *= -1);
-    }
-}
-*/

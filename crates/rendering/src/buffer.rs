@@ -56,7 +56,8 @@ impl BufferMode {
 // Common OpenGL buffer types
 pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
 pub type ElementBuffer<T> = Buffer<T, { gl::ELEMENT_ARRAY_BUFFER }>;
-pub type TriangleBuffer<T> = ElementBuffer<[T; 3]>;
+pub type Triangle<T> = [T; 3];
+pub type TriangleBuffer<T> = ElementBuffer<Triangle<T>>;
 pub type AtomicBuffer<T> = Buffer<T, { gl::ATOMIC_COUNTER_BUFFER }>;
 pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
 pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
