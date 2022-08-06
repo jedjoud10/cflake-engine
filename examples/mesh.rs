@@ -104,12 +104,11 @@ fn init(world: &mut World) {
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
-    let generator = PrimitiveCuboidSettings {
-        geom: Cuboid { center: vek::Vec3::zero(), extent: vek::Extent3::one() },
-        settings: MeshImportSettings::default(),
-        ctx: &mut ctx,
-    };
-    let cube = meshes.insert(generator.generate());
+    let cube = Cuboid {
+        center: vek::Vec3::zero(),
+        extent: vek::Extent3::one(),
+    }.generate(&mut ctx, MeshImportSettings::default());
+    let cube = meshes.insert(cube);
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard { 

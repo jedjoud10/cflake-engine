@@ -5,8 +5,9 @@ use crate::buffer::BufferMode;
 #[derive(Clone, Copy)]
 pub struct MeshImportSettings {
     pub mode: BufferMode,
-    pub generate_normals: bool,
-    pub generate_tangents: bool,
+    pub use_normals: bool,
+    pub use_tangents: bool,
+    pub use_tex_coords: bool,
     pub invert_triangle_ordering: bool,
     pub invert_normals: bool,
     pub invert_tangents: bool,
@@ -21,8 +22,9 @@ impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
             mode: BufferMode::Resizable,
-            generate_normals: false,
-            generate_tangents: true,
+            use_normals: true,
+            use_tangents: true,
+            use_tex_coords: true,
             invert_triangle_ordering: false,
             invert_normals: false,
             invert_tangents: false,
