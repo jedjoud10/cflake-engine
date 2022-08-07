@@ -64,12 +64,6 @@ fn init(world: &mut World) {
         mipmaps: MipMaps::default(),
     };
 
-    // Load a normal map texture
-    let normal_map = assets
-        .load_with::<NormalMap>("user/textures/normal.png", (&mut ctx, import_settings_normal))
-        .unwrap();
-    let normal_map = normal_maps.insert(normal_map);
-
     // Create the default albedo map texture
     let albedo_map = AlbedoMap::new(
         &mut ctx,
@@ -103,11 +97,23 @@ fn init(world: &mut World) {
     ).unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
+    let import = MeshImportSettings {
+        mode: BufferMode::Static,
+        use_normals: true,
+        use_tangents: true,
+        use_tex_coords: true,
+        invert_triangle_ordering: false,
+        invert_normals: false,
+        invert_tangents: false,
+        invert_vertical_tex_coord: false,
+        invert_horizontal_tex_coord: false,
+        translation: vek::Vec3::zero(),
+        rotation: vek::Quaternion::zero(),
+        scale: vek::Vec3::one(),
+    };
+
     // Create the default cube primitive mesh
-    let cube = Cuboid {
-        center: vek::Vec3::zero(),
-        extent: vek::Extent3::one(),
-    }.generate(&mut ctx, MeshImportSettings::default());
+    let cube = assets.load_with::<Mesh>("engine/meshes/cube.obj", (&mut ctx, import)).unwrap();
     let cube = meshes.insert(cube);
 
     // Create a new material instance with the normal map texture
@@ -148,8 +154,8 @@ fn update(world: &mut World) {
     let time = world.get::<Time>().unwrap();
 
     // Lock the cursor to the center of the screen
-    window.raw().set_cursor_grab(true).unwrap();
-    window.raw().set_cursor_visible(false);
+    //window.raw().set_cursor_grab(true).unwrap();
+    //window.raw().set_cursor_visible(false);
     
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them

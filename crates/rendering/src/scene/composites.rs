@@ -49,7 +49,7 @@ pub struct PostProcessing {
 }
 
 // These settings keep track what we rendered within a single frame
-#[derive(Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct RenderedFrameStats {
     pub(crate) tris: u32,
     pub(crate) verts: u32,

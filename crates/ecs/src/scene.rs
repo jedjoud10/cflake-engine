@@ -4,7 +4,7 @@ use world::{Events, Init, Stage, Update, World};
 
 use crate::{
     archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
-    EntryMut, EntryRef, Evaluate, Mask, MaskHashMap, MutQueryLayout, RefQueryLayout,
+    EntryMut, EntryRef, Evaluate, Mask, MaskHashMap, MutQueryLayout, RefQueryLayout, MutQueryItemResult, RefQueryItemResult,
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;
@@ -99,6 +99,11 @@ impl Scene {
             .collect::<Option<Vec<B>>>()
     }
 
+    // Check if an entity is stored within the scene
+    pub fn contains(&self, entity: Entity) -> bool {
+        self.entities.contains_key(entity)
+    }
+
     // Get the immutable entity entry for a specific entity
     pub fn entry(&self, entity: Entity) -> Option<EntryRef> {
         EntryRef::new(self, entity)
@@ -130,29 +135,69 @@ impl Scene {
     }
 
     // Create a new mutable query iterator
-    pub fn query<'a, L: MutQueryLayout<'a>>(&mut self) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_mut(&mut self.archetypes)
+    pub fn query<'c: 'a, 'a, L: MutQueryLayout<'a>>(&'c mut self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_mut_marked(&mut self.archetypes)
+            .map(|iter| iter.map(|(t, _)| t))
+    }
+
+    // Create a new mutable marked query iterator
+    pub fn query_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(&'c mut self) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+        crate::query_mut_marked(&mut self.archetypes)
     }
 
     // Create a new mutable query iterator with a filter
-    pub fn query_with<'a, L: MutQueryLayout<'a>>(
-        &mut self,
+    pub fn query_with_filter<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+        &'c mut self,
         filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_mut_filter(&mut self.archetypes, filter)
+        crate::query_mut_filter_marked(&mut self.archetypes, filter)
+            .map(|iter| iter.map(|(t, _)| t))
+    }
+
+    // Create a new mutable query iterator with a filter and entity ids
+    pub fn query_with_filter_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+        &'c mut self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+        crate::query_mut_filter_marked(&mut self.archetypes, filter)
+    }
+
+    // Create a new mutable raw query iterator
+    pub fn query_raw<'c: 'a, 'a, L: MutQueryLayout<'a>>(&'c mut self) -> Option<impl Iterator<Item = MutQueryItemResult<'a, L>> + 'a> {
+        crate::query_mut_raw(&mut self.archetypes)
     }
 
     // Create a new immutable query iterator
-    pub fn view<'a, L: RefQueryLayout<'a>>(&self) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref(&self.archetypes)
+    pub fn view<'c: 'a, 'a, L: RefQueryLayout<'a>>(&'c self) -> Option<impl Iterator<Item = L> + 'a> {
+        crate::query_ref_marked(&self.archetypes)
+            .map(|iter| iter.map(|(t, _)| t))
+    }
+
+    // Create a new immutable marked query iterator
+    pub fn view_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(&'c self) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+        crate::query_ref_marked(&self.archetypes)
     }
 
     // Create a new immutable query iterator with a filter
-    pub fn view_with<'a, L: RefQueryLayout<'a>>(
-        &self,
+    pub fn view_with_filter<'c: 'a, 'a, L: RefQueryLayout<'a>>(
+        &'c self,
         filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_ref_filter(&self.archetypes, filter)
+        crate::query_ref_filter_marked(&self.archetypes, filter)
+            .map(|iter| iter.map(|(t, _)| t))
+    }
+
+    // Create a new immutable query iterator with a filter and an entity id
+    pub fn view_with_filter_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(
+        &'c self,
+        filter: impl Evaluate,
+    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+        crate::query_ref_filter_marked(&self.archetypes, filter)
+    }
+
+    // Create a new immutable raw query iterator
+    pub fn view_raw<'c: 'a, 'a, L: RefQueryLayout<'a>>(&'c mut self) -> Option<impl Iterator<Item = RefQueryItemResult<'a, L>> + 'a> {
+        crate::query_ref_raw(&mut self.archetypes)
     }
 }
 

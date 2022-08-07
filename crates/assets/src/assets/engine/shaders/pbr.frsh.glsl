@@ -50,5 +50,5 @@ void main() {
 	vec3 color = vec3((diffuse * light) + spec);
 
     // This sets the color for the current fragment
-    frag = vec4(color, 1.0);
+    frag = vec4(1.0, 1.0, 1.0, 1.0);
 }

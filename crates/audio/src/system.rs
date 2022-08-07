@@ -32,7 +32,7 @@ fn update(world: &mut World) {
         // Update emitter locations
         let filter = or(modified::<Location>(), added::<Location>());
         let sources = ecs
-            .query_with::<(&mut AudioSource, &Location)>(filter)
+            .query_with_filter::<(&mut AudioSource, &Location)>(filter)
             .unwrap();
         for (source, transform) in sources {
             if let Some(pos) = &source.position {

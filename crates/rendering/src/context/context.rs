@@ -35,7 +35,7 @@ impl Context {
             // Always have OpenGL debugging enabled
             gl::Enable(gl::DEBUG_OUTPUT);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
-            gl::DebugMessageCallback(Some(super::callback), null());
+            //gl::DebugMessageCallback(Some(super::callback), null());
         }
 
         // Create el safe wrapper

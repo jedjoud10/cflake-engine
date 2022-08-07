@@ -217,7 +217,7 @@ macro_rules! impl_stencil_texel_layout {
 macro_rules! impl_gamma_corrected_texel_layout {
     () => {
         impl Texel for SRGB<Ranged<u8>> {
-            const INTERNAL_FORMAT: u32 = gl::SRGB;
+            const INTERNAL_FORMAT: u32 = gl::SRGB8;
             const FORMAT: u32 = gl::RGB;
             const TYPE: u32 = gl::UNSIGNED_BYTE;
             const CHANNELS: u32 = 3;
@@ -229,7 +229,7 @@ macro_rules! impl_gamma_corrected_texel_layout {
 
         impl Texel for SRGBA<Ranged<u8>> {
             const FORMAT: u32 = gl::RGBA;
-            const INTERNAL_FORMAT: u32 = gl::SRGB_ALPHA;
+            const INTERNAL_FORMAT: u32 = gl::SRGB8_ALPHA8;
             const TYPE: u32 = gl::UNSIGNED_BYTE;
             const CHANNELS: u32 = 4;
             const BYTES_PER_CHANNEL: u32 = u8::BITS / 8;

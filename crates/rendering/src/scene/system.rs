@@ -1,4 +1,4 @@
-use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats};
+use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats, DirectionalLight};
 use crate::{
     buffer::{BufferMode, UniformBuffer},
     context::{Context, GraphicsSetupSettings, Window},
@@ -137,7 +137,7 @@ fn rendering(world: &mut World) {
     } drop(shading);
     
     // Extract the pipelines and render them
-    let mut stats = *world.get::<RenderedFrameStats>().unwrap();
+    let mut stats = RenderedFrameStats::default();
     let pipelines = world
         .get::<Context>()
         .unwrap()
@@ -151,6 +151,7 @@ fn rendering(world: &mut World) {
 
     // Update the stats resources
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
+    dbg!(&stats);
     *old_stats = stats; 
     old_stats.current = true;
 }
@@ -191,24 +192,50 @@ fn swap(world: &mut World) {
     ctx.raw().swap_buffers().unwrap();
 }
 
-// Update event that will update the view matrix of the main perspective camera
-// The main camera entity is stored in the Scene renderer
+// Update event that will set/update the main perspective camera
 fn main_camera(world: &mut World) {
-    // Get the ecs, window, and scene renderer
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let shading = world.get::<ClusteredShading>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
 
     // Fetch the main perspective camera from the scene renderer
     if let Some(entity) = shading.main_camera {
-        let mut entry = ecs.entry_mut(entity).unwrap();
+        // Disable the entity in the resource if it got removed
+        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
+            entry
+        } else {
+            shading.main_camera = None;
+            return;
+        };
 
-        // Fetch it's components, and update them
+        // Fetch it's components,and update them
         let (camera, location, rotation) = entry.as_query::<(&mut Camera, &Location, &Rotation)>().unwrap();
         camera.update(location, rotation);
     } else {
-        // Set it if we cannot find one
-        let query = ecs.::<(&mut Camera, &Location, &Rotation)>()
-        let (camera, location, rotation, entity) = ecs.view_first::<(&mut Camera, &Location, &Rotation)>().unwrap();
+        // Set the main camera if we did not find one
+        let mut query = ecs.view_with_id::<(&Camera, &Location, &Rotation)>().unwrap();
+        if let Some((_, entity)) = query.next() {
+            shading.main_camera = Some(entity);
+        }
+    }
+}
+
+// Update event that will set the main directional light
+fn main_directional_light(world: &mut World) {
+    let ecs = world.get_mut::<Scene>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+
+    // Fetch the main directional light
+    if let Some(entity) = shading.main_directional_light {
+        // Disable the main directional shading light if it got removed
+        if !ecs.contains(entity) {
+            shading.main_directional_light = None;
+        }
+    } else {
+        // Set the main directional light if we did not find one
+        let mut query = ecs.view_with_id::<(&Rotation, &DirectionalLight)>().unwrap();
+        if let Some((_, entity)) = query.next() {
+            shading.main_directional_light = Some(entity);
+        }
     }
 }
 
@@ -238,6 +265,14 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
+    // Insert the directional light update event
+    reg.insert_with(
+        main_directional_light,
+        Stage::new("main directional light update")
+            .after("post user")
+    )
+    .unwrap();
+
     // Insert update renderer event
     reg.insert_with(
         update_matrices,
@@ -251,6 +286,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         rendering,
         Stage::new("scene rendering")
             .after("main camera update")
+            .after("main directional light update")
             .after("update renderer matrices")
     )
     .unwrap();

@@ -20,6 +20,11 @@ pub fn aabb_sphere(aabb: &AABB, sphere: &Sphere) -> bool {
     point_sphere(&nearest_point, sphere)
 }
 
+// Check if a sphere is intersecting a sphere
+pub fn sphere_sphere(first: &Sphere, second: &Sphere) -> bool {
+    vek::Vec3::distance(second.center, second.center) < (first.radius + second.radius)
+}
+
 // Check if a point is inside a sphere
 pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
     point.distance(sphere.center) < sphere.radius

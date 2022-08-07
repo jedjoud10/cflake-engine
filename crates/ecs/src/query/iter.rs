@@ -1,32 +1,56 @@
-use crate::{ArchetypeSet, Evaluate, LayoutAccess, Mask, MutQueryLayout, RefQueryLayout, StateRow};
+use crate::{ArchetypeSet, Evaluate, LayoutAccess, Mask, MutQueryLayout, RefQueryLayout, StateRow, Entity};
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
 // Raw data that is returned from the query (immutable)
-struct RefQueryItemResult<'a, L: RefQueryLayout<'a>> {
+pub struct RefQueryItemResult<'a, L: RefQueryLayout<'a>> {
     tuple: L,
     state: StateRow,
     archetype_mask: Mask,
+    entity: Entity,
     _phantom: PhantomData<&'a ()>,
 }
 
+impl<'a, L: RefQueryLayout<'a>> RefQueryItemResult<'a, L> {
+    // Get the data tuple immutably
+    pub fn data(&self) -> &L {
+        &self.tuple
+    }
+
+    // Get the state row
+    pub fn state_row(&self) -> StateRow {
+        self.state
+    }
+
+    // Get the archetype mask
+    pub fn archetype_mask(&self) -> Mask {
+        self.archetype_mask
+    }
+    
+    // Get the entity ID
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
 // Chunk used for immutable query
-struct RefQueryChunk<'a, L: RefQueryLayout<'a>> {
+pub struct RefQueryChunk<'c, 'a, L: RefQueryLayout<'a>> {
     ptrs: L::PtrTuple,
     access: LayoutAccess,
     states: Rc<RefCell<Vec<StateRow>>>,
+    entities: &'c [Entity],
     len: usize,
 }
 
 // Custom immutable archetype iterator.
-struct RefQueryIter<'a, L: RefQueryLayout<'a>> {
-    chunks: Vec<RefQueryChunk<'a, L>>,
+pub(crate) struct RefQueryIter<'c, 'a, L: RefQueryLayout<'a>> {
+    chunks: Vec<RefQueryChunk<'c, 'a, L>>,
     index: usize,
-    loaded: Option<RefQueryChunk<'a, L>>,
+    loaded: Option<RefQueryChunk<'c, 'a, L>>,
     len: usize,
 }
 
 // Implement the iterator trait for immutable queries
-impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
+impl<'c, 'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'c, 'a, L> {
     type Item = RefQueryItemResult<'a, L>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -49,6 +73,7 @@ impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
             tuple: bundle,
             state,
             archetype_mask: chunk.access.shared(),
+            entity: chunk.entities[self.index - 1],
             _phantom: Default::default(),
         })
     }
@@ -59,31 +84,61 @@ impl<'a, L: RefQueryLayout<'a>> Iterator for RefQueryIter<'a, L> {
 }
 
 // Raw data that is returned from the query (mutable)
-struct MutQueryItemResult<'a, L: MutQueryLayout<'a>> {
+pub struct MutQueryItemResult<'a, L: MutQueryLayout<'a>> {
     tuple: L,
     state: StateRow,
     archetype_mask: Mask,
+    entity: Entity,
     _phantom: PhantomData<&'a ()>,
 }
 
+
+impl<'a, L: MutQueryLayout<'a>> MutQueryItemResult<'a, L> {
+    // Get the data tuple immutably
+    pub fn data(&self) -> &L {
+        &self.tuple
+    }
+
+    // Get the data tuple mutably
+    pub fn data_mut(&mut self) -> &mut L {
+        &mut self.tuple
+    }
+
+    // Get the state row
+    pub fn state_row(&self) -> StateRow {
+        self.state
+    }
+
+    // Get the archetype mask
+    pub fn archetype_mask(&self) -> Mask {
+        self.archetype_mask
+    }
+    
+    // Get the entity ID
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
 // Chunk used for mutable query
-struct MutQueryChunk<'a, L: MutQueryLayout<'a>> {
+struct MutQueryChunk<'c, 'a, L: MutQueryLayout<'a>> {
     ptrs: L::PtrTuple,
     access: LayoutAccess,
     states: Rc<RefCell<Vec<StateRow>>>,
+    entities: &'c [Entity],
     len: usize,
 }
 
 // Custom immutable archetype iterator.
-struct MutQueryIter<'a, L: MutQueryLayout<'a>> {
-    chunks: Vec<MutQueryChunk<'a, L>>,
+pub(crate) struct MutQueryIter<'c, 'a, L: MutQueryLayout<'a>> {
+    chunks: Vec<MutQueryChunk<'c, 'a, L>>,
     index: usize,
-    loaded: Option<MutQueryChunk<'a, L>>,
+    loaded: Option<MutQueryChunk<'c, 'a, L>>,
     len: usize,
 }
 
 // Implement the iterator trait for immutable view queries
-impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
+impl<'c, 'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'c, 'a, L> {
     type Item = MutQueryItemResult<'a, L>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -110,6 +165,7 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
             tuple: bundle,
             state,
             archetype_mask: chunk.access.shared() | chunk.access.unique(),
+            entity: chunk.entities[self.index - 1],
             _phantom: Default::default(),
         })
     }
@@ -121,7 +177,11 @@ impl<'a, L: MutQueryLayout<'a>> Iterator for MutQueryIter<'a, L> {
 
 // Immutable query that returns RefQueryItemResult
 // TODO: Fix code duplication
-fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQueryIter<'a, L> {
+pub(crate) fn query_ref_raw<'c: 'a, 'a, L: RefQueryLayout<'a>>(archetypes: &'c ArchetypeSet) -> Option<RefQueryIter<'c, 'a, L>> {
+    if !L::is_valid() {
+        return None;
+    }
+
     let mut chunks = archetypes
     .iter()
     .filter_map(|(m, archetype)| {            
@@ -135,22 +195,27 @@ fn query_ref_raw<'a, L: RefQueryLayout<'a>>(archetypes: &ArchetypeSet) -> RefQue
         len: archetype.len(),
         states: archetype.states(),
         ptrs: L::prepare(archetype).unwrap(),
+        entities: archetype.entities(),
         access,
     })
     .collect::<Vec<_>>();
 
     let len = chunks.iter().map(|chunk| chunk.len).sum();
     let last = chunks.pop();
-    RefQueryIter {
+    Some(RefQueryIter {
         chunks,
         loaded: last,
         len,
         index: 0,
-    }
+    })
 }
 
 // Mutable query that returns MutQueryItemResult
-fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> MutQueryIter<'a, L> {
+pub(crate) fn query_mut_raw<'c: 'a, 'a, L: MutQueryLayout<'a>>(archetypes: &'c mut ArchetypeSet) -> Option<MutQueryIter<'c, 'a, L>> {
+    if !L::is_valid() {
+        return None;
+    }
+    
     let mut chunks = archetypes
         .iter_mut()
         .filter_map(|(m, archetype)| {       
@@ -164,56 +229,60 @@ fn query_mut_raw<'a, L: MutQueryLayout<'a>>(archetypes: &mut ArchetypeSet) -> Mu
             len: archetype.len(),
             states: archetype.states(),
             ptrs: L::prepare(archetype).unwrap(),
+            entities: archetype.entities(),
             access,
         })
         .collect::<Vec<_>>();
 
     let len = chunks.iter().map(|chunk| chunk.len).sum();
     let last = chunks.pop();
-    MutQueryIter {
+    Some(MutQueryIter {
         chunks,
         loaded: last,
         len,
         index: 0,
-    }
+    })
 }
 
 // Immutable query that returns the layout tuple
-pub(crate) fn query_ref<'a, L: RefQueryLayout<'a>>(
-    archetypes: &ArchetypeSet,
-) -> Option<impl Iterator<Item = L> + 'a> {
-    L::is_valid().then(|| query_ref_raw::<L>(archetypes).map(|item| item.tuple))
+pub(crate) fn query_ref_marked<'c: 'a, 'a, L: RefQueryLayout<'a>>(
+    archetypes: &'c ArchetypeSet,
+) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+    query_ref_raw::<L>(archetypes).map(|iter| iter.map(|item| (item.tuple, item.entity)))
 }
 
 // Mutable query that returns the layout tuple
-pub(crate) fn query_mut<'a, L: MutQueryLayout<'a>>(
-    archetypes: &mut ArchetypeSet,
-) -> Option<impl Iterator<Item = L> + 'a> {
-    L::is_valid().then(|| query_mut_raw::<L>(archetypes).map(|item| item.tuple))
+pub(crate) fn query_mut_marked<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+    archetypes: &'c mut ArchetypeSet,
+) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+    query_mut_raw::<L>(archetypes).map(|iter| iter.map(|item| (item.tuple, item.entity)))
 }
 
 // Immutable query that returns the layout tuple, filtered
-pub(crate) fn query_ref_filter<'a, L: RefQueryLayout<'a>, E: Evaluate>(
-    archetypes: &ArchetypeSet,
+pub(crate) fn query_ref_filter_marked<'c: 'a, 'a, L: RefQueryLayout<'a>, E: Evaluate>(
+    archetypes: &'c ArchetypeSet,
     _filter: E,
-) -> Option<impl Iterator<Item = L> + 'a> {
-    L::is_valid().then(|| {
-        let cached = E::prepare();
-        query_ref_raw::<L>(archetypes)
+) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+    let cached = E::prepare();
+    query_ref_raw::<L>(archetypes)
+        .map(|iter| {
+            iter
             .filter(move |item| E::eval(&cached, item.state, item.archetype_mask))
-            .map(|item| item.tuple)
-    })
+            .map(|item| (item.tuple, item.entity))
+        })
+    
 }
 
 // Mutable query that returns the layout tuple, filtered
-pub(crate) fn query_mut_filter<'a, L: MutQueryLayout<'a>, E: Evaluate>(
-    archetypes: &mut ArchetypeSet,
+pub(crate) fn query_mut_filter_marked<'c: 'a, 'a, L: MutQueryLayout<'a>, E: Evaluate>(
+    archetypes: &'c mut ArchetypeSet,
     _filter: E,
-) -> Option<impl Iterator<Item = L> + 'a> {
-    L::is_valid().then(|| {
-        let cached = E::prepare();
-        query_mut_raw::<L>(archetypes)
+) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
+    let cached = E::prepare();
+    query_mut_raw::<L>(archetypes)
+        .map(|iter| {
+            iter
             .filter(move |item| E::eval(&cached, item.state, item.archetype_mask))
-            .map(|item| item.tuple)
-    })
+            .map(|item| (item.tuple, item.entity))
+        })
 }
