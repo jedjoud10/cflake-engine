@@ -1,7 +1,8 @@
 use ecs::Entity;
 use math::Location;
+use world::Handle;
 
-use crate::{canvas::Canvas, buffer::UniformBuffer};
+use crate::{canvas::{Canvas, ColorAttachment, DepthAttachment}, buffer::UniformBuffer, prelude::{Uniforms, Shader}, mesh::Mesh, context::Context};
 
 use super::PointLight;
 
@@ -14,6 +15,8 @@ pub struct ClusteredShading {
     pub(crate) main_camera: Option<Entity>,
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) canvas: Canvas,
+    pub(crate) color: Handle<ColorAttachment>,
+    pub(crate) depth: Handle<DepthAttachment>,
     pub(crate) point_lights: UniformBuffer<(PointLight, Location)>
 }
 
@@ -32,10 +35,20 @@ impl ClusteredShading {
     pub fn canvas(&self) -> &Canvas {
         &self.canvas
     }
-    
+
     // Get a mutable reference to the renderer's canvas
     pub fn canvas_mut(&mut self) -> &mut Canvas {
         &mut self.canvas
+    }
+
+    // Get the handle to the main color attachment
+    pub fn image(&self) -> Handle<ColorAttachment> {
+        self.color.clone()
+    }
+    
+    // Get the handle to the main depth attachment
+    pub fn depth(&self) -> Handle<DepthAttachment> {
+        self.depth.clone()
     }
 }
 
@@ -46,6 +59,15 @@ pub struct PostProcessing {
     pub exposure: f32,
     pub vignette_strength: f32,
     pub vignette_size: f32,
+    pub bloom_radius: f32,
+    pub bloom_strength: f32,
+    pub bloom_contrast: f32,
+}
+
+// The compositor is what we shall use to combine the clustered shading canvas and other composites
+pub(crate) struct Compositor {
+    pub(crate) quad: Mesh,
+    pub(crate) compositor: Shader,
 }
 
 // These settings keep track what we rendered within a single frame

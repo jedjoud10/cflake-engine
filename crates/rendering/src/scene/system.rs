@@ -1,4 +1,4 @@
-use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats, DirectionalLight};
+use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats, DirectionalLight, Compositor};
 use crate::{
     buffer::{BufferMode, UniformBuffer},
     context::{Context, GraphicsSetupSettings, Window},
@@ -7,7 +7,7 @@ use crate::{
     mesh::{Mesh},
     prelude::{
         Filter, MipMaps, Sampling, Texture,
-        TextureMode, Wrap,
+        TextureMode, Wrap, VertexStage, FragmentStage, ShaderCompiler, Processor,
     },
     shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment},
 };
@@ -53,12 +53,12 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the render color texture
     let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let color = color_attachments.insert(color);
-    let t1 = (&*color_attachments, color);
+    let t1 = (&*color_attachments, color.clone());
 
     // Create the render depth texture
     let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let depth = depth_attachments.insert(depth);
-    let t2 = (&*depth_attachments, depth);
+    let t2 = (&*depth_attachments, depth.clone());
     
     // Create the canvas that we will draw our 3D objects onto
     let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
@@ -75,6 +75,21 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         main_directional_light: None,
         canvas,
         point_lights: UniformBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+        color,
+        depth,
+    };
+
+    // Create a fullscreen quad
+
+    // Create the compositor shader
+    let vertex = assets.load::<VertexStage>("engine/shaders/passthrough.vrsh.glsl").unwrap();
+    let fragment = assets.load::<FragmentStage>("engine/shaders/compositor.frsh.glsl").unwrap();
+    let shader = ShaderCompiler::link((vertex, fragment), Processor::new(&mut assets), ctx);
+
+    // Create the internally used compositor
+    let compositor = Compositor {
+        quad: todo!(),
+        compositor: shader,
     };
 
     // Create the post-processing settings
@@ -83,6 +98,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         exposure: 1.0,
         vignette_strength: 1.0,
         vignette_size: 1.0,
+        bloom_radius: 25.0,
+        bloom_strength: 1.0,
+        bloom_contrast: 1.0,
     };
     
     // Create the frame-to-frame basis stats
@@ -107,6 +125,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(clustered_shading);
     world.insert(postprocessing);
     world.insert(stats);
+    world.insert(compositor);
 }
 
 // Update the global mesh matrices of objects that have been modified
@@ -159,6 +178,8 @@ fn rendering(world: &mut World) {
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
     *old_stats = stats; 
     old_stats.current = true;
+
+    // Render the quad onto the screen now
 }
 
 // Window event for updating the current main canvas and world state if needed

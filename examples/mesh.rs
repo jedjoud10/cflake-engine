@@ -47,22 +47,7 @@ fn init(world: &mut World) {
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight::default();
-    let entity = ecs
-        .insert((light, Rotation::rotation_x(45f32.to_radians())));
-
-    // Import settings for our albedo map textures
-    let import_settings_albedo = TextureImportSettings {
-        sampling: Sampling::default(),
-        mode: TextureMode::default(),
-        mipmaps: MipMaps::default(),
-    };
-
-    // Import settings for our normal map texture
-    let import_settings_normal = TextureImportSettings {
-        sampling: Sampling::default(),
-        mode: TextureMode::default(),
-        mipmaps: MipMaps::default(),
-    };
+    ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
     // Create the default albedo map texture
     let albedo_map = AlbedoMap::new(
