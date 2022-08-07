@@ -61,6 +61,9 @@ pub trait Material<'w>: 'static + Sized {
         }
     }
 
+    // Should we assume that the shader instance is always valid?
+    unsafe fn should_assume_valid() -> bool { false }
+
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;
 

@@ -2,7 +2,7 @@
 out vec4 frag;
 
 // Textures that we will sample
-uniform texture2D image;
+uniform sampler2D color;
 
 // Post-processing compositor settings
 uniform float tonemapping_strength;
@@ -12,6 +12,6 @@ uniform float vignette_size;
 
 void main() {
 	vec2 tex_coord = gl_FragCoord.xy;
-	vec3 sampled = texture(image, tex_coord).xyz;
-	frag = vec4(sampled, 1.0);
+	vec3 sampled = texture(color, tex_coord).xyz;
+	frag = vec4(1, 1, 1, 1.0);
 }

@@ -9,7 +9,7 @@ use crate::{
         Filter, MipMaps, Sampling, Texture,
         TextureMode, Wrap, VertexStage, FragmentStage, ShaderCompiler, Processor,
     },
-    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment},
+    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment, RasterSettings, PrimitiveMode},
 };
 
 use assets::Assets;
@@ -79,7 +79,21 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         depth,
     };
 
-    // Create a fullscreen quad
+    // Create the positions vec for the fullscreen quad
+    let positions = vec![
+        vek::Vec3::new(-1.0, -1.0, 0.0),
+        vek::Vec3::new(1.0, -1.0, 0.0),
+        vek::Vec3::new(-1.0, 1.0, 0.0),
+        vek::Vec3::new(1.0, 1.0, 0.0),
+    ];
+
+    // Create the triangles vec for the fullscreen quad
+    let triangles = vec![
+        [0, 1, 2],
+        [1, 3, 2]
+    ];
+    let quad = Mesh::from_vecs(ctx, BufferMode::Static, positions, None, None, None, None, triangles).unwrap();
+
 
     // Create the compositor shader
     let vertex = assets.load::<VertexStage>("engine/shaders/passthrough.vrsh.glsl").unwrap();
@@ -88,7 +102,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the internally used compositor
     let compositor = Compositor {
-        quad: todo!(),
+        quad,
         compositor: shader,
     };
 
@@ -180,6 +194,31 @@ fn rendering(world: &mut World) {
     old_stats.current = true;
 
     // Render the quad onto the screen now
+    let mut _compositor = world.get_mut::<Compositor>().unwrap();
+    let compositor = &mut *_compositor;
+    let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
+    let images = world.get::<Storage<ColorAttachment>>().unwrap();
+    let depths = world.get::<Storage<DepthAttachment>>().unwrap();
+    let mut window = world.get_mut::<Window>().unwrap();
+    let shading = &mut *_shading;
+    let (canvas, image, depth) = (&mut shading.canvas, &shading.color, &shading.depth);
+    let image = images.get(image);
+    let depth = depths.get(depth);
+    let mut ctx = world.get_mut::<Context>().unwrap();
+    let settings = RasterSettings {
+        depth_test: None,
+        scissor_test: None,
+        primitive: PrimitiveMode::Triangles { cull: None },
+        srgb: false,
+        blend: None,
+    };
+    let (mut rasterizer, mut uniforms) = window.canvas_mut().rasterizer(&mut ctx, &mut compositor.compositor, settings);
+    uniforms.set_sampler("color", image);
+    uniforms.set_scalar("tonemapping_strength", 1.0);
+    uniforms.set_scalar("exposure", 1.0);
+    uniforms.set_scalar("vignette_strength", 1.0);
+    uniforms.set_scalar("vignette_size", 1.0);
+    rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -196,6 +235,10 @@ fn window(world: &mut World, event: &mut WindowEvent) {
             // Resize the default canvas when we resize the window
             let mut window = world.get_mut::<Window>().unwrap();
             window.canvas_mut().resize(extent);
+
+            // Resize the clustered shading canvas
+            let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+            shading.canvas_mut().resize(extent);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;

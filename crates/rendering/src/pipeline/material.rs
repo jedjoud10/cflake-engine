@@ -107,7 +107,16 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
             // Sometimes, meshes can be invalid
             if let Some(len) = mesh.vertices().len() {
-                rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
+                // Validate the uniforms
+                let validated = unsafe {
+                    if M::should_assume_valid() {
+                        uniforms.assume_valid()
+                    } else {
+                        uniforms.validate().unwrap()
+                    }
+                };
+
+                rasterizer.draw(mesh, validated);
                 stats.surfaces += 1;
                 stats.verts += len as u32;
                 stats.tris += mesh.triangles().len() as u32;
