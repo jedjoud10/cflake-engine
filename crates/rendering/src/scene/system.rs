@@ -129,8 +129,7 @@ fn update_matrices(world: &mut World) {
 }
 
 // Rendering event that will try to render the 3D scene each frame
-fn rendering(world: &mut World) {
-    
+fn rendering(world: &mut World) {    
     // Check if we can even render the scene in the first place
     let shading = world.get::<ClusteredShading>().unwrap();
     if shading.main_camera().is_none() || shading.main_directional_light().is_none() {
@@ -150,6 +149,7 @@ fn rendering(world: &mut World) {
         render.render(world, &mut stats);
     }
 
+    // Update the stats resources
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
     *old_stats = stats; 
     old_stats.current = true;
@@ -205,6 +205,10 @@ fn main_camera(world: &mut World) {
         // Fetch it's components, and update them
         let (camera, location, rotation) = entry.as_query::<(&mut Camera, &Location, &Rotation)>().unwrap();
         camera.update(location, rotation);
+    } else {
+        // Set it if we cannot find one
+        let query = ecs.::<(&mut Camera, &Location, &Rotation)>()
+        let (camera, location, rotation, entity) = ecs.view_first::<(&mut Camera, &Location, &Rotation)>().unwrap();
     }
 }
 
