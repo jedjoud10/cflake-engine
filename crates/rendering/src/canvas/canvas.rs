@@ -82,7 +82,11 @@ impl Canvas {
 
         for canvas_attachment in attachments.iter() {
             let attachment = match canvas_attachment.format {
-                TexelFormat::Color | TexelFormat::GammaCorrectedColor => { draw_buffers += 1; gl::COLOR_ATTACHMENT0 + draw_buffers },
+                TexelFormat::Color | TexelFormat::GammaCorrectedColor => { 
+                    let attachment = gl::COLOR_ATTACHMENT0 + draw_buffers; 
+                    draw_buffers += 1; 
+                    attachment
+                },
                 TexelFormat::Depth => if !depth_enabled {
                     depth_enabled = true;
                     gl::DEPTH_ATTACHMENT
@@ -138,6 +142,7 @@ impl Canvas {
     }
 
     // Clear the whole framebuffer using the proper flags
+    // This will only clear the framebuffer's draw buffers if they are using floating point colors
     pub fn clear(
         &mut self,
         color: Option<vek::Rgb<f32>>,
@@ -172,6 +177,7 @@ impl Canvas {
 
         // Clear the whole canvas using the proper bitwise flags
         unsafe {
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.name);
             gl::Clear(flags);
         }
     }

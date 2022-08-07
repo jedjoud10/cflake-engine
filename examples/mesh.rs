@@ -14,7 +14,7 @@ fn main() {
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
-        .insert_update(update)
+        //.insert_update(update)
         .execute();
 }
 
@@ -37,7 +37,7 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
-    let camera = ecs.insert((camera, Location::default(), Rotation::default(), Velocity::default()));
+    let camera = ecs.insert((camera, Location::at_z(5.0), Rotation::default(), Velocity::default()));
 
     // We will also register some new keybinds for the camera controller
     keyboard.bind("forward", Key::W);

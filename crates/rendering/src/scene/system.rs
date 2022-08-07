@@ -113,9 +113,15 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     
-    // TODO: Add filter
+    // Filter the objects that have changed
+    use ecs::*;
+    let f1 = or(added::<Location>(), modified::<Location>());
+    let f2 = or(added::<Rotation>(), modified::<Rotation>());
+    let f2 = or(added::<Scale>(), modified::<Scale>());
+    let f3 = added::<Renderer>();
+    let filter = or(f1, or(f2, f3));
     let query = ecs
-        .query::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>()
+        .query_with_filter::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>(filter)
         .unwrap();
 
     // Update the matrices of objects that might contain location, rotation, or scale
@@ -151,7 +157,6 @@ fn rendering(world: &mut World) {
 
     // Update the stats resources
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
-    dbg!(&stats);
     *old_stats = stats; 
     old_stats.current = true;
 }
@@ -184,6 +189,11 @@ fn clear(world: &mut World) {
     window
         .canvas_mut()
         .clear(Some(vek::Rgb::black()), Some(1.0), None);
+
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    shading
+        .canvas_mut()
+        .clear(Some(vek::Rgb::red()), Some(1.0), None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
