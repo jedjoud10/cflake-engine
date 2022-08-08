@@ -16,6 +16,7 @@ uniform vec3 forward;
 
 // Uniforms set by the main scene
 uniform vec3 light_dir;
+uniform float light_strength;
 
 // Data given by the vertex shader
 in vec3 m_position;
@@ -41,11 +42,12 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
     // Calculate lighting factor
-    float light = min(max(dot(normal, light_dir), 0.0) + 0.2, 1.0);
+	float ambient = 0.1;
+    float light = max(dot(normal, light_dir), 0.0) * light_strength + ambient;
 
 	// Calculate specular light
 	vec3 view = normalize(camera - m_position);
-	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32);
+	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32) * light_strength;
 
 	// Combine the factors to make the final color
 	vec3 color = vec3((diffuse * light) + spec);

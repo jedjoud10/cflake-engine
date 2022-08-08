@@ -7,7 +7,7 @@ use crate::{
     context::{Context},
     scene::{Renderer},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB}, prelude::{SRGBA},
+    texture::{Ranged, Texture, Texture2D, RG, RGB}, prelude::{SRGBA, RGBA}, mesh::EnabledAttributes,
 };
 
 use super::{Material, DefaultMaterialResources};
@@ -36,6 +36,10 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<MaskMap>>,  
     );
 
+    fn requirements() -> EnabledAttributes {
+        EnabledAttributes::POSITIONS | EnabledAttributes::NORMALS | EnabledAttributes::TANGENTS | EnabledAttributes::TEX_COORDS
+    }
+
     fn fetch_resources(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
@@ -53,6 +57,7 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_vec3::<vek::Vec3<f32>>("camera", main.camera_location.into());
         uniforms.set_vec3("forward", main.camera_rotation.forward());
         uniforms.set_vec3("light_dir", main.directional_light_rotation.forward());
+        uniforms.set_scalar("light_strength", main.directional_light.strength);
     }
 
     fn set_surface_properties(

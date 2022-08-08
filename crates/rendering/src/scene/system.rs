@@ -9,7 +9,7 @@ use crate::{
         Filter, MipMaps, Sampling, Texture,
         TextureMode, Wrap, VertexStage, FragmentStage, ShaderCompiler, Processor,
     },
-    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment, RasterSettings, PrimitiveMode},
+    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment, RasterSettings, PrimitiveMode, FloatingPointColorAttachment},
 };
 
 use assets::Assets;
@@ -31,12 +31,13 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<Canvas>::default());
     world.insert(Storage::<ColorAttachment>::default());
+    world.insert(Storage::<FloatingPointColorAttachment>::default());
     world.insert(Storage::<DepthAttachment>::default());
 
     // Get mutable references to the data that we must use
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
-    let mut color_attachments = world.get_mut::<Storage<ColorAttachment>>().unwrap();
+    let mut color_attachments = world.get_mut::<Storage<FloatingPointColorAttachment>>().unwrap();
     let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
 
     // Create the window and graphical context
@@ -51,7 +52,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let mipmaps = MipMaps::Disabled;
 
     // Create the render color texture
-    let color: ColorAttachment = <ColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
+    let color: FloatingPointColorAttachment = <FloatingPointColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
     let color = color_attachments.insert(color);
     let t1 = (&*color_attachments, color.clone());
 
@@ -67,7 +68,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the default pipelines
     let mut init = (&mut *shaders, &mut *assets);
     ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
-    ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
+    ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
 
     // Create the clustered shading rendererer
     let clustered_shading = ClusteredShading {
@@ -110,8 +111,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let postprocessing = PostProcessing {
         tonemapping_strength: 1.0,
         exposure: 1.0,
-        vignette_strength: 1.0,
-        vignette_size: 1.0,
+        gamma: 2.2,
+        vignette_strength: 8.5,
+        vignette_size: 0.2,
         bloom_radius: 25.0,
         bloom_strength: 1.0,
         bloom_contrast: 1.0,
@@ -198,9 +200,10 @@ fn rendering(world: &mut World) {
     let compositor = &mut *_compositor;
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
+    let pp = world.get::<PostProcessing>().unwrap();
     
     // Get the texture attachment storages to load them textures
-    let colors = world.get::<Storage<ColorAttachment>>().unwrap();
+    let colors = world.get::<Storage<FloatingPointColorAttachment>>().unwrap();
     let depths = world.get::<Storage<DepthAttachment>>().unwrap();
     
     // Get the texture attachments
@@ -224,10 +227,11 @@ fn rendering(world: &mut World) {
     // Set the shader uniforms
     uniforms.set_vec2("resolution", vek::Vec2::<i32>::from(rasterizer.canvas().size().as_::<i32>()));
     uniforms.set_sampler("color", color);
-    uniforms.set_scalar("tonemapping_strength", 1.0);
-    uniforms.set_scalar("exposure", 1.0);
-    uniforms.set_scalar("vignette_strength", 1.0);
-    uniforms.set_scalar("vignette_size", 1.0);
+    uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);
+    uniforms.set_scalar("exposure", pp.exposure);
+    uniforms.set_scalar("gamma", pp.gamma);
+    uniforms.set_scalar("vignette_strength", pp.vignette_strength);
+    uniforms.set_scalar("vignette_size", pp.vignette_size);
     rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
 }
 

@@ -1,5 +1,4 @@
 use std::num::NonZeroU8;
-
 use cflake_engine::prelude::{*, vek::Lerp};
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
@@ -15,6 +14,7 @@ fn main() {
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
         .insert_update(update)
+        .insert_update(debug)
         .execute();
 }
 
@@ -24,6 +24,7 @@ fn init(world: &mut World) {
     let mut ctx = world.get_mut::<Context>().unwrap();
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
     let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
+    let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
@@ -46,15 +47,18 @@ fn init(world: &mut World) {
     keyboard.bind("right", Key::D);
 
     // Create a directional light insert it as a light entity (and update the scene settings)
-    let light = DirectionalLight::default();
+    let light = DirectionalLight {
+        color: vek::Rgb::broadcast(255),
+        strength: 2.0,
+    };
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
     // Create the default albedo map texture
-    let albedo_map = assets.load_with::<AlbedoMap>("engine/textures/missing.png", (&mut ctx, TextureImportSettings::default())).unwrap();
+    let albedo_map = assets.load_with::<AlbedoMap>("user/textures/albedo.jpg", (&mut ctx, TextureImportSettings::default())).unwrap();
     let albedo_map = albedo_maps.insert(albedo_map);
 
     // Create the default normal map texture
-    let normal_map = assets.load_with::<NormalMap>("engine/textures/bumps.png", (&mut ctx, TextureImportSettings::default())).unwrap();
+    let normal_map = assets.load_with::<NormalMap>("user/textures/normal.jpg", (&mut ctx, TextureImportSettings::default())).unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
     // Create the default mask map texture
@@ -71,8 +75,8 @@ fn init(world: &mut World) {
     let import = MeshImportSettings {
         mode: BufferMode::Static,
         use_normals: true,
-        use_tangents: true,
-        use_tex_coords: true,
+        use_tangents: false,
+        use_tex_coords: false,
         invert_triangle_ordering: false,
         invert_normals: false,
         invert_tangents: false,
@@ -104,6 +108,40 @@ fn init(world: &mut World) {
 
     // Insert a new entity that contains the valid surface
     ecs.insert((surface, Renderer::default()));
+
+    // Load in the texture
+    let texture = albedo_maps.insert(
+        assets
+            .load_with::<AlbedoMap>("engine/textures/sky_gradient.png", (&mut ctx, TextureImportSettings::default()))
+            .unwrap(),
+    );
+
+    // Create the default sky material
+    let material = Sky {
+        gradient: texture,
+        sun_intensity: 15.0,
+        sun_size: 1.05,
+        cloud_coverage: 0.0,
+        cloud_speed: 0.0,
+    };
+
+    // Create the default Sky material pipeline and default Sky sphere surface
+    let material = sky_materials.insert(material);
+    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Sky>>().unwrap();
+    let renderer = Renderer::default();
+    let sphere = assets.load_with::<Mesh>("engine/meshes/sphere.obj", (&mut ctx, MeshImportSettings {
+        invert_triangle_ordering: true,
+        ..Default::default()
+    })).unwrap();
+    let sphere = meshes.insert(sphere);
+    let surface = Surface::new(sphere, material, pipeid);
+
+    // Insert it as a new entity
+    ecs.insert((
+        renderer,
+        surface,
+        Scale::from(vek::Vec3::one() * 5000.0)
+    ));
 }
 
 #[derive(Component, Default)]
@@ -126,7 +164,7 @@ fn update(world: &mut World) {
 
     // Lock the cursor to the center of the screen
     //window.raw().set_cursor_grab(true).unwrap();
-    window.raw().set_cursor_visible(false);
+    //window.raw().set_cursor_visible(false);
     
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them
@@ -162,4 +200,16 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
         **rotation = vek::Quaternion::lerp_unclamped_precise(**rotation, rot, time.delta_f32() * ROTATION_SMOOTH_SPEED);
     }
+}
+
+fn debug(world: &mut World) {
+    let mut postprocessing = world.get_mut::<PostProcessing>().unwrap();
+    let mut ui = world.get_mut::<UserInterface>().unwrap();
+    let ctx = ui.as_mut().as_mut();
+    egui::Window::new("Test window").show(ctx, |ui| {
+        ui.add(egui::DragValue::new(&mut postprocessing.vignette_size)); // 02
+        ui.add(egui::DragValue::new(&mut postprocessing.vignette_strength)); // 8.5
+        ui.add(egui::DragValue::new(&mut postprocessing.tonemapping_strength));
+        ui.add(egui::DragValue::new(&mut postprocessing.gamma));
+    });
 }

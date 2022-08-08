@@ -44,9 +44,11 @@ pub fn system(events: &mut Events) {
 
             // Update keyboard key states
             DeviceEvent::Key(key) => {
-                keyboard
-                    .keys
-                    .insert(key.virtual_keycode.unwrap(), key.state.into());
+                if let Some(keycode) = key.virtual_keycode {
+                    keyboard
+                        .keys
+                        .insert(keycode, key.state.into());
+                } 
             }
             _ => (),
         }

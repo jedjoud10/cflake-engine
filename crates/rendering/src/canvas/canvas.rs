@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use super::{RasterSettings, Rasterizer};
 
 // Framebuffer attachements
+pub type FloatingPointColorAttachment = RenderTarget2D<RGBA<f32>>; 
 pub type ColorAttachment = RenderTarget2D<RGBA<Ranged<u8>>>;
 pub type DepthAttachment = RenderTarget2D<Depth<Ranged<u32>>>;
 
