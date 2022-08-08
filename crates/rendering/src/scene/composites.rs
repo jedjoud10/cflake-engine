@@ -42,7 +42,7 @@ impl ClusteredShading {
     }
 
     // Get the handle to the main color attachment
-    pub fn image(&self) -> Handle<FloatingPointColorAttachment> {
+    pub fn color(&self) -> Handle<FloatingPointColorAttachment> {
         self.color.clone()
     }
     

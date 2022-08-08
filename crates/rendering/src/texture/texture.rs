@@ -19,6 +19,26 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
     pub(super) fn new(texture: &'a T, level: u8) -> Self {
         Self { texture, level }
     }
+
+    // Download a sub-region of the mip-layer, without checking for safety
+    pub unsafe fn download_unchecked(
+        &self,
+        region: T::Region,
+        data: *mut <T::T as Texel>::Storage,
+    ) {
+        T::read_subregion(self.texture.name(), region, self.level, data, region.area());
+    }
+
+    // Read the pixels from a layer (synchronous)
+    pub fn download(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
+        assert_ne!(region.area(), 0, "Input data length cannot be zero");
+
+        let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(region.area() as usize);
+        unsafe {
+            self.download_unchecked(region, vec.as_mut_ptr());
+        }
+        vec
+    }
 }
 
 // A mutable mip layer that we can use to write to the texture
@@ -36,29 +56,51 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
         Self { texture, level }
     }
 
-    // Update a sub-region of the mip-layer, but without checking for safety
-    unsafe fn update_unchecked(
-        &mut self,
-        _ctx: &mut Context,
+    // Download a sub-region of the mip-layer, without checking for safety
+    pub unsafe fn download_unchecked(
+        &self,
         region: T::Region,
-        data: &[<T::T as Texel>::Storage],
+        data: *mut <T::T as Texel>::Storage,
     ) {
-        T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
+        T::read_subregion(self.texture.name(), region, self.level, data, region.area());
     }
 
-    // Update a sub-region of the mip-layer using a data slice
-    fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[<T::T as Texel>::Storage]) {
-        // The length of the buffer should be equal to the surface area of the region
+    // Read the pixels from a layer (synchronous)
+    pub fn download(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
+        assert_ne!(region.area(), 0, "Input data length cannot be zero");
+
+        let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(region.area() as usize);
+        unsafe {
+            self.download_unchecked(region, vec.as_mut_ptr());
+        }
+        vec
+    }
+
+    // Update a sub-region of the mip-layer, but without checking for safety
+    pub unsafe fn upload_unhecked(
+        &mut self,
+        region: T::Region,
+        data: *const <T::T as Texel>::Storage,
+    ) {
+        T::update_subregion(self.texture.name(), region, data)
+    }
+
+    // Update a sub-region of the mip-layer using a data slice (synchronous)
+    pub fn upload(&mut self, region: T::Region, data: &[<T::T as Texel>::Storage]) {
         assert!(
             (data.len() as u32) == region.area(),
             "Input data length is not equal to region area surface"
         );
 
+        assert_ne!(data.len(), 0, "Input data length cannot be zero");
+
         // Le update texture subimage
         unsafe {
-            self.update_unchecked(ctx, region, data);
+            self.upload_unhecked(region, data.as_ptr());
         }
     }
+
+    // Read the pixels from a layer (synchronous)
 }
 
 // Texture dimensions traits that are simply implemented for extents
@@ -115,7 +157,7 @@ impl Extent for vek::Extent3<u16> {
 }
 
 // Texture region trait that will be implemented for (origin, extent) tuples
-pub trait Region {
+pub trait Region: Copy {
     // Regions are defined by their origin and extents
     type O: Default + Copy;
     type E: Copy + Extent;
@@ -187,6 +229,8 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
 }
 
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
+// TODO: Test texture resizing with mipmapping, does it reallocate or not?
+// TODO: Test texture mip map layer pixel reading / writing
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
     type Region: Region;
@@ -348,7 +392,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         name: u32,
         extent: <Self::Region as Region>::E,
         levels: u8,
-        ptr: *const c_void,
+        ptr: *const <Self::T as Texel>::Storage,
     );
 
     // Allocate some mutable(resizable) texture during texture initialization
@@ -356,10 +400,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     unsafe fn alloc_resizable_storage(
         name: u32,
         extent: <Self::Region as Region>::E,
-        unique_level: u8,
-        ptr: *const c_void,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
     );
 
     // Update a sub-region of the raw texture
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);
+    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const <Self::T as Texel>::Storage);
+
+    // Read a sub-region of the raw texture
+    // PS: This will read the texture storage for only one level
+    unsafe fn read_subregion(name: u32, region: Self::Region, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
 }

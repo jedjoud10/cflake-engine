@@ -2377,6 +2377,7 @@ dependencies = [
  "half",
  "hdrldr",
  "image",
+ "itertools",
  "lazy_static",
  "math",
  "mikktspace",

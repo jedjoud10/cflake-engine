@@ -7,7 +7,7 @@ use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{marker::PhantomData, num::NonZeroU8};
+use std::{marker::PhantomData, num::NonZeroU8, ffi::c_void};
 
 // A 2D texture that contains multiple pixels that have their own channels
 // Each pixel can be either a single value, RG, RGB, or even RGBA
@@ -80,7 +80,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         name: u32,
         extent: <Self::Region as Region>::E,
         levels: u8,
-        ptr: *const std::ffi::c_void,
+        ptr: *const <Self::T as Texel>::Storage,
     ) {
         gl::TextureStorage2D(
             name,
@@ -98,7 +98,7 @@ impl<T: Texel> Texture for Texture2D<T> {
             extent.h as i32,
             T::FORMAT,
             T::TYPE,
-            ptr,
+            ptr as *const c_void,
         );
     }
 
@@ -106,7 +106,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         name: u32,
         extent: <Self::Region as Region>::E,
         unique_level: u8,
-        ptr: *const std::ffi::c_void,
+        ptr: *const <Self::T as Texel>::Storage,
     ) {
         gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(
@@ -118,11 +118,11 @@ impl<T: Texel> Texture for Texture2D<T> {
             0,
             T::FORMAT,
             T::TYPE,
-            ptr,
+            ptr as *const c_void,
         );
     }
 
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const std::ffi::c_void) {
+    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const <Self::T as Texel>::Storage) {
         let origin = region.origin();
         let extent = region.extent();
         gl::TextureSubImage2D(
@@ -134,8 +134,27 @@ impl<T: Texel> Texture for Texture2D<T> {
             extent.h as i32,
             T::FORMAT,
             T::TYPE,
-            ptr,
+            ptr as *const c_void,
         );
+    }
+
+    unsafe fn read_subregion(name: u32, region: Self::Region, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32) {
+        let origin = region.origin().as_::<i32>();
+        let extent = region.extent().as_::<i32>();
+        let size = texels as u32 * T::bytes();
+        gl::GetTextureSubImage(
+            name, 
+            level as i32,
+            origin.x,
+            origin.y,
+            0, 
+            extent.w,
+            extent.h,
+            1,
+            T::FORMAT,
+            T::TYPE,
+            size as i32,
+            ptr as *mut c_void);
     }
 }
 

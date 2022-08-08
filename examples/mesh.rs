@@ -4,8 +4,8 @@ use cflake_engine::prelude::{*, vek::Lerp};
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
 const SPEED: f32 = 10.0;
-const ROTATION_SMOOTH_SPEED: f32 = 30.0;
-const VELOCITY_SMOOTH_SPEED: f32 = 30.0;
+const ROTATION_SMOOTH_SPEED: f32 = 20.0;
+const VELOCITY_SMOOTH_SPEED: f32 = 20.0;
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
@@ -75,8 +75,8 @@ fn init(world: &mut World) {
     let import = MeshImportSettings {
         mode: BufferMode::Static,
         use_normals: true,
-        use_tangents: false,
-        use_tex_coords: false,
+        use_tangents: true,
+        use_tex_coords: true,
         invert_triangle_ordering: false,
         invert_normals: false,
         invert_tangents: false,
@@ -88,7 +88,10 @@ fn init(world: &mut World) {
     };
 
     // Create the default cube primitive mesh
-    let cube = assets.load_with::<Mesh>("engine/meshes/cube.obj", (&mut ctx, import)).unwrap();
+    let cube = Cuboid {
+        center: vek::Vec3::zero(),
+        extent: vek::Extent3::one(),
+    }.generate(&mut ctx, MeshImportSettings::default());
     let cube = meshes.insert(cube);
 
     // Create a new material instance with the normal map texture
@@ -131,6 +134,8 @@ fn init(world: &mut World) {
     let renderer = Renderer::default();
     let sphere = assets.load_with::<Mesh>("engine/meshes/sphere.obj", (&mut ctx, MeshImportSettings {
         invert_triangle_ordering: true,
+        use_tangents: false,
+        use_normals: false,
         ..Default::default()
     })).unwrap();
     let sphere = meshes.insert(sphere);

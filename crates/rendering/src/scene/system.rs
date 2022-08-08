@@ -252,7 +252,11 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
             // Resize the clustered shading canvas
             let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+            let mut colors = world.get_mut::<Storage<FloatingPointColorAttachment>>().unwrap();
+            let mut depths = world.get_mut::<Storage<DepthAttachment>>().unwrap();
             shading.canvas_mut().resize(extent);
+            colors.get_mut(&shading.color()).resize(extent);
+            depths.get_mut(&shading.depth()).resize(extent);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;

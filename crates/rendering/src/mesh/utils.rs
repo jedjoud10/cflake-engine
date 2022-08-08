@@ -45,43 +45,65 @@ impl MeshUtils {
         }
     }
 
+    // Multiply a position by a matrix
+    pub fn mul_position(matrix: vek::Mat4<f32>, position: VePosition) -> VePosition {
+        matrix.mul_point(matrix.mul_point(position))
+    }
+
+    // Multiply a normal by a matrix
+    pub fn mul_normal(matrix: vek::Mat4<f32>, normal: VeNormal, flip: bool) -> VeNormal {
+        let mapped = normal.map(to_f32);
+        let new = inv(matrix.mul_direction(mapped), flip);
+        new.map(to_i8)
+    }
+
+
+    // Multiply a tangent by a matrix
+    pub fn mul_tangent(matrix: vek::Mat4<f32>, tangent: VeTangent, flip: bool) -> VeTangent {
+        let mapped = tangent.map(|f| f as f32 / 127.0);
+        let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
+        let mapped = vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w));
+        mapped
+    }
+
+    // Update a texture coordinate by it's settings
+    pub fn update_tex_coord(mut tex_coord: VeTexCoord, flip_horizontal: bool, flip_vertical: bool) -> VeTexCoord {
+        if flip_horizontal {
+            tex_coord.x = 255 - tex_coord.x;
+        }
+
+        if flip_vertical {
+            tex_coord.y = 255 - tex_coord.y;
+        }
+
+        tex_coord
+    }
+
     // Update a set of position attributes using a matrix
     pub fn apply_settings_positions(positions: &mut [VePosition], matrix: vek::Mat4<f32>) {
         for position in positions {
-            *position = matrix.mul_point(*position);
+            *position = Self::mul_position(matrix, *position);
         }
     }
     
     // Update a set of normal attributes using a matrix and a flip rule
     pub fn apply_settings_normals(normals: &mut [VeNormal], matrix: vek::Mat4<f32>, flip: bool) {
         for normal in normals {
-            let mapped = normal.map(to_f32);
-            let new = inv(matrix.mul_direction(mapped), flip);
-            *normal = new.map(to_i8);
+            *normal = Self::mul_normal(matrix, *normal, flip);
         }
     }
     
     // Update a set of tangent attributes using a matrix and a flip rule
     pub fn apply_settings_tangents(tangents: &mut [VeTangent], matrix: vek::Mat4<f32>, flip: bool) {
         for tangent in tangents {
-            let mapped = tangent.map(|f| f as f32 / 127.0);
-            // Should we flip XYZ or W?
-            let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
-            let mapped = vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w));
-            *tangent = mapped;
+            *tangent = Self::mul_tangent(matrix, *tangent, flip);
         }
     }
 
     // Update a set of texture coordinate attributes using a flip horizontal/vertical rule
     pub fn apply_settings_tex_coords(tex_coords: &mut [VeTexCoord], flip_horizontal: bool, flip_vertical: bool) {
         for tex_coord in tex_coords {
-            if flip_horizontal {
-                tex_coord.x = 255 - tex_coord.x;
-            }
-
-            if flip_vertical {
-                tex_coord.y = 255 - tex_coord.y;
-            }
+            *tex_coord = Self::update_tex_coord(*tex_coord, flip_horizontal, flip_vertical);
         }
     }
 
