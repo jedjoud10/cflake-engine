@@ -47,8 +47,9 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 	float spec = pow(max(dot(view, reflect(-light_dir, normal)), 0.0), 32);
 
+	// Combine the factors to make the final color
 	vec3 color = vec3((diffuse * light) + spec);
 
     // This sets the color for the current fragment
-    frag = vec4(1.0, 1.0, 1.0, 1.0);
+    frag = vec4(color, 1.0);
 }

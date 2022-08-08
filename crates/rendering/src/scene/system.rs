@@ -148,11 +148,11 @@ fn update_matrices(world: &mut World) {
     
     // Filter the objects that have changed
     use ecs::*;
-    let f1 = or(added::<Location>(), modified::<Location>());
-    let f2 = or(added::<Rotation>(), modified::<Rotation>());
-    let f2 = or(added::<Scale>(), modified::<Scale>());
-    let f3 = added::<Renderer>();
-    let filter = or(f1, or(f2, f3));
+    let f1 = modified::<Location>();
+    let f2 = modified::<Rotation>();
+    let f3 = modified::<Scale>();
+    let f4 = added::<Renderer>();
+    let filter = or(or(f1, f2), or(f3, f4));
     let query = ecs
         .query_with_filter::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>(filter)
         .unwrap();
@@ -197,14 +197,21 @@ fn rendering(world: &mut World) {
     let mut _compositor = world.get_mut::<Compositor>().unwrap();
     let compositor = &mut *_compositor;
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
-    let images = world.get::<Storage<ColorAttachment>>().unwrap();
-    let depths = world.get::<Storage<DepthAttachment>>().unwrap();
-    let mut window = world.get_mut::<Window>().unwrap();
     let shading = &mut *_shading;
-    let (canvas, image, depth) = (&mut shading.canvas, &shading.color, &shading.depth);
-    let image = images.get(image);
-    let depth = depths.get(depth);
+    
+    // Get the texture attachment storages to load them textures
+    let colors = world.get::<Storage<ColorAttachment>>().unwrap();
+    let depths = world.get::<Storage<DepthAttachment>>().unwrap();
+    
+    // Get the texture attachments
+    let color = colors.get(&shading.color);
+    let depth = depths.get(&shading.depth);
+
+    // Get the main window since we will draw to it
+    let mut window = world.get_mut::<Window>().unwrap();
     let mut ctx = world.get_mut::<Context>().unwrap();
+
+    // Create the full screen rasterizer
     let settings = RasterSettings {
         depth_test: None,
         scissor_test: None,
@@ -213,7 +220,10 @@ fn rendering(world: &mut World) {
         blend: None,
     };
     let (mut rasterizer, mut uniforms) = window.canvas_mut().rasterizer(&mut ctx, &mut compositor.compositor, settings);
-    uniforms.set_sampler("color", image);
+
+    // Set the shader uniforms
+    uniforms.set_vec2("resolution", vek::Vec2::<i32>::from(rasterizer.canvas().size().as_::<i32>()));
+    uniforms.set_sampler("color", color);
     uniforms.set_scalar("tonemapping_strength", 1.0);
     uniforms.set_scalar("exposure", 1.0);
     uniforms.set_scalar("vignette_strength", 1.0);
@@ -257,7 +267,7 @@ fn clear(world: &mut World) {
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
     shading
         .canvas_mut()
-        .clear(Some(vek::Rgb::red()), Some(1.0), None);
+        .clear(Some(vek::Rgb::black()), Some(1.0), None);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
