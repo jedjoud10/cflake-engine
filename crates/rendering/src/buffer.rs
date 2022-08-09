@@ -2,8 +2,8 @@ use crate::object::{ToGlName, ToGlTarget};
 use crate::{context::Context, object::Shared};
 use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::{MaybeUninit};
-use std::ops::{RangeBounds};
+use std::mem::MaybeUninit;
+use std::ops::RangeBounds;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -175,11 +175,11 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         let valid_start_index = start < self.length;
         let valid_end_index = end <= self.length && end >= start;
-        
+
         if !valid_start_index || !valid_end_index {
             return None;
         }
-    
+
         if (end - start) == 0 {
             return None;
         }
@@ -227,7 +227,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             self.mode().modify_length_permission(),
             "Cannot extend buffer, missing permission"
         );
-        
+
         unsafe {
             let ptr = if !slice.is_empty() {
                 slice.as_ptr() as *const c_void
@@ -235,16 +235,10 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 return;
             };
             let slice_byte_size = (slice.len() * size_of::<T>()) as isize;
-            
 
-            if self.length == 0 && self.capacity == 0 {  
+            if self.length == 0 && self.capacity == 0 {
                 // Allocate the buffer for the first time
-                gl::NamedBufferData(
-                    self.buffer,
-                    slice_byte_size,
-                    ptr,
-                    gl::DYNAMIC_DRAW,
-                );                
+                gl::NamedBufferData(self.buffer, slice_byte_size, ptr, gl::DYNAMIC_DRAW);
                 self.length = slice.len();
                 self.capacity = slice.len();
             } else if slice.len() + self.length > self.capacity {
@@ -261,7 +255,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 let old_capacity_byte_size = (self.capacity * size_of::<T>()) as isize;
 
                 // Create temporary buffer that will store our old data
-                let mut temp = 0;                
+                let mut temp = 0;
                 gl::CreateBuffers(1, &mut temp);
                 gl::NamedBufferStorage(temp, old_capacity_byte_size, null(), 0);
 
@@ -396,13 +390,16 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Copy the data from another buffer into this buffer, but transmute the other buffer as well
-    pub unsafe fn copy_from_transmute<U: Shared, const OTHER: u32>(&mut self, other: &Buffer<U, OTHER>) {
+    pub unsafe fn copy_from_transmute<U: Shared, const OTHER: u32>(
+        &mut self,
+        other: &Buffer<U, OTHER>,
+    ) {
         assert_eq!(
             self.len() * size_of::<T>(),
-            other.len()* size_of::<U>(),
+            other.len() * size_of::<U>(),
             "Byte size mismatch, cannot copy from buffer"
         );
-        
+
         let size = (self.length * size_of::<T>()) as isize;
         gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
     }
@@ -441,7 +438,10 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map a region of the buffer temporarily for reading and writing
-    pub fn map_range_mut(&mut self, range: impl RangeBounds<usize>) -> Option<MappedMut<T, TARGET>> {
+    pub fn map_range_mut(
+        &mut self,
+        range: impl RangeBounds<usize>,
+    ) -> Option<MappedMut<T, TARGET>> {
         let (start, end) = self.convert_range_bounds(range)?;
 
         let offset = (start * size_of::<T>()) as isize;

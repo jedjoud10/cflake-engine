@@ -1,5 +1,3 @@
-
-
 use crate::context::Context;
 
 use super::{Program, Uniforms};
@@ -43,7 +41,7 @@ impl<'c> ComputeScheduler<'c> {
     pub unsafe fn run_unchecked(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
 
     }
-    
+
     // Execute the compute shceduler by verifying the state of the uniforms
     pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
 

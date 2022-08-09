@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
-use crate::{object::ToGlName, texture::Texture, context::Context};
+use crate::{context::Context, object::ToGlName, texture::Texture};
 
 // IMplement the scalar trait for single, scalar uniform types
 macro_rules! impl_scalars {
@@ -209,7 +209,7 @@ struct TextureUnit {
 
 // The main struct that will allow us to set the shader uniforms before it's execution
 // If debug assertions are enabled, the safe execution functions will check if the uniforms are valid
-// You can always use the "_unchecked" variant of the execution functions to override this behavior 
+// You can always use the "_unchecked" variant of the execution functions to override this behavior
 // debug_assertions on -> verify uniform completion
 // debug_assertions off -> assume uniforms are valid
 pub struct Uniforms<'uniforms> {
@@ -234,10 +234,9 @@ impl<'uniforms> Uniforms<'uniforms> {
             gl::UseProgram(obj)
         });
 
-
         Self {
             texture_units: AHashMap::with_capacity(program.uniform_locations.len()),
-            
+
             #[cfg(debug_assertions)]
             bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
 
@@ -250,9 +249,11 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Check for any missing / invalid uniforms and panic if we find any
     #[cfg(debug_assertions)]
     fn check_completion(&mut self) -> Result<(), UniformsError> {
-        let missing_uniform = self.program.uniform_locations.keys().find(|name| {
-            !self.bound_uniforms.contains(*name)
-        });
+        let missing_uniform = self
+            .program
+            .uniform_locations
+            .keys()
+            .find(|name| !self.bound_uniforms.contains(*name));
 
         let missing_buffer_binding = self
             .program
@@ -294,7 +295,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     pub fn validate(&mut self) -> Result<ValidUniforms<'uniforms>, UniformsError> {
         #[cfg(debug_assertions)]
         self.check_completion()?;
-        
+
         Ok(unsafe { self.assume_valid() })
     }
 
@@ -307,7 +308,6 @@ impl<'uniforms> Uniforms<'uniforms> {
     fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
         let location = self.program.uniform_locations.get(name);
         if let Some(location) = location {
-
             #[cfg(debug_assertions)]
             self.bound_uniforms.insert(name.to_string());
 

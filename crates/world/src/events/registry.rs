@@ -76,7 +76,6 @@ impl<M: Descriptor> Registry<M> {
         self.events
             .sort_unstable_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
 
-
         // 3x POUNCES ON YOU UWU YOU'RE SO WARM
         Ok(())
     }
@@ -93,7 +92,6 @@ fn sort(
     // We might need to sort the keys to make sure they are deterministic
     let mut keys = map.keys().cloned().collect::<Vec<_>>();
     keys.sort();
-
 
     let mut indices = AHashMap::<StageKey, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
@@ -114,7 +112,6 @@ fn sort(
         iter: usize,
         caller: Option<StageKey>,
     ) -> Result<usize, RegistrySortingError> {
-
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
             return Err(RegistrySortingError::CyclicReference);

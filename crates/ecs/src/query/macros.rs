@@ -1,6 +1,6 @@
 use crate::{
-    mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap, MutQueryItem,
-    MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
+    mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap,
+    MutQueryItem, MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
 };
 
 use casey::lower;
@@ -13,7 +13,8 @@ impl<'a, T: Component> RefQueryItem<'a> for &'a T {
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         let cm = mask::<T>();
-        m.contains(cm).then_some(LayoutAccess::new(cm, Mask::zero()))
+        m.contains(cm)
+            .then_some(LayoutAccess::new(cm, Mask::zero()))
     }
 
     fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
@@ -50,7 +51,8 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a T {
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         let cm = mask::<T>();
-        m.contains(cm).then_some(LayoutAccess::new(cm, Mask::zero()))
+        m.contains(cm)
+            .then_some(LayoutAccess::new(cm, Mask::zero()))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
@@ -87,7 +89,8 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         let cm = mask::<T>();
-        m.contains(cm).then_some(LayoutAccess::new(Mask::zero(), cm))
+        m.contains(cm)
+            .then_some(LayoutAccess::new(Mask::zero(), cm))
     }
 
     fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {

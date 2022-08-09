@@ -7,10 +7,10 @@ pub mod material;
 pub mod mesh;
 pub mod object;
 pub mod others;
+pub mod pipeline;
 pub mod scene;
 pub mod shader;
 pub mod texture;
-pub mod pipeline;
 pub mod prelude {
     pub use super::buffer::*;
     pub use super::canvas::*;
@@ -20,8 +20,8 @@ pub mod prelude {
     pub use super::mesh::*;
     pub use super::object::*;
     pub use super::others::*;
+    pub use super::pipeline::*;
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
-    pub use super::pipeline::*;
 }

@@ -1,7 +1,6 @@
-
 use arrayvec::ArrayVec;
 use itertools::Itertools;
-use math::{UvSphere, Cuboid, IcoSphere};
+use math::{Cuboid, IcoSphere, UvSphere};
 
 use crate::context::Context;
 
@@ -17,13 +16,19 @@ impl PrimitiveGenerator for Cuboid {
     fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh {
         // Buffers we shall useth
         let mut positions = Vec::<vek::Vec3<f32>>::with_capacity(24);
-        let mut normals = settings.use_normals.then(|| Vec::<vek::Vec3<i8>>::with_capacity(24));
-        let mut tangents = settings.use_tangents.then(|| Vec::<vek::Vec4<i8>>::with_capacity(24));
-        let mut tex_coords = settings.use_tex_coords.then(|| Vec::<vek::Vec2<u8>>::with_capacity(24));
+        let mut normals = settings
+            .use_normals
+            .then(|| Vec::<vek::Vec3<i8>>::with_capacity(24));
+        let mut tangents = settings
+            .use_tangents
+            .then(|| Vec::<vek::Vec4<i8>>::with_capacity(24));
+        let mut tex_coords = settings
+            .use_tex_coords
+            .then(|| Vec::<vek::Vec2<u8>>::with_capacity(24));
 
         // Create the rotation quaternions
         let rotations: [vek::Quaternion<f32>; 2] = [
-            vek::Quaternion::identity(), 
+            vek::Quaternion::identity(),
             vek::Quaternion::rotation_y(90.0f32.to_radians()),
             /*
             vek::Quaternion::rotation_x(180.0f32.to_radians()),
@@ -42,32 +47,36 @@ impl PrimitiveGenerator for Cuboid {
                 MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, -0.5, 0.0)),
                 MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, 0.5, 0.0)),
                 MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, -0.5, 0.0)),
-                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, 0.5, 0.0))
+                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, 0.5, 0.0)),
             ];
 
             // Generate the normals (optional)
-            let local_normal = settings.use_normals.then(|| 
+            let local_normal = settings.use_normals.then(|| {
                 MeshUtils::mul_normal(
                     matrix.into(),
                     vek::Vec3::new(0, 127, 0),
                     settings.invert_normals,
-            ));
-            
+                )
+            });
+
             // Generate the tangents (optional)
-            let local_tangent = settings.use_tangents.then(||
+            let local_tangent = settings.use_tangents.then(|| {
                 MeshUtils::mul_tangent(
                     matrix.into(),
                     vek::Vec4::new(127, 0, 0, 127),
-                    settings.invert_tangents
-            ));
-            
+                    settings.invert_tangents,
+                )
+            });
+
             // Generate the texture coordinates (optional)
-            let mut local_tex_coords = settings.use_tex_coords.then(|| [
-                vek::Vec2::new(0, 0),
-                vek::Vec2::new(0, 255),
-                vek::Vec2::new(255, 0),
-                vek::Vec2::new(255, 255)
-            ]);
+            let mut local_tex_coords = settings.use_tex_coords.then(|| {
+                [
+                    vek::Vec2::new(0, 0),
+                    vek::Vec2::new(0, 255),
+                    vek::Vec2::new(255, 0),
+                    vek::Vec2::new(255, 255),
+                ]
+            });
 
             // Add the positions into the vector
             positions.extend_from_slice(&local_positions);
@@ -87,21 +96,35 @@ impl PrimitiveGenerator for Cuboid {
                 MeshUtils::apply_settings_tex_coords(
                     local_tex_coords.as_mut().unwrap(),
                     settings.invert_horizontal_tex_coord,
-                    settings.invert_vertical_tex_coord
+                    settings.invert_vertical_tex_coord,
                 );
                 tex_coords.extend(local_tex_coords.unwrap());
             }
         }
-        
-        // Generate the indices
-        let triangles = (0..2).into_iter().map(|face| {
-            let offset = face * 6;
-            let tri1 = [0 + offset, 1 + offset, 2 + offset];
-            let tri2 = [2 + offset, 1 + offset, 3 + offset];
-            (tri1, tri2)
-        }).flat_map(|(t1, t2)| [t1, t2]).collect_vec();
 
-        Mesh::from_vecs(ctx, settings.mode, positions, normals, tangents, None, tex_coords, triangles).unwrap()
+        // Generate the indices
+        let triangles = (0..2)
+            .into_iter()
+            .map(|face| {
+                let offset = face * 6;
+                let tri1 = [0 + offset, 1 + offset, 2 + offset];
+                let tri2 = [2 + offset, 1 + offset, 3 + offset];
+                (tri1, tri2)
+            })
+            .flat_map(|(t1, t2)| [t1, t2])
+            .collect_vec();
+
+        Mesh::from_vecs(
+            ctx,
+            settings.mode,
+            positions,
+            normals,
+            tangents,
+            None,
+            tex_coords,
+            triangles,
+        )
+        .unwrap()
     }
 }
 

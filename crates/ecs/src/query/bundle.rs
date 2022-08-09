@@ -11,8 +11,10 @@ where
     fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages>;
     fn push(storages: &mut Self::Storages, bundle: Self);
     fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>>;
-    fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentTable>>, index: usize)
-        -> Option<Self>;
+    fn try_swap_remove(
+        tables: &mut MaskHashMap<Box<dyn ComponentTable>>,
+        index: usize,
+    ) -> Option<Self>;
 }
 
 // Same as owned bundle, but simply a wrapper to eliminate the 'a lifetime

@@ -1,6 +1,6 @@
-use std::ops::{Deref, DerefMut};
-use ecs::Component;
 use crate::IntoMatrix;
+use ecs::Component;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Copy, Component)]
 pub struct Scale(vek::Vec3<f32>);

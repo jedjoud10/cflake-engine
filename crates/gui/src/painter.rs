@@ -1,6 +1,6 @@
 use assets::Assets;
-use egui::ClippedMesh;
 use egui::epaint::Vertex;
+use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
@@ -162,7 +162,7 @@ impl Painter {
             blend: Some(BlendMode {
                 src: Factor::One,
                 dest: Factor::OneMinusSrcAlpha,
-            })
+            }),
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
@@ -182,18 +182,17 @@ impl Painter {
         for mesh in meshes {
             self.vertices.clear();
             self.indices.clear();
-            
+
             self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
             self.indices.extend_from_slice(mesh.1.indices.as_slice());
 
             unsafe {
-                rasterizer
-                    .draw_vao_elements(
-                        self.vao,
-                        self.indices.len(),
-                        gl::UNSIGNED_INT,
-                        uniforms.assume_valid(),
-                    );
+                rasterizer.draw_vao_elements(
+                    self.vao,
+                    self.indices.len(),
+                    gl::UNSIGNED_INT,
+                    uniforms.assume_valid(),
+                );
             }
         }
     }

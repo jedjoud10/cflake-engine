@@ -1,6 +1,6 @@
-use slotmap::{Key, SlotMap};
-use crate::AABB;
 use super::{node::Node, NodeKey};
+use crate::AABB;
+use slotmap::{Key, SlotMap};
 
 type BoxedHeuriticFunc = Box<dyn Fn(&Node, &vek::Vec3<f32>) -> bool>;
 
@@ -18,7 +18,7 @@ pub enum OctreeHeuristic {
     },
     AABBHeuristic {
         extent: f32,
-    }
+    },
 }
 
 // A simple octree, no incremental generation what so ever
@@ -49,24 +49,26 @@ impl Octree {
         let heuristic = match heuristic {
             OctreeHeuristic::ManualBoxed(b) => b,
             OctreeHeuristic::Manual(x) => Box::new(x),
-            OctreeHeuristic::LodHeuristic { min_radius_lod: _, falloff: _, exp_falloff: _ } => {
-                Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| { false })
-            },
+            OctreeHeuristic::LodHeuristic {
+                min_radius_lod: _,
+                falloff: _,
+                exp_falloff: _,
+            } => Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| false),
             OctreeHeuristic::ShereHeuristic { radius: _ } => {
-                Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| { false })
-            },
+                Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| false)
+            }
             OctreeHeuristic::AABBHeuristic { extent } => {
                 Box::new(move |node: &Node, loc: &vek::Vec3<f32>| {
                     let user = AABB {
                         min: loc - vek::Vec3::broadcast(extent / 2.0),
                         max: loc + vek::Vec3::broadcast(extent / 2.0),
                     };
-    
+
                     let node = node.aabb();
-    
-                    crate::aabb_aabb(&user, &node)                
+
+                    crate::aabb_aabb(&user, &node)
                 })
-            },
+            }
         };
 
         Self {
@@ -83,7 +85,7 @@ impl Octree {
     pub fn nodes(&self) -> &SlotMap<NodeKey, Node> {
         &self.nodes
     }
-    
+
     // Get the nodes mutably
     pub fn nodes_mut(&mut self) -> &mut SlotMap<NodeKey, Node> {
         &mut self.nodes
@@ -93,13 +95,13 @@ impl Octree {
     pub fn depth(&self) -> u8 {
         self.depth
     }
-    
+
     // Get the size of the octree
     pub fn size(&self) -> u64 {
         self.size
     }
 
-    // Get the root node immutably 
+    // Get the root node immutably
     pub fn root_node(&self) -> &Node {
         self.nodes.get(self.root).unwrap()
     }
@@ -119,7 +121,7 @@ impl Octree {
             true
         }
     }
-    
+
     // Update the internal octree using the target point
     // This will immediately return false if we cannot update the octree
     pub fn update(&mut self, target: vek::Vec3<f32>) -> bool {
@@ -130,7 +132,7 @@ impl Octree {
         // Evaluate each node
         self.nodes.retain(|key, _| key == self.root);
         let mut pending_nodes: Vec<NodeKey> = vec![self.root];
-        
+
         while !pending_nodes.is_empty() {
             // Get the current pending node
             let key = pending_nodes.remove(0);
@@ -160,7 +162,7 @@ impl Octree {
     pub fn recurse<'a>(&'a self, mut function: impl FnMut(&'a Node) -> bool) -> Vec<&'a Node> {
         let mut pending_nodes: Vec<&'a Node> = vec![self.root_node()];
         let mut passed: Vec<&'a Node> = Vec::new();
-        
+
         while !pending_nodes.is_empty() {
             let node = pending_nodes.remove(0);
 

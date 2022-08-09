@@ -1,6 +1,6 @@
 use arrayvec::ArrayVec;
 use slotmap::Key;
-use std::{hash::Hash};
+use std::hash::Hash;
 
 slotmap::new_key_type! {
     pub struct NodeKey;

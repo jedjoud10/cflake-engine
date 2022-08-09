@@ -245,13 +245,13 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
         mipmaps: MipMaps,
-        data: &[<Self::T as Texel>::Storage],
+        data: Option<&[<Self::T as Texel>::Storage]>,
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
 
         // Validate length (make sure the data slice matches up with dimensions)
-        let len_valid = if !data.is_empty() {
+        let len_valid = if let Some(data) = data {
             data.len() as u64 == (dimensions.area() as u64)
         } else {
             true
@@ -260,9 +260,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {
             // Convert some parameters to their raw counterpart
-            let ptr = (!data.is_empty())
-                .then(|| data.as_ptr())
-                .unwrap_or_else(null);
+            let ptr = data.map_or_else(null, |p| p.as_ptr());
 
             // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
             let auto = dimensions.levels();
@@ -270,7 +268,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
                 MipMaps::Automatic => (auto, None),
                 MipMaps::Manual { levels } => (levels.min(auto), None),
-                MipMaps::AutomaticAniso => (auto, { 
+                MipMaps::AutomaticAniso => (auto, {
                     let mut val = 0.0;
                     gl::GetFloatv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mut val);
                     NonZeroU8::new(val as u8)
@@ -296,18 +294,26 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // The texture minifcation filter
-            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, match (sampling.filter, levels.get() > 1) {
-                (Filter::Nearest, false) => gl::NEAREST,
-                (Filter::Linear, false) => gl::LINEAR,
-                (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
-                (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
-            } as i32);
+            gl::TextureParameteri(
+                tex,
+                gl::TEXTURE_MIN_FILTER,
+                match (sampling.filter, levels.get() > 1) {
+                    (Filter::Nearest, false) => gl::NEAREST,
+                    (Filter::Linear, false) => gl::LINEAR,
+                    (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
+                    (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
+                } as i32,
+            );
 
             // Set the texture magnification filter
-            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, match sampling.filter {
-                Filter::Nearest => gl::NEAREST,
-                Filter::Linear => gl::LINEAR,
-            } as i32);
+            gl::TextureParameteri(
+                tex,
+                gl::TEXTURE_MAG_FILTER,
+                match sampling.filter {
+                    Filter::Nearest => gl::NEAREST,
+                    Filter::Linear => gl::LINEAR,
+                } as i32,
+            );
 
             // Convert the wrapping mode enum to the raw OpenGL type
             let (wrap, border) = match sampling.wrap {
@@ -405,9 +411,19 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     );
 
     // Update a sub-region of the raw texture
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const <Self::T as Texel>::Storage);
+    unsafe fn update_subregion(
+        name: u32,
+        region: Self::Region,
+        ptr: *const <Self::T as Texel>::Storage,
+    );
 
     // Read a sub-region of the raw texture
     // PS: This will read the texture storage for only one level
-    unsafe fn read_subregion(name: u32, region: Self::Region, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
+    unsafe fn read_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *mut <Self::T as Texel>::Storage,
+        texels: u32,
+    );
 }

@@ -1,6 +1,8 @@
-
-use crate::{buffer::{ArrayBuffer, BufferFormatAny, Buffer}, object::ToGlName};
 use super::attributes::*;
+use crate::{
+    buffer::{ArrayBuffer, Buffer, BufferFormatAny},
+    object::ToGlName,
+};
 
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a> {
@@ -32,15 +34,22 @@ impl VerticesRef<'_> {
     }
 
     // Get all the available attribute buffers as any wrapper types
-    pub fn as_any(&self) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    pub fn as_any(
+        &self,
+    ) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
-            self.attribute::<Position>().map(|b| (Buffer::format_any(b), Position::format_any())),
-            self.attribute::<Normal>().map(|b| (Buffer::format_any(b), Normal::format_any())),
-            self.attribute::<Tangent>().map(|b| (Buffer::format_any(b), Tangent::format_any())),
-            self.attribute::<Color>().map(|b| (Buffer::format_any(b), Color::format_any())),
-            self.attribute::<TexCoord>().map(|b| (Buffer::format_any(b), TexCoord::format_any())),
+            self.attribute::<Position>()
+                .map(|b| (Buffer::format_any(b), Position::format_any())),
+            self.attribute::<Normal>()
+                .map(|b| (Buffer::format_any(b), Normal::format_any())),
+            self.attribute::<Tangent>()
+                .map(|b| (Buffer::format_any(b), Tangent::format_any())),
+            self.attribute::<Color>()
+                .map(|b| (Buffer::format_any(b), Color::format_any())),
+            self.attribute::<TexCoord>()
+                .map(|b| (Buffer::format_any(b), TexCoord::format_any())),
         ]
-    } 
+    }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
     // TODO: Fix code duplication
@@ -72,7 +81,7 @@ impl VerticesMut<'_> {
     pub fn layout(&self) -> EnabledAttributes {
         *self.bitfield
     }
-    
+
     // Check if an attribute buffer is enabled
     pub fn is_enabled<T: VertexAttribute>(&self) -> bool {
         self.bitfield.contains(T::ENABLED)
@@ -95,15 +104,22 @@ impl VerticesMut<'_> {
     }
 
     // Get all the available attribute buffers as any wrapper types
-    pub fn as_any(&self) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    pub fn as_any(
+        &self,
+    ) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
-            self.attribute::<Position>().map(|b| (Buffer::format_any(b), Position::format_any())),
-            self.attribute::<Normal>().map(|b| (Buffer::format_any(b), Normal::format_any())),
-            self.attribute::<Tangent>().map(|b| (Buffer::format_any(b), Tangent::format_any())),
-            self.attribute::<Color>().map(|b| (Buffer::format_any(b), Color::format_any())),
-            self.attribute::<TexCoord>().map(|b| (Buffer::format_any(b), TexCoord::format_any())),
+            self.attribute::<Position>()
+                .map(|b| (Buffer::format_any(b), Position::format_any())),
+            self.attribute::<Normal>()
+                .map(|b| (Buffer::format_any(b), Normal::format_any())),
+            self.attribute::<Tangent>()
+                .map(|b| (Buffer::format_any(b), Tangent::format_any())),
+            self.attribute::<Color>()
+                .map(|b| (Buffer::format_any(b), Color::format_any())),
+            self.attribute::<TexCoord>()
+                .map(|b| (Buffer::format_any(b), TexCoord::format_any())),
         ]
-    } 
+    }
 
     // Set a new attribute buffer (this ignores that the buffer is a different length)
     pub fn set_attribute<T: VertexAttribute>(&mut self, buffer: Option<ArrayBuffer<T::Out>>) {
@@ -148,9 +164,15 @@ impl VerticesMut<'_> {
             if self.maybe_reassigned.contains(attrib.tag()) || force {
                 unsafe {
                     gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32);
-                    gl::VertexArrayVertexBuffer(self.vao, i as u32, buffer.name(), 0, buffer.stride() as i32);
+                    gl::VertexArrayVertexBuffer(
+                        self.vao,
+                        i as u32,
+                        buffer.name(),
+                        0,
+                        buffer.stride() as i32,
+                    );
                 }
-            }           
+            }
         }
 
         self.maybe_reassigned = EnabledAttributes::empty();

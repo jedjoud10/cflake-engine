@@ -1,17 +1,17 @@
+use super::{CreatePipeline, Pipeline};
 use crate::{
-    canvas::{RasterSettings},
+    canvas::RasterSettings,
     context::{Context, Window},
+    material::{DefaultMaterialResources, Material},
     mesh::{Mesh, Surface},
-    prelude::{Shader},
-    material::{Material, DefaultMaterialResources},
-    scene::{Camera, DirectionalLight, Renderer, ClusteredShading, RenderedFrameStats},
+    prelude::Shader,
+    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
 };
-use assets::{Assets};
+use assets::Assets;
 use ecs::Scene;
 use math::{Location, Rotation};
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 use world::{Handle, Storage, World};
-use super::{Pipeline, CreatePipeline};
 
 // The standardized pipeline will use the default rendering canvas to render to
 pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
@@ -45,17 +45,22 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
             let mesh = meshes.get(&surface.mesh());
-            let buffers = mesh.vertices().layout().contains(M::requirements()) && mesh.vertices().len().is_some();
+            let buffers = mesh.vertices().layout().contains(M::requirements())
+                && mesh.vertices().len().is_some();
             renderer && buffers
         });
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(shading.main_camera.unwrap()).unwrap();
-        let (camera, camera_location, camera_rotation) = camera_entry.as_view::<(&Camera, &Location, &Rotation)>().unwrap();
+        let (camera, camera_location, camera_rotation) = camera_entry
+            .as_view::<(&Camera, &Location, &Rotation)>()
+            .unwrap();
 
         // Get the main directional light
         let light_entry = ecs.entry(shading.main_directional_light.unwrap()).unwrap();
-        let (directional_light, directional_light_rotation) = light_entry.as_view::<(&DirectionalLight, &Rotation)>().unwrap();
+        let (directional_light, directional_light_rotation) = light_entry
+            .as_view::<(&DirectionalLight, &Rotation)>()
+            .unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
         let shader = shaders.get_mut(&self.shader);
@@ -72,11 +77,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         };
 
         // Set global properties
-        M::set_static_properties(
-            &mut uniforms,
-            &main,
-            &mut property_block_resources,
-        );
+        M::set_static_properties(&mut uniforms, &main, &mut property_block_resources);
 
         let mut old: Option<Handle<M>> = None;
         for (renderer, surface) in query {
@@ -131,6 +132,9 @@ impl<'a, M: for<'w> Material<'w>> CreatePipeline<'a> for SpecializedPipeline<M> 
     fn init(ctx: &mut Context, args: &mut Self::Args) -> Self {
         let shader = M::shader(ctx, args.1);
         let handle = args.0.insert(shader);
-        Self { shader: handle, _phantom: PhantomData::default() }
+        Self {
+            shader: handle,
+            _phantom: PhantomData::default(),
+        }
     }
 }

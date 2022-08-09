@@ -1,6 +1,31 @@
-use super::{Ranged, Texel, R, RG, RGB, RGBA, SRGBA, SRGB};
+use super::{
+    Base, Depth, Element, Normalized, Ranged, Stencil, Texel, R, RG, RGB, RGBA, SRGB, SRGBA,
+};
 
-// Image texels are texels that can be loaded from a .png file, like when loading a Texture2D<RGBA<Ranged<u8>>>
+// Color texels are texels that purely represent color data (all texel types other than depth and stencil texels)
+pub trait ColorTexel: Texel {}
+impl<B: Base> ColorTexel for R<Ranged<B>> {}
+impl<B: Base> ColorTexel for RG<Ranged<B>> {}
+impl<B: Base> ColorTexel for RGB<Ranged<B>> {}
+impl<B: Base> ColorTexel for RGBA<Ranged<B>> {}
+impl<B: Base> ColorTexel for SRGB<Ranged<B>> {}
+impl<B: Base> ColorTexel for SRGBA<Ranged<B>> {}
+impl<B: Base> ColorTexel for R<Normalized<B>> {}
+impl<B: Base> ColorTexel for RG<Normalized<B>> {}
+impl<B: Base> ColorTexel for RGB<Normalized<B>> {}
+impl<B: Base> ColorTexel for RGBA<Normalized<B>> {}
+impl<B: Base> ColorTexel for SRGB<Normalized<B>> {}
+impl<B: Base> ColorTexel for SRGBA<Normalized<B>> {}
+
+// Depth texels are texels that purely represent vertex depth
+pub trait DepthTexel: Texel {}
+impl<E: Element> DepthTexel for Depth<E> {}
+
+// Stencil texels are texels that purely represent stencil masks
+pub trait StencilTexel: Texel {}
+impl<E: Element> StencilTexel for Stencil<E> {}
+
+// Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Ranged<u8>>>
 pub trait ImageTexel: Texel {
     // Fetch the image texels from a loaded dynamic image stored on disk (or embedded into the binary)
     fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage>;
@@ -45,7 +70,6 @@ impl ImageTexel for SRGBA<Ranged<u8>> {
         image.chunks(4).map(vek::Vec4::from_slice).collect()
     }
 }
-
 
 // SRGB, u8
 impl ImageTexel for SRGB<Ranged<u8>> {

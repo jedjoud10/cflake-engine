@@ -4,10 +4,7 @@ use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
 
-
-use crate::{
-    pipeline::{PipeId, Pipeline, CreatePipeline},
-};
+use crate::pipeline::{CreatePipeline, PipeId, Pipeline};
 
 use super::get_static_str;
 
@@ -64,7 +61,10 @@ impl Context {
     }
 
     // Register a new pipeline with the specified init settings
-    pub fn init_pipe_id<'a, P: Pipeline + CreatePipeline<'a>>(&mut self, init: &mut P::Args) -> PipeId<P> {
+    pub fn init_pipe_id<'a, P: Pipeline + CreatePipeline<'a>>(
+        &mut self,
+        init: &mut P::Args,
+    ) -> PipeId<P> {
         let key = TypeId::of::<P>();
         if !self.pipelines.contains_key(&key) {
             let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(self, init));

@@ -1,16 +1,17 @@
 use assets::Assets;
 
-
 use world::{Handle, Read, Storage};
 
 use crate::{
-    context::{Context},
-    scene::{Renderer},
+    context::Context,
+    mesh::EnabledAttributes,
+    prelude::{RGBA, SRGBA},
+    scene::Renderer,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB}, prelude::{SRGBA, RGBA}, mesh::EnabledAttributes,
+    texture::{Ranged, Texture, Texture2D, RG, RGB},
 };
 
-use super::{Material, DefaultMaterialResources};
+use super::{DefaultMaterialResources, Material};
 
 // PBR maps
 pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
@@ -33,11 +34,14 @@ impl<'w> Material<'w> for Standard {
     type Resources = (
         Read<'w, Storage<AlbedoMap>>,
         Read<'w, Storage<NormalMap>>,
-        Read<'w, Storage<MaskMap>>,  
+        Read<'w, Storage<MaskMap>>,
     );
 
     fn requirements() -> EnabledAttributes {
-        EnabledAttributes::POSITIONS | EnabledAttributes::NORMALS | EnabledAttributes::TANGENTS | EnabledAttributes::TEX_COORDS
+        EnabledAttributes::POSITIONS
+            | EnabledAttributes::NORMALS
+            | EnabledAttributes::TANGENTS
+            | EnabledAttributes::TEX_COORDS
     }
 
     fn primitive_mode() -> crate::canvas::PrimitiveMode {

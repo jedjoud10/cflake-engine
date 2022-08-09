@@ -1,10 +1,7 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{Canvas};
-use crate::{
-    context::Context, mesh::Mesh, others::Comparison,
-    prelude::{ValidUniforms},
-};
+use super::{Canvas, CanvasLayout};
+use crate::{context::Context, mesh::Mesh, others::Comparison, prelude::ValidUniforms};
 
 // Blend mode factor source
 // This is a certified bruh moment classic
@@ -66,16 +63,16 @@ pub enum PrimitiveMode {
 
 // A rasterizer will help us render specific shaded / colored objects onto the screen
 // Painters can be fetched from any mutable reference to a canvas
-pub struct Rasterizer<'canvas, 'context> {
-    canvas: &'canvas mut Canvas,
+pub struct Rasterizer<'canvas, 'context, L: CanvasLayout> {
+    canvas: &'canvas mut Canvas<L>,
     ctx: &'context mut Context,
     primitive: u32,
 }
 
-impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
+impl<'canvas, 'context, L: CanvasLayout> Rasterizer<'canvas, 'context, L> {
     // Create a new rasterizer with the specified raster self
     pub(crate) fn new(
-        canvas: &'canvas mut Canvas,
+        canvas: &'canvas mut Canvas<L>,
         ctx: &'context mut Context,
         settings: RasterSettings,
     ) -> Self {
@@ -169,7 +166,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
     }
 
     // Get an immutable reference to the underlying canvas
-    pub fn canvas(&self) -> &Canvas {
+    pub fn canvas(&self) -> &Canvas<L> {
         self.canvas
     }
 
@@ -184,7 +181,7 @@ impl<'canvas, 'context> Rasterizer<'canvas, 'context> {
         vao: u32,
         primitive_count: usize,
         _uniforms: ValidUniforms,
-    ) {        
+    ) {
         if primitive_count > 0 {
             gl::BindVertexArray(vao);
             gl::DrawArrays(self.primitive, 0, primitive_count as i32);

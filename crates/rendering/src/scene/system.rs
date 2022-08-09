@@ -1,21 +1,25 @@
-use super::{Camera, Renderer, ClusteredShading, PostProcessing, RenderedFrameStats, DirectionalLight, Compositor};
+use super::{
+    Camera, ClusteredShading, Compositor, DirectionalLight, PostProcessing, RenderedFrameStats,
+    Renderer,
+};
 use crate::{
     buffer::{BufferMode, UniformBuffer},
+    canvas::{Canvas, PrimitiveMode, RasterSettings},
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
+    mesh::Mesh,
     pipeline::{Pipeline, SpecializedPipeline},
-    mesh::{Mesh},
     prelude::{
-        Filter, MipMaps, Sampling, Texture,
-        TextureMode, Wrap, VertexStage, FragmentStage, ShaderCompiler, Processor,
+        Depth, Filter, FragmentStage, MipMaps, Processor, Ranged, Sampling, ShaderCompiler,
+        Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
     },
-    shader::Shader, canvas::{Canvas, ColorAttachment, DepthAttachment, ToCanvasAttachment, RasterSettings, PrimitiveMode, FloatingPointColorAttachment},
+    shader::Shader,
 };
 
 use assets::Assets;
-use ecs::{Scene};
+use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::{Scale, Location, Rotation, IntoMatrix};
+use math::{IntoMatrix, Location, Rotation, Scale};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -30,15 +34,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
     world.insert(Storage::<Canvas>::default());
-    world.insert(Storage::<ColorAttachment>::default());
-    world.insert(Storage::<FloatingPointColorAttachment>::default());
-    world.insert(Storage::<DepthAttachment>::default());
 
     // Get mutable references to the data that we must use
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
-    let mut color_attachments = world.get_mut::<Storage<FloatingPointColorAttachment>>().unwrap();
-    let mut depth_attachments = world.get_mut::<Storage<DepthAttachment>>().unwrap();
 
     // Create the window and graphical context
     let (window, mut context) = crate::context::new(settings, el);
@@ -51,19 +50,30 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
     let mipmaps = MipMaps::Disabled;
 
-    // Create the render color texture
-    let color: FloatingPointColorAttachment = <FloatingPointColorAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
-    let color = color_attachments.insert(color);
-    let t1 = (&*color_attachments, color.clone());
+    // Create the color render texture
+    let color = <Texture2D<RGB<f32>> as Texture>::new(
+        ctx,
+        TextureMode::Resizable,
+        window.canvas().size(),
+        sampling,
+        mipmaps,
+        None,
+    )
+    .unwrap();
 
-    // Create the render depth texture
-    let depth: DepthAttachment = <DepthAttachment as Texture>::new(ctx, TextureMode::Resizable, window.canvas().size(), sampling, mipmaps, &[]).unwrap();
-    let depth = depth_attachments.insert(depth);
-    let t2 = (&*depth_attachments, depth.clone());
-    
-    // Create the canvas that we will draw our 3D objects onto
-    let targets: Vec<&dyn ToCanvasAttachment> = vec![&t1, &t2];
-    let canvas = Canvas::new(ctx, window.canvas().size(), targets).unwrap();
+    // Create the depth render texture
+    let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
+        ctx,
+        TextureMode::Resizable,
+        window.canvas().size(),
+        sampling,
+        mipmaps,
+        None,
+    )
+    .unwrap();
+
+    // Create the rendering canvas
+    let canvas = Canvas::new(ctx, window.canvas().size(), (color, depth)).unwrap();
 
     // Create the default pipelines
     let mut init = (&mut *shaders, &mut *assets);
@@ -76,8 +86,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         main_directional_light: None,
         canvas,
         point_lights: UniformBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
-        color,
-        depth,
     };
 
     // Create the positions vec for the fullscreen quad
@@ -89,16 +97,26 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     ];
 
     // Create the triangles vec for the fullscreen quad
-    let triangles = vec![
-        [0, 1, 2],
-        [1, 3, 2]
-    ];
-    let quad = Mesh::from_vecs(ctx, BufferMode::Static, positions, None, None, None, None, triangles).unwrap();
-
+    let triangles = vec![[0, 1, 2], [1, 3, 2]];
+    let quad = Mesh::from_vecs(
+        ctx,
+        BufferMode::Static,
+        positions,
+        None,
+        None,
+        None,
+        None,
+        triangles,
+    )
+    .unwrap();
 
     // Create the compositor shader
-    let vertex = assets.load::<VertexStage>("engine/shaders/passthrough.vrsh.glsl").unwrap();
-    let fragment = assets.load::<FragmentStage>("engine/shaders/compositor.frsh.glsl").unwrap();
+    let vertex = assets
+        .load::<VertexStage>("engine/shaders/passthrough.vrsh.glsl")
+        .unwrap();
+    let fragment = assets
+        .load::<FragmentStage>("engine/shaders/compositor.frsh.glsl")
+        .unwrap();
     let shader = ShaderCompiler::link((vertex, fragment), Processor::new(&mut assets), ctx);
 
     // Create the internally used compositor
@@ -118,7 +136,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         bloom_strength: 1.0,
         bloom_contrast: 1.0,
     };
-    
+
     // Create the frame-to-frame basis stats
     let stats = RenderedFrameStats {
         tris: 0,
@@ -128,12 +146,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         surfaces: 0,
         current: false,
     };
-    
+
     // Drop the old write/read handles
     drop(shaders);
     drop(assets);
-    drop(color_attachments);
-    drop(depth_attachments);
 
     // Insert the newly made resources
     world.insert(window);
@@ -147,7 +163,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 // Update the global mesh matrices of objects that have been modified
 fn update_matrices(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    
+
     // Filter the objects that have changed
     use ecs::*;
     let f1 = modified::<Location>();
@@ -156,7 +172,12 @@ fn update_matrices(world: &mut World) {
     let f4 = added::<Renderer>();
     let filter = or(or(f1, f2), or(f3, f4));
     let query = ecs
-        .query_with_filter::<(&mut Renderer, Option<&Location>, Option<&Rotation>, Option<&Scale>)>(filter)
+        .query_with_filter::<(
+            &mut Renderer,
+            Option<&Location>,
+            Option<&Rotation>,
+            Option<&Scale>,
+        )>(filter)
         .unwrap();
 
     // Update the matrices of objects that might contain location, rotation, or scale
@@ -170,13 +191,14 @@ fn update_matrices(world: &mut World) {
 }
 
 // Rendering event that will try to render the 3D scene each frame
-fn rendering(world: &mut World) {    
+fn rendering(world: &mut World) {
     // Check if we can even render the scene in the first place
     let shading = world.get::<ClusteredShading>().unwrap();
     if shading.main_camera().is_none() || shading.main_directional_light().is_none() {
         return;
-    } drop(shading);
-    
+    }
+    drop(shading);
+
     // Extract the pipelines and render them
     let mut stats = RenderedFrameStats::default();
     let pipelines = world
@@ -192,7 +214,7 @@ fn rendering(world: &mut World) {
 
     // Update the stats resources
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
-    *old_stats = stats; 
+    *old_stats = stats;
     old_stats.current = true;
 
     // Render the quad onto the screen now
@@ -201,11 +223,13 @@ fn rendering(world: &mut World) {
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
     let pp = world.get::<PostProcessing>().unwrap();
-    
+
     // Get the texture attachment storages to load them textures
-    let colors = world.get::<Storage<FloatingPointColorAttachment>>().unwrap();
+    let colors = world
+        .get::<Storage<FloatingPointColorAttachment>>()
+        .unwrap();
     let depths = world.get::<Storage<DepthAttachment>>().unwrap();
-    
+
     // Get the texture attachments
     let color = colors.get(&shading.color);
     let depth = depths.get(&shading.depth);
@@ -222,10 +246,16 @@ fn rendering(world: &mut World) {
         srgb: false,
         blend: None,
     };
-    let (mut rasterizer, mut uniforms) = window.canvas_mut().rasterizer(&mut ctx, &mut compositor.compositor, settings);
+    let (mut rasterizer, mut uniforms) =
+        window
+            .canvas_mut()
+            .rasterizer(&mut ctx, &mut compositor.compositor, settings);
 
     // Set the shader uniforms
-    uniforms.set_vec2("resolution", vek::Vec2::<i32>::from(rasterizer.canvas().size().as_::<i32>()));
+    uniforms.set_vec2(
+        "resolution",
+        vek::Vec2::<i32>::from(rasterizer.canvas().size().as_::<i32>()),
+    );
     uniforms.set_sampler("color", color);
     uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);
     uniforms.set_scalar("exposure", pp.exposure);
@@ -252,7 +282,9 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
             // Resize the clustered shading canvas
             let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-            let mut colors = world.get_mut::<Storage<FloatingPointColorAttachment>>().unwrap();
+            let mut colors = world
+                .get_mut::<Storage<FloatingPointColorAttachment>>()
+                .unwrap();
             let mut depths = world.get_mut::<Storage<DepthAttachment>>().unwrap();
             shading.canvas_mut().resize(extent);
             colors.get_mut(&shading.color()).resize(extent);
@@ -300,11 +332,15 @@ fn main_camera(world: &mut World) {
         };
 
         // Fetch it's components,and update them
-        let (camera, location, rotation) = entry.as_query::<(&mut Camera, &Location, &Rotation)>().unwrap();
+        let (camera, location, rotation) = entry
+            .as_query::<(&mut Camera, &Location, &Rotation)>()
+            .unwrap();
         camera.update(location, rotation);
     } else {
         // Set the main camera if we did not find one
-        let mut query = ecs.view_with_id::<(&Camera, &Location, &Rotation)>().unwrap();
+        let mut query = ecs
+            .view_with_id::<(&Camera, &Location, &Rotation)>()
+            .unwrap();
         if let Some((_, entity)) = query.next() {
             shading.main_camera = Some(entity);
         }
@@ -324,7 +360,9 @@ fn main_directional_light(world: &mut World) {
         }
     } else {
         // Set the main directional light if we did not find one
-        let mut query = ecs.view_with_id::<(&Rotation, &DirectionalLight)>().unwrap();
+        let mut query = ecs
+            .view_with_id::<(&Rotation, &DirectionalLight)>()
+            .unwrap();
         if let Some((_, entity)) = query.next() {
             shading.main_directional_light = Some(entity);
         }
@@ -352,24 +390,21 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert camera update event
     reg.insert_with(
         main_camera,
-        Stage::new("main camera update")
-            .after("post user"),
+        Stage::new("main camera update").after("post user"),
     )
     .unwrap();
 
     // Insert the directional light update event
     reg.insert_with(
         main_directional_light,
-        Stage::new("main directional light update")
-            .after("post user")
+        Stage::new("main directional light update").after("post user"),
     )
     .unwrap();
 
     // Insert update renderer event
     reg.insert_with(
         update_matrices,
-        Stage::new("update renderer matrices")
-            .after("post user"),
+        Stage::new("update renderer matrices").after("post user"),
     )
     .unwrap();
 
@@ -379,7 +414,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         Stage::new("scene rendering")
             .after("main camera update")
             .after("main directional light update")
-            .after("update renderer matrices")
+            .after("update renderer matrices"),
     )
     .unwrap();
 

@@ -1,5 +1,5 @@
+use cflake_engine::prelude::{vek::Lerp, *};
 use std::num::NonZeroU8;
-use cflake_engine::prelude::{*, vek::Lerp};
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
@@ -30,7 +30,7 @@ fn init(world: &mut World) {
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
-    
+
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut keyboard = world.get_mut::<Keyboard>().unwrap();
@@ -38,7 +38,12 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
-    let camera = ecs.insert((camera, Location::at_z(5.0), Rotation::default(), Velocity::default()));
+    let camera = ecs.insert((
+        camera,
+        Location::at_z(5.0),
+        Rotation::default(),
+        Velocity::default(),
+    ));
 
     // We will also register some new keybinds for the camera controller
     keyboard.bind("forward", Key::W);
@@ -54,11 +59,21 @@ fn init(world: &mut World) {
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
     // Create the default albedo map texture
-    let albedo_map = assets.load_with::<AlbedoMap>("user/textures/albedo.jpg", (&mut ctx, TextureImportSettings::default())).unwrap();
+    let albedo_map = assets
+        .load_with::<AlbedoMap>(
+            "user/textures/albedo.jpg",
+            (&mut ctx, TextureImportSettings::default()),
+        )
+        .unwrap();
     let albedo_map = albedo_maps.insert(albedo_map);
 
     // Create the default normal map texture
-    let normal_map = assets.load_with::<NormalMap>("user/textures/normal.jpg", (&mut ctx, TextureImportSettings::default())).unwrap();
+    let normal_map = assets
+        .load_with::<NormalMap>(
+            "user/textures/normal.jpg",
+            (&mut ctx, TextureImportSettings::default()),
+        )
+        .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
     // Create the default mask map texture
@@ -68,8 +83,9 @@ fn init(world: &mut World) {
         vek::Extent2::one(),
         Sampling::default(),
         MipMaps::Disabled,
-        &[vek::Vec2::zero()]
-    ).unwrap();
+        &[vek::Vec2::zero()],
+    )
+    .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
     let import = MeshImportSettings {
@@ -91,18 +107,19 @@ fn init(world: &mut World) {
     let cube = Cuboid {
         center: vek::Vec3::zero(),
         extent: vek::Extent3::one(),
-    }.generate(&mut ctx, MeshImportSettings::default());
+    }
+    .generate(&mut ctx, MeshImportSettings::default());
     let cube = meshes.insert(cube);
 
     // Create a new material instance with the normal map texture
-    let material = standard_materials.insert(Standard { 
+    let material = standard_materials.insert(Standard {
         albedo_map,
         normal_map,
         mask_map,
         bumpiness: 1.4,
         roughness: 0.,
         metallic: 0.,
-        tint: vek::Rgb::white()
+        tint: vek::Rgb::white(),
     });
 
     // Create a new material surface for rendering
@@ -115,7 +132,10 @@ fn init(world: &mut World) {
     // Load in the texture
     let texture = albedo_maps.insert(
         assets
-            .load_with::<AlbedoMap>("engine/textures/sky_gradient.png", (&mut ctx, TextureImportSettings::default()))
+            .load_with::<AlbedoMap>(
+                "engine/textures/sky_gradient.png",
+                (&mut ctx, TextureImportSettings::default()),
+            )
             .unwrap(),
     );
 
@@ -132,21 +152,25 @@ fn init(world: &mut World) {
     let material = sky_materials.insert(material);
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Sky>>().unwrap();
     let renderer = Renderer::default();
-    let sphere = assets.load_with::<Mesh>("engine/meshes/sphere.obj", (&mut ctx, MeshImportSettings {
-        invert_triangle_ordering: true,
-        use_tangents: false,
-        use_normals: false,
-        ..Default::default()
-    })).unwrap();
+    let sphere = assets
+        .load_with::<Mesh>(
+            "engine/meshes/sphere.obj",
+            (
+                &mut ctx,
+                MeshImportSettings {
+                    invert_triangle_ordering: true,
+                    use_tangents: false,
+                    use_normals: false,
+                    ..Default::default()
+                },
+            ),
+        )
+        .unwrap();
     let sphere = meshes.insert(sphere);
     let surface = Surface::new(sphere, material, pipeid);
 
     // Insert it as a new entity
-    ecs.insert((
-        renderer,
-        surface,
-        Scale::from(vek::Vec3::one() * 5000.0)
-    ));
+    ecs.insert((renderer, surface, Scale::from(vek::Vec3::one() * 5000.0)));
 }
 
 #[derive(Component, Default)]
@@ -158,7 +182,7 @@ struct Velocity {
 fn update(world: &mut World) {
     let shading = world.get::<ClusteredShading>().unwrap();
     let window = world.get_mut::<Window>().unwrap();
-    
+
     // Get the input resources
     let keyboard = world.get::<Keyboard>().unwrap();
     let mouse = world.get::<Mouse>().unwrap();
@@ -170,10 +194,12 @@ fn update(world: &mut World) {
     // Lock the cursor to the center of the screen
     //window.raw().set_cursor_grab(true).unwrap();
     //window.raw().set_cursor_visible(false);
-    
+
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them
-        let (location, rotation, velocity) = entry.as_query::<(&mut Location, &mut Rotation, &mut Velocity)>().unwrap();
+        let (location, rotation, velocity) = entry
+            .as_query::<(&mut Location, &mut Rotation, &mut Velocity)>()
+            .unwrap();
 
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
@@ -194,16 +220,24 @@ fn update(world: &mut World) {
             temp += right;
         }
 
-        velocity.velocity = vek::Vec3::lerp_unclamped_precise(velocity.velocity, temp, time.delta_f32() * VELOCITY_SMOOTH_SPEED);
+        velocity.velocity = vek::Vec3::lerp_unclamped_precise(
+            velocity.velocity,
+            temp,
+            time.delta_f32() * VELOCITY_SMOOTH_SPEED,
+        );
 
         // Update the location with the new velocity
-        **location += velocity.velocity * time.delta_f32() * SPEED;    
-        
+        **location += velocity.velocity * time.delta_f32() * SPEED;
+
         // Calculate a new rotation and apply it
         let pos = mouse.position();
         let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
-        **rotation = vek::Quaternion::lerp_unclamped_precise(**rotation, rot, time.delta_f32() * ROTATION_SMOOTH_SPEED);
+        **rotation = vek::Quaternion::lerp_unclamped_precise(
+            **rotation,
+            rot,
+            time.delta_f32() * ROTATION_SMOOTH_SPEED,
+        );
     }
 }
 
@@ -214,7 +248,9 @@ fn debug(world: &mut World) {
     egui::Window::new("Test window").show(ctx, |ui| {
         ui.add(egui::DragValue::new(&mut postprocessing.vignette_size)); // 02
         ui.add(egui::DragValue::new(&mut postprocessing.vignette_strength)); // 8.5
-        ui.add(egui::DragValue::new(&mut postprocessing.tonemapping_strength));
+        ui.add(egui::DragValue::new(
+            &mut postprocessing.tonemapping_strength,
+        ));
         ui.add(egui::DragValue::new(&mut postprocessing.gamma));
     });
 }

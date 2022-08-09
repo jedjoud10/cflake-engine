@@ -1,15 +1,18 @@
-use vek::Vec2;
-use vek::Vec3;
-use vek::Vec4;
 use super::channels::*;
 use super::element::*;
 use crate::object::Shared;
 use std::mem::size_of;
+use vek::Vec2;
+use vek::Vec3;
+use vek::Vec4;
 
 // The "type" of texel layout we're dealing with
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TexelFormat {
-    Color, Depth, Stencil, GammaCorrectedColor,
+    Color,
+    Depth,
+    Stencil,
+    GammaCorrectedColor,
 }
 
 // This trait defines the layout for a single texel that will be stored within textures1
@@ -167,7 +170,7 @@ macro_rules! impl_depth_texel_layout {
             const FORMAT: u32 = gl::DEPTH_COMPONENT;
             const TYPE: u32 = gl::UNSIGNED_SHORT;
             const CHANNELS: u32 = 1;
-            const BYTES_PER_CHANNEL: u32 = u16::BITS / 8 ;
+            const BYTES_PER_CHANNEL: u32 = u16::BITS / 8;
             const ENUM_FORMAT: TexelFormat = TexelFormat::Depth;
             type Storage = Scalar<u16>;
             type Element = u16;
@@ -178,7 +181,7 @@ macro_rules! impl_depth_texel_layout {
             const FORMAT: u32 = gl::DEPTH_COMPONENT;
             const TYPE: u32 = gl::UNSIGNED_INT;
             const CHANNELS: u32 = 1;
-            const BYTES_PER_CHANNEL: u32 = u32::BITS / 8 ;
+            const BYTES_PER_CHANNEL: u32 = u32::BITS / 8;
             const ENUM_FORMAT: TexelFormat = TexelFormat::Depth;
             type Storage = Scalar<u32>;
             type Element = u32;
@@ -253,4 +256,3 @@ impl_color_texel_layout!(RGBA, 4, RGBA, Vec4);
 impl_depth_texel_layout!();
 impl_stencil_texel_layout!();
 impl_gamma_corrected_texel_layout!();
-

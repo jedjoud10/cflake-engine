@@ -82,7 +82,6 @@ impl<'a, R: Resource> Write<'a, R> {
     }
 }
 
-
 // A write shard is a sub-guard of a bigger write guard. Most of the time, it is used to write/read a mapped value
 pub struct WriteShard<'a, T>(pub(crate) RefMut<'a, T>);
 

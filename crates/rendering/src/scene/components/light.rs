@@ -10,7 +10,6 @@ pub struct DirectionalLight {
     pub strength: f32,
 }
 
-
 impl Default for DirectionalLight {
     fn default() -> Self {
         Self {
