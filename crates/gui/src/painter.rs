@@ -147,7 +147,7 @@ impl Painter {
                         wrap: Wrap::ClampToEdge,
                     },
                     MipMaps::Disabled,
-                    &texels,
+                    Some(&texels),
                 )
                 .unwrap()
             });

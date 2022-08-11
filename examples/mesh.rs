@@ -83,7 +83,7 @@ fn init(world: &mut World) {
         vek::Extent2::one(),
         Sampling::default(),
         MipMaps::Disabled,
-        &[vek::Vec2::zero()],
+        Some(&[vek::Vec2::zero()]),
     )
     .unwrap();
     let mask_map = mask_maps.insert(mask_map);

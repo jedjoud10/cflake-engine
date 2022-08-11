@@ -33,7 +33,7 @@ impl Window {
 
         Self {
             glutin,
-            canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size, Vec::new()) },
+            canvas: unsafe { Canvas::from_raw_parts(ctx, 0, size, ()) },
             device: unsafe {
                 Device {
                     name: get_static_str(gl::RENDERER),

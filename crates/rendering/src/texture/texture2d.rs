@@ -186,7 +186,7 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
             dimensions,
             settings.sampling,
             settings.mipmaps,
-            texels.as_slice(),
+            Some(texels.as_slice()),
         )
         .unwrap()
     }

@@ -33,7 +33,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Shader>::default());
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
-    world.insert(Storage::<Canvas>::default());
 
     // Get mutable references to the data that we must use
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
@@ -224,15 +223,8 @@ fn rendering(world: &mut World) {
     let shading = &mut *_shading;
     let pp = world.get::<PostProcessing>().unwrap();
 
-    // Get the texture attachment storages to load them textures
-    let colors = world
-        .get::<Storage<FloatingPointColorAttachment>>()
-        .unwrap();
-    let depths = world.get::<Storage<DepthAttachment>>().unwrap();
-
     // Get the texture attachments
-    let color = colors.get(&shading.color);
-    let depth = depths.get(&shading.depth);
+    let (color, depth) = shading.canvas_mut().attachments_mut().unwrap();
 
     // Get the main window since we will draw to it
     let mut window = world.get_mut::<Window>().unwrap();
@@ -278,17 +270,11 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
             // Resize the default canvas when we resize the window
             let mut window = world.get_mut::<Window>().unwrap();
-            window.canvas_mut().resize(extent);
+            window.canvas_mut().resize(extent, true);
 
             // Resize the clustered shading canvas
             let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-            let mut colors = world
-                .get_mut::<Storage<FloatingPointColorAttachment>>()
-                .unwrap();
-            let mut depths = world.get_mut::<Storage<DepthAttachment>>().unwrap();
-            shading.canvas_mut().resize(extent);
-            colors.get_mut(&shading.color()).resize(extent);
-            depths.get_mut(&shading.depth()).resize(extent);
+            shading.canvas_mut().resize(extent, true);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;

@@ -375,9 +375,9 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get a single mip level from the texture, mutably
     fn get_layer_mut(&mut self, level: u8) -> Option<MipLayerMut<Self>>;
 
-    // Resize the current texture
-    fn resize(&mut self, _extent: <Self::Region as Region>::E) {
-        todo!()
+    // Resize the current texture (this will also set it's inner data to null)
+    fn resize(&mut self, extent: <Self::Region as Region>::E) {
+        unsafe { Self::alloc_resizable_storage(self.name(), extent, 0, null()); }
     }
 
     // Calculate the uncompressed size of the texture
