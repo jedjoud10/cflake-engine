@@ -1,8 +1,8 @@
 mod channels;
 mod element;
-mod image;
+mod special;
 mod texel;
-pub use self::image::*;
+pub use self::special::*;
 pub use channels::*;
 pub use element::*;
 pub use texel::*;

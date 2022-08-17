@@ -1,4 +1,4 @@
-use super::{CanvasLayout, RasterSettings, Rasterizer};
+use super::{Attachment, IntoAttachmentLayout, AttachmentDescription, Attached};
 use crate::{
     context::Context,
     object::ToGlName,
@@ -7,53 +7,48 @@ use crate::{
 };
 use std::marker::PhantomData;
 use world::{Handle, Storage, UntypedHandle};
-// A framebuffer canvas is an abstraction that we can use to modify the internal colors of the framebuffers
-// We can access the main default canvas from the window using the canvas() function
-pub struct Canvas<L: CanvasLayout> {
+
+// A framebuffer canvas is an abstraction over raw OpenGL framebuffers
+// Canvases are used to "attach" textures and render buffers to themselves
+pub struct Canvas {
     name: u32,
+    attachments: Vec<Box<dyn Attachment>>,
     size: vek::Extent2<u16>,
-    layout: L,
     _phantom: PhantomData<*const ()>,
 }
 
-impl<L: CanvasLayout> Canvas<L> {
+impl Canvas {
     // Create a new canvas from the raw OpenGl ID of a framebuffer
     // This assumes that the framebuffer was already initialized somewhere else
     pub unsafe fn from_raw_parts(
         _ctx: &mut Context,
         name: u32,
         size: vek::Extent2<u16>,
-        layout: L,
+        attachments: Vec<Box<dyn Attachment>>,
     ) -> Self {
         Self {
             name,
             size,
-            layout,
+            attachments,
             _phantom: Default::default(),
         }
     }
 
-    // Create a new canvas with a specific size
-    // This might fail if the canvas layout is invalid or size is zero
-    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, layout: L) -> Option<Self> {
-        if !L::is_instantiable(&layout) {
-            return None;
-        } else if size == vek::Extent2::zero() {
-            return None;
-        }
-
+    // Create a new canvas with a specific size and specific attachments attached to it
+    pub fn new(_ctx: &mut Context, size: vek::Extent2<u16>, attachments: impl IntoAttachmentLayout) -> Option<Self> {
         // Create a valid framebuffer object
-        let name = unsafe {
+        let name = (size != vek::Extent2::zero()).then(unsafe {
             let mut name = 0u32;
             gl::CreateFramebuffers(1, &mut name);
             gl::BindFramebuffer(gl::FRAMEBUFFER, name);
             name
-        };
+        })?;
 
         let mut draw_buffers = 0;
-
-        for description in layout.attachments().iter() {
-            let attachment = match description.format {
+        let attachments = attachments.into();
+        for boxed in attachments.iter() {
+            // Get the attachment value int
+            let attachment = match boxed.format() {
                 TexelFormat::Color | TexelFormat::GammaCorrectedColor => {
                     let attachment = gl::COLOR_ATTACHMENT0 + draw_buffers;
                     draw_buffers += 1;
@@ -63,9 +58,13 @@ impl<L: CanvasLayout> Canvas<L> {
                 TexelFormat::Stencil => gl::STENCIL_ATTACHMENT,
             };
 
-            // Bind the texture attachment to the framebuffer
+            // Bind the attachment to the framebuffer
             unsafe {
-                gl::NamedFramebufferTexture(name, attachment, description.name, 0);
+                match boxed.description() {
+                    AttachmentDescription::Texture2D { name } =>  {
+                        gl::NamedFramebufferTexture(name, attachment, name, 0)
+                    },
+                }
             }
         }
 
@@ -85,7 +84,7 @@ impl<L: CanvasLayout> Canvas<L> {
             }
         }
 
-        Some(unsafe { Self::from_raw_parts(_ctx, name, size, layout) })
+        Some(unsafe { Self::from_raw_parts(_ctx, name, size, attachments) })
     }
 
     // Resize the canvas to a new size (and optionally resize the texture as well)
@@ -107,15 +106,20 @@ impl<L: CanvasLayout> Canvas<L> {
         self.size
     }
 
-    // Get the internal attachments immutably (None if it is the default main canvas)
-    pub fn attachments(&self) -> Option<&L> {
-        (self.name != 0).then(|| &self.layout)
+    // Get an immutable reference to an attachment using it's handle
+    pub fn get<A: Attachment>(&self, handle: Attached<A>) -> Option<&A> {
+        (handle.framebuffer_name() == self.name).then(self.attachments.get(handle.index())?)
     }
 
-    // Get the internal attachments mutably (None if it is the default main canvas)
-    pub fn attachments_mut(&mut self) -> Option<&mut L> {
-        (self.name != 0).then(|| &mut self.layout)
+    // Get a mutable reference to an attachment using it's handle
+    pub fn get_mut<A: Attachment>(&mut self, handle: Attached<A>) -> Option<&mut A> {
+        (handle.framebuffer_name() == self.name).then(self.attachments.get_mut(handle.index())?)
     }
+    
+    // Get all the attachments immutably
+    pub fn attachments(&self) -> &[Attachment]
+
+    // Get all the attachments mutably
 
     // Clear the whole framebuffer using the proper flags
     // This will only clear the framebuffer's draw buffers if they are using floating point colors

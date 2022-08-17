@@ -355,8 +355,8 @@ impl<'uniforms> Uniforms<'uniforms> {
         self.set_raw_uniform(name, mat);
     }
 
-    // Set a texture sampler uniform
-    pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &T) {
+    // Set a sampler uniform
+    pub fn set_sampler<T: Sampler>(&mut self, name: &str, sampler: &T) {
         let count = self.texture_units.len() as u32;
         let offset = self
             .texture_units

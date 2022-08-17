@@ -1,8 +1,8 @@
 mod canvas;
-mod layout;
 mod macros;
 mod rasterizer;
+mod attachment;
+pub use attachment::*;
 pub use canvas::*;
-pub use layout::*;
 pub use macros::*;
 pub use rasterizer::*;
