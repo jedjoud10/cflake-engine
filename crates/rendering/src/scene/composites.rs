@@ -4,7 +4,7 @@ use world::Handle;
 
 use crate::{
     buffer::UniformBuffer,
-    canvas::Canvas,
+    display::Canvas,
     context::Context,
     mesh::Mesh,
     prelude::{Depth, Ranged, Shader, Texture, Texture2D, Uniforms, RGB},

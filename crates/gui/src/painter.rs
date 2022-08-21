@@ -4,7 +4,7 @@ use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::canvas::{BlendMode, Factor, PrimitiveMode, RasterSettings};
+use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Window};
 use rendering::gl;
 use rendering::object::ToGlName;

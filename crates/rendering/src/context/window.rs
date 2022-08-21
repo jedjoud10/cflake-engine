@@ -1,5 +1,5 @@
 use super::{get_static_str, Context};
-use crate::canvas::Canvas;
+use crate::display::Canvas;
 
 // A device is a software/hardware renderer that will be responsible for dealing with a specific window
 pub struct Device {

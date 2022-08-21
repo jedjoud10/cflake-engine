@@ -1,6 +1,6 @@
 use super::{CreatePipeline, Pipeline};
 use crate::{
-    canvas::RasterSettings,
+    display::RasterSettings,
     context::{Context, Window},
     material::{DefaultMaterialResources, Material},
     mesh::{Mesh, Surface},
