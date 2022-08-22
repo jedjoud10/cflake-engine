@@ -44,8 +44,8 @@ impl<'w> Material<'w> for Standard {
             | EnabledAttributes::TEX_COORDS
     }
 
-    fn primitive_mode() -> crate::display::PrimitiveMode {
-        crate::display::PrimitiveMode::Triangles { cull: None }
+    fn primitive_mode() -> crate::viewport::PrimitiveMode {
+        crate::viewport::PrimitiveMode::Triangles { cull: None }
     }
 
     fn fetch_resources(world: &'w world::World) -> Self::Resources {

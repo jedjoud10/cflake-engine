@@ -4,12 +4,15 @@ use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc};
 
-use crate::pipeline::{CreatePipeline, PipeId, Pipeline};
+use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, prelude::RawFramebufferLifeHint};
 
 use super::get_static_str;
 
 // HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
 type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
+
+// HashMap that contains framebuffers and their layout identifiers
+type FramebufferHashMap = HashMap<u64, (u64, RawFramebufferLifeHint), BuildHasherDefault<NoHashHasher<u64>>>;
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
@@ -18,6 +21,9 @@ pub struct Context {
 
     // The currently bound objects (since OpenGL uses a state machine)
     pub(crate) bound: BindingHashMap,
+
+    // List of generated framebuffers and their layout hashes
+    pub(crate) framebuffers: FramebufferHashMap,
 
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
@@ -39,6 +45,7 @@ impl Context {
         Self {
             ctx,
             bound: Default::default(),
+            framebuffers: Default::default(),
             pipelines: Default::default(),
         }
     }
@@ -85,6 +92,13 @@ impl Context {
             .iter()
             .map(|(_key, value)| value.clone())
             .collect::<_>()
+    }
+
+    // This is a method called at the end of every frame to release temporary values like binldess textures and framebuffers
+    pub(crate) fn release_temporary(&mut self) {
+        self.framebuffers.retain(|(uid, (name, hint))| {
+            
+        });
     }
 
     // Get the raw Glutin OpenGL context wrapper

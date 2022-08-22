@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     buffer::{BufferMode, UniformBuffer},
-    display::{Canvas, PrimitiveMode, RasterSettings},
+    viewport::{Canvas, PrimitiveMode, RasterSettings},
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,

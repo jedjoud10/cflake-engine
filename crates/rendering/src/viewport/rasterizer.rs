@@ -1,6 +1,6 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{Canvas, CanvasLayout};
+use super::{ViewportLayout, Viewport};
 use crate::{context::Context, mesh::Mesh, others::Comparison, prelude::ValidUniforms};
 
 // Blend mode factor source
@@ -63,16 +63,15 @@ pub enum PrimitiveMode {
 
 // A rasterizer will help us render specific shaded / colored objects onto the screen
 // Painters can be fetched from any mutable reference to a canvas
-pub struct Rasterizer<'canvas, 'context, L: CanvasLayout> {
-    canvas: &'canvas mut Canvas<L>,
-    ctx: &'context mut Context,
+pub struct Rasterizer<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> {
+    display: &'subdisplay mut Viewport<'display, L>,
     primitive: u32,
 }
 
-impl<'canvas, 'context, L: CanvasLayout> Rasterizer<'canvas, 'context, L> {
+impl<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> Rasterizer<'subdisplay, 'display, L> {
     // Create a new rasterizer with the specified raster self
     pub(crate) fn new(
-        canvas: &'canvas mut Canvas<L>,
+        display: &'subdisplay mut Viewport<'display, L>,
         ctx: &'context mut Context,
         settings: RasterSettings,
     ) -> Self {
