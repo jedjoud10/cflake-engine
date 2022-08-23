@@ -29,15 +29,17 @@ void main() {
 	
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
-	vec3 mapped = mix(sampled, aces(sampled), tonemapping_strength);
-	mapped = pow(mapped, vec3(1.0 / gamma));
+	vec3 mapped = pow(sampled, vec3(1.0 / gamma));
+	//vec3 mapped = mix(sampled, aces(sampled), tonemapping_strength);
 
+	/*
 	// Create a simple vignette
 	float vignette = length(abs(uv - 0.5));
 	vignette += vignette_size;
 	vignette = clamp(vignette, 0, 1);
 	vignette = pow(vignette, vignette_strength);
 	mapped = mix(mapped, vec3(0), vignette);
+	*/
 
-	frag = vec4(sampled, 1.0);
+	frag = vec4(mapped, 1.0);
 }

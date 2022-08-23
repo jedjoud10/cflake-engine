@@ -1,6 +1,6 @@
 use crate::IntoMatrix;
 use ecs::Component;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Add};
 
 #[derive(Default, Clone, Copy, Component)]
 pub struct Location(vek::Vec3<f32>);
@@ -92,5 +92,13 @@ impl From<vek::Vec3<f32>> for Location {
 impl From<(f32, f32, f32)> for Location {
     fn from(l: (f32, f32, f32)) -> Self {
         Self(l.into())
+    }
+}
+
+impl Add<Location> for Location {
+    type Output = Location;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }

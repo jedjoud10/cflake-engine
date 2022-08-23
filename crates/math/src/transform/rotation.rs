@@ -1,6 +1,6 @@
 use crate::IntoMatrix;
 use ecs::Component;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Mul, MulAssign};
 
 #[derive(Default, Clone, Copy, Component)]
 pub struct Rotation(vek::Quaternion<f32>);
@@ -21,33 +21,33 @@ impl Rotation {
         self.into_matrix().mul_point(vek::Vec3::unit_x())
     }
 
-    // Construct a scale using an X rotation (radians)
+    // Construct a rotation using an X rotation (radians)
     pub fn rotation_x(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_x(angle_radians))
     }
 
-    // Construct a scale using a Y rotation (radians)
+    // Construct a rotation using a Y rotation (radians)
     pub fn rotation_y(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_y(angle_radians))
     }
 
-    // Construct a scale using a Z rotation (radians)
+    // Construct a rotation using a Z rotation (radians)
     pub fn rotation_z(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_z(angle_radians))
     }
 
-    // Construct a scale that is looking directly down (forward => (0, -1, 0))
+    // Construct a rotation that is looking directly down (forward => (0, -1, 0))
     pub fn looking_down() -> Self {
         Self::rotation_x(90.0f32.to_radians())
     }
 
-    // Construct a scale that is looking directly up (forward => (0, 1, 0))
+    // Construct a rotation that is looking directly up (forward => (0, 1, 0))
     pub fn looking_up() -> Self {
         Self::rotation_x(-90.0f32.to_radians())
     }
 
     /*
-    // Construct a scale that is looking directly right (forward => (1, 0, 0))
+    // Construct a rotation that is looking directly right (forward => (1, 0, 0))
     pub fn looking_right() -> Self {
         Self::rotation_y(90.0f32.to_radians())
     }
@@ -95,5 +95,13 @@ impl Into<vek::Quaternion<f32>> for Rotation {
 impl From<vek::Quaternion<f32>> for Rotation {
     fn from(q: vek::Quaternion<f32>) -> Self {
         Self(q)
+    }
+}
+
+impl Mul<Rotation> for Rotation {
+    type Output = Rotation;
+
+    fn mul(self, rhs: Rotation) -> Self::Output {
+        Rotation(self.0 * rhs.0)
     }
 }
