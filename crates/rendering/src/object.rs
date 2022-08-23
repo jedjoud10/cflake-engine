@@ -1,3 +1,5 @@
+use crate::context::Context;
+
 // This trait will be implemented on objects that contain a raw OpenGL name
 pub trait ToGlName {
     fn name(&self) -> u32;

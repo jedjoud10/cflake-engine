@@ -1,6 +1,6 @@
 use super::{CreatePipeline, Pipeline};
 use crate::{
-    viewport::RasterSettings,
+    display::{RasterSettings, ScopedCanvas, RawFramebufferLifeHint},
     context::{Context, Window},
     material::{DefaultMaterialResources, Material},
     mesh::{Mesh, Surface},
@@ -64,7 +64,10 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Create a new rasterizer so we can draw the objects onto the world
         let shader = shaders.get_mut(&self.shader);
-        let (mut rasterizer, mut uniforms) = shading.canvas.rasterizer(&mut ctx, shader, settings);
+        let hint = RawFramebufferLifeHint::NeverDelete;
+        /*
+        let scoped = ScopedCanvas::new(&mut ctx, (&mut shading.color_tex, &mut shading.depth_tex), hint).unwrap();
+        let (mut rasterizer, mut uniforms) = todo!;
 
         let main = DefaultMaterialResources {
             camera,
@@ -123,6 +126,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 stats.tris += mesh.triangles().len() as u32;
             }
         }
+        */
     }
 }
 

@@ -1,6 +1,8 @@
-mod viewport;
+mod scoped;
 mod rasterizer;
 mod macros;
+mod display;
+pub use display::*;
 pub use macros::*;
-pub use viewport::*;
+pub use scoped::*;
 pub use rasterizer::*;

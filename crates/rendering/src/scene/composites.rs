@@ -4,7 +4,7 @@ use world::Handle;
 
 use crate::{
     buffer::UniformBuffer,
-    viewport::Canvas,
+    display::ScopedCanvas,
     context::Context,
     mesh::Mesh,
     prelude::{Depth, Ranged, Shader, Texture, Texture2D, Uniforms, RGB},
@@ -17,11 +17,11 @@ use super::PointLight;
 // The principle of "Clustered Shading" is to subdivide the camera's view frustum
 // into multiple sub-regions called "clusters", and have the lights within them rendered
 // TODO: Actually implement this lul
-pub type ClusteredShadingCanvas = Canvas<(Texture2D<RGB<f32>>, Texture2D<Depth<Ranged<u32>>>)>;
 pub struct ClusteredShading {
     pub(crate) main_camera: Option<Entity>,
+    pub(crate) color_tex: Texture2D<RGB<f32>>,
+    pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
-    pub(crate) canvas: ClusteredShadingCanvas,
     pub(crate) point_lights: UniformBuffer<(PointLight, Location)>,
 }
 
@@ -34,16 +34,6 @@ impl ClusteredShading {
     // Get the main directional light entity
     pub fn main_directional_light(&self) -> Option<Entity> {
         self.main_directional_light
-    }
-
-    // Get an immutable reference to the renderer's canvas
-    pub fn canvas(&self) -> &ClusteredShadingCanvas {
-        &self.canvas
-    }
-
-    // Get a mutable reference to the renderer's canvas
-    pub fn canvas_mut(&mut self) -> &mut ClusteredShadingCanvas {
-        &mut self.canvas
     }
 }
 

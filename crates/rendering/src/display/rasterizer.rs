@@ -1,6 +1,6 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{ViewportLayout, Viewport};
+use super::{ScopedCanvasLayout, ScopedCanvas, Display};
 use crate::{context::Context, mesh::Mesh, others::Comparison, prelude::ValidUniforms};
 
 // Blend mode factor source
@@ -63,18 +63,23 @@ pub enum PrimitiveMode {
 
 // A rasterizer will help us render specific shaded / colored objects onto the screen
 // Painters can be fetched from any mutable reference to a canvas
-pub struct Rasterizer<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> {
-    display: &'subdisplay mut Viewport<'display, L>,
+pub struct Rasterizer<'d, 'context, D: Display> {
+    display: &'d mut D,
+    context: &'context mut Context,
     primitive: u32,
 }
-
-impl<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> Rasterizer<'subdisplay, 'display, L> {
-    // Create a new rasterizer with the specified raster self
-    pub(crate) fn new(
-        display: &'subdisplay mut Viewport<'display, L>,
-        ctx: &'context mut Context,
+impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
+    // Create a new rasterizer with the specified raster settings and display adapter
+    pub(crate) unsafe fn new(
+        display: &'d mut D,
+        context: &'context mut Context,
         settings: RasterSettings,
     ) -> Self {
+        // We must bind the display to the current opengl context
+        context.bind(gl::FRAMEBUFFER, display.name(), |_| {
+            gl::Viewport(0, 0, display.size().w as i32, display.size().h as i32);
+        });
+
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
             PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
@@ -85,7 +90,7 @@ impl<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> Rasterizer
         // Set the OpenGL primitive parameters (along with face culling)
         match &settings.primitive {
             // Triangle primitive type
-            PrimitiveMode::Triangles { cull } => unsafe {
+            PrimitiveMode::Triangles { cull } => {
                 if let Some(cull) = cull {
                     gl::Enable(gl::CULL_FACE);
                     let (direction, ccw) = match cull {
@@ -100,12 +105,12 @@ impl<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> Rasterizer
             },
 
             // Point primitive type
-            PrimitiveMode::Points { diameter } => unsafe {
+            PrimitiveMode::Points { diameter } => {
                 gl::PointSize(*diameter);
             },
 
             // Line primitive type
-            PrimitiveMode::Lines { width, smooth } => unsafe {
+            PrimitiveMode::Lines { width, smooth } => {
                 if *smooth {
                     gl::Enable(gl::LINE_SMOOTH);
                 } else {
@@ -116,62 +121,49 @@ impl<'subdisplay, 'display: 'subdisplay, L: ViewportLayout<'display>> Rasterizer
         }
 
         // Handle depth testing and it's parameters
-        unsafe {
-            if let Some(func) = &settings.depth_test {
-                gl::Enable(gl::DEPTH_TEST);
-                gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
-            } else {
-                gl::Disable(gl::DEPTH_TEST);
-            }
+        if let Some(func) = &settings.depth_test {
+            gl::Enable(gl::DEPTH_TEST);
+            gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
+        } else {
+            gl::Disable(gl::DEPTH_TEST);
         }
 
         // Handle scissor testing and it's parameters
-        unsafe {
-            if let Some((origin, size)) = &settings.scissor_test {
-                gl::Enable(gl::SCISSOR_TEST);
-                gl::Scissor(origin.x, canvas.size().h as i32 - origin.y, size.w, size.h);
-            } else {
-                gl::Disable(gl::SCISSOR_TEST);
-            }
+        if let Some((origin, size)) = &settings.scissor_test {
+            gl::Enable(gl::SCISSOR_TEST);
+            gl::Scissor(origin.x, display.size().h as i32 - origin.y, size.w, size.h);
+        } else {
+            gl::Disable(gl::SCISSOR_TEST);
         }
 
         // Handle the SRGB framebuffer mode
-        unsafe {
-            if settings.srgb {
-                gl::Enable(gl::FRAMEBUFFER_SRGB);
-            } else {
-                gl::Disable(gl::FRAMEBUFFER_SRGB);
-            }
+        if settings.srgb {
+            gl::Enable(gl::FRAMEBUFFER_SRGB);
+        } else {
+            gl::Disable(gl::FRAMEBUFFER_SRGB);
         }
 
         // Handle blending and it's parameters
-        unsafe {
-            if let Some(mode) = settings.blend {
-                gl::Enable(gl::BLEND);
-                gl::BlendFunc(
-                    transmute::<Factor, u32>(mode.src),
-                    transmute::<Factor, u32>(mode.dest),
-                );
-            } else {
-                gl::Disable(gl::BLEND)
-            }
+        if let Some(mode) = settings.blend {
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(
+                transmute::<Factor, u32>(mode.src),
+                transmute::<Factor, u32>(mode.dest),
+            );
+        } else {
+            gl::Disable(gl::BLEND)
         }
 
         Self {
-            canvas,
-            ctx,
+            display,
+            context,
             primitive,
         }
     }
 
-    // Get an immutable reference to the underlying canvas
-    pub fn canvas(&self) -> &Canvas<L> {
-        self.canvas
-    }
-
-    // Get an immutable reference to the underlying context
-    pub fn context(&self) -> &Context {
-        self.ctx
+    // Get the underlying display value
+    pub fn display(&self) -> &D {
+        &self.display
     }
 
     // Draw a VAO by assuming that it has no EBO

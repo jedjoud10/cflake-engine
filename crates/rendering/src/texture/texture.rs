@@ -1,3 +1,5 @@
+use vek::Extent3;
+
 use super::{Filter, MipMaps, Sampling, Texel, TextureMode, Wrap};
 use crate::{
     context::Context,
@@ -7,10 +9,7 @@ use std::{ffi::c_void, num::NonZeroU8, ptr::null};
 
 // An immutable mip layer that we can use to read from the texture
 pub struct MipLayerRef<'a, T: Texture> {
-    // El texture
     texture: &'a T,
-
-    // The level of the mip layer
     level: u8,
 }
 
@@ -18,6 +17,22 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
     // Create a new mip layer view using a texture and a level
     pub(super) fn new(texture: &'a T, level: u8) -> Self {
         Self { texture, level }
+    }
+
+    // Get the underlying texture
+    pub fn texture(&self) -> &T {
+        self.texture
+    }
+
+    // Get the mip level of the current layer
+    pub fn level(&self) -> u8 {
+        self.level
+    }
+
+    // Get the mip layer's dimensions
+    pub fn dimensions(&self) -> <T::Region as Region>::E {
+        let main = self.texture.dimensions();
+        <<T::Region as Region>::E as Extent>::subdivide(&main, self.level)
     }
 
     // Download a sub-region of the mip-layer, without checking for safety
@@ -43,10 +58,7 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
 
 // A mutable mip layer that we can use to write to the texture
 pub struct MipLayerMut<'a, T: Texture> {
-    // El texture
     texture: &'a mut T,
-
-    // The level of the mip layer
     level: u8,
 }
 
@@ -54,6 +66,22 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     // Create a new mip layer mutable view using a texture and a level
     pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
         Self { texture, level }
+    }
+
+    // Get the underlying texture
+    pub fn texture(&self) -> &T {
+        self.texture
+    }
+    
+    // Get the mip level of the current layer
+    pub fn level(&self) -> u8 {
+        self.level
+    }
+
+    // Get the mip layer's dimensions
+    pub fn dimensions(&self) -> <T::Region as Region>::E {
+        let main = self.texture.dimensions();
+        <<T::Region as Region>::E as Extent>::subdivide(&main, self.level)
     }
 
     // Download a sub-region of the mip-layer, without checking for safety
@@ -124,6 +152,9 @@ pub trait Extent: Copy {
         }
         NonZeroU8::new(u8::try_from(num + 1).unwrap()).unwrap()
     }
+
+    // Repeatedly divie the extent for a number of times. This is only used to calculate the dimensions of mip-map layers
+    fn subdivide(&self, levels: u8) -> Self;
 }
 
 // Implementation of extent for 2D extent
@@ -139,20 +170,38 @@ impl Extent for vek::Extent2<u16> {
     fn max(&self) -> u16 {
         self.reduce_max()
     }
+
+    fn subdivide(&self, levels: u8) -> Self {
+        let mut new = *self;
+        for i in 0..levels {
+            new = (new.as_::<f32>() / 2.0).floor().as_::<u16>();
+        }
+
+        new.map(|e| if e == 0 { 1 } else { e })
+    }
 }
 
 // Implementation of extent for 3D extent
-impl Extent for vek::Extent3<u16> {
+impl Extent for Extent3<u16> {
     fn area(&self) -> u32 {
         self.as_::<u32>().product()
     }
 
     fn is_valid(&self) -> bool {
-        *self != vek::Extent3::zero()
+        *self != Extent3::zero()
     }
 
     fn max(&self) -> u16 {
         self.reduce_max()
+    }
+
+    fn subdivide(&self, levels: u8) -> Self {
+        let mut new = *self;
+        for i in 0..levels {
+            new = (new.as_::<f32>() / 2.0).floor().as_::<u16>();
+        }
+
+        new.map(|e| if e == 0 { 1 } else { e })
     }
 }
 
@@ -203,9 +252,9 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
     }
 }
 
-impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
+impl Region for (vek::Vec3<u16>, Extent3<u16>) {
     type O = vek::Vec3<u16>;
-    type E = vek::Extent3<u16>;
+    type E = Extent3<u16>;
 
     fn origin(&self) -> Self::O {
         self.0
@@ -224,7 +273,7 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     }
 
     fn unit() -> Self {
-        (vek::Vec3::zero(), vek::Extent3::one())
+        (vek::Vec3::zero(), Extent3::one())
     }
 }
 

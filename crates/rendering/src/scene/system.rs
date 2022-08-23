@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     buffer::{BufferMode, UniformBuffer},
-    viewport::{Canvas, PrimitiveMode, RasterSettings},
+    display::{ScopedCanvas, PrimitiveMode, RasterSettings, Display},
     context::{Context, GraphicsSetupSettings, Window},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,
@@ -53,7 +53,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let color = <Texture2D<RGB<f32>> as Texture>::new(
         ctx,
         TextureMode::Resizable,
-        window.canvas().size(),
+        window.size(),
         sampling,
         mipmaps,
         None,
@@ -64,15 +64,12 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
         ctx,
         TextureMode::Resizable,
-        window.canvas().size(),
+        window.size(),
         sampling,
         mipmaps,
         None,
     )
     .unwrap();
-
-    // Create the rendering canvas
-    let canvas = Canvas::new(ctx, window.canvas().size(), (color, depth)).unwrap();
 
     // Create the default pipelines
     let mut init = (&mut *shaders, &mut *assets);
@@ -82,8 +79,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the clustered shading rendererer
     let clustered_shading = ClusteredShading {
         main_camera: None,
+        color_tex: color,
+        depth_tex: depth,
         main_directional_light: None,
-        canvas,
         point_lights: UniformBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
     };
 
@@ -223,9 +221,6 @@ fn rendering(world: &mut World) {
     let shading = &mut *_shading;
     let pp = world.get::<PostProcessing>().unwrap();
 
-    // Get the texture attachments
-    let (color, depth) = shading.canvas_mut().attachments_mut().unwrap();
-
     // Get the main window since we will draw to it
     let mut window = world.get_mut::<Window>().unwrap();
     let mut ctx = world.get_mut::<Context>().unwrap();
@@ -238,17 +233,14 @@ fn rendering(world: &mut World) {
         srgb: false,
         blend: None,
     };
-    let (mut rasterizer, mut uniforms) =
-        window
-            .canvas_mut()
-            .rasterizer(&mut ctx, &mut compositor.compositor, settings);
+    let (mut rasterizer, mut uniforms) = window.rasterizer(&mut ctx, &mut compositor.compositor, settings);
 
     // Set the shader uniforms
     uniforms.set_vec2(
         "resolution",
-        vek::Vec2::<i32>::from(rasterizer.canvas().size().as_::<i32>()),
+        vek::Vec2::<i32>::from(rasterizer.display().size().as_::<i32>()),
     );
-    uniforms.set_sampler("color", color);
+    uniforms.set_sampler("color", &shading.color_tex);
     uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);
     uniforms.set_scalar("exposure", pp.exposure);
     uniforms.set_scalar("gamma", pp.gamma);
@@ -268,13 +260,10 @@ fn window(world: &mut World, event: &mut WindowEvent) {
                 return;
             };
 
-            // Resize the default canvas when we resize the window
-            let mut window = world.get_mut::<Window>().unwrap();
-            window.canvas_mut().resize(extent, true);
-
             // Resize the clustered shading canvas
             let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-            shading.canvas_mut().resize(extent, true);
+            shading.color_tex.resize(extent);
+            shading.depth_tex.resize(extent);
         }
         WindowEvent::CloseRequested => {
             *world.get_mut::<world::State>().unwrap() = world::State::Stopped;
@@ -285,6 +274,7 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
+    /*
     let mut window = world.get_mut::<Window>().unwrap();
     window
         .canvas_mut()
@@ -294,6 +284,7 @@ fn clear(world: &mut World) {
     shading
         .canvas_mut()
         .clear(Some(vek::Rgb::black()), Some(1.0), None);
+    */
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context

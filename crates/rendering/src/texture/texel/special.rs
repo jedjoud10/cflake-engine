@@ -6,20 +6,20 @@ use super::{
 
 // Color texels are texels that purely represent color data (all texel types other than depth and stencil texels)
 pub trait ColorTexel: Texel {}
-impl<E: Element> ColorTexel for R<E> {}
-impl<E: Element> ColorTexel for RG<E> {}
-impl<E: Element> ColorTexel for RGB<E> {}
-impl<E: Element> ColorTexel for RGBA<E> {}
-impl<E: Element> ColorTexel for SRGB<E> {}
-impl<E: Element> ColorTexel for SRGBA<E> {}
+impl<E: Element> ColorTexel for R<E> where Self: Texel {}
+impl<E: Element> ColorTexel for RG<E> where Self: Texel {}
+impl<E: Element> ColorTexel for RGB<E> where Self: Texel {}
+impl<E: Element> ColorTexel for RGBA<E> where Self: Texel {}
+impl<E: Element> ColorTexel for SRGB<E> where Self: Texel {}
+impl<E: Element> ColorTexel for SRGBA<E> where Self: Texel {}
 
 // Depth texels are texels that purely represent vertex depth
 pub trait DepthTexel: Texel {}
-impl<E: Element> DepthTexel for Depth<E> {}
+impl<E: Element> DepthTexel for Depth<E> where Self: Texel {}
 
 // Stencil texels are texels that purely represent stencil masks
 pub trait StencilTexel: Texel {}
-impl<E: Element> StencilTexel for Stencil<E> {}
+impl<E: Element> StencilTexel for Stencil<E> where Self: Texel {}
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Ranged<u8>>>
 pub trait ImageTexel: Texel {

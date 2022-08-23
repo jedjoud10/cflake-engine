@@ -4,11 +4,11 @@ use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::viewport::{BlendMode, Factor, PrimitiveMode, RasterSettings};
+use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Window};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::MipMaps;
+use rendering::prelude::{MipMaps, Display};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -166,19 +166,17 @@ impl Painter {
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
-        let (mut rasterizer, mut uniforms) =
-            window
-                .canvas_mut()
-                .rasterizer(ctx, &mut self.shader, settings);
+        let (mut rasterizer, mut uniforms) = window.rasterizer(ctx, &mut self.shader, settings);
 
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
         uniforms.set_sampler("test", texture);
         uniforms.set_vec2::<vek::Vec2<i32>>(
             "resolution",
-            rasterizer.canvas().size().as_::<i32>().into(),
+            rasterizer.size().as_::<i32>().into(),
         );
 
+        // Render each clipped mesh using unsafe commands
         for mesh in meshes {
             self.vertices.clear();
             self.indices.clear();
