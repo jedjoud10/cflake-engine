@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 
 use assets::Asset;
 use math::AABB;
-use num::{One, Zero};
+
 use obj::TexturedVertex;
 
 use super::attributes::*;
@@ -11,7 +11,7 @@ use super::{
     VerticesMut, VerticesRef,
 };
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferMode, Triangle, TriangleBuffer},
+    buffer::{ArrayBuffer, BufferMode, Triangle, TriangleBuffer},
     context::Context,
 };
 

@@ -1,8 +1,4 @@
-use crate::mesh::Color;
-
-use super::{
-    Base, Depth, Element, Normalized, Ranged, Stencil, Texel, R, RG, RGB, RGBA, SRGB, SRGBA,
-};
+use super::{Depth, Element, Ranged, Stencil, Texel, R, RG, RGB, RGBA, SRGB, SRGBA};
 
 // Color texels are texels that purely represent color data (all texel types other than depth and stencil texels)
 pub trait ColorTexel: Texel {}

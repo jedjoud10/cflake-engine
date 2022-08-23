@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     buffer::{BufferMode, UniformBuffer},
-    display::{ScopedCanvas, PrimitiveMode, RasterSettings, Display},
     context::{Context, GraphicsSetupSettings, Window},
+    display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,
     pipeline::{Pipeline, SpecializedPipeline},
@@ -233,7 +233,8 @@ fn rendering(world: &mut World) {
         srgb: false,
         blend: None,
     };
-    let (mut rasterizer, mut uniforms) = window.rasterizer(&mut ctx, &mut compositor.compositor, settings);
+    let (mut rasterizer, mut uniforms) =
+        window.rasterizer(&mut ctx, &mut compositor.compositor, settings);
 
     // Set the shader uniforms
     uniforms.set_vec2(
@@ -283,7 +284,11 @@ fn clear(world: &mut World) {
 
     // Clear the screen textures
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-    shading.color_tex.get_layer_mut(0).unwrap().splat(vek::Vec3::zero());
+    shading
+        .color_tex
+        .get_layer_mut(0)
+        .unwrap()
+        .splat(vek::Vec3::zero());
     shading.depth_tex.get_layer_mut(0).unwrap().splat(0);
 }
 

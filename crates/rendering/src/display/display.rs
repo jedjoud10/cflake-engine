@@ -1,8 +1,11 @@
-use crate::{context::Context, prelude::{Shader, Uniforms}, object::{ToGlName}};
+use crate::{
+    context::Context,
+    prelude::{Shader, Uniforms},
+};
 
 use super::{RasterSettings, Rasterizer, Viewport};
 
-// A display can be anything that has a specific size and that can be drawn into 
+// A display can be anything that has a specific size and that can be drawn into
 // For now, displays are just the main game window and user created scoped canvases
 pub trait Display: Sized {
     fn viewport(&self) -> Viewport;

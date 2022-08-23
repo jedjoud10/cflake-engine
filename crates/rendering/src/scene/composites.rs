@@ -1,13 +1,10 @@
 use ecs::Entity;
 use math::Location;
-use world::Handle;
 
 use crate::{
     buffer::UniformBuffer,
-    display::ScopedCanvas,
-    context::Context,
     mesh::Mesh,
-    prelude::{Depth, Ranged, Shader, Texture, Texture2D, Uniforms, RGB},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB},
 };
 
 use super::PointLight;

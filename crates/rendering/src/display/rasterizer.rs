@@ -1,6 +1,6 @@
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
-use super::{ScopedCanvasLayout, ScopedCanvas, Display};
+use super::Display;
 use crate::{context::Context, mesh::Mesh, others::Comparison, prelude::ValidUniforms};
 
 // Blend mode factor source
@@ -79,7 +79,12 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         context.bind(gl::FRAMEBUFFER, display.name(), |_| {
             let view = display.viewport();
             println!("{:?}", view.extent);
-            gl::Viewport(view.origin.x as i32, view.origin.y as i32, view.extent.w as i32, view.extent.h as i32);
+            gl::Viewport(
+                view.origin.x as i32,
+                view.origin.y as i32,
+                view.extent.w as i32,
+                view.extent.h as i32,
+            );
         });
 
         // Get the OpenGL primitive type
@@ -104,12 +109,12 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
                 } else {
                     gl::Disable(gl::CULL_FACE);
                 };
-            },
+            }
 
             // Point primitive type
             PrimitiveMode::Points { diameter } => {
                 gl::PointSize(*diameter);
-            },
+            }
 
             // Line primitive type
             PrimitiveMode::Lines { width, smooth } => {
@@ -119,7 +124,7 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
                     gl::Disable(gl::LINE_SMOOTH);
                 }
                 gl::LineWidth(*width);
-            },
+            }
         }
 
         // Handle depth testing and it's parameters
@@ -165,7 +170,7 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
 
     // Get the underlying display value
     pub fn display(&self) -> &D {
-        &self.display
+        self.display
     }
 
     // Draw a VAO by assuming that it has no EBO

@@ -1,4 +1,3 @@
-use arrayvec::ArrayVec;
 use itertools::Itertools;
 use math::{Cuboid, IcoSphere, UvSphere};
 
@@ -107,7 +106,7 @@ impl PrimitiveGenerator for Cuboid {
             .into_iter()
             .map(|face| {
                 let offset = face * 6;
-                let tri1 = [0 + offset, 1 + offset, 2 + offset];
+                let tri1 = [offset, 1 + offset, 2 + offset];
                 let tri2 = [2 + offset, 1 + offset, 3 + offset];
                 (tri1, tri2)
             })
@@ -130,14 +129,14 @@ impl PrimitiveGenerator for Cuboid {
 
 impl PrimitiveGenerator for UvSphere {
     // Generate a UV sphere mesh
-    fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh {
+    fn generate(self, _ctx: &mut Context, _settings: MeshImportSettings) -> Mesh {
         todo!()
     }
 }
 
 impl PrimitiveGenerator for IcoSphere {
     // Generate an IcoSphere mesh
-    fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh {
+    fn generate(self, _ctx: &mut Context, _settings: MeshImportSettings) -> Mesh {
         todo!()
     }
 }

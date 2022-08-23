@@ -72,8 +72,8 @@ impl MeshUtils {
     pub fn mul_tangent(matrix: vek::Mat4<f32>, tangent: VeTangent, flip: bool) -> VeTangent {
         let mapped = tangent.map(|f| f as f32 / 127.0);
         let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
-        let mapped = vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w));
-        mapped
+
+        vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w))
     }
 
     // Update a texture coordinate by it's settings

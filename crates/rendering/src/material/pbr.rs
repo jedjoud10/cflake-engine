@@ -5,7 +5,7 @@ use world::{Handle, Read, Storage};
 use crate::{
     context::Context,
     mesh::EnabledAttributes,
-    prelude::{RGBA, SRGBA},
+    prelude::SRGBA,
     scene::Renderer,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB},

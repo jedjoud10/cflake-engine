@@ -1,5 +1,4 @@
 use cflake_engine::prelude::{vek::Lerp, *};
-use std::num::NonZeroU8;
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
@@ -22,13 +21,13 @@ fn main() {
 fn init(world: &mut World) {
     // Get the graphics resources
     let mut ctx = world.get_mut::<Context>().unwrap();
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    let _shading = world.get_mut::<ClusteredShading>().unwrap();
     let mut standard_materials = world.get_mut::<Storage<Standard>>().unwrap();
     let mut sky_materials = world.get_mut::<Storage<Sky>>().unwrap();
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
-    let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
+    let _shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
 
     // Get the other resources
@@ -38,7 +37,7 @@ fn init(world: &mut World) {
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
-    let camera = ecs.insert((
+    let _camera = ecs.insert((
         camera,
         Location::at_z(5.0),
         Rotation::default(),
@@ -88,7 +87,7 @@ fn init(world: &mut World) {
     .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
-    let import = MeshImportSettings {
+    let _import = MeshImportSettings {
         mode: BufferMode::Static,
         use_normals: true,
         use_tangents: true,
@@ -181,7 +180,7 @@ struct Velocity {
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let shading = world.get::<ClusteredShading>().unwrap();
-    let window = world.get_mut::<Window>().unwrap();
+    let _window = world.get_mut::<Window>().unwrap();
 
     // Get the input resources
     let keyboard = world.get::<Keyboard>().unwrap();

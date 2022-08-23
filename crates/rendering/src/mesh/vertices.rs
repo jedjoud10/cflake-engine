@@ -60,7 +60,7 @@ impl VerticesRef<'_> {
         let min = maybe_min.unwrap_or_default();
         let max = maybe_max.unwrap_or_default();
         let valid = min == max;
-        valid.then(|| min)
+        valid.then_some(min)
     }
 }
 
@@ -150,7 +150,7 @@ impl VerticesMut<'_> {
         let min = maybe_min.unwrap_or_default();
         let max = maybe_max.unwrap_or_default();
         let valid = min == max;
-        valid.then(|| min)
+        valid.then_some(min)
     }
 
     // Re-bind the vertex buffers to the VAO, assuming that they are valid

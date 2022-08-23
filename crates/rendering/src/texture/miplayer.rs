@@ -1,7 +1,6 @@
 use crate::prelude::TextureMode;
 
-use super::{Texture, Region, Extent, Texel};
-
+use super::{Extent, Region, Texel, Texture};
 
 // An immutable mip layer that we can use to read from the texture
 pub struct MipLayerRef<'a, T: Texture> {
@@ -37,17 +36,13 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
         &self,
         region: T::Region,
         data: *mut <T::T as Texel>::Storage,
-        texels: u32
+        texels: u32,
     ) {
         T::read_subregion(self.texture.name(), region, self.level, data, texels);
     }
 
     // Download the whole mip layer, without checking for safety
-    pub unsafe fn download_unchecked(
-        &self,
-        data: *mut <T::T as Texel>::Storage,
-        texels: u32,
-    ) {
+    pub unsafe fn download_unchecked(&self, data: *mut <T::T as Texel>::Storage, texels: u32) {
         T::read(self.texture.name(), self.level, data, texels);
     }
 
@@ -89,7 +84,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     pub fn texture(&self) -> &T {
         self.texture
     }
-    
+
     // Get the mip level of the current layer
     pub fn level(&self) -> u8 {
         self.level
@@ -107,17 +102,13 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
         &self,
         region: T::Region,
         data: *mut <T::T as Texel>::Storage,
-        texels: u32
+        texels: u32,
     ) {
         T::read_subregion(self.texture.name(), region, self.level, data, texels);
     }
 
     // Download the whole mip layer, without checking for safety
-    pub unsafe fn download_unchecked(
-        &self,
-        data: *mut <T::T as Texel>::Storage,
-        texels: u32,
-    ) {
+    pub unsafe fn download_unchecked(&self, data: *mut <T::T as Texel>::Storage, texels: u32) {
         T::read(self.texture.name(), self.level, data, texels);
     }
 
@@ -152,10 +143,7 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Update the whole mip-layer, but without checking for safety
-    pub unsafe fn upload_unchecked(
-        &mut self,
-        data: *const <T::T as Texel>::Storage,
-    ) {
+    pub unsafe fn upload_unchecked(&mut self, data: *const <T::T as Texel>::Storage) {
         T::update_subregion(self.texture.name(), self.texture.region(), self.level, data)
     }
 
@@ -166,20 +154,28 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
             "Input data length is not equal to region area surface"
         );
         assert_ne!(data.len(), 0, "Input data length cannot be zero");
-        assert_ne!(self.texture.mode(), TextureMode::Static, "Cannot write data to static textures");
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
 
         unsafe {
             self.upload_subregion_unhecked(region, data.as_ptr());
         }
     }
 
-    // Update the whole mip-layer using a data slice 
+    // Update the whole mip-layer using a data slice
     pub fn upload(&mut self, data: &[<T::T as Texel>::Storage]) {
         assert!(
             (data.len() as u32) == self.texture.region().area(),
             "Input data length is not equal to mip layer area surface"
         );
-        assert_ne!(self.texture.mode(), TextureMode::Static, "Cannot write data to static textures");
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
 
         unsafe {
             self.upload_unchecked(data.as_ptr());
@@ -187,7 +183,11 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Set the contents of a sub-region of the texture layer to the given value without checking for safety
-    pub unsafe fn splat_subregion_unchecked(&mut self, region: T::Region, data: *const <T::T as Texel>::Storage) {
+    pub unsafe fn splat_subregion_unchecked(
+        &mut self,
+        region: T::Region,
+        data: *const <T::T as Texel>::Storage,
+    ) {
         T::splat_subregion(self.texture.name(), region, self.level, data)
     }
 
@@ -198,7 +198,11 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
 
     // Set the contents of a sub-region of the texture layer to the given value
     pub fn splat_subregion(&mut self, region: T::Region, val: <T::T as Texel>::Storage) {
-        assert_ne!(self.texture.mode(), TextureMode::Static, "Cannot write data to static textures");
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
 
         unsafe {
             self.splat_subregion_unchecked(region, &val);
@@ -207,7 +211,11 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
 
     // Set the whole contents of the texture layer to the specified value
     pub fn splat(&mut self, val: <T::T as Texel>::Storage) {
-        assert_ne!(self.texture.mode(), TextureMode::Static, "Cannot write data to static textures");
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
 
         unsafe {
             self.splat_unchecked(&val);

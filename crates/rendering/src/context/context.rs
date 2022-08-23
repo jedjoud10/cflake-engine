@@ -1,9 +1,12 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc, cell::RefCell};
+use std::{any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, rc::Rc};
 
-use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, prelude::RawFramebufferLifeHint};
+use crate::{
+    pipeline::{CreatePipeline, PipeId, Pipeline},
+    prelude::RawFramebufferLifeHint,
+};
 
 use super::get_static_str;
 
@@ -11,7 +14,8 @@ use super::get_static_str;
 pub type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
 
 // HashMap that contains framebuffers and their layout identifiers
-pub type FramebufferHashMap = HashMap<u64, (u32, RawFramebufferLifeHint), BuildHasherDefault<NoHashHasher<u64>>>;
+pub type FramebufferHashMap =
+    HashMap<u64, (u32, RawFramebufferLifeHint), BuildHasherDefault<NoHashHasher<u64>>>;
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
@@ -96,9 +100,7 @@ impl Context {
     // This is a method called at the end of every frame to release temporary values like binldess textures and framebuffers
     pub(crate) fn release_temporary(&mut self) {
         let mut borrowed = self.framebuffers.borrow_mut();
-        borrowed.retain(|uid, (name, hint)| {
-            false
-        });
+        borrowed.retain(|_uid, (_name, _hint)| false);
     }
 
     // Get the raw Glutin OpenGL context wrapper

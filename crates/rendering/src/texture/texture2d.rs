@@ -154,28 +154,18 @@ impl<T: Texel> Texture for Texture2D<T> {
             level as i32,
             origin.x as i32,
             origin.y as i32,
-            0, 
-            extent.w as i32, 
+            0,
+            extent.w as i32,
             extent.h as i32,
             1,
             T::FORMAT,
             T::TYPE,
-            ptr as *const c_void
+            ptr as *const c_void,
         );
     }
 
-    unsafe fn splat(
-            name: u32,
-            level: u8,
-            ptr: *const <Self::T as Texel>::Storage,
-        ) {
-        gl::ClearTexImage(
-            name,
-            level as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr as *const c_void
-        );
+    unsafe fn splat(name: u32, level: u8, ptr: *const <Self::T as Texel>::Storage) {
+        gl::ClearTexImage(name, level as i32, T::FORMAT, T::TYPE, ptr as *const c_void);
     }
 
     unsafe fn read_subregion(
@@ -204,12 +194,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         );
     }
 
-    unsafe fn read(
-        name: u32,
-        level: u8,
-        ptr: *mut <Self::T as Texel>::Storage,
-        texels: u32,
-    ) {
+    unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32) {
         let size = texels as u32 * T::bytes();
         gl::GetTextureImage(
             name,
@@ -217,7 +202,7 @@ impl<T: Texel> Texture for Texture2D<T> {
             T::FORMAT,
             T::TYPE,
             size as i32,
-            ptr as *mut c_void
+            ptr as *mut c_void,
         )
     }
 }

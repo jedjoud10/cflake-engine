@@ -1,11 +1,11 @@
-use vek::Extent3;
-
-use super::{Filter, MipMaps, Sampling, Texel, TextureMode, Wrap, Region, MipLayerMut, MipLayerRef, Extent};
+use super::{
+    Extent, Filter, MipLayerMut, MipLayerRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
+};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{ffi::c_void, num::NonZeroU8, ptr::null};
+use std::{num::NonZeroU8, ptr::null};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
 // TODO: Test texture mip map layer pixel reading / writing
@@ -155,7 +155,9 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
     // Resize the current texture (this will also set it's inner data to null)
     fn resize(&mut self, extent: <Self::Region as Region>::E) {
-        unsafe { Self::alloc_resizable_storage(self.name(), extent, 0, null()); }
+        unsafe {
+            Self::alloc_resizable_storage(self.name(), extent, 0, null());
+        }
     }
 
     // Calculate the uncompressed size of the texture
@@ -195,7 +197,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         level: u8,
         ptr: *const <Self::T as Texel>::Storage,
     );
-    
+
     // Fills a sub-region of a raw texture layer with a constant value
     unsafe fn splat_subregion(
         name: u32,
@@ -205,11 +207,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     );
 
     // Fills the whole raw texture layer with a constant value
-    unsafe fn splat(
-        name: u32,
-        level: u8,
-        ptr: *const <Self::T as Texel>::Storage,
-    );
+    unsafe fn splat(name: u32, level: u8, ptr: *const <Self::T as Texel>::Storage);
 
     // Read a sub-region of a raw texture layer
     unsafe fn read_subregion(
@@ -221,10 +219,5 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     );
 
     // Read the whole raw textrue layer
-    unsafe fn read(
-        name: u32,
-        level: u8,
-        ptr: *mut <Self::T as Texel>::Storage,
-        texels: u32,
-    );
+    unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
 }

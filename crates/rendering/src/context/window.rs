@@ -1,5 +1,5 @@
 use super::{get_static_str, Context};
-use crate::{display::{ScopedCanvas, Display}, prelude::Viewport};
+use crate::{display::Display, prelude::Viewport};
 
 // A device is a software/hardware renderer that will be responsible for dealing with a specific window
 pub struct Device {
@@ -27,8 +27,8 @@ pub struct Window {
 
 impl Window {
     // Create a new window wrapper using a Glutin window
-    pub(crate) fn new(ctx: &mut Context, glutin: glutin::window::Window) -> Self {
-        let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(glutin.inner_size())).as_::<u16>();
+    pub(crate) fn new(_ctx: &mut Context, glutin: glutin::window::Window) -> Self {
+        let _size = vek::Extent2::<u32>::from(<(u32, u32)>::from(glutin.inner_size())).as_::<u16>();
 
         Self {
             glutin,

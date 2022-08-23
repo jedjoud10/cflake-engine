@@ -5,8 +5,8 @@ use world::World;
 
 use crate::{
     buffer::UniformBuffer,
-    display::{BlendMode, FaceCullMode, PrimitiveMode},
     context::{Context, Window},
+    display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
     others::Comparison,
     scene::{Camera, DirectionalLight, PointLight, Renderer},

@@ -1,5 +1,4 @@
-use crate::prelude::{TexelFormat, Texel};
-use super::{ScopedCanvasLayout, ToDisplayStorageDescriptor, DisplayStorageDescriptor};
+use super::{DisplayStorageDescriptor, ScopedCanvasLayout, ToDisplayStorageDescriptor};
 use seq_macro::seq;
 
 // Default scoped canvas layout does not contain any attachments
@@ -13,10 +12,9 @@ impl<'a> ScopedCanvasLayout<'a> for () {
     }
 }
 
-
 macro_rules! tuple_impls_color_layout {
     ( $( $name:ident )+, $max:tt) => {
-        impl<'a, $($name: ToDisplayStorageDescriptor<'a>),+> ScopedCanvasLayout<'a> for ($($name,)+) {            
+        impl<'a, $($name: ToDisplayStorageDescriptor<'a>),+> ScopedCanvasLayout<'a> for ($($name,)+) {
             fn descriptors(&self) -> Vec<DisplayStorageDescriptor<'a>> {
                 // TODO: Remove this hack
                 let mut vec = Vec::<DisplayStorageDescriptor<'a>>::new();

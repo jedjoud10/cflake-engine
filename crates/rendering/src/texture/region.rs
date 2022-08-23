@@ -1,6 +1,5 @@
 use super::Extent;
 
-
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents

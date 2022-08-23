@@ -68,7 +68,7 @@ impl Assets {
         let (name, extension) = path.file_name().and_then(OsStr::to_str)?.split_once('.')?;
 
         // If the asset has no extensions, we shall not check
-        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then(|| ())?;
+        ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(())?;
 
         // If we have no bytes currently cached, try to load and cache them
         if self.cached.get(&path).is_none() {

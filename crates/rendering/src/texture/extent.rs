@@ -1,6 +1,5 @@
 use std::num::NonZeroU8;
 
-
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy {
     // Get the surface area of a superficial rectangle that uses these extents as it's dimensions

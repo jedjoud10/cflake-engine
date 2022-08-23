@@ -187,7 +187,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         Some((start, end))
     }
 
-    // Fills a range in the buffer with a constant value 
+    // Fills a range in the buffer with a constant value
     pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
         unsafe {
             assert!(
