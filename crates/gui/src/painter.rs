@@ -171,9 +171,11 @@ impl Painter {
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
         uniforms.set_sampler("image", texture);
-        uniforms.set_vec2::<vek::Vec2<i32>>(
+        let pixels = vek::Vec2::from(rasterizer.display().size().as_::<f32>());
+        let ppt = rasterizer.display().raw().scale_factor() as f32;
+        uniforms.set_vec2::<vek::Vec2<f32>>(
             "resolution",
-            rasterizer.display().size().as_::<i32>().into(),
+            pixels / ppt,
         );
 
         // Render each clipped mesh using unsafe commands

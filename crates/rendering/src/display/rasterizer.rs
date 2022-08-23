@@ -76,16 +76,16 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         settings: RasterSettings,
     ) -> Self {
         // We must bind the display to the current opengl context
-        context.bind(gl::FRAMEBUFFER, display.name(), |_| {
-            let view = display.viewport();
-            println!("{:?}", view.extent);
-            gl::Viewport(
-                view.origin.x as i32,
-                view.origin.y as i32,
-                view.extent.w as i32,
-                view.extent.h as i32,
-            );
-        });
+        context.bind(gl::FRAMEBUFFER, display.name(), |_| {});
+
+        // Update the settings of the OpenGL viewport
+        let view = display.viewport();
+        gl::Viewport(
+            view.origin.x as i32,
+            view.origin.y as i32,
+            view.extent.w as i32,
+            view.extent.h as i32,
+        );
 
         // Get the OpenGL primitive type
         let primitive = match settings.primitive {
