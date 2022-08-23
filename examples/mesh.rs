@@ -53,7 +53,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::broadcast(255),
-        strength: 9.0,
+        strength: 12.0,
     };
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
@@ -114,9 +114,9 @@ fn init(world: &mut World) {
         albedo_map,
         normal_map,
         mask_map,
-        bumpiness: 1.4,
-        roughness: 0.,
-        metallic: 0.,
+        bumpiness: 2.0,
+        roughness: 1.0,
+        metallic: 1.0,
         tint: vek::Rgb::white(),
     });
 
@@ -179,7 +179,7 @@ struct Velocity {
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let shading = world.get::<ClusteredShading>().unwrap();
-    let _window = world.get_mut::<Window>().unwrap();
+    let window = world.get_mut::<Window>().unwrap();
 
     // Get the input resources
     let keyboard = world.get::<Keyboard>().unwrap();
@@ -188,10 +188,6 @@ fn update(world: &mut World) {
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let time = world.get::<Time>().unwrap();
-
-    // Lock the cursor to the center of the screen
-    //window.raw().set_cursor_grab(true).unwrap();
-    //window.raw().set_cursor_visible(false);
 
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them
@@ -244,7 +240,7 @@ fn debug(world: &mut World) {
     let mut ui = world.get_mut::<UserInterface>().unwrap();
     let ctx = ui.as_mut().as_mut();
     egui::Window::new("Test window").show(ctx, |ui| {
-        ui.add(egui::DragValue::new(&mut postprocessing.vignette_size)); // 02
+        ui.add(egui::DragValue::new(&mut postprocessing.exposure)); // 02
         ui.add(egui::DragValue::new(&mut postprocessing.vignette_strength)); // 8.5
         ui.add(egui::DragValue::new(
             &mut postprocessing.tonemapping_strength,

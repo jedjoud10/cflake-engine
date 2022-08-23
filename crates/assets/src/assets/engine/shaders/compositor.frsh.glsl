@@ -14,6 +14,12 @@ uniform float gamma;
 uniform float vignette_strength;
 uniform float vignette_size;
 
+vec3 jim_richard(vec3 x, float exposure) {
+	x *= exposure;  // Hardcoded Exposure Adjustment
+	vec3 y = max(vec3(0),x-0.004);
+	return (y*(6.2*y+.5))/(y*(6.2*y+1.7)+0.06);
+}
+
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 vec3 aces(vec3 x) {
     const float a = 2.51;
@@ -29,17 +35,15 @@ void main() {
 	
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
-	vec3 mapped = pow(sampled, vec3(1.0 / gamma));
-	//vec3 mapped = mix(sampled, aces(sampled), tonemapping_strength);
+	sampled = aces(sampled);
+	sampled = pow(sampled, vec3(1.0 / gamma));
 
-	/*
 	// Create a simple vignette
 	float vignette = length(abs(uv - 0.5));
 	vignette += vignette_size;
 	vignette = clamp(vignette, 0, 1);
 	vignette = pow(vignette, vignette_strength);
-	mapped = mix(mapped, vec3(0), vignette);
-	*/
+	sampled = mix(sampled, vec3(0), vignette);
 
-	frag = vec4(mapped, 1.0);
+	frag = vec4(sampled, 1.0);
 }

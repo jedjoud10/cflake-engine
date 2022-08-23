@@ -38,7 +38,6 @@ struct SunData {
 
 // Camera data struct
 struct CameraData {
-	vec3 forward;
 	vec3 view;
 	vec3 half_view;
 	vec3 position;
@@ -98,7 +97,7 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Constants
-	float roughness = max(surface.mask.r, 0.05);
+	float roughness = max(pow(surface.mask.r, 2), 0.05);
 	float metallic = pow(surface.mask.g, 5);
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
@@ -131,7 +130,8 @@ void main() {
 	// Create the data structs
 	SunData sun = SunData(light_dir, light_color, light_strength);
 	SurfaceData surface = SurfaceData(diffuse, mask, normal, m_position);
-	CameraData camera = CameraData(camera_forward, m_position - camera, normalize((m_position - camera + normal) / 2), camera);
+	vec3 view = normalize(camera - m_position);
+	CameraData camera = CameraData(view, normalize(view + light_dir), camera);
 	
 	// Color of the final result
 	frag = brdf(surface, camera, sun);

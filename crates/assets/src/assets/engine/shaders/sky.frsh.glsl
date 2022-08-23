@@ -26,7 +26,7 @@ void main() {
 
     // Add the sun as a bright circle
     float size = dot(sun_dir, normalize(m_position)) + ((sun_size - 1) / 90.0);
-    float circle = max(pow(size, 512 * sun_intensity), 0); 
+    float circle = max(pow(size, 15 * sun_intensity), 0); 
     color = mix(color, vec3(1.0), circle);
 
     frag = color;

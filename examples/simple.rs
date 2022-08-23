@@ -35,7 +35,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 255, 230),
-        strength: 7.0,
+        strength: 16.0,
     };
     ecs.insert((light, Rotation::rotation_x(90f32.to_radians())));
 
@@ -83,7 +83,7 @@ fn init(world: &mut World) {
         normal_map,
         mask_map,
         bumpiness: 1.4,
-        roughness: 0.2,
+        roughness: 1.0,
         metallic: 1.0,
         tint: vek::Rgb::white(),
     });
