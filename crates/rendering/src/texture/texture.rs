@@ -36,21 +36,41 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
     }
 
     // Download a sub-region of the mip-layer, without checking for safety
-    pub unsafe fn download_unchecked(
+    pub unsafe fn download_subregion_unchecked(
         &self,
         region: T::Region,
         data: *mut <T::T as Texel>::Storage,
+        texels: u32
     ) {
-        T::read_subregion(self.texture.name(), region, self.level, data, region.area());
+        T::read_subregion(self.texture.name(), region, self.level, data, texels);
     }
 
-    // Read the pixels from a layer (synchronous)
-    pub fn download(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
+    // Download the whole mip layer, without checking for safety
+    pub unsafe fn download_unchecked(
+        &self,
+        data: *mut <T::T as Texel>::Storage,
+        texels: u32,
+    ) {
+        T::read(self.texture.name(), self.level, data, texels);
+    }
+
+    // Read the texels from a sub-region in the layer
+    pub fn download_subregion(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
         assert_ne!(region.area(), 0, "Input data length cannot be zero");
 
         let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(region.area() as usize);
         unsafe {
-            self.download_unchecked(region, vec.as_mut_ptr());
+            self.download_subregion_unchecked(region, vec.as_mut_ptr(), region.area());
+        }
+        vec
+    }
+
+    // Read the texels from the whole layer
+    pub fn download(&self) -> Vec<<T::T as Texel>::Storage> {
+        let texels = self.texture.region().area();
+        let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(texels as usize);
+        unsafe {
+            self.download_unchecked(vec.as_mut_ptr(), texels);
         }
         vec
     }
@@ -85,36 +105,56 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
     }
 
     // Download a sub-region of the mip-layer, without checking for safety
-    pub unsafe fn download_unchecked(
+    pub unsafe fn download_subregion_unchecked(
         &self,
         region: T::Region,
         data: *mut <T::T as Texel>::Storage,
+        texels: u32
     ) {
-        T::read_subregion(self.texture.name(), region, self.level, data, region.area());
+        T::read_subregion(self.texture.name(), region, self.level, data, texels);
     }
 
-    // Read the pixels from a layer (synchronous)
-    pub fn download(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
+    // Download the whole mip layer, without checking for safety
+    pub unsafe fn download_unchecked(
+        &self,
+        data: *mut <T::T as Texel>::Storage,
+        texels: u32,
+    ) {
+        T::read(self.texture.name(), self.level, data, texels);
+    }
+
+    // Read the texels from a sub-region in the layer
+    pub fn download_subregion(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
         assert_ne!(region.area(), 0, "Input data length cannot be zero");
 
         let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(region.area() as usize);
         unsafe {
-            self.download_unchecked(region, vec.as_mut_ptr());
+            self.download_subregion_unchecked(region, vec.as_mut_ptr(), region.area());
+        }
+        vec
+    }
+
+    // Read the texels from the whole layer
+    pub fn download(&self) -> Vec<<T::T as Texel>::Storage> {
+        let texels = self.texture.region().area();
+        let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(texels as usize);
+        unsafe {
+            self.download_unchecked(vec.as_mut_ptr(), texels);
         }
         vec
     }
 
     // Update a sub-region of the mip-layer, but without checking for safety
-    pub unsafe fn upload_unhecked(
+    pub unsafe fn upload_subregion_unhecked(
         &mut self,
         region: T::Region,
         data: *const <T::T as Texel>::Storage,
     ) {
-        T::update_subregion(self.texture.name(), region, data)
+        T::update_subregion(self.texture.name(), region, self.level, data)
     }
 
     // Update a sub-region of the mip-layer using a data slice (synchronous)
-    pub fn upload(&mut self, region: T::Region, data: &[<T::T as Texel>::Storage]) {
+    pub fn upload_subregion(&mut self, region: T::Region, data: &[<T::T as Texel>::Storage]) {
         assert!(
             (data.len() as u32) == region.area(),
             "Input data length is not equal to region area surface"
@@ -124,11 +164,19 @@ impl<'a, T: Texture> MipLayerMut<'a, T> {
 
         // Le update texture subimage
         unsafe {
-            self.upload_unhecked(region, data.as_ptr());
+            self.upload_subregion_unhecked(region, data.as_ptr());
         }
     }
 
-    // Read the pixels from a layer (synchronous)
+    // Set the contents of a sub-region of the texture layer to the given value
+    pub fn splat_subregion(&mut self, region: T::Region, val: <T::T as Texel>::Storage) {
+
+    }
+
+    // Set the whole contents of the texture layer to the specified value
+    pub fn splat(&mut self, val: <T::T as Texel>::Storage) {
+        
+    }
 }
 
 // Texture dimensions traits that are simply implemented for extents
@@ -459,18 +507,48 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         ptr: *const <Self::T as Texel>::Storage,
     );
 
-    // Update a sub-region of the raw texture
+    // Update a sub-region of a raw texture layer
     unsafe fn update_subregion(
         name: u32,
         region: Self::Region,
+        level: u8,
         ptr: *const <Self::T as Texel>::Storage,
     );
 
-    // Read a sub-region of the raw texture
-    // PS: This will read the texture storage for only one level
+    // Update a whole raw texture layer
+    unsafe fn update(
+        name: u32,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    )
+
+    // Fills a sub-region of a raw texture layer with a constant value
+    unsafe fn splat_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    );
+
+    // Fills the whole raw texture layer with a constant value
+    unsafe fn splat(
+        name: u32,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    );
+
+    // Read a sub-region of a raw texture layer
     unsafe fn read_subregion(
         name: u32,
         region: Self::Region,
+        level: u8,
+        ptr: *mut <Self::T as Texel>::Storage,
+        texels: u32,
+    );
+
+    // Read the whole raw textrue layer
+    unsafe fn read(
+        name: u32,
         level: u8,
         ptr: *mut <Self::T as Texel>::Storage,
         texels: u32,
