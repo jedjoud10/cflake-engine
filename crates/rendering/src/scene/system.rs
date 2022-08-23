@@ -241,11 +241,15 @@ fn rendering(world: &mut World) {
         vek::Vec2::<i32>::from(rasterizer.display().size().as_::<i32>()),
     );
     uniforms.set_sampler("color", &shading.color_tex);
+
+    // Set post processing uniforms
     uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);
     uniforms.set_scalar("exposure", pp.exposure);
     uniforms.set_scalar("gamma", pp.gamma);
     uniforms.set_scalar("vignette_strength", pp.vignette_strength);
     uniforms.set_scalar("vignette_size", pp.vignette_size);
+
+    // Render the screen quad
     rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
 }
 
@@ -285,6 +289,11 @@ fn clear(world: &mut World) {
         .canvas_mut()
         .clear(Some(vek::Rgb::black()), Some(1.0), None);
     */
+
+    // Clear the screen textures
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    shading.color_tex(extent);
+    shading.depth_tex.resize(extent);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
