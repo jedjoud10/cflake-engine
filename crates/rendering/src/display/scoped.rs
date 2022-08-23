@@ -1,7 +1,7 @@
 use std::{
     collections::hash_map::{DefaultHasher, Entry},
     hash::{Hash, Hasher},
-    marker::PhantomData,
+    marker::PhantomData, time::Duration,
 };
 
 use crate::{
@@ -72,7 +72,7 @@ impl<'a, T: Texel> ToDisplayStorageDescriptor<'a> for &'a mut Texture2D<T> {
         DisplayStorageDescriptor::TextureLayer2D {
             texture_name: self.name(),
             size: self.dimensions(),
-            level: 1,
+            level: 0,
             texel: T::ENUM_FORMAT,
             _phantom: Default::default(),
         }
@@ -109,12 +109,9 @@ pub trait ScopedCanvasLayout<'a> {
         let mut depth = false;
         let mut stencil = false;
 
-        // Check if the sizes are all the same as well
-        let main_size = descriptors[0].size();
-
         // Check if the texel format and attachment sizes are both valid
-        descriptors.iter().any(|desc| {
-            let format_valid = match desc.texel() {
+        descriptors.iter().all(|desc| {
+            match desc.texel() {
                 TexelFormat::Depth => {
                     if !depth {
                         depth = true;
@@ -132,9 +129,7 @@ pub trait ScopedCanvasLayout<'a> {
                     }
                 }
                 _ => true,
-            };
-            let size_valid = desc.size() == main_size;
-            !format_valid || !size_valid
+            }
         })
     }
 }
@@ -146,10 +141,16 @@ pub struct Viewport {
     pub extent: vek::Extent2<u16>,
 }
 
+// This is the raw framebuffer storage that will be stored in the context
+pub(crate) struct RawFramebuffer {
+    pub name: u32,
+    pub current_countdown: Duration,
+    pub countdown_reset_value: Duration,
+}
+
 // A display is a type of wrapper around raw OpenGL framebuffers
 // Display have a specific rust lifetime, although they might/might not destroy their underlying framebuffer if needed
 pub struct ScopedCanvas<'a, L: ScopedCanvasLayout<'a>> {
-    lifetime_hint: RawFramebufferLifeHint,
     layout: L,
     view: Viewport,
     name: u32,
@@ -160,7 +161,6 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
     // Create a default viewport without checking for safety (this is only called internally)
     pub fn new_default_unchecked<'b>(view: Viewport) -> ScopedCanvas<'b, ()> {
         ScopedCanvas {
-            lifetime_hint: RawFramebufferLifeHint::NeverDelete,
             layout: (),
             view,
             name: 0,
@@ -172,7 +172,6 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
     pub fn new(
         context: &mut Context,
         layout: L,
-        hint: RawFramebufferLifeHint,
         view: Viewport,
     ) -> Option<Self> {
         // Check if the layout is even valid first
@@ -192,21 +191,82 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
             .finish();
 
         // Check if the context contains an underlying framebuffer with the same layout/attachments
-        let mut borrowed = context.framebuffers.borrow_mut();
-        match borrowed.entry(uid) {
-            Entry::Occupied(old_fb_name) => {
-                // We have a framebuffer that we can re-use
+        match context.framebuffers.entry(uid) {
+            Entry::Occupied(mut old_fb_name) => {
+                // Reset the countdown of the raw backing framebuffer
+                let reset = old_fb_name.get().countdown_reset_value;
+                old_fb_name.get_mut().current_countdown = reset;
+
+                // Re-use the backing framebuffer
                 return Some(Self {
-                    lifetime_hint: hint,
                     layout,
                     view,
-                    name: old_fb_name.get().0,
+                    name: old_fb_name.get().name,
                     _phantom: Default::default(),
                 });
             }
             Entry::Vacant(_vacant) => {
                 // We don't have a framebuffer we can re-use, so we have to make a new one from scratch
-                todo!()
+                let name = unsafe {
+                    let mut name = 0u32;
+                    gl::CreateFramebuffers(1, &mut name);
+                    gl::BindFramebuffer(gl::FRAMEBUFFER, name);
+                    name
+                };
+        
+                // Set the textures / render buffers
+                let mut color_attachment_n = 0;
+                for descriptor in layout.descriptors().iter() {
+                    match descriptor {
+                        DisplayStorageDescriptor::TextureLayer2D {
+                            texture_name,
+                            level,
+                            texel, .. 
+                        } => {
+                            let attachment = match texel {
+                                TexelFormat::Color | TexelFormat::GammaCorrectedColor => { 
+                                    let attachment = gl::COLOR_ATTACHMENT0 + color_attachment_n;
+                                    color_attachment_n += 1;
+                                    attachment
+                                },
+                                TexelFormat::Depth => gl::DEPTH_ATTACHMENT,
+                                TexelFormat::Stencil => gl::STENCIL_ATTACHMENT,
+                            };
+
+                            unsafe {
+                                gl::NamedFramebufferTexture(name, attachment, *texture_name, *level as i32);
+                            }
+                        },
+                    };
+                }
+        
+                // Set the color attachment draw buffers
+                unsafe {
+                    let vec = (0..color_attachment_n).map(|i| gl::COLOR_ATTACHMENT0 + i).collect::<Vec<u32>>();
+                    gl::NamedFramebufferDrawBuffers(name, color_attachment_n as i32, vec.as_ptr());
+                }        
+        
+                // Check the framebuffer state
+                unsafe {
+                    let state = gl::CheckNamedFramebufferStatus(name, gl::FRAMEBUFFER);
+                    if state != gl::FRAMEBUFFER_COMPLETE {
+                        panic!("Framebuffer initialization error {state:X}");
+                    }
+                }    
+
+                // Add the raw backing framebuffer to the context
+                context.framebuffers.insert(uid, RawFramebuffer {
+                    name,
+                    current_countdown: Duration::from_secs(2),
+                    countdown_reset_value: Duration::from_secs(2),
+                });
+
+                Some(Self {
+                    layout,
+                    view,
+                    name,
+                    _phantom: PhantomData::default(),
+                })        
             }
         }
     }
@@ -214,11 +274,6 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
     // Get the underlying viewport region
     pub fn viewport(&self) -> Viewport {
         self.view
-    }
-
-    // Get the lifetime hint for the underlying framebuffer
-    pub fn hint(&self) -> RawFramebufferLifeHint {
-        self.lifetime_hint
     }
 }
 
@@ -237,11 +292,4 @@ impl<'a, L: ScopedCanvasLayout<'a>> Display for ScopedCanvas<'a, L> {
     fn name(&self) -> u32 {
         self.name
     }
-}
-
-// This tells the main graphics context when it should delete a display's underlying framebuffer
-#[derive(Clone, Copy)]
-pub enum RawFramebufferLifeHint {
-    DeleteWhenDropped,
-    NeverDelete,
 }

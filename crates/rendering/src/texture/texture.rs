@@ -136,6 +136,19 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get the texture's dimensions
     fn dimensions(&self) -> <Self::Region as Region>::E;
 
+    // Get the dimensions of a specific mip layer in this texture
+    fn dimensions_of_layer(&self, level: u8) -> Option<<Self::Region as Region>::E> {
+        if level == 0 {
+            Some(self.dimensions())
+        } else if level < self.levels().get() {
+            Some(unsafe { 
+                <<Self::Region as Region>::E as Extent>::get_layer_extent(self.name(), level)
+            })
+        } else {
+            None
+        }
+    }
+
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 

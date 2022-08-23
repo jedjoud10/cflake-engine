@@ -1,32 +1,24 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, rc::Rc};
+use std::{any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, rc::Rc, time::Duration, ptr::null};
 
 use crate::{
     pipeline::{CreatePipeline, PipeId, Pipeline},
-    prelude::RawFramebufferLifeHint,
+    prelude::{RawFramebuffer},
 };
-
 use super::get_static_str;
 
-// HashMap that uses the OpenGL types of ojects to keep track of which objects are bound
-pub type BindingHashMap = HashMap<u32, u32, BuildHasherDefault<NoHashHasher<u32>>>;
-
 // HashMap that contains framebuffers and their layout identifiers
-pub type FramebufferHashMap =
-    HashMap<u64, (u32, RawFramebufferLifeHint), BuildHasherDefault<NoHashHasher<u64>>>;
+pub(crate) type FramebufferHashMap = HashMap<u64, RawFramebuffer, BuildHasherDefault<NoHashHasher<u64>>>;
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
     // Raw Glutin context
     ctx: RawContext<PossiblyCurrent>,
 
-    // The currently bound objects (since OpenGL uses a state machine)
-    pub(crate) bound: BindingHashMap,
-
     // List of generated framebuffers and their layout hashes
-    pub(crate) framebuffers: Rc<RefCell<FramebufferHashMap>>,
+    pub(crate) framebuffers: FramebufferHashMap,
 
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
@@ -41,33 +33,15 @@ impl Context {
             // Always have OpenGL debugging enabled
             gl::Enable(gl::DEBUG_OUTPUT);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
-            //gl::DebugMessageCallback(Some(super::callback), null());
+            gl::DebugMessageCallback(Some(super::callback), null());
         }
 
         // Create el safe wrapper
         Self {
             ctx,
-            bound: Default::default(),
             framebuffers: Default::default(),
             pipelines: Default::default(),
         }
-    }
-
-    // This will check if an object of a unique target type is currently bound to the context
-    pub(crate) fn is_bound(&self, target: u32, object: u32) -> bool {
-        self.bound
-            .get(&target)
-            .map(|&bound| bound == object)
-            .unwrap_or_default()
-    }
-
-    // This will bind an object if it wasn't bound already
-    // This will execute the "update" callback whenever we must bind the object
-    pub(crate) fn bind(&mut self, target: u32, object: u32, update: impl FnOnce(u32)) {
-        // Bind the raw object first
-        (!self.is_bound(target, object)).then(|| update(object));
-
-        *self.bound.entry(target).or_insert(object) = object;
     }
 
     // Register a new pipeline with the specified init settings
@@ -98,9 +72,13 @@ impl Context {
     }
 
     // This is a method called at the end of every frame to release temporary values like binldess textures and framebuffers
-    pub(crate) fn release_temporary(&mut self) {
-        let mut borrowed = self.framebuffers.borrow_mut();
-        borrowed.retain(|_uid, (_name, _hint)| false);
+    pub(crate) fn release_temporary(&mut self, passed: Duration) {
+        self.framebuffers.retain(|_, raw| {
+            match raw.current_countdown.checked_sub(passed) {
+                Some(val) => { raw.current_countdown = val; true },
+                None => false,
+            } 
+        });
     }
 
     // Get the raw Glutin OpenGL context wrapper

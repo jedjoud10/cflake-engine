@@ -39,5 +39,5 @@ void main() {
 	vignette = pow(vignette, vignette_strength);
 	mapped = mix(mapped, vec3(0), vignette);
 
-	frag = vec4(mapped, 1.0);
+	frag = vec4(sampled, 1.0);
 }

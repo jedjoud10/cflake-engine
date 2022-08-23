@@ -230,9 +230,9 @@ impl<'uniforms> Uniforms<'uniforms> {
     // Create a temporary uniforms wrapper using a program and it's inner introspection data
     pub(crate) fn new(program: &'uniforms mut Program, ctx: &mut Context) -> Self {
         // Bind the program to the global state
-        ctx.bind(gl::PROGRAM, program.name(), |obj| unsafe {
-            gl::UseProgram(obj)
-        });
+        unsafe {
+            gl::UseProgram(program.name());
+        }
 
         Self {
             texture_units: AHashMap::with_capacity(program.uniform_locations.len()),

@@ -1,10 +1,10 @@
 use super::{CreatePipeline, Pipeline};
 use crate::{
     context::{Context, Window},
-    display::{RasterSettings, RawFramebufferLifeHint},
-    material::Material,
+    display::{RasterSettings},
+    material::{Material, DefaultMaterialResources},
     mesh::{Mesh, Surface},
-    prelude::Shader,
+    prelude::{Shader, ScopedCanvas, Viewport, Display, Texture, Region},
     scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
 };
 use assets::Assets;
@@ -20,19 +20,19 @@ pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
-    fn render(&self, world: &mut World, _stats: &mut RenderedFrameStats) {
-        let _property_block_resources = M::fetch_resources(world);
+    fn render(&self, world: &mut World, stats: &mut RenderedFrameStats) {
+        let mut property_block_resources = M::fetch_resources(world);
         let ecs = world.get::<Scene>().unwrap();
-        let _materials = world.get::<Storage<M>>().unwrap();
+        let materials = world.get::<Storage<M>>().unwrap();
         let meshes = world.get::<Storage<Mesh>>().unwrap();
-        let _window = world.get::<Window>().unwrap();
+        let window = world.get::<Window>().unwrap();
         let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
         let shading = &mut *_shading;
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
-        let _ctx = world.get_mut::<Context>().unwrap();
+        let mut ctx = world.get_mut::<Context>().unwrap();
 
         // How exactly we should rasterize the surfaces
-        let _settings: RasterSettings = RasterSettings {
+        let settings = RasterSettings {
             depth_test: M::depth_comparison(),
             scissor_test: None,
             primitive: M::primitive_mode(),
@@ -42,7 +42,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
         let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
-        let _query = query.filter(|(renderer, surface)| {
+        let query = query.filter(|(renderer, surface)| {
             let renderer = renderer.enabled();
             let mesh = meshes.get(&surface.mesh());
             let buffers = mesh.vertices().layout().contains(M::requirements())
@@ -52,22 +52,20 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(shading.main_camera.unwrap()).unwrap();
-        let (_camera, _camera_location, _camera_rotation) = camera_entry
+        let (camera, camera_location, camera_rotation) = camera_entry
             .as_view::<(&Camera, &Location, &Rotation)>()
             .unwrap();
 
         // Get the main directional light
         let light_entry = ecs.entry(shading.main_directional_light.unwrap()).unwrap();
-        let (_directional_light, _directional_light_rotation) = light_entry
+        let (directional_light, directional_light_rotation) = light_entry
             .as_view::<(&DirectionalLight, &Rotation)>()
             .unwrap();
 
         // Create a new rasterizer so we can draw the objects onto the world
-        let _shader = shaders.get_mut(&self.shader);
-        let _hint = RawFramebufferLifeHint::NeverDelete;
-        /*
-        let scoped = ScopedCanvas::new(&mut ctx, (&mut shading.color_tex, &mut shading.depth_tex), hint).unwrap();
-        let (mut rasterizer, mut uniforms) = todo!;
+        let shader = shaders.get_mut(&self.shader);
+        let mut scoped = ScopedCanvas::new(&mut ctx, (&mut shading.color_tex, &mut shading.depth_tex), window.viewport()).unwrap();
+        let (mut rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 
         let main = DefaultMaterialResources {
             camera,
@@ -126,7 +124,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 stats.tris += mesh.triangles().len() as u32;
             }
         }
-        */
     }
 }
 

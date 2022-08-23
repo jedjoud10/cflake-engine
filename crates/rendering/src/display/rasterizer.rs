@@ -76,7 +76,7 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         settings: RasterSettings,
     ) -> Self {
         // We must bind the display to the current opengl context
-        context.bind(gl::FRAMEBUFFER, display.name(), |_| {});
+        gl::BindFramebuffer(gl::FRAMEBUFFER, display.name());
 
         // Update the settings of the OpenGL viewport
         let view = display.viewport();
