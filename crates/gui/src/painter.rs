@@ -170,17 +170,16 @@ impl Painter {
 
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
-        uniforms.set_sampler("test", texture);
+        uniforms.set_sampler("image", texture);
         uniforms.set_vec2::<vek::Vec2<i32>>(
             "resolution",
-            rasterizer.size().as_::<i32>().into(),
+            rasterizer.display().size().as_::<i32>().into(),
         );
 
         // Render each clipped mesh using unsafe commands
         for mesh in meshes {
             self.vertices.clear();
             self.indices.clear();
-
             self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
             self.indices.extend_from_slice(mesh.1.indices.as_slice());
 

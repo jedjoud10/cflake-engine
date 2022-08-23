@@ -50,6 +50,46 @@ impl Window {
     pub fn device(&self) -> &Device {
         &self.device
     }
+
+    // Clear the whole window using the proper flags and values
+    pub fn clear(
+        &mut self,
+        color: Option<vek::Rgb<f32>>,
+        depth: Option<f32>,
+        stencil: Option<i32>,
+    ) {
+        let mut flags = 0u32;
+
+        // Set the background color values
+        if let Some(color) = color {
+            unsafe {
+                gl::ClearColor(color.r, color.g, color.b, 1.0);
+                flags |= gl::COLOR_BUFFER_BIT
+            }
+        }
+
+        // Set the background depth values
+        if let Some(depth) = depth {
+            unsafe {
+                gl::ClearDepth(depth as f64);
+                flags |= gl::DEPTH_BUFFER_BIT;
+            }
+        }
+
+        // Set the background stencil values
+        if let Some(stencil) = stencil {
+            unsafe {
+                gl::ClearStencil(stencil);
+                flags |= gl::STENCIL_BUFFER_BIT;
+            }
+        }
+
+        // Clear the whole canvas using the proper bitwise flags
+        unsafe {
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, 0);
+            gl::Clear(flags);
+        }
+    }
 }
 
 impl Display for Window {

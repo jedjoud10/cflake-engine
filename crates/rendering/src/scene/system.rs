@@ -278,22 +278,13 @@ fn window(world: &mut World, event: &mut WindowEvent) {
 
 // Frame startup (clearing the frame at the start of the frame)
 fn clear(world: &mut World) {
-    /*
     let mut window = world.get_mut::<Window>().unwrap();
-    window
-        .canvas_mut()
-        .clear(Some(vek::Rgb::black()), Some(1.0), None);
-
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-    shading
-        .canvas_mut()
-        .clear(Some(vek::Rgb::black()), Some(1.0), None);
-    */
+    window.clear(Some(vek::Rgb::black()), Some(1.0), None);
 
     // Clear the screen textures
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
     shading.color_tex.get_layer_mut(0).unwrap().splat(vek::Vec3::zero());
-    shading.depth_tex.get_layer_mut(0).unwrap().splat(0.0);
+    shading.depth_tex.get_layer_mut(0).unwrap().splat(0);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
