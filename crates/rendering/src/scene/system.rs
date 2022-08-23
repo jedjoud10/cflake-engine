@@ -289,7 +289,7 @@ fn clear(world: &mut World) {
         .get_layer_mut(0)
         .unwrap()
         .splat(vek::Vec3::zero());
-    shading.depth_tex.get_layer_mut(0).unwrap().splat(0);
+    shading.depth_tex.get_layer_mut(0).unwrap().splat(u32::MAX);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context

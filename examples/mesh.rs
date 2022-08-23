@@ -87,7 +87,7 @@ fn init(world: &mut World) {
     .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
-    let _import = MeshImportSettings {
+    let import = MeshImportSettings {
         mode: BufferMode::Static,
         use_normals: true,
         use_tangents: true,
@@ -103,12 +103,14 @@ fn init(world: &mut World) {
     };
 
     // Create the default cube primitive mesh
-    let cube = Cuboid {
-        center: vek::Vec3::zero(),
-        extent: vek::Extent3::one(),
-    }
-    .generate(&mut ctx, MeshImportSettings::default());
-    let cube = meshes.insert(cube);
+    let cube = meshes.insert(assets.load_with::<Mesh>(
+        "engine/meshes/cube.obj",
+        (
+            &mut ctx,
+            import,
+        ),
+    )
+    .unwrap());
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard {
