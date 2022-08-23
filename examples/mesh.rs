@@ -53,14 +53,14 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::broadcast(255),
-        strength: 2.0,
+        strength: 9.0,
     };
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
     // Create the default albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/textures/albedo.jpg",
+            "user/textures/metal/diffuse.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -69,21 +69,18 @@ fn init(world: &mut World) {
     // Create the default normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/textures/normal.jpg",
+            "user/textures/metal/normal.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
     // Create the default mask map texture
-    let mask_map = MaskMap::new(
-        &mut ctx,
-        TextureMode::Static,
-        vek::Extent2::one(),
-        Sampling::default(),
-        MipMaps::Disabled,
-        Some(&[vek::Vec2::zero()]),
-    )
+    let mask_map = assets
+        .load_with::<MaskMap>(
+            "user/textures/metal/mask.jpg",
+            (&mut ctx, TextureImportSettings::default()),
+        )
     .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 

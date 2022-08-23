@@ -1,9 +1,12 @@
 use cflake_engine::prelude::{vek::Lerp, *};
 
+const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
+
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
     App::default()
         .set_window_title("cflake engine simple example")
+        .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
         .execute();
 }
@@ -32,14 +35,14 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 255, 230),
-        strength: 1.0,
+        strength: 7.0,
     };
     ecs.insert((light, Rotation::rotation_x(90f32.to_radians())));
 
     // Create the missing albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "engine/textures/missing.png",
+            "user/textures/metal/diffuse.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -48,22 +51,19 @@ fn init(world: &mut World) {
     // Create the default normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "engine/textures/bumps.png",
+            "user/textures/metal/normal.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
     // Create the default mask map texture
-    let mask_map = MaskMap::new(
-        &mut ctx,
-        TextureMode::Static,
-        vek::Extent2::one(),
-        Sampling::default(),
-        MipMaps::Disabled,
-        Some(&[vek::Vec2::zero()]),
-    )
-    .unwrap();
+    let mask_map = assets
+        .load_with::<MaskMap>(
+            "user/textures/metal/mask.jpg",
+            (&mut ctx, TextureImportSettings::default()),
+        )
+        .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
@@ -83,8 +83,8 @@ fn init(world: &mut World) {
         normal_map,
         mask_map,
         bumpiness: 1.4,
-        roughness: 0.,
-        metallic: 0.,
+        roughness: 0.2,
+        metallic: 1.0,
         tint: vek::Rgb::white(),
     });
 
