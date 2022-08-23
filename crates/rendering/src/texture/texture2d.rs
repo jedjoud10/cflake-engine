@@ -123,13 +123,14 @@ impl<T: Texel> Texture for Texture2D<T> {
     unsafe fn update_subregion(
         name: u32,
         region: Self::Region,
+        level: u8,
         ptr: *const <Self::T as Texel>::Storage,
     ) {
         let origin = region.origin();
         let extent = region.extent();
         gl::TextureSubImage2D(
             name,
-            0,
+            level as i32,
             origin.x as i32,
             origin.y as i32,
             extent.w as i32,
@@ -137,6 +138,43 @@ impl<T: Texel> Texture for Texture2D<T> {
             T::FORMAT,
             T::TYPE,
             ptr as *const c_void,
+        );
+    }
+
+    unsafe fn splat_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    ) {
+        let origin = region.origin();
+        let extent = region.extent();
+        gl::ClearTexSubImage(
+            name,
+            level as i32,
+            origin.x as i32,
+            origin.y as i32,
+            0, 
+            extent.w as i32, 
+            extent.h as i32,
+            1,
+            T::FORMAT,
+            T::TYPE,
+            ptr as *const c_void
+        );
+    }
+
+    unsafe fn splat(
+            name: u32,
+            level: u8,
+            ptr: *const <Self::T as Texel>::Storage,
+        ) {
+        gl::ClearTexImage(
+            name,
+            level as i32,
+            T::FORMAT,
+            T::TYPE,
+            ptr as *const c_void
         );
     }
 
@@ -164,6 +202,23 @@ impl<T: Texel> Texture for Texture2D<T> {
             size as i32,
             ptr as *mut c_void,
         );
+    }
+
+    unsafe fn read(
+        name: u32,
+        level: u8,
+        ptr: *mut <Self::T as Texel>::Storage,
+        texels: u32,
+    ) {
+        let size = texels as u32 * T::bytes();
+        gl::GetTextureImage(
+            name,
+            level as i32,
+            T::FORMAT,
+            T::TYPE,
+            size as i32,
+            ptr as *mut c_void
+        )
     }
 }
 

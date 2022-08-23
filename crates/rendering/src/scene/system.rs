@@ -292,8 +292,8 @@ fn clear(world: &mut World) {
 
     // Clear the screen textures
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-    shading.color_tex(extent);
-    shading.depth_tex.resize(extent);
+    shading.color_tex.get_layer_mut(0).unwrap().splat(vek::Vec3::zero());
+    shading.depth_tex.get_layer_mut(0).unwrap().splat(0.0);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context

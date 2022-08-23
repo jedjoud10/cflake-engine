@@ -187,7 +187,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         Some((start, end))
     }
 
-    // Clear the values specified by the range to a new value
+    // Fills a range in the buffer with a constant value 
     pub fn splat_range(&mut self, val: T, range: impl RangeBounds<usize>) {
         unsafe {
             assert!(
@@ -404,7 +404,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
     }
 
-    // Clear the whole contents of the buffer to the specified value
+    // Fills the whole buffer with a constant value
     pub fn splat(&mut self, val: T) {
         self.splat_range(val, ..)
     }
