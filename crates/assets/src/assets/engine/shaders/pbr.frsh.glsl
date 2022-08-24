@@ -5,10 +5,12 @@ out vec3 frag;
 uniform float roughness;
 uniform float bumpiness;
 uniform float metallic;
+uniform float ambient_occlusion;
 uniform vec3 tint;
 uniform sampler2D albedo;
 uniform sampler2D normal;
 uniform sampler2D mask;
+uniform vec2 scale;
 
 // Uniforms coming from the camera
 uniform vec3 camera;
@@ -46,7 +48,7 @@ struct CameraData {
 // Surface data struct 
 struct SurfaceData {
 	vec3 diffuse;
-	vec2 mask;
+	vec3 mask;
 	vec3 normal;
 	vec3 position;
 };
@@ -97,8 +99,9 @@ vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Constants
-	float roughness = max(pow(surface.mask.r, 2), 0.05);
+	float roughness = max(surface.mask.r, 0.05);
 	float metallic = pow(surface.mask.g, 5);
+	float visibility = min(surface.mask.b, 1.0);
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
 	// Ks and Kd
@@ -108,14 +111,15 @@ vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, sun.backward, surface.normal, camera.half_view);
 	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0);
+	outgoing += 0.03 * surface.diffuse * visibility;
 	return outgoing;
 }
 
 void main() {
 	// Fetch the textures and their texels
-    vec3 diffuse = texture(albedo, m_tex_coord).xyz;
-	vec3 bumps = texture(normal, m_tex_coord).xyz * 2.0 - 1.0;
-	vec2 mask = texture(mask, m_tex_coord).xy * vec2(roughness, metallic);
+    vec3 diffuse = texture(albedo, m_tex_coord * scale).xyz;
+	vec3 bumps = texture(normal, m_tex_coord * scale).xyz * 2.0 - 1.0;
+	vec3 mask = texture(mask, m_tex_coord * scale).xyz * vec3(roughness, metallic, 1 / ambient_occlusion);
 
     // Calculate the normal mapped bumpiness
 	bumps.xy *= bumpiness;

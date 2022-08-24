@@ -5,7 +5,7 @@ use world::{Handle, Read, Storage};
 use crate::{
     context::Context,
     mesh::EnabledAttributes,
-    prelude::SRGBA,
+    prelude::{SRGBA, RGBA},
     scene::Renderer,
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB},
@@ -16,7 +16,7 @@ use super::{DefaultMaterialResources, Material};
 // PBR maps
 pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
 pub type NormalMap = Texture2D<RGB<Ranged<u8>>>;
-pub type MaskMap = Texture2D<RG<Ranged<u8>>>; // (r = roughness, g = metallic)
+pub type MaskMap = Texture2D<RGBA<Ranged<u8>>>; // (r = roughness, g = metallic, b = AO)
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
@@ -26,8 +26,10 @@ pub struct Standard {
     pub mask_map: Handle<MaskMap>,
     pub bumpiness: f32,
     pub roughness: f32,
+    pub ambient_occlusion: f32,
     pub metallic: f32,
     pub tint: vek::Rgb<f32>,
+    pub scale: vek::Vec2<f32>,
 }
 
 impl<'w> Material<'w> for Standard {
@@ -86,6 +88,8 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("bumpiness", instance.bumpiness);
         uniforms.set_scalar("roughness", instance.roughness);
         uniforms.set_scalar("metallic", instance.metallic);
+        uniforms.set_scalar("ambient_occlusion", instance.ambient_occlusion);
+        uniforms.set_vec2("scale", instance.scale);
 
         let albedo_map = albedo_maps.get(&instance.albedo_map);
         let normal_map = normal_maps.get(&instance.normal_map);

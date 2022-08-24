@@ -84,27 +84,12 @@ fn init(world: &mut World) {
     .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
-    let import = MeshImportSettings {
-        mode: BufferMode::Static,
-        use_normals: true,
-        use_tangents: true,
-        use_tex_coords: true,
-        invert_triangle_ordering: false,
-        invert_normals: false,
-        invert_tangents: false,
-        invert_vertical_tex_coord: false,
-        invert_horizontal_tex_coord: false,
-        translation: vek::Vec3::zero(),
-        rotation: vek::Quaternion::zero(),
-        scale: vek::Vec3::one(),
-    };
-
     // Create the default cube primitive mesh
     let cube = meshes.insert(assets.load_with::<Mesh>(
-        "engine/meshes/cube.obj",
+        "engine/meshes/sphere.obj",
         (
             &mut ctx,
-            import,
+            MeshImportSettings::default(),
         ),
     )
     .unwrap());
@@ -114,9 +99,11 @@ fn init(world: &mut World) {
         albedo_map,
         normal_map,
         mask_map,
-        bumpiness: 2.0,
+        bumpiness: 0.4,
         roughness: 1.0,
+        ambient_occlusion: 1.0,
         metallic: 1.0,
+        scale: vek::Vec2::broadcast(5.0),
         tint: vek::Rgb::white(),
     });
 
