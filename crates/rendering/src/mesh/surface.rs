@@ -14,9 +14,6 @@ pub struct Surface<M: for<'w> Material<'w>> {
     mesh: Handle<Mesh>,
     material: Handle<M>,
 
-    // Bounds of the surface
-    bounds: Option<AABB>,
-
     // This does nothing and it has a size of 0, but let's keep it for clarity
     id: PipeId<SpecializedPipeline<M>>,
 }
@@ -31,19 +28,8 @@ impl<M: for<'w> Material<'w>> Surface<M> {
         Self {
             mesh,
             material,
-            bounds: None,
             id,
         }
-    }
-
-    // Set the AABB bounds of this surface manually
-    pub fn set_aabb(&mut self, aabb: AABB) {
-        self.bounds = Some(aabb);
-    }
-
-    // Get the AABB bounds
-    pub fn aabb(&self) -> &Option<AABB> {
-        &self.bounds
     }
 
     // Get the mesh handle

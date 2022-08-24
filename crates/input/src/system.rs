@@ -1,5 +1,5 @@
 use crate::{KeyState, Keyboard, Mouse};
-use glutin::event::DeviceEvent;
+use glutin::event::{DeviceEvent, ElementState};
 use world::{Events, Init, Stage, Update, World};
 
 // This system will automatically insert the input resource and update it each frame using the window events
@@ -45,10 +45,25 @@ pub fn system(events: &mut Events) {
             // Update keyboard key states
             DeviceEvent::Key(key) => {
                 if let Some(keycode) = key.virtual_keycode {
-                    keyboard.keys.insert(keycode, key.state.into());
+                    match keyboard.keys.entry(keycode) {
+                        std::collections::hash_map::Entry::Occupied(mut current) => {
+                            // Check if the key is "down" (either pressed or held)
+                            let down = match *current.get() {
+                                KeyState::Pressed | KeyState::Held => true,
+                                _ => false
+                            };
+                            
+                            // If the key is pressed while it is currently down, it repeated itself, and we must ignore it                       
+                            if down ^ (key.state == ElementState::Pressed) {
+                                current.insert(key.state.into());
+                            }
+                        },
+                        std::collections::hash_map::Entry::Vacant(v) => { v.insert(key.state.into()); },
+                    }
                 }
             }
-            _ => (),
+
+            _ => {}
         }
     }
 

@@ -44,7 +44,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Settings for framebuffer textures
     let sampling = Sampling {
-        filter: Filter::Linear,
+        filter: Filter::Nearest,
         wrap: Wrap::ClampToEdge,
     };
     let mipmaps = MipMaps::Disabled;
@@ -220,10 +220,15 @@ fn rendering(world: &mut World) {
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
     let pp = world.get::<PostProcessing>().unwrap();
+    let ecs = world.get::<Scene>().unwrap();
 
     // Get the main window since we will draw to it
     let mut window = world.get_mut::<Window>().unwrap();
     let mut ctx = world.get_mut::<Context>().unwrap();
+
+    // Get the renderering camera
+    let camera_entity = ecs.entry(shading.main_camera.unwrap()).unwrap();
+    let camera = camera_entity.get::<Camera>().unwrap();
 
     // Create the full screen rasterizer
     let settings = RasterSettings {
@@ -236,12 +241,13 @@ fn rendering(world: &mut World) {
     let (mut rasterizer, mut uniforms) =
         window.rasterizer(&mut ctx, &mut compositor.compositor, settings);
 
-    // Set the shader uniforms
-    uniforms.set_vec2(
-        "resolution",
-        vek::Vec2::<i32>::from(rasterizer.display().size().as_::<i32>()),
-    );
+    // Set the shading uniforms
+    let resolution = vek::Vec2::<i32>::from(rasterizer.display().size().as_::<i32>());
+    uniforms.set_vec2("resolution", resolution);
     uniforms.set_sampler("color", &shading.color_tex);
+    uniforms.set_sampler("depth", &shading.depth_tex);
+    uniforms.set_scalar("z_near", camera.clip_planes().x);
+    uniforms.set_scalar("z_far", camera.clip_planes().y);
 
     // Set post processing uniforms
     uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);

@@ -3,8 +3,8 @@ use cflake_engine::prelude::{vek::Lerp, *};
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
 const SPEED: f32 = 10.0;
-const ROTATION_SMOOTH_SPEED: f32 = 20.0;
-const VELOCITY_SMOOTH_SPEED: f32 = 20.0;
+const ROTATION_SMOOTH_SPEED: f32 = 80.0;
+const VELOCITY_SMOOTH_SPEED: f32 = 80.0;
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
@@ -13,7 +13,6 @@ fn main() {
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
         .insert_update(update)
-        .insert_update(debug)
         .execute();
 }
 
@@ -35,8 +34,13 @@ fn init(world: &mut World) {
     let mut keyboard = world.get_mut::<Keyboard>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
+    asset!(&mut assets, "user/textures/bricks/diffuse.jpg");
+    asset!(&mut assets, "user/textures/bricks/normal.jpg");
+    asset!(&mut assets, "user/textures/bricks/mask.jpg");
+
+
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
+    let camera = Camera::new(90.0, 0.3, 10000.0, 16.0 / 9.0);
     let _camera = ecs.insert((
         camera,
         Location::at_z(5.0),
@@ -110,8 +114,8 @@ fn init(world: &mut World) {
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
 
-    for x in 0..80 {
-        for y in 0..80 {
+    for x in 0..1 {
+        for y in 0..1 {
             let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
             ecs.insert((surface, Location::at_xyz(x as f32, y as f32, 0.0), Renderer::default()));
 
@@ -170,29 +174,33 @@ struct Velocity {
 }
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
+    let mut postprocessing = world.get_mut::<PostProcessing>().unwrap();
     let mut ui = world.get_mut::<UserInterface>().unwrap();
-    let time = world.get::<Time>().unwrap();
     let ctx = ui.as_mut().as_mut();
     egui::Window::new("Test window").show(ctx, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("Delta (s/f): ");
-            ui.label(time.delta_f32().to_string());
-        });
-
-        ui.horizontal(|ui| {
-            ui.label("FPS (f/s): ");
-            ui.label((1.0 / time.delta_f32()).to_string());
-        });
+        ui.add(egui::DragValue::new(&mut postprocessing.exposure).speed(0.1)); // 02
+        ui.add(egui::Slider::new(
+            &mut postprocessing.tonemapping_strength,
+            0.0f32..=1.0
+        ));
+        ui.add(egui::DragValue::new(&mut postprocessing.gamma).speed(0.1));
     });
 
     let shading = world.get::<ClusteredShading>().unwrap();
     let window = world.get_mut::<Window>().unwrap();
-    window.raw().set_cursor_grab(true);
-    window.raw().set_cursor_visible(false);
 
     // Get the input resources
     let keyboard = world.get::<Keyboard>().unwrap();
     let mouse = world.get::<Mouse>().unwrap();
+
+    if keyboard.held(Key::H) {
+        window.raw().set_cursor_grab(false);
+        window.raw().set_cursor_visible(true);
+        return;
+    } else {
+        window.raw().set_cursor_grab(true);
+        window.raw().set_cursor_visible(false);
+    }
 
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
@@ -242,18 +250,4 @@ fn update(world: &mut World) {
             time.delta_f32() * ROTATION_SMOOTH_SPEED,
         );
     }
-}
-
-fn debug(world: &mut World) {
-    let mut postprocessing = world.get_mut::<PostProcessing>().unwrap();
-    let mut ui = world.get_mut::<UserInterface>().unwrap();
-    let ctx = ui.as_mut().as_mut();
-    egui::Window::new("Test window").show(ctx, |ui| {
-        ui.add(egui::DragValue::new(&mut postprocessing.exposure)); // 02
-        ui.add(egui::DragValue::new(&mut postprocessing.vignette_strength)); // 8.5
-        ui.add(egui::DragValue::new(
-            &mut postprocessing.tonemapping_strength,
-        ));
-        ui.add(egui::DragValue::new(&mut postprocessing.gamma));
-    });
 }

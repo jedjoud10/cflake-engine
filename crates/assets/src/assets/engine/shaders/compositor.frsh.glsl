@@ -3,9 +3,12 @@ out vec4 frag;
 
 // Global settings indeed
 uniform ivec2 resolution;
+uniform float z_near;
+uniform float z_far;
 
 // Textures that we will sample
 uniform sampler2D color;
+uniform sampler2D depth;
 
 // Post-processing compositor settings
 uniform float tonemapping_strength;
@@ -14,10 +17,11 @@ uniform float gamma;
 uniform float vignette_strength;
 uniform float vignette_size;
 
-vec3 jim_richard(vec3 x, float exposure) {
-	x *= exposure;  // Hardcoded Exposure Adjustment
-	vec3 y = max(vec3(0),x-0.004);
-	return (y*(6.2*y+.5))/(y*(6.2*y+1.7)+0.06);
+// Turn the 0-1 depth value to the zNear - zFar range
+float linearize_depth(float d,float zNear,float zFar)
+{
+	d = 2.0 * d - 1.0;
+    return zNear * zFar / (zFar + d * (zNear - zFar));
 }
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
@@ -35,7 +39,8 @@ void main() {
 	
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
-	sampled = aces(sampled);
+	sampled *= exposure;
+	sampled = mix(sampled, aces(sampled), tonemapping_strength);
 	sampled = pow(sampled, vec3(1.0 / gamma));
 
 	// Create a simple vignette
@@ -45,5 +50,7 @@ void main() {
 	vignette = pow(vignette, vignette_strength);
 	sampled = mix(sampled, vec3(0), vignette);
 
+	// Sample the depth texture
+	float depth = linearize_depth(texture(depth, uv).r, z_near, z_far);
 	frag = vec4(sampled, 1.0);
 }

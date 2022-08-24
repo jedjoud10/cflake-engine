@@ -8,7 +8,6 @@ use crate::{
 use std::{num::NonZeroU8, ptr::null};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
-// TODO: Test texture mip map layer pixel reading / writing
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
     type Region: Region;
