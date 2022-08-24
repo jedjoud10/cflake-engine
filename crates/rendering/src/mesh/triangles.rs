@@ -1,4 +1,4 @@
-use crate::{buffer::{TriangleBuffer}, object::ToGlName};
+use crate::{buffer::TriangleBuffer, object::ToGlName};
 
 // Immutable access to the mesh indices
 pub struct TrianglesRef<'a> {
@@ -55,7 +55,7 @@ impl TrianglesMut<'_> {
     pub fn rebind(&mut self, force: bool) {
         if self.maybe_reassigned || force {
             unsafe {
-                gl::VertexArrayElementBuffer(self.vao,self.buffer.name());
+                gl::VertexArrayElementBuffer(self.vao, self.buffer.name());
             }
         }
 

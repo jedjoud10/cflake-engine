@@ -1,4 +1,4 @@
-mod pipeline;
 mod material;
-pub use pipeline::*;
+mod pipeline;
 pub use material::*;
+pub use pipeline::*;

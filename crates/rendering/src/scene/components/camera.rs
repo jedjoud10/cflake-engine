@@ -35,11 +35,7 @@ fn new_projection_matrix(hfov: f32, aspect_ratio: f32, near: f32, far: f32) -> v
 
 // Create a new view matrix using a location and rotation
 fn new_view_matrix(location: &Location, rotation: &Rotation) -> vek::Mat4<f32> {
-    vek::Mat4::<f32>::look_at_rh(
-        **location,
-        rotation.forward() + **location,
-        rotation.up(),
-    )
+    vek::Mat4::<f32>::look_at_rh(**location, rotation.forward() + **location, rotation.up())
 }
 
 impl Camera {

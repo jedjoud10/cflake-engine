@@ -2,8 +2,11 @@ use crate::painter::Painter;
 
 use assets::Assets;
 use egui_winit::winit::event::WindowEvent;
-use rendering::{prelude::{Context, Window}, gl};
-use world::{Events, World, Init, Update, Stage};
+use rendering::{
+    gl,
+    prelude::{Context, Window},
+};
+use world::{Events, Init, Stage, Update, World};
 
 // This interface encapsulates all the data that we need to use eGui and to draw
 // There are no functions associated with the struct, since everything is handled from within the system alreadyz
@@ -89,14 +92,17 @@ pub fn system(events: &mut Events) {
         let deltas = output.textures_delta;
         let meshes = ui.egui.tessellate(clipped_shapes);
 
-        
         if !meshes.is_empty() {
-            ui.painter.draw(&mut window, &mut ctx, meshes, &mut assets, deltas);
+            ui.painter
+                .draw(&mut window, &mut ctx, meshes, &mut assets, deltas);
         }
     }
 
     // Register all the events
-    events.registry::<Init>().insert_with(init, Stage::new("ui insert").after("graphics insert")).unwrap();
+    events
+        .registry::<Init>()
+        .insert_with(init, Stage::new("ui insert").after("graphics insert"))
+        .unwrap();
     events.registry::<Update>().insert(begin);
     events
         .registry::<Update>()

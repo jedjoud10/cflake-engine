@@ -1,12 +1,7 @@
-use crate::{
-    context::{Context},
-    scene::{RenderedFrameStats},
-};
+use crate::{context::Context, scene::RenderedFrameStats};
 
-
-
-use std::{marker::PhantomData};
-use world::{World};
+use std::marker::PhantomData;
+use world::World;
 
 // Marker type that tells us we registered a specific generic pipeline
 pub struct PipeId<P: Pipeline>(pub(crate) PhantomData<P>);

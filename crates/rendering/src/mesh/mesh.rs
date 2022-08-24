@@ -1,19 +1,17 @@
-use std::{
-    mem::{MaybeUninit},
-};
-
+use std::mem::MaybeUninit;
 
 use assets::Asset;
 use math::AABB;
-use num::{Zero, One};
+
 use obj::TexturedVertex;
 
-use super::{
-    AttributeBuffer, EnabledAttributes, TrianglesMut, TrianglesRef, MeshImportSettings, VerticesMut, VerticesRef, MeshUtils,
-};
 use super::attributes::*;
+use super::{
+    AttributeBuffer, EnabledAttributes, MeshImportSettings, MeshUtils, TrianglesMut, TrianglesRef,
+    VerticesMut, VerticesRef,
+};
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferMode, TriangleBuffer, Triangle},
+    buffer::{ArrayBuffer, BufferMode, Triangle, TriangleBuffer},
     context::Context,
 };
 
@@ -65,7 +63,7 @@ impl Mesh {
         tex_coords: Option<ArrayBuffer<VeTexCoord>>,
         triangles: TriangleBuffer<u32>,
     ) -> Option<Self> {
-        let mut mesh = Self { 
+        let mut mesh = Self {
             vao: unsafe {
                 let mut vao = 0;
                 gl::CreateVertexArrays(1, &mut vao);
@@ -87,14 +85,14 @@ impl Mesh {
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
         vertices.set_attribute::<TexCoord>(tex_coords);
-    
+
         // Bind the vertex buffers and check for valididity
         let valid = vertices.rebind(true);
         std::mem::forget(vertices);
 
         // Bind the triangle buffer
         mesh.triangles_mut().rebind(true);
-        
+
         valid.then_some(mesh)
     }
 
@@ -142,34 +140,40 @@ impl Mesh {
 
     // Get the triangles and vertices both at the same time, immutably
     pub fn both(&self) -> (TrianglesRef, VerticesRef) {
-        (TrianglesRef {
-            buffer: &self.triangles,
-        }, VerticesRef {
-            positions: &self.positions,
-            normals: &self.normals,
-            tangents: &self.tangents,
-            colors: &self.colors,
-            uvs: &self.uvs,
-            bitfield: self.enabled,
-        })
+        (
+            TrianglesRef {
+                buffer: &self.triangles,
+            },
+            VerticesRef {
+                positions: &self.positions,
+                normals: &self.normals,
+                tangents: &self.tangents,
+                colors: &self.colors,
+                uvs: &self.uvs,
+                bitfield: self.enabled,
+            },
+        )
     }
-    
+
     // Get thr triangles and vertices both at the same time, mutably
     pub fn both_mut(&mut self) -> (TrianglesMut, VerticesMut) {
-        (TrianglesMut {
-            vao: self.vao,
-            buffer: &mut self.triangles,
-            maybe_reassigned: false,
-        }, VerticesMut {
-            vao: self.vao,
-            positions: &mut self.positions,
-            normals: &mut self.normals,
-            tangents: &mut self.tangents,
-            colors: &mut self.colors,
-            uvs: &mut self.uvs,
-            bitfield: &mut self.enabled,
-            maybe_reassigned: EnabledAttributes::empty(),
-        })
+        (
+            TrianglesMut {
+                vao: self.vao,
+                buffer: &mut self.triangles,
+                maybe_reassigned: false,
+            },
+            VerticesMut {
+                vao: self.vao,
+                positions: &mut self.positions,
+                normals: &mut self.normals,
+                tangents: &mut self.tangents,
+                colors: &mut self.colors,
+                uvs: &mut self.uvs,
+                bitfield: &mut self.enabled,
+                maybe_reassigned: EnabledAttributes::empty(),
+            },
+        )
     }
 
     // Recalculate the vertex normals procedurally; based on position attribute
@@ -206,8 +210,12 @@ impl Mesh {
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
-    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {       
-        let valid_attributes = self.vertices().layout().contains(EnabledAttributes::POSITIONS | EnabledAttributes::NORMALS | EnabledAttributes::TEX_COORDS);
+    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {
+        let valid_attributes = self.vertices().layout().contains(
+            EnabledAttributes::POSITIONS
+                | EnabledAttributes::NORMALS
+                | EnabledAttributes::TEX_COORDS,
+        );
         let (triangles, mut vertices) = if valid_attributes {
             self.both_mut()
         } else {
@@ -230,7 +238,7 @@ impl Mesh {
         let mapped_triangles = triangles.data().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
-        // Generate the tangents using the mesh utils 
+        // Generate the tangents using the mesh utils
         let tangents = MeshUtils::compute_tangents(positions, normals, tex_coords, triangles);
 
         // Return false if we were not able to generate the tangents
@@ -284,14 +292,18 @@ impl<'a> Asset<'a> for Mesh {
         // Create temporary vectors containing the vertex attributes
         let capacity = parsed.vertices.len();
         let mut positions = Vec::<vek::Vec3<f32>>::with_capacity(capacity);
-        let mut normals = settings.use_normals.then(|| Vec::<vek::Vec3<i8>>::with_capacity(capacity));
-        let mut tex_coords = settings.use_tex_coords.then(|| Vec::<vek::Vec2<u8>>::with_capacity(capacity));
+        let mut normals = settings
+            .use_normals
+            .then(|| Vec::<vek::Vec3<i8>>::with_capacity(capacity));
+        let mut tex_coords = settings
+            .use_tex_coords
+            .then(|| Vec::<vek::Vec2<u8>>::with_capacity(capacity));
         let mut triangles = Vec::<[u32; 3]>::with_capacity(parsed.indices.len() / 3);
         let indices = parsed.indices;
         use vek::{Vec2, Vec3};
 
         // Convert the translation/rotation/scale settings to a unified matrix
-        let translation: vek::Mat4<f32> =  vek::Mat4::translation_3d(settings.translation);
+        let translation: vek::Mat4<f32> = vek::Mat4::translation_3d(settings.translation);
         let rotation: vek::Mat4<f32> = vek::Mat4::from(settings.rotation);
         let scale: vek::Mat4<f32> = vek::Mat4::scaling_3d(settings.scale);
         let matrix = translation * rotation * scale;
@@ -322,17 +334,36 @@ impl<'a> Asset<'a> for Mesh {
         }
 
         // Optionally generate the tangents
-        let mut tangents = settings.use_tangents.then(|| 
+        let mut tangents = settings.use_tangents.then(|| {
             MeshUtils::compute_tangents(
                 &positions,
                 normals.as_ref().unwrap(),
                 tex_coords.as_ref().unwrap(),
-                &triangles
-            ).unwrap()
-        );
+                &triangles,
+            )
+            .unwrap()
+        });
 
         // Finally, create the mesh and generate it's new GPU data
-        MeshUtils::apply_vec_settings(settings, matrix, &mut positions, &mut normals, &mut tangents, &mut tex_coords, &mut triangles);        
-        Mesh::from_vecs(ctx, settings.mode, positions, normals, tangents, None, tex_coords, triangles).unwrap()
+        MeshUtils::apply_vec_settings(
+            settings,
+            matrix,
+            &mut positions,
+            &mut normals,
+            &mut tangents,
+            &mut tex_coords,
+            &mut triangles,
+        );
+        Mesh::from_vecs(
+            ctx,
+            settings.mode,
+            positions,
+            normals,
+            tangents,
+            None,
+            tex_coords,
+            triangles,
+        )
+        .unwrap()
     }
 }

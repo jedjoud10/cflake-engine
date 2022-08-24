@@ -1,6 +1,6 @@
 use vek::Clamp;
 
-use crate::{Sphere, AABB, Shape, Octree, Node};
+use crate::{Node, Octree, Shape, Sphere, AABB};
 
 // Check if an AABB intersects another AABB
 pub fn aabb_aabb(aabb: &AABB, other: &AABB) -> bool {
@@ -32,5 +32,10 @@ pub fn point_sphere(point: &vek::Vec3<f32>, sphere: &Sphere) -> bool {
 
 // Check if some shapes intersect an octree, and if they do, return the node indices for the nodes that intersect the shapes
 pub fn shapes_octree<'a>(shapes: &[&dyn Shape], octree: &'a Octree) -> Vec<&'a Node> {
-    octree.recurse(|node| shapes.iter().map(|shape| shape.bounds()).any(|bound| aabb_aabb(&node.aabb(), &bound)))
+    octree.recurse(|node| {
+        shapes
+            .iter()
+            .map(|shape| shape.bounds())
+            .any(|bound| aabb_aabb(&node.aabb(), &bound))
+    })
 }

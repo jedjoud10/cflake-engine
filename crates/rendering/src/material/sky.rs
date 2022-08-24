@@ -1,13 +1,11 @@
-
-
 use time::Time;
 use world::{Handle, Read, Storage};
 
 use crate::{
-    canvas::{PrimitiveMode},
+    display::PrimitiveMode,
     material::{AlbedoMap, Material},
     prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage},
-    scene::{Renderer},
+    scene::Renderer,
 };
 
 use super::DefaultMaterialResources;
@@ -55,7 +53,7 @@ impl<'w> Material<'w> for Sky {
         uniforms: &mut Uniforms,
         _main: &DefaultMaterialResources,
         _resources: &mut Self::Resources,
-        renderer: &Renderer
+        renderer: &Renderer,
     ) {
         uniforms.set_mat4x4("world_matrix", renderer.matrix());
     }
@@ -68,7 +66,10 @@ impl<'w> Material<'w> for Sky {
     ) {
         let texture = resources.0.get(&instance.gradient);
         uniforms.set_sampler("gradient", texture);
-        uniforms.set_scalar("sun_intensity", main.directional_light.strength * instance.sun_intensity);
+        uniforms.set_scalar(
+            "sun_intensity",
+            main.directional_light.strength * instance.sun_intensity,
+        );
         uniforms.set_scalar("sun_size", instance.sun_size);
         uniforms.set_scalar("cloud_speed", instance.cloud_speed);
         uniforms.set_scalar("cloud_coverage", instance.cloud_coverage);

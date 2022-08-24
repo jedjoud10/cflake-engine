@@ -1,192 +1,14 @@
-use super::{Filter, MipMaps, Sampling, Texel, TextureMode, Wrap};
+use super::{
+    Extent, Filter, MipLayerMut, MipLayerRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
+};
 use crate::{
     context::Context,
     object::{ToGlName, ToGlTarget},
 };
-use std::{ffi::c_void, num::NonZeroU8, ptr::null};
-
-// An immutable mip layer that we can use to read from the texture
-pub struct MipLayerRef<'a, T: Texture> {
-    // El texture
-    texture: &'a T,
-
-    // The level of the mip layer
-    level: u8,
-}
-
-impl<'a, T: Texture> MipLayerRef<'a, T> {
-    // Create a new mip layer view using a texture and a level
-    pub(super) fn new(texture: &'a T, level: u8) -> Self {
-        Self { texture, level }
-    }
-}
-
-// A mutable mip layer that we can use to write to the texture
-pub struct MipLayerMut<'a, T: Texture> {
-    // El texture
-    texture: &'a mut T,
-
-    // The level of the mip layer
-    level: u8,
-}
-
-impl<'a, T: Texture> MipLayerMut<'a, T> {
-    // Create a new mip layer mutable view using a texture and a level
-    pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
-        Self { texture, level }
-    }
-
-    // Update a sub-region of the mip-layer, but without checking for safety
-    unsafe fn update_unchecked(
-        &mut self,
-        _ctx: &mut Context,
-        region: T::Region,
-        data: &[<T::T as Texel>::Storage],
-    ) {
-        T::update_subregion(self.texture.name(), region, data.as_ptr() as _)
-    }
-
-    // Update a sub-region of the mip-layer using a data slice
-    fn update(&mut self, ctx: &mut Context, region: T::Region, data: &[<T::T as Texel>::Storage]) {
-        // The length of the buffer should be equal to the surface area of the region
-        assert!(
-            (data.len() as u32) == region.area(),
-            "Input data length is not equal to region area surface"
-        );
-
-        // Le update texture subimage
-        unsafe {
-            self.update_unchecked(ctx, region, data);
-        }
-    }
-}
-
-// Texture dimensions traits that are simply implemented for extents
-pub trait Extent: Copy {
-    // Get the surface area of a superficial rectangle that uses these extents as it's dimensions
-    fn area(&self) -> u32;
-
-    // Check if this region can be used to create a texture or update it
-    fn is_valid(&self) -> bool;
-
-    // Get the max element from these dimensions
-    fn max(&self) -> u16;
-
-    // Caclulate the number of mipmap layers that a texture can have (assuming that the offset is 0)
-    fn levels(&self) -> NonZeroU8 {
-        let mut cur = self.max() as f32;
-        let mut num = 0u32;
-        while cur > 1.0 {
-            cur /= 2.0;
-            num += 1;
-        }
-        NonZeroU8::new(u8::try_from(num + 1).unwrap()).unwrap()
-    }
-}
-
-// Implementation of extent for 2D extent
-impl Extent for vek::Extent2<u16> {
-    fn area(&self) -> u32 {
-        self.as_::<u32>().product()
-    }
-
-    fn is_valid(&self) -> bool {
-        *self != vek::Extent2::zero()
-    }
-
-    fn max(&self) -> u16 {
-        self.reduce_max()
-    }
-}
-
-// Implementation of extent for 3D extent
-impl Extent for vek::Extent3<u16> {
-    fn area(&self) -> u32 {
-        self.as_::<u32>().product()
-    }
-
-    fn is_valid(&self) -> bool {
-        *self != vek::Extent3::zero()
-    }
-
-    fn max(&self) -> u16 {
-        self.reduce_max()
-    }
-}
-
-// Texture region trait that will be implemented for (origin, extent) tuples
-pub trait Region {
-    // Regions are defined by their origin and extents
-    type O: Default + Copy;
-    type E: Copy + Extent;
-
-    // Create a texel region of one singular unit (so we can store a singular texel)
-    fn unit() -> Self;
-
-    // Get the region's origin
-    fn origin(&self) -> Self::O;
-
-    // Get the region's extent
-    fn extent(&self) -> Self::E;
-
-    // Create a region with a default origin using an extent
-    fn with_extent(extent: Self::E) -> Self;
-
-    // Calculate the surface area of the region
-    fn area(&self) -> u32;
-}
-
-impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
-    type O = vek::Vec2<u16>;
-    type E = vek::Extent2<u16>;
-
-    fn origin(&self) -> Self::O {
-        self.0
-    }
-
-    fn extent(&self) -> Self::E {
-        self.1
-    }
-
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
-    fn area(&self) -> u32 {
-        self.extent().area()
-    }
-
-    fn unit() -> Self {
-        (vek::Vec2::zero(), vek::Extent2::one())
-    }
-}
-
-impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
-    type O = vek::Vec3<u16>;
-    type E = vek::Extent3<u16>;
-
-    fn origin(&self) -> Self::O {
-        self.0
-    }
-
-    fn extent(&self) -> Self::E {
-        self.1
-    }
-
-    fn with_extent(extent: Self::E) -> Self {
-        (Default::default(), extent)
-    }
-
-    fn area(&self) -> u32 {
-        self.extent().area()
-    }
-
-    fn unit() -> Self {
-        (vek::Vec3::zero(), vek::Extent3::one())
-    }
-}
-
+use std::{num::NonZeroU8, ptr::null};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
+// TODO: Test texture resizing with mipmapping, does it reallocate or not?
+// TODO: Test texture mip map layer pixel reading / writing
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
     type Region: Region;
@@ -201,13 +23,13 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
         mipmaps: MipMaps,
-        data: &[<Self::T as Texel>::Storage],
+        data: Option<&[<Self::T as Texel>::Storage]>,
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
         let dims_valid = dimensions.is_valid();
 
         // Validate length (make sure the data slice matches up with dimensions)
-        let len_valid = if !data.is_empty() {
+        let len_valid = if let Some(data) = data {
             data.len() as u64 == (dimensions.area() as u64)
         } else {
             true
@@ -216,9 +38,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         // Create the texture if the requirements are all valid
         (dims_valid && len_valid).then(|| unsafe {
             // Convert some parameters to their raw counterpart
-            let ptr = (!data.is_empty())
-                .then(|| data.as_ptr())
-                .unwrap_or_else(null);
+            let ptr = data.map_or_else(null, |p| p.as_ptr());
 
             // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
             let auto = dimensions.levels();
@@ -226,7 +46,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
                 MipMaps::Automatic => (auto, None),
                 MipMaps::Manual { levels } => (levels.min(auto), None),
-                MipMaps::AutomaticAniso => (auto, { 
+                MipMaps::AutomaticAniso => (auto, {
                     let mut val = 0.0;
                     gl::GetFloatv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mut val);
                     NonZeroU8::new(val as u8)
@@ -252,18 +72,26 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             }
 
             // The texture minifcation filter
-            gl::TextureParameteri(tex, gl::TEXTURE_MIN_FILTER, match (sampling.filter, levels.get() > 1) {
-                (Filter::Nearest, false) => gl::NEAREST,
-                (Filter::Linear, false) => gl::LINEAR,
-                (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
-                (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
-            } as i32);
+            gl::TextureParameteri(
+                tex,
+                gl::TEXTURE_MIN_FILTER,
+                match (sampling.filter, levels.get() > 1) {
+                    (Filter::Nearest, false) => gl::NEAREST,
+                    (Filter::Linear, false) => gl::LINEAR,
+                    (Filter::Nearest, true) => gl::NEAREST_MIPMAP_NEAREST,
+                    (Filter::Linear, true) => gl::LINEAR_MIPMAP_LINEAR,
+                } as i32,
+            );
 
             // Set the texture magnification filter
-            gl::TextureParameteri(tex, gl::TEXTURE_MAG_FILTER, match sampling.filter {
-                Filter::Nearest => gl::NEAREST,
-                Filter::Linear => gl::LINEAR,
-            } as i32);
+            gl::TextureParameteri(
+                tex,
+                gl::TEXTURE_MAG_FILTER,
+                match sampling.filter {
+                    Filter::Nearest => gl::NEAREST,
+                    Filter::Linear => gl::LINEAR,
+                } as i32,
+            );
 
             // Convert the wrapping mode enum to the raw OpenGL type
             let (wrap, border) = match sampling.wrap {
@@ -308,6 +136,19 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get the texture's dimensions
     fn dimensions(&self) -> <Self::Region as Region>::E;
 
+    // Get the dimensions of a specific mip layer in this texture
+    fn dimensions_of_layer(&self, level: u8) -> Option<<Self::Region as Region>::E> {
+        if level == 0 {
+            Some(self.dimensions())
+        } else if level < self.levels().get() {
+            Some(unsafe { 
+                <<Self::Region as Region>::E as Extent>::get_layer_extent(self.name(), level)
+            })
+        } else {
+            None
+        }
+    }
+
     // Get the texture's mode
     fn mode(&self) -> TextureMode;
 
@@ -325,9 +166,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get a single mip level from the texture, mutably
     fn get_layer_mut(&mut self, level: u8) -> Option<MipLayerMut<Self>>;
 
-    // Resize the current texture
-    fn resize(&mut self, _extent: <Self::Region as Region>::E) {
-        todo!()
+    // Resize the current texture (this will also set it's inner data to null)
+    fn resize(&mut self, extent: <Self::Region as Region>::E) {
+        unsafe {
+            Self::alloc_resizable_storage(self.name(), extent, 0, null());
+        }
     }
 
     // Calculate the uncompressed size of the texture
@@ -348,7 +191,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         name: u32,
         extent: <Self::Region as Region>::E,
         levels: u8,
-        ptr: *const c_void,
+        ptr: *const <Self::T as Texel>::Storage,
     );
 
     // Allocate some mutable(resizable) texture during texture initialization
@@ -356,10 +199,38 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     unsafe fn alloc_resizable_storage(
         name: u32,
         extent: <Self::Region as Region>::E,
-        unique_level: u8,
-        ptr: *const c_void,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
     );
 
-    // Update a sub-region of the raw texture
-    unsafe fn update_subregion(name: u32, region: Self::Region, ptr: *const c_void);
+    // Update a sub-region of a raw texture layer
+    unsafe fn update_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    );
+
+    // Fills a sub-region of a raw texture layer with a constant value
+    unsafe fn splat_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *const <Self::T as Texel>::Storage,
+    );
+
+    // Fills the whole raw texture layer with a constant value
+    unsafe fn splat(name: u32, level: u8, ptr: *const <Self::T as Texel>::Storage);
+
+    // Read a sub-region of a raw texture layer
+    unsafe fn read_subregion(
+        name: u32,
+        region: Self::Region,
+        level: u8,
+        ptr: *mut <Self::T as Texel>::Storage,
+        texels: u32,
+    );
+
+    // Read the whole raw textrue layer
+    unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
 }

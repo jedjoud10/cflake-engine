@@ -19,7 +19,17 @@ fn init(world: &mut World) {
     world.insert::<Storage<ArrayBuffer<MyData>>>(Storage::default());
     let mut ctx = world.get_mut::<Context>().unwrap();
     let mut storage = world.get_mut::<Storage<ArrayBuffer<MyData>>>().unwrap();
-    let mut buffer = ArrayBuffer::<MyData>::from_slice(&mut ctx, &[MyData::default(), MyData::default(), MyData::default(), MyData::default()], BufferMode::Resizable).unwrap();
+    let mut buffer = ArrayBuffer::<MyData>::from_slice(
+        &mut ctx,
+        &[
+            MyData::default(),
+            MyData::default(),
+            MyData::default(),
+            MyData::default(),
+        ],
+        BufferMode::Resizable,
+    )
+    .unwrap();
     let mut mapped = buffer.map_mut().unwrap();
     let slice = mapped.as_slice_mut();
     slice[0].humidity = 1.0;

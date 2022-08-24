@@ -1,4 +1,4 @@
-use crate::{AABB, Movable, Boundable, Volume, SurfaceArea, SharpVertices};
+use crate::{Boundable, Movable, SharpVertices, SurfaceArea, Volume, AABB};
 
 // A 3D cuboid that is defined by it's center and it's extent
 #[derive(Clone, Copy)]
@@ -31,7 +31,7 @@ impl Boundable for Cuboid {
     }
 
     fn expand_by(&mut self, expand_units: f32) {
-        self.extent += vek::Extent3::broadcast(expand_units); 
+        self.extent += vek::Extent3::broadcast(expand_units);
     }
 }
 
@@ -57,7 +57,7 @@ impl SharpVertices for Cuboid {
     fn points(&self) -> Self::Points {
         let max = self.center + vek::Vec3::<f32>::from(self.extent / 2.0);
         let min = self.center - vek::Vec3::<f32>::from(self.extent / 2.0);
-    
+
         [
             min,
             vek::Vec3::new(max.x, min.y, min.z),

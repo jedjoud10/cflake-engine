@@ -32,7 +32,7 @@ impl Block {
     pub fn size(&self) -> usize {
         self.size
     }
-    
+
     // Get the block's index
     pub fn index(&self) -> &Index {
         &self.index

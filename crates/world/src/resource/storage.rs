@@ -3,7 +3,8 @@ use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 use std::{
     cell::{Cell, RefCell},
     marker::PhantomData,
-    rc::Rc, ops::{Index, IndexMut},
+    ops::{Index, IndexMut},
+    rc::Rc,
 };
 
 struct Trackers {
@@ -42,8 +43,8 @@ impl<T: 'static> Storage<T> {
             _phantom: PhantomData::default(),
             untyped: UntypedHandle {
                 trackers: self.trackers.clone(),
-                key
-            }
+                key,
+            },
         }
     }
 

@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use vek::num_traits::Pow;
 
-use crate::{AABB, Volume, SurfaceArea, Shape, Movable, Boundable};
+use crate::{Boundable, Movable, Shape, SurfaceArea, Volume, AABB};
 
 // A simple sphere that is represented by it's center and radius
 #[derive(Clone, Copy)]

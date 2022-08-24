@@ -2,7 +2,7 @@ use std::ops::Neg;
 
 use crate::buffer::Triangle;
 
-use super::{MeshImportSettings, VePosition, VeNormal, VeTangent, VeTexCoord};
+use super::{MeshImportSettings, VeNormal, VePosition, VeTangent, VeTexCoord};
 
 // Mesh utils are simple helper functions that facilitate the construction of a mesh
 pub struct MeshUtils;
@@ -26,10 +26,17 @@ fn to_i8(val: f32) -> i8 {
     (val * 127.0) as i8
 }
 
-
 impl MeshUtils {
     // Apply settings for mesh vectors (including triangles)
-    pub fn apply_vec_settings(settings: MeshImportSettings, matrix: vek::Mat4<f32>, positions: &mut Vec<VePosition>, normals: &mut Option<Vec<VeNormal>>, tangents: &mut Option<Vec<VeTangent>>, tex_coords: &mut Option<Vec<VeTexCoord>>, triangles: &mut Vec<Triangle<u32>>) {
+    pub fn apply_vec_settings(
+        settings: MeshImportSettings,
+        matrix: vek::Mat4<f32>,
+        positions: &mut Vec<VePosition>,
+        normals: &mut Option<Vec<VeNormal>>,
+        tangents: &mut Option<Vec<VeTangent>>,
+        tex_coords: &mut Option<Vec<VeTexCoord>>,
+        triangles: &mut Vec<Triangle<u32>>,
+    ) {
         MeshUtils::apply_settings_positions(positions, matrix);
         if let Some(normals) = normals {
             MeshUtils::apply_settings_normals(normals, matrix, settings.invert_normals);
@@ -38,50 +45,83 @@ impl MeshUtils {
             MeshUtils::apply_settings_tangents(tangents, matrix, settings.invert_tangents);
         }
         if let Some(tex_coords) = tex_coords {
-            MeshUtils::apply_settings_tex_coords(tex_coords, settings.invert_horizontal_tex_coord, settings.invert_vertical_tex_coord);
+            MeshUtils::apply_settings_tex_coords(
+                tex_coords,
+                settings.invert_horizontal_tex_coord,
+                settings.invert_vertical_tex_coord,
+            );
         }
         if settings.invert_triangle_ordering {
             MeshUtils::invert_triangle_ordering(triangles);
         }
     }
 
+    // Multiply a position by a matrix
+    pub fn mul_position(matrix: vek::Mat4<f32>, position: VePosition) -> VePosition {
+        matrix.mul_point(matrix.mul_point(position))
+    }
+
+    // Multiply a normal by a matrix
+    pub fn mul_normal(matrix: vek::Mat4<f32>, normal: VeNormal, flip: bool) -> VeNormal {
+        let mapped = normal.map(to_f32);
+        let new = inv(matrix.mul_direction(mapped), flip);
+        new.map(to_i8)
+    }
+
+    // Multiply a tangent by a matrix
+    pub fn mul_tangent(matrix: vek::Mat4<f32>, tangent: VeTangent, flip: bool) -> VeTangent {
+        let mapped = tangent.map(|f| f as f32 / 127.0);
+        let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
+
+        vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w))
+    }
+
+    // Update a texture coordinate by it's settings
+    pub fn update_tex_coord(
+        mut tex_coord: VeTexCoord,
+        flip_horizontal: bool,
+        flip_vertical: bool,
+    ) -> VeTexCoord {
+        if flip_horizontal {
+            tex_coord.x = 255 - tex_coord.x;
+        }
+
+        if flip_vertical {
+            tex_coord.y = 255 - tex_coord.y;
+        }
+
+        tex_coord
+    }
+
     // Update a set of position attributes using a matrix
     pub fn apply_settings_positions(positions: &mut [VePosition], matrix: vek::Mat4<f32>) {
         for position in positions {
-            *position = matrix.mul_point(*position);
+            *position = Self::mul_position(matrix, *position);
         }
     }
-    
+
     // Update a set of normal attributes using a matrix and a flip rule
     pub fn apply_settings_normals(normals: &mut [VeNormal], matrix: vek::Mat4<f32>, flip: bool) {
         for normal in normals {
-            let mapped = normal.map(to_f32);
-            let new = inv(matrix.mul_direction(mapped), flip);
-            *normal = new.map(to_i8);
+            *normal = Self::mul_normal(matrix, *normal, flip);
         }
     }
-    
+
     // Update a set of tangent attributes using a matrix and a flip rule
     pub fn apply_settings_tangents(tangents: &mut [VeTangent], matrix: vek::Mat4<f32>, flip: bool) {
         for tangent in tangents {
-            let mapped = tangent.map(|f| f as f32 / 127.0);
-            // Should we flip XYZ or W?
-            let new = matrix.mul_direction(inv(mapped.xyz(), flip)).map(to_i8);
-            let mapped = vek::Vec4::new(new.x, new.y, new.z, to_i8(mapped.w));
-            *tangent = mapped;
+            *tangent = Self::mul_tangent(matrix, *tangent, flip);
         }
     }
 
     // Update a set of texture coordinate attributes using a flip horizontal/vertical rule
-    pub fn apply_settings_tex_coords(tex_coords: &mut [VeTexCoord], flip_horizontal: bool, flip_vertical: bool) {
+    pub fn apply_settings_tex_coords(
+        tex_coords: &mut [VeTexCoord],
+        flip_horizontal: bool,
+        flip_vertical: bool,
+    ) {
         for tex_coord in tex_coords {
-            if flip_horizontal {
-                tex_coord.x = 255 - tex_coord.x;
-            }
-
-            if flip_vertical {
-                tex_coord.y = 255 - tex_coord.y;
-            }
+            *tex_coord = Self::update_tex_coord(*tex_coord, flip_horizontal, flip_vertical);
         }
     }
 
@@ -93,7 +133,10 @@ impl MeshUtils {
     }
 
     // Calculate the vertex normals procedurally and return them as a vector
-    pub fn compute_normals(positions: &[VePosition], triangles: &[[u32; 3]]) -> Option<Vec<VeNormal>> {
+    pub fn compute_normals(
+        positions: &[VePosition],
+        triangles: &[[u32; 3]],
+    ) -> Option<Vec<VeNormal>> {
         let mut normals = vec![vek::Vec3::<f32>::zero(); positions.len()];
         for i in 0..(triangles.len() / 3) {
             // Get triangle indices
@@ -119,16 +162,21 @@ impl MeshUtils {
         }
 
         // Normalized + conversion to i8
-        Some(normals
-            .into_iter()
-            .map(|n|
-                n.normalized().map(to_i8)
-            ).collect::<Vec::<VeNormal>>()
-        )            
+        Some(
+            normals
+                .into_iter()
+                .map(|n| n.normalized().map(to_i8))
+                .collect::<Vec<VeNormal>>(),
+        )
     }
 
     // Calculate the vertex tangents procedurally and return them as a vector
-    pub fn compute_tangents(positions: &[VePosition], normals: &[VeNormal], tex_coords: &[VeTexCoord], triangles: &[[u32; 3]]) -> Option<Vec<VeTangent>> {
+    pub fn compute_tangents(
+        positions: &[VePosition],
+        normals: &[VeNormal],
+        tex_coords: &[VeTexCoord],
+        triangles: &[[u32; 3]],
+    ) -> Option<Vec<VeTangent>> {
         // Check for incompatible lengths
         let len = positions.len();
         if len != normals.len() || len != tex_coords.len() {

@@ -1,14 +1,14 @@
 use assets::Assets;
-use egui::ClippedMesh;
 use egui::epaint::Vertex;
+use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::canvas::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::context::{Context, Window};
+use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::MipMaps;
+use rendering::prelude::{Display, MipMaps};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -147,7 +147,7 @@ impl Painter {
                         wrap: Wrap::ClampToEdge,
                     },
                     MipMaps::Disabled,
-                    &texels,
+                    Some(&texels),
                 )
                 .unwrap()
             });
@@ -162,38 +162,36 @@ impl Painter {
             blend: Some(BlendMode {
                 src: Factor::One,
                 dest: Factor::OneMinusSrcAlpha,
-            })
+            }),
         };
 
         // Create a new canvas rasterizer and fetch it's uniforms
-        let (mut rasterizer, mut uniforms) =
-            window
-                .canvas_mut()
-                .rasterizer(ctx, &mut self.shader, settings);
+        let (mut rasterizer, mut uniforms) = window.rasterizer(ctx, &mut self.shader, settings);
 
         // Set the global static uniforms at the start
         let texture = self.texture.as_ref().unwrap();
-        uniforms.set_sampler("test", texture);
-        uniforms.set_vec2::<vek::Vec2<i32>>(
+        uniforms.set_sampler("image", texture);
+        let pixels = vek::Vec2::from(rasterizer.display().size().as_::<f32>());
+        let ppt = rasterizer.display().raw().scale_factor() as f32;
+        uniforms.set_vec2::<vek::Vec2<f32>>(
             "resolution",
-            rasterizer.canvas().size().as_::<i32>().into(),
+            pixels / ppt,
         );
 
+        // Render each clipped mesh using unsafe commands
         for mesh in meshes {
             self.vertices.clear();
             self.indices.clear();
-            
             self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
             self.indices.extend_from_slice(mesh.1.indices.as_slice());
 
             unsafe {
-                rasterizer
-                    .draw_vao_elements(
-                        self.vao,
-                        self.indices.len(),
-                        gl::UNSIGNED_INT,
-                        uniforms.assume_valid(),
-                    );
+                rasterizer.draw_vao_elements(
+                    self.vao,
+                    self.indices.len(),
+                    gl::UNSIGNED_INT,
+                    uniforms.assume_valid(),
+                );
             }
         }
     }

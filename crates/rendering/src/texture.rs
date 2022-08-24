@@ -1,9 +1,13 @@
+mod extent;
+mod miplayer;
+mod region;
 mod settings;
 mod texel;
 mod texture;
 mod texture2d;
-mod render2d;
-pub use render2d::*;
+pub use extent::*;
+pub use miplayer::*;
+pub use region::*;
 pub use settings::*;
 pub use texel::*;
 pub use texture::*;

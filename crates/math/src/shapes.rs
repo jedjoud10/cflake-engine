@@ -1,12 +1,11 @@
 mod cuboid;
 mod sphere;
+use crate::AABB;
 pub use cuboid::*;
 pub use sphere::*;
-use crate::AABB;
 
 // A shape is a 3D geometrical object that takes space
-pub trait Shape: Movable + Boundable + Volume + SurfaceArea + Sync + Send {
-}
+pub trait Shape: Movable + Boundable + Volume + SurfaceArea + Sync + Send {}
 
 // Shapes that have a concrete positions
 pub trait Movable {
@@ -27,7 +26,7 @@ pub trait Boundable {
     fn expand_by(&mut self, expand_units: f32);
 }
 
-// Implemented for shapes that can calculate their own volume 
+// Implemented for shapes that can calculate their own volume
 pub trait Volume {
     fn volume(&self) -> f32;
 }

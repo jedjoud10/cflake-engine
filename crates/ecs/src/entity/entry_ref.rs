@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, Scene, EntityLinkings, EntryError, RefQueryLayout, StateRow,
+    Archetype, Component, EntityLinkings, EntryError, RefQueryLayout, Scene, StateRow,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity

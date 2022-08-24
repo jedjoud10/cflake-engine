@@ -1,6 +1,5 @@
 use crate::buffer::BufferMode;
 
-
 // Mesh settings that we will use whenever we import a new mesh from a file
 #[derive(Clone, Copy)]
 pub struct MeshImportSettings {

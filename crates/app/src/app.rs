@@ -1,13 +1,13 @@
 use ahash::AHashSet;
 use glutin::{
     event::{DeviceEvent, WindowEvent},
-    event_loop::{EventLoop, ControlFlow},
+    event_loop::{ControlFlow, EventLoop},
 };
 use gui::egui::util::id_type_map::TypeId;
 use mimalloc::MiMalloc;
-use rendering::prelude::{GraphicsSetupSettings, FrameRateLimit};
+use rendering::prelude::{FrameRateLimit, GraphicsSetupSettings};
 use std::path::PathBuf;
-use world::{Event, Events, Init, System, Update, World, State};
+use world::{Event, Events, Init, State, System, Update, World};
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -164,7 +164,7 @@ impl App {
         };
 
         // We must now start the game engine (start the glutin event loop)
-        el.run(move |event, _, cf| match event {            
+        el.run(move |event, _, cf| match event {
             // Call the update events
             glutin::event::Event::MainEventsCleared => {
                 events.execute::<Update>(&mut world);
@@ -175,7 +175,7 @@ impl App {
 
                 sleeper.loop_sleep();
             }
-            
+
             // Call the window events
             glutin::event::Event::WindowEvent {
                 window_id: _,

@@ -1,17 +1,16 @@
-
-
 use assets::Assets;
 
 use math::{Location, Rotation};
-use world::{World};
+use world::World;
 
 use crate::{
-    canvas::{BlendMode, FaceCullMode, PrimitiveMode},
+    buffer::UniformBuffer,
     context::{Context, Window},
-    mesh::{EnabledAttributes},
+    display::{BlendMode, FaceCullMode, PrimitiveMode},
+    mesh::EnabledAttributes,
     others::Comparison,
-    scene::{Camera, DirectionalLight, Renderer, PointLight},
-    shader::{Shader, Uniforms}, buffer::UniformBuffer,
+    scene::{Camera, DirectionalLight, PointLight, Renderer},
+    shader::{Shader, Uniforms},
 };
 
 // These are the default resources that we pass to any/each material
@@ -34,7 +33,7 @@ pub trait Material<'w>: 'static + Sized {
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader;
 
     // These are the minimum mesh attributes that must be enabled to be able to render the surface
-    // The EnabledAttributes::POSITIONS attribute will always be required 
+    // The EnabledAttributes::POSITIONS attribute will always be required
     fn requirements() -> EnabledAttributes {
         EnabledAttributes::POSITIONS
     }
@@ -62,7 +61,9 @@ pub trait Material<'w>: 'static + Sized {
     }
 
     // Should we assume that the shader instance is always valid?
-    unsafe fn should_assume_valid() -> bool { false }
+    unsafe fn should_assume_valid() -> bool {
+        false
+    }
 
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;

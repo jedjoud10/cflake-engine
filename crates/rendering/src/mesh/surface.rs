@@ -1,5 +1,5 @@
 use super::Mesh;
-use crate::material::{Material};
+use crate::material::Material;
 use crate::pipeline::{PipeId, SpecializedPipeline};
 use ecs::Component;
 
@@ -23,7 +23,11 @@ pub struct Surface<M: for<'w> Material<'w>> {
 
 impl<M: for<'w> Material<'w>> Surface<M> {
     // Create a new surface that can be rendered
-    pub fn new(mesh: Handle<Mesh>, material: Handle<M>, id: PipeId<SpecializedPipeline<M>>) -> Self {
+    pub fn new(
+        mesh: Handle<Mesh>,
+        material: Handle<M>,
+        id: PipeId<SpecializedPipeline<M>>,
+    ) -> Self {
         Self {
             mesh,
             material,

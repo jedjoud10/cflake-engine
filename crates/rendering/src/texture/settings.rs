@@ -1,9 +1,7 @@
 use std::num::NonZeroU8;
 
-
-
 // Some settings that tell us exactly how we should generate a texture
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TextureMode {
     // Static textures cannot be modified, they can only be read
     Static,
@@ -83,7 +81,8 @@ pub struct Sampling {
 impl Default for Sampling {
     fn default() -> Self {
         Self {
-            filter: Filter::Linear, wrap: Wrap::Repeat
+            filter: Filter::Linear,
+            wrap: Wrap::Repeat,
         }
     }
 }

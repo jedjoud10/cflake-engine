@@ -1,6 +1,4 @@
-
-
-use crate::{Movable, Boundable, SharpVertices, Volume, SurfaceArea};
+use crate::{Boundable, Movable, SharpVertices, SurfaceArea, Volume};
 
 // An axis aligned bounding box
 #[derive(Clone, Copy)]
@@ -22,21 +20,22 @@ impl AABB {
 
         for point in points {
             // Update the "max" bound element wise
-            for (point_element, max_element) in point.as_slice().iter().zip(max.as_mut_slice().iter_mut()) {
+            for (point_element, max_element) in
+                point.as_slice().iter().zip(max.as_mut_slice().iter_mut())
+            {
                 *max_element = f32::max(*max_element, *point_element)
             }
 
             // Update the "min" bound element wise
-            for (point_element, min_element) in point.as_slice().iter().zip(min.as_mut_slice().iter_mut()) {
+            for (point_element, min_element) in
+                point.as_slice().iter().zip(min.as_mut_slice().iter_mut())
+            {
                 *min_element = f32::max(*min_element, *point_element)
             }
         }
 
         // Check if the AABB would be valid
-        (min != max).then_some(Self {
-            min,
-            max,
-        })
+        (min != max).then_some(Self { min, max })
     }
 
     // Check if the AABB is valid (it's max point is indeed bigger than min)
