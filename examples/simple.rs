@@ -25,10 +25,10 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.003, 10000.0, 16.0 / 9.0);
+    let camera = Camera::new(70.0, 0.003, 6000.0, 16.0 / 9.0);
     ecs.insert((
         camera,
-        Location::at_xyz(0.0, 1.3, 3.0),
+        Location::at_xyz(0.0, 1.5, 4.0),
         Rotation::rotation_x(-20.0f32.to_radians()),
     ));
 

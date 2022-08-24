@@ -60,7 +60,7 @@ fn init(world: &mut World) {
     // Create the default albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/textures/metal/diffuse.jpg",
+            "user/textures/bricks/diffuse.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -69,7 +69,7 @@ fn init(world: &mut World) {
     // Create the default normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/textures/metal/normal.jpg",
+            "user/textures/bricks/normal.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -78,7 +78,7 @@ fn init(world: &mut World) {
     // Create the default mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "user/textures/metal/mask.jpg",
+            "user/textures/bricks/mask.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
     .unwrap();
@@ -99,20 +99,26 @@ fn init(world: &mut World) {
         albedo_map,
         normal_map,
         mask_map,
-        bumpiness: 0.4,
+        bumpiness: 1.0,
         roughness: 1.0,
         ambient_occlusion: 1.0,
         metallic: 1.0,
-        scale: vek::Vec2::broadcast(5.0),
+        scale: vek::Vec2::broadcast(2.0),
         tint: vek::Rgb::white(),
     });
 
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
-    let surface = Surface::new(cube, material, pipeid);
+
+    for x in 0..80 {
+        for y in 0..80 {
+            let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+            ecs.insert((surface, Location::at_xyz(x as f32, y as f32, 0.0), Renderer::default()));
+
+        }
+    }
 
     // Insert a new entity that contains the valid surface
-    ecs.insert((surface, Renderer::default()));
 
     // Load in the texture
     let texture = albedo_maps.insert(
@@ -162,11 +168,27 @@ fn init(world: &mut World) {
 struct Velocity {
     velocity: vek::Vec3<f32>,
 }
-
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
+    let mut ui = world.get_mut::<UserInterface>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    let ctx = ui.as_mut().as_mut();
+    egui::Window::new("Test window").show(ctx, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Delta (s/f): ");
+            ui.label(time.delta_f32().to_string());
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("FPS (f/s): ");
+            ui.label((1.0 / time.delta_f32()).to_string());
+        });
+    });
+
     let shading = world.get::<ClusteredShading>().unwrap();
     let window = world.get_mut::<Window>().unwrap();
+    window.raw().set_cursor_grab(true);
+    window.raw().set_cursor_visible(false);
 
     // Get the input resources
     let keyboard = world.get::<Keyboard>().unwrap();
