@@ -40,7 +40,7 @@ fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
 }
 
 // A global rasterizer that will draw the eGUI elements onto the screen canvas
-pub struct Painter {
+pub(crate) struct Painter {
     // A simple 2D shader that will draw the shapes
     shader: Shader,
 
@@ -118,7 +118,7 @@ impl Painter {
     }
 
     // Draw the whole user interface onto the screen
-    pub fn draw(
+    pub(crate) fn draw(
         &mut self,
         window: &mut Window,
         ctx: &mut Context,

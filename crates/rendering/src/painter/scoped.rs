@@ -12,7 +12,7 @@ use crate::{
 
 use super::Display;
 
-// This is what we will use within a display as it's backing store
+// This is what we will use within a canvas as it's backing store
 // TODO: Remove the size and texel field from the enum variants and just put it in a main wrapper
 pub enum DisplayStorageDescriptor<'a> {
     // This specifies a single layer in a texture2D that we can write to
@@ -148,7 +148,7 @@ pub(crate) struct RawFramebuffer {
     pub countdown_reset_value: Duration,
 }
 
-// A display is a type of wrapper around raw OpenGL framebuffers
+// A canvas is a type of wrapper around raw OpenGL framebuffers
 // Display have a specific rust lifetime, although they might/might not destroy their underlying framebuffer if needed
 pub struct ScopedCanvas<'a, L: ScopedCanvasLayout<'a>> {
     layout: L,
@@ -168,7 +168,7 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
         }
     }
 
-    // This is called whenever we want to create a new display with a specific hint and layout
+    // This is called whenever we want to create a new canvas with a specific hint and layout
     pub fn new(
         context: &mut Context,
         layout: L,
@@ -179,7 +179,7 @@ impl<'a, L: ScopedCanvasLayout<'a>> ScopedCanvas<'a, L> {
             return None;
         }
 
-        // Hash the display layout to compare it
+        // Hash the canvas layout to compare it
         let hasher = DefaultHasher::default();
         let uid = layout
             .descriptors()
@@ -283,7 +283,7 @@ impl<'a, L: ScopedCanvasLayout<'a>> ToGlName for ScopedCanvas<'a, L> {
     }
 }
 
-// We can render to a scoped canvas, so it is in fact a display
+// We can render to a scoped canvas, so it is in fact a canvas
 impl<'a, L: ScopedCanvasLayout<'a>> Display for ScopedCanvas<'a, L> {
     fn viewport(&self) -> Viewport {
         self.view
