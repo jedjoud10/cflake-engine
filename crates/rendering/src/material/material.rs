@@ -6,7 +6,7 @@ use world::World;
 use crate::{
     buffer::UniformBuffer,
     context::{Context, Window},
-    painter::{BlendMode, FaceCullMode, PrimitiveMode},
+    display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
     others::Comparison,
     scene::{Camera, DirectionalLight, PointLight, Renderer},
