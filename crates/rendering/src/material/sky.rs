@@ -2,7 +2,7 @@ use time::Time;
 use world::{Handle, Read, Storage};
 
 use crate::{
-    display::PrimitiveMode,
+    painter::PrimitiveMode,
     material::{AlbedoMap, Material},
     prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage},
     scene::Renderer,

@@ -346,8 +346,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Get an untyped buffer reference of the current buffer
-    pub fn format_any(&self) -> BufferFormatAny {
-        BufferFormatAny {
+    pub fn untyped_format(&self) -> UntypedBufferFormat {
+        UntypedBufferFormat {
             target: TARGET,
             buffer: self.buffer,
             length: self.length,
@@ -496,7 +496,7 @@ impl<T: Shared, const TARGET: u32> Drop for Buffer<T, TARGET> {
 
 // This is an untyped reference to the format of a specific buffer
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct BufferFormatAny {
+pub struct UntypedBufferFormat {
     target: u32,
     buffer: u32,
     length: usize,
@@ -506,7 +506,7 @@ pub struct BufferFormatAny {
     stride: usize,
 }
 
-impl BufferFormatAny {
+impl UntypedBufferFormat {
     // Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length
@@ -543,7 +543,7 @@ impl BufferFormatAny {
     }
 }
 
-impl ToGlName for BufferFormatAny {
+impl ToGlName for UntypedBufferFormat {
     fn name(&self) -> u32 {
         self.buffer
     }

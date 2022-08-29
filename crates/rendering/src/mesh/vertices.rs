@@ -1,6 +1,6 @@
 use super::attributes::*;
 use crate::{
-    buffer::{ArrayBuffer, Buffer, BufferFormatAny},
+    buffer::{ArrayBuffer, Buffer, UntypedBufferFormat},
     object::ToGlName,
 };
 
@@ -36,18 +36,18 @@ impl VerticesRef<'_> {
     // Get all the available attribute buffers as any wrapper types
     pub fn as_any(
         &self,
-    ) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Option<(UntypedBufferFormat, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
             self.attribute::<Position>()
-                .map(|b| (Buffer::format_any(b), Position::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Position::format_any())),
             self.attribute::<Normal>()
-                .map(|b| (Buffer::format_any(b), Normal::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Normal::format_any())),
             self.attribute::<Tangent>()
-                .map(|b| (Buffer::format_any(b), Tangent::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Tangent::format_any())),
             self.attribute::<Color>()
-                .map(|b| (Buffer::format_any(b), Color::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Color::format_any())),
             self.attribute::<TexCoord>()
-                .map(|b| (Buffer::format_any(b), TexCoord::format_any())),
+                .map(|b| (Buffer::untyped_format(b), TexCoord::format_any())),
         ]
     }
 
@@ -106,18 +106,18 @@ impl VerticesMut<'_> {
     // Get all the available attribute buffers as any wrapper types
     pub fn as_any(
         &self,
-    ) -> [Option<(BufferFormatAny, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
+    ) -> [Option<(UntypedBufferFormat, AttributeFormatAny)>; MAX_MESH_VERTEX_ATTRIBUTES] {
         [
             self.attribute::<Position>()
-                .map(|b| (Buffer::format_any(b), Position::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Position::format_any())),
             self.attribute::<Normal>()
-                .map(|b| (Buffer::format_any(b), Normal::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Normal::format_any())),
             self.attribute::<Tangent>()
-                .map(|b| (Buffer::format_any(b), Tangent::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Tangent::format_any())),
             self.attribute::<Color>()
-                .map(|b| (Buffer::format_any(b), Color::format_any())),
+                .map(|b| (Buffer::untyped_format(b), Color::format_any())),
             self.attribute::<TexCoord>()
-                .map(|b| (Buffer::format_any(b), TexCoord::format_any())),
+                .map(|b| (Buffer::untyped_format(b), TexCoord::format_any())),
         ]
     }
 

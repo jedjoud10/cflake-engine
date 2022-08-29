@@ -1,25 +1,14 @@
-use super::{DisplayStorageDescriptor, ScopedCanvasLayout, ToDisplayStorageDescriptor};
+use super::{ToCanvasStorage, CanvasLayout, CanvasStorage};
 use seq_macro::seq;
-
-// Default scoped canvas layout does not contain any attachments
-impl<'a> ScopedCanvasLayout<'a> for () {
-    fn descriptors(&self) -> Vec<DisplayStorageDescriptor<'a>> {
-        panic!()
-    }
-
-    fn is_valid(&self) -> bool {
-        true
-    }
-}
 
 macro_rules! tuple_impls_color_layout {
     ( $( $name:ident )+, $max:tt) => {
-        impl<'a, $($name: ToDisplayStorageDescriptor<'a>),+> ScopedCanvasLayout<'a> for ($($name,)+) {
-            fn descriptors(&self) -> Vec<DisplayStorageDescriptor<'a>> {
+        impl<'a, $($name: ToCanvasStorage<'a>),+> CanvasLayout<'a> for ($($name,)+) {
+            fn storages(self) -> Vec<CanvasStorage> {
                 // TODO: Remove this hack
-                let mut vec = Vec::<DisplayStorageDescriptor<'a>>::new();
+                let mut vec = Vec::<CanvasStorage>::new();
                 seq!(N in 0..$max {
-                    let desc = ToDisplayStorageDescriptor::into(&self.N);
+                    let desc = ToCanvasStorage::into(self.N);
                     vec.push(desc);
                 });
                 vec

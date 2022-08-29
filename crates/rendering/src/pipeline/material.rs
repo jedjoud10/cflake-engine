@@ -1,10 +1,10 @@
 use super::{CreatePipeline, Pipeline};
 use crate::{
     context::{Context, Window},
-    display::{RasterSettings},
+    painter::{RasterSettings},
     material::{Material, DefaultMaterialResources},
     mesh::{Mesh, Surface},
-    prelude::{Shader, ScopedCanvas, Viewport, Display, Texture, Region},
+    prelude::{Shader, ScopedPainter, Viewport, Display, Texture, Region},
     scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
 };
 use assets::Assets;
@@ -64,7 +64,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Create a new rasterizer so we can draw the objects onto the world
         let shader = shaders.get_mut(&self.shader);
-        let mut scoped = ScopedCanvas::new(&mut ctx, (&mut shading.color_tex, &mut shading.depth_tex), window.viewport()).unwrap();
+        let mut scoped = ScopedPainter::new(&mut ctx, (&mut shading.color_tex, &mut shading.depth_tex), window.viewport()).unwrap();
         let (mut rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 
         let main = DefaultMaterialResources {

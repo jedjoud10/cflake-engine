@@ -6,6 +6,17 @@ use vek::Vec2;
 use vek::Vec3;
 use vek::Vec4;
 
+// An untyped wrapper around texel types
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub struct UntypedTexel {
+    pub internal_format: u32,
+    pub format: u32,
+    pub type_: u32,
+    pub channels: u32,
+    pub bytes_per_channel: u32,
+    pub enum_format: TexelFormat,
+}
+
 // The "type" of texel layout we're dealing with
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TexelFormat {
@@ -32,6 +43,18 @@ pub trait Texel: 'static {
     fn bytes() -> u32 {
         Self::BYTES_PER_CHANNEL * Self::CHANNELS
     }
+
+    // Convert the texel type to an untypped wrapper
+    fn untyped() -> UntypedTexel {
+        UntypedTexel {
+            internal_format: Self::INTERNAL_FORMAT,
+            format: Self::FORMAT,
+            type_: Self::TYPE,
+            channels: Self::CHANNELS,
+            bytes_per_channel: Self::BYTES_PER_CHANNEL,
+            enum_format: Self::ENUM_FORMAT,
+        }
+    } 
 }
 
 // Implement the color texel layout

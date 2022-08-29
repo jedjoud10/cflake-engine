@@ -3,6 +3,7 @@ pub extern crate opengl as gl;
 pub mod buffer;
 pub mod context;
 pub mod display;
+pub mod painter;
 pub mod material;
 pub mod mesh;
 pub mod object;
@@ -15,6 +16,7 @@ pub mod prelude {
     pub use super::buffer::*;
     pub use super::context::*;
     pub use super::display::*;
+    pub use super::painter::*;
     pub use super::gl;
     pub use super::material::*;
     pub use super::mesh::*;

@@ -5,20 +5,13 @@ use std::{any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDef
 
 use crate::{
     pipeline::{CreatePipeline, PipeId, Pipeline},
-    prelude::{RawFramebuffer},
 };
 use super::get_static_str;
-
-// HashMap that contains framebuffers and their layout identifiers
-pub(crate) type FramebufferHashMap = HashMap<u64, RawFramebuffer, BuildHasherDefault<NoHashHasher<u64>>>;
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
     // Raw Glutin context
     ctx: RawContext<PossiblyCurrent>,
-
-    // List of generated framebuffers and their layout hashes
-    pub(crate) framebuffers: FramebufferHashMap,
 
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
@@ -36,10 +29,8 @@ impl Context {
             gl::DebugMessageCallback(Some(super::callback), null());
         }
 
-        // Create el safe wrapper
         Self {
             ctx,
-            framebuffers: Default::default(),
             pipelines: Default::default(),
         }
     }
@@ -69,16 +60,6 @@ impl Context {
             .iter()
             .map(|(_key, value)| value.clone())
             .collect::<_>()
-    }
-
-    // This is a method called at the end of every frame to release temporary values like binldess textures and framebuffers
-    pub(crate) fn release_temporary(&mut self, passed: Duration) {
-        self.framebuffers.retain(|_, raw| {
-            match raw.current_countdown.checked_sub(passed) {
-                Some(val) => { raw.current_countdown = val; true },
-                None => false,
-            } 
-        });
     }
 
     // Get the raw Glutin OpenGL context wrapper
