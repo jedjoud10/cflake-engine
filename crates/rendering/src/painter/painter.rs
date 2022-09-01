@@ -49,9 +49,27 @@ pub struct ScopedPainter<'layout, 'painter, L: CanvasLayout<'layout>> {
 impl<'layout, 'painter, L: CanvasLayout<'layout>> ScopedPainter<'layout, 'painter, L> {
     // Create a new scoped canvas from a painter and a canvas layout 
     pub fn new(painter: &'painter mut Painter, layout: L, viewport: Viewport) -> Option<Self> {
-        // Make sure the layout is valid
-        // Update the underlying framebuffer if needed
-        None
+        // Check if the layout is indeed valid
+        if !layout.valid() {
+            return None;
+        }
+
+        // Update the underlying framebuffer if needed (if the layout is different)
+        let new = layout.storages();
+
+        // Calculate delta
+        let added = new.iter().filter(|new| !painter.storages.contains(new)).cloned().collect::<Vec<_>>();
+        let removed = painter.storages.iter().filter(|old| !new.contains(old)).cloned().collect::<Vec<_>>();
+        
+        painter.storages = layout.storages();
+
+
+        // Create the scoped painter
+        Some(Self {
+            painter,
+            phantom_: Default::default(),
+            viewport,
+        })
     }
 }
 

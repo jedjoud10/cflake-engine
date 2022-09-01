@@ -4,11 +4,11 @@ use seq_macro::seq;
 macro_rules! tuple_impls_color_layout {
     ( $( $name:ident )+, $max:tt) => {
         impl<'a, $($name: ToCanvasStorage<'a>),+> CanvasLayout<'a> for ($($name,)+) {
-            fn storages(self) -> Vec<CanvasStorage> {
+            fn storages(&self) -> Vec<CanvasStorage> {
                 // TODO: Remove this hack
                 let mut vec = Vec::<CanvasStorage>::new();
                 seq!(N in 0..$max {
-                    let desc = ToCanvasStorage::into(self.N);
+                    let desc = ToCanvasStorage::into(&self.N);
                     vec.push(desc);
                 });
                 vec
