@@ -6,7 +6,7 @@ use super::{
     introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage,
     VertexStage,
 };
-use crate::{context::Context, object::ToGlName};
+use crate::{context::{Context, ToGlName}};
 
 // Compile a shader program using multiple unlinked shader stages
 unsafe fn compile(username: String, names: &[u32]) -> Program {

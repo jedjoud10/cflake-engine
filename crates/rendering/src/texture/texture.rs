@@ -2,8 +2,7 @@ use super::{
     Extent, Filter, MipLayerMut, MipLayerRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
 };
 use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
+    context::{Context, ToGlName, ToGlTarget},
 };
 use std::{num::NonZeroU8, ptr::null};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D

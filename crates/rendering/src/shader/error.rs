@@ -2,8 +2,6 @@
 pub enum UniformsError {
     IncompleteUniform(String),
     IncompleteBufferBinding(String),
-    InvalidTexture(String),
-    InvalidBuffer(String),
 }
 
 impl std::fmt::Debug for UniformsError {
@@ -12,12 +10,6 @@ impl std::fmt::Debug for UniformsError {
             UniformsError::IncompleteUniform(name) => write!(f, "The uniform '{name}' was not set"),
             UniformsError::IncompleteBufferBinding(name) => {
                 write!(f, "The binding buffer point '{name}' was not set")
-            }
-            UniformsError::InvalidTexture(name) => {
-                write!(f, "The texture at location '{name}' was destroyed")
-            }
-            UniformsError::InvalidBuffer(name) => {
-                write!(f, "The buffer at binding '{name}' was destroyed")
             }
         }
     }

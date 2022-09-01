@@ -1,4 +1,4 @@
-use crate::{buffer::TriangleBuffer, object::ToGlName};
+use crate::{buffer::TriangleBuffer, context::ToGlName};
 
 // Immutable access to the mesh indices
 pub struct TrianglesRef<'a> {

@@ -1,7 +1,7 @@
 use super::attributes::*;
 use crate::{
     buffer::{ArrayBuffer, Buffer, UntypedBufferFormat},
-    object::ToGlName,
+    context::ToGlName,
 };
 
 // Immutable access to the mesh vertices

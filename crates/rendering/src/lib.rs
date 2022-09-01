@@ -6,7 +6,6 @@ pub mod display;
 pub mod painter;
 pub mod material;
 pub mod mesh;
-pub mod object;
 pub mod others;
 pub mod pipeline;
 pub mod scene;
@@ -20,7 +19,6 @@ pub mod prelude {
     pub use super::gl;
     pub use super::material::*;
     pub use super::mesh::*;
-    pub use super::object::*;
     pub use super::others::*;
     pub use super::pipeline::*;
     pub use super::scene::*;

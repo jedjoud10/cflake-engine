@@ -2,6 +2,8 @@ mod context;
 mod details;
 mod graphics;
 mod window;
+mod object;
+pub use object::*;
 pub use context::*;
 pub use details::*;
 pub use graphics::*;

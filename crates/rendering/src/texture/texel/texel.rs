@@ -1,6 +1,6 @@
 use super::channels::*;
 use super::element::*;
-use crate::object::Shared;
+use crate::context::Shared;
 use std::mem::size_of;
 use vek::Vec2;
 use vek::Vec3;

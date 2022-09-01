@@ -1,5 +1,4 @@
-use crate::object::{ToGlName, ToGlTarget};
-use crate::{context::Context, object::Shared};
+use crate::{context::{Context, ToGlName, ToGlTarget, Shared}};
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::MaybeUninit;

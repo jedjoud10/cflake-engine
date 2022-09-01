@@ -1,5 +1,5 @@
 use super::Introspection;
-use crate::object::{ToGlName, ToGlTarget};
+use crate::context::{ToGlName, ToGlTarget};
 use ahash::AHashMap;
 use std::marker::PhantomData;
 

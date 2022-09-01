@@ -1,6 +1,6 @@
 use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
 
-use crate::object::ToGlName;
+use crate::context::ToGlName;
 
 // The type of block that we have stored
 #[derive(Debug)]

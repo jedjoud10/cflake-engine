@@ -2,8 +2,7 @@ use assets::Asset;
 
 use super::{ImageTexel, Region, Texel, Texture, TextureImportSettings, TextureMode};
 use crate::{
-    context::Context,
-    object::{ToGlName, ToGlTarget},
+    context::{Context, ToGlName, ToGlTarget},
 };
 use std::{ffi::c_void, marker::PhantomData, num::NonZeroU8};
 

@@ -4,7 +4,7 @@ use crate::{
     display::{RasterSettings},
     material::{Material, DefaultMaterialResources},
     mesh::{Mesh, Surface},
-    prelude::{Shader, ScopedPainter, Viewport, Display, Texture, Region},
+    prelude::{Shader, Painter, ScopedPainter, Viewport, Display, Texture, Region},
     scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
 };
 use assets::Assets;
@@ -64,8 +64,10 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Create a new rasterizer so we can draw the objects onto the world
         let shader = shaders.get_mut(&self.shader);
-        let layout = (shading.color_tex.get_layer_mut(0).unwrap(), shading.depth_tex.get_layer_mut(0).unwrap());
-        let mut scoped = ScopedPainter::new(&mut shading.painter, layout, window.viewport()).unwrap();
+        /*
+        let mut scoped = ScopedCanvas::new(&mut shading.canvas, window.viewport());
+        scoped.set_rw_storage();
+        scoped.set_rw_storage();
         let (mut rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 
         let main = DefaultMaterialResources {
@@ -125,6 +127,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 stats.tris += mesh.triangles().len() as u32;
             }
         }
+        */
     }
 }
 

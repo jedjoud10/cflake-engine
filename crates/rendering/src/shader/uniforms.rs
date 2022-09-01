@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
-use crate::{context::Context, object::ToGlName, texture::Texture};
+use crate::{context::{Context, ToGlName}, texture::Texture};
 
 // IMplement the scalar trait for single, scalar uniform types
 macro_rules! impl_scalars {
@@ -267,24 +267,6 @@ impl<'uniforms> Uniforms<'uniforms> {
 
         if let Some(name) = missing_buffer_binding {
             return Err(UniformsError::IncompleteBufferBinding(name.clone()));
-        }
-
-        let destroyed_texture = self
-            .texture_units
-            .iter()
-            .find(|(_, unit)| unsafe { gl::IsTexture(unit.texture) == 0 });
-
-        let destroyed_buffer = self
-            .bound_buffer_bindings
-            .iter()
-            .find(|(_, &unit)| unsafe { gl::IsBuffer(unit) == 0 });
-
-        if let Some((name, _)) = destroyed_texture {
-            return Err(UniformsError::InvalidTexture(name.clone()));
-        }
-
-        if let Some((name, _)) = destroyed_buffer {
-            return Err(UniformsError::InvalidBuffer(name.clone()));
         }
 
         Ok(())
