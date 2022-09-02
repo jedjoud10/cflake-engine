@@ -13,9 +13,11 @@ pub enum AttachmentLocation {
 
 // An attachment binding is a wrapper around an attachment location that was accepted into the canvas
 pub struct AttachmentBinding<T: Texel> {
+    framebuffer: u32,
     converted_gl_location: u32,
     index: usize,
     _phantom: PhantomData<T>,
+    attachment: FramebufferAttachment<T>,
 }
 
 // This is a wrapper around framebuffer attachments
@@ -60,8 +62,8 @@ pub struct Canvas {
 }
 
 impl Canvas {    
-    // Create a new blank framebuffer with a specific layout
-    pub fn new(ctx: &mut Context) -> (Self, L::Out) {
+    // Create a new blank framebuffer with a specific texel layout
+    pub fn new<L: CanvasTexelLayout>(ctx: &mut Context) -> Result<(Self, L::Out), CanvasError> {
         let mut name = 0u32;
         unsafe {
             gl::GenFramebuffers(1, &mut name);
@@ -74,24 +76,25 @@ impl Canvas {
         }
     }
 
-    // Create a new attachment binding for a canvas storage of a specific texel type
-    pub fn insert<T: Texel>(&mut self) -> AttachmentBinding<T> {
-        todo!()
-    }
+    // Attach a new target to the canvas using it's binding (only if necessary)
+    unsafe fn attach<T: Texel>(&mut self, storage: FramebufferAttachment<T>, binding: &mut AttachmentBinding<T>) {
+        // We cannot use the binding from another canvas
+        if binding.framebuffer != self.name {
+            panic!("Cannot use the given binding since it originates from another canvas");
+        }
 
-    // Attach a new target to the painter (only if necessary)
-    unsafe fn attach<T: Texel>(&mut self, storage: FramebufferAttachment<T>, binding: &AttachmentBinding<T>) {
         // Check if we *must* send out OpenGL commands
         if (self.layout & (1 >> binding.index)) == 1 {
-            let attachment = *self.bindings[binding.index].1.assume_init_ref();
-            if attachment == storage {
+            if binding.attachment == storage {
                 return;
+            } else {
+                binding.attachment = storage;
             }
         }
 
         // Set the framebuffer storage
         match storage {
-            FramebufferAttachment::TextureLevel { texture_name, level, layer, untyped } => {
+            FramebufferAttachment::TextureLevel { texture_name, level, layer, untyped, .. } => {
                 gl::NamedFramebufferTextureLayer(self.name, binding.converted_gl_location, texture_name, level as i32, layer as i32);
             },
         }
@@ -136,9 +139,14 @@ impl<'a> ScopedPainter<'a> {
         }
     }
 
-    // Set a specific storage target inside the painter
-    pub fn set_rw_target<'b, T: Texel, F: ToFramebufferAttachment<'b, T>>(&mut self, target: F, binding: &AttachmentBinding<T>) {
+    // Set a specific storage target to write to using this scoped painter
+    pub fn set_rw_target<'b, T: Texel, F: ToFramebufferAttachment<'b, T>>(&mut self, target: F, binding: &mut AttachmentBinding<T>) {
         unsafe { self.canvas.attach(T::into(&target), binding) }
+    }
+
+    // Get an immutable reference to the inner canvas
+    pub fn canvas(&self) -> &Canvas {
+        &self.canvas
     }
 }
 

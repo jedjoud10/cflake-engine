@@ -18,7 +18,7 @@ pub struct UntypedTexel {
 }
 
 // The "type" of texel layout we're dealing with
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TexelFormat {
     Color,
     Depth,

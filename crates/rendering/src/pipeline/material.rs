@@ -4,7 +4,7 @@ use crate::{
     display::{RasterSettings},
     material::{Material, DefaultMaterialResources},
     mesh::{Mesh, Surface},
-    prelude::{Shader, Painter, ScopedPainter, Viewport, Display, Texture, Region},
+    prelude::{Shader, Canvas, ScopedPainter, Viewport, Display, Texture, Region},
     scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
 };
 use assets::Assets;

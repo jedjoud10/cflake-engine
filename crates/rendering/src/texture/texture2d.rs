@@ -50,12 +50,12 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.levels
     }
 
-    fn get_layer(&self, level: u8) -> Option<super::MipLayerRef<Self>> {
-        (level < self.levels.get()).then(|| super::MipLayerRef::new(self, level))
+    fn get_layer(&self, level: u8) -> Option<super::MipLevelRef<Self>> {
+        (level < self.levels.get()).then(|| super::MipLevelRef::new(self, level))
     }
 
-    fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLayerMut<Self>> {
-        (level < self.levels.get()).then(|| super::MipLayerMut::new(self, level))
+    fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLevelMut<Self>> {
+        (level < self.levels.get()).then(|| super::MipLevelMut::new(self, level))
     }
 
     unsafe fn from_raw_parts(

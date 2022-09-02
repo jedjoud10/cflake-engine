@@ -1,5 +1,5 @@
 use super::{
-    Extent, Filter, MipLayerMut, MipLayerRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
+    Extent, Filter, MipLevelMut, MipLevelRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
 };
 use crate::{
     context::{Context, ToGlName, ToGlTarget},
@@ -159,10 +159,10 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     fn levels(&self) -> NonZeroU8;
 
     // Get a single mip level from the texture, immutably
-    fn get_layer(&self, level: u8) -> Option<MipLayerRef<Self>>;
+    fn get_layer(&self, level: u8) -> Option<MipLevelRef<Self>>;
 
     // Get a single mip level from the texture, mutably
-    fn get_layer_mut(&mut self, level: u8) -> Option<MipLayerMut<Self>>;
+    fn get_layer_mut(&mut self, level: u8) -> Option<MipLevelMut<Self>>;
 
     // Resize the current texture (this will also set it's inner data to null)
     fn resize(&mut self, extent: <Self::Region as Region>::E) {

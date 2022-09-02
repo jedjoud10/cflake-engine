@@ -13,7 +13,7 @@ use crate::{
         Depth, Filter, FragmentStage, MipMaps, Processor, Ranged, Sampling, ShaderCompiler,
         Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
     },
-    shader::Shader, painter::Painter,
+    shader::Shader, canvas::Canvas,
 };
 
 use assets::Assets;
@@ -79,7 +79,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the clustered shading rendererer
     let clustered_shading = ClusteredShading {
         main_camera: None,
-        painter: Painter::new(ctx),
+        painter: Canvas::new(ctx),
         color_tex: color,
         depth_tex: depth,
         main_directional_light: None,

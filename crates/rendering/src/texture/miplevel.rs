@@ -3,12 +3,12 @@ use crate::prelude::TextureMode;
 use super::{Extent, Region, Texel, Texture};
 
 // An immutable mip layer that we can use to read from the texture
-pub struct MipLayerRef<'a, T: Texture> {
+pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
     level: u8,
 }
 
-impl<'a, T: Texture> MipLayerRef<'a, T> {
+impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Create a new mip layer view using a texture and a level
     pub(super) fn new(texture: &'a T, level: u8) -> Self {
         Self { texture, level }
@@ -69,12 +69,12 @@ impl<'a, T: Texture> MipLayerRef<'a, T> {
 }
 
 // A mutable mip layer that we can use to write to the texture
-pub struct MipLayerMut<'a, T: Texture> {
+pub struct MipLevelMut<'a, T: Texture> {
     texture: &'a mut T,
     level: u8,
 }
 
-impl<'a, T: Texture> MipLayerMut<'a, T> {
+impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Create a new mip layer mutable view using a texture and a level
     pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
         Self { texture, level }
