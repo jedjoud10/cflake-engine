@@ -10,12 +10,12 @@ use crate::{
 use std::marker::PhantomData;
 
 // A painter is a safe wrapper around an OpenGL framebuffer
-// However, a painter by itself does not store textures / renderbuffers
-// A painter must be "used" to give us a scoped painter that we can use to set targets
-// These targets are the actual textures / render buffers that we wish to draw to
+// Painters only store the texel types that we shall use, but they do not store the attachments by themselves
 pub struct Painter<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> {
     pub(super) name: u32,
-    attachments: Vec<UntypedAttachment>,
+    untyped_color_attachments: Option<Vec<UntypedAttachment>>,
+    untyped_depth_attachment: Option<UntypedAttachment>,
+    untyped_stencil_attachment: Option<UntypedAttachment>,
     _phantom: PhantomData<*const C>,
     _phantom2: PhantomData<*const D>,
     _phantom3: PhantomData<*const S>,
@@ -32,7 +32,9 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
         
         Self {
             name,
-            attachments: Vec::new(),
+            untyped_color_attachments: None,
+            untyped_depth_attachment: None,
+            untyped_stencil_attachment: None,
             _phantom: PhantomData,
             _phantom2: PhantomData,
             _phantom3: PhantomData,
@@ -40,7 +42,6 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
     }
 
     // Use the painter to give us a scoped painter that has proper targets
-    // This will return None if the current painter is defined as empty
     pub fn scope<CT: ColorAttachmentLayout<C>, DT: DepthAttachment<D>, ST: StencilAttachment<S>>(
         &mut self,
         viewport: Viewport,
@@ -48,7 +49,14 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
         depth: DT,
         stencil: ST,
     ) -> Option<ScopedPainter<C, D, S>> {
-        todo!()
+        // Convert the attachments to their untyped values
+        let untyped_color = colors.untyped();
+        let untyped_depth = depth.untyped();
+        let untyped_stencil = stencil.untyped();
+
+        // Check for any changes, and update the internal framebuffer if needed
+
+        None
     }
 
     /*

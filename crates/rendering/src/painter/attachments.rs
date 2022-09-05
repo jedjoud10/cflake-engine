@@ -80,15 +80,21 @@ impl<'a, T: Texel + PainterBitmask> Attachment<T> for MipLevelMut<'a, Texture2D<
 } 
 
 // This is implemented for all tuples that contain types of attachments of the specifici painter color layout
-pub trait ColorAttachmentLayout<C: PainterColorLayout> {}
-impl ColorAttachmentLayout<()> for () {}
+pub trait ColorAttachmentLayout<C: PainterColorLayout> {
+    fn untyped(&self) -> Option<Vec<UntypedAttachment>>;
+}
+impl ColorAttachmentLayout<()> for () {
+    fn untyped(&self) -> Option<Vec<UntypedAttachment>> {
+        None
+    }
+}
 
 // This is implemented for all attachments that use this painter depth texel
-pub trait DepthAttachment<D: PainterDepthTexel> {}
+pub trait DepthAttachment<D: PainterDepthTexel>: Attachment<D> {}
 impl<D: PainterDepthTexel + Texel, A: Attachment<D>> DepthAttachment<D> for A {}
 impl DepthAttachment<()> for () {}
 
 // This is implemented for all attachments that use this painter stencil texel
-pub trait StencilAttachment<S: PainterStencilTexel> {}
+pub trait StencilAttachment<S: PainterStencilTexel>: Attachment<S> {}
 impl<S: PainterStencilTexel + Texel, A: Attachment<S>> StencilAttachment<S> for A {}
 impl StencilAttachment<()> for () {}

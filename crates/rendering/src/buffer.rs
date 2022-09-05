@@ -94,7 +94,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             // Create OpenGL buffer and fetch pointer
             let mut buffer = 0;
             gl::CreateBuffers(1, &mut buffer);
-            gl::BindBuffer(TARGET, buffer);
             let bytes = (slice.len() * size_of::<T>()) as isize;
             let ptr = if bytes == 0 {
                 null()

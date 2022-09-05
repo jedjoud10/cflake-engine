@@ -8,7 +8,7 @@ use rendering::context::{Context, Window};
 use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
 use rendering::object::ToGlName;
-use rendering::prelude::{Display, MipMaps};
+use rendering::prelude::{Display, MipMaps, ToGlName};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -72,8 +72,7 @@ impl Painter {
         // Create the main mesh VAO
         let mut vao = 0;
         unsafe {
-            gl::GenVertexArrays(1, &mut vao);
-            gl::BindVertexArray(vao);
+            gl::CreateVertexArrays(1, &mut vao);
         }
 
         // Resizable buffers for vertices and indices

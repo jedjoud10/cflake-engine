@@ -354,8 +354,7 @@ impl<'uniforms> Uniforms<'uniforms> {
 
         unsafe {
             self.texture_units.get_mut(name).unwrap().texture = sampler.name();
-            gl::ActiveTexture(gl::TEXTURE0 + offset);
-            gl::BindTexture(T::target(), sampler.name());
+            gl::BindTextureUnit(offset, sampler.name());
             self.set_scalar(name, offset as i32);
         }
     }
