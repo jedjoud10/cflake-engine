@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use super::{
     ColorAttachmentLayout, DepthAttachment, PainterColorLayout, PainterDepthTexel,
     PainterStencilTexel, StencilAttachment, UntypedAttachment,
@@ -42,48 +44,64 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
     }
 
     // Use the painter to give us a scoped painter that has proper targets
-    pub fn scope<CT: ColorAttachmentLayout<C>, DT: DepthAttachment<D>, ST: StencilAttachment<S>>(
-        &mut self,
+    pub fn scope<'a, 'c: 'a, 'd: 'a, 's: 'a, CT: ColorAttachmentLayout<'c, C>, DT: DepthAttachment<'d, D>, ST: StencilAttachment<'s, S>>(
+        &'a mut self,
         viewport: Viewport,
         colors: CT,
         depth: DT,
         stencil: ST,
-    ) -> Option<ScopedPainter<C, D, S>> {
+    ) -> Option<ScopedPainter<'a, C, D, S>> {
         // Convert the attachments to their untyped values
         let untyped_color = colors.untyped();
         let untyped_depth = depth.untyped();
         let untyped_stencil = stencil.untyped();
 
         // Check for any changes, and update the internal framebuffer if needed
-
-        None
-    }
-
-    /*
-    // Attach a new target to the canvas using it's binding (only if necessary)
-    pub(super) unsafe fn attach<T: Texel>(&mut self, storage: Attachment<T>, binding: &mut AttachmentBinding<T>) {
-        // We cannot use the binding from another canvas
-        if binding.framebuffer() != self.name {
-            panic!("Cannot use the given binding since it originates from another canvas");
-        }
-
-        // Check if we *must* send out OpenGL commands
-        if (self.layout & (1 >> binding.index())) == 1 {
-            if binding.attachment == Some(storage) {
-                return;
-            } else {
-                binding.attachment = Some(storage);
+        // We don't have to bother about us checking the discriminent of the enum since we already know they are Some using type checks (TODO: Explain this a better)
+        // TODO: Delete duplicate OpenGL code
+        // Update the color attachments and the draw buffers
+        if untyped_color != self.untyped_color_attachments {
+            let mut offset = 0;
+            for attachment in untyped_color.unwrap() {
+                match attachment {
+                    UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
+                        gl::NamedFramebufferTextureLayer(self.name, gl::COLOR_ATTACHMENT0 + offset, texture_name, level as i32, layer as i32);
+                    },
+                }
+                offset += 1;
+            }
+ 
+            unsafe {
+                let draw = (0..offset).into_iter().map(|offset| gl::COLOR_ATTACHMENT0 + offset).collect_vec();
+                gl::NamedFramebufferDrawBuffers(self.name, draw.len() as i32, draw.as_ptr() as *const u32);
             }
         }
 
-        // Set the framebuffer storage
-        match storage {
-            Attachment::TextureLevel { texture_name, level, layer, .. } => {
-                gl::NamedFramebufferTextureLayer(self.name, binding.location(), texture_name, level as i32, layer as i32);
-            },
+        // Update the depth attachment
+        if untyped_depth != self.untyped_depth_attachment {
+            let depth = untyped_depth.unwrap();
+            match depth {
+                UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
+                    gl::NamedFramebufferTextureLayer(self.name, gl::DEPTH_ATTACHMENT, texture_name, level as i32, layer as i32);
+                },
+            }
         }
+
+        // Update the stencil attachment
+        if untyped_stencil != self.untyped_stencil_attachment {
+            let stencil = untyped_stencil.unwrap();
+            match stencil {
+                UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
+                    gl::NamedFramebufferTextureLayer(self.name, gl::STENCIL_ATTACHMENT, texture_name, level as i32, layer as i32);
+                },
+            }
+        }
+
+        Some(ScopedPainter {
+            painter: self,
+            viewport,
+        })
     }
-    */
 }
 
 // A scoped painter is what we must use to be able to use the Display's trait functionality

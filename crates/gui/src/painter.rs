@@ -4,11 +4,10 @@ use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::context::{Context, Window};
+use rendering::context::{Context, Window, ToGlName};
 use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
-use rendering::object::ToGlName;
-use rendering::prelude::{Display, MipMaps, ToGlName};
+use rendering::prelude::{Display, MipMaps};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 

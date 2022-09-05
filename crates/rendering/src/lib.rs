@@ -1,3 +1,4 @@
+#![feature(concat_idents)]
 pub extern crate opengl as gl;
 
 pub mod buffer;
