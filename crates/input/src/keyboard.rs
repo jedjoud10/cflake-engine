@@ -1,5 +1,5 @@
-use glutin::event::ElementState;
 use ahash::AHashMap;
+use glutin::event::ElementState;
 
 // The virtual keycodes that the window will receive (as a form of events)
 pub type Key = glutin::event::VirtualKeyCode;
@@ -48,7 +48,6 @@ impl KeyState {
     }
 }
 
-
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Keyboard {
     // "forward_key_bind" -> Key::W
@@ -73,7 +72,10 @@ impl KeyStateFetcher for Key {
 // Fetch the state of a single mapping
 impl KeyStateFetcher for &'static str {
     fn fetch(self, keyboard: &Keyboard) -> Option<&KeyState> {
-        keyboard.binds.get(self).and_then(|key| keyboard.keys.get(key))
+        keyboard
+            .binds
+            .get(self)
+            .and_then(|key| keyboard.keys.get(key))
     }
 }
 

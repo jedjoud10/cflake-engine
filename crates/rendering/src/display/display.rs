@@ -3,7 +3,7 @@ use crate::{
     prelude::{Shader, Uniforms, UntypedTexel},
 };
 
-use super::{Rasterizer, RasterSettings};
+use super::{RasterSettings, Rasterizer};
 
 // A viewport wrapper around raw OpenGL viewport
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -36,7 +36,12 @@ pub trait Display: Sized {
         // Set the viewport values
         unsafe {
             let v = self.viewport();
-            gl::Viewport(v.origin.x as i32, v.origin.y as i32, v.extent.w as i32, v.extent.h as i32);
+            gl::Viewport(
+                v.origin.x as i32,
+                v.origin.y as i32,
+                v.extent.w as i32,
+                v.extent.h as i32,
+            );
         }
 
         // Create the new rasterizer and it's corresponding uniforms

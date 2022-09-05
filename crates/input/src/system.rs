@@ -50,15 +50,17 @@ pub fn system(events: &mut Events) {
                             // Check if the key is "down" (either pressed or held)
                             let down = match *current.get() {
                                 KeyState::Pressed | KeyState::Held => true,
-                                _ => false
+                                _ => false,
                             };
-                            
-                            // If the key is pressed while it is currently down, it repeated itself, and we must ignore it                       
+
+                            // If the key is pressed while it is currently down, it repeated itself, and we must ignore it
                             if down ^ (key.state == ElementState::Pressed) {
                                 current.insert(key.state.into());
                             }
-                        },
-                        std::collections::hash_map::Entry::Vacant(v) => { v.insert(key.state.into()); },
+                        }
+                        std::collections::hash_map::Entry::Vacant(v) => {
+                            v.insert(key.state.into());
+                        }
                     }
                 }
             }

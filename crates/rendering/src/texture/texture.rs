@@ -1,9 +1,7 @@
 use super::{
     Extent, Filter, MipLevelMut, MipLevelRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
 };
-use crate::{
-    context::{Context, ToGlName, ToGlTarget},
-};
+use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{num::NonZeroU8, ptr::null};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
@@ -139,7 +137,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         if level == 0 {
             Some(self.dimensions())
         } else if level < self.levels().get() {
-            Some(unsafe { 
+            Some(unsafe {
                 <<Self::Region as Region>::E as Extent>::get_layer_extent(self.name(), level)
             })
         } else {

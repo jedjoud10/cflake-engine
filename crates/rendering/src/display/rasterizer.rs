@@ -1,5 +1,7 @@
+use crate::{
+    context::Context, display::Display, mesh::Mesh, others::Comparison, prelude::ValidUniforms,
+};
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
-use crate::{context::Context, mesh::Mesh, others::Comparison, prelude::ValidUniforms, display::Display};
 
 // Blend mode factor source
 // This is a certified bruh moment classic
@@ -137,7 +139,12 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         // Handle scissor testing and it's parameters
         if let Some((origin, size)) = &settings.scissor_test {
             gl::Enable(gl::SCISSOR_TEST);
-            gl::Scissor(origin.x, display.viewport().extent.h as i32 - origin.y, size.w, size.h);
+            gl::Scissor(
+                origin.x,
+                display.viewport().extent.h as i32 - origin.y,
+                size.w,
+                size.h,
+            );
         } else {
             gl::Disable(gl::SCISSOR_TEST);
         }

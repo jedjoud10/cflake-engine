@@ -38,7 +38,6 @@ fn init(world: &mut World) {
     asset!(&mut assets, "user/textures/bricks/normal.jpg");
     asset!(&mut assets, "user/textures/bricks/mask.jpg");
 
-
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
     let camera = Camera::new(90.0, 0.3, 10000.0, 16.0 / 9.0);
     let _camera = ecs.insert((
@@ -85,18 +84,18 @@ fn init(world: &mut World) {
             "user/textures/bricks/mask.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
-    .unwrap();
+        .unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
-    let cube = meshes.insert(assets.load_with::<Mesh>(
-        "engine/meshes/sphere.obj",
-        (
-            &mut ctx,
-            MeshImportSettings::default(),
-        ),
-    )
-    .unwrap());
+    let cube = meshes.insert(
+        assets
+            .load_with::<Mesh>(
+                "engine/meshes/sphere.obj",
+                (&mut ctx, MeshImportSettings::default()),
+            )
+            .unwrap(),
+    );
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard {
@@ -117,8 +116,11 @@ fn init(world: &mut World) {
     for x in 0..1 {
         for y in 0..1 {
             let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-            ecs.insert((surface, Location::at_xyz(x as f32, y as f32, 0.0), Renderer::default()));
-
+            ecs.insert((
+                surface,
+                Location::at_xyz(x as f32, y as f32, 0.0),
+                Renderer::default(),
+            ));
         }
     }
 
@@ -181,7 +183,7 @@ fn update(world: &mut World) {
         ui.add(egui::DragValue::new(&mut postprocessing.exposure).speed(0.1)); // 02
         ui.add(egui::Slider::new(
             &mut postprocessing.tonemapping_strength,
-            0.0f32..=1.0
+            0.0f32..=1.0,
         ));
         ui.add(egui::DragValue::new(&mut postprocessing.gamma).speed(0.1));
     });

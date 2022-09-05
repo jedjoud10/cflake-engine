@@ -25,11 +25,7 @@ impl<M: for<'w> Material<'w>> Surface<M> {
         material: Handle<M>,
         id: PipeId<SpecializedPipeline<M>>,
     ) -> Self {
-        Self {
-            mesh,
-            material,
-            id,
-        }
+        Self { mesh, material, id }
     }
 
     // Get the mesh handle

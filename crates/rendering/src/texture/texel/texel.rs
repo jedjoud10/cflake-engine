@@ -54,7 +54,7 @@ pub trait Texel: 'static {
             bytes_per_channel: Self::BYTES_PER_CHANNEL,
             enum_format: Self::ENUM_FORMAT,
         }
-    } 
+    }
 }
 
 // Implement the color texel layout

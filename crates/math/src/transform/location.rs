@@ -1,6 +1,6 @@
 use crate::IntoMatrix;
 use ecs::Component;
-use std::ops::{Deref, DerefMut, Add};
+use std::ops::{Add, Deref, DerefMut};
 
 #[derive(Default, Clone, Copy, Component)]
 pub struct Location(vek::Vec3<f32>);

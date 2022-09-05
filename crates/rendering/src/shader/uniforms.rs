@@ -1,7 +1,10 @@
 use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
-use crate::{context::{Context, ToGlName}, texture::Texture};
+use crate::{
+    context::{Context, ToGlName},
+    texture::Texture,
+};
 
 // IMplement the scalar trait for single, scalar uniform types
 macro_rules! impl_scalars {

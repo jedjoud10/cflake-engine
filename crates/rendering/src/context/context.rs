@@ -1,12 +1,13 @@
 use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
-use std::{any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, rc::Rc, time::Duration, ptr::null};
-
-use crate::{
-    pipeline::{CreatePipeline, PipeId, Pipeline},
+use std::{
+    any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc,
+    time::Duration,
 };
+
 use super::get_static_str;
+use crate::pipeline::{CreatePipeline, PipeId, Pipeline};
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {

@@ -67,14 +67,12 @@ fn init(world: &mut World) {
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
-    let cube = assets.load_with::<Mesh>(
-        "engine/meshes/cube.obj",
-        (
-            &mut ctx,
-            MeshImportSettings::default(),
-        ),
-    )
-    .unwrap();
+    let cube = assets
+        .load_with::<Mesh>(
+            "engine/meshes/cube.obj",
+            (&mut ctx, MeshImportSettings::default()),
+        )
+        .unwrap();
     let cube = meshes.insert(cube);
 
     // Create a new material instance with the normal map texture

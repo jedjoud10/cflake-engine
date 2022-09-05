@@ -173,10 +173,7 @@ impl Painter {
         uniforms.set_sampler("image", texture);
         let pixels = vek::Vec2::from(rasterizer.display().size().as_::<f32>());
         let ppt = rasterizer.display().raw().scale_factor() as f32;
-        uniforms.set_vec2::<vek::Vec2<f32>>(
-            "resolution",
-            pixels / ppt,
-        );
+        uniforms.set_vec2::<vek::Vec2<f32>>("resolution", pixels / ppt);
 
         // Render each clipped mesh using unsafe commands
         for mesh in meshes {

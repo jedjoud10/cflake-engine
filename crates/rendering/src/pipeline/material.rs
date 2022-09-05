@@ -1,11 +1,11 @@
 use super::{CreatePipeline, Pipeline};
 use crate::{
     context::{Context, Window},
-    display::{RasterSettings},
-    material::{Material, DefaultMaterialResources},
+    display::RasterSettings,
+    material::{DefaultMaterialResources, Material},
     mesh::{Mesh, Surface},
-    prelude::{Shader, Canvas, ScopedPainter, Viewport, Display, Texture, Region},
-    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
+    prelude::{Display, Region, Shader, Texture, Viewport},
+    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer}, painter::Painter,
 };
 use assets::Assets;
 use ecs::Scene;
@@ -62,12 +62,9 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             .as_view::<(&DirectionalLight, &Rotation)>()
             .unwrap();
 
-        // Create a new rasterizer so we can draw the objects onto the world
+        // Create a new rasterizer so we can draw the objects onto the painter
         let shader = shaders.get_mut(&self.shader);
-        /*
-        let mut scoped = ScopedCanvas::new(&mut shading.canvas, window.viewport());
-        scoped.set_rw_storage();
-        scoped.set_rw_storage();
+        let mut scoped = shading.painter.scope(window.viewport(), (), shading.depth_tex.get_layer_mut(0).unwrap(), ()).unwrap();
         let (mut rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 
         let main = DefaultMaterialResources {
@@ -127,7 +124,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 stats.tris += mesh.triangles().len() as u32;
             }
         }
-        */
     }
 }
 
