@@ -22,7 +22,6 @@ pub enum UntypedAttachment {
     TextureLevel {
         texture_name: u32,
         level: u8,
-        layer: u8,
         untyped: UntypedTexel,
     },
 }
@@ -34,19 +33,16 @@ impl PartialEq for UntypedAttachment {
                 Self::TextureLevel {
                     texture_name: l_texture_name,
                     level: l_level,
-                    layer: l_layer,
                     untyped: l_untyped,
                 },
                 Self::TextureLevel {
                     texture_name: r_texture_name,
                     level: r_level,
-                    layer: r_layer,
                     untyped: r_untyped,
                 },
             ) => {
                 l_texture_name == r_texture_name
                     && l_level == r_level
-                    && l_layer == r_layer
                     && l_untyped == r_untyped
             }
         }
@@ -73,7 +69,6 @@ impl<'a, T: Texel> Attachment<'a, T> for MipLevelMut<'a, Texture2D<T>> {
         Some(UntypedAttachment::TextureLevel { 
             texture_name: self.texture().name(),
             level: self.level(),
-            layer: 0,
             untyped: T::untyped()
         })
     }
@@ -89,6 +84,8 @@ impl<'a> ColorAttachmentLayout<'a, ()> for () {
     }
 }
 
+
+// TODO: Simplify this a tiny bit I guess?
 // This is implemented for all attachments that use this painter depth texel
 pub trait DepthAttachment<'a, D: PainterDepthTexel>: Attachment<'a, D> {}
 impl<'a, D: PainterDepthTexel + Texel, A: Attachment<'a, D>> DepthAttachment<'a, D> for A {}

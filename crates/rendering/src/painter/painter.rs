@@ -61,11 +61,12 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
         // TODO: Delete duplicate OpenGL code
         // Update the color attachments and the draw buffers
         if untyped_color != self.untyped_color_attachments {
+            self.untyped_color_attachments = untyped_color.clone();
             let mut offset = 0;
             for attachment in untyped_color.unwrap() {
                 match attachment {
-                    UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
-                        gl::NamedFramebufferTextureLayer(self.name, gl::COLOR_ATTACHMENT0 + offset, texture_name, level as i32, layer as i32);
+                    UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
+                        gl::NamedFramebufferTexture(self.name, gl::COLOR_ATTACHMENT0 + offset, texture_name, level as i32);
                     },
                 }
                 offset += 1;
@@ -75,24 +76,27 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
                 let draw = (0..offset).into_iter().map(|offset| gl::COLOR_ATTACHMENT0 + offset).collect_vec();
                 gl::NamedFramebufferDrawBuffers(self.name, draw.len() as i32, draw.as_ptr() as *const u32);
             }
+            
         }
 
         // Update the depth attachment
         if untyped_depth != self.untyped_depth_attachment {
+            self.untyped_depth_attachment = untyped_depth;
             let depth = untyped_depth.unwrap();
             match depth {
-                UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
-                    gl::NamedFramebufferTextureLayer(self.name, gl::DEPTH_ATTACHMENT, texture_name, level as i32, layer as i32);
+                UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
+                    gl::NamedFramebufferTexture(self.name, gl::DEPTH_ATTACHMENT, texture_name, level as i32);
                 },
             }
         }
 
         // Update the stencil attachment
         if untyped_stencil != self.untyped_stencil_attachment {
+            self.untyped_stencil_attachment = untyped_stencil;
             let stencil = untyped_stencil.unwrap();
             match stencil {
-                UntypedAttachment::TextureLevel { texture_name, level, layer, untyped: _ } => unsafe {
-                    gl::NamedFramebufferTextureLayer(self.name, gl::STENCIL_ATTACHMENT, texture_name, level as i32, layer as i32);
+                UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
+                    gl::NamedFramebufferTexture(self.name, gl::STENCIL_ATTACHMENT, texture_name, level as i32);
                 },
             }
         }

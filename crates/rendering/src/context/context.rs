@@ -7,12 +7,17 @@ use std::{
 };
 
 use super::get_static_str;
-use crate::pipeline::{CreatePipeline, PipeId, Pipeline};
+use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, display::{RasterSettings, PrimitiveMode, Viewport}};
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
     // Raw Glutin context
     ctx: RawContext<PossiblyCurrent>,
+
+    // The currently bounded rasterizer settings
+    pub(crate) raster: RasterSettings,
+    pub(crate) bounded_fbo: u32,
+    pub(crate) viewport: Viewport,
 
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
@@ -32,6 +37,15 @@ impl Context {
 
         Self {
             ctx,
+            raster: RasterSettings {
+                depth_test: None,
+                scissor_test: None,
+                primitive: PrimitiveMode::Triangles { cull: None },
+                srgb: false,
+                blend: None
+            },
+            bounded_fbo: 0,
+            viewport: Viewport { origin: vek::Vec2::zero(), extent: vek::Extent2::zero() },
             pipelines: Default::default(),
         }
     }

@@ -5,7 +5,7 @@ use crate::{
     buffer::UniformBuffer,
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB},
 };
 
 use super::PointLight;
@@ -17,7 +17,7 @@ use super::PointLight;
 // TODO: Actually implement this lul
 pub struct ClusteredShading {
     pub(crate) main_camera: Option<Entity>,
-    pub(crate) painter: Painter<(), Depth<Ranged<u32>>, ()>,
+    pub(crate) painter: Painter<RGB<f32>, Depth<Ranged<u32>>, ()>,
     pub(crate) color_tex: Texture2D<RGB<f32>>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,

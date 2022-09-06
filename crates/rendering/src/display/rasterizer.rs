@@ -3,10 +3,12 @@ use crate::{
 };
 use std::{intrinsics::transmute, mem::transmute_copy, ptr::null};
 
+use super::Viewport;
+
 // Blend mode factor source
 // This is a certified bruh moment classic
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Factor {
     Zero = gl::ZERO,
     One = gl::ONE,
@@ -21,27 +23,27 @@ pub enum Factor {
 }
 
 // Tells us if we how we should blend between transparent objects
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct BlendMode {
     pub src: Factor,
     pub dest: Factor,
 }
 
 // How rasterized triangles should be culled
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FaceCullMode {
     Front(bool),
     Back(bool),
 }
 
 // Main rasterizer self like sissor tests and depth tests
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct RasterSettings {
     // Should we check for vertex depth when rasteizing?
     pub depth_test: Option<Comparison>,
 
     // A scissor test basically limits the area of effect when rasterizing. Pretty useful for UI
-    pub scissor_test: Option<(vek::Vec2<i32>, vek::Extent2<i32>)>,
+    pub scissor_test: Option<Viewport>,
 
     // The current primitive that we will render with. Currently supported: Triangles and Points
     pub primitive: PrimitiveMode,
@@ -54,7 +56,7 @@ pub struct RasterSettings {
 }
 
 // Depicts the exact primitives we will use to draw the VAOs
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum PrimitiveMode {
     Triangles { cull: Option<FaceCullMode> },
     Lines { width: f32, smooth: bool },
@@ -80,91 +82,45 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         gl::BindFramebuffer(gl::FRAMEBUFFER, display.name());
 
         // Update the settings of the OpenGL viewport
-        let view = display.viewport();
-        gl::Viewport(
-            view.origin.x as i32,
-            view.origin.y as i32,
-            view.extent.w as i32,
-            view.extent.h as i32,
-        );
+        if context.viewport != display.viewport() {
+            context.viewport = display.viewport();
+            gl::Viewport(
+                context.viewport.origin.x as i32,
+                context.viewport.origin.y as i32,
+                context.viewport.extent.w as i32,
+                context.viewport.extent.h as i32,
+            );
+        }
 
         // Get the OpenGL primitive type
-        let primitive = match settings.primitive {
-            PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
-            PrimitiveMode::Points { .. } => gl::POINTS,
-            PrimitiveMode::Lines { .. } => gl::LINES,
-        };
-
-        // Set the OpenGL primitive parameters (along with face culling)
-        match &settings.primitive {
-            // Triangle primitive type
-            PrimitiveMode::Triangles { cull } => {
-                if let Some(cull) = cull {
-                    gl::Enable(gl::CULL_FACE);
-                    let (direction, ccw) = match cull {
-                        FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
-                        FaceCullMode::Back(ccw) => (gl::BACK, ccw),
-                    };
-                    gl::CullFace(direction);
-                    gl::FrontFace(if *ccw { gl::CCW } else { gl::CW });
-                } else {
-                    gl::Disable(gl::CULL_FACE);
-                };
-            }
-
-            // Point primitive type
-            PrimitiveMode::Points { diameter } => {
-                gl::PointSize(*diameter);
-            }
-
-            // Line primitive type
-            PrimitiveMode::Lines { width, smooth } => {
-                if *smooth {
-                    gl::Enable(gl::LINE_SMOOTH);
-                } else {
-                    gl::Disable(gl::LINE_SMOOTH);
-                }
-                gl::LineWidth(*width);
-            }
+        let primitive = get_primtive_gl_enum(settings.primitive);
+        if context.raster.primitive != settings.primitive {
+            context.raster.primitive = settings.primitive;
+            set_state_primitive_mode(settings.primitive);
         }
 
         // Handle depth testing and it's parameters
-        if let Some(func) = &settings.depth_test {
-            gl::Enable(gl::DEPTH_TEST);
-            gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
-        } else {
-            gl::Disable(gl::DEPTH_TEST);
+        if context.raster.depth_test != settings.depth_test {
+            context.raster.depth_test = settings.depth_test;
+            set_state_depth_testing(settings.depth_test);
         }
 
         // Handle scissor testing and it's parameters
-        if let Some((origin, size)) = &settings.scissor_test {
-            gl::Enable(gl::SCISSOR_TEST);
-            gl::Scissor(
-                origin.x,
-                display.viewport().extent.h as i32 - origin.y,
-                size.w,
-                size.h,
-            );
-        } else {
-            gl::Disable(gl::SCISSOR_TEST);
+        if context.raster.scissor_test != settings.scissor_test {
+            context.raster.scissor_test = settings.scissor_test;
+            set_state_scissor_testing(settings.scissor_test, display);
         }
 
-        // Handle the SRGB framebuffer mode
-        if settings.srgb {
-            gl::Enable(gl::FRAMEBUFFER_SRGB);
-        } else {
-            gl::Disable(gl::FRAMEBUFFER_SRGB);
+        // Handle framebuffer SRGB 
+        if context.raster.srgb != settings.srgb {
+            context.raster.srgb = settings.srgb;
+            set_state_fbo_srgb(settings.srgb);
         }
 
-        // Handle blending and it's parameters
-        if let Some(mode) = settings.blend {
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(
-                transmute::<Factor, u32>(mode.src),
-                transmute::<Factor, u32>(mode.dest),
-            );
-        } else {
-            gl::Disable(gl::BLEND)
+        // Handle transparent blending
+        if context.raster.blend != settings.blend {
+            context.raster.blend = settings.blend;
+            set_state_blending(settings.blend);
         }
 
         Self {
@@ -212,5 +168,96 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
             let count = mesh.triangles().len();
             self.draw_vao_elements(mesh.vao, count * 3, gl::UNSIGNED_INT, uniforms)
         }
+    }
+}
+
+// Set the OpenGL transparent blending settings
+unsafe fn set_state_blending(blending: Option<BlendMode>) {
+    if let Some(mode) = blending {
+        gl::Enable(gl::BLEND);
+        gl::BlendFunc(
+            transmute::<Factor, u32>(mode.src),
+            transmute::<Factor, u32>(mode.dest),
+        );
+    } else {
+        gl::Disable(gl::BLEND)
+    }
+}
+
+// Set the OpenGL SRGB framebuffer setting
+unsafe fn set_state_fbo_srgb(srgb: bool) {
+    if srgb {
+        gl::Enable(gl::FRAMEBUFFER_SRGB);
+    } else {
+        gl::Disable(gl::FRAMEBUFFER_SRGB);
+    }
+}
+
+// Set the OpenGL scissor testing settings
+unsafe fn set_state_scissor_testing<D: Display>(scissor_test: Option<Viewport>, display: &mut D) {
+    if let Some(Viewport { origin, extent }) = &scissor_test {
+        gl::Enable(gl::SCISSOR_TEST);
+        gl::Scissor(
+            origin.x as i32,
+            display.viewport().extent.h as i32 - origin.y as i32,
+            extent.w as i32,
+            extent.h as i32,
+        );
+    } else {
+        gl::Disable(gl::SCISSOR_TEST);
+    }
+}
+
+// Set the OpenGL depth testing settings
+unsafe fn set_state_depth_testing(depth_test: Option<Comparison>) {
+    if let Some(func) = &depth_test {
+        gl::Enable(gl::DEPTH_TEST);
+        gl::DepthFunc(transmute_copy::<Comparison, u32>(func));
+    } else {
+        gl::Disable(gl::DEPTH_TEST);
+    }
+}
+
+// Get the raw OpenGL primitive ID from the primitive mode
+fn get_primtive_gl_enum(primitive: PrimitiveMode) -> u32 {
+    match primitive {
+        PrimitiveMode::Triangles { .. } => gl::TRIANGLES,
+        PrimitiveMode::Lines { .. } => gl::LINES,
+        PrimitiveMode::Points { .. } => gl::POINTS,
+    }
+}
+
+// Set the OpenGL primitive settings (along with face culling)
+unsafe fn set_state_primitive_mode(primitive: PrimitiveMode) {
+    match primitive {
+        // Triangle primitive type
+        PrimitiveMode::Triangles { cull } => {
+            if let Some(cull) = cull {
+                gl::Enable(gl::CULL_FACE);
+                let (direction, ccw) = match cull {
+                    FaceCullMode::Front(ccw) => (gl::FRONT, ccw),
+                    FaceCullMode::Back(ccw) => (gl::BACK, ccw),
+                };
+                gl::CullFace(direction);
+                gl::FrontFace(if ccw { gl::CCW } else { gl::CW });
+            } else {
+                gl::Disable(gl::CULL_FACE);
+            }
+        },
+
+        // Point primitive type
+        PrimitiveMode::Points { diameter } => {
+            gl::PointSize(diameter);
+        },
+
+        // Line primitive type
+        PrimitiveMode::Lines { width, smooth } => {
+            if smooth {
+                gl::Enable(gl::LINE_SMOOTH);
+            } else {
+                gl::Disable(gl::LINE_SMOOTH);
+            }
+            gl::LineWidth(width);
+        },
     }
 }

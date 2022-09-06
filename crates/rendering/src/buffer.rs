@@ -6,7 +6,7 @@ use std::ops::RangeBounds;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferMode {
     // Static buffers are only created once, and they can never be modified ever again
     Static,
@@ -18,6 +18,7 @@ pub enum BufferMode {
     Parital,
 
     // Resizable buffers can be resized to whatever length needed
+    #[default]
     Resizable,
 }
 

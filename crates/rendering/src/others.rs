@@ -1,5 +1,5 @@
 #[repr(u32)]
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 // Comparison type that represents the raw OpenGL comparison modes
 pub enum Comparison {
     Always = gl::ALWAYS,

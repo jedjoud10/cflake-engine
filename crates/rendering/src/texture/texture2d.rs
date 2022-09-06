@@ -48,11 +48,11 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.levels
     }
 
-    fn get_layer(&self, level: u8) -> Option<super::MipLevelRef<Self>> {
+    fn mip(&self, level: u8) -> Option<super::MipLevelRef<Self>> {
         (level < self.levels.get()).then(|| super::MipLevelRef::new(self, level))
     }
 
-    fn get_layer_mut(&mut self, level: u8) -> Option<super::MipLevelMut<Self>> {
+    fn mip_mut(&mut self, level: u8) -> Option<super::MipLevelMut<Self>> {
         (level < self.levels.get()).then(|| super::MipLevelMut::new(self, level))
     }
 

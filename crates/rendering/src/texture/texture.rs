@@ -157,13 +157,18 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     fn levels(&self) -> NonZeroU8;
 
     // Get a single mip level from the texture, immutably
-    fn get_layer(&self, level: u8) -> Option<MipLevelRef<Self>>;
+    fn mip(&self, level: u8) -> Option<MipLevelRef<Self>>;
 
     // Get a single mip level from the texture, mutably
-    fn get_layer_mut(&mut self, level: u8) -> Option<MipLevelMut<Self>>;
+    fn mip_mut(&mut self, level: u8) -> Option<MipLevelMut<Self>>;
 
     // Resize the current texture (this will also set it's inner data to null)
+    // This will panic if we try to resize a static texture
     fn resize(&mut self, extent: <Self::Region as Region>::E) {
+        assert!(
+            self.mode().resize_permission(),
+            "Cannot resize texture, missing permission"
+        );
         unsafe {
             Self::alloc_resizable_storage(self.name(), extent, 0, null());
         }

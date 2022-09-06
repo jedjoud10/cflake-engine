@@ -1,7 +1,7 @@
 use std::num::NonZeroU8;
 
 // Some settings that tell us exactly how we should generate a texture
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TextureMode {
     // Static textures cannot be modified, they can only be read
     Static,
@@ -10,12 +10,30 @@ pub enum TextureMode {
     Dynamic,
 
     // Resizable textures are just dynamic textures that can change their size at will
+    #[default]
     Resizable,
 }
 
-impl Default for TextureMode {
-    fn default() -> Self {
-        Self::Resizable
+impl TextureMode {
+    // Can we read from an arbitrary texture that uses this texture mode?
+    pub fn read_permission(&self) -> bool {
+        true
+    }
+
+    // Can we write to an arbitrary texture that uses this texture mode?
+    pub fn write_permission(&self) -> bool {
+        match self {
+            TextureMode::Static => false,
+            _ => true,
+        }
+    }
+
+    // Can we resize an arbitrary texture that uses this texture mode?
+    pub fn resize_permission(&self) -> bool {
+        match self {
+            TextureMode::Resizable => true,
+            _ => false
+        }
     }
 }
 
