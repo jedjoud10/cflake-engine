@@ -44,13 +44,13 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
     }
 
     // Use the painter to give us a scoped painter that has proper targets
-    pub fn scope<'a, 'c: 'a, 'd: 'a, 's: 'a, CT: ColorAttachmentLayout<'c, C>, DT: DepthAttachment<'d, D>, ST: StencilAttachment<'s, S>>(
-        &'a mut self,
+    pub fn scope<CT: ColorAttachmentLayout<C>, DT: DepthAttachment<D>, ST: StencilAttachment<S>>(
+        &mut self,
         viewport: Viewport,
         colors: CT,
         depth: DT,
         stencil: ST,
-    ) -> Option<ScopedPainter<'a, C, D, S>> {
+    ) -> Option<ScopedPainter<C, D, S>> {
         // Convert the attachments to their untyped values
         let untyped_color = colors.untyped();
         let untyped_depth = depth.untyped();

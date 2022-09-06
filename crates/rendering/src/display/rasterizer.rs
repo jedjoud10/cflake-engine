@@ -69,6 +69,7 @@ pub struct Rasterizer<'d, 'context, D: Display> {
     display: &'d mut D,
     context: &'context mut Context,
     primitive: u32,
+    vao: u32,
 }
 
 impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
@@ -127,6 +128,7 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
             display,
             context,
             primitive,
+            vao: u32::MAX,
         }
     }
 
@@ -143,7 +145,10 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         _uniforms: ValidUniforms,
     ) {
         if primitive_count > 0 {
-            gl::BindVertexArray(vao);
+            if self.vao != vao {
+                gl::BindVertexArray(vao);
+                self.vao = vao;
+            }
             gl::DrawArrays(self.primitive, 0, primitive_count as i32);
         }
     }
@@ -157,7 +162,10 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         _uniforms: ValidUniforms,
     ) {
         if primitive_count > 0 {
-            gl::BindVertexArray(vao);
+            if self.vao != vao {
+                gl::BindVertexArray(vao);
+                self.vao = vao;
+            }
             gl::DrawElements(self.primitive, primitive_count as i32, element_type, null());
         }
     }

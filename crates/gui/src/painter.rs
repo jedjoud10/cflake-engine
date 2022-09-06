@@ -71,7 +71,8 @@ impl Painter {
         // Create the main mesh VAO
         let mut vao = 0;
         unsafe {
-            gl::CreateVertexArrays(1, &mut vao);
+            gl::GenVertexArrays(1, &mut vao);
+            gl::BindVertexArray(vao);
         }
 
         // Resizable buffers for vertices and indices
@@ -80,30 +81,24 @@ impl Painter {
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
         unsafe {
-            const STRIDE: i32 = size_of::<Vertex>() as i32;
-            gl::BindBuffer(gl::ARRAY_BUFFER, vertices.name());
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, STRIDE, null());
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(
-                1,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                STRIDE,
-                (size_of::<f32>() * 2) as isize as _,
-            );
-            gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(
-                2,
-                4,
-                gl::UNSIGNED_BYTE,
-                gl::FALSE,
-                STRIDE,
-                (size_of::<f32>() * 4) as isize as _,
-            );
+            // Create the Position vertex attribute 
+            gl::EnableVertexArrayAttrib(vao, 0);
+            gl::VertexArrayAttribFormat(vao, 0, 2, gl::FLOAT, gl::FALSE, 0);
+            gl::VertexArrayAttribBinding(vao, 0, 0);
+            
+            // Create the UV vertex attribute
+            gl::EnableVertexArrayAttrib(vao, 1);
+            gl::VertexArrayAttribFormat(vao, 1, 2, gl::FLOAT, gl::FALSE, (size_of::<f32>() * 2) as u32);
+            gl::VertexArrayAttribBinding(vao, 1, 0);
+            
+            // Create the Color vertex attribute
+            gl::EnableVertexArrayAttrib(vao, 2);
+            gl::VertexArrayAttribFormat(vao, 2, 4, gl::UNSIGNED_BYTE, gl::FALSE, (size_of::<f32>() * 4) as u32);
+            gl::VertexArrayAttribBinding(vao, 2, 0);            
+            
+            // Bind the buffers to the VAO
+            gl::VertexArrayVertexBuffer(vao, 0, vertices.name(), 0, vertices.stride() as i32);
             gl::VertexArrayElementBuffer(vao, indices.name());
-            gl::BindVertexArray(0);
         }
 
         Self {
@@ -179,7 +174,6 @@ impl Painter {
             self.indices.clear();
             self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
             self.indices.extend_from_slice(mesh.1.indices.as_slice());
-
             unsafe {
                 rasterizer.draw_vao_elements(
                     self.vao,

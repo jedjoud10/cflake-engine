@@ -52,19 +52,19 @@ impl Eq for UntypedAttachment {}
 
 // An attachment is something that we will bind to the painter to be able to render to it
 // This attachment trait is just a wrapper around framebuffer attachments
-pub trait Attachment<'a, T> {
+pub trait Attachment<T> {
     fn untyped(&self) -> Option<UntypedAttachment>;
 }
 
 // Attachments that use the default texel are disabled
-impl<'a> Attachment<'a, ()> for () {
+impl Attachment<()> for () {
     fn untyped(&self) -> Option<UntypedAttachment> {
         None
     }
 }
 
 // Texture2D mip maps are attachable 
-impl<'a, T: Texel> Attachment<'a, T> for MipLevelMut<'a, Texture2D<T>> {
+impl<'a, T: Texel> Attachment<T> for MipLevelMut<'a, Texture2D<T>> {
     fn untyped(&self) -> Option<UntypedAttachment> {
         Some(UntypedAttachment::TextureLevel { 
             texture_name: self.texture().name(),
@@ -75,10 +75,10 @@ impl<'a, T: Texel> Attachment<'a, T> for MipLevelMut<'a, Texture2D<T>> {
 } 
 
 // This is implemented for all tuples that contain types of attachments of the specifici painter color layout
-pub trait ColorAttachmentLayout<'a, C: PainterColorLayout> {
+pub trait ColorAttachmentLayout<C: PainterColorLayout> {
     fn untyped(&self) -> Option<Vec<UntypedAttachment>>;
 }
-impl<'a> ColorAttachmentLayout<'a, ()> for () {
+impl ColorAttachmentLayout<()> for () {
     fn untyped(&self) -> Option<Vec<UntypedAttachment>> {
         None
     }
@@ -87,11 +87,11 @@ impl<'a> ColorAttachmentLayout<'a, ()> for () {
 
 // TODO: Simplify this a tiny bit I guess?
 // This is implemented for all attachments that use this painter depth texel
-pub trait DepthAttachment<'a, D: PainterDepthTexel>: Attachment<'a, D> {}
-impl<'a, D: PainterDepthTexel + Texel, A: Attachment<'a, D>> DepthAttachment<'a, D> for A {}
-impl<'a> DepthAttachment<'a, ()> for () {}
+pub trait DepthAttachment<D: PainterDepthTexel>: Attachment<D> {}
+impl<D: PainterDepthTexel + Texel, A: Attachment<D>> DepthAttachment<D> for A {}
+impl DepthAttachment<()> for () {}
 
 // This is implemented for all attachments that use this painter stencil texel
-pub trait StencilAttachment<'a, S: PainterStencilTexel>: Attachment<'a, S> {}
-impl<'a, S: PainterStencilTexel + Texel, A: Attachment<'a, S>> StencilAttachment<'a, S> for A {}
-impl<'a> StencilAttachment<'a, ()> for () {}
+pub trait StencilAttachment<S: PainterStencilTexel>: Attachment<S> {}
+impl<S: PainterStencilTexel + Texel, A: Attachment<S>> StencilAttachment<S> for A {}
+impl StencilAttachment<()> for () {}
