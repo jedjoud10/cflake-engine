@@ -1,77 +1,82 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    registry, ArchetypeSet, ComponentStateRow, ComponentStateSet, EntitySet, Mask, MaskMap, StorageVec, UniqueStoragesSet,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow,
 };
-use getset::{CopyGetters, Getters, MutGetters};
-use std::any::Any;
-// Combination of multiple component types
-#[derive(Getters, CopyGetters, MutGetters)]
+use std::{cell::RefCell, rc::Rc};
+
+// TODO: Comment
 pub struct Archetype {
-    // Main
-    pub(crate) mask: Mask,
-
-    // Components
-    pub(crate) vectors: MaskMap<Box<dyn StorageVec>>,
-    pub(crate) states: ComponentStateSet,
-
-    // Entities
-    pub(crate) entities: Vec<Entity>,
+    mask: Mask,
+    tables: MaskHashMap<Box<dyn ComponentTable>>,
+    states: Rc<RefCell<Vec<StateRow>>>,
+    entities: Vec<Entity>,
 }
 
 impl Archetype {
-    // Create new a archetype based on it's main mask
-    pub(crate) fn new(mask: Mask, uniques: &UniqueStoragesSet) -> Self {
-        // We must decompose the combined mask into the individual masks and create the storages from that
-        let vectors = (0..(registry::count() as usize))
-            .into_iter()
-            .filter_map(|i| {
-                // Make sure the bit is valid
-                if (mask >> i) & Mask::one() != Mask::one() {
-                    return None;
-                }
-
-                // Create the archetype storage
-                let mask = Mask::one() << i;
-
-                Some((mask, uniques[&mask].clone_unique_storage()))
-            })
-            .collect::<_>();
-
+    // Create a new archetype from a owned bundle accessor
+    // This assumes that B is a valid bundle
+    pub(crate) fn from_table_accessor<B: Bundle>() -> Self {
         Self {
-            vectors,
-            mask,
-            entities: Default::default(),
+            mask: B::combined(),
+            tables: B::default_tables(),
+            states: Rc::new(RefCell::new(Vec::new())),
+            entities: Vec::new(),
+        }
+    }
+
+    // Create the unit archetype that contains no tables and has a zeroed mask
+    pub(crate) fn empty() -> Self {
+        Self {
+            mask: Mask::zero(),
+            tables: Default::default(),
             states: Default::default(),
+            entities: Default::default(),
         }
     }
 
-    // Add an entity into the archetype and update it's linkings
-    pub(crate) fn push(&mut self, entity: Entity, linkings: &mut EntityLinkings, components: Vec<(Mask, Box<dyn Any>)>) {
-        // Add the entity and update it's linkings
-        self.states.push(ComponentStateRow::new(self.mask));
-        self.entities.push(entity);
-        linkings.bundle = self.len() - 1;
-        linkings.mask = self.mask;
+    // Add multiple entities into the archetype with their corresponding owned components
+    // The layout mask for "B" must be equal to the layout mask that this archetype contains
+    pub(crate) fn extend_from_slice<B: Bundle>(
+        &mut self,
+        entities: &mut EntitySet,
+        components: Vec<B>,
+    ) -> Vec<Entity> {
+        assert!(B::is_valid());
+        assert_eq!(B::combined(), self.mask);
+        self.reserve(entities.len());
+        let mut output = Vec::new();
 
-        // Add the components using their specific storages
-        for (mask, component) in components {
-            self.fetch_update(mask, |vec| vec.push(component));
+        // Add the entities internally and externally
+        for _ in 0..components.len() {
+            let linkings = EntityLinkings {
+                mask: self.mask,
+                index: self.len(),
+            };
+            let entity = entities.insert(linkings);
+            self.states
+                .borrow_mut()
+                .push(StateRow::new(self.mask, Mask::zero(), self.mask));
+            self.entities.push(entity);
+            output.push(entity)
         }
+
+        // Add the storage bundles to their respective tables
+        let mut storages = B::prepare(self).unwrap();
+        for set in components {
+            B::push(&mut storages, set);
+        }
+
+        // Return the newly added entity IDs
+        output
     }
 
-    // Update a single underlying storage
-    fn fetch_update(&mut self, mask: Mask, function: impl FnOnce(&mut Box<dyn StorageVec>)) -> Option<()> {
-        let vec = self.vectors.get_mut(&mask)?;
-        function(vec);
-        Some(())
-    }
-
-    // Reserve enough space to fit "n" number of new entities into this archetype
-    pub(crate) fn reserve(&mut self, additional: usize) {
-        self.states.reserve(additional);
+    // Reserve enough memory space to be able to fit all the new entities in one allocation
+    pub fn reserve(&mut self, additional: usize) {
         self.entities.reserve(additional);
-        for (_, vec) in self.vectors.iter_mut() {
-            vec.reserve(additional)
+        self.states.borrow_mut().reserve(additional);
+
+        for (_, table) in &mut self.tables {
+            table.reserve(additional);
         }
     }
 
@@ -80,71 +85,206 @@ impl Archetype {
         self.entities.len()
     }
 
-    // Remove an entity from the archetype it is currently linked to
-    // This will return the removed boxed components that validate the given mask
-    pub(crate) fn remove(archetypes: &mut ArchetypeSet, entities: &mut EntitySet, entity: Entity, filter: Mask) -> Vec<(Mask, Box<dyn Any>)> {
-        // Get the archetype directly
-        let linkings = entities.get_mut(entity).unwrap();
-        let bundle = linkings.bundle;
-        let archetype = archetypes.get_mut(&linkings.mask).unwrap();
+    // Get the entity slice immutably
+    pub fn entities(&self) -> &[Entity] {
+        &self.entities
+    }
 
-        // The boxed components that will be added into the new archetype
-        let mut components: Vec<(Mask, Box<dyn Any>)> = Vec::with_capacity(filter.count_ones() as usize);
+    // Get the unique archetype mask
+    pub fn mask(&self) -> Mask {
+        self.mask
+    }
 
-        // Remove the components from the storages
-        for (&mask, vec) in archetype.vectors.iter_mut() {
-            // Filter the components that validate the mask
-            if mask & filter == mask {
-                // Remove the component, and box it
-                components.push((mask, vec.swap_remove_boxed(bundle)));
-            } else {
-                // Remove it normally
-                vec.swap_remove(bundle);
-            }
+    // Get a copy of the archetype states
+    pub fn states(&self) -> Rc<RefCell<Vec<StateRow>>> {
+        self.states.clone()
+    }
+
+    // Try to get an immutable reference to the table for a specific component
+    pub fn table<T: Component>(&self) -> Option<&Vec<T>> {
+        let boxed = self.tables.get(&mask::<T>())?;
+        Some(boxed.as_any().downcast_ref().unwrap())
+    }
+
+    // Try to get a mutable reference to the table for a specific component
+    pub(crate) fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+        let boxed = self.tables.get_mut(&mask::<T>())?;
+        Some(boxed.as_any_mut().downcast_mut().unwrap())
+    }
+
+    // Remove an entity that is stored within this archetype using it's index
+    // This will return the entity's old linkings if successful
+    pub(crate) fn remove(
+        &mut self,
+        entities: &mut EntitySet,
+        entity: Entity,
+    ) -> Option<EntityLinkings> {
+        // Try to get the linkings and index
+        let linkings = entities.remove(entity)?;
+        let index = linkings.index();
+
+        // Remove the components from the tables
+        for (_, table) in self.tables.iter_mut() {
+            table.swap_remove(index)
         }
 
         // Remove the entity and get the entity that was swapped with it
-        archetype.entities.swap_remove(bundle);
-        archetype.states.swap_remove(bundle);
-        let entity = archetype.entities.get(bundle).cloned();
+        self.entities.swap_remove(index);
+        self.states.borrow_mut().swap_remove(index);
+        let entity = self.entities.get(index).cloned();
 
-        // Swap is not nessecary when removeing the last element anyways
+        // Swap might've failed if we swapped with the last element in the vector
         if let Some(entity) = entity {
-            // Since the last entity stored will swap positions, we must update it's linkings
-            let swapped_linkings = entities.get_mut(entity).unwrap();
-            swapped_linkings.bundle = bundle;
+            let swapped = entities.get_mut(entity).unwrap();
+            swapped.index = index;
         }
 
-        components
+        Some(linkings)
+    }
+}
+
+// This will get two different archetypes using their masks
+// This assumes that the archetypes exist already in the set, and that we are using different masks
+fn split(set: &mut ArchetypeSet, mask1: Mask, mask2: Mask) -> (&mut Archetype, &mut Archetype) {
+    assert_ne!(mask1, mask2);
+    let a1 = set.get_mut(&mask1).unwrap() as *mut Archetype;
+    let a2 = set.get_mut(&mask2).unwrap() as *mut Archetype;
+    unsafe {
+        let a1 = &mut *a1;
+        let a2 = &mut *a2;
+        (a1, a2)
+    }
+}
+
+// Add some new components onto an entity, forcing it to switch archetypes
+// This assumes that the OwnedBundle type is valid for this use case
+pub(crate) fn add_bundle_unchecked<B: Bundle>(
+    archetypes: &mut ArchetypeSet,
+    entity: Entity,
+    entities: &mut EntitySet,
+    bundle: B,
+) -> Option<()> {
+    // Get the old and new masks
+    let old = entities[entity].mask;
+    let new = entities[entity].mask | B::combined();
+
+    // Nothing changed, don't execute
+    if new == old {
+        return Some(());
     }
 
-    // Move an entity from an archetype to another archetype, whilst adding extra components to the entity
-    pub(crate) fn move_entity(
-        archetypes: &mut ArchetypeSet,
-        entities: &mut EntitySet,
-        old: Mask,
-        new: Mask,
-        entity: Entity,
-        linkings: &mut EntityLinkings,
-        extra: Vec<(Mask, Box<dyn Any>)>,
-    ) {
-        // Remove the entity (this might fail in the case of the default empty archetype)
-        let mut removed = (old != Mask::zero()).then(|| Archetype::remove(archetypes, entities, entity, old)).unwrap_or_default();
-
-        // Combine the removed components with the extra components
-        removed.extend(extra);
-
-        // And insert into the new archetype
-        let new = archetypes.get_mut(&new).unwrap();
-        new.push(entity, linkings, removed);
+    // Create the new target archetype if needed
+    if archetypes.contains_key(&new) {
+        let current = archetypes.get_mut(&old).unwrap();
+        let tables = current
+            .tables
+            .iter()
+            .map(|(mask, table)| (*mask, table.clone_default()));
+        let archetype = Archetype {
+            mask: new,
+            tables: MaskHashMap::from_iter(tables),
+            states: Default::default(),
+            entities: Default::default(),
+        };
+        archetypes.insert(new, archetype);
     }
 
-    // Prepare the arhcetype for execution. This will reset the component states, and remove the "pending for deletion" components
-    pub(crate) fn prepare(&mut self, count: u64) {
-        // Don't do anything for the first frame of execution
-        if count == 0 {
-            return;
-        }
-        self.states.reset();
+    // Get the current and target archetypes that we will modify
+    let (current, target) = split(archetypes, old, new);
+    let linkings = entities.remove(entity)?;
+    let index = linkings.index();
+
+    // Move the components from one archetype to the other
+    for (mask, input) in current.tables.iter_mut() {
+        let output = target.tables.get_mut(mask).unwrap();
+        input.swap_remove_move(index, output.as_mut());
     }
+
+    // Add the extra components as well
+    let mut storages = B::prepare(target)?;
+    B::push(&mut storages, bundle);
+    drop(storages);
+
+    // Handle swap-remove logic in the current archetype
+    current.entities.swap_remove(index);
+    current.states.borrow_mut().swap_remove(index);
+    if let Some(entity) = current.entities.get(index).cloned() {
+        let swapped = entities.get_mut(entity).unwrap();
+        swapped.index = index;
+    }
+
+    // Insert the new entity in the target archetype
+    let linkings = entities.get_mut(entity).unwrap();
+    target
+        .states
+        .borrow_mut()
+        .push(StateRow::new(target.mask, Mask::zero(), target.mask));
+    target.entities.push(entity);
+    linkings.index = target.len() - 1;
+    linkings.mask = target.mask;
+
+    Some(())
+}
+
+// Remove some old components from an entity, forcing it to switch archetypes
+// This assumes that the OwnedBundle type is valid for this use case
+pub(crate) fn remove_bundle_unchecked<B: Bundle>(
+    archetypes: &mut ArchetypeSet,
+    entity: Entity,
+    entities: &mut EntitySet,
+) -> Option<B> {
+    // Get the old and new masks
+    let old = entities[entity].mask;
+    let new = entities[entity].mask & !B::combined();
+
+    // Create the new target archetype if needed
+    if archetypes.contains_key(&new) {
+        let current = archetypes.get_mut(&old).unwrap();
+        let tables = current
+            .tables
+            .iter()
+            .map(|(mask, table)| (*mask, table.clone_default()));
+        let filtered = tables.filter(|(mask, _)| Mask::contains(&new, *mask));
+        let archetype = Archetype {
+            mask: new,
+            tables: MaskHashMap::from_iter(filtered),
+            states: Default::default(),
+            entities: Default::default(),
+        };
+        archetypes.insert(new, archetype);
+    }
+
+    // Get the current and target archetypes that we will modify
+    let (current, target) = split(archetypes, old, new);
+    let linkings = entities.remove(entity)?;
+    let index = linkings.index();
+
+    // Move the components from one archetype to the other (swapped)
+    for (mask, output) in target.tables.iter_mut() {
+        let input = current.tables.get_mut(mask).unwrap();
+        input.swap_remove_move(index, output.as_mut());
+    }
+
+    // Create the return bundle
+    let bundle = B::try_swap_remove(&mut current.tables, index);
+
+    // Handle swap-remove logic in the current archetype
+    current.entities.swap_remove(index);
+    current.states.borrow_mut().swap_remove(index);
+    if let Some(entity) = current.entities.get(index).cloned() {
+        let swapped = entities.get_mut(entity).unwrap();
+        swapped.index = index;
+    }
+
+    // Insert the new entity in the target archetype
+    let linkings = entities.get_mut(entity).unwrap();
+    target
+        .states
+        .borrow_mut()
+        .push(StateRow::new(target.mask, B::combined(), target.mask));
+    target.entities.push(entity);
+    linkings.index = target.len() - 1;
+    linkings.mask = target.mask;
+
+    bundle
 }

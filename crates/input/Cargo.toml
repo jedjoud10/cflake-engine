@@ -9,5 +9,5 @@ edition = "2021"
 glutin = "0.28.0"
 multimap = "0.8.3"
 ahash = "0.7.6"
-getset = "0.1.2"
 vek = "0.15.6"
+world = { path = "../world" }

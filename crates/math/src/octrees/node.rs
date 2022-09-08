@@ -1,44 +1,33 @@
-use super::HeuristicSettings;
-use getset::{CopyGetters, Getters, MutGetters};
+use arrayvec::ArrayVec;
 use slotmap::Key;
-use std::{hash::Hash, mem::MaybeUninit};
+use std::hash::Hash;
 
 slotmap::new_key_type! {
     pub struct NodeKey;
 }
 
-// Simple node in the octree
-#[derive(Clone, Debug, Getters, CopyGetters, MutGetters)]
+// A single node within any type of octree
+// A node must have a parent (except if it is the root node)
+// A node *might* have 8 children
+// TODO: Optimize the node's layout since it seems inefficient
+#[derive(Clone, Copy, Debug)]
 pub struct Node {
-    // The curent position of the node. Note: Multiple nodes can have the same position, but not the same center
-    #[getset(get_copy = "pub")]
+    // Positioning and size
     position: vek::Vec3<i64>,
-
-    // Half extents of the node
-    #[getset(get_copy = "pub")]
     half_extent: u64,
 
-    // Depth of the node. 0 means that is is the root node
-    #[getset(get_copy = "pub")]
+    // Hierarchy fields
     depth: u8,
-
-    // Parent of the node. This could be null if the node is the root node
-    #[getset(get_copy = "pub")]
     parent: NodeKey,
-
-    // The internal key index that this node uses
-    #[getset(get_copy = "pub")]
     key: NodeKey,
-
-    // Children
-    #[getset(get = "pub", get_mut = "pub(super)")]
     children: Option<[NodeKey; 8]>,
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        // Check coordinates, then check if we have the same child count
-        self.center() == other.center() && self.children.is_none() == other.children.is_none() && self.depth == other.depth
+        self.center() == other.center()
+            && self.children.is_none() == other.children.is_none()
+            && self.depth == other.depth
     }
 }
 
@@ -57,7 +46,8 @@ impl Node {
     pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
         // Get the maximum size of the root node
         let full_extent = (2_u64.pow(depth as u32) * size) as i64;
-        let position = vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
+        let position =
+            vek::Vec3::<i64>::new(-(full_extent / 2), -(full_extent / 2), -(full_extent / 2));
 
         Self {
             position,
@@ -68,37 +58,56 @@ impl Node {
             children: None,
         }
     }
+
     // Get the AABB from this octee node
-    pub fn aabb(&self) -> crate::bounds::aabb::AABB {
-        crate::bounds::aabb::AABB {
+    pub fn aabb(&self) -> crate::AABB {
+        crate::AABB {
             min: self.position.as_(),
             max: self.position.as_() + vek::Vec3::<f32>::broadcast(self.half_extent as f32 * 2.0),
         }
     }
+
     // Get the center of this octree node
     pub fn center(&self) -> vek::Vec3<i64> {
         self.position + self.half_extent as i64
     }
-    // Check if we can subdivide this node
-    pub fn can_subdivide(&self, target: &vek::Vec3<f32>, max_depth: u8, settings: &HeuristicSettings) -> bool {
-        let test = (settings.function)(self, target);
-        test && self.depth < (max_depth - 1)
+
+    // Get the children keys of this node
+    pub fn children(&self) -> Option<&[NodeKey; 8]> {
+        self.children.as_ref()
     }
+
+    // Get a mutable reference to the inner children keys (PS: Only used internally)
+    pub fn children_mut(&mut self) -> &mut Option<[NodeKey; 8]> {
+        &mut self.children
+    }
+
+    // Get the depth of this node
+    pub fn depth(&self) -> u8 {
+        self.depth
+    }
+
+    // Get the size of this node
+    pub fn size(&self) -> u64 {
+        self.half_extent * 2
+    }
+
     // Subdivide this node into 8 smaller nodes
     pub fn subdivide<'a>(&mut self) -> [Node; 8] {
-        let half_extent = self.half_extent;
-        const NULL: MaybeUninit<Node> = MaybeUninit::<Node>::uninit();
-        let mut children = [NULL; 8];
-        // Children counter
-        let mut i: usize = 0;
+        assert!(self.children.is_none());
+        let mut children = ArrayVec::<Node, 8>::new();
         for y in 0..2 {
             for z in 0..2 {
                 for x in 0..2 {
                     // The position offset for the new octree node
-                    let offset = vek::Vec3::<i64>::new(x * half_extent as i64, y * half_extent as i64, z * half_extent as i64);
+                    let offset = vek::Vec3::<i64>::new(
+                        x * self.half_extent as i64,
+                        y * self.half_extent as i64,
+                        z * self.half_extent as i64,
+                    );
 
-                    // Calculate the child's index
-                    let child = Node {
+                    // Create the new child and add it to our vector
+                    children.push(Node {
                         position: self.position + offset,
                         // The children node is two times smaller in each axis
                         half_extent: u64::try_from(self.half_extent).unwrap() / 2,
@@ -108,15 +117,11 @@ impl Node {
                         parent: self.key,
                         key: NodeKey::null(),
                         children: None,
-                    };
-                    unsafe {
-                        children[i].as_mut_ptr().write(child);
-                    }
-                    i += 1;
+                    });
                 }
             }
         }
 
-        unsafe { std::mem::transmute::<[MaybeUninit<Node>; 8], [Node; 8]>(children) }
+        children.into_inner().unwrap()
     }
 }

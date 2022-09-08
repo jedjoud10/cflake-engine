@@ -1,12 +1,4 @@
-mod defaults;
-mod handle;
+mod material;
 mod pipeline;
-mod rendering;
-mod settings;
-mod storage;
-pub use self::rendering::*;
-pub use defaults::*;
-pub use handle::*;
+pub use material::*;
 pub use pipeline::*;
-pub use settings::*;
-pub use storage::*;

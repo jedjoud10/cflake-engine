@@ -1,16 +1,14 @@
 #![feature(int_roundings)]
-#![feature(bool_to_option)]
 mod archetype;
-mod component;
 mod entity;
-mod manager;
+mod mask;
 mod query;
-mod utils;
+mod registry;
+mod scene;
 pub use archetype::*;
-pub use component::*;
 pub use entity::*;
-pub use manager::*;
+pub use mask::*;
 pub use query::*;
-pub use utils::*;
-
+pub use registry::*;
+pub use scene::*;
 mod tests;

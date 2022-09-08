@@ -1,166 +1,186 @@
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
+use assets::Assets;
+use egui::epaint::Vertex;
+use egui::ClippedMesh;
+use egui::{ImageData, TextureId, TexturesDelta};
 
-use crate::buffers::Buffers;
-use crate::common::{convert_image, get_dimensions, get_id};
-use egui::TexturesDelta;
-use egui::{epaint::Mesh, ClippedMesh, Rect};
-use nohash_hasher::NoHashHasher;
-use rendering::basics::texture::{ResizableTexture, Texture2D, TextureFilter, TextureFlags, TextureFormat, TextureLayout, TextureParams};
-use rendering::basics::uniforms::Uniforms;
+use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
+use rendering::context::{Context, Window, ToGlName};
+use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
-use rendering::pipeline::SceneRenderer;
-use rendering::utils::DataType;
-use rendering::{
-    basics::{
-        shader::{Shader, ShaderInitSettings},
-        texture::TextureWrapMode,
-    },
-    pipeline::{Handle, Pipeline},
-};
-use vek::Clamp;
+use rendering::prelude::{Display, MipMaps};
+use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
+use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
-// Painter that will draw the egui elements onto the screen
-pub struct Painter {
-    // Store everything we need to render the egui meshes
-    pub(crate) shader: Handle<Shader>,
+use std::mem::size_of;
+use std::ptr::null;
 
-    // Multiple textures
-    pub(crate) textures: HashMap<u64, Handle<Texture2D>, BuildHasherDefault<NoHashHasher<u64>>>,
-    pub(crate) buffers: Buffers,
+// Texel type that will be used to describe the inner raw texel that the texture will use
+type Texel = RGBA<Ranged<u8>>;
+
+// Convert some image data into the RGBA texels
+fn image_data_to_texels(image: &ImageData) -> Vec<vek::Vec4<u8>> {
+    match image {
+        // I don't like this but I have to cope
+        ImageData::Color(color) => color
+            .pixels
+            .iter()
+            .map(|pixel| vek::Vec4::new(pixel.r(), pixel.g(), pixel.b(), pixel.a()))
+            .collect::<Vec<vek::Vec4<u8>>>(),
+
+        // Iterate through each alpha pixel and create a full color from it
+        ImageData::Alpha(alpha) => {
+            let mut texels = Vec::<vek::Vec4<u8>>::with_capacity(alpha.pixels.len());
+            for alpha in alpha.pixels.iter() {
+                texels.push(vek::Vec4::broadcast(*alpha));
+            }
+            texels
+        }
+    }
+}
+
+// A global rasterizer that will draw the eGUI elements onto the screen canvas
+pub(crate) struct Painter {
+    // A simple 2D shader that will draw the shapes
+    shader: Shader,
+
+    // Main font texture
+    texture: Option<Texture2D<Texel>>,
+
+    // The VAO for the whole rasterizer mesh
+    vao: u32,
+
+    // Dynamic buffers that we will update each frame
+    indices: ElementBuffer<u32>,
+    vertices: ArrayBuffer<Vertex>,
 }
 
 impl Painter {
-    // Create a new painter
-    pub fn new(pipeline: &mut Pipeline) -> Self {
-        // Load the GUI shader
-        let shader_settings = ShaderInitSettings::default()
-            .source("defaults/shaders/gui/vert.vrsh.glsl")
-            .source("defaults/shaders/gui/frag.frsh.glsl");
-        let shader = Shader::new(shader_settings).unwrap();
-        let shader = pipeline.insert(shader);
+    // Create a new rasterizer using an asset loader an OpenGL context
+    pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
+        // Load the shader stages first, then compile a shader
+        let vert = loader
+            .load::<VertexStage>("engine/shaders/gui.vrsh.glsl")
+            .unwrap();
+        let frag = loader
+            .load::<FragmentStage>("engine/shaders/gui.frsh.glsl")
+            .unwrap();
+
+        // Link the stages and compile the shader
+        let shader = ShaderCompiler::link((vert, frag), Processor::from(loader), ctx);
+
+        // Create the main mesh VAO
+        let mut vao = 0;
+        unsafe {
+            gl::CreateVertexArrays(1, &mut vao);
+        }
+
+        // Resizable buffers for vertices and indices
+        let vertices = ArrayBuffer::<Vertex>::from_slice(ctx, &[], BufferMode::Resizable).unwrap();
+        let indices = ElementBuffer::<u32>::from_slice(ctx, &[], BufferMode::Resizable).unwrap();
+
+        // Set the vertex attribute parameters for the position, uv, and color attributes
+        unsafe {
+            // Create the Position vertex attribute 
+            gl::EnableVertexArrayAttrib(vao, 0);
+            gl::VertexArrayAttribFormat(vao, 0, 2, gl::FLOAT, gl::FALSE, 0);
+            gl::VertexArrayAttribBinding(vao, 0, 0);
+            
+            // Create the UV vertex attribute
+            gl::EnableVertexArrayAttrib(vao, 1);
+            gl::VertexArrayAttribFormat(vao, 1, 2, gl::FLOAT, gl::FALSE, (size_of::<f32>() * 2) as u32);
+            gl::VertexArrayAttribBinding(vao, 1, 0);
+            
+            // Create the Color vertex attribute
+            gl::EnableVertexArrayAttrib(vao, 2);
+            gl::VertexArrayAttribFormat(vao, 2, 4, gl::UNSIGNED_BYTE, gl::FALSE, (size_of::<f32>() * 4) as u32);
+            gl::VertexArrayAttribBinding(vao, 2, 0);            
+            
+            // Bind the buffers to the VAO
+            gl::VertexArrayVertexBuffer(vao, 0, vertices.name(), 0, vertices.stride() as i32);
+            gl::VertexArrayElementBuffer(vao, indices.name());
+        }
+
         Self {
             shader,
-            textures: Default::default(),
-            buffers: Buffers::new(pipeline),
+            texture: None,
+            vao,
+            indices,
+            vertices,
         }
     }
-    // Set uniforms
-    fn set_mesh_uniforms(&mut self, mesh: &Mesh, uniforms: &mut Uniforms, last_texture: &mut Handle<Texture2D>) {
-        // Get ID
-        let id = match mesh.texture_id {
-            egui::TextureId::Managed(id) => id,
-            egui::TextureId::User(_) => todo!(),
+
+    // Draw the whole user interface onto the screen
+    pub(crate) fn draw(
+        &mut self,
+        window: &mut Window,
+        ctx: &mut Context,
+        meshes: Vec<ClippedMesh>,
+        _loader: &mut Assets,
+        deltas: TexturesDelta,
+    ) {
+        // Update font texture
+        if let Some((_tid, delta)) = deltas
+            .set
+            .iter()
+            .find(|(&tid, _)| tid == TextureId::Managed(0))
+        {
+            // Insert the texture if we don't have it already
+            self.texture.get_or_insert_with(|| {
+                let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
+                let texels = image_data_to_texels(&delta.image);
+
+                // Create the main font texture since it is missing
+                Texture2D::new(
+                    ctx,
+                    TextureMode::Resizable,
+                    dimensions,
+                    Sampling {
+                        filter: Filter::Linear,
+                        wrap: Wrap::ClampToEdge,
+                    },
+                    MipMaps::Disabled,
+                    Some(&texels),
+                )
+                .unwrap()
+            });
+        }
+
+        // Setup OpenGL settings like blending settings and all
+        let settings = RasterSettings {
+            depth_test: None,
+            scissor_test: None,
+            primitive: PrimitiveMode::Triangles { cull: None },
+            srgb: true,
+            blend: Some(BlendMode {
+                src: Factor::One,
+                dest: Factor::OneMinusSrcAlpha,
+            }),
         };
 
-        let handle = self.textures.get(&id).unwrap();
-        // Only set the uniform if we need to
-        if handle != last_texture {
-            uniforms.set_texture2d("u_sampler", handle);
-            *last_texture = handle.clone();
-        }
-    }
-    // Draw a single egui mesh
-    fn draw_mesh(&mut self, rect: Rect, mesh: Mesh, pipeline: &Pipeline) {
-        // We already have the shader bound, so we just need to draw
-        // Get the rect size so we can use the scissor test
-        let pixels_per_point = pipeline.window().pixels_per_point() as f32;
-        let clip_min = vek::Vec2::new(pixels_per_point * rect.min.x, pixels_per_point * rect.min.y);
-        let clip_max = vek::Vec2::new(pixels_per_point * rect.max.x, pixels_per_point * rect.max.y);
-        let dims = pipeline.window().dimensions().as_().into();
-        let clip_min = clip_min.clamped(vek::Vec2::zero(), dims);
-        let clip_max = clip_max.clamped(vek::Vec2::zero(), dims);
-        let clip_min: vek::Vec2<i32> = clip_min.round().as_();
-        let clip_max: vek::Vec2<i32> = clip_max.round().as_();
+        // Create a new canvas rasterizer and fetch it's uniforms
+        let (mut rasterizer, mut uniforms) = window.rasterizer(ctx, &mut self.shader, settings);
 
-        //scissor Y coordinate is from the bottom
-        unsafe {
-            gl::Scissor(clip_min.x, dims.y as i32 - clip_max.y, clip_max.x - clip_min.x, clip_max.y - clip_min.y);
-        }
+        // Set the global static uniforms at the start
+        let texture = self.texture.as_ref().unwrap();
+        uniforms.set_sampler("image", texture);
+        let pixels = vek::Vec2::from(rasterizer.display().size().as_::<f32>());
+        let ppt = rasterizer.display().raw().scale_factor() as f32;
+        uniforms.set_vec2::<vek::Vec2<f32>>("resolution", pixels / ppt);
 
-        // Gotta fil the buffers with new data, then we can draw
-        self.buffers.fill_buffers(mesh.vertices, mesh.indices);
-        self.buffers.draw();
-    }
-    // Apply the texture deltas
-    fn apply_deltas(&mut self, pipeline: &mut Pipeline, deltas: TexturesDelta) {
-        // Create / modify
-        for (tid, delta) in deltas.set {
-            if let Some(handle) = self.textures.get(&get_id(tid)) {
-                // Simply update the texture
-                let texture = pipeline.get_mut(handle).unwrap();
-                if delta.is_whole() {
-                    // Resize and write
-                    texture.resize_then_write(get_dimensions(&delta.image), convert_image(delta.image));
-                }
-            } else {
-                // If we don't have the texture ID stored, we must create it
-                let texture = Texture2D::new(
-                    get_dimensions(&delta.image),
-                    Some(convert_image(delta.image)),
-                    TextureParams {
-                        wrap: TextureWrapMode::ClampToEdge,
-                        flags: TextureFlags::RESIZABLE,
-                        layout: TextureLayout::new(DataType::U8, TextureFormat::RGBA8R),
-                        filter: TextureFilter::Linear,
-                    },
+        // Render each clipped mesh using unsafe commands
+        for mesh in meshes {
+            self.vertices.clear();
+            self.indices.clear();
+            self.vertices.extend_from_slice(mesh.1.vertices.as_slice());
+            self.indices.extend_from_slice(mesh.1.indices.as_slice());
+            unsafe {
+                rasterizer.draw_vao_elements(
+                    self.vao,
+                    self.indices.len(),
+                    gl::UNSIGNED_INT,
+                    uniforms.assume_valid(),
                 );
-                // Create the texture handle
-                let texture = pipeline.insert(texture);
-                self.textures.insert(get_id(tid), texture);
             }
         }
-        // Delete
-        for tid in deltas.free {
-            // Dropping the handle will automatically get rid of the texture
-            self.textures.remove(&get_id(tid)).unwrap();
-        }
-    }
-    // Draw a single frame using an egui context and a painter
-    pub fn draw_gui(&mut self, pipeline: &mut Pipeline, renderer: &mut SceneRenderer, clipped_meshes: Vec<ClippedMesh>, deltas: TexturesDelta) {
-        // No need to draw if we don't have any meshes or if our shader is invalid
-        if clipped_meshes.is_empty() || pipeline.get(&self.shader).is_none() {
-            return;
-        }
-
-        // Apply the texture deltas
-        self.apply_deltas(pipeline, deltas);
-
-        // Since all the elements use the same shader, we can simply set it once
-        let shader = pipeline.get(&self.shader).unwrap();
-
-        // UI is rendered after the scene is rendered, so it is fine to bind to the default framebuffer since we are going to use it to render the screen quad anyways
-        renderer.default_mut().bind(|mut bound| {
-            // OpenGL settings
-            unsafe {
-                gl::BindVertexArray(self.buffers.vao);
-                gl::Enable(gl::FRAMEBUFFER_SRGB);
-                gl::Enable(gl::BLEND);
-                gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
-                gl::Disable(gl::CULL_FACE);
-                gl::Disable(gl::DEPTH_TEST);
-                gl::Enable(gl::SCISSOR_TEST);
-            }
-
-            // We can bind once, and mutate multiple times
-            Uniforms::new(shader.program(), pipeline, |mut uniforms| {
-                // Draw each mesh
-                let mut last_texture = Handle::<Texture2D>::default();
-                for ClippedMesh(rect, mesh) in clipped_meshes {
-                    self.set_mesh_uniforms(&mesh, &mut uniforms, &mut last_texture);
-                    self.draw_mesh(rect, mesh, pipeline);
-                }
-            });
-
-            // Reset
-            unsafe {
-                gl::Disable(gl::FRAMEBUFFER_SRGB);
-                gl::BindVertexArray(0);
-                gl::Disable(gl::BLEND);
-                gl::Enable(gl::CULL_FACE);
-                gl::Enable(gl::DEPTH_TEST);
-                gl::Disable(gl::SCISSOR_TEST);
-            }
-        });
     }
 }

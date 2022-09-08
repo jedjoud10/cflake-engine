@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets,
     audio::AudioSource,
@@ -28,7 +29,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(1.0, vek::Rgb::one()));
+        let light = Light(LightType::directional(vek::Rgb::one() * 6.0));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-90f32.to_radians())).unwrap();
     });
@@ -42,3 +43,5 @@ fn init(world: &mut World) {
     world.audio.play_positional(&audio2, vek::Vec3::unit_x() * 2.0, |s| s).unwrap();
     world.audio.play_positional(&audio3, vek::Vec3::default(), |s| s).unwrap();
 }
+*/
+fn main() {}

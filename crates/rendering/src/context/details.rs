@@ -1,0 +1,60 @@
+use gl::types;
+use std::ffi::{c_void, CStr};
+
+// Get a static string that calls the glGetString function with the input value "symbolic"
+pub(crate) unsafe fn get_static_str(symbolic: u32) -> &'static str {
+    let ptr = gl::GetString(symbolic);
+    let str = CStr::from_ptr(ptr as *const i8);
+    str.to_str().unwrap()
+}
+
+// Get a value from the global OpenGL context
+pub(crate) unsafe fn get_value(value: u32) -> i32 {
+    let mut val = 0;
+    gl::GetIntegerv(value, &mut val);
+    val
+}
+
+// Callback function for OpenGl debugging output
+// This might log the newly fed message to a log or the console
+pub(crate) extern "system" fn callback(
+    source: types::GLenum,
+    _type: types::GLenum,
+    _id: types::GLuint,
+    severity: types::GLenum,
+    length: types::GLsizei,
+    ptr: *const types::GLchar,
+    _user: *mut c_void,
+) {
+    if severity == gl::DEBUG_SEVERITY_NOTIFICATION {
+        return;
+    }
+
+    // Convert the source type to a user safe name
+    let source = match source {
+        gl::DEBUG_SOURCE_API => "API",
+        gl::DEBUG_SOURCE_WINDOW_SYSTEM => "Window System",
+        gl::DEBUG_SOURCE_APPLICATION => "App",
+        gl::DEBUG_SOURCE_SHADER_COMPILER => "Shader Compiler",
+        gl::DEBUG_SOURCE_THIRD_PARTY => "Third Party",
+        _ => panic!(),
+    };
+
+    // Convert the unsafe message pointer to a safe string
+    let message = unsafe {
+        let bytes = std::slice::from_raw_parts(ptr as *const u8, length as usize + 1);
+        let msg = CStr::from_bytes_with_nul_unchecked(bytes);
+        msg.to_str().unwrap()
+    };
+
+    // Convert the severity type to a user safe name
+    let severity = match severity {
+        gl::DEBUG_SEVERITY_LOW => "Low Severity",
+        gl::DEBUG_SEVERITY_MEDIUM => "Medium Severity",
+        gl::DEBUG_SEVERITY_HIGH => "High Severity",
+        gl::DEBUG_SEVERITY_NOTIFICATION => "Notification",
+        _ => panic!(),
+    };
+
+    println!("{source}, {severity}, {message}");
+}

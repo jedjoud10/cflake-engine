@@ -1,3 +1,4 @@
+/*
 use cflake_engine::{
     assets,
     defaults::{
@@ -6,10 +7,9 @@ use cflake_engine::{
     },
     rendering::basics::{
         lights::LightType::{self},
-        material::Material,
+        material::{Material, MaterialType, PbrMaterial},
         shader::{Shader, ShaderInitSettings},
         texture::{bundle, Texture2D, TextureParams},
-        uniforms::UniformsSet,
     },
     terrain::editing::{Edit, EditParams},
     vek, World,
@@ -35,7 +35,7 @@ fn init(world: &mut World) {
 
     // Create the directional light source
     world.ecs.insert(|_, linker| {
-        let light = Light(LightType::new_directional(6.0, vek::Rgb::one()));
+        let light = Light(LightType::directional(vek::Rgb::one() * 6.0));
         linker.insert(light).unwrap();
         linker.insert(Transform::rotation_x(-25f32.to_radians())).unwrap();
     });
@@ -55,18 +55,10 @@ fn init(world: &mut World) {
     let diffuse1 = world.pipeline.insert(diffuse1);
     let normal1 = world.pipeline.insert(normal1);
     let mask1 = world.pipeline.insert(mask1);
-    let material = Material {
+    let material = Material::from_parts(
         shader,
-        uniforms: UniformsSet::new(move |mut uniforms| {
-            // Set the textures first
-            uniforms.set_texture2d("diffuse_m", &diffuse1);
-            uniforms.set_texture2d("normal_m", &normal1);
-            uniforms.set_texture2d("mask_m", &mask1);
-            // Then the parameters
-            uniforms.set_f32("bumpiness", 1.0);
-            uniforms.set_vec2f32("uv_scale", vek::Vec2::broadcast(0.01));
-        }),
-    };
+        PbrMaterial::default().diffuse(diffuse1).normal(normal1).mask(mask1).scale(vek::Vec2::broadcast(0.01)),
+    );
     let material = world.pipeline.insert(material);
     // Create some terrain settings
     let terrain_settings = TerrainSettings {
@@ -80,3 +72,6 @@ fn init(world: &mut World) {
     terrain.edit(Edit::sphere(vek::Vec3::unit_y() * -50.0, 50.0, EditParams::new(None, vek::Rgb::one(), true)));
     world.resources.insert(terrain).unwrap();
 }
+*/
+
+fn main() {}

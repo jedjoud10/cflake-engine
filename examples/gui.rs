@@ -1,18 +1,27 @@
-use cflake_engine::*;
+use cflake_engine::prelude::*;
 
-// An empty game window
+// Create an app that will render some GUI text
 fn main() {
-    cflake_engine::start("cflake-examples/gui", init)
+    App::default()
+        .set_window_title("cflake engine GUI example")
+        .insert_update(update)
+        .execute();
 }
 
-// Init the empty world
-fn init(world: &mut World) {
-    world.events.insert(run);
-}
+// Update the UI and render some cool text
+fn update(world: &mut World) {
+    let mut ui = world.get_mut::<UserInterface>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    let ctx = ui.as_mut().as_mut();
+    egui::Window::new("Test window").show(ctx, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Delta (s/f): ");
+            ui.label(time.delta_f32().to_string());
+        });
 
-// Simple GUI
-fn run(world: &mut World) {
-    gui::egui::Window::new("Test Window").show(&mut world.gui.egui, |ui| {
-        ui.label("Hello, I am your average anime enjoyer. How are you on this fine day?");
+        ui.horizontal(|ui| {
+            ui.label("FPS (f/s): ");
+            ui.label((1.0 / time.delta_f32()).to_string());
+        });
     });
 }
