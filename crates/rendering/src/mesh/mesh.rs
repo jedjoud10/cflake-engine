@@ -29,6 +29,9 @@ pub struct Mesh {
     pub(super) colors: AttributeBuffer<Color>,
     pub(super) uvs: AttributeBuffer<TexCoord>,
 
+    // The AABB bounding box for this mesh section
+    aabb: Option<AABB>,
+
     // The triangle buffer (triangles * 3)
     triangles: TriangleBuffer<u32>,
 }
@@ -75,6 +78,7 @@ impl Mesh {
             tangents: MaybeUninit::uninit(),
             colors: MaybeUninit::uninit(),
             uvs: MaybeUninit::uninit(),
+            aabb: None,
             triangles,
         };
 
@@ -85,12 +89,11 @@ impl Mesh {
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
         vertices.set_attribute::<TexCoord>(tex_coords);
+        vertices.compute_aabb();
 
         // Bind the vertex buffers and check for valididity
         let valid = vertices.rebind(true);
         std::mem::forget(vertices);
-
-        // Bind the triangle buffer
         mesh.triangles_mut().rebind(true);
 
         valid.then_some(mesh)
@@ -118,6 +121,7 @@ impl Mesh {
             colors: &mut self.colors,
             uvs: &mut self.uvs,
             bitfield: &mut self.enabled,
+            aabb: &mut self.aabb,
             maybe_reassigned: EnabledAttributes::empty(),
         }
     }
@@ -171,6 +175,7 @@ impl Mesh {
                 colors: &mut self.colors,
                 uvs: &mut self.uvs,
                 bitfield: &mut self.enabled,
+                aabb: &mut self.aabb,
                 maybe_reassigned: EnabledAttributes::empty(),
             },
         )
@@ -259,12 +264,21 @@ impl Mesh {
         true
     }
 
-    // Recalculate the AABB bounds of this mesh
-    pub fn compute_bounds(&mut self) -> Option<AABB> {
+    // Update the AABB of the mesh using updated position vertices
+    pub fn compute_aabb(&mut self) -> bool{
+        if !self.vertices().is_enabled::<Position>() {
+            return false;
+        }
+        
         let vertices = self.vertices();
         let positions = vertices.attribute::<Position>().unwrap();
         let mapped = positions.map().unwrap();
-        AABB::from_points(mapped.as_slice())
+        let slice = mapped.as_slice();
+        let temp = AABB::from_points(slice);
+        drop(mapped);
+        self.aabb = temp;
+        
+        true
     }
 }
 

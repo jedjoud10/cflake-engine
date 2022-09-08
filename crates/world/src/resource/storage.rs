@@ -58,6 +58,16 @@ impl<T: 'static> Storage<T> {
         self.map.get_mut(handle.untyped.key).unwrap()
     }
 
+    // Get an immutable iterator over all the values in the storage
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.map.iter().map(|(_, v)| v)
+    }
+
+    // Get a mutable iterator over all the values in the storage
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.map.iter_mut().map(|(_, v)| v)
+    }
+
     // Clean the storage of any dangling values. This will keep the same memory footprint as before
     pub fn clean(&mut self) {
         if !self.trackers.cleaned.get() {

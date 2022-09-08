@@ -53,13 +53,13 @@ impl Renderer {
         &self.bounds
     }
 
-    // Set the current bounds of the renderer
-    pub fn set_bounds(&mut self, aabb: AABB) {
-        self.bounds = aabb;
-    }
-
     // Check if we should render the model
     pub fn enabled(&self) -> bool {
         self.enabled
+    }
+
+    // Set the enabled state of the model
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
     }
 }

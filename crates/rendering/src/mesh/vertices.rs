@@ -1,3 +1,5 @@
+use math::AABB;
+
 use super::attributes::*;
 use crate::{
     buffer::{ArrayBuffer, Buffer, UntypedBufferFormat},
@@ -74,6 +76,7 @@ pub struct VerticesMut<'a> {
     pub(super) tangents: &'a mut AttributeBuffer<Tangent>,
     pub(super) colors: &'a mut AttributeBuffer<Color>,
     pub(super) uvs: &'a mut AttributeBuffer<TexCoord>,
+    pub(super) aabb: &'a mut Option<AABB>,
 }
 
 impl VerticesMut<'_> {
@@ -153,8 +156,24 @@ impl VerticesMut<'_> {
         valid.then_some(min)
     }
 
+    // Update the AABB of the mesh using updated position vertices
+    pub fn compute_aabb(&mut self) -> bool {
+        if !self.is_enabled::<Position>() {
+            return false;
+        }
+        
+        let positions = self.attribute::<Position>().unwrap();
+        let mapped = positions.map().unwrap();
+        let slice = mapped.as_slice();
+        let temp = AABB::from_points(slice);
+        drop(mapped);
+        *self.aabb = temp;
+        
+        true
+    }
+
     // Re-bind the vertex buffers to the VAO, assuming that they are valid
-    // This is done automatically when "self is dropped"
+    // This is done automatically when self is dropped
     pub fn rebind(&mut self, force: bool) -> bool {
         if self.len().is_none() {
             return false;
@@ -163,6 +182,7 @@ impl VerticesMut<'_> {
         for (i, (buffer, attrib)) in self.as_any().into_iter().flatten().enumerate() {
             if self.maybe_reassigned.contains(attrib.tag()) || force {
                 unsafe {
+                    // TODO: Just use a state machine internally saved in the mesh bozo
                     gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32);
                     gl::VertexArrayVertexBuffer(
                         self.vao,
@@ -175,14 +195,13 @@ impl VerticesMut<'_> {
             }
         }
 
-        self.maybe_reassigned = EnabledAttributes::empty();
-
         true
     }
 }
 
 impl Drop for VerticesMut<'_> {
     fn drop(&mut self) {
+        self.compute_aabb();
         assert!(self.rebind(false));
     }
 }
