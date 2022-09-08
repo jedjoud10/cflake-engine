@@ -63,7 +63,7 @@ fn init(world: &mut World) {
     // Create the default albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/textures/bricks/diffuse.jpg",
+            "user/textures/metal/diffuse.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -72,7 +72,7 @@ fn init(world: &mut World) {
     // Create the default normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/textures/bricks/normal.jpg",
+            "user/textures/metal/normal.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -81,7 +81,7 @@ fn init(world: &mut World) {
     // Create the default mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "user/textures/bricks/mask.jpg",
+            "user/textures/metal/mask.jpg",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();

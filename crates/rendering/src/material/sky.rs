@@ -47,6 +47,7 @@ impl<'w> Material<'w> for Sky {
         uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
         uniforms.set_vec3("sun_dir", main.directional_light_rotation.forward());
         uniforms.set_scalar("time_since_startup", resources.1.secs_since_startup_f32());
+        uniforms.set_vec3::<vek::Vec3<f32>>("camera", main.camera_location.into());
     }
 
     fn set_surface_properties(

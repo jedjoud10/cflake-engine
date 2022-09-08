@@ -401,7 +401,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     reg.insert_with(
         rendering,
         Stage::new("scene rendering")
-            .after("main camera update")
+            .before("main camera update")
             .after("main directional light update")
             .after("update renderer matrices"),
     )

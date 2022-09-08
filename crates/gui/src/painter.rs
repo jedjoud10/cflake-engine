@@ -71,8 +71,7 @@ impl Painter {
         // Create the main mesh VAO
         let mut vao = 0;
         unsafe {
-            gl::GenVertexArrays(1, &mut vao);
-            gl::BindVertexArray(vao);
+            gl::CreateVertexArrays(1, &mut vao);
         }
 
         // Resizable buffers for vertices and indices
