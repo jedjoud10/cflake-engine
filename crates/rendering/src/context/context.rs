@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::get_static_str;
-use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, display::{RasterSettings, PrimitiveMode, Viewport}, buffer::PersistentlyMappedBuffers};
+use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, display::{RasterSettings, PrimitiveMode, Viewport}};
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
@@ -18,8 +18,6 @@ pub struct Context {
     pub(crate) raster: RasterSettings,
     pub(crate) bounded_fbo: u32,
     pub(crate) viewport: Viewport,
-    pub(crate) persistently_mapped_buffers: PersistentlyMappedBuffers,
-
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
 }
@@ -46,7 +44,6 @@ impl Context {
                 blend: None
             },
             bounded_fbo: 0,
-            persistently_mapped_buffers: Default::default(),
             viewport: Viewport { origin: vek::Vec2::zero(), extent: vek::Extent2::zero() },
             pipelines: Default::default(),
         }

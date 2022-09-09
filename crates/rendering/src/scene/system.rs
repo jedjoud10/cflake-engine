@@ -10,7 +10,7 @@ use crate::{
     mesh::Mesh,
     pipeline::{Pipeline, SpecializedPipeline},
     prelude::{
-        Depth, Filter, FragmentStage, MipMaps, Processor, Ranged, Sampling, ShaderCompiler,
+        Depth, Filter, FragmentStage, MipMapSetting, Processor, Ranged, Sampling, ShaderCompiler,
         Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
     },
     shader::Shader, painter::Painter,
@@ -47,7 +47,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         filter: Filter::Nearest,
         wrap: Wrap::ClampToEdge,
     };
-    let mipmaps = MipMaps::Disabled;
+    let mipmaps = MipMapSetting::Disabled;
 
     // Create the color render texture
     let color = <Texture2D<RGB<f32>> as Texture>::new(

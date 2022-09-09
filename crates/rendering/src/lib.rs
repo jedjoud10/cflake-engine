@@ -12,6 +12,7 @@ pub mod pipeline;
 pub mod scene;
 pub mod shader;
 pub mod texture;
+pub mod query;
 pub mod prelude {
     pub use super::buffer::*;
     pub use super::context::*;
@@ -25,4 +26,5 @@ pub mod prelude {
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
+    pub use super::query::*;
 }

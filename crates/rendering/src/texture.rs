@@ -1,12 +1,12 @@
 mod extent;
-mod miplevel;
+mod mipmap;
 mod region;
 mod settings;
 mod texel;
 mod texture;
 mod texture2d;
 pub use extent::*;
-pub use miplevel::*;
+pub use mipmap::*;
 pub use region::*;
 pub use settings::*;
 pub use texel::*;

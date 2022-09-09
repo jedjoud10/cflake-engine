@@ -1,5 +1,5 @@
 use super::{
-    Extent, Filter, MipLevelMut, MipLevelRef, MipMaps, Region, Sampling, Texel, TextureMode, Wrap,
+    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{num::NonZeroU8, ptr::null};
@@ -18,7 +18,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         mode: TextureMode,
         dimensions: <Self::Region as Region>::E,
         sampling: Sampling,
-        mipmaps: MipMaps,
+        mipmaps: MipMapSetting,
         data: Option<&[<Self::T as Texel>::Storage]>,
     ) -> Option<Self> {
         // Validate the dimensions (make sure they aren't zero in ANY axii)
@@ -39,15 +39,15 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
             let auto = dimensions.levels();
             let (levels, anisotropy_samples) = match mipmaps {
-                MipMaps::Disabled => (NonZeroU8::new(1).unwrap(), None),
-                MipMaps::Automatic => (auto, None),
-                MipMaps::Manual { levels } => (levels.min(auto), None),
-                MipMaps::AutomaticAniso => (auto, {
+                MipMapSetting::Disabled => (NonZeroU8::new(1).unwrap(), None),
+                MipMapSetting::Automatic => (auto, None),
+                MipMapSetting::Manual { levels } => (levels.min(auto), None),
+                MipMapSetting::AutomaticAniso => (auto, {
                     let mut val = 0.0;
                     gl::GetFloatv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mut val);
                     NonZeroU8::new(val as u8)
                 }),
-                MipMaps::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
+                MipMapSetting::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
             };
 
             // Create a new raw OpenGL texture object
@@ -156,12 +156,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get the number of mipmap layers that this texture uses
     fn levels(&self) -> NonZeroU8;
 
-    // Get a single mip level from the texture, immutably
-    fn mip(&self, level: u8) -> Option<MipLevelRef<Self>>;
+    // Get a wrapper that allows us to read/write to texture mipmaps
+    fn mipmap(&mut self) -> MipMap {
 
-    // Get a single mip level from the texture, mutably
-    fn mip_mut(&mut self, level: u8) -> Option<MipLevelMut<Self>>;
-
+    } 
+    
     // Resize the current texture (this will also set it's inner data to null)
     // This will panic if we try to resize a static texture
     fn resize(&mut self, extent: <Self::Region as Region>::E) {

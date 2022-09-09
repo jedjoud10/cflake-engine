@@ -1,6 +1,8 @@
-use crate::context::Context;
+use std::marker::PhantomData;
 
-use super::{Program, Uniforms};
+use crate::{context::Context, others::CommandTimer};
+
+use super::{Program, Uniforms, ValidUniforms};
 
 // A compute shader that has a specific set of "inputs" and "outputs"
 // This shall execute code on the GPU efficiently, in parallel
@@ -10,10 +12,9 @@ impl ComputeShader {
     // Create a new scheduler for this compute shader and it's corresponding uniform values
     pub fn scheduler<'s, 'c>(
         &'s mut self,
-        ctx: &'c mut Context,
     ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
-        let uniforms = Uniforms::new(&mut self.0, ctx);
-        let scheduler = ComputeScheduler { ctx };
+        let uniforms = Uniforms::new(&mut self.0);
+        let scheduler = ComputeScheduler { _phantom: PhantomData::default()  };
         (scheduler, uniforms)
     }
 }
@@ -31,34 +32,22 @@ impl AsMut<Program> for ComputeShader {
 }
 
 // The responsability of a compute scheduler is to set the compute shader parameters and to execute a compute shader
-pub struct ComputeScheduler<'c> {
-    ctx: &'c mut Context,
+pub struct ComputeScheduler<'s> {
+    _phantom: PhantomData<&'s mut ComputeShader>,
 }
 
-impl<'c> ComputeScheduler<'c> {
-    /*
-    // Execute the compute scheduler without verifying the state of the uniforms
-    pub unsafe fn run_unchecked(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
-
-    }
-
-    // Execute the compute shceduler by verifying the state of the uniforms
-    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) {
-
-    }
-
+impl<'s> ComputeScheduler<'s> {
     // Execute the compute scheduler with the compute shader axii parameter and the valid uniforms
-    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: &mut Uniforms) -> Result<(), ()> {
-        // Return an error if any of the axii is 0
+    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: ValidUniforms) -> Option<CommandTimer> {
         if axii.reduce_min() == 0 {
-            return Err(());
+            return None;
         }
 
-        // Validate the uniforms
-        //uniforms.execute().unwrap();
+        let timer = CommandTimer::new(|| unsafe {
+            gl::UseProgram(uniforms.0.name);
+            gl::DispatchCompute(axii.x, axii.y, axii.z)
+        });
 
-        // Execute le compute
-        Ok(())
+        Some(timer)
     }
-    */
 }

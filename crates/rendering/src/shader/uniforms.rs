@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
 use crate::{
-    context::{Context, ToGlName},
-    texture::Texture,
+    context::{Context, ToGlName, Shared},
+    texture::Texture, buffer::Buffer,
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -227,11 +227,11 @@ pub struct Uniforms<'uniforms> {
 }
 
 // Valid uniforms are the only way we can render the uniforms normally
-pub struct ValidUniforms<'uniforms>(PhantomData<&'uniforms mut Program>);
+pub struct ValidUniforms<'validated>(pub(crate) &'validated mut Program);
 
 impl<'uniforms> Uniforms<'uniforms> {
     // Create a temporary uniforms wrapper using a program and it's inner introspection data
-    pub(crate) fn new(program: &'uniforms mut Program, ctx: &mut Context) -> Self {
+    pub(crate) fn new(program: &'uniforms mut Program) -> Self {
         // Bind the program to the global state
         unsafe {
             gl::UseProgram(program.name());
@@ -277,7 +277,7 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Validate the underlying uniforms
     // If debug assertions are off, this function will always return Ok
-    pub fn validate(&mut self) -> Result<ValidUniforms<'uniforms>, UniformsError> {
+    pub fn validate(&mut self) -> Result<ValidUniforms, UniformsError> {
         #[cfg(debug_assertions)]
         self.check_completion()?;
 
@@ -285,8 +285,8 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Assume that the underlying uniforms are valid without checking
-    pub unsafe fn assume_valid(&mut self) -> ValidUniforms<'uniforms> {
-        ValidUniforms(PhantomData::default())
+    pub unsafe fn assume_valid(&mut self) -> ValidUniforms {
+        ValidUniforms(self.program)
     }
 
     // Set the type for any object, as long as it implements SetRawUniform
@@ -357,5 +357,15 @@ impl<'uniforms> Uniforms<'uniforms> {
             gl::BindTextureUnit(offset, sampler.name());
             self.set_scalar(name, offset as i32);
         }
+    }
+
+    // Set an image uniform (a texture that we can modify)
+    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut T) {
+
+    }
+
+    // Set a buffer uniform (that accepts any type of buffer)
+    pub fn set_buffer<T: Shared, const TARGET: u32>(&mut self, name: &str, buffer: &mut Buffer<T, TARGET>) {
+        
     }
 }

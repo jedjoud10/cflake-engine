@@ -5,7 +5,7 @@ use std::mem::MaybeUninit;
 use std::ops::RangeBounds;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
-use super::{UntypedBufferFormat, Mapped, MappedMut, PersistentlyMapped, PersistentlyMappedMut, PersistentlyMappedBuffers};
+use super::{UntypedBufferFormat, Mapped, MappedMut, PersistentlyMapped, PersistentlyMappedMut};
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -72,7 +72,6 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
     length: usize,
     capacity: usize,
     mode: BufferMode,
-    globals: PersistentlyMappedBuffers,
 
     _phantom: PhantomData<*const MaybeUninit<T>>,
     _phantom2: PhantomData<T>,
@@ -130,7 +129,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 length: slice.len(),
                 capacity: slice.len(),
                 mode,
-                globals: ctx.persistently_mapped_buffers.clone(),
                 _phantom: Default::default(),
                 _phantom2: Default::default(),
             })
@@ -198,10 +196,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
                 self.mode.write_permission(),
                 "Cannot write to buffer, missing permission"
             );
-            assert!(
-                !self.is_persistently_mapped(),
-                "Cannot write to buffer, currently in use by persistent mapping"
-            );
             let (start, end) = self
                 .convert_range_bounds(range)
                 .expect("Buffer splat range is invalid");
@@ -234,10 +228,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         assert!(
             self.mode().modify_length_permission(),
             "Cannot extend buffer, missing permission"
-        );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot extent buffer, currently in use by persistent mapping"
         );
 
         unsafe {
@@ -314,10 +304,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             slice.len(),
             "Buffer write range is not equal to slice length"
         );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot write to buffer, currently in use by persistent mapping"
-        );
 
         let ptr = if !slice.is_empty() {
             slice.as_ptr() as *const c_void
@@ -343,10 +329,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             slice.len(),
             "Buffer read range is not equal to slice length"
         );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot read buffer, currently in use by persistent mapping"
-        );
 
         let offset = (start * size_of::<T>()) as isize;
         let size = ((end - start) * size_of::<T>()) as isize;
@@ -361,10 +343,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         assert!(
             self.mode().modify_length_permission(),
             "Cannot clear buffer, missing permission"
-        );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot clear buffer, currently in use by persistent mapping"
         );
         self.length = 0;
     }
@@ -400,7 +378,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             length: self.length,
             capacity: self.capacity,
             mode: self.mode,
-            globals: self.globals.clone(),
             _phantom: Default::default(),
             _phantom2: Default::default(),
         }
@@ -412,10 +389,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             self.len(),
             other.len(),
             "Cannot copy from buffer, length mismatch"
-        );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot copy from buffer, currently in use by persistent mapping"
         );
         unsafe {
             let size = (self.length * size_of::<T>()) as isize;
@@ -432,10 +405,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             self.len() * size_of::<T>(),
             other.len() * size_of::<U>(),
             "Cannot copy from buffer, byte size mismatch"
-        );
-        assert!(
-            !self.is_persistently_mapped(),
-            "Cannot copy from, buffer, currently in use by persistent mapping"
         );
 
         let size = (self.length * size_of::<T>()) as isize;
@@ -501,21 +470,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         })
     }
 
-    // Check if a buffer is currently in use persistently
-    pub fn is_persistently_mapped(&self) -> bool {
-        self.globals.get_buffer_state(self.buffer).0
-    }
-
-    // Map a region of the buffer persistently for reading
-    pub fn map_persistent_range(&self, range: impl RangeBounds<usize>) -> Option<PersistentlyMapped<T, TARGET>> {
-        None
-    }
-
-    // Map a region of the buffer persistently for reading and writing
-    pub fn map_persistent_range_mut(&mut self, range: impl RangeBounds<usize>) -> Option<PersistentlyMappedMut<T, TARGET>> {
-        None
-    }
-
     // Map the whole buffer temporarily for reading
     pub fn map(&self) -> Option<Mapped<T, TARGET>> {
         self.map_range(..)
@@ -524,16 +478,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Map the whole buffer temporarily for reading and writing
     pub fn map_mut(&mut self) -> Option<MappedMut<T, TARGET>> {
         self.map_range_mut(..)
-    }
-
-    // Map the whole buffer persistently for reading
-    pub fn map_persistent(&self) -> Option<PersistentlyMapped<T, TARGET>> {
-        None
-    } 
-    
-    // Map the whole buffer persistently for reading and writing
-    pub fn map_persistent_mut(&mut self) -> Option<PersistentlyMappedMut<T, TARGET>> {
-        None
     }
 }
 

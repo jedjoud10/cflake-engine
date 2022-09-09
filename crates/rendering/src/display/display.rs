@@ -45,7 +45,7 @@ pub trait Display: Sized {
         }
 
         // Create the new rasterizer and it's corresponding uniforms
-        let uniforms = Uniforms::new(shader.as_mut(), ctx);
+        let uniforms = Uniforms::new(shader.as_mut());
         let rasterizer = unsafe { Rasterizer::new(self, ctx, settings) };
         (rasterizer, uniforms)
     }

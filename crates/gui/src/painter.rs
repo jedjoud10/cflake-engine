@@ -7,7 +7,7 @@ use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
 use rendering::context::{Context, Window, ToGlName};
 use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
-use rendering::prelude::{Display, MipMaps};
+use rendering::prelude::{Display, MipMapSetting};
 use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, VertexStage};
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
@@ -138,7 +138,7 @@ impl Painter {
                         filter: Filter::Linear,
                         wrap: Wrap::ClampToEdge,
                     },
-                    MipMaps::Disabled,
+                    MipMapSetting::Disabled,
                     Some(&texels),
                 )
                 .unwrap()
