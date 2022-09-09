@@ -47,15 +47,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     fn levels(&self) -> NonZeroU8 {
         self.levels
     }
-
-    fn mip(&self, level: u8) -> Option<super::MipLevelRef<Self>> {
-        (level < self.levels.get()).then(|| super::MipLevelRef::new(self, level))
-    }
-
-    fn mip_mut(&mut self, level: u8) -> Option<super::MipLevelMut<Self>> {
-        (level < self.levels.get()).then(|| super::MipLevelMut::new(self, level))
-    }
-
+    
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as super::Region>::E,

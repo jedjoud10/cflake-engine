@@ -64,8 +64,10 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
 
         // Create a new rasterizer so we can draw the objects onto the painter
         let shader = shaders.get_mut(&self.shader);
-        let color = shading.color_tex.mip_mut(0).unwrap();
-        let depth = shading.depth_tex.mip_mut(0).unwrap();
+        let color_mipmap = shading.color_tex.mipmap();
+        let color = color_mipmap.mip_mut(0).unwrap();
+        let depth_mipmap = shading.depth_tex.mipmap();
+        let depth = depth_mipmap.mip_mut(0).unwrap();
         let mut scoped = shading.painter.scope(window.viewport(), color, depth, ()).unwrap();
         let (mut rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 

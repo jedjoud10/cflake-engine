@@ -23,7 +23,7 @@ pub trait Extent: Copy {
     }
 
     // Get the dimensions of a specific miplayer using raw OpenGL commands
-    unsafe fn get_layer_extent(texture: u32, level: u8) -> Self;
+    unsafe fn get_level_extent(texture: u32, level: u8) -> Self;
 }
 
 // Implementation of extent for 2D extent
@@ -40,7 +40,7 @@ impl Extent for vek::Extent2<u16> {
         self.reduce_max()
     }
 
-    unsafe fn get_layer_extent(texture: u32, level: u8) -> Self {
+    unsafe fn get_level_extent(texture: u32, level: u8) -> Self {
         let mut width = 0;
         let mut height = 0;
         gl::GetTextureLevelParameteriv(texture, level as i32, gl::TEXTURE_WIDTH, &mut width);
@@ -63,7 +63,7 @@ impl Extent for vek::Extent3<u16> {
         self.reduce_max()
     }
 
-    unsafe fn get_layer_extent(texture: u32, level: u8) -> Self {
+    unsafe fn get_level_extent(texture: u32, level: u8) -> Self {
         let mut width = 0;
         let mut height = 0;
         let mut depth = 0;

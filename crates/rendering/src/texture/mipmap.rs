@@ -1,19 +1,87 @@
-use crate::prelude::TextureMode;
+use std::{cell::{RefCell, Cell}, rc::Rc};
 
+use crate::prelude::TextureMode;
 use super::{Extent, Region, Texel, Texture};
 
-// An immutable mip layer that we can use to read from the texture
+// This wrapper contains all the mipmaps from the texture
+// We can use this accessor to fetch multiple mutable mip maps at the same time as well
+pub struct MipMap<'a, T: Texture> {
+    pub(super) texture: &'a mut T,
+    pub(super) read: Rc<Cell<u64>>,
+    pub(super) write: Rc<Cell<u64>>,
+}
+
+// This will read from an Rc<Cell<u64>> and check if the bit at the specified location is set
+fn get_bit(rc: &Rc<Cell<u64>>, location: u8) -> bool {
+    let current = rc.get();
+    current >> location & 1 == 1
+}
+
+// This will write to an Rc<Cell<u64>> and set a specific bit to the specified location
+fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
+    let mut current = rc.get();
+
+    if value {
+        current |= 1 << location;
+    } else {
+        current &= !(1 << location);
+    }
+
+    rc.set(current);
+} 
+
+impl<'a, T: Texture> MipMap<'a, T> {
+    // Get a single mip level from the texture, immutably
+    // This will fail if the mip level is currently being used mutably
+    pub fn mip(&self, level: u8) -> Option<MipLevelRef<T>> {
+        if level > self.texture.levels().get() {
+            return None;
+        }
+
+        if get_bit(&self.write, level) {
+            return None;
+        }
+
+        set_bit(&self.read, level, true);
+        
+        Some(MipLevelRef {
+            texture: self.texture,
+            read: self.read.clone(),
+            level,
+        })
+    }
+
+    // Get a single mip level from the texture, mutably
+    // This will fail if the mip level is currently being used mutably or being read from
+    pub fn mip_mut(&mut self, level: u8) -> Option<MipLevelMut<T>> {
+        if level > self.texture.levels().get() {
+            return None;
+        }
+
+        if get_bit(&self.write, level) || get_bit(&self.read, level) {
+            return None;
+        }
+
+        set_bit(&self.read, level, true);
+        set_bit(&self.write, level, true);
+        
+        Some(MipLevelMut {
+            texture: self.texture,
+            read: self.read.clone(),
+            write: self.write.clone(),
+            level,
+        })
+    }
+}
+
+// An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
     level: u8,
+    read: Rc<Cell<u64>>,
 }
 
 impl<'a, T: Texture> MipLevelRef<'a, T> {
-    // Create a new mip layer view using a texture and a level
-    pub(super) fn new(texture: &'a T, level: u8) -> Self {
-        Self { texture, level }
-    }
-
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -27,7 +95,7 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     // Get the mip layer's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         unsafe {
-            <<T::Region as Region>::E as Extent>::get_layer_extent(self.texture.name(), self.level)
+            <<T::Region as Region>::E as Extent>::get_level_extent(self.texture.name(), self.level)
         }
     }
 
@@ -68,18 +136,21 @@ impl<'a, T: Texture> MipLevelRef<'a, T> {
     }
 }
 
+impl<'a, T: Texture> Drop for MipLevelRef<'a, T> {
+    fn drop(&mut self) {
+        set_bit(&self.read, self.level, false);
+    }
+}
+
 // A mutable mip layer that we can use to write to the texture
 pub struct MipLevelMut<'a, T: Texture> {
-    texture: &'a mut T,
+    texture: &'a T,
     level: u8,
+    read: Rc<Cell<u64>>,
+    write: Rc<Cell<u64>>,
 }
 
 impl<'a, T: Texture> MipLevelMut<'a, T> {
-    // Create a new mip layer mutable view using a texture and a level
-    pub(super) fn new(texture: &'a mut T, level: u8) -> Self {
-        Self { texture, level }
-    }
-
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -93,7 +164,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Get the mip layer's dimensions
     pub fn dimensions(&self) -> <T::Region as Region>::E {
         unsafe {
-            <<T::Region as Region>::E as Extent>::get_layer_extent(self.texture.name(), self.level)
+            <<T::Region as Region>::E as Extent>::get_level_extent(self.texture.name(), self.level)
         }
     }
 
@@ -220,5 +291,12 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
         unsafe {
             self.splat_unchecked(&val);
         }
+    }
+}
+
+impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {
+    fn drop(&mut self) {
+        set_bit(&self.read, self.level, false);
+        set_bit(&self.write, self.level, false);
     }
 }

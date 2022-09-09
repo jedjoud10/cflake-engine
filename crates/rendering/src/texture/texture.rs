@@ -1,8 +1,8 @@
 use super::{
-    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap,
+    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap, MipMap,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
-use std::{num::NonZeroU8, ptr::null};
+use std::{num::NonZeroU8, ptr::null, rc::Rc, cell::Cell};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
 pub trait Texture: ToGlName + ToGlTarget + Sized {
@@ -132,13 +132,13 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get the texture's dimensions
     fn dimensions(&self) -> <Self::Region as Region>::E;
 
-    // Get the dimensions of a specific mip layer in this texture
-    fn dimensions_of_layer(&self, level: u8) -> Option<<Self::Region as Region>::E> {
+    // Get the dimensions of a specific mip level in this texture
+    fn dimensions_of_level(&self, level: u8) -> Option<<Self::Region as Region>::E> {
         if level == 0 {
             Some(self.dimensions())
         } else if level < self.levels().get() {
             Some(unsafe {
-                <<Self::Region as Region>::E as Extent>::get_layer_extent(self.name(), level)
+                <<Self::Region as Region>::E as Extent>::get_level_extent(self.name(), level)
             })
         } else {
             None
@@ -153,12 +153,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         self.dimensions().area()
     }
 
-    // Get the number of mipmap layers that this texture uses
+    // Get the number of mipmap levels that this texture uses
     fn levels(&self) -> NonZeroU8;
 
     // Get a wrapper that allows us to read/write to texture mipmaps
-    fn mipmap(&mut self) -> MipMap {
-
+    fn mipmap(&mut self) -> MipMap<Self> {
+        MipMap { texture: self, read: Rc::new(Cell::new(0)), write: Rc::new(Cell::new(0)) }
     } 
     
     // Resize the current texture (this will also set it's inner data to null)
