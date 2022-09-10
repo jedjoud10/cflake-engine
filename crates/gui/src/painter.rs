@@ -4,7 +4,7 @@ use egui::ClippedMesh;
 use egui::{ImageData, TextureId, TexturesDelta};
 
 use rendering::buffer::{ArrayBuffer, BufferMode, ElementBuffer};
-use rendering::context::{Context, Window, ToGlName};
+use rendering::context::{Context, ToGlName, Window};
 use rendering::display::{BlendMode, Factor, PrimitiveMode, RasterSettings};
 use rendering::gl;
 use rendering::prelude::{Display, MipMapSetting};
@@ -80,21 +80,35 @@ impl Painter {
 
         // Set the vertex attribute parameters for the position, uv, and color attributes
         unsafe {
-            // Create the Position vertex attribute 
+            // Create the Position vertex attribute
             gl::EnableVertexArrayAttrib(vao, 0);
             gl::VertexArrayAttribFormat(vao, 0, 2, gl::FLOAT, gl::FALSE, 0);
             gl::VertexArrayAttribBinding(vao, 0, 0);
-            
+
             // Create the UV vertex attribute
             gl::EnableVertexArrayAttrib(vao, 1);
-            gl::VertexArrayAttribFormat(vao, 1, 2, gl::FLOAT, gl::FALSE, (size_of::<f32>() * 2) as u32);
+            gl::VertexArrayAttribFormat(
+                vao,
+                1,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                (size_of::<f32>() * 2) as u32,
+            );
             gl::VertexArrayAttribBinding(vao, 1, 0);
-            
+
             // Create the Color vertex attribute
             gl::EnableVertexArrayAttrib(vao, 2);
-            gl::VertexArrayAttribFormat(vao, 2, 4, gl::UNSIGNED_BYTE, gl::FALSE, (size_of::<f32>() * 4) as u32);
-            gl::VertexArrayAttribBinding(vao, 2, 0);            
-            
+            gl::VertexArrayAttribFormat(
+                vao,
+                2,
+                4,
+                gl::UNSIGNED_BYTE,
+                gl::FALSE,
+                (size_of::<f32>() * 4) as u32,
+            );
+            gl::VertexArrayAttribBinding(vao, 2, 0);
+
             // Bind the buffers to the VAO
             gl::VertexArrayVertexBuffer(vao, 0, vertices.name(), 0, vertices.stride() as i32);
             gl::VertexArrayElementBuffer(vao, indices.name());

@@ -2,8 +2,9 @@ use std::marker::PhantomData;
 
 use super::{Program, UniformsError};
 use crate::{
-    context::{Context, ToGlName, Shared},
-    texture::Texture, buffer::Buffer,
+    buffer::Buffer,
+    context::{Context, Shared, ToGlName},
+    texture::Texture,
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -360,12 +361,13 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set an image uniform (a texture that we can modify)
-    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut T) {
-
-    }
+    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut T) {}
 
     // Set a buffer uniform (that accepts any type of buffer)
-    pub fn set_buffer<T: Shared, const TARGET: u32>(&mut self, name: &str, buffer: &mut Buffer<T, TARGET>) {
-        
+    pub fn set_buffer<T: Shared, const TARGET: u32>(
+        &mut self,
+        name: &str,
+        buffer: &mut Buffer<T, TARGET>,
+    ) {
     }
 }

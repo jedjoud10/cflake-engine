@@ -183,28 +183,19 @@ impl Mesh {
     }
 
     // Recalculate the vertex normals procedurally; based on position attribute
-    pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {
-        let (triangles, mut vertices) = if self.vertices().is_enabled::<Position>() {
-            self.both_mut()
-        } else {
-            return false;
-        };
-
+    pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         // Fetch the buffers and map them
-        let mapped_positions = vertices.attribute::<Position>().unwrap().map().unwrap();
+        let (mut triangles, mut vertices) = self.both_mut();
+        let mapped_positions = vertices.attribute_mut::<Position>()?.map()?;
         let positions = mapped_positions.as_slice();
-        let mapped_triangles = triangles.data().map().unwrap();
+        let mapped_triangles = triangles.data_mut().map().unwrap();
         let triangles = mapped_triangles.as_slice();
 
         // Mesh utils come to the rescue yet again
-        let normals = MeshUtils::compute_normals(positions, triangles);
+        let normals = MeshUtils::compute_normals(positions, triangles)?;
 
         // Return false if we were not able to generate the normals
-        let buffer = if normals.is_none() {
-            return false;
-        } else {
-            ArrayBuffer::from_slice(ctx, normals.unwrap().as_slice(), mode).unwrap()
-        };
+        let buffer = ArrayBuffer::from_slice(ctx, normals.as_slice(), mode).unwrap();
 
         // Drop the buffers manually
         drop(mapped_positions);
@@ -212,47 +203,34 @@ impl Mesh {
 
         // Insert the new buffer
         vertices.set_attribute::<Normal>(Some(buffer));
-        true
+        Some(())
     }
 
     // Recalculate the tangents procedurally; based on normal, position, and texture coordinate attributes
-    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> bool {
-        let valid_attributes = self.vertices().layout().contains(
-            EnabledAttributes::POSITIONS
-                | EnabledAttributes::NORMALS
-                | EnabledAttributes::TEX_COORDS,
-        );
-        let (triangles, mut vertices) = if valid_attributes {
-            self.both_mut()
-        } else {
-            return false;
-        };
+    pub fn compute_tangents(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
+        let (triangles, mut vertices) = self.both_mut();
 
         // Get positions slice
-        let mapped_positions = vertices.attribute::<Position>().unwrap().map().unwrap();
+        let mapped_positions = vertices.attribute::<Position>()?.map()?;
         let positions = mapped_positions.as_slice();
 
         // Get normals slice
-        let mapped_normals = vertices.attribute::<Normal>().unwrap().map().unwrap();
+        let mapped_normals = vertices.attribute::<Normal>()?.map()?;
         let normals = mapped_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped_tex_coords = vertices.attribute::<TexCoord>().unwrap().map().unwrap();
+        let mapped_tex_coords = vertices.attribute::<TexCoord>()?.map()?;
         let tex_coords = mapped_tex_coords.as_slice();
 
         // Get triangles slice
-        let mapped_triangles = triangles.data().map().unwrap();
+        let mapped_triangles = triangles.data().map()?;
         let triangles = mapped_triangles.as_slice();
 
         // Generate the tangents using the mesh utils
-        let tangents = MeshUtils::compute_tangents(positions, normals, tex_coords, triangles);
+        let tangents = MeshUtils::compute_tangents(positions, normals, tex_coords, triangles)?;
 
         // Return false if we were not able to generate the tangents
-        let buffer = if tangents.is_none() {
-            return false;
-        } else {
-            ArrayBuffer::from_slice(ctx, tangents.unwrap().as_slice(), mode).unwrap()
-        };
+        let buffer = ArrayBuffer::from_slice(ctx, tangents.as_slice(), mode).unwrap();
 
         // Drop the mapped buffers manually
         drop(mapped_positions);
@@ -262,15 +240,15 @@ impl Mesh {
 
         // Insert the new buffer
         vertices.set_attribute::<Tangent>(Some(buffer));
-        true
+        Some(())
     }
 
     // Update the AABB of the mesh using updated position vertices
-    pub fn compute_aabb(&mut self) -> bool{
+    pub fn compute_aabb(&mut self) -> bool {
         if !self.vertices().is_enabled::<Position>() {
             return false;
         }
-        
+
         let vertices = self.vertices();
         let positions = vertices.attribute::<Position>().unwrap();
         let mapped = positions.map().unwrap();
@@ -278,7 +256,7 @@ impl Mesh {
         let temp = AABB::from_points(slice);
         drop(mapped);
         self.aabb = temp;
-        
+
         true
     }
 }

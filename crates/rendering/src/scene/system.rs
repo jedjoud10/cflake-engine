@@ -3,17 +3,18 @@ use super::{
     Renderer,
 };
 use crate::{
-    buffer::{BufferMode, UniformBuffer, MappingMode},
+    buffer::{BufferMode, MappingMode, UniformBuffer},
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,
+    painter::Painter,
     pipeline::{Pipeline, SpecializedPipeline},
     prelude::{
         Depth, Filter, FragmentStage, MipMapSetting, Processor, Ranged, Sampling, ShaderCompiler,
         Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
     },
-    shader::Shader, painter::Painter,
+    shader::Shader,
 };
 
 use assets::Assets;

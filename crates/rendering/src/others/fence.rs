@@ -23,7 +23,7 @@ impl CommandTimer {
             gl::EndQuery(gl::TIME_ELAPSED);
 
             let fence = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
-        
+
             Self {
                 query,
                 fence,
@@ -31,7 +31,7 @@ impl CommandTimer {
         }
         */
     }
-    
+
     // Check if the OpenGL fence has been signaled
     pub fn signaled(&self) -> bool {
         if self.fence.is_none() || self.query.is_none() {

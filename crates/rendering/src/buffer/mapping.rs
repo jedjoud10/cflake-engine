@@ -1,8 +1,14 @@
-use std::{marker::PhantomData, sync::{Arc, atomic::{AtomicU64, Ordering}}};
 use parking_lot::{Mutex, RwLock};
+use std::{
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+};
 
-use crate::context::{Shared, ToGlName};
 use super::Buffer;
+use crate::context::{Shared, ToGlName};
 
 // Immutably mapped buffer that we can read from directly
 // The reason this takes a mutable reference to the buffer is because OpenGL does not allow us to read the buffer even when it is mapped
@@ -83,5 +89,5 @@ impl<T: Shared, const TARGET: u32> Persistent<T, TARGET> {
     // Get the raw pointer that references the mapped buffer's contents
     pub fn as_mut_ptr(&mut self) -> *mut T {
         self.ptr
-    }  
+    }
 }

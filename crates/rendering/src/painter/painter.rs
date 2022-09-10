@@ -31,7 +31,7 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
             gl::CreateFramebuffers(1, &mut name);
             name
         };
-        
+
         Self {
             name,
             untyped_color_attachments: None,
@@ -65,18 +65,33 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
             let mut offset = 0;
             for attachment in untyped_color.unwrap() {
                 match attachment {
-                    UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
-                        gl::NamedFramebufferTexture(self.name, gl::COLOR_ATTACHMENT0 + offset, texture_name, level as i32);
+                    UntypedAttachment::TextureLevel {
+                        texture_name,
+                        level,
+                        untyped: _,
+                    } => unsafe {
+                        gl::NamedFramebufferTexture(
+                            self.name,
+                            gl::COLOR_ATTACHMENT0 + offset,
+                            texture_name,
+                            level as i32,
+                        );
                     },
                 }
                 offset += 1;
             }
- 
+
             unsafe {
-                let draw = (0..offset).into_iter().map(|offset| gl::COLOR_ATTACHMENT0 + offset).collect_vec();
-                gl::NamedFramebufferDrawBuffers(self.name, draw.len() as i32, draw.as_ptr() as *const u32);
+                let draw = (0..offset)
+                    .into_iter()
+                    .map(|offset| gl::COLOR_ATTACHMENT0 + offset)
+                    .collect_vec();
+                gl::NamedFramebufferDrawBuffers(
+                    self.name,
+                    draw.len() as i32,
+                    draw.as_ptr() as *const u32,
+                );
             }
-            
         }
 
         // Update the depth attachment
@@ -84,8 +99,17 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
             self.untyped_depth_attachment = untyped_depth;
             let depth = untyped_depth.unwrap();
             match depth {
-                UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
-                    gl::NamedFramebufferTexture(self.name, gl::DEPTH_ATTACHMENT, texture_name, level as i32);
+                UntypedAttachment::TextureLevel {
+                    texture_name,
+                    level,
+                    untyped: _,
+                } => unsafe {
+                    gl::NamedFramebufferTexture(
+                        self.name,
+                        gl::DEPTH_ATTACHMENT,
+                        texture_name,
+                        level as i32,
+                    );
                 },
             }
         }
@@ -95,8 +119,17 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
             self.untyped_stencil_attachment = untyped_stencil;
             let stencil = untyped_stencil.unwrap();
             match stencil {
-                UntypedAttachment::TextureLevel { texture_name, level, untyped: _ } => unsafe {
-                    gl::NamedFramebufferTexture(self.name, gl::STENCIL_ATTACHMENT, texture_name, level as i32);
+                UntypedAttachment::TextureLevel {
+                    texture_name,
+                    level,
+                    untyped: _,
+                } => unsafe {
+                    gl::NamedFramebufferTexture(
+                        self.name,
+                        gl::STENCIL_ATTACHMENT,
+                        texture_name,
+                        level as i32,
+                    );
                 },
             }
         }

@@ -40,11 +40,7 @@ impl PartialEq for UntypedAttachment {
                     level: r_level,
                     untyped: r_untyped,
                 },
-            ) => {
-                l_texture_name == r_texture_name
-                    && l_level == r_level
-                    && l_untyped == r_untyped
-            }
+            ) => l_texture_name == r_texture_name && l_level == r_level && l_untyped == r_untyped,
         }
     }
 }
@@ -63,16 +59,16 @@ impl Attachment<()> for () {
     }
 }
 
-// Texture2D mip maps are attachable 
+// Texture2D mip maps are attachable
 impl<'a, T: Texel> Attachment<T> for MipLevelMut<'a, Texture2D<T>> {
     fn untyped(&self) -> Option<UntypedAttachment> {
-        Some(UntypedAttachment::TextureLevel { 
+        Some(UntypedAttachment::TextureLevel {
             texture_name: self.texture().name(),
             level: self.level(),
-            untyped: T::untyped()
+            untyped: T::untyped(),
         })
     }
-} 
+}
 
 // This is implemented for all tuples that contain types of attachments of the specifici painter color layout
 pub trait ColorAttachmentLayout<C: PainterColorLayout> {
@@ -83,7 +79,6 @@ impl ColorAttachmentLayout<()> for () {
         None
     }
 }
-
 
 // TODO: Simplify this a tiny bit I guess?
 // This is implemented for all attachments that use this painter depth texel

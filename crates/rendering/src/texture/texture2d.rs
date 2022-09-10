@@ -1,6 +1,8 @@
 use assets::Asset;
 
-use super::{ImageTexel, Region, Texel, Texture, TextureImportSettings, TextureMode, MipMapDescriptor};
+use super::{
+    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode,
+};
 use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{ffi::c_void, marker::PhantomData, num::NonZeroU8};
 
@@ -47,7 +49,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     fn mipmap_descriptor(&self) -> &MipMapDescriptor {
         &self.mipmap
     }
-    
+
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as super::Region>::E,

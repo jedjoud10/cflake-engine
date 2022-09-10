@@ -161,14 +161,19 @@ impl VerticesMut<'_> {
         if !self.is_enabled::<Position>() {
             return false;
         }
-        
+
         let positions = self.attribute_mut::<Position>().unwrap();
+
+        if !positions.mode().map_read_permission() {
+            return false;
+        }
+
         let mapped = positions.map().unwrap();
         let slice = mapped.as_slice();
         let temp = AABB::from_points(slice);
         drop(mapped);
         *self.aabb = temp;
-        
+
         true
     }
 

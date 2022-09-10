@@ -35,6 +35,11 @@ impl TrianglesMut<'_> {
         self.buffer
     }
 
+    // Set the underlying triangle buffer
+    pub fn set_data(&mut self, buffer: TriangleBuffer<u32>) {
+        *self.buffer = buffer;
+    }
+
     // Get the number of triangles that we have
     pub fn len(&self) -> usize {
         self.buffer.len()

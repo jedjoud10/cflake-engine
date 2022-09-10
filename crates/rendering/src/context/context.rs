@@ -2,12 +2,21 @@ use ahash::AHashMap;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
 use std::{
-    any::TypeId, cell::RefCell, collections::HashMap, hash::BuildHasherDefault, ptr::null, rc::Rc,
-    time::Duration, sync::{Arc, Mutex, atomic::AtomicU64},
+    any::TypeId,
+    cell::RefCell,
+    collections::HashMap,
+    hash::BuildHasherDefault,
+    ptr::null,
+    rc::Rc,
+    sync::{atomic::AtomicU64, Arc, Mutex},
+    time::Duration,
 };
 
 use super::get_static_str;
-use crate::{pipeline::{CreatePipeline, PipeId, Pipeline}, display::{RasterSettings, PrimitiveMode, Viewport}};
+use crate::{
+    display::{PrimitiveMode, RasterSettings, Viewport},
+    pipeline::{CreatePipeline, PipeId, Pipeline},
+};
 
 // An abstract wrapper around the whole OpenGL context
 pub struct Context {
@@ -41,10 +50,13 @@ impl Context {
                 scissor_test: None,
                 primitive: PrimitiveMode::Triangles { cull: None },
                 srgb: false,
-                blend: None
+                blend: None,
             },
             bounded_fbo: 0,
-            viewport: Viewport { origin: vek::Vec2::zero(), extent: vek::Extent2::zero() },
+            viewport: Viewport {
+                origin: vek::Vec2::zero(),
+                extent: vek::Extent2::zero(),
+            },
             pipelines: Default::default(),
         }
     }

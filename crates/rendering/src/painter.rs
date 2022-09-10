@@ -1,8 +1,8 @@
 mod attachments;
 mod layout;
-mod painter;
 mod macros;
-pub use macros::*;
+mod painter;
 pub use attachments::*;
 pub use layout::*;
+pub use macros::*;
 pub use painter::*;

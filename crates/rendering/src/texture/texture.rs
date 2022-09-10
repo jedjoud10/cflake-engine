@@ -1,8 +1,9 @@
 use super::{
-    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap, MipMapDescriptor, get_bit, set_bit,
+    get_bit, set_bit, Extent, Filter, MipLevelMut, MipLevelRef, MipMapDescriptor, MipMapSetting,
+    Region, Sampling, Texel, TextureMode, Wrap,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
-use std::{num::NonZeroU8, ptr::null, rc::Rc, cell::Cell};
+use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
 pub trait Texture: ToGlName + ToGlTarget + Sized {
@@ -121,9 +122,9 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
             // Create a mip map accessor
             let mipmap = MipMapDescriptor {
-                levels, 
+                levels,
                 read: Rc::new(Cell::new(0)),
-                write: Rc::new(Cell::new(0))
+                write: Rc::new(Cell::new(0)),
             };
 
             // Create the texture object
@@ -175,8 +176,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         }
 
         set_bit(&self.mipmap_descriptor().read, level, true);
-        
-        Some(MipLevelRef::new(self, level, self.mipmap_descriptor().read.clone()))
+
+        Some(MipLevelRef::new(
+            self,
+            level,
+            self.mipmap_descriptor().read.clone(),
+        ))
     }
 
     // Get a single mip level from the texture, mutably
@@ -186,21 +191,28 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             return None;
         }
 
-        if get_bit(&self.mipmap_descriptor().write, level) || get_bit(&self.mipmap_descriptor().read, level) {
+        if get_bit(&self.mipmap_descriptor().write, level)
+            || get_bit(&self.mipmap_descriptor().read, level)
+        {
             return None;
         }
 
         set_bit(&self.mipmap_descriptor().read, level, true);
         set_bit(&self.mipmap_descriptor().write, level, true);
-        
-        Some(MipLevelMut::new(self, level, self.mipmap_descriptor().read.clone(), self.mipmap_descriptor().write.clone()))
+
+        Some(MipLevelMut::new(
+            self,
+            level,
+            self.mipmap_descriptor().read.clone(),
+            self.mipmap_descriptor().write.clone(),
+        ))
     }
 
     // Get the number of mipmap levels we are using
     fn levels(&self) -> u8 {
         self.mipmap_descriptor().levels.get()
-    } 
-    
+    }
+
     // Resize the current texture (this will also set it's inner data to null)
     // This will panic if we try to resize a static texture
     fn resize(&mut self, extent: <Self::Region as Region>::E) {

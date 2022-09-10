@@ -1,6 +1,11 @@
-use std::{cell::{RefCell, Cell}, rc::Rc, num::NonZeroU8, marker::PhantomData};
-use crate::prelude::TextureMode;
 use super::{Extent, Region, Texel, Texture};
+use crate::prelude::TextureMode;
+use std::{
+    cell::{Cell, RefCell},
+    marker::PhantomData,
+    num::NonZeroU8,
+    rc::Rc,
+};
 
 // A mip map descriptor contains the two bitfields that contain the read/write flags of each mipmap level
 pub struct MipMapDescriptor {
@@ -26,7 +31,7 @@ pub(super) fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
     }
 
     rc.set(current);
-} 
+}
 
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
@@ -36,7 +41,7 @@ pub struct MipLevelRef<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelRef<'a, T> {
-    // Create an immutable mip level 
+    // Create an immutable mip level
     pub fn new(texture: &'a T, level: u8, read: Rc<Cell<u64>>) -> Self {
         Self {
             texture,
@@ -114,7 +119,7 @@ pub struct MipLevelMut<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelMut<'a, T> {
-    // Create an mutable mip level 
+    // Create an mutable mip level
     pub fn new(texture: &'a T, level: u8, read: Rc<Cell<u64>>, write: Rc<Cell<u64>>) -> Self {
         Self {
             texture,

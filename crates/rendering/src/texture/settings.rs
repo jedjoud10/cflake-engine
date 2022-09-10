@@ -32,7 +32,7 @@ impl TextureMode {
     pub fn resize_permission(&self) -> bool {
         match self {
             TextureMode::Resizable => true,
-            _ => false
+            _ => false,
         }
     }
 }

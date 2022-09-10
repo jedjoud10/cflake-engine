@@ -112,7 +112,7 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
             set_state_scissor_testing(settings.scissor_test, display);
         }
 
-        // Handle framebuffer SRGB 
+        // Handle framebuffer SRGB
         if context.raster.srgb != settings.srgb {
             context.raster.srgb = settings.srgb;
             set_state_fbo_srgb(settings.srgb);
@@ -251,12 +251,12 @@ unsafe fn set_state_primitive_mode(primitive: PrimitiveMode) {
             } else {
                 gl::Disable(gl::CULL_FACE);
             }
-        },
+        }
 
         // Point primitive type
         PrimitiveMode::Points { diameter } => {
             gl::PointSize(diameter);
-        },
+        }
 
         // Line primitive type
         PrimitiveMode::Lines { width, smooth } => {
@@ -266,6 +266,6 @@ unsafe fn set_state_primitive_mode(primitive: PrimitiveMode) {
                 gl::Disable(gl::LINE_SMOOTH);
             }
             gl::LineWidth(width);
-        },
+        }
     }
 }
