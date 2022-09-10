@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use crate::context::Context;
+
 // This Gpu timer will tell us how much time it took to execute a specific function on the GPU
 // This timer will contain an OpenGL timer query and a OpenGL fence
 pub struct CommandTimer {
@@ -8,9 +10,11 @@ pub struct CommandTimer {
 }
 
 impl CommandTimer {
+    // Create a new command timer that we can use multiple times
+    pub fn 
+
     // Create a new fence and run the closure within it
-    // This must be called on the main thread
-    pub fn new(closure: impl FnOnce()) -> Self {
+    pub fn new(ctx: &Context, closure: impl FnOnce()) -> Self {
         unsafe {
             let mut query = 0u32;
             gl::Flush();
