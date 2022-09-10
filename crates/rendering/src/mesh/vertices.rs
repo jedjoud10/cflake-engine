@@ -162,7 +162,7 @@ impl VerticesMut<'_> {
             return false;
         }
         
-        let positions = self.attribute::<Position>().unwrap();
+        let positions = self.attribute_mut::<Position>().unwrap();
         let mapped = positions.map().unwrap();
         let slice = mapped.as_slice();
         let temp = AABB::from_points(slice);

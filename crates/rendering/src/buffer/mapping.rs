@@ -5,6 +5,7 @@ use crate::context::{Shared, ToGlName};
 use super::Buffer;
 
 // Immutably mapped buffer that we can read from directly
+// The reason this takes a mutable reference to the buffer is because OpenGL does not allow us to read the buffer even when it is mapped
 pub struct Mapped<'a, T: Shared, const TARGET: u32> {
     pub(super) buffer: &'a Buffer<T, TARGET>,
     pub(super) len: usize,
@@ -62,16 +63,25 @@ impl<'a, T: Shared, const TARGET: u32> Drop for MappedMut<'a, T, TARGET> {
         }
     }
 }
-// Immutably mapped persistent buffer that we can read from directly AND from other threads
-pub struct PersistentlyMapped<T: Shared, const TARGET: u32> {
-    pub(super) buffer: PhantomData<Buffer<T, TARGET>>,
-    pub(super) len: usize,
-    pub(super) ptr: *const T,
+
+// This is a wrapper type that we can use around buffers to hint that they are persistently mapped
+pub struct Persistent<T: Shared, const TARGET: u32> {
+    pub(super) buf: Buffer<T, TARGET>,
+    pub(super) ptr: *mut T,
 }
 
-// Mutably mapped persistent buffer that we write / read from in other threads
-pub struct PersistentlyMappedMut<T: Shared, const TARGET: u32> {
-    pub(super) buffer: PhantomData<Buffer<T, TARGET>>,
-    pub(super) len: usize,
-    pub(super) ptr: *mut T,
+impl<T: Shared, const TARGET: u32> Persistent<T, TARGET> {
+    // Unmap the buffer, and return it's underlying buffer value
+    pub fn unmap(self) -> Buffer<T, TARGET> {
+        unsafe {
+            gl::UnmapNamedBuffer(self.buf.name());
+        }
+
+        self.buf
+    }
+
+    // Get the raw pointer that references the mapped buffer's contents
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self.ptr
+    }  
 }

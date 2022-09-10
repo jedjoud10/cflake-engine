@@ -1,5 +1,5 @@
 use super::{
-    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap, MipMap,
+    Extent, Filter, MipLevelMut, MipLevelRef, MipMapSetting, Region, Sampling, Texel, TextureMode, Wrap, MipMapDescriptor, get_bit, set_bit,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{num::NonZeroU8, ptr::null, rc::Rc, cell::Cell};
@@ -119,8 +119,15 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                 }
             }
 
+            // Create a mip map accessor
+            let mipmap = MipMapDescriptor {
+                levels, 
+                read: Rc::new(Cell::new(0)),
+                write: Rc::new(Cell::new(0))
+            };
+
             // Create the texture object
-            Self::from_raw_parts(tex, dimensions, mode, levels)
+            Self::from_raw_parts(tex, dimensions, mode, mipmap)
         })
     }
 
@@ -136,7 +143,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     fn dimensions_of_level(&self, level: u8) -> Option<<Self::Region as Region>::E> {
         if level == 0 {
             Some(self.dimensions())
-        } else if level < self.levels().get() {
+        } else if level < self.levels() {
             Some(unsafe {
                 <<Self::Region as Region>::E as Extent>::get_level_extent(self.name(), level)
             })
@@ -153,12 +160,45 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         self.dimensions().area()
     }
 
-    // Get the number of mipmap levels that this texture uses
-    fn levels(&self) -> NonZeroU8;
+    // Get the inner mipmap accessor for this texture
+    fn mipmap_descriptor(&self) -> &MipMapDescriptor;
 
-    // Get a wrapper that allows us to read/write to texture mipmaps
-    fn mipmap(&mut self) -> MipMap<Self> {
-        MipMap { texture: self, read: Rc::new(Cell::new(0)), write: Rc::new(Cell::new(0)) }
+    // Get a single mip level from the texture, immutably
+    // This will fail if the mip level is currently being used mutably
+    fn mip(&self, level: u8) -> Option<MipLevelRef<Self>> {
+        if level > self.levels() {
+            return None;
+        }
+
+        if get_bit(&self.mipmap_descriptor().write, level) {
+            return None;
+        }
+
+        set_bit(&self.mipmap_descriptor().read, level, true);
+        
+        Some(MipLevelRef::new(self, level, self.mipmap_descriptor().read.clone()))
+    }
+
+    // Get a single mip level from the texture, mutably
+    // This will fail if the mip level is currently being used mutably or being read from
+    fn mip_mut(&self, level: u8) -> Option<MipLevelMut<Self>> {
+        if level > self.levels() {
+            return None;
+        }
+
+        if get_bit(&self.mipmap_descriptor().write, level) || get_bit(&self.mipmap_descriptor().read, level) {
+            return None;
+        }
+
+        set_bit(&self.mipmap_descriptor().read, level, true);
+        set_bit(&self.mipmap_descriptor().write, level, true);
+        
+        Some(MipLevelMut::new(self, level, self.mipmap_descriptor().read.clone(), self.mipmap_descriptor().write.clone()))
+    }
+
+    // Get the number of mipmap levels we are using
+    fn levels(&self) -> u8 {
+        self.mipmap_descriptor().levels.get()
     } 
     
     // Resize the current texture (this will also set it's inner data to null)
@@ -183,7 +223,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         name: u32,
         dimensions: <Self::Region as Region>::E,
         mode: TextureMode,
-        levels: NonZeroU8,
+        mipmap: MipMapDescriptor,
     ) -> Self;
 
     // Allocate some immutable texture storage during texture initialization

@@ -5,16 +5,15 @@ use crate::context::Context;
 // This Gpu timer will tell us how much time it took to execute a specific function on the GPU
 // This timer will contain an OpenGL timer query and a OpenGL fence
 pub struct CommandTimer {
-    query: u32,
-    fence: gl::types::GLsync,
+    query: Option<u32>,
+    fence: Option<gl::types::GLsync>,
 }
 
 impl CommandTimer {
     // Create a new command timer that we can use multiple times
-    pub fn 
-
-    // Create a new fence and run the closure within it
-    pub fn new(ctx: &Context, closure: impl FnOnce()) -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
+        todo!()
+        /*
         unsafe {
             let mut query = 0u32;
             gl::Flush();
@@ -30,11 +29,16 @@ impl CommandTimer {
                 fence,
             }
         }
-    }    
+        */
+    }
     
     // Check if the OpenGL fence has been signaled
     pub fn signaled(&self) -> bool {
-        let state = unsafe { gl::ClientWaitSync(self.fence, 0, 0) };
+        if self.fence.is_none() || self.query.is_none() {
+            return false;
+        }
+
+        let state = unsafe { gl::ClientWaitSync(self.fence.unwrap(), 0, 0) };
         match state {
             gl::ALREADY_SIGNALED | gl::CONDITION_SATISFIED => true,
             gl::WAIT_FAILED | gl::TIMEOUT_EXPIRED => false,
@@ -46,7 +50,7 @@ impl CommandTimer {
     pub fn elapsed(&self) -> Option<Duration> {
         self.signaled().then(|| unsafe {
             let mut result = 0u64;
-            gl::GetQueryObjectui64v(self.query, gl::QUERY_RESULT_NO_WAIT, &mut result);
+            gl::GetQueryObjectui64v(self.query.unwrap(), gl::QUERY_RESULT_NO_WAIT, &mut result);
             Duration::from_nanos(result)
         })
     }

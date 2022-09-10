@@ -1,24 +1,22 @@
-use std::{cell::{RefCell, Cell}, rc::Rc};
-
+use std::{cell::{RefCell, Cell}, rc::Rc, num::NonZeroU8, marker::PhantomData};
 use crate::prelude::TextureMode;
 use super::{Extent, Region, Texel, Texture};
 
-// This wrapper contains all the mipmaps from the texture
-// We can use this accessor to fetch multiple mutable mip maps at the same time as well
-pub struct MipMap<'a, T: Texture> {
-    pub(super) texture: &'a mut T,
+// A mip map descriptor contains the two bitfields that contain the read/write flags of each mipmap level
+pub struct MipMapDescriptor {
+    pub(super) levels: NonZeroU8,
     pub(super) read: Rc<Cell<u64>>,
     pub(super) write: Rc<Cell<u64>>,
 }
 
 // This will read from an Rc<Cell<u64>> and check if the bit at the specified location is set
-fn get_bit(rc: &Rc<Cell<u64>>, location: u8) -> bool {
+pub(super) fn get_bit(rc: &Rc<Cell<u64>>, location: u8) -> bool {
     let current = rc.get();
     current >> location & 1 == 1
 }
 
 // This will write to an Rc<Cell<u64>> and set a specific bit to the specified location
-fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
+pub(super) fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
     let mut current = rc.get();
 
     if value {
@@ -30,50 +28,6 @@ fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
     rc.set(current);
 } 
 
-impl<'a, T: Texture> MipMap<'a, T> {
-    // Get a single mip level from the texture, immutably
-    // This will fail if the mip level is currently being used mutably
-    pub fn mip(&self, level: u8) -> Option<MipLevelRef<T>> {
-        if level > self.texture.levels().get() {
-            return None;
-        }
-
-        if get_bit(&self.write, level) {
-            return None;
-        }
-
-        set_bit(&self.read, level, true);
-        
-        Some(MipLevelRef {
-            texture: self.texture,
-            read: self.read.clone(),
-            level,
-        })
-    }
-
-    // Get a single mip level from the texture, mutably
-    // This will fail if the mip level is currently being used mutably or being read from
-    pub fn mip_mut(&mut self, level: u8) -> Option<MipLevelMut<T>> {
-        if level > self.texture.levels().get() {
-            return None;
-        }
-
-        if get_bit(&self.write, level) || get_bit(&self.read, level) {
-            return None;
-        }
-
-        set_bit(&self.read, level, true);
-        set_bit(&self.write, level, true);
-        
-        Some(MipLevelMut {
-            texture: self.texture,
-            read: self.read.clone(),
-            write: self.write.clone(),
-            level,
-        })
-    }
-}
-
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
@@ -82,6 +36,15 @@ pub struct MipLevelRef<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelRef<'a, T> {
+    // Create an immutable mip level 
+    pub fn new(texture: &'a T, level: u8, read: Rc<Cell<u64>>) -> Self {
+        Self {
+            texture,
+            level,
+            read,
+        }
+    }
+
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture
@@ -151,6 +114,16 @@ pub struct MipLevelMut<'a, T: Texture> {
 }
 
 impl<'a, T: Texture> MipLevelMut<'a, T> {
+    // Create an mutable mip level 
+    pub fn new(texture: &'a T, level: u8, read: Rc<Cell<u64>>, write: Rc<Cell<u64>>) -> Self {
+        Self {
+            texture,
+            level,
+            read,
+            write,
+        }
+    }
+
     // Get the underlying texture
     pub fn texture(&self) -> &T {
         self.texture

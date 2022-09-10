@@ -10,6 +10,7 @@ use super::{
     AttributeBuffer, EnabledAttributes, MeshImportSettings, MeshUtils, TrianglesMut, TrianglesRef,
     VerticesMut, VerticesRef,
 };
+use crate::context::ToGlName;
 use crate::{
     buffer::{ArrayBuffer, BufferMode, Triangle, TriangleBuffer},
     context::Context,
@@ -137,8 +138,8 @@ impl Mesh {
     pub fn triangles_mut(&mut self) -> TrianglesMut {
         TrianglesMut {
             vao: self.vao,
+            bound_buffer: self.triangles.name(),
             buffer: &mut self.triangles,
-            maybe_reassigned: false,
         }
     }
 
@@ -164,8 +165,8 @@ impl Mesh {
         (
             TrianglesMut {
                 vao: self.vao,
+                bound_buffer: self.triangles.name(),
                 buffer: &mut self.triangles,
-                maybe_reassigned: false,
             },
             VerticesMut {
                 vao: self.vao,

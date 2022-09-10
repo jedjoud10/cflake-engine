@@ -16,9 +16,7 @@ struct MyData {
 }
 
 fn init(world: &mut World) {
-    world.insert::<Storage<ArrayBuffer<MyData>>>(Storage::default());
     let mut ctx = world.get_mut::<Context>().unwrap();
-    let mut storage = world.get_mut::<Storage<ArrayBuffer<MyData>>>().unwrap();
     let mut buffer = ArrayBuffer::<MyData>::from_slice(
         &mut ctx,
         &[
@@ -48,7 +46,4 @@ fn init(world: &mut World) {
     let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
-
-    let handle = storage.insert(buffer);
-    unsafe { handle.increment_count() };
 }

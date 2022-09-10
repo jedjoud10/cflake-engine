@@ -3,7 +3,7 @@ use super::{
     Renderer,
 };
 use crate::{
-    buffer::{BufferMode, UniformBuffer},
+    buffer::{BufferMode, UniformBuffer, MappingMode},
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
@@ -98,7 +98,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let triangles = vec![[0, 1, 2], [1, 3, 2]];
     let quad = Mesh::from_vecs(
         ctx,
-        BufferMode::Static,
+        BufferMode::Static(MappingMode::Disabled),
         positions,
         None,
         None,

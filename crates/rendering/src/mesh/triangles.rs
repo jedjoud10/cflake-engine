@@ -20,8 +20,8 @@ impl TrianglesRef<'_> {
 // Mutable access to the mesh indices
 pub struct TrianglesMut<'a> {
     pub(super) vao: u32,
+    pub(super) bound_buffer: u32,
     pub(super) buffer: &'a mut TriangleBuffer<u32>,
-    pub(super) maybe_reassigned: bool,
 }
 
 impl TrianglesMut<'_> {
@@ -53,13 +53,11 @@ impl TrianglesMut<'_> {
     // Re-bind the triangle buffer to the VAO
     // This is done automatically when "self" is dropped
     pub fn rebind(&mut self, force: bool) {
-        if self.maybe_reassigned || force {
+        if self.bound_buffer != self.buffer.name() || force {
             unsafe {
                 gl::VertexArrayElementBuffer(self.vao, self.buffer.name());
             }
         }
-
-        self.maybe_reassigned = false;
     }
 }
 

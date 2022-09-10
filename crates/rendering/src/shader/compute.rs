@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{context::Context, others::CommandTimer};
+use crate::{context::{Context, ToGlTarget, ToGlName}, others::CommandTimer, buffer::DispatchComputerIndirectBuffer};
 
 use super::{Program, Uniforms, ValidUniforms};
 
@@ -12,7 +12,7 @@ impl ComputeShader {
     // Create a new scheduler for this compute shader and it's corresponding uniform values
     pub fn scheduler<'s, 'c>(
         &'s mut self,
-    ) -> (ComputeScheduler<'c>, Uniforms<'s>) {
+    ) -> (ComputeScheduler<'s>, Uniforms<'s>) {
         let uniforms = Uniforms::new(&mut self.0);
         let scheduler = ComputeScheduler { _phantom: PhantomData::default()  };
         (scheduler, uniforms)
@@ -38,16 +38,23 @@ pub struct ComputeScheduler<'s> {
 
 impl<'s> ComputeScheduler<'s> {
     // Execute the compute scheduler with the compute shader axii parameter and the valid uniforms
-    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: ValidUniforms) -> Option<CommandTimer> {
+    pub fn run(&mut self, axii: vek::Vec3<u32>, uniforms: ValidUniforms) {
         if axii.reduce_min() == 0 {
-            return None;
+            return;
         }
 
-        let timer = CommandTimer::new(|| unsafe {
+        unsafe {
             gl::UseProgram(uniforms.0.name);
             gl::DispatchCompute(axii.x, axii.y, axii.z)
-        });
+        }
+    }
 
-        Some(timer)
+    // Execute the compute scheduler using a specific dispatch indirect buffer
+    pub fn run_indirect(&mut self, buffer: &DispatchComputerIndirectBuffer, uniforms: ValidUniforms) {
+        unsafe {
+            gl::UseProgram(uniforms.0.name);
+            gl::BindBuffer(DispatchComputerIndirectBuffer::target(), buffer.name());
+            gl::DispatchComputeIndirect(0);
+        }
     }
 }

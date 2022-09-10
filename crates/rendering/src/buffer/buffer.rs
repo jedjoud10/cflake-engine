@@ -1,23 +1,69 @@
 use crate::context::{Context, Shared, ToGlName, ToGlTarget};
 use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::MaybeUninit;
+use std::mem::{MaybeUninit, transmute};
 use std::ops::RangeBounds;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
+use super::{UntypedBufferFormat, Mapped, MappedMut, Persistent};
 
-use super::{UntypedBufferFormat, Mapped, MappedMut, PersistentlyMapped, PersistentlyMappedMut};
+// Some settings that specify how we should deal with buffer mapping 
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u32)]
+pub enum MappingMode {
+    // Buffer mapping is disabled completely
+    Disabled = 0,
+
+    // We can map a buffer for reading only
+    Read = gl::MAP_READ_BIT,
+
+    // We can mape a buffer for writing only
+    Write = gl::MAP_WRITE_BIT,
+
+    // We can map a buffer for reading and writing
+    #[default]
+    ReadWrite = gl::MAP_READ_BIT | gl::MAP_WRITE_BIT,
+
+    // We can map a buffer persistently for reading only
+    PersistentRead = gl::MAP_PERSISTENT_BIT | gl::MAP_READ_BIT,
+
+    // We can map a buffer persistently for writing only
+    PersistentWrite = gl::MAP_PERSISTENT_BIT | gl::MAP_WRITE_BIT,
+
+    // We can map a buffer persistently for reading and writing
+    PersistentReadWrite = gl::MAP_PERSISTENT_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT,
+}
+
+impl MappingMode {
+    // Check if we can map the buffer for reading
+    pub fn map_read_permission(&self) -> bool {
+        let code = unsafe { transmute::<Self, u32>(*self) };
+        (code & gl::MAP_READ_BIT) == gl::MAP_READ_BIT
+    }
+
+    // Check if we can map the buffer for writing
+    pub fn map_write_permission(&self) -> bool {
+        let code = unsafe { transmute::<Self, u32>(*self) };
+        (code & gl::MAP_WRITE_BIT) == gl::MAP_WRITE_BIT
+    }
+
+    // Check if we can map the buffer persistently 
+    pub fn map_persistent_permission(&self) -> bool {
+        let code = unsafe { transmute::<Self, u32>(*self) };
+        (code & gl::MAP_PERSISTENT_BIT) == gl::MAP_PERSISTENT_BIT
+    }
+}
 
 // Some settings that tell us how exactly we should create the buffer
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BufferMode {
     // Static buffers are only created once, and they can never be modified ever again
-    Static,
+    Static(MappingMode),
 
     // Dynamic buffers are like static buffers, but they allow the user to mutate each element
-    Dynamic,
+    Dynamic(MappingMode),
 
     // Partial buffer have a fixed capacity, but a dynamic length
-    Parital,
+    Parital(MappingMode),
 
     // Resizable buffers can be resized to whatever length needed
     #[default]
@@ -33,7 +79,7 @@ impl BufferMode {
     // Can we write to an arbitrary buffer that uses this buffer mode?
     pub fn write_permission(&self) -> bool {
         match self {
-            BufferMode::Static => false,
+            BufferMode::Static(_) => false,
             _ => true,
         }
     }
@@ -41,7 +87,7 @@ impl BufferMode {
     // Can we modify the LENGTH of an arbitrary buffer that uses this buffer mode?
     pub fn modify_length_permission(&self) -> bool {
         match self {
-            BufferMode::Resizable | BufferMode::Parital => true,
+            BufferMode::Resizable | BufferMode::Parital(_) => true,
             _ => false,
         }
     }
@@ -51,6 +97,30 @@ impl BufferMode {
         match self {
             BufferMode::Resizable => true,
             _ => false,
+        }
+    }
+
+    // Check if we can map the buffer for reading
+    pub fn map_read_permission(&self) -> bool {
+        match self {
+            BufferMode::Static(m) | BufferMode::Dynamic(m) | BufferMode::Parital(m) => m.map_read_permission(),
+            BufferMode::Resizable => true,
+        }
+    }
+
+    // Check if we can map the buffer for writing
+    pub fn map_write_permission(&self) -> bool {
+        match self {
+            BufferMode::Static(m) | BufferMode::Dynamic(m) | BufferMode::Parital(m) => m.map_write_permission(),
+            BufferMode::Resizable => true,
+        }
+    }
+
+    // Check if we can map the buffer persistently 
+    pub fn map_persistent_permission(&self) -> bool {
+        match self {
+            BufferMode::Static(m) | BufferMode::Dynamic(m) | BufferMode::Parital(m) => m.map_persistent_permission(),
+            BufferMode::Resizable => false,
         }
     }
 }
@@ -63,6 +133,7 @@ pub type TriangleBuffer<T> = ElementBuffer<Triangle<T>>;
 pub type AtomicBuffer<T> = Buffer<T, { gl::ATOMIC_COUNTER_BUFFER }>;
 pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
 pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
+pub type DispatchComputerIndirectBuffer = Buffer<(u32, u32, u32), { gl::DISPATCH_INDIRECT_BUFFER }>;
 
 // An abstraction layer over a valid OpenGL buffer
 // This takes a valid OpenGL type and an element type, though the user won't be able make the buffer directly
@@ -89,7 +160,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             // Return none if we are trying to make an empty static / dynamic / partial buffer
             if slice.is_empty() {
                 match mode {
-                    BufferMode::Static | BufferMode::Dynamic | BufferMode::Parital => return None,
+                    BufferMode::Static(_) | BufferMode::Dynamic(_) | BufferMode::Parital(_) => return None,
                     _ => {}
                 };
             }
@@ -106,21 +177,17 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             };
 
             // Initialize the buffer with the data
-            match mode {
-                BufferMode::Static => gl::NamedBufferStorage(buffer, bytes, ptr, gl::MAP_READ_BIT),
-                BufferMode::Dynamic => gl::NamedBufferStorage(
-                    buffer,
-                    bytes,
-                    ptr,
-                    gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::DYNAMIC_STORAGE_BIT,
-                ),
-                BufferMode::Parital => gl::NamedBufferStorage(
-                    buffer,
-                    bytes,
-                    ptr,
-                    gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::DYNAMIC_STORAGE_BIT,
-                ),
-                BufferMode::Resizable => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
+            let flags = match mode {
+                BufferMode::Static(m) => Some(transmute::<MappingMode, u32>(m)),
+                BufferMode::Dynamic(m) => Some(transmute::<MappingMode, u32>(m) | gl::DYNAMIC_STORAGE_BIT),
+                BufferMode::Parital(m) => Some(transmute::<MappingMode, u32>(m) | gl::DYNAMIC_STORAGE_BIT),
+                BufferMode::Resizable => None,
+            };
+
+            // Create the immutable vs mutable buffers
+            match flags {
+                Some(flags) => gl::NamedBufferStorage(buffer, bytes, ptr, flags),
+                None => gl::NamedBufferData(buffer, bytes, ptr, gl::DYNAMIC_DRAW),
             }
 
             // Create the buffer object
@@ -320,7 +387,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Read a region of the buffer into a mutable slice
-    pub fn read_range(&mut self, slice: &mut [T], range: impl RangeBounds<usize>) {
+    pub fn read_range(&self, slice: &mut [T], range: impl RangeBounds<usize>) {
         let (start, end) = self
             .convert_range_bounds(range)
             .expect("Buffer read range is invalid");
@@ -336,6 +403,13 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         unsafe {
             gl::GetNamedBufferSubData(self.buffer, offset, size, slice.as_mut_ptr() as *mut c_void);
         }
+    }
+
+    // Read the whole buffer into a new vector
+    pub fn read_as_vec(&self) -> Vec<T> {
+        let mut vec = Vec::with_capacity(self.len());
+        self.read(&mut vec);
+        vec
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
@@ -422,12 +496,16 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Read the whole buffer into a mutable slice
-    pub fn read(&mut self, slice: &mut [T]) {
+    pub fn read(&self, slice: &mut [T]) {
         self.read_range(slice, ..)
     }
 
     // Map a region of the buffer temporarily for reading
     pub fn map_range(&self, range: impl RangeBounds<usize>) -> Option<Mapped<T, TARGET>> {
+        if !self.mode.map_read_permission() {
+            return None;
+        }
+
         let (start, end) = self.convert_range_bounds(range)?;
 
         let offset = (start * size_of::<T>()) as isize;
@@ -449,6 +527,10 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         &mut self,
         range: impl RangeBounds<usize>,
     ) -> Option<MappedMut<T, TARGET>> {
+        if !self.mode.map_read_permission() || !self.mode.map_write_permission() {
+            return None;
+        }
+
         let (start, end) = self.convert_range_bounds(range)?;
 
         let offset = (start * size_of::<T>()) as isize;
@@ -478,6 +560,38 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Map the whole buffer temporarily for reading and writing
     pub fn map_mut(&mut self) -> Option<MappedMut<T, TARGET>> {
         self.map_range_mut(..)
+    }
+
+    // Map a range of the buffer persistently for reading/writing
+    pub fn map_range_persistent(self, range: impl RangeBounds<usize>) -> Result<Persistent<T, TARGET>, Self> {
+        let range = self.convert_range_bounds(range);
+        let storage = if let BufferMode::Resizable = self.mode() { false } else { true };
+        
+        if !storage || range.is_none() {
+            return Err(self);
+        }
+        
+        let (start, end) = range.unwrap();
+
+        let offset = (start * size_of::<T>()) as isize;
+        let size = ((end - start) * size_of::<T>()) as isize;
+
+        let ptr = unsafe {
+            gl::MapNamedBufferRange(
+                self.buffer,
+                offset,
+                size,
+                gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT,
+            ) as *mut T
+        };
+
+
+        todo!()
+    }
+
+    // Map the whole buffer persistently for reading/writing
+    pub fn map_persistent(self) -> Result<Persistent<T, TARGET>, Self> {
+        todo!()
     }
 }
 

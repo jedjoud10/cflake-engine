@@ -1,6 +1,6 @@
 use assets::Asset;
 
-use super::{ImageTexel, Region, Texel, Texture, TextureImportSettings, TextureMode};
+use super::{ImageTexel, Region, Texel, Texture, TextureImportSettings, TextureMode, MipMapDescriptor};
 use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{ffi::c_void, marker::PhantomData, num::NonZeroU8};
 
@@ -14,7 +14,7 @@ pub struct Texture2D<T: Texel> {
     // Main texture settings
     dimensions: vek::Extent2<u16>,
     mode: TextureMode,
-    levels: NonZeroU8,
+    mipmap: MipMapDescriptor,
 
     // Boo (also sets Texture2D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
@@ -44,21 +44,21 @@ impl<T: Texel> Texture for Texture2D<T> {
         self.mode
     }
 
-    fn levels(&self) -> NonZeroU8 {
-        self.levels
+    fn mipmap_descriptor(&self) -> &MipMapDescriptor {
+        &self.mipmap
     }
     
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as super::Region>::E,
         mode: TextureMode,
-        levels: NonZeroU8,
+        mipmap: MipMapDescriptor,
     ) -> Self {
         Self {
             name,
             dimensions,
             mode,
-            levels,
+            mipmap,
             _phantom: Default::default(),
         }
     }
