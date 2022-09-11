@@ -34,6 +34,8 @@ fn init(world: &mut World) {
     slice[3].humidity = 1.0;
     drop(mapped);
     let mapped = buffer.map().unwrap();
+    let vec = buffer.read_as_vec();
+    dbg!(vec);
     dbg!(mapped.as_slice());
     drop(mapped);
 

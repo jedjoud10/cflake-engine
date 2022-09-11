@@ -2,7 +2,7 @@ use super::{Mapped, MappedMut, Persistent, UntypedBufferFormat};
 use crate::context::{Context, Shared, ToGlName, ToGlTarget};
 use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::{transmute, MaybeUninit};
+use std::mem::{transmute, MaybeUninit, ManuallyDrop};
 use std::ops::RangeBounds;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
@@ -419,9 +419,9 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
     // Read the whole buffer into a new vector
     pub fn read_as_vec(&self) -> Vec<T> {
-        let mut vec = Vec::with_capacity(self.len());
-        self.read(&mut vec);
-        vec
+        let mut vec = ManuallyDrop::new(vec![MaybeUninit::<T>::zeroed(); self.len()]);
+        self.read(unsafe { std::slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut T, self.len()) });
+        unsafe { Vec::from_raw_parts(vec.as_mut_ptr() as *mut T, self.len(), self.len()) }
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
@@ -513,7 +513,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map a region of the buffer temporarily for reading
-    pub fn map_range(&mut self, range: impl RangeBounds<usize>) -> Option<Mapped<T, TARGET>> {
+    pub fn map_range(&self, range: impl RangeBounds<usize>) -> Option<Mapped<T, TARGET>> {
         if !self.mode.map_read_permission() {
             return None;
         }
@@ -565,7 +565,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map the whole buffer temporarily for reading
-    pub fn map(&mut self) -> Option<Mapped<T, TARGET>> {
+    pub fn map(&self) -> Option<Mapped<T, TARGET>> {
         self.map_range(..)
     }
 
