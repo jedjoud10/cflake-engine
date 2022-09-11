@@ -39,6 +39,7 @@ unsafe fn compile(username: String, names: &[u32]) -> Program {
 
     // Delete the shader stages since we already linked them
     for name in names {
+        // TODO: Maybe we can reuse these shader??
         gl::DeleteShader(*name);
     }
 

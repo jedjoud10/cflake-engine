@@ -244,20 +244,16 @@ impl Mesh {
     }
 
     // Update the AABB of the mesh using updated position vertices
-    pub fn compute_aabb(&mut self) -> bool {
-        if !self.vertices().is_enabled::<Position>() {
-            return false;
-        }
-
+    pub fn compute_aabb(&mut self) -> Option<()> {
         let vertices = self.vertices();
-        let positions = vertices.attribute::<Position>().unwrap();
-        let mapped = positions.map().unwrap();
+        let positions = vertices.attribute::<Position>()?;
+        let mapped = positions.map()?;
         let slice = mapped.as_slice();
         let temp = AABB::from_points(slice);
         drop(mapped);
         self.aabb = temp;
 
-        true
+        Some(())
     }
 }
 

@@ -113,10 +113,11 @@ impl BufferMode {
     // Check if we can map the buffer for writing
     pub fn map_write_permission(&self) -> bool {
         match self {
-            BufferMode::Static(m) | BufferMode::Dynamic(m) | BufferMode::Parital(m) => {
+            BufferMode::Dynamic(m) | BufferMode::Parital(m) => {
                 m.map_write_permission()
             }
             BufferMode::Resizable => true,
+            _ => false,
         }
     }
 
@@ -417,11 +418,20 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
+    // Read a region of the buffer into a new vector
+    pub fn read_range_as_vec(&self, range: impl RangeBounds<usize> + Copy) -> Vec<T> {
+        let (start, end) = self
+            .convert_range_bounds(range)
+            .expect("Buffer read range is invalid");
+
+        let mut vec = ManuallyDrop::new(vec![MaybeUninit::<T>::zeroed(); end - start]);
+        self.read_range(unsafe { std::slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut T, end - start) }, range);
+        unsafe { Vec::from_raw_parts(vec.as_mut_ptr() as *mut T, end - start, end - start) }
+    }
+
     // Read the whole buffer into a new vector
     pub fn read_as_vec(&self) -> Vec<T> {
-        let mut vec = ManuallyDrop::new(vec![MaybeUninit::<T>::zeroed(); self.len()]);
-        self.read(unsafe { std::slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut T, self.len()) });
-        unsafe { Vec::from_raw_parts(vec.as_mut_ptr() as *mut T, self.len(), self.len()) }
+        self.read_range_as_vec(..)
     }
 
     // Clear the buffer contents, resetting the buffer's length down to zero
@@ -513,24 +523,15 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map a region of the buffer temporarily for reading
-    pub fn map_range(&self, range: impl RangeBounds<usize>) -> Option<Mapped<T, TARGET>> {
+    // NOTE: For now, this simply create a copy of the buffer in client memory because I'd rather not put a &mut restriction on this function
+    pub fn map_range(&self, range: impl RangeBounds<usize> + Copy) -> Option<Mapped<T, TARGET>> {
         if !self.mode.map_read_permission() {
             return None;
         }
 
-        let (start, end) = self.convert_range_bounds(range)?;
-
-        let offset = (start * size_of::<T>()) as isize;
-        let size = ((end - start) * size_of::<T>()) as isize;
-
-        let ptr = unsafe {
-            gl::MapNamedBufferRange(self.buffer, offset, size, gl::MAP_READ_BIT) as *const T
-        };
-
         Some(Mapped {
             buffer: self,
-            len: end - start,
-            ptr,
+            copied: self.read_range_as_vec(range),
         })
     }
 

@@ -157,24 +157,15 @@ impl VerticesMut<'_> {
     }
 
     // Update the AABB of the mesh using updated position vertices
-    pub fn compute_aabb(&mut self) -> bool {
-        if !self.is_enabled::<Position>() {
-            return false;
-        }
-
-        let positions = self.attribute_mut::<Position>().unwrap();
-
-        if !positions.mode().map_read_permission() {
-            return false;
-        }
-
-        let mapped = positions.map().unwrap();
+    pub fn compute_aabb(&mut self) -> Option<()> {
+        let positions = self.attribute::<Position>()?;
+        let mapped = positions.map()?;
         let slice = mapped.as_slice();
         let temp = AABB::from_points(slice);
         drop(mapped);
         *self.aabb = temp;
 
-        true
+        Some(())
     }
 
     // Re-bind the vertex buffers to the VAO, assuming that they are valid

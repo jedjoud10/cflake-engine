@@ -11,11 +11,10 @@ use super::Buffer;
 use crate::context::{Shared, ToGlName};
 
 // Immutably mapped buffer that we can read from directly
-// The reason this takes a mutable reference to the buffer is because OpenGL does not allow us to read the buffer even when it is mapped
+// TODO: Remove this hack of just, not mapping the buffer (because of OpenGL persistent shitery)
 pub struct Mapped<'a, T: Shared, const TARGET: u32> {
     pub(super) buffer: &'a Buffer<T, TARGET>,
-    pub(super) len: usize,
-    pub(super) ptr: *const T,
+    pub(super) copied: Vec<T>,
 }
 
 // Mutably mapped buffer that we can write / read from directly
@@ -28,20 +27,12 @@ pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
 impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
     // Get the length of the mapped region
     pub fn len(&self) -> usize {
-        self.len
+        self.copied.len()
     }
 
     // Convert the mapped pointer into an immutable slice
     pub fn as_slice(&self) -> &[T] {
-        unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
-    }
-}
-
-impl<'a, T: Shared, const TARGET: u32> Drop for Mapped<'a, T, TARGET> {
-    fn drop(&mut self) {
-        unsafe {
-            gl::UnmapNamedBuffer(self.buffer.name());
-        }
+        self.copied.as_slice()
     }
 }
 
