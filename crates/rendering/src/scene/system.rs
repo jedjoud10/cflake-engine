@@ -99,7 +99,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let triangles = vec![[0, 1, 2], [1, 3, 2]];
     let quad = Mesh::from_vecs(
         ctx,
-        BufferMode::Static { map_read: false, persistent: false  },
+        BufferMode::default(),
         positions,
         None,
         None,

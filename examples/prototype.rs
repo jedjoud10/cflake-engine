@@ -25,20 +25,22 @@ fn init(world: &mut World) {
             MyData::default(),
             MyData::default(),
         ],
-        BufferMode::Resizable,
+        BufferMode::Dynamic { map_write: true, map_read: true, persistent: true, client: true },
     )
     .unwrap();
-    let mut mapped = buffer.map_mut().unwrap();
-    let slice = mapped.as_slice_mut();
+    let mut mapped = buffer.view_mut().unwrap();
+    let slice = mapped.as_mut_slice();
     slice[0].humidity = 1.0;
     slice[3].humidity = 1.0;
     drop(mapped);
-    let mapped = buffer.map().unwrap();
-    let vec = buffer.read_as_vec();
+    let mapped = buffer.view().unwrap();
+    let mapped2 = buffer.view().unwrap();
+    let vec = buffer.read_to_vec();
     dbg!(vec);
     dbg!(mapped.as_slice());
     drop(mapped);
 
+    /*
     buffer.extend_from_slice(&[MyData::default()]);
     let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
@@ -48,4 +50,5 @@ fn init(world: &mut World) {
     let mapped = buffer.map().unwrap();
     dbg!(mapped.as_slice());
     drop(mapped);
+    */
 }

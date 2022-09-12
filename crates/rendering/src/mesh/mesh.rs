@@ -186,9 +186,9 @@ impl Mesh {
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         // Fetch the buffers and map them
         let (mut triangles, mut vertices) = self.both_mut();
-        let mapped_positions = vertices.attribute_mut::<Position>()?.map()?;
+        let mapped_positions = vertices.attribute_mut::<Position>()?.view()?;
         let positions = mapped_positions.as_slice();
-        let mapped_triangles = triangles.data_mut().map().unwrap();
+        let mapped_triangles = triangles.data_mut().view().unwrap();
         let triangles = mapped_triangles.as_slice();
 
         // Mesh utils come to the rescue yet again
@@ -211,19 +211,19 @@ impl Mesh {
         let (triangles, mut vertices) = self.both_mut();
 
         // Get positions slice
-        let mapped_positions = vertices.attribute::<Position>()?.map()?;
+        let mapped_positions = vertices.attribute::<Position>()?.view()?;
         let positions = mapped_positions.as_slice();
 
         // Get normals slice
-        let mapped_normals = vertices.attribute::<Normal>()?.map()?;
+        let mapped_normals = vertices.attribute::<Normal>()?.view()?;
         let normals = mapped_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped_tex_coords = vertices.attribute::<TexCoord>()?.map()?;
+        let mapped_tex_coords = vertices.attribute::<TexCoord>()?.view()?;
         let tex_coords = mapped_tex_coords.as_slice();
 
         // Get triangles slice
-        let mapped_triangles = triangles.data().map()?;
+        let mapped_triangles = triangles.data().view()?;
         let triangles = mapped_triangles.as_slice();
 
         // Generate the tangents using the mesh utils
@@ -247,7 +247,7 @@ impl Mesh {
     pub fn compute_aabb(&mut self) -> Option<()> {
         let vertices = self.vertices();
         let positions = vertices.attribute::<Position>()?;
-        let mapped = positions.map()?;
+        let mapped = positions.view()?;
         let slice = mapped.as_slice();
         let temp = AABB::from_points(slice);
         drop(mapped);
