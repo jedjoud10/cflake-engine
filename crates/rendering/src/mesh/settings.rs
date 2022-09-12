@@ -1,4 +1,4 @@
-use crate::buffer::{BufferMode, MappingMode};
+use crate::buffer::{BufferMode};
 
 // Mesh settings that we will use whenever we import a new mesh from a file
 #[derive(Clone, Copy)]
@@ -20,7 +20,7 @@ pub struct MeshImportSettings {
 impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
-            mode: BufferMode::Static(MappingMode::PersistentReadWrite),
+            mode: BufferMode::Static { map_read: true, persistent: true },
             use_normals: true,
             use_tangents: true,
             use_tex_coords: true,

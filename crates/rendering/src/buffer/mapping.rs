@@ -4,59 +4,69 @@ use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
-    },
+    }, io::Read,
 };
 
 use super::Buffer;
 use crate::context::{Shared, ToGlName};
 
-// Immutably mapped buffer that we can read from directly
-// TODO: Remove this hack of just, not mapping the buffer (because of OpenGL persistent shitery)
-pub struct Mapped<'a, T: Shared, const TARGET: u32> {
-    pub(super) buffer: &'a Buffer<T, TARGET>,
-    pub(super) copied: Vec<T>,
+// This will allow us to read from the buffer as is if were a Rust slice 
+// TODO: Research a way to make this more flexible to allow for better performance
+pub enum MappedBuffer<'a, T: Shared, const TARGET: u32> {
+    // The buffer was mapped persistently to allow us to read from the buffer whilst it is mapped
+    PersistentlyMapped {
+        buf: &'a Buffer<T, TARGET>,
+        ptr: *const T,
+        len: u32,
+    },
+
+    // The buffer data was copied to client memory using glGetBufferSubData
+    Copied {
+        buf: &'a Buffer<T, TARGET>,
+        vec: Vec<T>,
+    },
 }
 
-// Mutably mapped buffer that we can write / read from directly
-pub struct MappedMut<'a, T: Shared, const TARGET: u32> {
-    pub(super) buffer: &'a mut Buffer<T, TARGET>,
-    pub(super) len: usize,
-    pub(super) ptr: *mut T,
-}
 
-impl<'a, T: Shared, const TARGET: u32> Mapped<'a, T, TARGET> {
-    // Get the length of the mapped region
-    pub fn len(&self) -> usize {
-        self.copied.len()
-    }
-
-    // Convert the mapped pointer into an immutable slice
+impl<'a, T: Shared, const TARGET: u32> MappedBuffer<'a, T, TARGET> {
+    // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
-        self.copied.as_slice()
-    }
-}
-
-impl<'a, T: Shared, const TARGET: u32> MappedMut<'a, T, TARGET> {
-    // Get the length of the mapped region
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    // Convert the mapped buffer into an immutable slice
-    pub fn as_slice(&self) -> &[T] {
-        unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
-    }
-
-    // Convert the mapped buffer into a mutable slice
-    pub fn as_slice_mut(&mut self) -> &mut [T] {
-        unsafe { std::slice::from_raw_parts_mut(self.ptr, self.len) }
-    }
-}
-
-impl<'a, T: Shared, const TARGET: u32> Drop for MappedMut<'a, T, TARGET> {
-    fn drop(&mut self) {
         unsafe {
-            gl::UnmapNamedBuffer(self.buffer.name());
+            match self {
+                MappedBuffer::PersistentlyMapped { ptr, len, .. } => std::slice::from_raw_parts(*ptr, *len as usize),
+                MappedBuffer::Copied { vec, .. } => vec.as_slice(),
+            }
+        }
+    }
+}
+
+// This will allow us to read AND write from/to the buffer as if it were a mutable Rust slice
+// TODO: Research a way to make this more flexible to allow for better performance
+pub enum MappedBufferMut<'a, T: Shared, const TARGET: u32> {
+    // The buffer was mapped normally to allow us to read/write to it
+    Mapped {
+        buf: &'a mut Buffer<T, TARGET>,
+        ptr: *mut T,
+        len: u32,
+    }, 
+}
+
+impl<'a, T: Shared, const TARGET: u32> MappedBufferMut<'a, T, TARGET> {
+    // Get an immutable slice that we can read from
+    pub fn as_slice(&self) -> &[T] {
+        unsafe {
+            match self {
+                MappedBufferMut::Mapped {  ptr, len, .. } => std::slice::from_raw_parts(*ptr as *const T, *len as usize),
+            }
+        }
+    }
+
+    // Get a mutabkle slice that we read/write from/to
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        unsafe {
+            match self {
+                MappedBufferMut::Mapped { ptr, len, .. } => std::slice::from_raw_parts_mut(*ptr, *len as usize),
+            }
         }
     }
 }
