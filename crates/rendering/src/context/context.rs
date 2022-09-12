@@ -105,11 +105,9 @@ impl Context {
 
     // Flush the context's commands to the driver
     pub fn flush(&mut self) {
-        unsafe {
-            gl::Flush()
-        }
+        unsafe { gl::Flush() }
     }
-    
+
     // Force the driver to execute all the commands in the stream
     pub fn finish(&mut self) {
         unsafe {

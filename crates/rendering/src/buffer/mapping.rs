@@ -1,16 +1,17 @@
 use parking_lot::{Mutex, RwLock};
 use std::{
+    io::Read,
     marker::PhantomData,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
-    }, io::Read,
+    },
 };
 
 use super::Buffer;
 use crate::context::{Shared, ToGlName};
 
-// This will allow us to read from the buffer as is if were a Rust slice 
+// This will allow us to read from the buffer as is if were a Rust slice
 // TODO: Research a way to make this more flexible to allow for better performance
 pub enum BufferView<'a, T: Shared, const TARGET: u32> {
     // The buffer was mapped persistently to allow us to read from the buffer whilst it is mapped
@@ -27,13 +28,14 @@ pub enum BufferView<'a, T: Shared, const TARGET: u32> {
     },
 }
 
-
 impl<'a, T: Shared, const TARGET: u32> BufferView<'a, T, TARGET> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         unsafe {
             match self {
-                BufferView::PersistentlyMapped { ptr, len, .. } => std::slice::from_raw_parts(*ptr, *len),
+                BufferView::PersistentlyMapped { ptr, len, .. } => {
+                    std::slice::from_raw_parts(*ptr, *len)
+                }
                 BufferView::Copied { vec, .. } => vec.as_slice(),
             }
         }
@@ -59,13 +61,13 @@ pub enum BufferViewMut<'a, T: Shared, const TARGET: u32> {
         buf: &'a mut Buffer<T, TARGET>,
         ptr: *mut T,
         len: usize,
-    }, 
+    },
 
     // The buffer was temporarily cloned to client memory for modification
     Copied {
         buf: &'a mut Buffer<T, TARGET>,
         vec: Vec<T>,
-    }
+    },
 }
 
 impl<'a, T: Shared, const TARGET: u32> BufferViewMut<'a, T, TARGET> {
@@ -73,7 +75,9 @@ impl<'a, T: Shared, const TARGET: u32> BufferViewMut<'a, T, TARGET> {
     pub fn as_slice(&self) -> &[T] {
         unsafe {
             match self {
-                BufferViewMut::Mapped {  ptr, len, .. } => std::slice::from_raw_parts(*ptr as *const T, *len),
+                BufferViewMut::Mapped { ptr, len, .. } => {
+                    std::slice::from_raw_parts(*ptr as *const T, *len)
+                }
                 BufferViewMut::Copied { vec, .. } => vec.as_slice(),
             }
         }
@@ -83,7 +87,9 @@ impl<'a, T: Shared, const TARGET: u32> BufferViewMut<'a, T, TARGET> {
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         unsafe {
             match self {
-                BufferViewMut::Mapped { ptr, len, .. } => std::slice::from_raw_parts_mut(*ptr, *len),
+                BufferViewMut::Mapped { ptr, len, .. } => {
+                    std::slice::from_raw_parts_mut(*ptr, *len)
+                }
                 BufferViewMut::Copied { vec, .. } => vec.as_mut_slice(),
             }
         }
@@ -98,7 +104,7 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
             },
             BufferViewMut::Copied { buf, vec } => {
                 buf.write(&vec);
-            },
+            }
         }
     }
 }

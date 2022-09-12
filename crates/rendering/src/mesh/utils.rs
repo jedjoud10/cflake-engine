@@ -238,7 +238,6 @@ impl MeshUtils {
         Some(tangents)
     }
 
-    
     // Create a new AABB from a list of vertices in 3D space
     pub fn aabb_from_points(points: &[vek::Vec3<f32>]) -> Option<AABB> {
         if points.len() < 2 {

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use crate::context::Context;
+use std::time::Duration;
 
 // This is an abstraction over an OpenGL fence that we can use to detect whenever the GPU has completed executing some commands
 // TODO: Actually figure out how to use these bozos (asnyc buffer transfer and/or compute shaders)
@@ -44,7 +44,8 @@ impl Fence {
             return false;
         }
 
-        let state = unsafe { gl::ClientWaitSync(self.fence.unwrap(),  gl::SYNC_FLUSH_COMMANDS_BIT, 0) };
+        let state =
+            unsafe { gl::ClientWaitSync(self.fence.unwrap(), gl::SYNC_FLUSH_COMMANDS_BIT, 0) };
         match state {
             gl::ALREADY_SIGNALED | gl::CONDITION_SATISFIED => true,
             gl::WAIT_FAILED | gl::TIMEOUT_EXPIRED => false,

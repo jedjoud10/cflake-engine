@@ -24,10 +24,20 @@ fn init(world: &mut World) {
     let mut buffer = ArrayBuffer::<MyData>::from_slice(
         &mut ctx,
         vec![MyData::default(); 4096 * 4].as_slice(),
-        BufferMode::Dynamic { map_write: true, map_read: true, persistent: true, client: true },
+        BufferMode::Dynamic {
+            map_write: true,
+            map_read: true,
+            persistent: true,
+            client: true,
+        },
     )
     .unwrap();
-    let mut buffer2 = ArrayBuffer::<MyData>::from_slice(&mut ctx, vec![MyData::default(); 4096 * 4].as_slice(), BufferMode::Resizable).unwrap();
+    let mut buffer2 = ArrayBuffer::<MyData>::from_slice(
+        &mut ctx,
+        vec![MyData::default(); 4096 * 4].as_slice(),
+        BufferMode::Resizable,
+    )
+    .unwrap();
     let i = Instant::now();
     buffer2.copy_from(&buffer);
     println!("{}", i.elapsed().as_millis());
@@ -36,9 +46,7 @@ fn init(world: &mut World) {
     slice[0].humidity = 1.0;
     slice[3].humidity = 1.0;
     drop(mapped);
-    
-    
-    
+
     let mapped = buffer.view().unwrap();
     let mapped2 = buffer.view().unwrap();
     let vec = buffer.read_to_vec();
