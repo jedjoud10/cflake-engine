@@ -6,6 +6,7 @@ use crate::context::Context;
 use super::{Mesh, MeshImportSettings, MeshUtils};
 
 // A primitive generator that we can use to generate procedural shapes at runtime
+// TODO: Finish writing this bozo
 pub trait PrimitiveGenerator {
     fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh;
 }

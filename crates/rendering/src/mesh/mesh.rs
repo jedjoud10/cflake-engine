@@ -186,10 +186,10 @@ impl Mesh {
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         // Fetch the buffers and map them
         let (mut triangles, mut vertices) = self.both_mut();
-        let mapped_positions = vertices.attribute_mut::<Position>()?.view()?;
-        let positions = mapped_positions.as_slice();
-        let mapped_triangles = triangles.data_mut().view().unwrap();
-        let triangles = mapped_triangles.as_slice();
+        let viewed_positions = vertices.attribute_mut::<Position>()?.view()?;
+        let positions = viewed_positions.as_slice();
+        let viewed_triangles = triangles.data_mut().view().unwrap();
+        let triangles = viewed_triangles.as_slice();
 
         // Mesh utils come to the rescue yet again
         let normals = MeshUtils::compute_normals(positions, triangles)?;
@@ -198,8 +198,8 @@ impl Mesh {
         let buffer = ArrayBuffer::from_slice(ctx, normals.as_slice(), mode).unwrap();
 
         // Drop the buffers manually
-        drop(mapped_positions);
-        drop(mapped_triangles);
+        drop(viewed_positions);
+        drop(viewed_triangles);
 
         // Insert the new buffer
         vertices.set_attribute::<Normal>(Some(buffer));
@@ -211,20 +211,20 @@ impl Mesh {
         let (triangles, mut vertices) = self.both_mut();
 
         // Get positions slice
-        let mapped_positions = vertices.attribute::<Position>()?.view()?;
-        let positions = mapped_positions.as_slice();
+        let viewed_positions = vertices.attribute::<Position>()?.view()?;
+        let positions = viewed_positions.as_slice();
 
         // Get normals slice
-        let mapped_normals = vertices.attribute::<Normal>()?.view()?;
-        let normals = mapped_normals.as_slice();
+        let viewed_normals = vertices.attribute::<Normal>()?.view()?;
+        let normals = viewed_normals.as_slice();
 
         // Get texture coordinate slice
-        let mapped_tex_coords = vertices.attribute::<TexCoord>()?.view()?;
-        let tex_coords = mapped_tex_coords.as_slice();
+        let viewed_tex_coords = vertices.attribute::<TexCoord>()?.view()?;
+        let tex_coords = viewed_tex_coords.as_slice();
 
         // Get triangles slice
-        let mapped_triangles = triangles.data().view()?;
-        let triangles = mapped_triangles.as_slice();
+        let viewed_triangles = triangles.data().view()?;
+        let triangles = viewed_triangles.as_slice();
 
         // Generate the tangents using the mesh utils
         let tangents = MeshUtils::compute_tangents(positions, normals, tex_coords, triangles)?;
@@ -232,11 +232,11 @@ impl Mesh {
         // Return false if we were not able to generate the tangents
         let buffer = ArrayBuffer::from_slice(ctx, tangents.as_slice(), mode).unwrap();
 
-        // Drop the mapped buffers manually
-        drop(mapped_positions);
-        drop(mapped_normals);
-        drop(mapped_tex_coords);
-        drop(mapped_triangles);
+        // Drop the viewed buffers manually
+        drop(viewed_positions);
+        drop(viewed_normals);
+        drop(viewed_tex_coords);
+        drop(viewed_triangles);
 
         // Insert the new buffer
         vertices.set_attribute::<Tangent>(Some(buffer));
@@ -247,10 +247,10 @@ impl Mesh {
     pub fn compute_aabb(&mut self) -> Option<()> {
         let vertices = self.vertices();
         let positions = vertices.attribute::<Position>()?;
-        let mapped = positions.view()?;
-        let slice = mapped.as_slice();
-        let temp = AABB::from_points(slice);
-        drop(mapped);
+        let view = positions.view()?;
+        let slice = view.as_slice();
+        let temp = MeshUtils::aabb_from_points(slice);
+        drop(view);
         self.aabb = temp;
 
         Some(())
@@ -305,15 +305,15 @@ impl<'a> Asset<'a> for Mesh {
             // Read and add the normal
             if let Some(normals) = &mut normals {
                 let read = Vec3::from_slice(&vertex.normal);
-                let mapped = read.map(|f| (f * 127.0) as i8);
-                normals.push(mapped);
+                let viewed = read.map(|f| (f * 127.0) as i8);
+                normals.push(viewed);
             }
 
             // Read and add the texture coordinate
             if let Some(tex_coords) = &mut tex_coords {
                 let read = Vec2::from_slice(&vertex.texture);
-                let mapped = read.map(|f| (f * 255.0) as u8);
-                tex_coords.push(mapped);
+                let viewed = read.map(|f| (f * 255.0) as u8);
+                tex_coords.push(viewed);
             }
         }
 

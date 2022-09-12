@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::{
     buffer::DispatchComputerIndirectBuffer,
     context::{Context, ToGlName, ToGlTarget},
-    others::CommandTimer,
+    others::Fence,
 };
 
 use super::{Program, Uniforms, ValidUniforms};

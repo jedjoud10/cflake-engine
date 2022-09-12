@@ -1,6 +1,6 @@
 use math::AABB;
 
-use super::attributes::*;
+use super::{attributes::*, MeshUtils};
 use crate::{
     buffer::{ArrayBuffer, Buffer, UntypedBufferFormat},
     context::ToGlName,
@@ -159,10 +159,10 @@ impl VerticesMut<'_> {
     // Update the AABB of the mesh using updated position vertices
     pub fn compute_aabb(&mut self) -> Option<()> {
         let positions = self.attribute::<Position>()?;
-        let mapped = positions.view()?;
-        let slice = mapped.as_slice();
-        let temp = AABB::from_points(slice);
-        drop(mapped);
+        let view = positions.view()?;
+        let slice = view.as_slice();
+        let temp = MeshUtils::aabb_from_points(slice);
+        drop(view);
         *self.aabb = temp;
 
         Some(())

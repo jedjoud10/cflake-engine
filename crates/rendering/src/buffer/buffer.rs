@@ -4,6 +4,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::{transmute, MaybeUninit, ManuallyDrop};
 use std::ops::RangeBounds;
+use std::time::Instant;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -445,7 +446,9 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         );
         unsafe {
             let size = (self.length * size_of::<T>()) as isize;
+            //let i = Instant::now();
             gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
+            //println!("{}", i.elapsed().as_millis())
         }
     }
 
@@ -480,7 +483,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Create a new ranged buffer reader that can read from the buffer
-    // TODO: Make sure we don't map the buffer twice whilst it is mapped 
     pub fn view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TARGET>> {
         if !self.mode.read_permission() {
             return None;
