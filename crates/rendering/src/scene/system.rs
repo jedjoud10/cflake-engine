@@ -7,7 +7,7 @@ use crate::{
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
-    mesh::Mesh,
+    mesh::{Mesh, Surface},
     painter::Painter,
     pipeline::{Pipeline, SpecializedPipeline},
     prelude::{
@@ -17,10 +17,11 @@ use crate::{
     shader::Shader,
 };
 
+use arrayvec::ArrayVec;
 use assets::Assets;
 use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::{IntoMatrix, Location, Rotation, Scale};
+use math::{IntoMatrix, Location, Rotation, Scale, AABB, SharpVertices};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -80,6 +81,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the clustered shading rendererer
     let clustered_shading = ClusteredShading {
         main_camera: None,
+        skysphere_entity: None,
         painter: Painter::new(ctx),
         color_tex: color,
         depth_tex: depth,
@@ -359,6 +361,103 @@ fn main_directional_light(world: &mut World) {
     }
 }
 
+// Update event that will set the main skysphere
+fn main_sky_sphere(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    
+    // Fetch the main sky sphere from the scene renderer
+    if let Some(entity) = shading.skysphere_entity {
+        // Disable the entity in the resource if it got removed
+        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
+            entry
+        } else {
+            shading.skysphere_entity = None;
+            return;
+        };
+    } else {
+        // Set the main sky sphere if we did not find one
+        let mut query = ecs
+            .view_with_id::<(&Renderer, &Surface<Sky>)>()
+            .unwrap();
+        if let Some((_, entity)) = query.next() {
+            shading.skysphere_entity = Some(entity);
+        }
+    }
+}
+
+// Frustum culling will simply disable all the renderers outside the camera's view frustum
+fn frustum_culling(world: &mut World) {
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+
+    // A single frustum plane
+    #[derive(Debug)]
+    struct Plane {
+        normal: vek::Vec3<f32>,
+        distance: f32,
+    }
+
+    impl Plane {
+        // Create a plane from a matrix column
+        fn new(column: vek::Vec4<f32>) -> Self {
+            let mag = column.xyz().magnitude();
+            Self {
+                normal: column.xyz() / mag,
+                distance: (column.w / mag),
+            }
+        }
+    }
+
+    // The 6 frustum planes from the camera
+    struct Frustum {
+        planes: [Plane; 6]
+    }
+
+    // Calculate the view frustum from the camera
+    fn frustum(camera: &Camera) -> Frustum {
+        let columns = (*camera.projection_matrix() * *camera.view_matrix()).clone().transposed().into_col_arrays();
+        let columns = columns.into_iter().map(vek::Vec4::from).collect::<ArrayVec<vek::Vec4<f32>, 4>>();
+
+        // Magic from https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
+        // And also from https://gamedev.stackexchange.com/questions/156743/finding-the-normals-of-the-planes-of-a-view-frustum
+        // YAY https://stackoverflow.com/questions/12836967/extracting-view-frustum-planes-gribb-hartmann-method
+        let left = Plane::new(columns[3] + columns[0]);
+        let right = Plane::new(columns[3] - columns[0]);
+        let top = Plane::new(columns[3] - columns[1]);
+        let bottom = Plane::new(columns[3] + columns[1]);
+        let near = Plane::new(columns[3] + columns[2]);
+        let far = Plane::new(columns[3] - columns[2]);
+
+        Frustum {
+            planes: [top, bottom, left, right, near, far]
+        }
+    } 
+
+    // AABB - Frustum collision check
+    fn is_inside_frustum_aabb(frustum: &Frustum, aabb: &AABB) -> bool {
+        // Totally not stolen from the internet or anything
+        let points = aabb.points();
+        for plane in frustum.planes.iter() {
+            // Furthest vertex down the plane normal
+            let mut furthest = vek::Vec3::zero();
+        
+            // Update each value in each axis
+            furthest.iter_mut().enumerate().for_each(|(i, e)| {            
+                *e = points[(plane.normal[i] > 0.0) as usize][i];
+            });
+        
+            // Calculate the signed distance of the point
+            let signed = furthest.dot(plane.normal) + plane.distance;
+        
+            // Early return
+            if signed < 0.0 {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 // Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert graphics init event
@@ -391,6 +490,14 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
+    
+    // Insert the directional sky sphere update event
+    reg.insert_with(
+        main_sky_sphere,
+        Stage::new("sky sphere update").after("post user"),
+    )
+    .unwrap();
+
     // Insert update renderer event
     reg.insert_with(
         update_matrices,
@@ -404,6 +511,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
         Stage::new("scene rendering")
             .before("main camera update")
             .after("main directional light update")
+            .after("sky sphere update")
             .after("update renderer matrices"),
     )
     .unwrap();

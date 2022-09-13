@@ -13,6 +13,8 @@ pub struct Renderer {
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
     enabled: bool,
+
+    
 }
 
 impl Default for Renderer {
