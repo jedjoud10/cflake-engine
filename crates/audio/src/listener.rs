@@ -3,6 +3,7 @@ use math::{Location, Rotation};
 use rodio::{OutputStream, OutputStreamHandle};
 use std::sync::{Arc, Mutex};
 
+// TODO: Rewrite all of this with our own custom logic sheize
 #[derive(Clone, Copy)]
 // The global audio head of the main audio listener
 pub(crate) struct AudioHead {

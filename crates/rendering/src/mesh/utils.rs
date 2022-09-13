@@ -60,7 +60,7 @@ impl MeshUtils {
 
     // Multiply a position by a matrix
     pub fn mul_position(matrix: vek::Mat4<f32>, position: VePosition) -> VePosition {
-        matrix.mul_point(matrix.mul_point(position))
+        matrix.mul_point(position)
     }
 
     // Multiply a normal by a matrix

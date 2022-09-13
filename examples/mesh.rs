@@ -88,14 +88,21 @@ fn init(world: &mut World) {
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
+    let cube = meshes.insert(Cuboid {
+        center: vek::Vec3::zero(),
+        extent: vek::Extent3::one(),
+    }.generate(&mut ctx, MeshImportSettings::default()));
+    
+    /*
     let cube = meshes.insert(
         assets
             .load_with::<Mesh>(
-                "engine/meshes/sphere.obj",
+                "engine/meshes/cube.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
             .unwrap(),
     );
+    */
 
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard {
@@ -112,19 +119,11 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
-
-    for x in 0..1 {
-        for y in 0..1 {
-            let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-            ecs.insert((
-                surface,
-                Location::at_xyz(x as f32, y as f32, 0.0),
-                Renderer::default(),
-            ));
-        }
-    }
-
-    // Insert a new entity that contains the valid surface
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+    ecs.insert((
+        surface,
+        Renderer::default(),
+    ));
 
     // Load in the texture
     let texture = albedo_maps.insert(

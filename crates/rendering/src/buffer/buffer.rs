@@ -4,6 +4,8 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::{transmute, ManuallyDrop, MaybeUninit};
 use std::ops::RangeBounds;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::time::Instant;
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
@@ -534,7 +536,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Create a new ranged buffer reader that can read from the buffer
-    pub fn view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TARGET>> {
+    pub fn as_view_ranged(&self, range: impl RangeBounds<usize>) -> Option<BufferView<T, TARGET>> {
         if !self.mode.read_permission() {
             return None;
         }
@@ -562,17 +564,21 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
             Some(BufferView::PersistentlyMapped {
                 buf: self,
-                len: end - start,
+                range: (start, end),
                 ptr,
             })
         } else {
             let vec = self.read_to_vec();
-            Some(BufferView::Copied { buf: self, vec })
+            Some(BufferView::Copied {
+                buf: self,
+                vec,
+                range: (start, end),
+            })
         }
     }
 
     // Create a new ranged buffer writer that can read/write from/to the buffer
-    pub fn view_ranged_mut(
+    pub fn as_view_ranged_mut(
         &mut self,
         range: impl RangeBounds<usize>,
     ) -> Option<BufferViewMut<T, TARGET>> {
@@ -599,55 +605,64 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
             Some(BufferViewMut::Mapped {
                 buf: self,
-                len: end - start,
+                range: (start, end),
                 ptr,
             })
         } else {
             let vec = self.read_to_vec();
-            Some(BufferViewMut::Copied { buf: self, vec })
+            Some(BufferViewMut::Copied {
+                buf: self,
+                vec,
+                range: (start, end),
+            })
         }
     }
 
     // Create a buffer reader that uses the whole buffer
-    pub fn view(&self) -> Option<BufferView<T, TARGET>> {
-        self.view_ranged(..)
+    pub fn as_view(&self) -> Option<BufferView<T, TARGET>> {
+        self.as_view_ranged(..)
     }
 
     // Create a buffer writer that uses the whole buffer
-    pub fn view_mut(&mut self) -> Option<BufferViewMut<T, TARGET>> {
-        self.view_ranged_mut(..)
+    pub fn as_mut_view(&mut self) -> Option<BufferViewMut<T, TARGET>> {
+        self.as_view_ranged_mut(..)
+    }
+
+    // Check if we can convert this to a persistent buffer
+    pub fn can_convert_to_persistent(&self) -> bool {
+        self.mode.map_read_permission()
+            && self.mode.map_write_permission()
+            && self.mode.map_persistent_permission()
+            && !self.is_empty()
     }
 
     // Map the whole buffer persistently for reading/writing
-    pub fn into_persistent(self) -> Result<Persistent<T, TARGET>, Self> {
-        let range = self.convert_range_bounds(..);
-
-        if self.mode.map_read_permission()
-            && self.mode.map_write_permission()
-            && self.mode.map_persistent_permission()
-            || range.is_none()
-        {
-            return Err(self);
+    pub fn into_persistent(self) -> Option<Persistent<T, TARGET>> {
+        if !self.can_convert_to_persistent() {
+            return None;
         }
 
-        let (start, end) = range.unwrap();
-
-        let offset = (start * size_of::<T>()) as isize;
-        let size = ((end - start) * size_of::<T>()) as isize;
+        let size = (self.len() * size_of::<T>()) as isize;
 
         let ptr = unsafe {
             gl::MapNamedBufferRange(
                 self.buffer,
-                offset,
+                0,
                 size,
                 gl::MAP_READ_BIT
                     | gl::MAP_WRITE_BIT
                     | gl::MAP_PERSISTENT_BIT
-                    | gl::MAP_COHERENT_BIT,
+                    | gl::MAP_FLUSH_EXPLICIT_BIT,
             ) as *mut T
         };
 
-        Ok(Persistent { buf: self, ptr })
+        Some(Persistent {
+            buf: Some(self),
+            ptr,
+            ranges: Vec::new(),
+            counter: 0,
+            active: Arc::new(AtomicBool::new(true)),
+        })
     }
 }
 

@@ -57,7 +57,7 @@ vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Constants
 	float roughness = max(surface.mask.r, 0.05);
 	float metallic = pow(surface.mask.g, 5);
-	float visibility = min(surface.mask.b, 1.0);
+	float visibility = pow(min(surface.mask.b, 1.0), 2);
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
 	// Ks and Kd

@@ -6,16 +6,25 @@ type BoxedHeuriticFunc = Box<dyn Fn(&Node, &vek::Vec3<f32>) -> bool>;
 
 // The octree heuristic is what we must use within the octree to specify what nodes will be further subdivided
 pub enum OctreeHeuristic {
+    // THe heuristic function is a boxed function
     ManualBoxed(BoxedHeuriticFunc),
+
+    // The heuristic function is a static global function
     Manual(fn(&Node, &vek::Vec3<f32>) -> bool),
+
+    // The heuristic function uses some sort of LOD logic
     LodHeuristic {
         min_radius_lod: f32,
         falloff: f32,
         exp_falloff: f32,
     },
+
+    // The heuristic function uses a sphere as a bound area for intersections
     ShereHeuristic {
         radius: f32,
     },
+
+    // The heursistic function uses an AABB as a bound area for intersections
     AABBHeuristic {
         extent: f32,
     },

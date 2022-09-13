@@ -186,9 +186,9 @@ impl Mesh {
     pub fn compute_normals(&mut self, ctx: &mut Context, mode: BufferMode) -> Option<()> {
         // Fetch the buffers and map them
         let (mut triangles, mut vertices) = self.both_mut();
-        let viewed_positions = vertices.attribute_mut::<Position>()?.view()?;
+        let viewed_positions = vertices.attribute_mut::<Position>()?.as_view()?;
         let positions = viewed_positions.as_slice();
-        let viewed_triangles = triangles.data_mut().view().unwrap();
+        let viewed_triangles = triangles.data_mut().as_view().unwrap();
         let triangles = viewed_triangles.as_slice();
 
         // Mesh utils come to the rescue yet again
@@ -211,19 +211,19 @@ impl Mesh {
         let (triangles, mut vertices) = self.both_mut();
 
         // Get positions slice
-        let viewed_positions = vertices.attribute::<Position>()?.view()?;
+        let viewed_positions = vertices.attribute::<Position>()?.as_view()?;
         let positions = viewed_positions.as_slice();
 
         // Get normals slice
-        let viewed_normals = vertices.attribute::<Normal>()?.view()?;
+        let viewed_normals = vertices.attribute::<Normal>()?.as_view()?;
         let normals = viewed_normals.as_slice();
 
         // Get texture coordinate slice
-        let viewed_tex_coords = vertices.attribute::<TexCoord>()?.view()?;
+        let viewed_tex_coords = vertices.attribute::<TexCoord>()?.as_view()?;
         let tex_coords = viewed_tex_coords.as_slice();
 
         // Get triangles slice
-        let viewed_triangles = triangles.data().view()?;
+        let viewed_triangles = triangles.data().as_view()?;
         let triangles = viewed_triangles.as_slice();
 
         // Generate the tangents using the mesh utils
@@ -247,7 +247,7 @@ impl Mesh {
     pub fn compute_aabb(&mut self) -> Option<()> {
         let vertices = self.vertices();
         let positions = vertices.attribute::<Position>()?;
-        let view = positions.view()?;
+        let view = positions.as_view()?;
         let slice = view.as_slice();
         let temp = MeshUtils::aabb_from_points(slice);
         drop(view);

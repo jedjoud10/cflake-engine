@@ -159,7 +159,7 @@ impl VerticesMut<'_> {
     // Update the AABB of the mesh using updated position vertices
     pub fn compute_aabb(&mut self) -> Option<()> {
         let positions = self.attribute::<Position>()?;
-        let view = positions.view()?;
+        let view = positions.as_view()?;
         let slice = view.as_slice();
         let temp = MeshUtils::aabb_from_points(slice);
         drop(view);

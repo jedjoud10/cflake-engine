@@ -20,9 +20,10 @@ pub struct MeshImportSettings {
 impl Default for MeshImportSettings {
     fn default() -> Self {
         Self {
-            mode: BufferMode::Static {
+            mode: BufferMode::Dynamic {
                 persistent: true,
                 map_read: true,
+                map_write: true,
                 client: false,
             },
             use_normals: true,

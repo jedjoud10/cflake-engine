@@ -12,30 +12,23 @@ pub trait PrimitiveGenerator {
 }
 
 impl PrimitiveGenerator for Cuboid {
-    // Generate a cuboid mesh
     fn generate(self, ctx: &mut Context, settings: MeshImportSettings) -> Mesh {
-        // Buffers we shall useth
         let mut positions = Vec::<vek::Vec3<f32>>::with_capacity(24);
         let mut normals = settings
             .use_normals
             .then(|| Vec::<vek::Vec3<i8>>::with_capacity(24));
-        let mut tangents = settings
-            .use_tangents
-            .then(|| Vec::<vek::Vec4<i8>>::with_capacity(24));
         let mut tex_coords = settings
             .use_tex_coords
             .then(|| Vec::<vek::Vec2<u8>>::with_capacity(24));
 
         // Create the rotation quaternions
-        let rotations: [vek::Quaternion<f32>; 2] = [
+        let rotations: [vek::Quaternion<f32>; 6] = [
             vek::Quaternion::identity(),
             vek::Quaternion::rotation_y(90.0f32.to_radians()),
-            /*
-            vek::Quaternion::rotation_x(180.0f32.to_radians()),
-            vek::Quaternion::rotation_x(270.0f32.to_radians()),
-            vek::Quaternion::rotation_z(90.0f32.to_radians()),
-            vek::Quaternion::rotation_z(-90.0f32.to_radians())
-            */
+            vek::Quaternion::rotation_y(180.0f32.to_radians()),
+            vek::Quaternion::rotation_y(270.0f32.to_radians()),
+            vek::Quaternion::rotation_x(90.0f32.to_radians()),
+            vek::Quaternion::rotation_x(-90.0f32.to_radians()),
         ];
 
         // Create the 6 faces separartely
@@ -44,27 +37,18 @@ impl PrimitiveGenerator for Cuboid {
 
             // Generate the positions
             let local_positions = [
-                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, -0.5, 0.0)),
-                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, 0.5, 0.0)),
-                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, -0.5, 0.0)),
-                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, 0.5, 0.0)),
+                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, -0.5, 0.5)),
+                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(-0.5, 0.5, 0.5)),
+                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, -0.5, 0.5)),
+                MeshUtils::mul_position(matrix.into(), vek::Vec3::new(0.5, 0.5, 0.5)),
             ];
 
             // Generate the normals (optional)
             let local_normal = settings.use_normals.then(|| {
                 MeshUtils::mul_normal(
                     matrix.into(),
-                    vek::Vec3::new(0, 127, 0),
+                    vek::Vec3::new(0, 0, 127),
                     settings.invert_normals,
-                )
-            });
-
-            // Generate the tangents (optional)
-            let local_tangent = settings.use_tangents.then(|| {
-                MeshUtils::mul_tangent(
-                    matrix.into(),
-                    vek::Vec4::new(127, 0, 0, 127),
-                    settings.invert_tangents,
                 )
             });
 
@@ -86,11 +70,6 @@ impl PrimitiveGenerator for Cuboid {
                 normals.extend(std::iter::repeat(local_normal.unwrap()).take(4));
             }
 
-            // Add the tangents into the vector
-            if let Some(tangents) = &mut tangents {
-                tangents.extend(std::iter::repeat(local_tangent.unwrap()).take(4));
-            }
-
             // Add the texture coordinates into the vector
             if let Some(tex_coords) = &mut tex_coords {
                 MeshUtils::apply_settings_tex_coords(
@@ -103,16 +82,29 @@ impl PrimitiveGenerator for Cuboid {
         }
 
         // Generate the indices
-        let triangles = (0..2)
+        let triangles = (0..6)
             .into_iter()
             .map(|face| {
-                let offset = face * 6;
+                let offset = face * 4;
                 let tri1 = [offset, 1 + offset, 2 + offset];
                 let tri2 = [2 + offset, 1 + offset, 3 + offset];
                 (tri1, tri2)
             })
             .flat_map(|(t1, t2)| [t1, t2])
             .collect_vec();
+
+        // Generate the tangents if we want
+        let tangents = if let (Some(normals), Some(tex_coords), true) = (&normals, &tex_coords, settings.use_tangents) {
+            if let Some(mut tangents) = MeshUtils::compute_tangents(&positions, normals, tex_coords, &triangles) {
+                if settings.invert_tangents {
+                    for tangent in tangents.iter_mut() {
+                        *tangent = MeshUtils::mul_tangent(vek::Mat4::identity(), *tangent, true)
+                    }
+                }
+
+                Some(tangents)
+            } else { None }
+        } else { None };
 
         Mesh::from_vecs(
             ctx,

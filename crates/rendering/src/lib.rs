@@ -9,7 +9,6 @@ pub mod mesh;
 pub mod others;
 pub mod painter;
 pub mod pipeline;
-pub mod query;
 pub mod scene;
 pub mod shader;
 pub mod texture;
@@ -23,7 +22,6 @@ pub mod prelude {
     pub use super::others::*;
     pub use super::painter::*;
     pub use super::pipeline::*;
-    pub use super::query::*;
     pub use super::scene::*;
     pub use super::shader::*;
     pub use super::texture::*;
