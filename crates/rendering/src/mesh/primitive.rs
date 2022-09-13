@@ -94,8 +94,12 @@ impl PrimitiveGenerator for Cuboid {
             .collect_vec();
 
         // Generate the tangents if we want
-        let tangents = if let (Some(normals), Some(tex_coords), true) = (&normals, &tex_coords, settings.use_tangents) {
-            if let Some(mut tangents) = MeshUtils::compute_tangents(&positions, normals, tex_coords, &triangles) {
+        let tangents = if let (Some(normals), Some(tex_coords), true) =
+            (&normals, &tex_coords, settings.use_tangents)
+        {
+            if let Some(mut tangents) =
+                MeshUtils::compute_tangents(&positions, normals, tex_coords, &triangles)
+            {
                 if settings.invert_tangents {
                     for tangent in tangents.iter_mut() {
                         *tangent = MeshUtils::mul_tangent(vek::Mat4::identity(), *tangent, true)
@@ -103,8 +107,12 @@ impl PrimitiveGenerator for Cuboid {
                 }
 
                 Some(tangents)
-            } else { None }
-        } else { None };
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         Mesh::from_vecs(
             ctx,

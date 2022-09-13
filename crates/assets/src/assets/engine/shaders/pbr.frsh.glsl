@@ -22,6 +22,9 @@ uniform vec3 light_dir;
 uniform vec3 light_color;
 uniform float light_strength;
 
+// Sky shader values
+uniform sampler2D gradient;
+
 // Data given by the vertex shader
 in vec3 m_position;
 in vec3 m_normal;
@@ -55,9 +58,9 @@ struct SurfaceData {
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Constants
-	float roughness = max(surface.mask.r, 0.05);
-	float metallic = pow(surface.mask.g, 5);
-	float visibility = pow(min(surface.mask.b, 1.0), 2);
+	float roughness = clamp(surface.mask.r, 0.02, 0.50);
+	float metallic = surface.mask.g;
+	float visibility = min(surface.mask.b, 1.0);
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
 	// Ks and Kd

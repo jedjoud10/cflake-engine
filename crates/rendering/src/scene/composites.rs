@@ -17,6 +17,7 @@ use super::PointLight;
 // TODO: Actually implement this lul
 pub struct ClusteredShading {
     pub(crate) main_camera: Option<Entity>,
+    pub(crate) skysphere_entity: Option<Entity>,
     pub(crate) painter: Painter<RGB<f32>, Depth<Ranged<u32>>, ()>,
     pub(crate) color_tex: Texture2D<RGB<f32>>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
@@ -28,6 +29,11 @@ impl ClusteredShading {
     // Get the main camera entity
     pub fn main_camera(&self) -> Option<Entity> {
         self.main_camera
+    }
+
+    // Get the main sky entity
+    pub fn sky_entity(&self) -> Option<Entity> {
+        self.skysphere_entity
     }
 
     // Get the main directional light entity

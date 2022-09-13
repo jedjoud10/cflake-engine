@@ -1,17 +1,18 @@
 use assets::Assets;
 
+use ecs::{Scene, Entity};
 use world::{Handle, Read, Storage};
 
 use crate::{
     context::Context,
-    mesh::EnabledAttributes,
-    prelude::{RGBA, SRGBA},
-    scene::Renderer,
+    mesh::{EnabledAttributes, Surface},
+    prelude::{TextureImportSettings, R, RGBA, SRGBA},
+    scene::{Renderer, Compositor, ClusteredShading},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RG, RGB},
 };
 
-use super::{DefaultMaterialResources, Material};
+use super::{DefaultMaterialResources, Material, Sky};
 
 // PBR maps
 pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
@@ -37,6 +38,7 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<AlbedoMap>>,
         Read<'w, Storage<NormalMap>>,
         Read<'w, Storage<MaskMap>>,
+        Handle<AlbedoMap>
     );
 
     fn requirements() -> EnabledAttributes {
@@ -54,13 +56,21 @@ impl<'w> Material<'w> for Standard {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
         let mask_map = world.get::<Storage<MaskMap>>().unwrap();
-        (albedo_map, normal_map, mask_map)
+
+        let ecs = world.get::<Scene>().unwrap();
+        let entity = world.get::<ClusteredShading>().unwrap().skysphere_entity.unwrap();
+        let entity = ecs.entry(entity).unwrap();
+        let component = entity.get::<Surface<Sky>>().unwrap();
+        let sky_materials = world.get::<Storage<Sky>>().unwrap();
+        let material = sky_materials.get(&component.material());
+
+        (albedo_map, normal_map, mask_map, material.gradient.clone())
     }
 
     fn set_static_properties<'u>(
         uniforms: &mut Uniforms<'u>,
         main: &DefaultMaterialResources,
-        _resources: &mut Self::Resources,
+        resources: &mut Self::Resources,
     ) {
         uniforms.set_mat4x4("view_matrix", main.camera.view_matrix());
         uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
@@ -72,6 +82,9 @@ impl<'w> Material<'w> for Standard {
             main.directional_light.color.as_::<f32>() / 255.0,
         );
         uniforms.set_scalar("light_strength", main.directional_light.strength);
+
+        
+        uniforms.set_sampler("gradient", resources.0.get(&resources.3));
     }
 
     fn set_surface_properties(
@@ -89,7 +102,7 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps, normal_maps, mask_maps) = resources;
+        let (albedo_maps, normal_maps, mask_maps, _) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);
@@ -118,4 +131,53 @@ impl<'w> Material<'w> for Standard {
 
         ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)
     }
+}
+
+// Create a new mask map using the separate metallic, roughness, and AO parameters
+// Roughness is stored in the Red channel
+// Metallic is stored in the Green channel
+// AO is stored in the Blue channel
+pub fn combine_into_mask_map(
+    ctx: &mut Context,
+    roughness: Texture2D<R<Ranged<u8>>>,
+    metallic: Texture2D<R<Ranged<u8>>>,
+    ao: Texture2D<R<Ranged<u8>>>,
+    settings: TextureImportSettings,
+) -> Option<MaskMap> {
+    let dimensions = roughness.dimensions();
+    if metallic.dimensions() != dimensions || ao.dimensions() != dimensions {
+        return None;
+    }
+
+    // This is extremely slow but I don't know how to copy specific channels between texture images
+    // Also don't want to use FBO as well lol
+    let roughness_mip = roughness.mip(0).unwrap();
+    let roughness_data = roughness_mip.download();
+    let metallic_mip = metallic.mip(0).unwrap();
+    let metallic_data = metallic_mip.download();
+    let ambient_mip = ao.mip(0).unwrap();
+    let ambient_data = ambient_mip.download();
+
+    // I hate this so much
+    let data = (0..roughness.texel_count())
+        .map(|i| {
+            let index = i as usize;
+            let r = roughness_data[index];
+            let g = metallic_data[index];
+            let b = ambient_data[index];
+            vek::Vec4::new(r, g, b, 0u8)
+        })
+        .collect::<Vec<_>>();
+
+    Some(
+        MaskMap::new(
+            ctx,
+            settings.mode,
+            dimensions,
+            settings.sampling,
+            settings.mipmaps,
+            Some(&data),
+        )
+        .unwrap(),
+    )
 }
