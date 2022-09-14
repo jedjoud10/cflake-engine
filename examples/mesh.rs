@@ -107,8 +107,16 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-    ecs.insert((surface, Renderer::default()));
+
+    for x in 0..200 {
+        for y in 0..200 {
+            for z in 0..1 {
+                let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+                ecs.insert((surface, Renderer::default(), Location::at_xyz(x as f32, y as f32, z as f32)));
+            }
+        }
+    }
+    
 
     // Load in the texture
     let texture = albedo_maps.insert(

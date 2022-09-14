@@ -133,7 +133,6 @@ impl Camera {
         let bottom = FrustumPlane::new(columns[3] + columns[1]);
         let near = FrustumPlane::new(columns[3] + columns[2]);
         let far = FrustumPlane::new(columns[3] - columns[2]);
-        println!("{}", left.distance);
         [top, bottom, left, right, near, far]
     }
 }

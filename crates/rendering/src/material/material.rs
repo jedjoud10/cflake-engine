@@ -65,6 +65,11 @@ pub trait Material<'w>: 'static + Sized {
         false
     }
 
+    // Should we use frustum culling when rendering surfaces of this type?
+    fn should_use_frustum_culling() -> bool {
+        true
+    }
+
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;
 

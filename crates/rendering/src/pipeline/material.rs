@@ -11,15 +11,25 @@ use crate::{
 use assets::Assets;
 use ecs::Scene;
 use math::{Location, Rotation, AABB, SharpVertices};
-use std::{marker::PhantomData, any::type_name};
+use std::{marker::PhantomData, any::type_name, time::Instant};
 use world::{Handle, Storage, World};
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
-// TODO: Fix this and actually do it properly
 // TODO: Use multithreading to make it faster as well
-pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB) -> bool {
-    false
+// https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
+// https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
+pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB, matrix: &vek::Mat4<f32>) -> bool {
+    let corners = [matrix.mul_point(aabb.min), matrix.mul_point(aabb.max)];
+    planes.iter().all(|plane| {
+        let mut furthest = vek::Vec3::zero();
+        furthest.iter_mut().enumerate().for_each(|(i, e)| {            
+            *e = corners[(plane.normal[i] > 0.0) as usize][i];
+        });
+        let signed = furthest.dot(plane.normal) + plane.distance;
+
+        signed > 0.0
+    })
 }
 
 // The standardized pipeline will use the default rendering canvas to render to
@@ -74,15 +84,15 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 && mesh.vertices().len().is_some();
 
             // Check if the surface is visible inside the camera's frustum
-            let aabb = if let Some(mut aabb) = mesh.aabb() {
-                //aabb.min = renderer.matrix.mul_point(aabb.min);
-                //aabb.max = renderer.matrix.mul_point(aabb.max);
-                intersects_frustum(&planes, aabb)
+            let aabb = if let Some(aabb) = mesh.aabb() {
+                intersects_frustum(&planes, aabb, &renderer.matrix)
             } else {
                 false
             };
             
-            enabled && buffers && aabb
+            let render = enabled && buffers && aabb;
+            stats.invisible_surfaces += !render as u32;
+            render
         });
 
         // Create a new rasterizer so we can draw the objects onto the painter
@@ -147,7 +157,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
                 };
 
                 rasterizer.draw(mesh, validated);
-                stats.surfaces += 1;
+                stats.rendered_surfaces += 1;
                 stats.verts += len as u32;
                 stats.tris += mesh.triangles().len() as u32;
             }

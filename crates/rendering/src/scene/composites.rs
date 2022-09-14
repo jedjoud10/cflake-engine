@@ -64,42 +64,11 @@ pub(crate) struct Compositor {
 // These settings keep track what we rendered within a single frame
 #[derive(Default, Debug, Clone, Copy)]
 pub struct RenderedFrameStats {
-    pub(crate) tris: u32,
-    pub(crate) verts: u32,
-    pub(crate) unique_materials: u32,
-    pub(crate) material_instances: u32,
-    pub(crate) surfaces: u32,
-    pub(crate) current: bool,
-}
-
-impl RenderedFrameStats {
-    // Get the total number of triangles that we rendered
-    pub fn triangle_count(&self) -> u32 {
-        self.tris
-    }
-
-    // Get the total number of vertices that we rendered
-    pub fn vertex_count(&self) -> u32 {
-        self.verts
-    }
-
-    // Get the total number of materials that we rendered
-    pub fn unique_material_count(&self) -> u32 {
-        self.unique_materials
-    }
-
-    // Get the number of material instances that we used
-    pub fn material_instance_count(&self) -> u32 {
-        self.material_instances
-    }
-
-    // Get the number of surfaces that we rendered
-    pub fn surface_count(&self) -> u32 {
-        self.surfaces
-    }
-
-    // Did we finish rendering this frame?
-    pub fn has_finished_rendering(&self) -> bool {
-        self.current
-    }
+    pub tris: u32,
+    pub verts: u32,
+    pub unique_materials: u32,
+    pub material_instances: u32,
+    pub rendered_surfaces: u32,
+    pub invisible_surfaces: u32,
+    pub current: bool,
 }

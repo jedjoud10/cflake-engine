@@ -144,7 +144,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         verts: 0,
         unique_materials: 0,
         material_instances: 0,
-        surfaces: 0,
+        rendered_surfaces: 0,
+        invisible_surfaces: 0,
         current: false,
     };
 
@@ -262,6 +263,8 @@ fn rendering(world: &mut World) {
 
     // Render the screen quad
     rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
+
+    println!("{}", stats.rendered_surfaces);
 }
 
 // Window event for updating the current main canvas and world state if needed
