@@ -93,7 +93,7 @@ impl<'w> Material<'w> for Standard {
         _resources: &mut Self::Resources,
         renderer: &Renderer,
     ) {
-        uniforms.set_mat4x4("world_matrix", renderer.matrix());
+        uniforms.set_mat4x4("world_matrix", &renderer.matrix);
     }
 
     fn set_instance_properties(

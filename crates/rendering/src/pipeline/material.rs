@@ -6,13 +6,21 @@ use crate::{
     mesh::{Mesh, Surface},
     painter::Painter,
     prelude::{Display, Region, Shader, Texture, Viewport},
-    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer},
+    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer, FrustumPlane},
 };
 use assets::Assets;
 use ecs::Scene;
-use math::{Location, Rotation};
-use std::marker::PhantomData;
+use math::{Location, Rotation, AABB, SharpVertices};
+use std::{marker::PhantomData, any::type_name};
 use world::{Handle, Storage, World};
+
+// Check if an AABB intersects all the given frustum planes
+// TODO: Use space partioning algorithms to make this faster (ex. Octree)
+// TODO: Fix this and actually do it properly
+// TODO: Use multithreading to make it faster as well
+pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB) -> bool {
+    false
+}
 
 // The standardized pipeline will use the default rendering canvas to render to
 pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
@@ -40,28 +48,42 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
-
-        // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
-        let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
-        let query = query.filter(|(renderer, surface)| {
-            let renderer = renderer.enabled();
-            let mesh = meshes.get(&surface.mesh());
-            let buffers = mesh.vertices().layout().contains(M::requirements())
-                && mesh.vertices().len().is_some();
-            renderer && buffers
-        });
-
+        
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(shading.main_camera.unwrap()).unwrap();
         let (camera, camera_location, camera_rotation) = camera_entry
             .as_view::<(&Camera, &Location, &Rotation)>()
             .unwrap();
+        let planes = camera.frustum();
 
-        // Get the main directional light
+        // Get the main directional light (there has to be one for us to render)
         let light_entry = ecs.entry(shading.main_directional_light.unwrap()).unwrap();
         let (directional_light, directional_light_rotation) = light_entry
             .as_view::<(&DirectionalLight, &Rotation)>()
             .unwrap();
+
+        // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
+        let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
+        let query = query.filter(|(renderer, surface)| {            
+            // Check if the renderer is even enabled
+            let enabled = renderer.enabled;
+
+            // Check if the mesh meets the material requirements
+            let mesh = meshes.get(&surface.mesh());
+            let buffers = mesh.vertices().layout().contains(M::requirements())
+                && mesh.vertices().len().is_some();
+
+            // Check if the surface is visible inside the camera's frustum
+            let aabb = if let Some(mut aabb) = mesh.aabb() {
+                //aabb.min = renderer.matrix.mul_point(aabb.min);
+                //aabb.max = renderer.matrix.mul_point(aabb.max);
+                intersects_frustum(&planes, aabb)
+            } else {
+                false
+            };
+            
+            enabled && buffers && aabb
+        });
 
         // Create a new rasterizer so we can draw the objects onto the painter
         let shader = shaders.get_mut(&self.shader);

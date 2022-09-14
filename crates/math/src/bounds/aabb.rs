@@ -1,7 +1,7 @@
 use crate::{Boundable, Movable, SharpVertices, SurfaceArea, Volume};
 
 // An axis aligned bounding box
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct AABB {
     pub min: vek::Vec3<f32>,
     pub max: vek::Vec3<f32>,

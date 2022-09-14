@@ -3,8 +3,8 @@ use cflake_engine::prelude::{vek::Lerp, *};
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
 const SPEED: f32 = 10.0;
-const ROTATION_SMOOTH_SPEED: f32 = 80.0;
-const VELOCITY_SMOOTH_SPEED: f32 = 80.0;
+const ROTATION_SMOOTH_SPEED: f32 = 40.0;
+const VELOCITY_SMOOTH_SPEED: f32 = 40.0;
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {

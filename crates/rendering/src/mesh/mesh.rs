@@ -255,6 +255,11 @@ impl Mesh {
 
         Some(())
     }
+
+    // Fetch the stored AABB bounds
+    pub fn aabb(&self) -> Option<AABB> {
+        self.aabb
+    }
 }
 
 impl Drop for Mesh {

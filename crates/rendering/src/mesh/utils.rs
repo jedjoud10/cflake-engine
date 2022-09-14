@@ -260,7 +260,7 @@ impl MeshUtils {
             for (point_element, min_element) in
                 point.as_slice().iter().zip(min.as_mut_slice().iter_mut())
             {
-                *min_element = f32::max(*min_element, *point_element)
+                *min_element = f32::min(*min_element, *point_element)
             }
         }
 
