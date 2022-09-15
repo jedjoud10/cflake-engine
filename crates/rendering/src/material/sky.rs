@@ -38,6 +38,14 @@ impl<'w> Material<'w> for Sky {
         PrimitiveMode::Triangles { cull: None }
     }
 
+    unsafe fn should_assume_valid() -> bool {
+        true
+    }
+
+    fn should_use_frustum_culling() -> bool {
+        false
+    }
+
     fn set_static_properties(
         uniforms: &mut Uniforms,
         main: &DefaultMaterialResources,
@@ -56,7 +64,7 @@ impl<'w> Material<'w> for Sky {
         _resources: &mut Self::Resources,
         renderer: &Renderer,
     ) {
-        uniforms.set_mat4x4("world_matrix",& renderer.matrix);
+        uniforms.set_mat4x4("world_matrix", &renderer.matrix);
     }
 
     fn set_instance_properties(

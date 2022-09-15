@@ -69,6 +69,4 @@ pub struct RenderedFrameStats {
     pub unique_materials: u32,
     pub material_instances: u32,
     pub rendered_surfaces: u32,
-    pub invisible_surfaces: u32,
-    pub current: bool,
 }

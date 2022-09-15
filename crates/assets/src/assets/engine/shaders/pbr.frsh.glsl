@@ -58,9 +58,9 @@ struct SurfaceData {
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	// Constants
-	float roughness = clamp(surface.mask.r, 0.02, 0.50);
-	float metallic = surface.mask.g;
-	float visibility = min(surface.mask.b, 1.0);
+	float roughness = surface.mask.g;
+	float metallic = surface.mask.b;
+	float visibility = surface.mask.r;
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
 	// Ks and Kd
@@ -76,9 +76,9 @@ vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 
 void main() {
 	// Fetch the textures and their texels
-    vec3 diffuse = texture(albedo, m_tex_coord * scale).xyz;
+    vec3 diffuse = texture(albedo, m_tex_coord * scale).xyz * tint;
 	vec3 bumps = texture(normal, m_tex_coord * scale).xyz * 2.0 - 1.0;
-	vec3 mask = texture(mask, m_tex_coord * scale).xyz * vec3(roughness, metallic, 1 / ambient_occlusion);
+	vec3 mask = texture(mask, m_tex_coord * scale).xyz * vec3(1 / ambient_occlusion, roughness, metallic);
 
     // Calculate the normal mapped bumpiness
 	bumps.xy *= bumpiness;

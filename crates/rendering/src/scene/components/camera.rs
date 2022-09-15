@@ -120,9 +120,15 @@ impl Camera {
     }
 
     // Get the view frustum planes from this camera
-    pub fn frustum(&self) -> [FrustumPlane; 6] {        
-        let columns = (*self.projection_matrix() * *self.view_matrix()).clone().transposed().into_col_arrays();
-        let columns = columns.into_iter().map(vek::Vec4::from).collect::<ArrayVec<vek::Vec4<f32>, 4>>();
+    pub fn frustum(&self) -> [FrustumPlane; 6] {
+        let columns = (*self.projection_matrix() * *self.view_matrix())
+            .clone()
+            .transposed()
+            .into_col_arrays();
+        let columns = columns
+            .into_iter()
+            .map(vek::Vec4::from)
+            .collect::<ArrayVec<vek::Vec4<f32>, 4>>();
 
         // Magic from https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
         // And also from https://gamedev.stackexchange.com/questions/156743/finding-the-normals-of-the-planes-of-a-view-frustum

@@ -9,7 +9,7 @@ pub struct Renderer {
     pub matrix: vek::Mat4<f32>,
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
-    pub enabled: bool,    
+    pub enabled: bool,
 }
 
 impl Default for Renderer {

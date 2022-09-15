@@ -6,12 +6,15 @@ use crate::{
     mesh::{Mesh, Surface},
     painter::Painter,
     prelude::{Display, Region, Shader, Texture, Viewport},
-    scene::{Camera, ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer, FrustumPlane},
+    scene::{
+        Camera, ClusteredShading, DirectionalLight, FrustumPlane, RenderedFrameStats, Renderer,
+    },
 };
 use assets::Assets;
 use ecs::Scene;
-use math::{Location, Rotation, AABB, SharpVertices};
-use std::{marker::PhantomData, any::type_name, time::Instant};
+use math::{Location, Rotation, SharpVertices, AABB};
+use rayon::prelude::ParallelDrainRange;
+use std::{any::type_name, marker::PhantomData, time::Instant};
 use world::{Handle, Storage, World};
 
 // Check if an AABB intersects all the given frustum planes
@@ -23,7 +26,7 @@ pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB, matrix: &vek::
     let corners = [matrix.mul_point(aabb.min), matrix.mul_point(aabb.max)];
     planes.iter().all(|plane| {
         let mut furthest = vek::Vec3::zero();
-        furthest.iter_mut().enumerate().for_each(|(i, e)| {            
+        furthest.iter_mut().enumerate().for_each(|(i, e)| {
             *e = corners[(plane.normal[i] > 0.0) as usize][i];
         });
         let signed = furthest.dot(plane.normal) + plane.distance;
@@ -58,7 +61,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             srgb: M::srgb(),
             blend: M::blend_mode(),
         };
-        
+
         // Get the main camera component (there has to be one for us to render)
         let camera_entry = ecs.entry(shading.main_camera.unwrap()).unwrap();
         let (camera, camera_location, camera_rotation) = camera_entry
@@ -72,9 +75,13 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             .as_view::<(&DirectionalLight, &Rotation)>()
             .unwrap();
 
-        // Find all the surfaces that use this material type (and that have a valid renderer and valid mesh)
+        // Find all the surfaces that use this material type
         let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
-        let query = query.filter(|(renderer, surface)| {            
+        let mut query = query.collect::<Vec<(&Renderer, &Surface<M>)>>();
+
+        // Filter the query in multiple threads
+        let i = Instant::now();
+        query.retain(|(renderer, surface)| {
             // Check if the renderer is even enabled
             let enabled = renderer.enabled;
 
@@ -89,10 +96,8 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
             } else {
                 false
             };
-            
-            let render = enabled && buffers && aabb;
-            stats.invisible_surfaces += !render as u32;
-            render
+
+            enabled && buffers && aabb
         });
 
         // Create a new rasterizer so we can draw the objects onto the painter

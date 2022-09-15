@@ -3,8 +3,6 @@ use cflake_engine::prelude::{vek::Lerp, *};
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
 const SPEED: f32 = 10.0;
-const ROTATION_SMOOTH_SPEED: f32 = 40.0;
-const VELOCITY_SMOOTH_SPEED: f32 = 40.0;
 
 // Create a game that will draw a simple mesh onto the screen and a movable camera
 fn main() {
@@ -35,13 +33,12 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.3, 10000.0, 16.0 / 9.0);
-    let _camera = ecs.insert((
-        camera,
-        Location::at_z(5.0),
-        Rotation::default(),
-        Velocity::default(),
-    ));
+    let camera = Camera::new(90.0, 0.3, 1000.0, 16.0 / 9.0);
+    let _camera = ecs.insert((camera, Location::at_z(5.0), Rotation::default()));
+
+    asset!(&mut assets, "assets/user/diffuse.png");
+    asset!(&mut assets, "assets/user/normal.png");
+    asset!(&mut assets, "assets/user/mask.png");
 
     // We will also register some new keybinds for the camera controller
     keyboard.bind("forward", Key::W);
@@ -59,7 +56,7 @@ fn init(world: &mut World) {
     // Create the default albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "engine/textures/missing.png",
+            "user/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -68,7 +65,7 @@ fn init(world: &mut World) {
     // Create the default normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "engine/textures/bumps.png",
+            "user/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -77,53 +74,81 @@ fn init(world: &mut World) {
     // Create the default mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "engine/textures/mask.png",
+            "user/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
     let mask_map = mask_maps.insert(mask_map);
-    
+
     // Create the default cube primitive mesh
-    let cube =  meshes.insert(
+    let cube = meshes.insert(
         assets
             .load_with::<Mesh>(
                 "engine/meshes/cube.obj",
                 (&mut ctx, MeshImportSettings::default()),
-            ).unwrap(),
+            )
+            .unwrap(),
     );
 
+    /*/
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard {
         albedo_map,
         normal_map,
         mask_map,
-        bumpiness: 0.2,
+        bumpiness: 1.0,
         roughness: 1.0,
         ambient_occlusion: 1.0,
         metallic: 1.0,
-        scale: vek::Vec2::broadcast(3.0),
+        scale: vek::Vec2::broadcast(1.0),
         tint: vek::Rgb::white(),
     });
+    */
 
     // Create a new material surface for rendering
     let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
 
-    for x in 0..200 {
-        for y in 0..200 {
+    for x in 0..20 {
+        for y in 0..20 {
             for z in 0..1 {
+                // Create a new material instance with the normal map texture
+                let material = standard_materials.insert(Standard {
+                    albedo_map: albedo_map.clone(),
+                    normal_map: normal_map.clone(),
+                    mask_map: mask_map.clone(),
+                    bumpiness: 1.6,
+                    roughness: x as f32 / 20.0,
+                    ambient_occlusion: 1.0,
+                    metallic: y as f32 / 20.0,
+                    scale: vek::Vec2::broadcast(1.0),
+                    tint: vek::Rgb::white(),
+                });
+
                 let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-                ecs.insert((surface, Renderer::default(), Location::at_xyz(x as f32, y as f32, z as f32)));
+                ecs.insert((
+                    surface,
+                    Renderer::default(),
+                    Location::at_xyz(x as f32, y as f32, z as f32),
+                ));
             }
         }
     }
-    
 
     // Load in the texture
     let texture = albedo_maps.insert(
         assets
             .load_with::<AlbedoMap>(
                 "engine/textures/sky_gradient.png",
-                (&mut ctx, TextureImportSettings::default()),
+                (
+                    &mut ctx,
+                    TextureImportSettings {
+                        sampling: Sampling {
+                            filter: Filter::Linear,
+                            wrap: Wrap::ClampToEdge,
+                        },
+                        ..Default::default()
+                    },
+                ),
             )
             .unwrap(),
     );
@@ -159,13 +184,9 @@ fn init(world: &mut World) {
     let surface = Surface::new(sphere, material, pipeid);
 
     // Insert it as a new entity
-    ecs.insert((renderer, surface, Scale::from(vek::Vec3::one() * 5000.0)));
+    ecs.insert((renderer, surface, Scale::from(vek::Vec3::one() * 400.0)));
 }
 
-#[derive(Component, Default)]
-struct Velocity {
-    velocity: vek::Vec3<f32>,
-}
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let mut postprocessing = world.get_mut::<PostProcessing>().unwrap();
@@ -202,46 +223,33 @@ fn update(world: &mut World) {
 
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them
-        let (location, rotation, velocity) = entry
-            .as_query::<(&mut Location, &mut Rotation, &mut Velocity)>()
-            .unwrap();
+        let (location, rotation) = entry.as_query::<(&mut Location, &mut Rotation)>().unwrap();
 
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
-        let mut temp = vek::Vec3::<f32>::default();
+        let mut velocity = vek::Vec3::<f32>::default();
 
         // Update the velocity in the forward and backward directions
         if keyboard.held("forward") {
-            temp += forward;
+            velocity += forward;
         } else if keyboard.held("backward") {
-            temp += -forward;
+            velocity += -forward;
         }
 
         // Update the velocity in the left and right directions
         if keyboard.held("left") {
-            temp += -right;
+            velocity += -right;
         } else if keyboard.held("right") {
-            temp += right;
+            velocity += right;
         }
 
-        velocity.velocity = vek::Vec3::lerp_unclamped_precise(
-            velocity.velocity,
-            temp,
-            time.delta_f32() * VELOCITY_SMOOTH_SPEED,
-        );
-
         // Update the location with the new velocity
-        **location += velocity.velocity * time.delta_f32() * SPEED;
+        **location += velocity * time.delta_f32() * SPEED;
 
         // Calculate a new rotation and apply it
         let pos = mouse.position();
-        let rot = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
+        **rotation = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
             * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
-        **rotation = vek::Quaternion::lerp_unclamped_precise(
-            **rotation,
-            rot,
-            time.delta_f32() * ROTATION_SMOOTH_SPEED,
-        );
     }
 }

@@ -21,7 +21,7 @@ use arrayvec::ArrayVec;
 use assets::Assets;
 use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::{IntoMatrix, Location, Rotation, Scale, AABB, SharpVertices};
+use math::{IntoMatrix, Location, Rotation, Scale, SharpVertices, AABB};
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -145,8 +145,6 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         unique_materials: 0,
         material_instances: 0,
         rendered_surfaces: 0,
-        invisible_surfaces: 0,
-        current: false,
     };
 
     // Drop the old write/read handles
@@ -217,7 +215,6 @@ fn rendering(world: &mut World) {
     // Update the stats resources
     let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
     *old_stats = stats;
-    old_stats.current = true;
 
     // Render the quad onto the screen now
     let mut _compositor = world.get_mut::<Compositor>().unwrap();
@@ -263,8 +260,6 @@ fn rendering(world: &mut World) {
 
     // Render the screen quad
     rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
-
-    println!("{}", stats.rendered_surfaces);
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -368,7 +363,7 @@ fn main_directional_light(world: &mut World) {
 fn main_sky_sphere(world: &mut World) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-    
+
     // Fetch the main sky sphere from the scene renderer
     if let Some(entity) = shading.skysphere_entity {
         // Disable the entity in the resource if it got removed
@@ -380,9 +375,7 @@ fn main_sky_sphere(world: &mut World) {
         };
     } else {
         // Set the main sky sphere if we did not find one
-        let mut query = ecs
-            .view_with_id::<(&Renderer, &Surface<Sky>)>()
-            .unwrap();
+        let mut query = ecs.view_with_id::<(&Renderer, &Surface<Sky>)>().unwrap();
         if let Some((_, entity)) = query.next() {
             shading.skysphere_entity = Some(entity);
         }
@@ -421,7 +414,6 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
-    
     // Insert the directional sky sphere update event
     reg.insert_with(
         main_sky_sphere,
