@@ -1,4 +1,4 @@
-use super::{BufferView, BufferViewMut, Persistent, UntypedBufferFormat};
+use super::{BufferView, BufferViewMut, Persistent, UntypedBufferFormat, PersistentAccessor};
 use crate::context::{Context, Shared, ToGlName, ToGlTarget};
 use std::alloc::Layout;
 use std::any::TypeId;
@@ -637,7 +637,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Map the whole buffer persistently for reading/writing
-    pub fn into_persistent(self) -> Option<Persistent<T, TARGET>> {
+    pub fn into_persistent(self) -> Option<(Persistent<T, TARGET>, PersistentAccessor<T, TARGET>)> {
         if !self.can_convert_to_persistent() {
             return None;
         }
@@ -656,13 +656,22 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
             ) as *mut T
         };
 
-        Some(Persistent {
+        let used = Arc::new(AtomicBool::new(false));
+
+        let accessor = PersistentAccessor {
+            buf: self.buffer,
+            len: self.len(),
+            used: used.clone(),
+            ptr,
+        };
+
+        let owner = Persistent {
             buf: Some(self),
             ptr,
-            ranges: Vec::new(),
-            counter: 0,
-            active: Arc::new(AtomicBool::new(true)),
-        })
+            used: used.clone(),
+        };
+
+        Some((owner, accessor))
     }
 }
 

@@ -11,7 +11,6 @@ fn main() {
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
         .insert_update(update)
-        .set_window_fullscreen(true)
         .execute();
 }
 
@@ -55,59 +54,72 @@ fn init(world: &mut World) {
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
     // Create the default albedo map texture
+    /*/
     let albedo_map = assets
         .load_with::<AlbedoMap>(
             "user/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
+    */
+    let albedo_map = AlbedoMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec4::new(255, 0, 0, 0)])).unwrap();
     let albedo_map = albedo_maps.insert(albedo_map);
 
     // Create the default normal map texture
+    /*
     let normal_map = assets
         .load_with::<NormalMap>(
             "user/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
+    */
+    let normal_map = NormalMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec3::new(127, 127, 255)])).unwrap();
     let normal_map = normal_maps.insert(normal_map);
-
+    
     // Create the default mask map texture
+    /*
     let mask_map = assets
         .load_with::<MaskMap>(
             "user/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
+    */
+    let mask_map = MaskMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec4::new(255, 255, 255, 0)])).unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
     let cube = meshes.insert(
         assets
             .load_with::<Mesh>(
-                "engine/meshes/cube.obj",
+                "engine/meshes/sphere.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
             .unwrap(),
     );
 
-    // Create a new material instance with the normal map texture
-    let material = standard_materials.insert(Standard {
-        albedo_map,
-        normal_map,
-        mask_map,
-        bumpiness: 1.0,
-        roughness: 0.2,
-        ambient_occlusion: 1.0,
-        metallic: 1.0,
-        scale: vek::Vec2::broadcast(1.0),
-        tint: vek::Rgb::white(),
-    });
-
-    // Create a new material surface for rendering
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-    ecs.insert((surface, Renderer::default()));
+    for x in 0..7 {
+        for y in 0..7 {
+            // Create a new material instance with the normal map texture
+            let material = standard_materials.insert(Standard {
+                albedo_map: albedo_map.clone(),
+                normal_map: normal_map.clone(),
+                mask_map: mask_map.clone(),
+                bumpiness: 1.0,
+                roughness: x as f32 / 7.0,
+                ambient_occlusion: 1.0,
+                metallic: y as f32 / 7.0,
+                scale: vek::Vec2::broadcast(1.0),
+                tint: vek::Rgb::white(),
+            });
+        
+            // Create a new material surface for rendering
+            let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
+            let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+            ecs.insert((surface, Renderer::default(), Location::at_xyz(x as f32, y as f32, 0.0)));
+        }
+    }
 
     // Load in the texture
     let texture = albedo_maps.insert(

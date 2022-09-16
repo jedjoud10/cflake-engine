@@ -3,16 +3,15 @@
 // Normal distribution function
 // GGX/Trowbridge-reitz model
 float ndf(float roughness, vec3 n, vec3 h) {
-	float a = pow(roughness, 2);
-	float a2 = a*a;
+	float a = roughness * roughness;
+	float a2 = a * a;
 
-	float n_dot_h = max(dot(n, h), 0.0);
-	float n_dot_h_2 = pow(n_dot_h, 2);
-	
-	float num = a2;
-	float denom = n_dot_h_2 * (a2 - 1) + 1;
-	denom = PI * denom * denom;
-	return num / denom;
+	float n_dot_h = max(dot(n, h), 0.0);	
+	float n_dot_h2 = n_dot_h * n_dot_h;	
+
+	float semi_denom = n_dot_h2 * (a2 - 1.0) + 1.0;
+	float denom = PI * semi_denom * semi_denom;
+	return a2 / denom;
 }
 
 // Schlick/GGX model
@@ -31,14 +30,13 @@ float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
 
 // Fresnel function
 vec3 fresnel(vec3 f0, vec3 v, vec3 h, vec3 n) {
-	float prod = max(dot(v, h), 0);
-	float clamped = clamp(1 - prod, 0, 1);
-	return f0 + (1 - f0) * pow(clamped, 5);
+	float cosTheta = max(dot(v, h), 0);
+	return f0 + (1.0 - f0) * pow (1.0 - cosTheta, 5.0);
 }
 
 // Cook-torrence model for specular
 vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
 	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h, n);
-	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0);
-	return num / max(denom, 0.001);
+	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.0001;
+	return num / denom;
 }

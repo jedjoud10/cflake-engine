@@ -260,6 +260,7 @@ fn rendering(world: &mut World) {
 
     // Render the screen quad
     rasterizer.draw(&compositor.quad, uniforms.validate().unwrap());
+    ctx.flush();
 }
 
 // Window event for updating the current main canvas and world state if needed
@@ -291,7 +292,7 @@ fn clear(world: &mut World) {
     window.clear(Some(vek::Rgb::black()), Some(1.0), None);
 
     // Clear the screen textures
-    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    let shading = world.get_mut::<ClusteredShading>().unwrap();
     shading
         .color_tex
         .mip_mut(0)
@@ -361,18 +362,15 @@ fn main_directional_light(world: &mut World) {
 
 // Update event that will set the main skysphere
 fn main_sky_sphere(world: &mut World) {
-    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let ecs = world.get_mut::<Scene>().unwrap();
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
 
     // Fetch the main sky sphere from the scene renderer
     if let Some(entity) = shading.skysphere_entity {
-        // Disable the entity in the resource if it got removed
-        let mut entry = if let Some(entry) = ecs.entry_mut(entity) {
-            entry
-        } else {
+        // Disable the main directional shading light if it got removed
+        if !ecs.contains(entity) {
             shading.skysphere_entity = None;
-            return;
-        };
+        }
     } else {
         // Set the main sky sphere if we did not find one
         let mut query = ecs.view_with_id::<(&Renderer, &Surface<Sky>)>().unwrap();

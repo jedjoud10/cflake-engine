@@ -35,6 +35,7 @@ pub enum BufferView<'a, T: Shared, const TARGET: u32> {
         ptr: *const T,
         range: (usize, usize),
         accessor: &'a PersistentAccessor<T, TARGET>,
+        used: Arc<AtomicBool>,
     },
 }
 
@@ -68,6 +69,9 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferView<'a, T, TARGET> {
             BufferView::PersistentlyMapped { buf, .. } => unsafe {
                 gl::UnmapNamedBuffer(buf.name());
             },
+            BufferView::PersistentAccessor { used, .. } => {
+                used.store(false, Ordering::Relaxed)
+            },
             _ => {}
         }
     }
@@ -95,6 +99,7 @@ pub enum BufferViewMut<'a, T: Shared, const TARGET: u32> {
         ptr: *mut T,
         range: (usize, usize),
         accessor: &'a mut PersistentAccessor<T, TARGET>,
+        used: Arc<AtomicBool>,
     },
 }
 
@@ -143,7 +148,10 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
             },
             BufferViewMut::Copied { buf, vec, .. } => {
                 buf.write(&vec);
-            }
+            },
+            BufferViewMut::PersistentAccessor { used, .. } => {
+                used.store(false, Ordering::Relaxed)
+            },
             _ => {}
         }
     }
@@ -154,31 +162,33 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
 pub struct Persistent<T: Shared, const TARGET: u32> {
     pub(super) buf: Option<Buffer<T, TARGET>>,
     pub(super) ptr: *mut T,
-    pub(super) ranges: Vec<(usize, usize)>,
-    pub(super) counter: u32,
-    pub(super) active: Arc<AtomicBool>,
+    pub(super) used: Arc<AtomicBool>,
 }
 
-// This will be able to read / write to specific parts to a persistent buffer using multiple threads
+// This will be able to read / write to specific parts to a persistent buffer in another thread
 // TODO: SLightly rename this to be more correct, or rewrite the persistent buffer API completely
-// TODO: Handle cases when the persistent buffer gets deallocated mmoent
 pub struct PersistentAccessor<T: Shared, const TARGET: u32> {
-    buf: u32,
-    idx: u32,
-    ptr: *mut T,
-    range: (usize, usize),
+    pub(super) buf: u32,
+    pub(super) len: usize,
+    pub(super) used: Arc<AtomicBool>,
+    pub(super) ptr: *mut T,
 }
 unsafe impl<T: Shared, const TARGET: u32> Send for PersistentAccessor<T, TARGET> {}
 unsafe impl<T: Shared, const TARGET: u32> Sync for PersistentAccessor<T, TARGET> {}
 
 impl<T: Shared, const TARGET: u32> Persistent<T, TARGET> {
     // Unmap the buffer, and return it's underlying buffer value
-    pub fn unmap(mut self) -> Buffer<T, TARGET> {
+    // This will return None if the buffer is in use currently in another thread
+    pub fn unmap(mut self) -> Option<Buffer<T, TARGET>> {
+        if self.used.load(Ordering::Relaxed) {
+           return None 
+        }
+
         let buf = self.buf.take().unwrap();
         unsafe {
             gl::UnmapNamedBuffer(buf.name());
         }
-        buf
+        Some(buf)
     }
 
     /*
@@ -192,66 +202,27 @@ impl<T: Shared, const TARGET: u32> Persistent<T, TARGET> {
         &mut self.buf
     }
     */
-
-    // Check if a specific is already in use by a shared viewer
-    fn is_range_in_use(&self, range: Option<(usize, usize)>) -> bool {
-        if let Some((start1, end1)) = range {
-            self.ranges
-                .iter()
-                .any(|&(start2, end2)| start2 <= end1 && end2 >= start1)
-        } else {
-            return false;
-        }
-    }
-
-    // Create a new range that we can read / write to from another thread
-    // This function will return None if the range was already used persistently somewhere else
-    pub fn accessor_range(
-        &mut self,
-        range: impl RangeBounds<usize>,
-    ) -> Option<PersistentAccessor<T, TARGET>> {
-        let range = self.buf.as_ref().unwrap().convert_range_bounds(range);
-        let range = if !self.is_range_in_use(range) {
-            range.unwrap()
-        } else {
-            return None;
-        };
-
-        self.counter += 1;
-        Some(PersistentAccessor {
-            buf: self.buf.as_ref().unwrap().name(),
-            idx: self.counter - 1,
-            ptr: self.ptr,
-            range,
-        })
-    }
-
-    // Create a persistent accessor that will span over the whole buffer
-    pub fn accessor(&mut self) -> Option<PersistentAccessor<T, TARGET>> {
-        self.accessor_range(..)
-    }
 }
 
 impl<T: Shared, const TARGET: u32> PersistentAccessor<T, TARGET> {
-    // Get the range indices that we fetched from the buffer
-    pub fn range(&self) -> (usize, usize) {
-        self.range
-    }
-
     // Create an immutable buffer view that we can use to read from the persistent buffer's subregion
     pub fn as_view(&self) -> BufferView<T, TARGET> {
+        self.used.store(true, Ordering::Relaxed);
         BufferView::PersistentAccessor {
             ptr: self.ptr,
-            range: self.range,
+            range: (0, self.len),
+            used: self.used.clone(),
             accessor: self,
         }
     }
 
     // Create a mutable buffer view that we can use to read/write from/to the persistent buffer's subregion
     pub fn as_mut_view(&mut self) -> BufferViewMut<T, TARGET> {
+        self.used.store(true, Ordering::Relaxed);
         BufferViewMut::PersistentAccessor {
             ptr: self.ptr,
-            range: self.range,
+            range: (0, self.len),
+            used: self.used.clone(),
             accessor: self,
         }
     }
@@ -260,10 +231,12 @@ impl<T: Shared, const TARGET: u32> PersistentAccessor<T, TARGET> {
 impl<T: Shared, const TARGET: u32> Drop for Persistent<T, TARGET> {
     fn drop(&mut self) {
         if let Some(buf) = &self.buf {
+            let used = self.used.load(Ordering::Relaxed);
+            assert!(!used, "Cannot unmap the buffer, it is still in use in another thread");
+            
             unsafe {
                 gl::UnmapNamedBuffer(buf.name());
             }
-            self.active.fetch_and(false, Ordering::Relaxed);
         }
     }
 }

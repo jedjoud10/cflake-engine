@@ -184,7 +184,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         ))
     }
 
-    // Get a single mip level from the texture, mutably
+    // Get a single mip level from the texture, mutably (uses internal mutability pattern)
     // This will fail if the mip level is currently being used mutably or being read from
     fn mip_mut(&self, level: u8) -> Option<MipLevelMut<Self>> {
         if level > self.levels() {
