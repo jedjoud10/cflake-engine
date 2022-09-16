@@ -198,61 +198,6 @@ impl<T: Texel> Texture for Texture2D<T> {
     }
 }
 
-// The raw texture will contain all the raw bytes loaded in from an image file
-pub struct RawTexture2D<T: ImageTexel> {
-    dimensions: vek::Extent2<u16>,
-    import: TextureImportSettings,
-    texels: Vec<T::Storage>,
-}
-
-impl<T: ImageTexel> RawTexture2D<T> {
-    // The settings we used to import this raw texture
-    pub fn settings(&self) -> TextureImportSettings {
-        self.import
-    }
-
-    // Get the width of the texture
-    pub fn width(&self) -> u16 {
-        self.dimensions.w
-    }
-
-    // Get the height of the texture
-    pub fn height(&self) -> u16 {
-        self.dimensions.h
-    }
-
-    // Get an immutable reference to the texels
-    pub fn texels(&self) -> &[T::Storage] {
-        &self.texels
-    }
-
-    // Get a mutable reference to the texels
-    pub fn texels_mut(&mut self) -> &mut [T::Storage] {
-        &mut self.texels
-    }
-}
-
-impl<'a, T: ImageTexel> Asset<'a> for RawTexture2D<T> {
-    type Args = TextureImportSettings;
-
-    fn extensions() -> &'static [&'static str] {
-        &["png", "jpg"]
-    }
-
-    fn deserialize(data: assets::Data, settings: Self::Args) -> Self {
-        let image = image::load_from_memory(data.bytes()).unwrap();
-        let image = image.flipv();
-        let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
-        let texels = T::to_image_texels(image);
-
-        RawTexture2D {
-            dimensions,
-            import: settings,
-            texels,
-        }
-    }
-}
-
 impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
     type Args = (&'a mut Context, TextureImportSettings);
 
@@ -262,14 +207,17 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
         let (ctx, settings) = args;
-        let raw = RawTexture2D::<T>::deserialize(data, settings);
+        let image = image::load_from_memory(data.bytes()).unwrap();
+        let image = image.flipv();
+        let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
+        let texels = T::to_image_texels(image);
         Self::new(
             ctx,
             settings.mode,
-            raw.dimensions,
+            dimensions,
             settings.sampling,
             settings.mipmaps,
-            Some(raw.texels()),
+            Some(texels.as_slice()),
         )
         .unwrap()
     }

@@ -11,6 +11,7 @@ fn main() {
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
         .insert_update(update)
+        .set_window_fullscreen(true)
         .execute();
 }
 
@@ -90,49 +91,23 @@ fn init(world: &mut World) {
             .unwrap(),
     );
 
-    /*/
     // Create a new material instance with the normal map texture
     let material = standard_materials.insert(Standard {
         albedo_map,
         normal_map,
         mask_map,
         bumpiness: 1.0,
-        roughness: 1.0,
+        roughness: 0.2,
         ambient_occlusion: 1.0,
         metallic: 1.0,
         scale: vek::Vec2::broadcast(1.0),
         tint: vek::Rgb::white(),
     });
-    */
 
     // Create a new material surface for rendering
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
-
-    for x in 0..20 {
-        for y in 0..20 {
-            for z in 0..1 {
-                // Create a new material instance with the normal map texture
-                let material = standard_materials.insert(Standard {
-                    albedo_map: albedo_map.clone(),
-                    normal_map: normal_map.clone(),
-                    mask_map: mask_map.clone(),
-                    bumpiness: 1.6,
-                    roughness: x as f32 / 20.0,
-                    ambient_occlusion: 1.0,
-                    metallic: y as f32 / 20.0,
-                    scale: vek::Vec2::broadcast(1.0),
-                    tint: vek::Rgb::white(),
-                });
-
-                let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-                ecs.insert((
-                    surface,
-                    Renderer::default(),
-                    Location::at_xyz(x as f32, y as f32, z as f32),
-                ));
-            }
-        }
-    }
+    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+    ecs.insert((surface, Renderer::default()));
 
     // Load in the texture
     let texture = albedo_maps.insert(
@@ -189,16 +164,21 @@ fn init(world: &mut World) {
 
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
-    let mut postprocessing = world.get_mut::<PostProcessing>().unwrap();
+    let stats = world.get::<RenderedFrameStats>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let mut ui = world.get_mut::<UserInterface>().unwrap();
     let ctx = ui.as_mut().as_mut();
-    egui::Window::new("Test window").show(ctx, |ui| {
-        ui.add(egui::DragValue::new(&mut postprocessing.exposure).speed(0.1)); // 02
-        ui.add(egui::Slider::new(
-            &mut postprocessing.tonemapping_strength,
-            0.0f32..=1.0,
-        ));
-        ui.add(egui::DragValue::new(&mut postprocessing.gamma).speed(0.1));
+    egui::Window::new("Stats").show(ctx, |ui| {
+        ui.heading("Timing");
+        ui.label(format!("Delta Time MS: {}", (time.delta_f32() * 1000.0).round()));
+        ui.label(format!("Startup Timer: {}", time.secs_since_startup_f32().round()));
+
+        ui.heading("Rendering Engine");
+        ui.label(format!("Unique Materials: {}", stats.unique_materials));
+        ui.label(format!("Material Instances: {}", stats.material_instances));
+        ui.label(format!("Rendered Surfaces: {}", stats.rendered_surfaces));
+        ui.label(format!("Triangles: {}", stats.tris));
+        ui.label(format!("Vertices: {}", stats.verts));
     });
 
     let shading = world.get::<ClusteredShading>().unwrap();

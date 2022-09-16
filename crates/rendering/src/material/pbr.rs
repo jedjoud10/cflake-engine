@@ -52,10 +52,6 @@ impl<'w> Material<'w> for Standard {
         true
     }
 
-    fn primitive_mode() -> crate::display::PrimitiveMode {
-        crate::display::PrimitiveMode::Triangles { cull: None }
-    }
-
     fn fetch_resources(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();

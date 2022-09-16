@@ -52,6 +52,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         let shading = &mut *_shading;
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
+        stats.unique_materials += 1;
 
         // How exactly we should rasterize the surfaces
         let settings = RasterSettings {
