@@ -1,6 +1,8 @@
 use ahash::AHashMap;
+use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 use nohash_hasher::NoHashHasher;
+use world::Storage;
 use std::{
     any::TypeId,
     cell::RefCell,
@@ -15,7 +17,7 @@ use std::{
 use super::get_static_str;
 use crate::{
     display::{PrimitiveMode, RasterSettings, Viewport},
-    pipeline::{CreatePipeline, PipeId, Pipeline},
+    pipeline::{CreatePipeline, PipeId, Pipeline}, material::Material, shader::Shader,
 };
 
 // An abstract wrapper around the whole OpenGL context
@@ -63,10 +65,11 @@ impl Context {
     }
 
     // Register a new pipeline with the specified init settings
-    pub fn init_pipe_id<'a, P: Pipeline + CreatePipeline<'a>>(
+    pub fn register_material<'a, M: for<'w> Material<'w>>(
         &mut self,
-        init: &mut P::Args,
-    ) -> PipeId<P> {
+        storage: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> MaterialId<P> {
         let key = TypeId::of::<P>();
         if !self.pipelines.contains_key(&key) {
             let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(self, init));
