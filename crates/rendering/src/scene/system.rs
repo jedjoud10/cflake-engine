@@ -9,7 +9,6 @@ use crate::{
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::{Mesh, Surface},
     painter::Painter,
-    pipeline::{Pipeline, SpecializedPipeline},
     prelude::{
         Depth, Filter, FragmentStage, MipMapSetting, Processor, Ranged, Sampling, ShaderCompiler,
         Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
@@ -171,7 +170,7 @@ fn render_surfaces(world: &mut World) {
 
     // Render the pipelines one by one
     for render in pipelines {
-        render.render(world);
+        render(world);
     }
 
     // Render the quad onto the screen now

@@ -1,6 +1,5 @@
 use super::Mesh;
-use crate::material::Material;
-use crate::pipeline::{PipeId, SpecializedPipeline};
+use crate::material::{Material, MaterialId};
 use ecs::Component;
 
 use math::AABB;
@@ -15,7 +14,7 @@ pub struct Surface<M: for<'w> Material<'w>> {
     material: Handle<M>,
 
     // This does nothing and it has a size of 0, but let's keep it for clarity
-    id: PipeId<SpecializedPipeline<M>>,
+    id: MaterialId<M>,
 }
 
 impl<M: for<'w> Material<'w>> Surface<M> {
@@ -23,7 +22,7 @@ impl<M: for<'w> Material<'w>> Surface<M> {
     pub fn new(
         mesh: Handle<Mesh>,
         material: Handle<M>,
-        id: PipeId<SpecializedPipeline<M>>,
+        id:MaterialId<M>,
     ) -> Self {
         Self { mesh, material, id }
     }

@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use assets::Assets;
 
 use math::{Location, Rotation};
@@ -23,6 +25,15 @@ pub struct DefaultMaterialResources<'a> {
     pub(crate) directional_light: &'a DirectionalLight,
     pub(crate) directional_light_rotation: &'a Rotation,
     pub(crate) window: &'a Window,
+}
+
+// Material ID is used to make sure the user has initialized the proper material pipeline
+pub struct MaterialId<M: for<'w> Material<'w>>(pub(crate) PhantomData<M>);
+
+impl<M: for<'w> Material<'w>> Clone for MaterialId<M> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
 }
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen

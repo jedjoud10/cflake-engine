@@ -7,7 +7,7 @@ use crate::{
     buffer::{UniformBuffer, ComputeStorage, BufferMode},
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, pipeline::SpecializedPipeline, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
 };
 
 use super::PointLight;
@@ -60,9 +60,8 @@ impl ClusteredShading {
         .unwrap();
     
         // Create the default pipelines
-        let mut init = (shaders, assets);
-        ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
-        ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
+        ctx.register_material::<Standard>(shaders, assets);
+        ctx.register_material::<Sky>(shaders, assets);
     
         // Create the clustered shading rendererer
         let clustered_shading = ClusteredShading {

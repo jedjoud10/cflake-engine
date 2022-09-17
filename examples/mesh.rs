@@ -107,7 +107,7 @@ fn init(world: &mut World) {
     });
 
     // Create a new material surface for rendering
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
+    let pipeid = ctx.material_id::<Standard>().unwrap();    
     let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
     ecs.insert((surface, Renderer::default()));
 
@@ -141,7 +141,7 @@ fn init(world: &mut World) {
 
     // Create the default Sky material pipeline and default Sky sphere surface
     let material = sky_materials.insert(material);
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Sky>>().unwrap();
+    let pipeid = ctx.material_id::<Sky>().unwrap();
     let renderer = Renderer::default();
     let sphere = assets
         .load_with::<Mesh>(
