@@ -1,6 +1,4 @@
-mod keyboard;
-mod mouse;
+mod input;
 mod system;
-pub use keyboard::*;
-pub use mouse::*;
+pub use input::*;
 pub use system::*;

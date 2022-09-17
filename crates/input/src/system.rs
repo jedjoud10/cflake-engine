@@ -1,4 +1,4 @@
-use crate::{KeyState, Keyboard, Mouse};
+use crate::{KeyState, Axis, Input};
 use glutin::event::{DeviceEvent, ElementState};
 use world::{Events, Init, Stage, Update, World};
 
@@ -6,30 +6,27 @@ use world::{Events, Init, Stage, Update, World};
 pub fn system(events: &mut Events) {
     // Init event (called once at the start of program)
     fn init(world: &mut World) {
-        world.insert(Keyboard {
-            binds: Default::default(),
+        world.insert(Input {
+            key_bindings: Default::default(),
             keys: Default::default(),
-        });
-
-        world.insert(Mouse {
-            scroll_delta: 0.0,
-            scroll: 0.0,
-            pos_delta: Default::default(),
-            pos: Default::default(),
+            axis_bindings: Default::default(),
+            axii: Default::default(),
         });
     }
 
     // Glutin window event (called by handler when needed)
     fn event(world: &mut World, ev: &DeviceEvent) {
-        let mut keyboard = world.get_mut::<Keyboard>().unwrap();
-        let mut mouse = world.get_mut::<Mouse>().unwrap();
-
+        let mut input = world.get_mut::<Input>().unwrap();
         match ev {
             // Update mouse position delta and summed  pos
             DeviceEvent::MouseMotion { delta } => {
                 let delta = vek::Vec2::<f64>::from(*delta).as_::<f32>();
-                mouse.pos += delta;
-                mouse.pos_delta = delta;
+                input.axii.insert(Axis::MousePositionDeltaX, delta.x);
+                input.axii.insert(Axis::MousePositionDeltaY, delta.y);
+                let x = input.axii.entry(Axis::MousePositionX).or_insert(0.0);
+                *x += delta.x;
+                let y = input.axii.entry(Axis::MousePositionY).or_insert(0.0);
+                *y += delta.y;
             }
 
             // Update mouse wheel delta and summed value
@@ -38,14 +35,16 @@ pub fn system(events: &mut Events) {
                     glutin::event::MouseScrollDelta::LineDelta(_, y) => *y,
                     glutin::event::MouseScrollDelta::PixelDelta(physical) => physical.x as f32,
                 };
-                mouse.scroll += delta;
-                mouse.scroll_delta = delta;
+
+                input.axii.insert(Axis::MouseScrollDelta, delta);
+                let scroll = input.axii.entry(Axis::MouseScroll).or_insert(0.0);
+                *scroll += delta;
             }
 
             // Update keyboard key states
             DeviceEvent::Key(key) => {
                 if let Some(keycode) = key.virtual_keycode {
-                    match keyboard.keys.entry(keycode) {
+                    match input.keys.entry(keycode) {
                         std::collections::hash_map::Entry::Occupied(mut current) => {
                             // Check if the key is "down" (either pressed or held)
                             let down = match *current.get() {
@@ -71,7 +70,7 @@ pub fn system(events: &mut Events) {
 
     // Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
     fn update(world: &mut World) {
-        let mut keyboard = world.get_mut::<Keyboard>().unwrap();
+        let mut keyboard = world.get_mut::<Input>().unwrap();
         for (_, state) in keyboard.keys.iter_mut() {
             *state = match state {
                 crate::KeyState::Pressed => KeyState::Held,

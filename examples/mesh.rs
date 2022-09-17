@@ -29,7 +29,7 @@ fn init(world: &mut World) {
 
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
-    let mut keyboard = world.get_mut::<Keyboard>().unwrap();
+    let mut input = world.get_mut::<Input>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
@@ -41,10 +41,13 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/mask.png");
 
     // We will also register some new keybinds for the camera controller
-    keyboard.bind("forward", Key::W);
-    keyboard.bind("backward", Key::S);
-    keyboard.bind("left", Key::A);
-    keyboard.bind("right", Key::D);
+    input.bind_key("forward", Key::W);
+    input.bind_key("backward", Key::S);
+    input.bind_key("left", Key::A);
+    input.bind_key("right", Key::D);
+    input.bind_axis("x rotation", Axis::MousePositionX);
+    input.bind_axis("y rotation", Axis::MousePositionY);
+    
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
@@ -53,36 +56,31 @@ fn init(world: &mut World) {
     };
     ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
 
-    // Create the default albedo map texture
-    
+    // Load the albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
             "user/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
-    //let albedo_map = AlbedoMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec4::new(255, 0, 0, 0)])).unwrap();
     let albedo_map = albedo_maps.insert(albedo_map);
 
-    // Create the default normal map texture
+    // Load the normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
             "user/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
-    //let normal_map = NormalMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec3::new(127, 127, 255)])).unwrap();
     let normal_map = normal_maps.insert(normal_map);
     
-    // Create the default mask map texture
+    // Load the mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
             "user/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
-    
-    //let mask_map = MaskMap::new(&mut ctx, TextureMode::Static, vek::Extent2::one(), Sampling::default(), MipMapSetting::Disabled, Some(&[vek::Vec4::new(255, 255, 255, 0)])).unwrap();
     let mask_map = mask_maps.insert(mask_map);
 
     // Create the default cube primitive mesh
@@ -95,27 +93,23 @@ fn init(world: &mut World) {
             .unwrap(),
     );
 
-    for x in 1..7 {
-        for y in 1..7 {
-            // Create a new material instance with the normal map texture
-            let material = standard_materials.insert(Standard {
-                albedo_map: albedo_map.clone(),
-                normal_map: normal_map.clone(),
-                mask_map: mask_map.clone(),
-                bumpiness: 0.8,
-                roughness: x as f32 / 7.0,
-                ambient_occlusion: 1.0,
-                metallic: y as f32 / 7.0,
-                scale: vek::Vec2::broadcast(1.0),
-                tint: vek::Rgb::white(),
-            });
-        
-            // Create a new material surface for rendering
-            let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
-            let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
-            ecs.insert((surface, Renderer::default(), Location::at_xyz(x as f32, y as f32, 0.0)));
-        }
-    }
+    // Create a new material instance
+    let material = standard_materials.insert(Standard {
+        albedo_map: albedo_map.clone(),
+        normal_map: normal_map.clone(),
+        mask_map: mask_map.clone(),
+        bumpiness: 0.8,
+        roughness: 1.0,
+        ambient_occlusion: 1.0,
+        metallic: 0.5,
+        scale: vek::Vec2::broadcast(1.0),
+        tint: vek::Rgb::white(),
+    });
+
+    // Create a new material surface for rendering
+    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();    
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+    ecs.insert((surface, Renderer::default()));
 
     // Load in the texture
     let texture = albedo_maps.insert(
@@ -193,10 +187,9 @@ fn update(world: &mut World) {
     let window = world.get_mut::<Window>().unwrap();
 
     // Get the input resources
-    let keyboard = world.get::<Keyboard>().unwrap();
-    let mouse = world.get::<Mouse>().unwrap();
+    let input = world.get::<Input>().unwrap();
 
-    if keyboard.held(Key::H) {
+    if input.key(Key::H).held() {
         window.raw().set_cursor_grab(false);
         window.raw().set_cursor_visible(true);
         return;
@@ -219,16 +212,16 @@ fn update(world: &mut World) {
         let mut velocity = vek::Vec3::<f32>::default();
 
         // Update the velocity in the forward and backward directions
-        if keyboard.held("forward") {
+        if input.key("forward").held() {
             velocity += forward;
-        } else if keyboard.held("backward") {
+        } else if input.key("backward").held() {
             velocity += -forward;
         }
 
         // Update the velocity in the left and right directions
-        if keyboard.held("left") {
+        if input.key("left").held() {
             velocity += -right;
-        } else if keyboard.held("right") {
+        } else if input.key("right").held() {
             velocity += right;
         }
 
@@ -236,8 +229,9 @@ fn update(world: &mut World) {
         **location += velocity * time.delta_f32() * SPEED;
 
         // Calculate a new rotation and apply it
-        let pos = mouse.position();
-        **rotation = vek::Quaternion::rotation_y(-pos.x as f32 * SENSIVITY)
-            * vek::Quaternion::rotation_x(-pos.y as f32 * SENSIVITY);
+        let pos_x = input.axis("x rotation");
+        let pos_y = input.axis("y rotation");
+        **rotation = vek::Quaternion::rotation_y(-pos_x as f32 * SENSIVITY)
+            * vek::Quaternion::rotation_x(-pos_y as f32 * SENSIVITY);
     }
 }
