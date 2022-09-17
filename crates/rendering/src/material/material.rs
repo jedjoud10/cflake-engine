@@ -85,13 +85,8 @@ pub trait Material<'w>: 'static + Sized {
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;
 
-    // Does this material cast shadows onto other materials?
+    // Does this material cast shadows onto other surfaces?
     fn shadow_caster() -> bool {
-        true
-    }
-    
-    // Does this material receive shadows from other materials?
-    fn shadow_receiver() -> bool {
         true
     }
 

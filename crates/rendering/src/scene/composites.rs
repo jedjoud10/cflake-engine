@@ -114,7 +114,7 @@ impl ShadowMapping {
         // Create the depth render texture
         let depth_tex = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
             ctx,
-            TextureMode::Static,
+            TextureMode::Resizable,
             vek::Extent2::broadcast(resolution),
             sampling,
             mipmaps,
@@ -160,6 +160,7 @@ pub struct RenderedFrameStats {
     pub tris: u32,
     pub verts: u32,
     pub unique_materials: u32,
+    pub unique_materials_shadow_casters: u32,
     pub material_instances: u32,
     pub rendered_surfaces: u32,
 }

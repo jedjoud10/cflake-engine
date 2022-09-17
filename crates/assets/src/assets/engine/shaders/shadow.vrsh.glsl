@@ -2,6 +2,8 @@
 layout(location = 0) in vec3 position;
 uniform mat4 proj_matrix;
 uniform mat4 view_matrix;
+uniform mat4 world_matrix;
+
 
 void main() {
     // Model space -> World space -> Clip space

@@ -42,10 +42,6 @@ impl<'w> Material<'w> for Sky {
         false
     }
 
-    fn shadow_receiver() -> bool {
-        false
-    }
-
     unsafe fn should_assume_valid() -> bool {
         true
     }

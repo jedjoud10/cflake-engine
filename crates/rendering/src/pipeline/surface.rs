@@ -16,6 +16,7 @@ use rayon::prelude::ParallelDrainRange;
 use std::{any::type_name, marker::PhantomData, time::Instant};
 use world::{Handle, Storage, World};
 
+
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
 // TODO: Use multithreading to make it faster as well
@@ -34,7 +35,8 @@ pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB, matrix: &vek::
     })
 }
 
-pub fn render<M: for<'w> Material<'w>>(world: &mut World, shader: Handle<Shader>) {
+// Render all the visible surfaces of a specific material type
+pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader: Handle<Shader>) {
     let mut property_block_resources = M::fetch_resources(world);
     let ecs = world.get::<Scene>().unwrap();
     let materials = world.get::<Storage<M>>().unwrap();

@@ -74,8 +74,10 @@ impl Context {
             let shader = M::shader(self, assets);
             let handle = storage.insert(shader);
 
+            // Main material pipeline
             let closure = move |world: &mut World| {
-                crate::pipeline::render::<M>(world, handle.clone());
+                crate::pipeline::render_shadows::<M>(world);
+                crate::pipeline::render_surfaces::<M>(world, handle.clone());
             };
 
             self.pipelines.insert(key, Rc::new(closure));

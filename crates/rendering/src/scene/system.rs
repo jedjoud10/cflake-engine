@@ -97,13 +97,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     };
 
     // Create the frame-to-frame basis stats
-    let stats = RenderedFrameStats {
-        tris: 0,
-        verts: 0,
-        unique_materials: 0,
-        material_instances: 0,
-        rendered_surfaces: 0,
-    };
+    let stats = RenderedFrameStats::default();
 
     // Drop the old write/read handles
     drop(shaders);
