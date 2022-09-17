@@ -71,7 +71,7 @@ vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, sun.backward, surface.normal, camera.half_view);
 	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0);
 	outgoing += 0.03 * surface.diffuse * visibility;
-	return brdf;
+	return outgoing;
 }
 
 void main() {
