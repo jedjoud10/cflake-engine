@@ -15,7 +15,7 @@ impl<P: Pipeline> Clone for PipeId<P> {
 // Pipeline trait that will be boxed and stored from within the world
 // Pipelines are user defined to allow the user to write their own logic
 pub trait Pipeline: 'static {
-    fn render(&self, world: &mut World, stats: &mut RenderedFrameStats);
+    fn render(&self, world: &mut World);
 }
 
 // This is a custom pipeline creator that will be able to instantiate a specific pipeline

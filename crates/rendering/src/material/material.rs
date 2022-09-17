@@ -4,7 +4,7 @@ use math::{Location, Rotation};
 use world::World;
 
 use crate::{
-    buffer::UniformBuffer,
+    buffer::{UniformBuffer, ComputeStorage},
     context::{Context, Window},
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
@@ -16,7 +16,8 @@ use crate::{
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
-    pub(crate) point_lights: &'a UniformBuffer<(PointLight, Location)>,
+    pub(crate) point_lights: &'a ComputeStorage<(PointLight, Location)>,
+    pub(crate) clusters: &'a ComputeStorage<(u32, u32)>,
     pub(crate) camera_location: &'a Location,
     pub(crate) camera_rotation: &'a Rotation,
     pub(crate) directional_light: &'a DirectionalLight,
@@ -72,6 +73,16 @@ pub trait Material<'w>: 'static + Sized {
 
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;
+
+    // Does this material cast shadows onto other materials?
+    fn shadow_caster() -> bool {
+        true
+    }
+    
+    // Does this material receive shadows from other materials?
+    fn shadow_receiver() -> bool {
+        true
+    }
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties(

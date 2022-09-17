@@ -42,7 +42,7 @@ pub struct SpecializedPipeline<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
-    fn render(&self, world: &mut World, stats: &mut RenderedFrameStats) {
+    fn render(&self, world: &mut World) {
         let mut property_block_resources = M::fetch_resources(world);
         let ecs = world.get::<Scene>().unwrap();
         let materials = world.get::<Storage<M>>().unwrap();
@@ -52,8 +52,9 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         let shading = &mut *_shading;
         let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
         let mut ctx = world.get_mut::<Context>().unwrap();
+        let mut stats = world.get_mut::<RenderedFrameStats>().unwrap();
         stats.unique_materials += 1;
-
+        
         // How exactly we should rasterize the surfaces
         let settings = RasterSettings {
             depth_test: M::depth_comparison(),
@@ -81,7 +82,6 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         let mut query = query.collect::<Vec<(&Renderer, &Surface<M>)>>();
 
         // Filter the query in multiple threads
-        let i = Instant::now();
         query.retain(|(renderer, surface)| {
             // Check if the renderer is even enabled
             let enabled = renderer.enabled;
@@ -114,6 +114,7 @@ impl<M: for<'w> Material<'w>> Pipeline for SpecializedPipeline<M> {
         let main = DefaultMaterialResources {
             camera,
             point_lights: &shading.point_lights,
+            clusters: &shading.clusters,
             camera_location,
             camera_rotation,
             directional_light,

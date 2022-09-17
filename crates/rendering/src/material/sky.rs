@@ -38,6 +38,14 @@ impl<'w> Material<'w> for Sky {
         PrimitiveMode::Triangles { cull: None }
     }
 
+    fn shadow_caster() -> bool {
+        false
+    }
+
+    fn shadow_receiver() -> bool {
+        false
+    }
+
     unsafe fn should_assume_valid() -> bool {
         true
     }

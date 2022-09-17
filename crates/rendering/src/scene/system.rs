@@ -1,9 +1,9 @@
 use super::{
     Camera, ClusteredShading, Compositor, DirectionalLight, PostProcessing, RenderedFrameStats,
-    Renderer,
+    Renderer, ShadowMapping,
 };
 use crate::{
-    buffer::{BufferMode, UniformBuffer},
+    buffer::{BufferMode, UniformBuffer, ComputeStorage},
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
@@ -22,7 +22,7 @@ use assets::Assets;
 use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::{IntoMatrix, Location, Rotation, Scale, SharpVertices, AABB};
-use world::{Events, Init, Stage, Storage, Update, World};
+use world::{Events, Init, Stage, Storage, Update, World, Write};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine
@@ -44,50 +44,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     let (window, mut context) = crate::context::new(settings, el);
     let ctx = &mut context;
 
-    // Settings for framebuffer textures
-    let sampling = Sampling {
-        filter: Filter::Nearest,
-        wrap: Wrap::ClampToEdge,
-    };
-    let mipmaps = MipMapSetting::Disabled;
-
-    // Create the color render texture
-    let color = <Texture2D<RGB<f32>> as Texture>::new(
-        ctx,
-        TextureMode::Resizable,
-        window.size(),
-        sampling,
-        mipmaps,
-        None,
-    )
-    .unwrap();
-
-    // Create the depth render texture
-    let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
-        ctx,
-        TextureMode::Resizable,
-        window.size(),
-        sampling,
-        mipmaps,
-        None,
-    )
-    .unwrap();
-
-    // Create the default pipelines
-    let mut init = (&mut *shaders, &mut *assets);
-    ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
-    ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
-
-    // Create the clustered shading rendererer
-    let clustered_shading = ClusteredShading {
-        main_camera: None,
-        skysphere_entity: None,
-        painter: Painter::new(ctx),
-        color_tex: color,
-        depth_tex: depth,
-        main_directional_light: None,
-        point_lights: UniformBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
-    };
+    // Create the clustered shading and the shadow mapper
+    let clustered_shading = ClusteredShading::new(ctx, &window, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(1024, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -158,6 +117,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(postprocessing);
     world.insert(stats);
     world.insert(compositor);
+    world.insert(shadow_mapping);
 }
 
 // Update the global mesh matrices of objects that have been modified
@@ -191,16 +151,18 @@ fn update_matrices(world: &mut World) {
 }
 
 // Rendering event that will try to render the 3D scene each frame
-fn rendering(world: &mut World) {
+fn render_surfaces(world: &mut World) {
     // Check if we can even render the scene in the first place
     let shading = world.get::<ClusteredShading>().unwrap();
+    let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
+    *old_stats = RenderedFrameStats::default();
     if shading.main_camera().is_none() || shading.main_directional_light().is_none() {
         return;
     }
+    drop(old_stats);
     drop(shading);
-
+    
     // Extract the pipelines and render them
-    let mut stats = RenderedFrameStats::default();
     let pipelines = world
         .get::<Context>()
         .unwrap()
@@ -209,12 +171,8 @@ fn rendering(world: &mut World) {
 
     // Render the pipelines one by one
     for render in pipelines {
-        render.render(world, &mut stats);
+        render.render(world);
     }
-
-    // Update the stats resources
-    let mut old_stats = world.get_mut::<RenderedFrameStats>().unwrap();
-    *old_stats = stats;
 
     // Render the quad onto the screen now
     let mut _compositor = world.get_mut::<Compositor>().unwrap();
@@ -428,7 +386,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert scene renderer event
     reg.insert_with(
-        rendering,
+        render_surfaces,
         Stage::new("scene rendering")
             .before("main camera update")
             .after("main directional light update")

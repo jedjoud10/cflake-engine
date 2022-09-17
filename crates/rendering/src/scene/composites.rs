@@ -1,11 +1,13 @@
+use assets::Assets;
 use ecs::Entity;
 use math::Location;
+use world::{Write, Storage};
 
 use crate::{
-    buffer::UniformBuffer,
+    buffer::{UniformBuffer, ComputeStorage, BufferMode},
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, pipeline::SpecializedPipeline, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
 };
 
 use super::PointLight;
@@ -22,10 +24,60 @@ pub struct ClusteredShading {
     pub(crate) color_tex: Texture2D<RGB<f32>>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
-    pub(crate) point_lights: UniformBuffer<(PointLight, Location)>,
+    pub(crate) point_lights: ComputeStorage<(PointLight, Location)>,
+    pub(crate) clusters: ComputeStorage<(u32, u32)>,
 }
 
 impl ClusteredShading {
+    pub(crate) fn new(ctx: &mut Context, window: &Window, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+        // Settings for framebuffer textures
+        let sampling = Sampling {
+            filter: Filter::Nearest,
+            wrap: Wrap::ClampToEdge,
+        };
+        let mipmaps = MipMapSetting::Disabled;
+        
+        // Create the color render texture
+        let color = <Texture2D<RGB<f32>> as Texture>::new(
+            ctx,
+            TextureMode::Resizable,
+            window.size(),
+            sampling,
+            mipmaps,
+            None,
+        )
+        .unwrap();
+    
+        // Create the depth render texture
+        let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
+            ctx,
+            TextureMode::Resizable,
+            window.size(),
+            sampling,
+            mipmaps,
+            None,
+        )
+        .unwrap();
+    
+        // Create the default pipelines
+        let mut init = (shaders, assets);
+        ctx.init_pipe_id::<SpecializedPipeline<Standard>>(&mut init);
+        ctx.init_pipe_id::<SpecializedPipeline<Sky>>(&mut init);
+    
+        // Create the clustered shading rendererer
+        let clustered_shading = ClusteredShading {
+            main_camera: None,
+            skysphere_entity: None,
+            painter: Painter::new(ctx),
+            color_tex: color,
+            depth_tex: depth,
+            main_directional_light: None,
+            point_lights: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+            clusters: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+        };
+        clustered_shading
+    }
+
     // Get the main camera entity
     pub fn main_camera(&self) -> Option<Entity> {
         self.main_camera
@@ -39,6 +91,48 @@ impl ClusteredShading {
     // Get the main directional light entity
     pub fn main_directional_light(&self) -> Option<Entity> {
         self.main_directional_light
+    }
+}
+
+// Directional shadow mapping for the main sun light
+// The shadows must be rendered before we render the main frame
+pub struct ShadowMapping {
+    pub(crate) painter: Painter<(), Depth<Ranged<u32>>, ()>,
+    pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
+    pub(crate) shader: Shader,
+    pub(crate) resolution: u16,
+}
+
+impl ShadowMapping {
+    pub(crate) fn new(resolution: u16, ctx: &mut Context, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+        // Settings for framebuffer textures
+        let sampling = Sampling {
+            filter: Filter::Nearest,
+            wrap: Wrap::ClampToEdge,
+        };
+        let mipmaps = MipMapSetting::Disabled;
+
+        // Create the depth render texture
+        let depth_tex = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
+            ctx,
+            TextureMode::Static,
+            vek::Extent2::broadcast(resolution),
+            sampling,
+            mipmaps,
+            None,
+        ).unwrap();
+
+        // Load the shader used for shadow map object rasterization
+        let vertex = assets.load::<VertexStage>("engine/shaders/shadow.vrsh.glsl").unwrap();
+        let fragment = assets.load::<FragmentStage>("engine/shaders/shadow.frsh.glsl").unwrap();
+        let shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
+
+        Self {
+            painter: Painter::new(ctx),
+            depth_tex,
+            shader,
+            resolution,
+        }
     }
 }
 

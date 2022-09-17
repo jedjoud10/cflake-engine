@@ -27,6 +27,7 @@ pub struct Context {
     pub(crate) raster: RasterSettings,
     pub(crate) bounded_fbo: u32,
     pub(crate) viewport: Viewport,
+    
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
 }
