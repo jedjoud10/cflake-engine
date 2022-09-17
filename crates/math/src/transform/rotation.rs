@@ -1,6 +1,6 @@
 use crate::IntoMatrix;
 use ecs::Component;
-use std::ops::{Deref, DerefMut, Mul, MulAssign};
+use std::ops::{Deref, DerefMut, Mul};
 
 #[derive(Default, Clone, Copy, Component)]
 pub struct Rotation(vek::Quaternion<f32>);

@@ -33,6 +33,6 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut ctx = world.get_mut::<Context>().unwrap();
     let mut stats = world.get_mut::<RenderedFrameStats>().unwrap();
-    */
     stats.unique_materials += 1;    
+    */
 }
