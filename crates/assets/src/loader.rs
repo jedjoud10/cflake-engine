@@ -99,13 +99,14 @@ impl Assets {
         self.load_with(path, Default::default())
     }
 
-    // Import a persistant asset using it's global asset path and it's raw bytes
+    // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&mut self, path: impl AsRef<Path>, bytes: Vec<u8>) {
         let path = path
             .as_ref()
             .strip_prefix("./assets/")
             .unwrap()
             .to_path_buf();
+        dbg!(&path);
         self.cached.entry(path).or_insert(bytes);
     }
 }

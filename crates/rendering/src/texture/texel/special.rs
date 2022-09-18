@@ -39,7 +39,7 @@ impl ImageTexel for RG<Ranged<u8>> {
     }
 }
 
-// Red-green-blue channels only, u8
+// RGB, u8
 impl ImageTexel for RGB<Ranged<u8>> {
     fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
         let image = image.into_rgba8();
@@ -68,5 +68,37 @@ impl ImageTexel for SRGB<Ranged<u8>> {
     fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
         let image = image.into_rgba8();
         image.chunks(4).map(vek::Vec3::from_slice).collect()
+    }
+}
+
+// Red channel only, u16
+impl ImageTexel for R<Ranged<u16>> {
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+        let image = image.into_rgba16();
+        image.chunks(4).map(|val| val[0]).collect()
+    }
+}
+
+// Red-Green channels only, u16
+impl ImageTexel for RG<Ranged<u16>> {
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+        let image = image.into_rgba16();
+        image.chunks(4).map(vek::Vec2::from_slice).collect()
+    }
+}
+
+// RGB, u16
+impl ImageTexel for RGB<Ranged<u16>> {
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+        let image = image.into_rgba16();
+        image.chunks(4).map(vek::Vec3::from_slice).collect()
+    }
+}
+
+// RGBA, u16
+impl ImageTexel for RGBA<Ranged<u16>> {
+    fn to_image_texels(image: image::DynamicImage) -> Vec<Self::Storage> {
+        let image = image.into_rgba16();
+        image.chunks(4).map(vek::Vec4::from_slice).collect()
     }
 }

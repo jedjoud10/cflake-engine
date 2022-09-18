@@ -4,8 +4,8 @@ macro_rules! asset {
         // Include an asset into the binary if we are in release
         #[cfg(not(debug_assertions))]
         {
-            let bytes = include_bytes!(concat!("./assets/", $file));
-            $assets.import(concat!("./assets/", $file), bytes.to_vec());
+            let bytes = include_bytes!($file);
+            $assets.import(concat!("./", $file), bytes.to_vec());
         }
         // Don't do anything in debug since it'll read it from the file system
     };

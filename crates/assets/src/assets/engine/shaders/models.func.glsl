@@ -32,7 +32,6 @@ float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
 vec3 fresnel(vec3 f0, vec3 v, vec3 h, vec3 n) {
 	float cosTheta = 1.0 - max(dot(v, n), 0);
 	return f0 + (1.0 - f0) * pow(cosTheta, 5.0);
-	//return vec3(max(1.0 - dot(v, n), 0)); 
 }
 
 // Cook-torrence model for specular

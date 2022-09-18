@@ -269,6 +269,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             self.splat_unchecked(&val);
         }
     }
+
+    // Copy a sub-region from another texture level into this texture without checking for safety
+    // Copy a whole another texture level into this one without checking for safety
+    // Copy a sub-region from another texture level into this texture
+    // Copy a whole another texture level into this one
 }
 
 impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {

@@ -86,7 +86,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the post-processing settings
     let postprocessing = PostProcessing {
         tonemapping_strength: 1.0,
-        exposure: 1.0,
+        exposure: 1.2,
         gamma: 2.2,
         vignette_strength: 8.5,
         vignette_size: 0.2,

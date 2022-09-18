@@ -59,7 +59,7 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
-	float roughness = surface.mask.g;
+	float roughness = max(surface.mask.g, 0.1);
 	float metallic = surface.mask.b;
 	float visibility = surface.mask.r;
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);

@@ -10,6 +10,7 @@ fn main() {
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
+        .set_window_fullscreen(true)
         .insert_update(update)
         .execute();
 }
@@ -52,7 +53,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::broadcast(255),
-        strength: 12.0,
+        strength: 9.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -101,7 +102,7 @@ fn init(world: &mut World) {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.8,
+        bumpiness: 0.3,
         roughness: 1.0,
         ambient_occlusion: 1.0,
         metallic: 0.5,

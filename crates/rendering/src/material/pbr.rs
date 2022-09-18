@@ -16,8 +16,8 @@ use super::{DefaultMaterialResources, Material, Sky};
 
 // PBR maps
 pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
-pub type NormalMap = Texture2D<RGB<Ranged<u8>>>;
-pub type MaskMap = Texture2D<RGBA<Ranged<u8>>>; // (r = AO, g = roughness, b = metallic)
+pub type NormalMap = Texture2D<RGB<Ranged<u16>>>;
+pub type MaskMap = Texture2D<RGBA<Ranged<u16>>>; // (r = AO, g = roughness, b = metallic)
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality

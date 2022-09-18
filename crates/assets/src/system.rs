@@ -34,7 +34,6 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/textures/bumps.png");
                 persistent!(loader, "engine/textures/missing.png");
                 persistent!(loader, "engine/textures/sky_gradient.png");
-                persistent!(loader, "engine/textures/mask.png");
 
                 // Insert the loader
                 world.insert(loader);

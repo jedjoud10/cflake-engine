@@ -12,10 +12,10 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // Get depths and test
-    float shadow_bias = 0.0004;
+    float shadow_bias = 0.002;
     float current_depth = lightspace_uvs.z;
     float closest_depth = texture(shadow_map_texture, lightspace_uvs.xy).r;
-    float in_shadow = current_depth - shadow_bias > closest_depth ? 1.0 : 0.0; 
+    float in_shadow = current_depth + shadow_bias > closest_depth ? 1.0 : 0.0; 
 
     /*
     float accumulated_shadow = 0.0;
