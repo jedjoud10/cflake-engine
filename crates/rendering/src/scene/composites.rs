@@ -1,6 +1,7 @@
 use assets::Assets;
 use ecs::Entity;
 use math::Location;
+use vek::FrustumPlanes;
 use world::{Storage};
 
 use crate::{
@@ -98,12 +99,14 @@ impl ClusteredShading {
 pub struct ShadowMapping {
     pub(crate) painter: Painter<(), Depth<Ranged<u32>>, ()>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
+    pub(crate) view_matrix: vek::Mat4<f32>,
+    pub(crate) proj_matrix: vek::Mat4<f32>,
     pub(crate) shader: Shader,
     pub(crate) resolution: u16,
 }
 
 impl ShadowMapping {
-    pub(crate) fn new(resolution: u16, ctx: &mut Context, _shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+    pub(crate) fn new(size: f32, depth: f32, resolution: u16, ctx: &mut Context, _shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
         // Settings for framebuffer textures
         let sampling = Sampling {
             filter: Filter::Nearest,
@@ -126,11 +129,26 @@ impl ShadowMapping {
         let fragment = assets.load::<FragmentStage>("engine/shaders/shadow.frsh.glsl").unwrap();
         let shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
 
+        // The shadow frustum is the cuboid that will contain the shadow map
+        let frustum = FrustumPlanes::<f32> {
+            left: -size,
+            right: size,
+            bottom: -size,
+            top: size,
+            near: -depth / 2.0,
+            far: depth / 2.0,
+        };
+
+        // Create the projection matrix from the frustum
+        let proj_matrix = vek::Mat4::orthographic_rh_no(frustum);
+
         Self {
             painter: Painter::new(ctx),
             depth_tex,
             shader,
             resolution,
+            view_matrix: vek::Mat4::identity(),
+            proj_matrix,
         }
     }
 }
@@ -163,4 +181,7 @@ pub struct RenderedFrameStats {
     pub unique_materials_shadow_casters: u32,
     pub material_instances: u32,
     pub rendered_surfaces: u32,
+    pub shadow_casters_tris: u32,
+    pub shadow_casters_verts: u32,
+    pub shadow_casters_surfaces: u32,
 }

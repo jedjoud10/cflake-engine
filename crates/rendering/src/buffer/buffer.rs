@@ -659,7 +659,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         let used = Arc::new(AtomicBool::new(false));
 
         let accessor = PersistentAccessor {
-            buf: self.buffer,
             len: self.len(),
             used: used.clone(),
             ptr,
@@ -667,7 +666,6 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
 
         let owner = Persistent {
             buf: Some(self),
-            ptr,
             used,
         };
 

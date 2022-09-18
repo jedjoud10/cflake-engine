@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use math::AABB;
 
 use super::{attributes::*, MeshUtils};
@@ -14,6 +16,7 @@ pub struct VerticesRef<'a> {
     pub(super) tangents: &'a AttributeBuffer<Tangent>,
     pub(super) colors: &'a AttributeBuffer<Color>,
     pub(super) uvs: &'a AttributeBuffer<TexCoord>,
+    pub(super) len: Option<usize>,
 }
 
 impl VerticesRef<'_> {
@@ -54,15 +57,8 @@ impl VerticesRef<'_> {
     }
 
     // Get the number of vertices that we have (will return None if we have buffers of mismatching lengths)
-    // TODO: Fix code duplication
     pub fn len(&self) -> Option<usize> {
-        let slice = self.as_any();
-        let maybe_min = slice.iter().filter_map(|f| f.map(|(b, _)| b.len())).min();
-        let maybe_max = slice.iter().filter_map(|f| f.map(|(b, _)| b.len())).max();
-        let min = maybe_min.unwrap_or_default();
-        let max = maybe_max.unwrap_or_default();
-        let valid = min == max;
-        valid.then_some(min)
+        self.len
     }
 }
 
@@ -77,6 +73,7 @@ pub struct VerticesMut<'a> {
     pub(super) colors: &'a mut AttributeBuffer<Color>,
     pub(super) uvs: &'a mut AttributeBuffer<TexCoord>,
     pub(super) aabb: &'a mut Option<AABB>,
+    pub(super) len: &'a mut Cell<Option<usize>>,
 }
 
 impl VerticesMut<'_> {
@@ -153,7 +150,9 @@ impl VerticesMut<'_> {
         let min = maybe_min.unwrap_or_default();
         let max = maybe_max.unwrap_or_default();
         let valid = min == max;
-        valid.then_some(min)
+        let len = valid.then_some(min);
+        self.len.set(len);
+        len
     }
 
     // Update the AABB of the mesh using updated position vertices
@@ -198,6 +197,7 @@ impl VerticesMut<'_> {
 impl Drop for VerticesMut<'_> {
     fn drop(&mut self) {
         self.compute_aabb();
+        self.len();
         assert!(self.rebind(false));
     }
 }

@@ -175,12 +175,18 @@ fn update(world: &mut World) {
         ui.label(format!("Delta Time MS: {}", (time.delta_f32() * 1000.0).round()));
         ui.label(format!("Startup Timer: {}", time.secs_since_startup_f32().round()));
 
-        ui.heading("Rendering Engine");
+        ui.heading("Rendering Engine: Surfaces");
         ui.label(format!("Unique Materials: {}", stats.unique_materials));
         ui.label(format!("Material Instances: {}", stats.material_instances));
         ui.label(format!("Rendered Surfaces: {}", stats.rendered_surfaces));
         ui.label(format!("Triangles: {}", stats.tris));
         ui.label(format!("Vertices: {}", stats.verts));
+
+        ui.heading("Rendering Engine: Shadows");
+        ui.label(format!("Unique Shadow Caster Materials: {}", stats.unique_materials_shadow_casters));
+        ui.label(format!("Shadow Caster Surfaces: {}", stats.shadow_casters_surfaces));
+        ui.label(format!("Shadow Caster Triangles: {}", stats.shadow_casters_tris));
+        ui.label(format!("Shadow Caster Vertices: {}", stats.shadow_casters_verts));
     });
 
     let shading = world.get::<ClusteredShading>().unwrap();

@@ -9,6 +9,7 @@ uniform float z_far;
 // Textures that we will sample
 uniform sampler2D color;
 uniform sampler2D depth;
+uniform sampler2D shadow_map;
 
 // Post-processing compositor settings
 uniform float tonemapping_strength;
@@ -37,6 +38,8 @@ vec3 aces(vec3 x) {
 void main() {
 	vec2 uv = gl_FragCoord.xy / vec2(resolution);
 	
+	frag = vec4(texture(shadow_map, uv).xyz, 0.0);
+	/*
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
 	sampled *= exposure;
@@ -54,4 +57,5 @@ void main() {
 	// Sample the depth texture
 	float depth = linearize_depth(texture(depth, uv).r, z_near, z_far);
 	frag = vec4(sampled, 1.0);
+	*/
 }

@@ -44,7 +44,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(1024, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(1000.0, 1000.0, 1024, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -171,6 +171,8 @@ fn render_surfaces(world: &mut World) {
     let compositor = &mut *_compositor;
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
+    let mut _shadow_mapper = world.get_mut::<ShadowMapping>().unwrap();
+    let shadow_mapper = &mut *_shadow_mapper;
     let pp = world.get::<PostProcessing>().unwrap();
     let ecs = world.get::<Scene>().unwrap();
 
@@ -198,6 +200,7 @@ fn render_surfaces(world: &mut World) {
     uniforms.set_vec2("resolution", resolution);
     uniforms.set_sampler("color", &shading.color_tex);
     uniforms.set_sampler("depth", &shading.depth_tex);
+    uniforms.set_sampler("shadow_map", &shadow_mapper.depth_tex);
     uniforms.set_scalar("z_near", camera.clip_planes().x);
     uniforms.set_scalar("z_far", camera.clip_planes().y);
 
@@ -249,6 +252,10 @@ fn clear(world: &mut World) {
         .unwrap()
         .splat(vek::Vec3::zero());
     shading.depth_tex.mip_mut(0).unwrap().splat(u32::MAX);
+
+    // Clear the shadowmap texture
+    let shadow_map = world.get_mut::<ShadowMapping>().unwrap();
+    shadow_map.depth_tex.mip_mut(0).unwrap().splat(u32::MAX);
 }
 
 // Frame cleanup event that will just swap the front and back buffers of the current context
@@ -330,6 +337,22 @@ fn main_sky_sphere(world: &mut World) {
     }
 }
 
+// Update the light positions inside the shadow mapper
+fn shadow_map(world: &mut World) {
+    let ecs = world.get::<Scene>().unwrap();
+    let shading = world.get::<ClusteredShading>().unwrap();
+    let main_light = shading.main_directional_light;
+    let main_light_entry = main_light.map(|id| ecs.entry(id)).flatten();
+
+    if let Some(entry) = main_light_entry {
+        if let Ok(rotation) = entry.get::<Rotation>() {
+            let mut shadow = world.get_mut::<ShadowMapping>().unwrap();
+            shadow.view_matrix = vek::Mat4::look_at_rh(vek::Vec3::zero(), rotation.forward(), rotation.up());
+        }
+    }
+    
+}
+
 // Main rendering/graphics system that will register the appropriate events
 pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert graphics init event
@@ -373,6 +396,15 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     reg.insert_with(
         update_matrices,
         Stage::new("update renderer matrices").after("post user"),
+    )
+    .unwrap();
+
+    // Insert shadow mapping update view matrix event
+    reg.insert_with(
+        shadow_map, 
+        Stage::new("update shadow mapping view matrix")
+            .after("post user")
+            .before("scene rendering")
     )
     .unwrap();
 

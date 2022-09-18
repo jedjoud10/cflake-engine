@@ -72,10 +72,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
 
     // Find all the surfaces that use this material type
     let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
-    let mut query = query.collect::<Vec<(&Renderer, &Surface<M>)>>();
-
-    // Filter the query in multiple threads
-    query.retain(|(renderer, surface)| {
+    let query = query.filter(|(renderer, surface)| {
         // Check if the renderer is even enabled
         let enabled = renderer.enabled;
 
@@ -122,6 +119,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
     for (renderer, surface) in query {
         // Check if we changed material instances
         if old != Some(surface.material().clone()) {
+            stats.material_instances += 1;
             old = Some(surface.material().clone());
             let instance = materials.get(old.as_ref().unwrap());
 
@@ -145,21 +143,18 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         // Draw the surface object using the current rasterizer pass
         let mesh = meshes.get(&surface.mesh());
 
-        // Sometimes, meshes can be invalid
-        if let Some(len) = mesh.vertices().len() {
-            // Validate the uniforms
-            let validated = unsafe {
-                if M::should_assume_valid() {
-                    uniforms.assume_valid()
-                } else {
-                    uniforms.validate().unwrap()
-                }
-            };
+        // Validate the uniforms
+        let validated = unsafe {
+            if M::should_assume_valid() {
+                uniforms.assume_valid()
+            } else {
+                uniforms.validate().unwrap()
+            }
+        };
 
-            rasterizer.draw(mesh, validated);
-            stats.rendered_surfaces += 1;
-            stats.verts += len as u32;
-            stats.tris += mesh.triangles().len() as u32;
-        }
+        rasterizer.draw(mesh, validated);
+        stats.rendered_surfaces += 1;
+        stats.verts += mesh.vertices().len().unwrap() as u32;
+        stats.tris += mesh.triangles().len() as u32;
     }
 }
