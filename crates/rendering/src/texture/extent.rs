@@ -22,6 +22,9 @@ pub trait Extent: Copy {
         NonZeroU8::new(u8::try_from(num + 1).unwrap()).unwrap()
     }
 
+    // Check if this extent is smaller than another extent (in all axii)
+    fn is_self_smaller(&self, other: Self) -> bool;
+
     // Get the dimensions of a specific miplayer using raw OpenGL commands
     unsafe fn get_level_extent(texture: u32, level: u8) -> Self;
 }
@@ -38,6 +41,10 @@ impl Extent for vek::Extent2<u16> {
 
     fn max(&self) -> u16 {
         self.reduce_max()
+    }
+
+    fn is_self_smaller(&self, other: Self) -> bool {
+        self.cmple(&other).reduce_and()
     }
 
     unsafe fn get_level_extent(texture: u32, level: u8) -> Self {
@@ -61,6 +68,10 @@ impl Extent for vek::Extent3<u16> {
 
     fn max(&self) -> u16 {
         self.reduce_max()
+    }
+
+    fn is_self_smaller(&self, other: Self) -> bool {
+        self.cmple(&other).reduce_and()
     }
 
     unsafe fn get_level_extent(texture: u32, level: u8) -> Self {

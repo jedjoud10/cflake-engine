@@ -137,6 +137,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     fn region(&self) -> Self::Region {
         Self::Region::with_extent(self.dimensions())
     }
+    
+    // Checks if we can modify a region of the texture
+    fn is_region_valid(&self, region: Self::Region) -> bool {
+        region.summed().is_self_smaller(self.dimensions()) 
+    }
 
     // Get the texture's dimensions
     fn dimensions(&self) -> <Self::Region as Region>::E;
@@ -288,5 +293,5 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
 
     // Copy a sub-region of another texture into this texture
-    unsafe fn copy_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O);
+    unsafe fn copy_subregion_from(write_name: u32, read_name: u32, write_level: u8, read_level: u8, read_region: Self::Region, write_offset: <Self::Region as Region>::O);
 }

@@ -1,10 +1,12 @@
+use std::ops::Add;
+
 use super::Extent;
 
 // Texture region trait that will be implemented for (origin, extent) tuples
 pub trait Region: Copy {
     // Regions are defined by their origin and extents
-    type O: Default + Copy;
-    type E: Copy + Extent;
+    type O: Default + Copy + Add<Self::O, Output = Self::O>;
+    type E: Extent + Copy + From<Self::O>;
 
     // Create a texel region of one singular unit (so we can store a singular texel)
     fn unit() -> Self;
@@ -14,6 +16,9 @@ pub trait Region: Copy {
 
     // Get the region's extent
     fn extent(&self) -> Self::E;
+
+    // Sum up the origin and extent into one value
+    fn summed(&self) -> Self::E;
 
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;

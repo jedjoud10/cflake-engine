@@ -202,7 +202,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         )
     }
 
-    unsafe fn copy_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O) {
+    unsafe fn copy_subregion_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O) {
         let origin = region.origin().as_::<i32>();
         let extent = region.extent().as_::<i32>();
         let offset = offset.as_::<i32>();

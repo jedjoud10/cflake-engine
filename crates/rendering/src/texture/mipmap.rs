@@ -164,6 +164,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     pub fn download_subregion(&self, region: T::Region) -> Vec<<T::T as Texel>::Storage> {
         assert_ne!(region.area(), 0, "Input data length cannot be zero");
 
+        assert!(
+            self.texture.is_region_valid(region),
+            "Access region is invalid due to size of offset"
+        );
+
         let mut vec = Vec::<<T::T as Texel>::Storage>::with_capacity(region.area() as usize);
         unsafe {
             self.download_subregion_unchecked(region, vec.as_mut_ptr(), region.area());
@@ -206,6 +211,10 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             self.texture.mode(),
             TextureMode::Static,
             "Cannot write data to static textures"
+        );
+        assert!(
+            self.texture.is_region_valid(region),
+            "Access region is invalid due to size of offset"
         );
 
         unsafe {
@@ -252,6 +261,11 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             "Cannot write data to static textures"
         );
 
+        assert!(
+            self.texture.is_region_valid(region),
+            "Access region is invalid due to size of offset"
+        );
+
         unsafe {
             self.splat_subregion_unchecked(region, &val);
         }
@@ -271,9 +285,47 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Copy a sub-region from another texture level into this texture without checking for safety
+    pub unsafe fn copy_subregion_from_unchecked(&mut self, other: &MipLevelRef<T>, read_region: T::Region, write_offset: <T::Region as Region>::O) {
+        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, read_region, write_offset);
+    }
+
     // Copy a whole another texture level into this one without checking for safety
+    pub unsafe fn copy_from_unchecked(&mut self, other: &MipLevelRef<T>) {
+        let offset = <T::Region as Region>::unit().origin();
+        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, other.texture.region(), offset);
+    }
+
     // Copy a sub-region from another texture level into this texture
+    pub fn copy_subregion_from(&mut self, other: &MipLevelRef<T>, read_region: T::Region, write_offset: <T::Region as Region>::O) {
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
+
+        assert!(
+            other.texture.is_region_valid(read_region),
+            "Access read region is invalid due to size of offset"
+        );
+
+        assert!(
+            self.texture.is_region_valid(read_region.offset_by(write_offset)),
+            "Access write region is invalid due to size of offset"
+        );
+
+        unsafe {
+            self.copy_subregion_from_unchecked(other, read_region, write_offset);
+        }
+    }
+
     // Copy a whole another texture level into this one
+    pub fn copy_from(&mut self, other: &MipLevelRef<T>) {
+        assert_ne!(
+            self.texture.mode(),
+            TextureMode::Static,
+            "Cannot write data to static textures"
+        );
+    }
 }
 
 impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {

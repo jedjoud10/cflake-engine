@@ -490,6 +490,19 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
+    // Copy the data from another buffer's range into this buffer's range
+    pub fn copy_range_from<const OTHER: u32>(&mut self, range: impl RangeBounds<usize>, other: &Buffer<T, OTHER>, offset: usize) {
+        let (start, end) = other.convert_range_bounds(range).unwrap();
+        assert!((end - start) + offset < self.length, "Cannot copy range from buffer, range is too big or offset is too large");
+
+        unsafe {
+            let size = ((end - start) * size_of::<T>()) as isize;
+            let write_offset = (offset * size_of::<T>()) as isize;
+            let read_offset = (start * size_of::<T>()) as isize;
+            gl::CopyNamedBufferSubData(other.buffer, self.buffer, read_offset, write_offset, size);
+        }
+    }
+
     // Copy the data from another buffer into this buffer
     pub fn copy_from<const OTHER: u32>(&mut self, other: &Buffer<T, OTHER>) {
         assert_eq!(
@@ -499,9 +512,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         );
         unsafe {
             let size = (self.length * size_of::<T>()) as isize;
-            //let i = Instant::now();
             gl::CopyNamedBufferSubData(other.buffer, self.buffer, 0, 0, size);
-            //println!("{}", i.elapsed().as_millis())
         }
     }
 
