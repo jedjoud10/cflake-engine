@@ -1,5 +1,5 @@
 use crate::context::Context;
-use std::time::Duration;
+
 
 // This is an abstraction over an OpenGL fence that we can use to detect whenever the GPU has completed executing some commands
 // TODO: Actually figure out how to use these bozos (asnyc buffer transfer and/or compute shaders)
@@ -10,7 +10,7 @@ pub struct Fence {
 
 impl Fence {
     // Create a new command timer that we can use to check if specific GPU commands have finished executing
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(_ctx: &mut Context) -> Self {
         Self {
             fence: None,
             active: false,

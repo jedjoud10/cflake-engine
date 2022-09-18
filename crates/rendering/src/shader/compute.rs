@@ -2,8 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     buffer::DispatchComputerIndirectBuffer,
-    context::{Context, ToGlName, ToGlTarget},
-    others::Fence,
+    context::{ToGlName, ToGlTarget},
 };
 
 use super::{Program, Uniforms, ValidUniforms};

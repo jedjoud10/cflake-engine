@@ -2,7 +2,7 @@ use super::Mesh;
 use crate::material::{Material, MaterialId};
 use ecs::Component;
 
-use math::AABB;
+
 use world::Handle;
 
 // A surface is a combination of a sub mesh and a specific material handle

@@ -1,4 +1,4 @@
-use std::time::Instant;
+
 
 use cflake_engine::prelude::*;
 
@@ -18,5 +18,5 @@ struct MyData {
 }
 
 fn init(world: &mut World) {
-    let mut ctx = world.get_mut::<Context>().unwrap();
+    let _ctx = world.get_mut::<Context>().unwrap();
 }

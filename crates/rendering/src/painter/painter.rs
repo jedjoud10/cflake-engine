@@ -7,7 +7,7 @@ use super::{
 use crate::{
     context::Context,
     display::{Display, Viewport},
-    prelude::{Texel, TexelFormat},
+    prelude::{Texel},
 };
 use std::marker::PhantomData;
 
@@ -25,7 +25,7 @@ pub struct Painter<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStenci
 
 impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painter<C, D, S> {
     // Create a new painter using the graphics context
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(_ctx: &mut Context) -> Self {
         let name = unsafe {
             let mut name = 0u32;
             gl::CreateFramebuffers(1, &mut name);

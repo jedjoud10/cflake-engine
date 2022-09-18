@@ -4,7 +4,7 @@ use super::{
     ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
-use std::{ffi::c_void, marker::PhantomData, num::NonZeroU8};
+use std::{ffi::c_void, marker::PhantomData};
 
 // A 2D texture that contains multiple pixels that have their own channels
 // Each pixel can be either a single value, RG, RGB, or even RGBA

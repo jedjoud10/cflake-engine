@@ -1,4 +1,4 @@
-use cflake_engine::prelude::{vek::Lerp, *};
+use cflake_engine::prelude::{*};
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 

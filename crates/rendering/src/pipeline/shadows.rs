@@ -1,25 +1,17 @@
 use crate::{
-    context::{Context, Window},
-    display::RasterSettings,
-    material::{DefaultMaterialResources, Material},
-    mesh::{Mesh, Surface},
-    painter::Painter,
-    prelude::{Display, Region, Shader, Texture, Viewport},
-    scene::{
-        Camera, ClusteredShading, DirectionalLight, FrustumPlane, RenderedFrameStats, Renderer,
-    },
+    material::{Material},
 };
-use assets::Assets;
-use ecs::Scene;
-use math::{Location, Rotation, SharpVertices, AABB};
-use rayon::prelude::ParallelDrainRange;
-use std::{any::type_name, marker::PhantomData, time::Instant};
-use world::{Handle, Storage, World};
+
+
+
+
+
+use world::{World};
 
 // Render to the main global shadow map if the material is a shadow caster
-pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
+pub(crate) fn render_shadows<M: for<'w> Material<'w>>(_world: &mut World) {
     if !M::shadow_caster() {
-        return;
+        
     }
 
     /*

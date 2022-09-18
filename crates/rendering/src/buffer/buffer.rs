@@ -2,11 +2,11 @@ use super::{BufferView, BufferViewMut, Persistent, UntypedBufferFormat, Persiste
 use crate::context::{Context, Shared, ToGlName, ToGlTarget};
 use std::alloc::Layout;
 use std::any::TypeId;
-use std::mem::{transmute, ManuallyDrop, MaybeUninit};
+use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ops::RangeBounds;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::time::Instant;
+
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // Some settings that tell us how exactly we should create the buffer
@@ -177,7 +177,7 @@ pub struct Buffer<T: Shared, const TARGET: u32> {
 
 impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Create a buffer using a slice of elements (will return none if we try to create a zero length Static, Dynamic, or Partial buffer)
-    pub fn from_slice(ctx: &mut Context, slice: &[T], mode: BufferMode) -> Option<Self> {
+    pub fn from_slice(_ctx: &mut Context, slice: &[T], mode: BufferMode) -> Option<Self> {
         unsafe {
             // We cannot handle zero sized types
             if size_of::<T>() == 0 {
@@ -668,7 +668,7 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         let owner = Persistent {
             buf: Some(self),
             ptr,
-            used: used.clone(),
+            used,
         };
 
         Some((owner, accessor))

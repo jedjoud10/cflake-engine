@@ -6,7 +6,7 @@ use math::{Location, Rotation};
 use world::World;
 
 use crate::{
-    buffer::{UniformBuffer, ComputeStorage},
+    buffer::{ComputeStorage},
     context::{Context, Window},
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
@@ -32,7 +32,7 @@ pub struct MaterialId<M: for<'w> Material<'w>>(pub(crate) PhantomData<M>);
 
 impl<M: for<'w> Material<'w>> Clone for MaterialId<M> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(self.0)
     }
 }
 

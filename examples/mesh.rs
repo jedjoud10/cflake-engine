@@ -1,4 +1,4 @@
-use cflake_engine::prelude::{vek::Lerp, *};
+use cflake_engine::prelude::{*};
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
@@ -95,9 +95,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = standard_materials.insert(Standard {
-        albedo_map: albedo_map.clone(),
-        normal_map: normal_map.clone(),
-        mask_map: mask_map.clone(),
+        albedo_map: albedo_map,
+        normal_map: normal_map,
+        mask_map: mask_map,
         bumpiness: 0.8,
         roughness: 1.0,
         ambient_occlusion: 1.0,
@@ -108,7 +108,7 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.material_id::<Standard>().unwrap();    
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid.clone());
+    let surface = Surface::new(cube, material, pipeid);
     ecs.insert((surface, Renderer::default()));
 
     // Load in the texture

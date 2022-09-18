@@ -1,13 +1,13 @@
 use assets::Assets;
 use ecs::Entity;
 use math::Location;
-use world::{Write, Storage};
+use world::{Storage};
 
 use crate::{
-    buffer::{UniformBuffer, ComputeStorage, BufferMode},
+    buffer::{ComputeStorage, BufferMode},
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, SRGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
 };
 
 use super::PointLight;
@@ -64,7 +64,8 @@ impl ClusteredShading {
         ctx.register_material::<Sky>(shaders, assets);
     
         // Create the clustered shading rendererer
-        let clustered_shading = ClusteredShading {
+        
+        ClusteredShading {
             main_camera: None,
             skysphere_entity: None,
             painter: Painter::new(ctx),
@@ -73,8 +74,7 @@ impl ClusteredShading {
             main_directional_light: None,
             point_lights: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
-        };
-        clustered_shading
+        }
     }
 
     // Get the main camera entity
@@ -103,7 +103,7 @@ pub struct ShadowMapping {
 }
 
 impl ShadowMapping {
-    pub(crate) fn new(resolution: u16, ctx: &mut Context, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+    pub(crate) fn new(resolution: u16, ctx: &mut Context, _shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
         // Settings for framebuffer textures
         let sampling = Sampling {
             filter: Filter::Nearest,

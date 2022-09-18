@@ -1,6 +1,6 @@
-use super::{Buffer, BufferMode};
-use crate::context::{Shared, ToGlName};
-use std::{any::TypeId, mem::size_of};
+use super::{BufferMode};
+
+use std::{any::TypeId};
 
 // This is an untyped reference to the format of a specific buffer
 #[derive(Clone, Copy, PartialEq, Eq)]

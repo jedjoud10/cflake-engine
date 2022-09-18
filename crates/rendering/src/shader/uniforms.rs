@@ -1,9 +1,9 @@
-use std::marker::PhantomData;
+
 
 use super::{Program, UniformsError};
 use crate::{
     buffer::Buffer,
-    context::{Context, Shared, ToGlName},
+    context::{Shared, ToGlName},
     texture::Texture,
 };
 
@@ -361,13 +361,13 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set an image uniform (a texture that we can modify)
-    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut T) {}
+    pub fn set_image<T: Texture>(&mut self, _name: &str, _sampler: &mut T) {}
 
     // Set a buffer uniform (that accepts any type of buffer)
     pub fn set_buffer<T: Shared, const TARGET: u32>(
         &mut self,
-        name: &str,
-        buffer: &mut Buffer<T, TARGET>,
+        _name: &str,
+        _buffer: &mut Buffer<T, TARGET>,
     ) {
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    prelude::{Shader, Uniforms, UntypedTexel},
+    prelude::{Shader, Uniforms},
 };
 
 use super::{RasterSettings, Rasterizer};

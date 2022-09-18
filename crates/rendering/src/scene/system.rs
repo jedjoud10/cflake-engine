@@ -3,25 +3,24 @@ use super::{
     Renderer, ShadowMapping,
 };
 use crate::{
-    buffer::{BufferMode, UniformBuffer, ComputeStorage},
+    buffer::{BufferMode},
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::{Mesh, Surface},
-    painter::Painter,
     prelude::{
-        Depth, Filter, FragmentStage, MipMapSetting, Processor, Ranged, Sampling, ShaderCompiler,
-        Texture, Texture2D, TextureMode, VertexStage, Wrap, RGB,
+        FragmentStage, Processor, ShaderCompiler,
+        Texture, VertexStage,
     },
     shader::Shader,
 };
 
-use arrayvec::ArrayVec;
+
 use assets::Assets;
 use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
-use math::{IntoMatrix, Location, Rotation, Scale, SharpVertices, AABB};
-use world::{Events, Init, Stage, Storage, Update, World, Write};
+use math::{IntoMatrix, Location, Rotation, Scale};
+use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
 // This will be called at the very start of the init of the engine

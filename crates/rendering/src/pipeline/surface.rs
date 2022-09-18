@@ -3,17 +3,16 @@ use crate::{
     display::RasterSettings,
     material::{DefaultMaterialResources, Material},
     mesh::{Mesh, Surface},
-    painter::Painter,
-    prelude::{Display, Region, Shader, Texture, Viewport},
+    prelude::{Display, Shader, Texture},
     scene::{
         Camera, ClusteredShading, DirectionalLight, FrustumPlane, RenderedFrameStats, Renderer,
     },
 };
-use assets::Assets;
+
 use ecs::Scene;
-use math::{Location, Rotation, SharpVertices, AABB};
-use rayon::prelude::ParallelDrainRange;
-use std::{any::type_name, marker::PhantomData, time::Instant};
+use math::{Location, Rotation, AABB};
+
+
 use world::{Handle, Storage, World};
 
 

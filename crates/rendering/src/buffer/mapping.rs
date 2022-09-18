@@ -1,11 +1,9 @@
-use ahash::{AHashMap, AHashSet};
-use parking_lot::{Mutex, RwLock};
+
+
 use std::{
     io::Read,
-    marker::PhantomData,
-    ops::RangeBounds,
     sync::{
-        atomic::{AtomicBool, AtomicPtr, AtomicU64, Ordering},
+        atomic::{AtomicBool, Ordering},
         Arc,
     },
 };
@@ -147,7 +145,7 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
                 gl::UnmapNamedBuffer(buf.name());
             },
             BufferViewMut::Copied { buf, vec, .. } => {
-                buf.write(&vec);
+                buf.write(vec);
             },
             BufferViewMut::PersistentAccessor { used, .. } => {
                 used.store(false, Ordering::Relaxed)

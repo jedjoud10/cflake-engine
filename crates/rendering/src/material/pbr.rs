@@ -1,15 +1,15 @@
 use assets::Assets;
 
-use ecs::{Entity, Scene};
+use ecs::{Scene};
 use world::{Handle, Read, Storage};
 
 use crate::{
     context::Context,
     mesh::{EnabledAttributes, Surface},
-    prelude::{TextureImportSettings, R, RGBA, SRGBA},
-    scene::{ClusteredShading, Compositor, Renderer},
+    prelude::{RGBA, SRGBA},
+    scene::{ClusteredShading, Renderer},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RG, RGB},
+    texture::{Ranged, Texture, Texture2D, RGB},
 };
 
 use super::{DefaultMaterialResources, Material, Sky};

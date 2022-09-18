@@ -1,17 +1,12 @@
 use ahash::AHashMap;
 use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
-use nohash_hasher::NoHashHasher;
+
 use world::{Storage, World};
 use std::{
     any::TypeId,
-    cell::RefCell,
-    collections::HashMap,
-    hash::BuildHasherDefault,
     ptr::null,
     rc::Rc,
-    sync::{atomic::AtomicU64, Arc, Mutex},
-    time::Duration,
 };
 
 use super::get_static_str;
