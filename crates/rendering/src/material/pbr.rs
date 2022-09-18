@@ -7,7 +7,7 @@ use crate::{
     context::Context,
     mesh::{EnabledAttributes, Surface},
     prelude::{RGBA, SRGBA},
-    scene::{ClusteredShading, Renderer},
+    scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
 };
@@ -38,6 +38,7 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<AlbedoMap>>,
         Read<'w, Storage<NormalMap>>,
         Read<'w, Storage<MaskMap>>,
+        Read<'w, ShadowMapping>,
         Handle<AlbedoMap>,
     );
 
@@ -56,6 +57,7 @@ impl<'w> Material<'w> for Standard {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
         let mask_map = world.get::<Storage<MaskMap>>().unwrap();
+        let shadow_mapping = world.get::<ShadowMapping>().unwrap();
 
         let ecs = world.get::<Scene>().unwrap();
         let entity = world
@@ -68,7 +70,7 @@ impl<'w> Material<'w> for Standard {
         let sky_materials = world.get::<Storage<Sky>>().unwrap();
         let material = sky_materials.get(&component.material());
 
-        (albedo_map, normal_map, mask_map, material.gradient.clone())
+        (albedo_map, normal_map, mask_map, shadow_mapping, material.gradient.clone())
     }
 
     fn set_static_properties<'u>(
@@ -86,8 +88,9 @@ impl<'w> Material<'w> for Standard {
             main.directional_light.color.as_::<f32>() / 255.0,
         );
         uniforms.set_scalar("light_strength", main.directional_light.strength);
-
-        uniforms.set_sampler("gradient", resources.0.get(&resources.3));
+        let shadow = &(*resources.3);
+        uniforms.set_sampler("shadow_map", &shadow.depth_tex);
+        uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);
     }
 
     fn set_surface_properties(
@@ -105,7 +108,7 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, _) = resources;
+        let (albedo_maps, normal_maps, mask_maps, _, _) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);

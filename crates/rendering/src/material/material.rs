@@ -36,6 +36,8 @@ impl<M: for<'w> Material<'w>> Clone for MaterialId<M> {
     }
 }
 
+impl<M: for<'w> Material<'w>> Copy for MaterialId<M> {}
+
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
     // The resources that we need to fetch from the world to set the uniforms

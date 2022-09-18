@@ -110,14 +110,14 @@ impl ShadowMapping {
         // Settings for framebuffer textures
         let sampling = Sampling {
             filter: Filter::Nearest,
-            wrap: Wrap::ClampToEdge,
+            wrap: Wrap::ClampToBorder(vek::Rgba::broadcast(1.0)),
         };
         let mipmaps = MipMapSetting::Disabled;
 
         // Create the depth render texture
         let depth_tex = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
             ctx,
-            TextureMode::Resizable,
+            TextureMode::Dynamic,
             vek::Extent2::broadcast(resolution),
             sampling,
             mipmaps,

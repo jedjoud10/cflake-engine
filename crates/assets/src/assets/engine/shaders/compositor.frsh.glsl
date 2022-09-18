@@ -38,13 +38,11 @@ vec3 aces(vec3 x) {
 void main() {
 	vec2 uv = gl_FragCoord.xy / vec2(resolution);
 	
-	frag = vec4(texture(shadow_map, uv).xyz, 0.0);
-	/*
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
 	sampled *= exposure;
-	//sampled = mix(sampled, aces(sampled), tonemapping_strength);
-	sampled = sampled / (sampled + vec3(1.0));
+	sampled = mix(sampled, aces(sampled), tonemapping_strength);
+	//sampled = sampled / (sampled + vec3(1.0));
 	sampled = pow(sampled, vec3(1.0 / gamma));
 
 	// Create a simple vignette
@@ -57,5 +55,4 @@ void main() {
 	// Sample the depth texture
 	float depth = linearize_depth(texture(depth, uv).r, z_near, z_far);
 	frag = vec4(sampled, 1.0);
-	*/
 }

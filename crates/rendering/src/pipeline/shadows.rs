@@ -1,5 +1,5 @@
 use crate::{
-    material::{Material}, scene::{ShadowMapping, ClusteredShading, DirectionalLight, Renderer, RenderedFrameStats}, mesh::{Mesh, Surface}, shader::Shader, display::{Viewport, Display, RasterSettings, PrimitiveMode}, prelude::Texture, others::Comparison, context::Context,
+    material::{Material}, scene::{ShadowMapping, ClusteredShading, DirectionalLight, Renderer, RenderedFrameStats}, mesh::{Mesh, Surface}, shader::Shader, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}, prelude::Texture, others::Comparison, context::Context,
 };
 
 use ecs::Scene;
@@ -34,7 +34,7 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let settings = RasterSettings {
         depth_test: Some(Comparison::Less),
         scissor_test: None,
-        primitive: PrimitiveMode::Triangles { cull: None },
+        primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Front(true)) },
         srgb: false,
         blend: None,
     };

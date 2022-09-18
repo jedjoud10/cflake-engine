@@ -4,7 +4,7 @@ use super::{
     ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
-use std::{ffi::c_void, marker::PhantomData};
+use std::{ffi::c_void, marker::PhantomData, ptr::null};
 
 // A 2D texture that contains multiple pixels that have their own channels
 // Each pixel can be either a single value, RG, RGB, or even RGBA
@@ -78,17 +78,20 @@ impl<T: Texel> Texture for Texture2D<T> {
             extent.w as i32,
             extent.h as i32,
         );
-        gl::TextureSubImage2D(
-            name,
-            0,
-            0,
-            0,
-            extent.w as i32,
-            extent.h as i32,
-            T::FORMAT,
-            T::TYPE,
-            ptr as *const c_void,
-        );
+
+        if ptr != null() {
+            gl::TextureSubImage2D(
+                name,
+                0,
+                0,
+                0,
+                extent.w as i32,
+                extent.h as i32,
+                T::FORMAT,
+                T::TYPE,
+                ptr as *const c_void,
+            );
+        }
     }
 
     unsafe fn alloc_resizable_storage(

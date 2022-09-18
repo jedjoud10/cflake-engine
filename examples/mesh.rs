@@ -54,7 +54,10 @@ fn init(world: &mut World) {
         color: vek::Rgb::broadcast(255),
         strength: 12.0,
     };
-    ecs.insert((light, Rotation::rotation_x(45f32.to_radians())));
+
+    let b1 = Rotation::rotation_x(45f32.to_radians());
+    let b2 = Rotation::rotation_z(45f32.to_radians());
+    ecs.insert((light, b2 * b1));
 
     // Load the albedo map texture
     let albedo_map = assets
@@ -87,7 +90,7 @@ fn init(world: &mut World) {
     let cube = meshes.insert(
         assets
             .load_with::<Mesh>(
-                "engine/meshes/sphere.obj",
+                "engine/meshes/cube.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
             .unwrap(),
@@ -108,8 +111,14 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.material_id::<Standard>().unwrap();    
-    let surface = Surface::new(cube, material, pipeid);
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default()));
+
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
+    ecs.insert((surface, Renderer::default(), Location::at_y(-0.5), Scale::scale_xyz(20.0, 1.0, 20.0)));
+
+    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
+    ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
 
     // Load in the texture
     let texture = albedo_maps.insert(

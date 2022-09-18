@@ -44,7 +44,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(1000.0, 1000.0, 1024, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 1024, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -347,7 +347,7 @@ fn shadow_map(world: &mut World) {
     if let Some(entry) = main_light_entry {
         if let Ok(rotation) = entry.get::<Rotation>() {
             let mut shadow = world.get_mut::<ShadowMapping>().unwrap();
-            shadow.view_matrix = vek::Mat4::look_at_rh(vek::Vec3::zero(), rotation.forward(), rotation.up());
+            shadow.view_matrix = vek::Mat4::look_at_rh(vek::Vec3::zero(), -rotation.forward(), -rotation.up());
         }
     }
     

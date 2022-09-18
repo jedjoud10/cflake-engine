@@ -2,7 +2,7 @@ use crate::{
     context::{Context, Window},
     display::RasterSettings,
     material::{DefaultMaterialResources, Material},
-    mesh::{Mesh, Surface},
+    mesh::{Mesh, Surface, MeshUtils},
     prelude::{Display, Shader, Texture},
     scene::{
         Camera, ClusteredShading, DirectionalLight, FrustumPlane, RenderedFrameStats, Renderer,
@@ -10,7 +10,7 @@ use crate::{
 };
 
 use ecs::Scene;
-use math::{Location, Rotation, AABB};
+use math::{Location, Rotation, AABB, SharpVertices};
 
 
 use world::{Handle, Storage, World};
@@ -22,7 +22,16 @@ use world::{Handle, Storage, World};
 // https://subscription.packtpub.com/book/game+development/9781787123663/9/ch09lvl1sec89/obb-to-plane
 // https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
 pub fn intersects_frustum(planes: &[FrustumPlane; 6], aabb: AABB, matrix: &vek::Mat4<f32>) -> bool {
-    let corners = [matrix.mul_point(aabb.min), matrix.mul_point(aabb.max)];
+    let mut corners = aabb.points();
+
+    for corner in corners.iter_mut() {
+        *corner = matrix.mul_point(*corner);
+    }
+
+    let aabb = MeshUtils::aabb_from_points(&corners).unwrap();
+
+    let corners = [aabb.min, aabb.max];
+
     planes.iter().all(|plane| {
         let mut furthest = vek::Vec3::zero();
         furthest.iter_mut().enumerate().for_each(|(i, e)| {
