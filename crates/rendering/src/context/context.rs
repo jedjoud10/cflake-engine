@@ -1,21 +1,17 @@
 use ahash::AHashMap;
+use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
-use nohash_hasher::NoHashHasher;
+
+use world::{Storage, World};
 use std::{
     any::TypeId,
-    cell::RefCell,
-    collections::HashMap,
-    hash::BuildHasherDefault,
     ptr::null,
     rc::Rc,
-    sync::{atomic::AtomicU64, Arc, Mutex},
-    time::Duration,
 };
 
 use super::get_static_str;
 use crate::{
-    display::{PrimitiveMode, RasterSettings, Viewport},
-    pipeline::{CreatePipeline, PipeId, Pipeline},
+    display::{PrimitiveMode, RasterSettings, Viewport}, material::{Material, MaterialId}, shader::Shader,
 };
 
 // An abstract wrapper around the whole OpenGL context
@@ -27,8 +23,9 @@ pub struct Context {
     pub(crate) raster: RasterSettings,
     pub(crate) bounded_fbo: u32,
     pub(crate) viewport: Viewport,
+    
     // A list of material surface renderers that we will use
-    pipelines: AHashMap<TypeId, Rc<dyn Pipeline>>,
+    pipelines: AHashMap<TypeId, Rc<dyn Fn(&mut World)>>,
 }
 
 impl Context {
@@ -62,26 +59,35 @@ impl Context {
     }
 
     // Register a new pipeline with the specified init settings
-    pub fn init_pipe_id<'a, P: Pipeline + CreatePipeline<'a>>(
+    pub fn register_material<'a, M: for<'w> Material<'w>>(
         &mut self,
-        init: &mut P::Args,
-    ) -> PipeId<P> {
-        let key = TypeId::of::<P>();
+        storage: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> MaterialId<M> {
+        let key = TypeId::of::<M>();
         if !self.pipelines.contains_key(&key) {
-            let pipeline: Rc<dyn Pipeline> = Rc::new(P::init(self, init));
-            self.pipelines.insert(key, pipeline);
+            let shader = M::shader(self, assets);
+            let handle = storage.insert(shader);
+
+            // Main material pipeline
+            let closure = move |world: &mut World| {
+                crate::pipeline::render_shadows::<M>(world);
+                crate::pipeline::render_surfaces::<M>(world, handle.clone());
+            };
+
+            self.pipelines.insert(key, Rc::new(closure));
         }
-        PipeId(Default::default())
+        MaterialId(Default::default())
     }
 
     // Get a PipeId from a pre-initialized pipeline
-    pub fn get_pipe_id<P: Pipeline>(&self) -> Option<PipeId<P>> {
-        let key = TypeId::of::<P>();
-        self.pipelines.get(&key).map(|_| PipeId(Default::default()))
+    pub fn material_id<M: for<'w> Material<'w>>(&self) -> Option<MaterialId<M>> {
+        let key = TypeId::of::<M>();
+        self.pipelines.get(&key).map(|_| MaterialId(Default::default()))
     }
 
     // Extract all the internally stored material pipelines
-    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Pipeline>> {
+    pub(crate) fn extract_pipelines(&self) -> Vec<Rc<dyn Fn(&mut World)>> {
         self.pipelines
             .iter()
             .map(|(_key, value)| value.clone())

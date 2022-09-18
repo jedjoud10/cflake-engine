@@ -12,7 +12,7 @@ use rendering::shader::{FragmentStage, Processor, Shader, ShaderCompiler, Vertex
 use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMode, Wrap, RGBA};
 
 use std::mem::size_of;
-use std::ptr::null;
+
 
 // Texel type that will be used to describe the inner raw texel that the texture will use
 type Texel = RGBA<Ranged<u8>>;

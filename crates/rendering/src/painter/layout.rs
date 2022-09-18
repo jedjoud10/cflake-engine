@@ -1,4 +1,4 @@
-use super::Attachment;
+
 use crate::prelude::{Depth, DepthTexel, Element, Stencil, StencilTexel};
 
 // This trait is implemented for color texels exclusively and the unit tuple

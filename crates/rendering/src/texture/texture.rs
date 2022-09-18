@@ -6,6 +6,7 @@ use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
+// TODO: Cannot create static/dynamic textures with NONE data
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
     type Region: Region;

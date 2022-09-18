@@ -1,5 +1,6 @@
 #version 460 core
 #include "engine/shaders/models.func.glsl"
+#include "engine/shaders/shadow.func.glsl"
 out vec3 frag;
 
 // Main PBR uniforms
@@ -22,8 +23,9 @@ uniform vec3 light_dir;
 uniform vec3 light_color;
 uniform float light_strength;
 
-// Sky shader values
-uniform sampler2D gradient;
+// Directional shadow mapping
+uniform sampler2D shadow_map;
+uniform mat4 shadow_lightspace_matrix;
 
 // Data given by the vertex shader
 in vec3 m_position;
@@ -57,7 +59,6 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
-	// Constants
 	float roughness = surface.mask.g;
 	float metallic = surface.mask.b;
 	float visibility = surface.mask.r;
@@ -67,10 +68,18 @@ vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
 	vec3 ks = fresnel(f0, camera.view, camera.half_view, surface.normal);
 	vec3 kd = (1 - ks) * (1 - metallic);
 
+	// Check if the fragment is in shadow
+	float shadow = is_in_shadow(
+		surface.position,
+		sun.backward,
+		shadow_lightspace_matrix,
+		shadow_map
+	);
+
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, sun.backward, surface.normal, camera.half_view);
-	vec3 outgoing = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0);
-	outgoing += 0.03 * surface.diffuse * visibility;
+	brdf = brdf * sun.color * sun.strength * max(dot(sun.backward, surface.normal), 0.0) * (1 - shadow);
+	brdf += 0.03 * surface.diffuse * visibility;
 	return brdf;
 }
 

@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
+
 
 use crate::{
     context::ToGlName,
-    prelude::{DepthTexel, MipLevelMut, Texel, Texture2D, UntypedTexel},
+    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel},
 };
 
 use super::{PainterColorLayout, PainterDepthTexel, PainterStencilTexel};

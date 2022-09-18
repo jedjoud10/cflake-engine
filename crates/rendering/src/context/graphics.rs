@@ -3,7 +3,7 @@ use glutin::{
     dpi::LogicalSize,
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
-    ContextBuilder, GlProfile, GlRequest, monitor::VideoMode,
+    ContextBuilder, GlProfile, GlRequest,
 };
 
 // FPS cap setting that limits the number of redraws per second
@@ -35,7 +35,7 @@ pub(crate) fn new<T>(settings: GraphicsSetupSettings, el: &EventLoop<T>) -> (Win
 
     // In case we want to use fullscreen, get the main monitor's video mode
     let fullscreen = if fullscreen {
-       el.primary_monitor().map(|monitor| monitor.video_modes().next()).flatten().map(Fullscreen::Exclusive)
+       el.primary_monitor().and_then(|monitor| monitor.video_modes().next()).map(Fullscreen::Exclusive)
     } else {
         None
     };

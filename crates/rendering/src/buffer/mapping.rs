@@ -1,11 +1,8 @@
-use ahash::{AHashMap, AHashSet};
-use parking_lot::{Mutex, RwLock};
+
+
 use std::{
-    io::Read,
-    marker::PhantomData,
-    ops::RangeBounds,
     sync::{
-        atomic::{AtomicBool, AtomicPtr, AtomicU64, Ordering},
+        atomic::{AtomicBool, Ordering},
         Arc,
     },
 };
@@ -147,12 +144,11 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
                 gl::UnmapNamedBuffer(buf.name());
             },
             BufferViewMut::Copied { buf, vec, .. } => {
-                buf.write(&vec);
+                buf.write(vec);
             },
             BufferViewMut::PersistentAccessor { used, .. } => {
                 used.store(false, Ordering::Relaxed)
             },
-            _ => {}
         }
     }
 }
@@ -161,14 +157,12 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
 // This will allow us to share the persistent buffer accross threads to be able to read/write from it concurrently
 pub struct Persistent<T: Shared, const TARGET: u32> {
     pub(super) buf: Option<Buffer<T, TARGET>>,
-    pub(super) ptr: *mut T,
     pub(super) used: Arc<AtomicBool>,
 }
 
 // This will be able to read / write to specific parts to a persistent buffer in another thread
 // TODO: SLightly rename this to be more correct, or rewrite the persistent buffer API completely
 pub struct PersistentAccessor<T: Shared, const TARGET: u32> {
-    pub(super) buf: u32,
     pub(super) len: usize,
     pub(super) used: Arc<AtomicBool>,
     pub(super) ptr: *mut T,

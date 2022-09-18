@@ -1,9 +1,9 @@
-use std::marker::PhantomData;
+
 
 use super::{Program, UniformsError};
 use crate::{
     buffer::Buffer,
-    context::{Context, Shared, ToGlName},
+    context::{Shared, ToGlName},
     texture::Texture,
 };
 
@@ -18,6 +18,14 @@ macro_rules! impl_scalars {
             }
 
             impl Scalar for $t {}
+
+            impl<'a> SetRawUniform for &'a $t {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 1 $glfunc>](program, loc, *self)
+                }
+            }
+
+            impl<'a> Scalar for &'a $t {}
         }
     };
 }
@@ -134,6 +142,48 @@ macro_rules! impl_math_vectors {
             }
 
             impl Vector<4> for vek::Rgb<$t> {}
+
+
+            impl<'a> SetRawUniform for &'a vek::Vec2<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 2 $glfunc>](program, loc, self.x, self.y)
+                }
+            }
+
+            impl<'a> Vector<2> for &'a vek::Vec2<$t> {}
+
+            impl<'a> SetRawUniform for &'a vek::Vec3<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 3 $glfunc>](program, loc, self.x, self.y, self.z)
+                }
+            }
+
+            impl<'a> Vector<3> for &'a vek::Vec3<$t> {}
+
+            impl<'a> SetRawUniform for &'a vek::Rgb<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 3 $glfunc>](program, loc, self.r, self.g, self.b)
+                }
+            }
+
+            impl<'a> Vector<3> for &'a vek::Rgb<$t> {}
+
+            impl<'a> SetRawUniform for &'a vek::Vec4<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 4 $glfunc>](program, loc, self.x, self.y, self.z, self.w)
+                }
+            }
+
+            impl<'a> Vector<4> for &'a vek::Vec4<$t> {}
+
+
+            impl<'a> SetRawUniform for &'a vek::Rgba<$t> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::[<ProgramUniform 4 $glfunc>](program, loc, self.r, self.g, self.b, self.a)
+                }
+            }
+
+            impl<'a> Vector<4> for &'a vek::Rgb<$t> {}
         }
     };
 }
@@ -163,6 +213,28 @@ macro_rules! impl_matrices {
             impl<'a> Matrix<4, 4> for &'a vek::Mat4<f32> {}
             impl<'a> Matrix<3, 3> for &'a vek::Mat3<f32> {}
             impl<'a> Matrix<2, 2> for &'a vek::Mat2<f32> {}
+
+            impl<'a> SetRawUniform for vek::Mat4<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix4fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
+                }
+            }
+
+            impl<'a> SetRawUniform for vek::Mat3<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix3fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
+                }
+            }
+
+            impl<'a> SetRawUniform for vek::Mat2<f32> {
+                unsafe fn set(self, loc: i32, program: u32) {
+                    gl::ProgramUniformMatrix2fv(program, loc as i32, 1, gl::FALSE, self.as_col_ptr())
+                }
+            }
+
+            impl<'a> Matrix<4, 4> for vek::Mat4<f32> {}
+            impl<'a> Matrix<3, 3> for vek::Mat3<f32> {}
+            impl<'a> Matrix<2, 2> for vek::Mat2<f32> {}
         }
     };
 }
@@ -361,13 +433,13 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set an image uniform (a texture that we can modify)
-    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut T) {}
+    pub fn set_image<T: Texture>(&mut self, _name: &str, _sampler: &mut T) {}
 
     // Set a buffer uniform (that accepts any type of buffer)
     pub fn set_buffer<T: Shared, const TARGET: u32>(
         &mut self,
-        name: &str,
-        buffer: &mut Buffer<T, TARGET>,
+        _name: &str,
+        _buffer: &mut Buffer<T, TARGET>,
     ) {
     }
 }

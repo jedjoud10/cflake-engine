@@ -1,4 +1,4 @@
-use std::ops::Index;
+
 
 use arrayvec::ArrayVec;
 use ecs::Component;
@@ -122,7 +122,6 @@ impl Camera {
     // Get the view frustum planes from this camera
     pub fn frustum(&self) -> [FrustumPlane; 6] {
         let columns = (*self.projection_matrix() * *self.view_matrix())
-            .clone()
             .transposed()
             .into_col_arrays();
         let columns = columns

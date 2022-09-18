@@ -1,4 +1,4 @@
-mod material;
-mod pipeline;
-pub use material::*;
-pub use pipeline::*;
+mod surface;
+mod shadows;
+pub use surface::*;
+pub use shadows::*;

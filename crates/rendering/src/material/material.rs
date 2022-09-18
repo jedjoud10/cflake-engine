@@ -1,10 +1,12 @@
+use std::marker::PhantomData;
+
 use assets::Assets;
 
 use math::{Location, Rotation};
 use world::World;
 
 use crate::{
-    buffer::UniformBuffer,
+    buffer::{ComputeStorage},
     context::{Context, Window},
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
@@ -16,13 +18,25 @@ use crate::{
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
-    pub(crate) point_lights: &'a UniformBuffer<(PointLight, Location)>,
+    pub(crate) point_lights: &'a ComputeStorage<(PointLight, Location)>,
+    pub(crate) clusters: &'a ComputeStorage<(u32, u32)>,
     pub(crate) camera_location: &'a Location,
     pub(crate) camera_rotation: &'a Rotation,
     pub(crate) directional_light: &'a DirectionalLight,
     pub(crate) directional_light_rotation: &'a Rotation,
     pub(crate) window: &'a Window,
 }
+
+// Material ID is used to make sure the user has initialized the proper material pipeline
+pub struct MaterialId<M: for<'w> Material<'w>>(pub(crate) PhantomData<M>);
+
+impl<M: for<'w> Material<'w>> Clone for MaterialId<M> {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+impl<M: for<'w> Material<'w>> Copy for MaterialId<M> {}
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 pub trait Material<'w>: 'static + Sized {
@@ -72,6 +86,11 @@ pub trait Material<'w>: 'static + Sized {
 
     // Fetch the property block resources
     fn fetch_resources(world: &'w World) -> Self::Resources;
+
+    // Does this material cast shadows onto other surfaces?
+    fn shadow_caster() -> bool {
+        true
+    }
 
     // Set the global and static instance properties when we start batch rendering
     fn set_static_properties(

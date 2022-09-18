@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::mem::MaybeUninit;
 
 use assets::Asset;
@@ -29,6 +30,9 @@ pub struct Mesh {
     pub(super) tangents: AttributeBuffer<Tangent>,
     pub(super) colors: AttributeBuffer<Color>,
     pub(super) uvs: AttributeBuffer<TexCoord>,
+
+    // The number of vertices stored in this mesh
+    pub(super) len: Cell<Option<usize>>,
 
     // The AABB bounding box for this mesh section
     aabb: Option<AABB>,
@@ -79,6 +83,7 @@ impl Mesh {
             tangents: MaybeUninit::uninit(),
             colors: MaybeUninit::uninit(),
             uvs: MaybeUninit::uninit(),
+            len: Cell::new(None),
             aabb: None,
             triangles,
         };
@@ -91,9 +96,12 @@ impl Mesh {
         vertices.set_attribute::<Color>(colors);
         vertices.set_attribute::<TexCoord>(tex_coords);
         vertices.compute_aabb();
+        vertices.len();
 
         // Bind the vertex buffers and check for valididity
         let valid = vertices.rebind(true);
+
+        // TODO: Maybe don't do this?
         std::mem::forget(vertices);
         mesh.triangles_mut().rebind(true);
 
@@ -109,6 +117,7 @@ impl Mesh {
             colors: &self.colors,
             uvs: &self.uvs,
             bitfield: self.enabled,
+            len: self.len.get(),
         }
     }
 
@@ -124,6 +133,7 @@ impl Mesh {
             bitfield: &mut self.enabled,
             aabb: &mut self.aabb,
             maybe_reassigned: EnabledAttributes::empty(),
+            len: &mut self.len,
         }
     }
 
@@ -156,6 +166,7 @@ impl Mesh {
                 colors: &self.colors,
                 uvs: &self.uvs,
                 bitfield: self.enabled,
+                len: self.len.get(),
             },
         )
     }
@@ -178,6 +189,7 @@ impl Mesh {
                 bitfield: &mut self.enabled,
                 aabb: &mut self.aabb,
                 maybe_reassigned: EnabledAttributes::empty(),
+                len: &mut self.len,
             },
         )
     }

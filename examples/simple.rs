@@ -1,4 +1,4 @@
-use cflake_engine::prelude::{vek::Lerp, *};
+use cflake_engine::prelude::{*};
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 
@@ -89,7 +89,7 @@ fn init(world: &mut World) {
     });
 
     // Create a new material surface for rendering
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Standard>>().unwrap();
+    let pipeid = ctx.material_id::<Standard>().unwrap();
     let surface = Surface::new(cube, material, pipeid);
 
     // Insert a new entity that contains the valid surface
@@ -116,7 +116,7 @@ fn init(world: &mut World) {
 
     // Create the default Sky material pipeline and default Sky sphere surface
     let material = sky_materials.insert(material);
-    let pipeid = ctx.get_pipe_id::<SpecializedPipeline<Sky>>().unwrap();
+    let pipeid = ctx.material_id::<Sky>().unwrap();
     let renderer = Renderer::default();
     let sphere = assets
         .load_with::<Mesh>(

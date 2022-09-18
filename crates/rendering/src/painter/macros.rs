@@ -1,5 +1,5 @@
 use super::{Attachment, ColorAttachmentLayout, PainterColorLayout};
-use crate::prelude::{ColorTexel, Texel, TexelFormat};
+use crate::prelude::{ColorTexel};
 use seq_macro::seq;
 use std::concat_idents;
 

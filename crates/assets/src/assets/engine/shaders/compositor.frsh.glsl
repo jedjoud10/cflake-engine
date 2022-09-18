@@ -9,6 +9,7 @@ uniform float z_far;
 // Textures that we will sample
 uniform sampler2D color;
 uniform sampler2D depth;
+uniform sampler2D shadow_map;
 
 // Post-processing compositor settings
 uniform float tonemapping_strength;
@@ -39,11 +40,10 @@ void main() {
 	
 	// Sample the color texture and apply gamma correction
 	vec3 sampled = texture(color, uv).xyz;
-	//sampled *= exposure;
-	sampled = pow(sampled, vec3(1.0 / gamma));
-	frag = vec4(sampled, 1.0);
-	return;
+	sampled *= exposure;
 	sampled = mix(sampled, aces(sampled), tonemapping_strength);
+	//sampled = sampled / (sampled + vec3(1.0));
+	sampled = pow(sampled, vec3(1.0 / gamma));
 
 	// Create a simple vignette
 	float vignette = length(abs(uv - 0.5));

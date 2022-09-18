@@ -1,8 +1,7 @@
 use super::{Extent, Region, Texel, Texture};
 use crate::prelude::TextureMode;
 use std::{
-    cell::{Cell, RefCell},
-    marker::PhantomData,
+    cell::{Cell},
     num::NonZeroU8,
     rc::Rc,
 };
