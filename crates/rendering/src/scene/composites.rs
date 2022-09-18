@@ -27,10 +27,11 @@ pub struct ClusteredShading {
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) point_lights: ComputeStorage<(PointLight, Location)>,
     pub(crate) clusters: ComputeStorage<(u32, u32)>,
+    pub(crate) cluster_size: u32,
 }
 
 impl ClusteredShading {
-    pub(crate) fn new(ctx: &mut Context, window: &Window, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+    pub(crate) fn new(ctx: &mut Context, cluster_size: u32, window: &Window, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
         // Settings for framebuffer textures
         let sampling = Sampling {
             filter: Filter::Nearest,
@@ -73,6 +74,7 @@ impl ClusteredShading {
             color_tex: color,
             depth_tex: depth,
             main_directional_light: None,
+            cluster_size,
             point_lights: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
         }
@@ -102,7 +104,6 @@ pub struct ShadowMapping {
     pub(crate) view_matrix: vek::Mat4<f32>,
     pub(crate) proj_matrix: vek::Mat4<f32>,
     pub(crate) shader: Shader,
-    pub(crate) resolution: u16,
 }
 
 impl ShadowMapping {
@@ -146,7 +147,6 @@ impl ShadowMapping {
             painter: Painter::new(ctx),
             depth_tex,
             shader,
-            resolution,
             view_matrix: vek::Mat4::identity(),
             proj_matrix,
         }

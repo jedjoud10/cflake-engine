@@ -286,4 +286,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
     // Read the whole raw textrue layer
     unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
+
+    // Copy a sub-region of another texture into this texture
+    unsafe fn copy_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O);
 }

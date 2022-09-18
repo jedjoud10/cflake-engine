@@ -27,6 +27,10 @@ uniform float light_strength;
 uniform sampler2D shadow_map;
 uniform mat4 shadow_lightspace_matrix;
 
+// Clustered shading data
+uniform ivec2 cluster_size;
+uniform ivec2 resolution;
+
 // Data given by the vertex shader
 in vec3 m_position;
 in vec3 m_normal;
@@ -59,7 +63,7 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, SunData sun) {
-	float roughness = max(surface.mask.g, 0.1);
+	float roughness = max(surface.mask.g, 0.06);
 	float metallic = surface.mask.b;
 	float visibility = surface.mask.r;
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);

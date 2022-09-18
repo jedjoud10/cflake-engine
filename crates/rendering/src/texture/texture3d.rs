@@ -1,41 +1,39 @@
-use assets::Asset;
-
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode,
+    MipMapDescriptor, Region, Texel, Texture, TextureMode,
 };
-use crate::context::{Context, ToGlName, ToGlTarget};
+use crate::context::{ToGlName, ToGlTarget};
 use std::{ffi::c_void, marker::PhantomData, ptr::null};
 
-// A 2D texture that contains multiple pixels that have their own channels
-// Each pixel can be either a single value, RG, RGB, or even RGBA
-// These individual pixels are called texels, since they are used within the texture
-pub struct Texture2D<T: Texel> {
+// A 3D texture that contains multiple voxels that have their own channels
+// Each voxel can be either a single value, RG, RGB, or even RGBA
+// These individual voxel are also called texels, since they are used within the texture
+pub struct Texture3D<T: Texel> {
     // Internal OpenGL shit
     name: u32,
 
     // Main texture settings
-    dimensions: vek::Extent2<u16>,
+    dimensions: vek::Extent3<u16>,
     mode: TextureMode,
     mipmap: MipMapDescriptor,
 
-    // Boo (also sets Texture2D as !Sync and !Send)
+    // Boo (also sets Texture3D as !Sync and !Send)
     _phantom: PhantomData<*const T>,
 }
 
-impl<T: Texel> ToGlName for Texture2D<T> {
+impl<T: Texel> ToGlName for Texture3D<T> {
     fn name(&self) -> u32 {
         self.name
     }
 }
 
-impl<T: Texel> ToGlTarget for Texture2D<T> {
+impl<T: Texel> ToGlTarget for Texture3D<T> {
     fn target() -> u32 {
-        gl::TEXTURE_2D
+        gl::TEXTURE_3D
     }
 }
 
-impl<T: Texel> Texture for Texture2D<T> {
-    type Region = (vek::Vec2<u16>, vek::Extent2<u16>);
+impl<T: Texel> Texture for Texture3D<T> {
+    type Region = (vek::Vec3<u16>, vek::Extent3<u16>);
     type T = T;
 
     fn dimensions(&self) -> <Self::Region as super::Region>::E {
@@ -81,13 +79,15 @@ impl<T: Texel> Texture for Texture2D<T> {
         );
 
         if ptr != null() {
-            gl::TextureSubImage2D(
+            gl::TextureSubImage3D(
                 name,
+                0,
                 0,
                 0,
                 0,
                 extent.w,
                 extent.h,
+                extent.d,
                 T::FORMAT,
                 T::TYPE,
                 ptr as *const c_void,
@@ -102,13 +102,14 @@ impl<T: Texel> Texture for Texture2D<T> {
         ptr: *const <Self::T as Texel>::Storage,
     ) {        
         let extent = extent.as_::<i32>();
-        gl::BindTexture(gl::TEXTURE_2D, name);
-        gl::TexImage2D(
+        gl::BindTexture(gl::TEXTURE_3D, name);
+        gl::TexImage3D(
             gl::TEXTURE_2D,
             unique_level as i32,
             T::INTERNAL_FORMAT as i32,
             extent.w,
             extent.h,
+            extent.d,
             0,
             T::FORMAT,
             T::TYPE,
@@ -124,13 +125,15 @@ impl<T: Texel> Texture for Texture2D<T> {
     ) {
         let origin = region.origin().as_::<i32>();
         let extent = region.extent().as_::<i32>();
-        gl::TextureSubImage2D(
+        gl::TextureSubImage3D(
             name,
             level as i32,
             origin.x,
             origin.y,
+            origin.z,
             extent.w,
             extent.h,
+            extent.d,
             T::FORMAT,
             T::TYPE,
             ptr as *const c_void,
@@ -150,10 +153,10 @@ impl<T: Texel> Texture for Texture2D<T> {
             level as i32,
             origin.x,
             origin.y,
-            0,
+            origin.z,
             extent.w,
             extent.h,
-            1,
+            extent.d,
             T::FORMAT,
             T::TYPE,
             ptr as *const c_void,
@@ -179,10 +182,10 @@ impl<T: Texel> Texture for Texture2D<T> {
             level as i32,
             origin.x,
             origin.y,
-            0,
+            origin.z,
             extent.w,
             extent.h,
-            1,
+            extent.d,
             T::FORMAT,
             T::TYPE,
             size as i32,
@@ -213,41 +216,16 @@ impl<T: Texel> Texture for Texture2D<T> {
             other_level as i32,
             origin.x,
             origin.y,
-            0,
+            origin.z,
             name,
             gl::TEXTURE_2D,
             level as i32,
             offset.x,
             offset.y,
-            0,
+            offset.z,
             extent.w,
             extent.h,
-            1,
+            extent.d,
         );
-    }
-}
-
-impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
-    type Args = (&'a mut Context, TextureImportSettings);
-
-    fn extensions() -> &'static [&'static str] {
-        &["png", "jpg"]
-    }
-
-    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
-        let (ctx, settings) = args;
-        let image = image::load_from_memory(data.bytes()).unwrap();
-        let image = image.flipv();
-        let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
-        let texels = T::to_image_texels(image);
-        Self::new(
-            ctx,
-            settings.mode,
-            dimensions,
-            settings.sampling,
-            settings.mipmaps,
-            Some(texels.as_slice()),
-        )
-        .unwrap()
     }
 }

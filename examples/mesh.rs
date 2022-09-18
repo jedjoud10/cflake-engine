@@ -105,8 +105,8 @@ fn init(world: &mut World) {
         bumpiness: 0.3,
         roughness: 1.0,
         ambient_occlusion: 1.0,
-        metallic: 0.5,
-        scale: vek::Vec2::broadcast(1.0),
+        metallic: 1.0,
+        scale: vek::Vec2::broadcast(3.0),
         tint: vek::Rgb::white(),
     });
 
