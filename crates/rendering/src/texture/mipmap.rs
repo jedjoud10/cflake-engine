@@ -32,6 +32,11 @@ pub(super) fn set_bit(rc: &Rc<Cell<u64>>, location: u8, value: bool) {
     rc.set(current);
 }
 
+// Fetch the dimensions of one single mip level that is part of a texture
+fn mip_level_extent<T: Texture>(texture: &T, level: u8) -> <<T as Texture>::Region as Region>::E {
+    unsafe { <<T::Region as Region>::E as Extent>::get_level_extent(texture.name(), level) }
+}
+
 // An immutable mip level that we can use to read from the texture
 pub struct MipLevelRef<'a, T: Texture> {
     texture: &'a T,
@@ -125,6 +130,7 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             level,
             read,
             write,
+
         }
     }
 
@@ -292,7 +298,8 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     // Copy a whole another texture level into this one without checking for safety
     pub unsafe fn copy_from_unchecked(&mut self, other: &MipLevelRef<T>) {
         let offset = <T::Region as Region>::unit().origin();
-        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, other.texture.region(), offset);
+        let read_region = <T::Region as Region>::with_extent(self.dimensions());
+        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, read_region, offset);
     }
 
     // Copy a sub-region from another texture level into this texture
@@ -305,12 +312,13 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
 
         assert!(
             other.texture.is_region_valid(read_region),
-            "Access read region is invalid due to size of offset"
+            "Access read region is invalid due to size or offset"
         );
 
+        let reg = <T::Region as Region>::from_raw_parts(write_offset, read_region.extent());
         assert!(
-            self.texture.is_region_valid(read_region.offset_by(write_offset)),
-            "Access write region is invalid due to size of offset"
+            self.texture.is_region_valid(reg),
+            "Access write region is invalid due to size or offset"
         );
 
         unsafe {
@@ -325,6 +333,10 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             TextureMode::Static,
             "Cannot write data to static textures"
         );
+
+        assert!(self.dimensions() == other.dimensions(), "Cannot copy from differently sized mip level");
+
+        self.copy_subregion_from(other, <T::Region as Region>::with_extent(self.dimensions()), <T::Region as Region>::unit().origin())
     }
 }
 
