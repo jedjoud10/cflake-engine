@@ -91,7 +91,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
             && mesh.vertices().len().is_some();
 
         // Check if the surface is visible inside the camera's frustum
-        let aabb = if let Some(aabb) = mesh.aabb() {
+        let aabb = !M::should_use_frustum_culling() || if let Some(aabb) = mesh.aabb() {
             intersects_frustum(&planes, aabb, &renderer.matrix)
         } else {
             false

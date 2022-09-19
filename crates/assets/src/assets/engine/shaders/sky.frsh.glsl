@@ -11,10 +11,6 @@ uniform float sun_intensity;
 uniform float sun_size;
 uniform vec3 sun_dir;
 
-// Cloud params
-uniform float cloud_speed;
-uniform float cloud_coverage;
-
 // Heheheha
 uniform vec3 camera;
 in vec2 m_tex_coord;

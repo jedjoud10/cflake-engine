@@ -19,10 +19,6 @@ pub struct Sky {
     // Sun settings
     pub sun_intensity: f32,
     pub sun_size: f32,
-
-    // Cloud settings
-    pub cloud_coverage: f32,
-    pub cloud_speed: f32,
 }
 
 impl<'w> Material<'w> for Sky {
@@ -84,8 +80,6 @@ impl<'w> Material<'w> for Sky {
             main.directional_light.strength * instance.sun_intensity,
         );
         uniforms.set_scalar("sun_size", instance.sun_size);
-        uniforms.set_scalar("cloud_speed", instance.cloud_speed);
-        uniforms.set_scalar("cloud_coverage", instance.cloud_coverage);
     }
 
     fn shader(

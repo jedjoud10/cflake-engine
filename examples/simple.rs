@@ -110,8 +110,6 @@ fn init(world: &mut World) {
         gradient: texture,
         sun_intensity: 15.0,
         sun_size: 1.05,
-        cloud_coverage: 0.0,
-        cloud_speed: 0.0,
     };
 
     // Create the default Sky material pipeline and default Sky sphere surface
