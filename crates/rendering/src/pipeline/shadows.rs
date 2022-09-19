@@ -8,7 +8,7 @@ use world::{World, Storage};
 
 // Render to the main global shadow map if the material is a shadow caster
 pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
-    if !M::shadow_caster() {
+    if !M::uses_shadow_pass() {
         return;
     }
 
@@ -42,11 +42,11 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     // Find all the surfaces that use this material type
     let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
     let query = query.filter(|(renderer, surface)| {
-        // Check if the renderer is even enabled
-        let enabled = renderer.enabled;
+        // Check if the renderer is even enabled and if it should cast shadows
+        let enabled = renderer.visible && surface.visible && surface.shadow_caster;
 
         // Check if the mesh meets the material requirements
-        let mesh = meshes.get(&surface.mesh());
+        let mesh = meshes.get(&surface.mesh);
         let buffers = mesh.vertices().layout().contains(M::requirements())
             && mesh.vertices().len().is_some();
 
@@ -62,7 +62,7 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
 
     // Render each mesh as if it was a shadow caster
     for (renderer, surface) in query {
-        let mesh = meshes.get(&surface.mesh());
+        let mesh = meshes.get(&surface.mesh);
         uniforms.set_mat4x4("world_matrix", renderer.matrix);
         rasterizer.draw(mesh, unsafe {
             uniforms.assume_valid()

@@ -83,10 +83,10 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
     let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
     let query = query.filter(|(renderer, surface)| {
         // Check if the renderer is even enabled
-        let enabled = renderer.enabled;
+        let enabled = renderer.visible;
 
         // Check if the mesh meets the material requirements
-        let mesh = meshes.get(&surface.mesh());
+        let mesh = meshes.get(&surface.mesh);
         let buffers = mesh.vertices().layout().contains(M::requirements())
             && mesh.vertices().len().is_some();
 
@@ -127,9 +127,9 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
     let mut old: Option<Handle<M>> = None;
     for (renderer, surface) in query {
         // Check if we changed material instances
-        if old != Some(surface.material().clone()) {
+        if old != Some(surface.material.clone()) {
             stats.material_instances += 1;
-            old = Some(surface.material().clone());
+            old = Some(surface.material.clone());
             let instance = materials.get(old.as_ref().unwrap());
 
             // Update the material property block uniforms
@@ -150,7 +150,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         );
 
         // Draw the surface object using the current rasterizer pass
-        let mesh = meshes.get(&surface.mesh());
+        let mesh = meshes.get(&surface.mesh);
 
         // Validate the uniforms
         let validated = unsafe {

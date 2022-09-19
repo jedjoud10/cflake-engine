@@ -68,7 +68,7 @@ impl<'w> Material<'w> for Standard {
         let entity = ecs.entry(entity).unwrap();
         let component = entity.get::<Surface<Sky>>().unwrap();
         let sky_materials = world.get::<Storage<Sky>>().unwrap();
-        let material = sky_materials.get(&component.material());
+        let material = sky_materials.get(&component.material);
 
         (albedo_map, normal_map, mask_map, shadow_mapping, material.gradient.clone())
     }

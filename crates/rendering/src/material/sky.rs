@@ -34,7 +34,7 @@ impl<'w> Material<'w> for Sky {
         PrimitiveMode::Triangles { cull: None }
     }
 
-    fn shadow_caster() -> bool {
+    fn uses_shadow_pass() -> bool {
         false
     }
 
