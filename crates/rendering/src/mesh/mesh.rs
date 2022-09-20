@@ -25,19 +25,20 @@ pub struct Mesh {
     pub(crate) enabled: EnabledAttributes,
 
     // Vertex attribute buffers
+    pub(super) bound: [u32; 5],
     pub(super) positions: AttributeBuffer<Position>,
     pub(super) normals: AttributeBuffer<Normal>,
     pub(super) tangents: AttributeBuffer<Tangent>,
     pub(super) colors: AttributeBuffer<Color>,
     pub(super) uvs: AttributeBuffer<TexCoord>,
-
+    
     // The number of vertices stored in this mesh
     pub(super) len: Cell<Option<usize>>,
 
     // The AABB bounding box for this mesh section
     aabb: Option<AABB>,
 
-    // The triangle buffer (triangles * 3)
+    // The triangle buffer
     triangles: TriangleBuffer<u32>,
 }
 
@@ -46,14 +47,14 @@ impl Mesh {
     pub fn from_vecs(
         ctx: &mut Context,
         mode: BufferMode,
-        positions: Vec<VePosition>,
+        positions: Option<Vec<VePosition>>,
         normals: Option<Vec<VeNormal>>,
         tangents: Option<Vec<VeTangent>>,
         colors: Option<Vec<VeColor>>,
         tex_coords: Option<Vec<VeTexCoord>>,
         triangles: Vec<Triangle<u32>>,
     ) -> Option<Self> {
-        let positions = ArrayBuffer::from_slice(ctx, &positions, mode).unwrap();
+        let positions = positions.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
         let normals = normals.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
         let tangents = tangents.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
         let colors = colors.map(|vec| ArrayBuffer::from_slice(ctx, &vec, mode).unwrap());
@@ -64,7 +65,7 @@ impl Mesh {
 
     // Create a new mesh from the attribute buffers
     pub fn from_buffers(
-        positions: ArrayBuffer<VePosition>,
+        positions: Option<ArrayBuffer<VePosition>>,
         normals: Option<ArrayBuffer<VeNormal>>,
         tangents: Option<ArrayBuffer<VeTangent>>,
         colors: Option<ArrayBuffer<VeColor>>,
@@ -78,6 +79,7 @@ impl Mesh {
                 vao
             },
             enabled: EnabledAttributes::empty(),
+            bound: [0; 5],
             positions: MaybeUninit::uninit(),
             normals: MaybeUninit::uninit(),
             tangents: MaybeUninit::uninit(),
@@ -90,7 +92,7 @@ impl Mesh {
 
         // Set the vertex buffers (including the position buffer)
         let mut vertices = mesh.vertices_mut();
-        vertices.set_attribute::<Position>(Some(positions));
+        vertices.set_attribute::<Position>(positions);
         vertices.set_attribute::<Normal>(normals);
         vertices.set_attribute::<Tangent>(tangents);
         vertices.set_attribute::<Color>(colors);
@@ -125,6 +127,7 @@ impl Mesh {
     pub fn vertices_mut(&mut self) -> VerticesMut {
         VerticesMut {
             vao: self.vao,
+            bound: &mut self.bound,
             positions: &mut self.positions,
             normals: &mut self.normals,
             tangents: &mut self.tangents,
@@ -132,7 +135,6 @@ impl Mesh {
             uvs: &mut self.uvs,
             bitfield: &mut self.enabled,
             aabb: &mut self.aabb,
-            maybe_reassigned: EnabledAttributes::empty(),
             len: &mut self.len,
         }
     }
@@ -181,6 +183,7 @@ impl Mesh {
             },
             VerticesMut {
                 vao: self.vao,
+                bound: &mut self.bound,
                 positions: &mut self.positions,
                 normals: &mut self.normals,
                 tangents: &mut self.tangents,
@@ -188,7 +191,6 @@ impl Mesh {
                 uvs: &mut self.uvs,
                 bitfield: &mut self.enabled,
                 aabb: &mut self.aabb,
-                maybe_reassigned: EnabledAttributes::empty(),
                 len: &mut self.len,
             },
         )
@@ -363,7 +365,7 @@ impl<'a> Asset<'a> for Mesh {
         Mesh::from_vecs(
             ctx,
             settings.mode,
-            positions,
+            Some(positions),
             normals,
             tangents,
             None,

@@ -66,7 +66,7 @@ impl VerticesRef<'_> {
 pub struct VerticesMut<'a> {
     pub(super) vao: u32,
     pub(super) bitfield: &'a mut EnabledAttributes,
-    pub(super) maybe_reassigned: EnabledAttributes,
+    pub(super) bound: &'a mut [u32; 5],
     pub(super) positions: &'a mut AttributeBuffer<Position>,
     pub(super) normals: &'a mut AttributeBuffer<Normal>,
     pub(super) tangents: &'a mut AttributeBuffer<Tangent>,
@@ -174,10 +174,10 @@ impl VerticesMut<'_> {
             return false;
         }
 
+        let mut copied = *self.bound;
         for (i, (buffer, attrib)) in self.as_any().into_iter().flatten().enumerate() {
-            if self.maybe_reassigned.contains(attrib.tag()) || force {
+            if self.bound[i] != buffer.name() || force {
                 unsafe {
-                    // TODO: Just use a state machine internally saved in the mesh bozo
                     gl::VertexArrayAttribBinding(self.vao, attrib.attribute_index(), i as u32);
                     gl::VertexArrayVertexBuffer(
                         self.vao,
@@ -186,9 +186,11 @@ impl VerticesMut<'_> {
                         0,
                         buffer.stride() as i32,
                     );
+                    copied[i] = buffer.name();
                 }
             }
         }
+        *self.bound = copied;
 
         true
     }

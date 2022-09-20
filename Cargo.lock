@@ -2334,6 +2334,7 @@ dependencies = [
  "arrayvec",
  "assets",
  "bitflags",
+ "crc32fast",
  "ecs",
  "enum-as-inner",
  "getset",

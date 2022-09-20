@@ -114,15 +114,26 @@ impl<T: Stage> Drop for Compiled<T> {
 }
 
 // Compile a single shader stage, and handle errors
-pub(super) unsafe fn compile<U: Stage>(_ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
+pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
     // Create the stage source
     let stage = stage.0;
-    let shader = gl::CreateShader(U::target());
     let (source, name) = stage.into_raw_parts();
 
+    // If the stage was already compiled, simply just reuse it
+    if ctx.stages.0.contains(&name) {
+        let hash = crc32fast::hash(source.as_bytes());
+        println!("Reused shader source {name}");
+        let name = *ctx.stages.1.get(&hash).unwrap();
+        return Compiled {
+            name,
+            _phantom: PhantomData,
+        };
+    }
+    
     // Specify the stage source and compile it
     let cstring = CString::new(source.clone()).unwrap();
     let shader_source: *const i8 = cstring.as_ptr();
+    let shader = gl::CreateShader(U::target());
     gl::ShaderSource(shader, 1, &shader_source, null());
     gl::CompileShader(shader);
 
@@ -151,9 +162,12 @@ pub(super) unsafe fn compile<U: Stage>(_ctx: &mut Context, stage: Processed<U>) 
         panic!("Source: \n{}\n Error: \n{}", source, message);
     }
 
-    // Return the stage GL name
+    // Cache the shader source for later reusage
+    let hash = crc32fast::hash(source.as_bytes());
     println!("Compiled shader source {name} successfully");
-
+    ctx.stages.0.insert(name);
+    ctx.stages.1.insert(hash, shader);
+    
     Compiled {
         name: shader,
         _phantom: Default::default(),

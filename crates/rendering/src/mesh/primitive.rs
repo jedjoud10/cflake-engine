@@ -74,8 +74,7 @@ impl PrimitiveGenerator for Cuboid {
             if let Some(tex_coords) = &mut tex_coords {
                 MeshUtils::apply_settings_tex_coords(
                     local_tex_coords.as_mut().unwrap(),
-                    settings.invert_horizontal_tex_coord,
-                    settings.invert_vertical_tex_coord,
+                    settings.invert_tex_coords,
                 );
                 tex_coords.extend(local_tex_coords.unwrap());
             }
@@ -117,7 +116,7 @@ impl PrimitiveGenerator for Cuboid {
         Mesh::from_vecs(
             ctx,
             settings.mode,
-            positions,
+            Some(positions),
             normals,
             tangents,
             None,

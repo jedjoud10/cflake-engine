@@ -4,7 +4,7 @@ use super::{Program, UniformsError};
 use crate::{
     buffer::Buffer,
     context::{Shared, ToGlName},
-    texture::Texture,
+    texture::Texture, prelude::MipLevelMut,
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -433,7 +433,7 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set an image uniform (a texture that we can modify)
-    pub fn set_image<T: Texture>(&mut self, _name: &str, _sampler: &mut T) {}
+    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut MipLevelMut<T>) {}
 
     // Set a buffer uniform (that accepts any type of buffer)
     pub fn set_buffer<T: Shared, const TARGET: u32>(

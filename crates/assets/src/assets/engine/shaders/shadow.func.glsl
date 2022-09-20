@@ -12,16 +12,16 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // Get depths and test
-    float shadow_bias = 0.002;
+    float shadow_bias = 0.003;
     float current_depth = lightspace_uvs.z;
     float closest_depth = texture(shadow_map_texture, lightspace_uvs.xy).r;
-    float in_shadow = current_depth + shadow_bias > closest_depth ? 1.0 : 0.0; 
+    float in_shadow = current_depth - shadow_bias > closest_depth ? 1.0 : 0.0; 
 
     /*
     float accumulated_shadow = 0.0;
 
     // Sample the depth texture multiple times to smooth it out
-    vec2 offset_size = 1.0 / textureSize(shadow_map_texture, 0);
+    vec2 offset_size = 1.0 / textureSize(shadow_map_texture, 0);+
     for(int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             vec2 offset = vec2(x, y) * offset_size;

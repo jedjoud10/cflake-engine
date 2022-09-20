@@ -132,12 +132,10 @@ macro_rules! impl_vertex_attribute {
                     }
 
                     vertices.bitfield.insert(Self::ENABLED);
-                    vertices.maybe_reassigned.insert(Self::ENABLED);
                 }
 
                 fn remove(vertices: &mut VerticesMut) {
                     vertices.bitfield.remove(Self::ENABLED);
-                    vertices.maybe_reassigned.remove(Self::ENABLED);
                 }
             }
         }

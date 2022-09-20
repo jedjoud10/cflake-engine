@@ -10,7 +10,8 @@ fn main() {
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
-        .set_window_fullscreen(true)
+        .set_framerate_limit(Some(FrameRateLimit::VSync))
+        .set_window_fullscreen(false)
         .insert_update(update)
         .execute();
 }
@@ -52,8 +53,8 @@ fn init(world: &mut World) {
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
-        color: vek::Rgb::broadcast(255),
-        strength: 9.0,
+        color: vek::Rgb::new(255, 243, 196),
+        strength: 10.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());

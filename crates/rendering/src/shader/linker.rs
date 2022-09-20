@@ -9,7 +9,7 @@ use super::{
 use crate::context::{Context, ToGlName};
 
 // Compile a shader program using multiple unlinked shader stages
-unsafe fn compile(username: String, names: &[u32]) -> Program {
+unsafe fn compile(username: String, names: &[u32], ctx: &mut Context) -> Program {
     // Create the program and link the stages to it
     let program = gl::CreateProgram();
     for name in names {
@@ -35,12 +35,6 @@ unsafe fn compile(username: String, names: &[u32]) -> Program {
 
         // Print the error message
         panic!("Error: \n{}", message);
-    }
-
-    // Delete the shader stages since we already linked them
-    for name in names {
-        // TODO: Maybe we can reuse these shader??
-        gl::DeleteShader(*name);
     }
 
     // Use shader introspection to pre-fetch the shader uniform/storage blocks and uniform locations
@@ -92,7 +86,7 @@ impl StageSet for (VertexStage, FragmentStage) {
         let fragment = super::stage::compile(ctx, fragment);
 
         // And compile the main shader
-        Shader(compile(username, &[vertex.name(), fragment.name()]))
+        Shader(compile(username, &[vertex.name(), fragment.name()], ctx))
     }
 }
 
@@ -112,7 +106,7 @@ impl StageSet for ComputeStage {
         let compute = super::stage::compile(ctx, compute);
 
         // And compile the main shader
-        ComputeShader(compile(username, &[compute.name()]))
+        ComputeShader(compile(username, &[compute.name()], ctx))
     }
 }
 

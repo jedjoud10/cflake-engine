@@ -1,7 +1,7 @@
-use std::num::NonZeroU8;
+use std::num::{NonZeroU8, NonZeroU16};
 
 // Some settings that tell us exactly how we should generate a texture
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum TextureMode {
     // Static textures cannot be modified, they can only be read
     Static,
@@ -39,7 +39,7 @@ impl TextureMode {
 
 // This enum tells the texture how exactly it should create it's mipmaps
 // Default mode for mipmap generation is MipMaps::AutomaticAniso
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MipMapSetting {
     // Disable mipmap generation for the texture
     Disabled,
@@ -56,6 +56,7 @@ pub enum MipMapSetting {
 
     // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
     // The number of anisotropic samples will be decided automatically
+    #[default]
     AutomaticAniso,
 
     // Manual mipmap generation, but with a specified number of anisotropy sampler
@@ -67,21 +68,31 @@ pub enum MipMapSetting {
     },
 }
 
-impl Default for MipMapSetting {
-    fn default() -> Self {
-        Self::AutomaticAniso
-    }
+// Texture resolution scale that we can use to downsample or upsample imported textures
+pub type TextureResizeFilter = image::imageops::FilterType;
+#[derive(Default, Copy, Clone, PartialEq)]
+pub enum TextureScale {
+    // This will not affect the texture scale
+    #[default]
+    Default,
+
+    // This will scale the texture size with the "scaling" parameter
+    Scale { scaling: f64, filter: TextureResizeFilter },
+
+    // This will completely resize the texture to a new size
+    Resize { size: vek::Extent2<NonZeroU16>, filter: TextureResizeFilter },
 }
 
+
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Filter {
     Nearest,
     Linear,
 }
 
 // Wrapping mode utilised by TEXTURE_WRAP_R and TEXTURE_WRAP_T
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Wrap {
     ClampToEdge,
     ClampToBorder(vek::Rgba<f32>),
@@ -90,7 +101,7 @@ pub enum Wrap {
 }
 
 // Some special sampling parameters for textures
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Sampling {
     pub filter: Filter,
     pub wrap: Wrap,
@@ -111,4 +122,6 @@ pub struct TextureImportSettings {
     pub sampling: Sampling,
     pub mode: TextureMode,
     pub mipmaps: MipMapSetting,
+    pub scale: TextureScale,
+    pub flip: vek::Vec2<bool>,
 }

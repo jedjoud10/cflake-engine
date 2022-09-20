@@ -1,4 +1,4 @@
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 
@@ -6,7 +6,7 @@ use world::{Storage, World};
 use std::{
     any::TypeId,
     ptr::null,
-    rc::Rc,
+    rc::Rc, collections::HashMap,
 };
 
 use super::get_static_str;
@@ -23,6 +23,9 @@ pub struct Context {
     pub(crate) raster: RasterSettings,
     pub(crate) bounded_fbo: u32,
     pub(crate) viewport: Viewport,
+
+    // Reusable shader sources
+    pub(crate) stages: (AHashSet<String>, AHashMap<u32, u32>),
     
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Fn(&mut World)>>,
@@ -54,6 +57,7 @@ impl Context {
                 origin: vek::Vec2::zero(),
                 extent: vek::Extent2::zero(),
             },
+            stages: Default::default(),
             pipelines: Default::default(),
         }
     }

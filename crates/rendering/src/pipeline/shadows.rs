@@ -34,7 +34,7 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let settings = RasterSettings {
         depth_test: Some(Comparison::Less),
         scissor_test: None,
-        primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Front(true)) },
+        primitive: PrimitiveMode::Triangles { cull: None },
         srgb: false,
         blend: None,
     };
