@@ -34,9 +34,9 @@ impl Context {
     pub(crate) fn new(ctx: ContextWrapper<PossiblyCurrent, ()>) -> Self {
         // Set default OpenGL settings
         unsafe {
-            // Always have OpenGL debugging enabled
             gl::Enable(gl::DEBUG_OUTPUT);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+            gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
             gl::DebugMessageCallback(Some(super::callback), null());
         }
 

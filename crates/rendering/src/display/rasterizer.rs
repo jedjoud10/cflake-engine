@@ -80,7 +80,10 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         settings: RasterSettings,
     ) -> Self {
         // We must bind the display to the current opengl context
-        gl::BindFramebuffer(gl::FRAMEBUFFER, display.name());
+        if context.bounded_fbo != display.name() {
+            context.bounded_fbo = display.name();
+            gl::BindFramebuffer(gl::FRAMEBUFFER, display.name());
+        }
 
         // Update the settings of the OpenGL viewport
         if context.viewport != display.viewport() {

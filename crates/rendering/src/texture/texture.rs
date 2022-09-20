@@ -140,7 +140,7 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     
     // Checks if we can modify a region of the texture
     fn is_region_valid(&self, region: Self::Region) -> bool {
-        let extent = <Self::Region as Region>::E::from(region.origin()) + region.extent();
+        let extent = <Self::Region as Region>::extent_from_origin(region.origin()) + region.extent();
         extent.is_self_smaller(self.dimensions()) 
     }
 
