@@ -283,6 +283,18 @@ struct TextureUnit {
     texture: u32,
 }
 
+enum BufferBindingRange {}
+
+struct BufferBindingId {
+    name: String,
+    range: BufferBindingRange,
+}
+
+struct BufferBinding {
+    buffer: u32,
+    binding: u32,
+}
+
 // The main struct that will allow us to set the shader uniforms before it's execution
 // If debug assertions are enabled, the safe execution functions will check if the uniforms are valid
 // You can always use the "_unchecked" variant of the execution functions to override this behavior
@@ -291,6 +303,7 @@ struct TextureUnit {
 pub struct Uniforms<'uniforms> {
     program: &'uniforms mut Program,
     texture_units: AHashMap<String, TextureUnit>,
+    buffer_bindings: AHashMap<String, BufferBinding>,
 
     #[cfg(debug_assertions)]
     bound_uniforms: AHashSet<String>,
@@ -312,12 +325,13 @@ impl<'uniforms> Uniforms<'uniforms> {
 
         Self {
             texture_units: AHashMap::with_capacity(program.uniform_locations.len()),
+            buffer_bindings: AHashMap::with_capacity(program.buffer_block_locations.len()),
 
             #[cfg(debug_assertions)]
             bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
 
             #[cfg(debug_assertions)]
-            bound_buffer_bindings: AHashMap::with_capacity(program.buffer_binding_points.len()),
+            bound_buffer_bindings: AHashMap::with_capacity(program.buffer_block_locations.len()),
             program,
         }
     }
@@ -333,9 +347,11 @@ impl<'uniforms> Uniforms<'uniforms> {
 
         let missing_buffer_binding = self
             .program
-            .buffer_binding_points
+            .buffer_block_locations
             .keys()
             .find(|name| !self.bound_buffer_bindings.contains_key(*name));
+
+        dbg!(self.program.buffer_block_locations.len());
 
         if let Some(name) = missing_uniform {
             return Err(UniformsError::IncompleteUniform(name.clone()));
@@ -343,6 +359,17 @@ impl<'uniforms> Uniforms<'uniforms> {
 
         if let Some(name) = missing_buffer_binding {
             return Err(UniformsError::IncompleteBufferBinding(name.clone()));
+        }
+
+        let deleted_texture = self.texture_units.iter().find(|(_, unit)| unsafe { gl::IsTexture(unit.texture) == 0 }).map(|(name, _)| name);;
+        let deleted_buffer = self.buffer_bindings.iter().find(|(_, binding)| unsafe { gl::IsBuffer(binding.buffer) == 0 }).map(|(name, _)| name);
+
+        if let Some(name) = deleted_texture {
+            return Err(UniformsError::DeletedTextureUnit(name.clone()));
+        }
+
+        if let Some(name) = deleted_buffer {
+            return Err(UniformsError::DeletedBufferBinding(name.clone()));
         }
 
         Ok(())

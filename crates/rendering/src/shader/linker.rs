@@ -4,7 +4,7 @@ use ahash::AHashMap;
 
 use super::{
     introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage,
-    VertexStage,
+    VertexStage, Block, BlockIndex,
 };
 use crate::context::{Context, ToGlName};
 
@@ -44,18 +44,23 @@ unsafe fn compile(username: String, names: &[u32], ctx: &mut Context) -> Program
     let uniform_locations: AHashMap<String, u32> = introspection
         .uniforms()
         .iter()
-        .map(|uniform| (uniform.name().to_string(), (uniform.location())))
+        .map(|uniform| (uniform.name().to_string(), uniform.location()))
         .collect();
 
-    // TODO: Implement buffers
+    // Fetch all the buffer indices
+    let buffer_block_locations: AHashMap<String, BlockIndex> = introspection
+        .blocks()
+        .iter()
+        .map(|block| (block.name().to_string(), *block.index()))
+        .collect();
 
     Program {
         username,
         name: program,
         introspection,
-        _phantom: Default::default(),
-        buffer_binding_points: Default::default(),
+        buffer_block_locations,
         uniform_locations,
+        _phantom: Default::default(),
     }
 }
 

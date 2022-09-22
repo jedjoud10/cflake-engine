@@ -1,10 +1,9 @@
 use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
-
 use crate::context::ToGlName;
 
 // The type of block that we have stored
-#[derive(Debug)]
-pub enum Index {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BlockIndex {
     UniformBlock(u32),
     ShaderStorageBlock(u32),
 }
@@ -16,7 +15,7 @@ pub struct Block {
     name: String,
 
     // Index for this specific block
-    index: Index,
+    index: BlockIndex,
 
     // Byte size of this block
     size: usize,
@@ -34,7 +33,7 @@ impl Block {
     }
 
     // Get the block's index
-    pub fn index(&self) -> &Index {
+    pub fn index(&self) -> &BlockIndex {
         &self.index
     }
 }
@@ -191,9 +190,9 @@ unsafe fn fetch_blocks(program: u32, interface: u32) -> Vec<Block> {
 
             // Classify the index into the valid enum variant
             let index = if interface == gl::UNIFORM_BLOCK {
-                Index::UniformBlock(i as u32)
+                BlockIndex::UniformBlock(i as u32)
             } else if interface == gl::SHADER_STORAGE_BLOCK {
-                Index::ShaderStorageBlock(i as u32)
+                BlockIndex::ShaderStorageBlock(i as u32)
             } else {
                 panic!()
             };
@@ -218,7 +217,7 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
     // Fetch non block uniforms
     (0..non_block_uniforms)
         .into_iter()
-        .map(|uniform_index| {
+        .filter_map(|uniform_index| {
             // Read the uniform properties, and decompose it's values
             let props = props::<UnifProps>(program, gl::UNIFORM, uniform_index as u32);
 
@@ -231,10 +230,10 @@ unsafe fn fetch_uniforms(program: u32) -> Vec<Uniform> {
             );
 
             // Construct the uniform and add it to the vector
-            Uniform {
+            (props.block_index == -1).then(|| Uniform {
                 name,
                 location: props.location as u32,
-            }
+            })
         })
         .collect::<Vec<_>>()
 }

@@ -1,4 +1,4 @@
-use super::Introspection;
+use super::{Introspection, BlockIndex};
 use crate::context::{ToGlName, ToGlTarget};
 use ahash::AHashMap;
 use std::marker::PhantomData;
@@ -13,7 +13,7 @@ pub struct Program {
 
     // Complete shader introspection (even though the values are stored directly in the following fields)
     pub(super) introspection: Introspection,
-    pub(super) buffer_binding_points: AHashMap<String, u32>,
+    pub(super) buffer_block_locations: AHashMap<String, BlockIndex>,
     pub(super) uniform_locations: AHashMap<String, u32>,
 
     // Unsync + unsend
