@@ -25,10 +25,6 @@ float linearize_depth(float d,float zNear,float zFar)
     return zNear * zFar / (zFar + d * (zNear - zFar));
 }
 
-layout (std140) uniform ExampleBlock {
-	float value;
-};
-
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 vec3 aces(vec3 x) {
     const float a = 2.51;

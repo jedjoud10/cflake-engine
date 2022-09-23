@@ -5,7 +5,7 @@ use vek::FrustumPlanes;
 use world::{Storage};
 
 use crate::{
-    buffer::{ShaderBuffer, BufferMode},
+    buffer::{ShaderBuffer, BufferMode, UniformBuffer},
     mesh::Mesh,
     painter::Painter,
     prelude::{Depth, Ranged, Shader, Texture2D, RGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},

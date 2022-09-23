@@ -309,7 +309,7 @@ pub struct Uniforms<'uniforms> {
     dbg_bound_uniforms: AHashSet<String>,
 
     #[cfg(debug_assertions)]
-    dbg_bound_buffer_bindings: AHashMap<String, BufferBinding>,
+    dbg_bound_buffer_bindings: AHashSet<String>,
 }
 
 // Valid uniforms are the only way we can render the uniforms normally
@@ -331,7 +331,7 @@ impl<'uniforms> Uniforms<'uniforms> {
             dbg_bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
 
             #[cfg(debug_assertions)]
-            dbg_bound_buffer_bindings: AHashMap::with_capacity(program.buffer_block_locations.len()),
+            dbg_bound_buffer_bindings: AHashSet::with_capacity(program.buffer_block_locations.len()),
             program,
         }
     }
@@ -349,9 +349,7 @@ impl<'uniforms> Uniforms<'uniforms> {
             .program
             .buffer_block_locations
             .keys()
-            .find(|name| !self.dbg_bound_buffer_bindings.contains_key(*name));
-
-        dbg!(self.program.buffer_block_locations.len());
+            .find(|name| !self.dbg_bound_buffer_bindings.contains(*name));
 
         if let Some(name) = missing_uniform {
             return Err(UniformsError::IncompleteUniform(name.clone()));
@@ -389,7 +387,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         ValidUniforms(self.program)
     }
 
-    // Set the type for any object, as long as it implements SetRawUniform
+    // Set the type for any uniform object, as long as it implements SetRawUniform
     fn set_raw_uniform<A: SetRawUniform>(&mut self, name: &str, val: A) {
         let location = self.program.uniform_locations.get(name);
         if let Some(location) = location {
@@ -398,6 +396,22 @@ impl<'uniforms> Uniforms<'uniforms> {
 
             unsafe { val.set(*location as i32, self.program.name()) }
         }
+    }
+
+    // Set the type for a buffer and return it's new binding point location
+    fn set_raw_buffer<T: Shared, const TARGET: u32>(&mut self, name: &str, buffer: &Buffer<T, TARGET>) -> u32 {
+        #[cfg(debug_assertions)]
+        self.dbg_bound_buffer_bindings.insert(name.to_string());
+
+        let count = self.buffer_bindings.len() as u32;
+        self
+            .buffer_bindings
+            .entry(name.to_string())
+            .or_insert(BufferBinding {
+                buffer: u32::MAX,
+                binding: count,
+            })
+            .binding
     }
 
     // Set a single scalar type using the Scalar trait
@@ -468,22 +482,14 @@ impl<'uniforms> Uniforms<'uniforms> {
         name: &str,
         buffer: &UniformBuffer<T>,
     ) {
-        let count = self.buffer_bindings.len() as u32;
-        let offset = self
-            .buffer_bindings
-            .entry(name.to_string())
-            .or_insert(BufferBinding {
-                buffer: u32::MAX,
-                binding: count,
-            })
-            .binding;
+        let binding = self.set_raw_buffer(name, buffer);
 
         unsafe {
             self.buffer_bindings.get_mut(name).unwrap().buffer = buffer.name();
             if let BlockIndex::UniformBlock(index) = self.program.buffer_block_locations.get(name).unwrap() {
-                gl::UniformBlockBinding(self.program.name, *index, offset);
+                gl::UniformBlockBinding(self.program.name, *index, binding);
                 gl::BindBuffer(gl::UNIFORM_BUFFER, buffer.name());
-                gl::BindBufferBase(gl::UNIFORM_BUFFER, offset, buffer.name()); 
+                gl::BindBufferBase(gl::UNIFORM_BUFFER, binding, buffer.name()); 
             }
         }
     }
@@ -494,22 +500,14 @@ impl<'uniforms> Uniforms<'uniforms> {
         name: &str,
         buffer: &mut ShaderBuffer<T>,
     ) {
-        let count = self.dbg_bound_buffer_bindings.len() as u32;
-        let offset = self
-            .dbg_bound_buffer_bindings
-            .entry(name.to_string())
-            .or_insert(BufferBinding {
-                buffer: u32::MAX,
-                binding: count,
-            })
-            .binding;
+        let binding = self.set_raw_buffer(name, buffer);
             
         unsafe {
             self.buffer_bindings.get_mut(name).unwrap().buffer = buffer.name();
             if let BlockIndex::ShaderStorageBlock(index) = self.program.buffer_block_locations.get(name).unwrap() {
-                gl::ShaderStorageBlockBinding(self.program.name, *index, offset);
+                gl::ShaderStorageBlockBinding(self.program.name, *index, binding);
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, buffer.name());
-                gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, offset, buffer.name()); 
+                gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, buffer.name()); 
             }
         }
     }
