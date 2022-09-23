@@ -158,8 +158,7 @@ pub type ArrayBuffer<T> = Buffer<T, { gl::ARRAY_BUFFER }>;
 pub type ElementBuffer<T> = Buffer<T, { gl::ELEMENT_ARRAY_BUFFER }>;
 pub type Triangle<T> = [T; 3];
 pub type TriangleBuffer<T> = ElementBuffer<Triangle<T>>;
-pub type AtomicBuffer<T> = Buffer<T, { gl::ATOMIC_COUNTER_BUFFER }>;
-pub type ComputeStorage<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
+pub type ShaderBuffer<T> = Buffer<T, { gl::SHADER_STORAGE_BUFFER }>;
 pub type UniformBuffer<T> = Buffer<T, { gl::UNIFORM_BUFFER }>;
 pub type DispatchComputerIndirectBuffer = Buffer<(u32, u32, u32), { gl::DISPATCH_INDIRECT_BUFFER }>;
 

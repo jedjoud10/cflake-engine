@@ -5,7 +5,7 @@ use vek::FrustumPlanes;
 use world::{Storage};
 
 use crate::{
-    buffer::{ComputeStorage, BufferMode},
+    buffer::{ShaderBuffer, BufferMode},
     mesh::Mesh,
     painter::Painter,
     prelude::{Depth, Ranged, Shader, Texture2D, RGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
@@ -25,8 +25,8 @@ pub struct ClusteredShading {
     pub(crate) color_tex: Texture2D<RGB<f32>>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
-    pub(crate) point_lights: ComputeStorage<(PointLight, Location)>,
-    pub(crate) clusters: ComputeStorage<(u32, u32)>,
+    pub(crate) point_lights: ShaderBuffer<(PointLight, Location)>,
+    pub(crate) clusters: ShaderBuffer<(u32, u32)>,
     pub(crate) cluster_size: u32,
 }
 
@@ -75,8 +75,8 @@ impl ClusteredShading {
             depth_tex: depth,
             main_directional_light: None,
             cluster_size,
-            point_lights: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
-            clusters: ComputeStorage::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+            point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+            clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
         }
     }
 

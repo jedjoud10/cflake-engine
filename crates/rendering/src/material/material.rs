@@ -6,7 +6,7 @@ use math::{Location, Rotation};
 use world::World;
 
 use crate::{
-    buffer::{ComputeStorage},
+    buffer::{ShaderBuffer},
     context::{Context, Window},
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
@@ -18,8 +18,8 @@ use crate::{
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
-    pub(crate) point_lights: &'a ComputeStorage<(PointLight, Location)>,
-    pub(crate) clusters: &'a ComputeStorage<(u32, u32)>,
+    pub(crate) point_lights: &'a ShaderBuffer<(PointLight, Location)>,
+    pub(crate) clusters: &'a ShaderBuffer<(u32, u32)>,
     pub(crate) camera_location: &'a Location,
     pub(crate) camera_rotation: &'a Rotation,
     pub(crate) directional_light: &'a DirectionalLight,
