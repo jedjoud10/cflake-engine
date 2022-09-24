@@ -27,7 +27,7 @@ pub enum TexelFormat {
 }
 
 // This trait defines the layout for a single texel that will be stored within textures1
-pub trait Texel: 'static {
+pub trait Texel: 'static + Sized {
     // Main OpenGL wrapper enums / values
     const INTERNAL_FORMAT: u32;
     const FORMAT: u32;
@@ -54,7 +54,7 @@ pub trait Texel: 'static {
             bytes_per_channel: Self::BYTES_PER_CHANNEL,
             enum_format: Self::ENUM_FORMAT,
         }
-    }
+    }    
 }
 
 // Implement the color texel layout
