@@ -11,19 +11,19 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
         .insert_with(
             move |world: &mut World| {
                 // Create a new asset loader / cacher
-                let mut loader = Assets::new(user.clone());
+                let loader = Assets::new(user.clone());
 
                 // Load the default shaders
                 persistent!(loader, "engine/shaders/models.func.glsl");
-                persistent!(loader, "engine/shaders/pbr.vrsh.glsl");
-                persistent!(loader, "engine/shaders/pbr.frsh.glsl");
-                persistent!(loader, "engine/shaders/gui.vrsh.glsl");
-                persistent!(loader, "engine/shaders/gui.frsh.glsl");
-                persistent!(loader, "engine/shaders/sky.frsh.glsl");
-                persistent!(loader, "engine/shaders/passthrough.vrsh.glsl");
-                persistent!(loader, "engine/shaders/compositor.frsh.glsl");
-                persistent!(loader, "engine/shaders/shadow.vrsh.glsl");
-                persistent!(loader, "engine/shaders/shadow.frsh.glsl");
+                persistent!(loader, "engine/shaders/pbr.vrtx.glsl");
+                persistent!(loader, "engine/shaders/pbr.frag.glsl");
+                persistent!(loader, "engine/shaders/gui.vrtx.glsl");
+                persistent!(loader, "engine/shaders/gui.frag.glsl");
+                persistent!(loader, "engine/shaders/sky.frag.glsl");
+                persistent!(loader, "engine/shaders/passthrough.vrtx.glsl");
+                persistent!(loader, "engine/shaders/compositor.frag.glsl");
+                persistent!(loader, "engine/shaders/projection.vrtx.glsl");
+                persistent!(loader, "engine/shaders/shadow.frag.glsl");
                 persistent!(loader, "engine/shaders/shadow.func.glsl");
                 persistent!(loader, "engine/shaders/clustered.func.glsl");
                 persistent!(loader, "engine/shaders/clustered.cmpt.glsl");

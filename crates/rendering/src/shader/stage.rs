@@ -21,12 +21,12 @@ pub trait Stage: Sized + ToGlTarget {
     fn from_raw_parts(source: String, name: String) -> Self;
 }
 
-// A vertex stage that will be loaded from .vrsh files
+// A vertex stage that will be loaded from .vrtx files
 pub struct VertexStage {
     source: String,
     name: String,
 }
-// A fragment stage that will be loaded from .frsh files
+// A fragment stage that will be loaded from .frag files
 pub struct FragmentStage {
     source: String,
     name: String,
@@ -87,8 +87,8 @@ macro_rules! impl_stage_traits {
     };
 }
 
-impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, "vrsh.glsl");
-impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, "frsh.glsl");
+impl_stage_traits!(VertexStage, gl::VERTEX_SHADER, "vrtx.glsl");
+impl_stage_traits!(FragmentStage, gl::FRAGMENT_SHADER, "frag.glsl");
 impl_stage_traits!(ComputeStage, gl::COMPUTE_SHADER, "cmpt.glsl");
 
 // This implies that the source code for the underlying stage has been filtered and is ready for compliation

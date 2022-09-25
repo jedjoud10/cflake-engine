@@ -1,12 +1,15 @@
-use std::path::Path;
+use std::{path::Path, rc::Rc, sync::Arc};
+
+use crate::Assets;
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
 pub struct Data<'a> {
     pub(super) name: &'a str,
     pub(super) extension: &'a str,
-    pub(super) bytes: &'a [u8],
+    pub(super) bytes: Arc<[u8]>,
     pub(super) path: &'a Path,
+    pub(super) loader: &'a Assets,
 }
 
 impl<'a> Data<'a> {
@@ -27,7 +30,12 @@ impl<'a> Data<'a> {
 
     // Get the bytes of the loaded file
     pub fn bytes(&self) -> &[u8] {
-        self.bytes
+        &self.bytes
+    }
+
+    // Get an immutable reference to the loader
+    pub fn loader(&self) -> &Assets {
+        self.loader
     }
 }
 

@@ -57,16 +57,19 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let mut scoped = painter.scope(viewport, (), depth.mip_mut(0).unwrap(), ()).unwrap();
     let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shadow_mapper.shader, settings);
 
-    // Set the global uniforms
-    uniforms.set_mat4x4("lightspace_matrix", shadow_mapper.proj_matrix * shadow_mapper.view_matrix);
-
     // Render each mesh as if it was a shadow caster
     for (renderer, surface) in query {
         let mesh = meshes.get(&surface.mesh);
-        uniforms.set_mat4x4("world_matrix", renderer.matrix);
+
+        // Set the model, view, and projection matrices all at the same time
+        uniforms.set_mat4x4("matrix", shadow_mapper.proj_matrix * shadow_mapper.view_matrix * renderer.matrix);
+        
+        // Draw the shadow mesh
         rasterizer.draw(mesh, unsafe {
             uniforms.assume_valid()
         });
+
+        // Update the statistics
         stats.shadow_casters_surfaces += 1;
         stats.shadow_casters_verts += mesh.vertices().len().unwrap() as u32;
         stats.shadow_casters_tris += mesh.triangles().len() as u32;

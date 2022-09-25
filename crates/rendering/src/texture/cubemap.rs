@@ -3,7 +3,7 @@ use assets::Asset;
 use super::{
     ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting,
 };
-use crate::context::{Context, ToGlName, ToGlTarget};
+use crate::{context::{Context, ToGlName, ToGlTarget}, shader::VertexStage};
 use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
 
 
@@ -283,8 +283,43 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         // Create the equilateral texture that will then be mapped to a cubemap 
         let texture = Texture2D::<RGB<f32>>::new(ctx, TextureMode::Static, dimensions, sampling, MipMapSetting::Disabled, Some(&texels)).unwrap();
 
-        // TODO: Do the mapping
+        // Convert the eqilateral texture to a cubemap texture
+        let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
+        use vek::Mat4;
+        use vek::Vec3;
+    
+        // View matrices for the 6 different faces 
+        let view_matrices: [Mat4<f32>; 6] = [
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
+    
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()), // Top
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
+    
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
+        ];
+
+        // Create the cubemap, but don't initialize it with any data
+        let dimensions = vek::Extent2::broadcast(dimensions.w / 4);
+        let texels = vec![vek::Vec3::<f32>::zero(); dimensions.product() as usize];
+        let cubemap = Self::new(
+            ctx,
+            settings.mode,
+            dimensions,
+            settings.sampling,
+            settings.mipmaps,
+            Some(&texels),
+        ).unwrap();
+
+        // Create the rasterization shader for the cubemap converter
+        todo!()
+        /*
+        let vertex = data.loader().load("engine/shaders/panorama.vrtx.glsl");
+        let fragment = data.loader().load("engine/shader/panorama.frag.glsl");
+
 
         todo!()
+        */
     }
 }

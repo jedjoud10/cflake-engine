@@ -59,10 +59,10 @@ impl Painter {
     pub(super) fn new(loader: &mut Assets, ctx: &mut Context) -> Self {
         // Load the shader stages first, then compile a shader
         let vert = loader
-            .load::<VertexStage>("engine/shaders/gui.vrsh.glsl")
+            .load::<VertexStage>("engine/shaders/gui.vrtx.glsl")
             .unwrap();
         let frag = loader
-            .load::<FragmentStage>("engine/shaders/gui.frsh.glsl")
+            .load::<FragmentStage>("engine/shaders/gui.frag.glsl")
             .unwrap();
 
         // Link the stages and compile the shader

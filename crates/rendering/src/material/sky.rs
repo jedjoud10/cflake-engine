@@ -87,11 +87,11 @@ impl<'w> Material<'w> for Sky {
         assets: &mut assets::Assets,
     ) -> crate::prelude::Shader {
         let vs = assets
-            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
+            .load::<VertexStage>("engine/shaders/pbr.vrtx.glsl")
             .unwrap();
 
         let fs = assets
-            .load::<FragmentStage>("engine/shaders/sky.frsh.glsl")
+            .load::<FragmentStage>("engine/shaders/sky.frag.glsl")
             .unwrap();
 
         ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)

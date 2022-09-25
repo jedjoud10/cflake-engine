@@ -43,8 +43,8 @@ fn init(world: &mut World) {
     // Load a terrain material
     // Load the shader first
     let settings = ShaderInitSettings::default()
-        .source("defaults/shaders/voxel_terrain/terrain.vrsh.glsl")
-        .source("user/shaders/voxel_terrain/terrain.frsh.glsl");
+        .source("defaults/shaders/voxel_terrain/terrain.vrtx.glsl")
+        .source("user/shaders/voxel_terrain/terrain.frag.glsl");
     let shader = world.pipeline.insert(Shader::new(settings).unwrap());
     // Then the textures
     let diffuse = TextureParams::DIFFUSE_MAP_LOAD;

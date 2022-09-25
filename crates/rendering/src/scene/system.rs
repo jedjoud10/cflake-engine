@@ -71,10 +71,10 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the compositor shader
     let vertex = assets
-        .load::<VertexStage>("engine/shaders/passthrough.vrsh.glsl")
+        .load::<VertexStage>("engine/shaders/passthrough.vrtx.glsl")
         .unwrap();
     let fragment = assets
-        .load::<FragmentStage>("engine/shaders/compositor.frsh.glsl")
+        .load::<FragmentStage>("engine/shaders/compositor.frag.glsl")
         .unwrap();
     let shader = ShaderCompiler::link((vertex, fragment), Processor::new(&mut assets), ctx);
 

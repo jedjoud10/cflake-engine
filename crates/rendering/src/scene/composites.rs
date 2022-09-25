@@ -130,8 +130,8 @@ impl ShadowMapping {
         ).unwrap();
 
         // Load the shader used for shadow map object rasterization
-        let vertex = assets.load::<VertexStage>("engine/shaders/shadow.vrsh.glsl").unwrap();
-        let fragment = assets.load::<FragmentStage>("engine/shaders/shadow.frsh.glsl").unwrap();
+        let vertex = assets.load::<VertexStage>("engine/shaders/projection.vrtx.glsl").unwrap();
+        let fragment = assets.load::<FragmentStage>("engine/shaders/shadow.frag.glsl").unwrap();
         let shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
 
         // The shadow frustum is the cuboid that will contain the shadow map

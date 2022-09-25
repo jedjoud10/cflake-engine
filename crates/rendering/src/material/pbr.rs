@@ -137,11 +137,11 @@ impl<'w> Material<'w> for Standard {
 
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {
         let vs = assets
-            .load::<VertexStage>("engine/shaders/pbr.vrsh.glsl")
+            .load::<VertexStage>("engine/shaders/pbr.vrtx.glsl")
             .unwrap();
 
         let fs = assets
-            .load::<FragmentStage>("engine/shaders/pbr.frsh.glsl")
+            .load::<FragmentStage>("engine/shaders/pbr.frag.glsl")
             .unwrap();
 
         ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)
