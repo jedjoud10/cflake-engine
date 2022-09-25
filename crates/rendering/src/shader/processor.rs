@@ -12,7 +12,7 @@ pub struct Constant<T: ToString>(T);
 // A processor is something that will take some raw GLSL text and expand/process each directive
 pub struct Processor<'a> {
     // This is the asset loader that we will use to load include files
-    loader: &'a mut Assets,
+    loader: &'a Assets,
 
     // A hashmap containing the constant values that we must replace
     // #const [name]
@@ -23,15 +23,15 @@ pub struct Processor<'a> {
     snippets: AHashMap<String, String>,
 }
 
-impl<'a> From<&'a mut Assets> for Processor<'a> {
-    fn from(loader: &'a mut Assets) -> Self {
+impl<'a> From<&'a Assets> for Processor<'a> {
+    fn from(loader: &'a Assets) -> Self {
         Self::new(loader)
     }
 }
 
 impl<'a> Processor<'a> {
     // Create a processor from an asset loader
-    pub fn new(loader: &'a mut Assets) -> Self {
+    pub fn new(loader: &'a Assets) -> Self {
         Self {
             loader,
             constants: Default::default(),

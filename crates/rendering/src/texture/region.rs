@@ -79,7 +79,7 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
      
 }
 
-// Texture3D or BundledTexture2D
+// Texture3D
 impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     type O = vek::Vec3<u16>;
     type E = vek::Extent3<u16>;
@@ -121,7 +121,7 @@ impl Region for (vek::Vec3<u16>, vek::Extent3<u16>) {
     }
 }
 
-// CubeMap2D
+// Layered texture 2D
 impl Region for (vek::Vec3<u16>, vek::Extent2<u16>) {
     type O = vek::Vec3<u16>;
     type E = vek::Extent2<u16>;

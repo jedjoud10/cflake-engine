@@ -4,9 +4,10 @@ use super::{
 };
 use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
 use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc, mem::transmute};
-// A global texture trait that will be implemented for Texture2D and ArrayTexture2D
+// A global texture trait that will be implemented for all our texture variants
+// This texture trait does not allow us to fetch multiple layers in the case of multi-layered textures
+// However, the Region's Origin for this texture must be a 3D vector if it is a multi-layered texture
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
-// TODO: Cannot create static/dynamic textures with NONE data
 pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Texel region (position + extent)
     type Region: Region;

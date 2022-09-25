@@ -3,7 +3,7 @@ use assets::Asset;
 use super::{
     ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting,
 };
-use crate::{context::{Context, ToGlName, ToGlTarget}, shader::VertexStage};
+use crate::{context::{Context, ToGlName, ToGlTarget}, shader::{VertexStage, FragmentStage, Processor, ShaderCompiler}, mesh::{Mesh, MeshImportSettings}, buffer::BufferMode, painter::Painter, display::Viewport};
 use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
 
 
@@ -265,6 +265,7 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         &["hdr"]
     }
 
+    // TODO: Convert this to a resource so we can convert multiple HDRis more efficiently?
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
         let (ctx, settings) = args;
         let hdr = hdrldr::load(data.bytes()).unwrap();
@@ -313,13 +314,25 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         ).unwrap();
 
         // Create the rasterization shader for the cubemap converter
-        todo!()
-        /*
-        let vertex = data.loader().load("engine/shaders/panorama.vrtx.glsl");
-        let fragment = data.loader().load("engine/shader/panorama.frag.glsl");
+        let vertex = data.loader().load::<VertexStage>("engine/shaders/panorama.vrtx.glsl").unwrap();
+        let fragment = data.loader().load::<FragmentStage>("engine/shader/panorama.frag.glsl").unwrap();
+        let shader = ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
+
+        // Load in a unit cube that is inside out
+        let cube = data.loader().load_with::<Mesh>("engine/meshes/cube.obj", (ctx, MeshImportSettings {
+            invert_triangle_ordering: true,
+            ..Default::default()
+        })).unwrap();
+
+        // Create a rasterizer to convert the panoramic texture
+        let painter = Painter::<RGB<f32>, (), ()>::new(ctx);
+        let viewport = Viewport { origin: vek::Vec2::zero(), extent: dimensions };
+
+        // Iterate through all of the faces of the cubemap
+        let target = cubemap.mip_mut(0).unwrap();
+        //let rasterizer = painter.scope(viewport, cubemap.layer(), (), ());
 
 
         todo!()
-        */
     }
 }

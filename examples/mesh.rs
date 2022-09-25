@@ -54,7 +54,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 243, 196),
-        strength: 10.0,
+        strength: 0.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -79,7 +79,7 @@ fn init(world: &mut World) {
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
-    let hdr = assets.load_with::<CubeMap2D<RGB<f32>>>("user/lilienstein_4k.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
+    //let hdr = assets.load_with::<CubeMap2D<RGB<f32>>>("user/lilienstein_4k.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
     
     // Load the mask map texture
     let mask_map = assets
@@ -106,7 +106,7 @@ fn init(world: &mut World) {
         normal_map: normal_map,
         mask_map: mask_map,
         bumpiness: 0.8,
-        roughness: 0.8,
+        roughness: 0.2,
         ambient_occlusion: 1.0,
         metallic: 1.0,
         scale: vek::Vec2::broadcast(3.0),
@@ -123,6 +123,8 @@ fn init(world: &mut World) {
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
+
+    ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
     //ecs.insert((Location::at_y(5.0), PointLight::default()));
 

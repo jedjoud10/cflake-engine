@@ -39,7 +39,7 @@ impl Default for PointLight {
     fn default() -> Self {
         Self {
             color: vek::Rgb::broadcast(255),
-            strength: 9.0,
+            strength: 60.0,
             attenuation: 0.5,
         }
     }
