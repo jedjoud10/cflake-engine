@@ -306,6 +306,12 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
         }
     }
 
+    // Extent the current buffer using data from an iterator
+    pub fn extend_from_iterator<I: Iterator<Item = T>>(&mut self, iterator: I) {
+        let collected = iterator.collect::<Vec<_>>();
+        self.extend_from_slice(&collected);  
+    } 
+
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
         assert!(

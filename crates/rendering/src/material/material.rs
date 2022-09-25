@@ -11,14 +11,14 @@ use crate::{
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
     others::Comparison,
-    scene::{Camera, DirectionalLight, PointLight, Renderer},
+    scene::{Camera, DirectionalLight, PointLight, Renderer, PackedPointLight},
     shader::{Shader, Uniforms},
 };
 
 // These are the default resources that we pass to any/each material
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
-    pub(crate) point_lights: &'a ShaderBuffer<(PointLight, Location)>,
+    pub(crate) point_lights: &'a ShaderBuffer<PackedPointLight>,
     pub(crate) clusters: &'a ShaderBuffer<(u32, u32)>,
     pub(crate) cluster_size: &'a u32,
     pub(crate) camera_location: &'a Location,

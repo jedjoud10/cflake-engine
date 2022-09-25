@@ -1,6 +1,6 @@
 // Check if a fragment is in shadow or not
 // This will return 1.0 if the fragment in shadow, and 0.0 if the fragment is not in shadow
-float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sampler2D shadow_map_texture) {
+float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sampler2DShadow tex) {
     // Transform the world coordinates to NDC coordinates 
     vec4 ndc = lightspace_matrix * vec4(position, 1.0); 
     vec3 projected = ndc.xyz / ndc.w;
@@ -13,27 +13,23 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
 
     // Get depths and test
     float shadow_bias = 0.003;
-    float current_depth = lightspace_uvs.z;
-    float closest_depth = texture(shadow_map_texture, lightspace_uvs.xy).r;
-    float in_shadow = current_depth - shadow_bias > closest_depth ? 1.0 : 0.0; 
+    float current = lightspace_uvs.z;
 
-    /*
-    float accumulated_shadow = 0.0;
+    // Number of omni-directional samples to take
+    const int SAMPLES = 4;
+    const int HALVED_SAMPLES = SAMPLES / 2;
 
     // Sample the depth texture multiple times to smooth it out
-    vec2 offset_size = 1.0 / textureSize(shadow_map_texture, 0);+
-    for(int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
+    float sum = 0.0;
+    vec2 offset_size = 1.0 / textureSize(tex, 0);
+    for(int x = -HALVED_SAMPLES; x <= HALVED_SAMPLES; x++) {
+        for (int y = -HALVED_SAMPLES; y <= HALVED_SAMPLES; y++) {
             vec2 offset = vec2(x, y) * offset_size;
-            float closest_depth = texture(shadow_map_texture, lightspace_uvs.xy + offset).r;
-            float in_shadow = current_depth - shadow_bias > closest_depth ? 1.0 : 0.0; 
-            accumulated_shadow += in_shadow;
+            float in_shadow = texture(tex, vec3(lightspace_uvs.xy + offset, current - shadow_bias)).r;
+            sum += in_shadow;
         }
     }
-    
-    // Average
-    accumulated_shadow /= 9.0;
-    */
+    sum /= pow(HALVED_SAMPLES*2 + 1, 2);
 
-    return in_shadow;
+    return sum;
 }

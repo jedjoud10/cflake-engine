@@ -494,11 +494,11 @@ impl<'uniforms> Uniforms<'uniforms> {
         }
     }
 
-    // Set a shader storage buffer (read and write)
+    // Set a shader storage buffer (only for reading)
     pub fn set_shader_storage_buffer<T: Shared>(
         &mut self,
-        name: &str,
-        buffer: &mut ShaderBuffer<T>,
+        name: &str, 
+        buffer: &ShaderBuffer<T>,
     ) {
         let binding = self.set_raw_buffer(name, buffer);
             
@@ -510,5 +510,16 @@ impl<'uniforms> Uniforms<'uniforms> {
                 gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, buffer.name()); 
             }
         }
+    }
+
+    // Set a shader storage buffer (read and write)
+    pub fn set_shader_storage_buffer_mut<T: Shared>(
+        &mut self,
+        name: &str,
+        buffer: &mut ShaderBuffer<T>,
+    ) {
+        // TODO: Check shader introspection to make sure the shader is valid for writing into it (not readonly)
+        // Custom shading language?
+        self.set_shader_storage_buffer(name, buffer);
     }
 }

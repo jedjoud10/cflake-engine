@@ -5,8 +5,7 @@ struct ShadingCluster {
 };
 
 // This is a single point light that will be sent from the CPU
-struct PointLight {
-    uint color;
-    float strength;
-    float radius;
+struct PackedPointLight {
+    vec4 color;
+    vec4 position_attenuation;
 };

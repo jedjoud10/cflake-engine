@@ -98,6 +98,8 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);
         uniforms.set_vec2("resolution", vek::Vec2::<u32>::from(main.window.viewport().extent.as_::<u32>()));
         uniforms.set_scalar("cluster_size", main.cluster_size);
+        uniforms.set_scalar("point_lights_num", main.point_lights.len() as u32);
+        uniforms.set_shader_storage_buffer("point_lights", &main.point_lights);
     }
 
     fn set_surface_properties(

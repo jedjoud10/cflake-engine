@@ -1,6 +1,6 @@
 use super::{
     Camera, ClusteredShading, Compositor, DirectionalLight, PostProcessing, RenderedFrameStats,
-    Renderer, ShadowMapping,
+    Renderer, ShadowMapping, PointLight, PackedPointLight,
 };
 use crate::{
     buffer::{BufferMode},
@@ -20,6 +20,7 @@ use assets::Assets;
 use ecs::Scene;
 use glutin::{event::WindowEvent, event_loop::EventLoop};
 use math::{IntoMatrix, Location, Rotation, Scale};
+use time::Time;
 use world::{Events, Init, Stage, Storage, Update, World};
 
 // This event will initialize a new graphics context and create the valid window
@@ -141,6 +142,30 @@ fn update_matrices(world: &mut World) {
         renderer.matrix = matrix;
     }
 }
+
+// Sort all the lights in the scene into their respective clusters
+fn light_clustering(world: &mut World) {
+    let mut shading = world.get_mut::<ClusteredShading>().unwrap();
+    let mut ecs = world.get_mut::<Scene>().unwrap();
+    let time = world.get::<Time>().unwrap();
+    let query = ecs.query::<(&mut Location, &PointLight)>().unwrap();
+    for (location, _) in query {
+        location.z = time.secs_since_startup_f32().sin() * 3.0;
+    }
+
+    let query = ecs.view::<(&Location, &PointLight)>().unwrap();
+
+    // Update the lights buffer with the lights in the scene
+    let lights = &mut shading.point_lights;
+    lights.clear();
+    lights.extend_from_iterator(query.map(|(location, light)| {
+        let color = light.color.as_::<f32>() / 255.0;
+        let mut position_attenuation = vek::Vec4::from_slice(&*location);
+        position_attenuation.w = light.attenuation;
+        PackedPointLight { color: vek::Rgba::from_slice(&color) * light.strength, position_attenuation, }
+    }));
+}
+
 
 // Rendering event that will try to render the 3D scene each frame
 fn render_surfaces(world: &mut World) {
@@ -385,6 +410,13 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     )
     .unwrap();
 
+    // Insert the light cluster calculate event
+    reg.insert_with(
+        light_clustering,
+        Stage::new("light clustering").after("post user")
+    )
+    .unwrap();
+
     // Insert the directional sky sphere update event
     reg.insert_with(
         main_sky_sphere,
@@ -412,9 +444,10 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     reg.insert_with(
         render_surfaces,
         Stage::new("scene rendering")
-            .before("main camera update")
+            .after("main camera update")
             .after("main directional light update")
             .after("sky sphere update")
+            .after("light clustering")
             .after("update renderer matrices"),
     )
     .unwrap();

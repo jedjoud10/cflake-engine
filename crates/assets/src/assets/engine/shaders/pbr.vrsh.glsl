@@ -14,7 +14,6 @@ uniform mat4 world_matrix;
 
 // Data to give to the fragment shader
 out vec3 m_position;
-out vec3 w_position;
 out vec3 m_normal;
 out vec3 m_tangent;
 out vec3 m_bitangent;
@@ -25,7 +24,6 @@ void main()
     // Model space -> World space -> Clip space
     vec4 world_pos = world_matrix * vec4(position, 1);
     vec4 projected = (proj_matrix * view_matrix) * world_pos; 
-    w_position = projected.xyz;
     gl_Position = projected;
 
     // Set the output variables

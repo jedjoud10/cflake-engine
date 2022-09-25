@@ -102,7 +102,7 @@ fn init(world: &mut World) {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.3,
+        bumpiness: 0.8,
         roughness: 1.0,
         ambient_occlusion: 1.0,
         metallic: 1.0,
@@ -120,6 +120,20 @@ fn init(world: &mut World) {
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
+
+    //ecs.insert((Location::at_y(5.0), PointLight::default()));
+
+    ecs.insert((Location::at_xyz(5.0, 5.0, 5.0), PointLight {
+        color: vek::Rgb::red(),
+        strength: 4.0,
+        attenuation: 0.5,
+    }));
+
+    ecs.insert((Location::at_xyz(-5.0, 5.0, 5.0), PointLight {
+        color: vek::Rgb::blue(),
+        strength: 4.0,
+        attenuation: 0.5,
+    }));
 
     // Load in the texture
     let texture = albedo_maps.insert(

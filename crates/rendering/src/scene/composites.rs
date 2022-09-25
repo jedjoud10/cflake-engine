@@ -11,7 +11,7 @@ use crate::{
     prelude::{Depth, Ranged, Shader, Texture2D, RGB, Filter, Wrap, MipMapSetting, Texture, TextureMode, Sampling}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor}, others::Comparison,
 };
 
-use super::PointLight;
+use super::{PointLight, PackedPointLight};
 
 // Clustered shading is a method to render multiple lights
 // efficienty without losing image quality
@@ -25,7 +25,7 @@ pub struct ClusteredShading {
     pub(crate) color_tex: Texture2D<RGB<f32>>,
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
-    pub(crate) point_lights: ShaderBuffer<(PointLight, Location)>,
+    pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
     pub(crate) cluster_size: u32,
 }
@@ -112,7 +112,7 @@ impl ShadowMapping {
         let sampling = Sampling {
             filter: Filter::Linear,
             wrap: Wrap::ClampToBorder(vek::Rgba::broadcast(1.0f32)),
-            depth_comparison: None,
+            depth_comparison: Some(Comparison::GreaterThanOrEquals),
             ..Default::default()
         };
         

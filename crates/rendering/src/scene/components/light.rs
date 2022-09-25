@@ -21,24 +21,26 @@ impl Default for DirectionalLight {
 
 // A point light is a type of light that emits light in all direction, coming from a single point (depicted from the Transform of this entity)
 #[derive(Component, Clone, Copy)]
-#[repr(C)]
 pub struct PointLight {
-    // The color of the light
-    pub color: vek::Rgba<u8>,
-
-    // The strength of the light (in lumens or lux)
+    pub color: vek::Rgb<u8>,
     pub strength: f32,
+    pub attenuation: f32,
+}
 
-    // The sphere of influence of the light
-    pub radius: f32,
+// The packed light data that will be used within the compute buffer
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub(crate) struct PackedPointLight {
+    pub color: vek::Rgba<f32>,
+    pub position_attenuation: vek::Vec4<f32>,
 }
 
 impl Default for PointLight {
     fn default() -> Self {
         Self {
-            color: vek::Rgba::broadcast(255),
-            strength: 1.0,
-            radius: 10.0,
+            color: vek::Rgb::broadcast(255),
+            strength: 9.0,
+            attenuation: 0.5,
         }
     }
 }
