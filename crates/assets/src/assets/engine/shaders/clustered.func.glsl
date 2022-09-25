@@ -9,3 +9,9 @@ struct PackedPointLight {
     vec4 color;
     vec4 position_attenuation;
 };
+
+
+// Calculate the attenuation of a light using it's distance from the fragment
+float calculate_attenuation(float dist) {
+    return 1.0 / (1.0 + dist*dist);
+}

@@ -26,6 +26,7 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/shadow.frsh.glsl");
                 persistent!(loader, "engine/shaders/shadow.func.glsl");
                 persistent!(loader, "engine/shaders/clustered.func.glsl");
+                persistent!(loader, "engine/shaders/clustered.cmpt.glsl");
 
                 // Load the default meshes
                 persistent!(loader, "engine/meshes/cube.obj");

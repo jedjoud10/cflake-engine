@@ -75,6 +75,10 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, LightData light) {
+	if (all(equal(light.color * light.strength, vec3(0.0)))) {
+		return vec3(0.0);
+	}
+
 	float roughness = clamp(surface.mask.g, 0.06, 1.0);
 	float metallic = clamp(surface.mask.b, 0.0, 1.0);
 	float visibility = clamp(surface.mask.r, 0.0, 1.0);
@@ -123,7 +127,7 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 
 	// Main directional light
-	vec3 sum = vec3(0, 0, 0);
+	vec3 sum = 0.03 * diffuse * mask.r;
 	LightData sun = LightData(sun_dir, sun_color, sun_strength, true);
 	CameraData _camera = CameraData(view, normalize(view + sun_dir), camera);	
 	sum += brdf(surface, _camera, sun);
@@ -132,19 +136,15 @@ void main() {
 	for(int i = 0; i < point_lights_num; i++) {
 		vec3 light_position = lights[i].position_attenuation.xyz;
 		vec3 dir = normalize(light_position - m_position);
-        float dist = length(dir);
-        vec3 radiance = lights[i].color.xyz / (1.0 + 5.8 * (dist * dist) + 9.7 * dist);
+        float dist = distance(light_position, m_position);
+		float attenuation = calculate_attenuation(dist);
+        vec3 radiance = lights[i].color.xyz * attenuation;
 
 		LightData point_light = LightData(dir, radiance, 1.0, false);
 		CameraData camera = CameraData(view, normalize(view + dir), camera);
 		sum += brdf(surface, camera, point_light);
 	}
 
-	// Add the ambient lighting
-	sum += 0.03 * diffuse * mask.r;
-
 	// Color of the final result
 	frag = sum;
-	//frag = brdf(surface, camera, sun);
-	//frag = vec3(dist / 10.0);
 }

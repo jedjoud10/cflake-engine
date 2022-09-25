@@ -53,7 +53,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 243, 196),
-        strength: 10.0,
+        strength: 0.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -102,10 +102,10 @@ fn init(world: &mut World) {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.4,
-        roughness: 1.0,
+        bumpiness: 0.8,
+        roughness: 0.8,
         ambient_occlusion: 1.0,
-        metallic: 0.0,
+        metallic: 1.0,
         scale: vek::Vec2::broadcast(3.0),
         tint: vek::Rgb::white(),
     });
@@ -120,6 +120,8 @@ fn init(world: &mut World) {
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
+
+    //ecs.insert((Location::at_y(5.0), PointLight::default()));
 
     // Load in the texture
     let texture = albedo_maps.insert(

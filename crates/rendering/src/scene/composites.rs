@@ -8,7 +8,7 @@ use crate::{
     buffer::{ShaderBuffer, BufferMode, UniformBuffer},
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Filter, Wrap, MipMapSetting, Texture, TextureMode, Sampling}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor}, others::Comparison,
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Filter, Wrap, MipMapSetting, Texture, TextureMode, Sampling}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor, ComputeShader}, others::Comparison,
 };
 
 use super::{PointLight, PackedPointLight};
@@ -26,7 +26,9 @@ pub struct ClusteredShading {
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
+    //pub(crate) light_ids: ShaderBuffer<u32>,
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
+    //pub(crate) compute: ComputeShader,
     pub(crate) cluster_size: u32,
 }
 
@@ -65,9 +67,10 @@ impl ClusteredShading {
         // Create the default pipelines
         ctx.register_material::<Standard>(shaders, assets);
         ctx.register_material::<Sky>(shaders, assets);
+
+        // TODO: Create the cluster compute shader that will sort the lights
     
-        // Create the clustered shading rendererer
-        
+        // Create the clustered shading rendererer        
         ClusteredShading {
             main_camera: None,
             skysphere_entity: None,

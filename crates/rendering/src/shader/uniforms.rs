@@ -4,7 +4,7 @@ use super::{Program, UniformsError, BlockIndex};
 use crate::{
     buffer::{Buffer, ShaderBuffer, UniformBuffer},
     context::{Shared, ToGlName},
-    texture::Texture, prelude::{MipLevelMut},
+    texture::Texture, prelude::{MipLevelMut, Texel},
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -397,8 +397,25 @@ impl<'uniforms> Uniforms<'uniforms> {
             unsafe { val.set(*location as i32, self.program.name()) }
         }
     }
+    // Set a texture and reutrn it's new texture unit location
+    fn set_raw_texture(&mut self, name: &str, texture_name: u32) -> u32 
+    {
+        let count = self.texture_units.len() as u32;
+        let offset = self
+            .texture_units
+            .entry(name.to_string())
+            .or_insert(TextureUnit {
+                texture: u32::MAX,
+                unit: count,
+            })
+            .unit;
 
-    // Set the type for a buffer and return it's new binding point location
+        self.texture_units.get_mut(name).unwrap().texture = texture_name;
+        self.set_scalar(name, offset as i32);
+        offset
+    }
+
+    // Set a buffer and return it's new binding point location
     fn set_raw_buffer<T: Shared, const TARGET: u32>(&mut self, name: &str, buffer: &Buffer<T, TARGET>) -> u32 {
         #[cfg(debug_assertions)]
         self.dbg_bound_buffer_bindings.insert(name.to_string());
@@ -456,25 +473,24 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a sampler uniform (that accepts any type of texture)
     pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &T) {
-        let count = self.texture_units.len() as u32;
-        let offset = self
-            .texture_units
-            .entry(name.to_string())
-            .or_insert(TextureUnit {
-                texture: u32::MAX,
-                unit: count,
-            })
-            .unit;
+        let offset = self.set_raw_texture(name, sampler.name());
 
         unsafe {
-            self.texture_units.get_mut(name).unwrap().texture = sampler.name();
             gl::BindTextureUnit(offset, sampler.name());
-            self.set_scalar(name, offset as i32);
         }
     }
 
     // Set an image uniform (a texture that we can modify)
-    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut MipLevelMut<T>) {}
+    pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut MipLevelMut<T>) {
+        let offset = self.set_raw_texture(name, sampler.texture().name());
+
+        unsafe {
+            // TODO: What the fuk do we do when we have a depth texture here?
+            // TODO: Handle layered textures bozo
+            let format_ = <T::T as Texel>::INTERNAL_FORMAT;
+            gl::BindImageTexture(offset, sampler.texture().name(), sampler.level() as i32, gl::FALSE, 0, gl::READ_WRITE, format_);            
+        }
+    }
 
     // Set a uniform buffer (read only)
     pub fn set_uniform_buffer<T: Shared>(

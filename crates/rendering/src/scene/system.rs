@@ -146,12 +146,7 @@ fn update_matrices(world: &mut World) {
 // Sort all the lights in the scene into their respective clusters
 fn light_clustering(world: &mut World) {
     let mut shading = world.get_mut::<ClusteredShading>().unwrap();
-    let mut ecs = world.get_mut::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
-    let query = ecs.query::<(&mut Location, &PointLight)>().unwrap();
-    for (location, _) in query {
-        location.z = time.secs_since_startup_f32().sin() * 30.0;
-    }
+    let ecs = world.get::<Scene>().unwrap();
 
     let query = ecs.view::<(&Location, &PointLight)>().unwrap();
 
