@@ -1,7 +1,7 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent,
+    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting,
 };
 use crate::context::{Context, ToGlName, ToGlTarget};
 use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
@@ -254,5 +254,37 @@ impl<T: Texel> Texture for CubeMap2D<T> {
             extent.h,
             1,
         );
+    }
+}
+
+
+impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
+    type Args = (&'a mut Context, TextureImportSettings);
+
+    fn extensions() -> &'static [&'static str] {
+        &["hdr"]
+    }
+
+    fn deserialize(data: assets::Data, args: Self::Args) -> Self {
+        let (ctx, settings) = args;
+        let hdr = hdrldr::load(data.bytes()).unwrap();
+        let dimensions = vek::Extent2::new(hdr.width as u16, hdr.height as u16);
+        // TODO: Optimize this vertical flip
+        let rows = hdr.data.chunks(dimensions.w as usize);
+        let flipped = rows.rev().flat_map(|row| row.iter().cloned()).collect::<Vec<hdrldr::RGB>>();
+        
+        let texels = flipped.into_iter().map(|texel| vek::Vec3::new(texel.r, texel.g, texel.b)).collect::<Vec<_>>();
+        let sampling = Sampling {
+            filter: Filter::Linear,
+            wrap: Wrap::Repeat,
+            ..Default::default()
+        };
+        
+        // Create the equilateral texture that will then be mapped to a cubemap 
+        let texture = Texture2D::<RGB<f32>>::new(ctx, TextureMode::Static, dimensions, sampling, MipMapSetting::Disabled, Some(&texels)).unwrap();
+
+        // TODO: Do the mapping
+
+        todo!()
     }
 }

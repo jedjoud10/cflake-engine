@@ -40,6 +40,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/diffuse.png");
     asset!(&mut assets, "assets/user/normal.png");
     asset!(&mut assets, "assets/user/mask.png");
+    asset!(&mut assets, "assets/user/lilienstein_4k.hdr");
 
     // We will also register some new keybinds for the camera controller
     input.bind_key("forward", Key::W);
@@ -77,6 +78,8 @@ fn init(world: &mut World) {
         )
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
+
+    let hdr = assets.load_with::<CubeMap2D<RGB<f32>>>("user/lilienstein_4k.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
     
     // Load the mask map texture
     let mask_map = assets

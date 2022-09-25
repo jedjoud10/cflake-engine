@@ -127,6 +127,4 @@ pub struct TextureImportSettings {
     pub sampling: Sampling,
     pub mode: TextureMode,
     pub mipmaps: MipMapSetting,
-    pub scale: TextureScale,
-    pub flip: vek::Vec2<bool>,
 }

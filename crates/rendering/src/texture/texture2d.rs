@@ -58,6 +58,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.mipmap
     }
 
+
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as super::Region>::E,
@@ -246,7 +247,7 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
         let (ctx, settings) = args;
         let image = image::load_from_memory(data.bytes()).unwrap();
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
-
+        /*
         let image = match settings.scale {
             super::TextureScale::Default => image,
             super::TextureScale::Scale { scaling, filter } => image.resize((dimensions.w as f64 * scaling) as u32, (dimensions.h as f64 * scaling) as u32, filter),
@@ -264,6 +265,7 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
         } else {
             image
         };
+        */
 
         let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
         let texels = T::to_image_texels(image);
