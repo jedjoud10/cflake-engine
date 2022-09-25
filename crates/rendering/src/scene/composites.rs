@@ -165,9 +165,6 @@ pub struct PostProcessing {
     pub gamma: f32,
     pub vignette_strength: f32,
     pub vignette_size: f32,
-    pub bloom_radius: f32,
-    pub bloom_strength: f32,
-    pub bloom_contrast: f32,
 }
 
 // The compositor is what we shall use to combine the clustered shading canvas and other composites

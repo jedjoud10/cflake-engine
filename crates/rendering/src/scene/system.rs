@@ -89,11 +89,8 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         tonemapping_strength: 1.0,
         exposure: 1.2,
         gamma: 2.2,
-        vignette_strength: 8.5,
+        vignette_strength: 10.5,
         vignette_size: 0.2,
-        bloom_radius: 25.0,
-        bloom_strength: 1.0,
-        bloom_contrast: 1.0,
     };
 
     // Create the frame-to-frame basis stats

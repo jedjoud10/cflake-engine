@@ -53,7 +53,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 243, 196),
-        strength: 0.0,
+        strength: 10.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
