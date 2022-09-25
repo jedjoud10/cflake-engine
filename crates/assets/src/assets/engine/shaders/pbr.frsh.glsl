@@ -20,9 +20,9 @@ uniform vec3 camera;
 uniform vec3 camera_forward;
 
 // Uniforms set by the main scene
-uniform vec3 light_dir;
-uniform vec3 light_color;
-uniform float light_strength;
+uniform vec3 sun_dir;
+uniform vec3 sun_color;
+uniform float sun_strength;
 
 // Directional shadow mapping
 uniform sampler2DShadow shadow_map;
@@ -55,6 +55,7 @@ struct LightData {
 	vec3 backward;
 	vec3 color;
 	float strength;
+	bool directional;
 };
 
 // Camera data struct
@@ -74,25 +75,26 @@ struct SurfaceData {
 
 // Bidirectional reflectance distribution function, aka PBRRRR
 vec3 brdf(SurfaceData surface, CameraData camera, LightData light) {
-	float roughness = max(surface.mask.g, 0.06);
-	float metallic = surface.mask.b;
-	float visibility = surface.mask.r;
+	float roughness = clamp(surface.mask.g, 0.06, 1.0);
+	float metallic = clamp(surface.mask.b, 0.0, 1.0);
+	float visibility = clamp(surface.mask.r, 0.0, 1.0);
 	vec3 f0 = mix(vec3(0.04), surface.diffuse, metallic);
 	
 	// Ks and Kd
 	vec3 ks = fresnel(f0, camera.view, camera.half_view, surface.normal);
 	vec3 kd = (1 - ks) * (1 - metallic);
 
-	/*
+	// TODO: Add point light shadow mapping
 	// Check if the fragment is in shadow
-	float shadow = is_in_shadow(
-		surface.position,
-		sun.backward,
-		shadow_lightspace_matrix,
-		shadow_map
-	);
-	*/
 	float shadow = 0.0;
+	if (light.directional) {
+		shadow = is_in_shadow(
+			surface.position,
+			light.backward,
+			shadow_lightspace_matrix,
+			shadow_map
+		);
+	}
 
 	// Calculate diffuse and specular
 	vec3 brdf = kd * (surface.diffuse / PI) + specular(f0, roughness, camera.view, light.backward, surface.normal, camera.half_view);
@@ -104,7 +106,7 @@ void main() {
 	// Fetch the textures and their texels
     vec3 diffuse = texture(albedo, m_tex_coord * scale).xyz * tint;
 	vec3 bumps = texture(normal, m_tex_coord * scale).xyz * 2.0 - 1.0;
-	vec3 mask = texture(mask, m_tex_coord * scale).xyz * vec3(1 / ambient_occlusion, roughness, metallic);
+	vec3 mask = (vec3(0.01) + texture(mask, m_tex_coord * scale).xyz) * vec3(1 / ambient_occlusion, roughness, metallic);
 
     // Calculate the normal mapped bumpiness
 	bumps.xy *= bumpiness;
@@ -116,20 +118,26 @@ void main() {
 		normalize(m_normal));
 	vec3 normal = normalize(tbn * normalize(bumps));
 
-	// Iterate through all the point light
+	// Set the main PBR structs that we shall re-use
+	SurfaceData surface = SurfaceData(diffuse, mask, normal, m_position);
+	vec3 view = normalize(camera - m_position);
+
+	// Main directional light
 	vec3 sum = vec3(0, 0, 0);
+	LightData sun = LightData(sun_dir, sun_color, sun_strength, true);
+	CameraData _camera = CameraData(view, normalize(view + sun_dir), camera);	
+	sum += brdf(surface, _camera, sun);
+
+	// Iterate through all the point light
 	for(int i = 0; i < point_lights_num; i++) {
 		vec3 light_position = lights[i].position_attenuation.xyz;
 		vec3 dir = normalize(light_position - m_position);
         float dist = length(dir);
-        float attenuation = 1.0 / ((dist * dist) * lights[i].position_attenuation.w);
-		vec3 radiance = lights[i].color.xyz * attenuation;
+        vec3 radiance = lights[i].color.xyz / (1.0 + 5.8 * (dist * dist) + 9.7 * dist);
 
-		LightData sun = LightData(dir, radiance, 1.0);
-		SurfaceData surface = SurfaceData(diffuse, mask, normal, m_position);
-		vec3 view = normalize(camera - m_position);
+		LightData point_light = LightData(dir, radiance, 1.0, false);
 		CameraData camera = CameraData(view, normalize(view + dir), camera);
-		sum += brdf(surface, camera, sun);
+		sum += brdf(surface, camera, point_light);
 	}
 
 	// Add the ambient lighting

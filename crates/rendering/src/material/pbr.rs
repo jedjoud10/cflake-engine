@@ -87,12 +87,12 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
         uniforms.set_vec3::<vek::Vec3<f32>>("camera", main.camera_location.into());
         uniforms.set_vec3("forward", main.camera_rotation.forward());
-        uniforms.set_vec3("light_dir", main.directional_light_rotation.forward());
+        uniforms.set_vec3("sun_dir", main.directional_light_rotation.forward());
         uniforms.set_vec3(
-            "light_color",
+            "sun_color",
             main.directional_light.color.as_::<f32>() / 255.0,
         );
-        uniforms.set_scalar("light_strength", main.directional_light.strength);
+        uniforms.set_scalar("sun_strength", main.directional_light.strength);
         let shadow = &(*resources.3);
         uniforms.set_sampler("shadow_map", &shadow.depth_tex);
         uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);

@@ -116,7 +116,7 @@ impl Default for Sampling {
             depth_comparison: None,
             mipmap_lod_bias: 0.0,
             mipmap_lod_range: (-1000.0, 1000.0),
-            mipmap_aniso_samples: Some(NonZeroU8::new(16).unwrap())
+            mipmap_aniso_samples: Some(NonZeroU8::new(4).unwrap())
         }
     }
 }

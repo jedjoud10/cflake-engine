@@ -45,7 +45,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, 64, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 1024, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 4096, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -150,7 +150,7 @@ fn light_clustering(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let query = ecs.query::<(&mut Location, &PointLight)>().unwrap();
     for (location, _) in query {
-        location.z = time.secs_since_startup_f32().sin() * 3.0;
+        location.z = time.secs_since_startup_f32().sin() * 30.0;
     }
 
     let query = ecs.view::<(&Location, &PointLight)>().unwrap();
