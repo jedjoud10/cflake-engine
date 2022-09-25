@@ -1,5 +1,7 @@
 use std::num::{NonZeroU8, NonZeroU16};
 
+use crate::others::Comparison;
+
 // Some settings that tell us exactly how we should generate a texture
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum TextureMode {
@@ -45,6 +47,7 @@ pub enum MipMapSetting {
     Disabled,
 
     // Automatic mipmap generation based on the texture dimensions
+    #[default]
     Automatic,
 
     // Manual mipmap generation with specific levels.
@@ -52,19 +55,6 @@ pub enum MipMapSetting {
     // If levels is less than 2, then mipmapping will be disabled
     Manual {
         levels: NonZeroU8,
-    },
-
-    // Automatic mipmap generation (from texture dimensions), but with a specified number of anisotropy samples
-    // The number of anisotropic samples will be decided automatically
-    #[default]
-    AutomaticAniso,
-
-    // Manual mipmap generation, but with a specified number of anisotropy sampler
-    // If levels is less than 2, then mipmapping will be disabled
-    // If samples is less than 2m then anisotropic filtering will be disabled
-    ManualAniso {
-        levels: NonZeroU8,
-        samples: NonZeroU8,
     },
 }
 
@@ -103,8 +93,19 @@ pub enum Wrap {
 // Some special sampling parameters for textures
 #[derive(Clone, Copy, PartialEq)]
 pub struct Sampling {
+    // Minification and magnification filters
     pub filter: Filter,
+
+    // Wrapping mode for each direction
     pub wrap: Wrap,
+
+    // This is a comparison hint used when dealing with depth textures
+    pub depth_comparison: Option<Comparison>,
+
+    // Only used when we have texture mipmapping enabled
+    pub mipmap_lod_bias: f32,
+    pub mipmap_lod_range: (f32, f32),
+    pub mipmap_aniso_samples: Option<NonZeroU8>,
 }
 
 impl Default for Sampling {
@@ -112,6 +113,10 @@ impl Default for Sampling {
         Self {
             filter: Filter::Linear,
             wrap: Wrap::Repeat,
+            depth_comparison: None,
+            mipmap_lod_bias: 0.0,
+            mipmap_lod_range: (-1000.0, 1000.0),
+            mipmap_aniso_samples: Some(NonZeroU8::new(16).unwrap())
         }
     }
 }

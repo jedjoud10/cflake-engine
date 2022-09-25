@@ -24,7 +24,7 @@ impl Default for DirectionalLight {
 #[repr(C)]
 pub struct PointLight {
     // The color of the light
-    pub color: vek::Rgb<u8>,
+    pub color: vek::Rgba<u8>,
 
     // The strength of the light (in lumens or lux)
     pub strength: f32,
@@ -36,7 +36,7 @@ pub struct PointLight {
 impl Default for PointLight {
     fn default() -> Self {
         Self {
-            color: vek::Rgb::broadcast(255),
+            color: vek::Rgba::broadcast(255),
             strength: 1.0,
             radius: 10.0,
         }

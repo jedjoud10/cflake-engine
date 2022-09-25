@@ -32,6 +32,14 @@ impl<T: Texel> ToGlTarget for Texture3D<T> {
     }
 }
 
+impl<T: Texel> Drop for Texture3D<T> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &self.name);
+        }
+    }
+}
+
 impl<T: Texel> Texture for Texture3D<T> {
     type Region = (vek::Vec3<u16>, vek::Extent3<u16>);
     type T = T;

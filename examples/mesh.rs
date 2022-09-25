@@ -10,7 +10,6 @@ fn main() {
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
         .insert_init(init)
-        .set_framerate_limit(Some(FrameRateLimit::VSync))
         .set_window_fullscreen(false)
         .insert_update(update)
         .execute();
@@ -133,6 +132,7 @@ fn init(world: &mut World) {
                         sampling: Sampling {
                             filter: Filter::Linear,
                             wrap: Wrap::ClampToEdge,
+                            ..Default::default()
                         },
                         ..Default::default()
                     },

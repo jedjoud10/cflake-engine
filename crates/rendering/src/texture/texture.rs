@@ -2,8 +2,8 @@ use super::{
     get_bit, set_bit, Extent, Filter, MipLevelMut, MipLevelRef, MipMapDescriptor, MipMapSetting,
     Region, Sampling, Texel, TextureMode, Wrap,
 };
-use crate::context::{Context, ToGlName, ToGlTarget};
-use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc};
+use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
+use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc, mem::transmute};
 // A global texture trait that will be implemented for Texture2D and ArrayTexture2D
 // TODO: Test texture resizing with mipmapping, does it reallocate or not?
 // TODO: Cannot create static/dynamic textures with NONE data
@@ -40,16 +40,10 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
 
             // Calculate the total mipmap levels (and optionally the number of anisotropy samples)
             let auto = dimensions.levels();
-            let (levels, anisotropy_samples) = match mipmaps {
-                MipMapSetting::Disabled => (NonZeroU8::new(1).unwrap(), None),
-                MipMapSetting::Automatic => (auto, None),
-                MipMapSetting::Manual { levels } => (levels.min(auto), None),
-                MipMapSetting::AutomaticAniso => (auto, {
-                    let mut val = 0.0;
-                    gl::GetFloatv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mut val);
-                    NonZeroU8::new(val as u8)
-                }),
-                MipMapSetting::ManualAniso { levels, samples } => (levels.min(auto), Some(samples)),
+            let levels = match mipmaps {
+                MipMapSetting::Disabled => NonZeroU8::new(1).unwrap(),
+                MipMapSetting::Automatic => auto,
+                MipMapSetting::Manual { levels } => levels.min(auto),
             };
 
             // Create a new raw OpenGL texture object
@@ -112,13 +106,27 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             // Apply the mipmapping settings (and anisostropic filtering)
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
-                if let Some(samples) = anisotropy_samples {
+                
+                // Set the anisotropic samples 
+                if let Some(samples) = sampling.mipmap_aniso_samples {
                     gl::TextureParameterf(
                         tex,
                         gl::TEXTURE_MAX_ANISOTROPY_EXT,
                         samples.get() as f32,
                     );
                 }
+
+                // Set the LOD bias/range parameters
+                gl::TextureParameterf(tex, gl::TEXTURE_LOD_BIAS, sampling.mipmap_lod_bias);
+                gl::TextureParameterf(tex, gl::TEXTURE_MIN_LOD, sampling.mipmap_lod_range.0);
+                gl::TextureParameterf(tex, gl::TEXTURE_MAX_LOD, sampling.mipmap_lod_range.1);
+            }
+
+            // Apply the comparison texture (only if we are using depth texels)
+            let depth = <Self::T as Texel>::FORMAT == gl::DEPTH_COMPONENT;
+            if let (Some(comparison), true) = (sampling.depth_comparison, depth) {
+                gl::TextureParameteri(tex, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE as i32);
+                gl::TextureParameteri(tex, gl::TEXTURE_COMPARE_FUNC, transmute::<Comparison, u32>(comparison) as i32);
             }
 
             // Create a mip map accessor

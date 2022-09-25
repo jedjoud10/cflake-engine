@@ -143,15 +143,19 @@ impl Painter {
                 let dimensions = vek::Extent2::from_slice(&delta.image.size()).as_::<u16>();
                 let texels = image_data_to_texels(&delta.image);
 
+                // Sampling settings for the UI texture
+                let sampling = Sampling {
+                    filter: Filter::Linear,
+                    wrap: Wrap::ClampToEdge,
+                    ..Default::default()
+                };
+
                 // Create the main font texture since it is missing
                 Texture2D::new(
                     ctx,
                     TextureMode::Resizable,
                     dimensions,
-                    Sampling {
-                        filter: Filter::Linear,
-                        wrap: Wrap::ClampToEdge,
-                    },
+                    sampling,
                     MipMapSetting::Disabled,
                     Some(&texels),
                 )

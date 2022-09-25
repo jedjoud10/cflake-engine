@@ -1,9 +1,9 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode,
+    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, DepthTexel,
 };
-use crate::context::{Context, ToGlName, ToGlTarget};
+use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
 use std::{ffi::c_void, marker::PhantomData, ptr::null};
 
 // A 2D texture that contains multiple pixels that have their own channels
@@ -31,6 +31,14 @@ impl<T: Texel> ToGlName for Texture2D<T> {
 impl<T: Texel> ToGlTarget for Texture2D<T> {
     fn target() -> u32 {
         gl::TEXTURE_2D
+    }
+}
+
+impl<T: Texel> Drop for Texture2D<T> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &self.name);
+        }
     }
 }
 

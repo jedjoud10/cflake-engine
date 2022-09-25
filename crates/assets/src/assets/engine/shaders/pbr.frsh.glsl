@@ -1,6 +1,7 @@
 #version 460 core
 #include "engine/shaders/models.func.glsl"
 #include "engine/shaders/shadow.func.glsl"
+#include "engine/shaders/clustered.func.glsl"
 out vec3 frag;
 
 // Main PBR uniforms
@@ -28,11 +29,16 @@ uniform sampler2D shadow_map;
 uniform mat4 shadow_lightspace_matrix;
 
 // Clustered shading data
-uniform ivec2 cluster_size;
-uniform ivec2 resolution;
+uniform uint cluster_size;
+uniform uvec2 resolution;
+
+// Point lights that are in the scene
+// Clustered shading clusters
+// Clustered shading indices
 
 // Data given by the vertex shader
 in vec3 m_position;
+in vec3 w_position;
 in vec3 m_normal;
 in vec3 m_tangent;
 in vec3 m_bitangent;

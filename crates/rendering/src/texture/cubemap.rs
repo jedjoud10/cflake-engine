@@ -36,6 +36,14 @@ impl<T: Texel> ToGlTarget for CubeMap2D<T> {
     }
 }
 
+impl<T: Texel> Drop for CubeMap2D<T> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &self.name);
+        }
+    }
+}
+
 impl<T: Texel> Texture for CubeMap2D<T> {
     type Region = (vek::Vec3<u16>, vek::Extent2<u16>);
     type T = T;

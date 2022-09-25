@@ -4,7 +4,7 @@ use super::{Program, UniformsError, BlockIndex};
 use crate::{
     buffer::{Buffer, ShaderBuffer, UniformBuffer},
     context::{Shared, ToGlName},
-    texture::Texture, prelude::MipLevelMut,
+    texture::Texture, prelude::{MipLevelMut},
 };
 
 // IMplement the scalar trait for single, scalar uniform types

@@ -20,6 +20,7 @@ pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
     pub(crate) point_lights: &'a ShaderBuffer<(PointLight, Location)>,
     pub(crate) clusters: &'a ShaderBuffer<(u32, u32)>,
+    pub(crate) cluster_size: &'a u32,
     pub(crate) camera_location: &'a Location,
     pub(crate) camera_rotation: &'a Rotation,
     pub(crate) directional_light: &'a DirectionalLight,

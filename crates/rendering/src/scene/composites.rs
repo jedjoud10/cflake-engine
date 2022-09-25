@@ -8,7 +8,7 @@ use crate::{
     buffer::{ShaderBuffer, BufferMode, UniformBuffer},
     mesh::Mesh,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Sampling, Filter, Wrap, MipMapSetting, Texture, TextureMode}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor},
+    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Filter, Wrap, MipMapSetting, Texture, TextureMode, Sampling}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor}, others::Comparison,
 };
 
 use super::PointLight;
@@ -36,6 +36,7 @@ impl ClusteredShading {
         let sampling = Sampling {
             filter: Filter::Nearest,
             wrap: Wrap::ClampToEdge,
+            ..Default::default()
         };
         let mipmaps = MipMapSetting::Disabled;
         
@@ -44,7 +45,7 @@ impl ClusteredShading {
             ctx,
             TextureMode::Resizable,
             window.size(),
-            sampling,
+            sampling, 
             mipmaps,
             None,
         )
@@ -55,7 +56,7 @@ impl ClusteredShading {
             ctx,
             TextureMode::Resizable,
             window.size(),
-            sampling,
+            sampling, 
             mipmaps,
             None,
         )
@@ -108,20 +109,20 @@ pub struct ShadowMapping {
 
 impl ShadowMapping {
     pub(crate) fn new(size: f32, depth: f32, resolution: u16, ctx: &mut Context, _shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
-        // Settings for framebuffer textures
         let sampling = Sampling {
-            filter: Filter::Nearest,
-            wrap: Wrap::ClampToBorder(vek::Rgba::broadcast(1.0)),
+            filter: Filter::Linear,
+            wrap: Wrap::ClampToBorder(vek::Rgba::broadcast(1.0f32)),
+            depth_comparison: None,
+            ..Default::default()
         };
-        let mipmaps = MipMapSetting::Disabled;
-
-        // Create the depth render texture
+        
+        // Create the depth shadow map texture
         let depth_tex = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
             ctx,
             TextureMode::Dynamic,
             vek::Extent2::broadcast(resolution),
             sampling,
-            mipmaps,
+            MipMapSetting::Disabled,
             None,
         ).unwrap();
 

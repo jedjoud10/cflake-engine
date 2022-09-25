@@ -114,6 +114,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         camera,
         point_lights: &shading.point_lights,
         clusters: &shading.clusters,
+        cluster_size: &shading.cluster_size,
         camera_location,
         camera_rotation,
         directional_light,

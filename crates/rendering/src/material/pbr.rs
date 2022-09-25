@@ -9,15 +9,20 @@ use crate::{
     prelude::{RGBA, SRGBA},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RGB},
+    texture::{Ranged, Texture, Texture2D, RGB}, display::Display,
 };
 
 use super::{DefaultMaterialResources, Material, Sky};
 
+// PBR texels
+pub type AlbedoTexel = SRGBA<Ranged<u8>>;
+pub type NormalTexel = RGB<Ranged<u16>>;
+pub type MaskTexel = RGBA<Ranged<u16>>;
+
 // PBR maps
-pub type AlbedoMap = Texture2D<SRGBA<Ranged<u8>>>;
-pub type NormalMap = Texture2D<RGB<Ranged<u16>>>;
-pub type MaskMap = Texture2D<RGBA<Ranged<u16>>>; // (r = AO, g = roughness, b = metallic)
+pub type AlbedoMap = Texture2D<AlbedoTexel>;
+pub type NormalMap = Texture2D<NormalTexel>;
+pub type MaskMap = Texture2D<MaskTexel>; // (r = AO, g = roughness, b = metallic)
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
@@ -91,6 +96,8 @@ impl<'w> Material<'w> for Standard {
         let shadow = &(*resources.3);
         uniforms.set_sampler("shadow_map", &shadow.depth_tex);
         uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);
+        uniforms.set_vec2("resolution", vek::Vec2::<u32>::from(main.window.viewport().extent.as_::<u32>()));
+        uniforms.set_scalar("cluster_size", main.cluster_size);
     }
 
     fn set_surface_properties(
