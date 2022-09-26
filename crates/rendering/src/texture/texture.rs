@@ -305,3 +305,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Copy a sub-region of another texture into this texture
     unsafe fn copy_subregion_from(write_name: u32, read_name: u32, write_level: u8, read_level: u8, read_region: Self::Region, write_offset: <Self::Region as Region>::O);
 }
+
+// Implemented for textures that have only one single layer
+pub trait SingleLayerTexture: Texture {}
+
+// Implemented for textures that have multiple layers
+pub trait MultiLayerTexture: Texture {
+    // Check if the texture contains the specific layer
+    fn is_layer_valid(&self, layer: u16) -> bool;
+}

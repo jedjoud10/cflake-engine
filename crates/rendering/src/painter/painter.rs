@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use super::{
     ColorAttachmentLayout, DepthAttachment, PainterColorLayout, PainterDepthTexel,
-    PainterStencilTexel, StencilAttachment, UntypedAttachment,
+    PainterStencilTexel, StencilAttachment, UntypedAttachment, Target,
 };
 use crate::{
     context::Context,
@@ -44,93 +44,113 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
     }
 
     // Use the painter to give us a scoped painter that has proper targets
-    pub fn scope<CT: ColorAttachmentLayout<C>, DT: DepthAttachment<D>, ST: StencilAttachment<S>>(
+    pub fn scope<CT: ColorAttachmentLayout<C>>(
         &mut self,
         viewport: Viewport,
         colors: CT,
-        depth: DT,
-        stencil: ST,
+        depth: <Target<D>,
+        stencil: Target<S>,
     ) -> Option<ScopedPainter<C, D, S>> {
         // Convert the attachments to their untyped values
         let untyped_color = colors.untyped();
-        let untyped_depth = depth.untyped();
-        let untyped_stencil = stencil.untyped();
+        let untyped_depth = depth.untyped;
+        let untyped_stencil = stencil.untyped;
 
-        // Check for any changes, and update the internal framebuffer if needed
-        // We don't have to bother about us checking the discriminent of the enum since we already know they are Some using type checks (TODO: Explain this a better)
-        // TODO: Delete duplicate OpenGL code
-        // Update the color attachments and the draw buffers
+        // Simple local struct to help us bind the attachments to the painter 
+        struct Attachment {
+            untyped: UntypedAttachment,
+            code: u32,
+        }
+
+        // We will bind all the attachments later
+        let mut attachments = Vec::<Attachment>::new();
+
+        // Convert the untyped color attachments to the local struct
         if untyped_color != self.untyped_color_attachments {
-            self.untyped_color_attachments = untyped_color.clone();
+            let untyped_color = untyped_color.unwrap();
             let mut offset = 0;
-            for attachment in untyped_color.unwrap() {
-                match attachment {
-                    UntypedAttachment::TextureLevel {
-                        texture_name,
-                        level,
-                        untyped: _,
-                    } => unsafe {
-                        gl::NamedFramebufferTexture(
-                            self.name,
-                            gl::COLOR_ATTACHMENT0 + offset,
-                            texture_name,
-                            level as i32,
-                        );
-                    },
-                }
+            attachments.extend(untyped_color.iter().map(|untyped| {
+                let attachment = Attachment {
+                    untyped: untyped.clone(),
+                    code: gl::COLOR_ATTACHMENT0 + offset,
+                };
                 offset += 1;
-            }
+                return attachment;
+            }));
+            self.untyped_color_attachments = Some(untyped_color);
+        }
 
-            unsafe {
-                let draw = (0..offset)
+        // Convert the untyped depth attachment to the local struct
+        if untyped_depth != self.untyped_depth_attachment {
+            let untyped_depth = untyped_depth.unwrap();
+            self.untyped_depth_attachment = Some(untyped_depth);
+            attachments.push(Attachment {
+                untyped: untyped_depth,
+                code: gl::DEPTH_ATTACHMENT,
+            });
+        }
+
+        // Convert the untyped stencil attachment to the local struct
+        if untyped_stencil != self.untyped_stencil_attachment {
+            let untyped_stencil = untyped_stencil.unwrap();
+            self.untyped_stencil_attachment = Some(untyped_stencil);
+            attachments.push(Attachment {
+                untyped: untyped_stencil,
+                code: gl::STENCIL_ATTACHMENT,
+            });
+        }
+
+        // Bind the texture layers/levels to the proper attachments
+        for attachment in attachments.iter() {
+            match attachment.untyped {
+                UntypedAttachment::TextureLevel {
+                    texture_name,
+                    level,
+                    untyped: _,
+                } => unsafe {
+                    gl::NamedFramebufferTexture(
+                        self.name,
+                        attachment.code,
+                        texture_name,
+                        level as i32,
+                    );
+                },
+                UntypedAttachment::TextureLevelLayer { texture_name, level, layer, untyped } => unsafe {
+                    gl::NamedFramebufferTextureLayer(
+                        self.name,
+                        attachment.code,
+                        texture_name,
+                        level as i32,
+                        layer as i32
+                    );
+                },
+            }
+        }
+
+        // Check if we have any color attachment, and if we do, check how many of them we have bound to the FB
+        let color_attachments_bound: Option<u32> = attachments.iter().fold(None, |current, item| {
+            match item.code {
+                gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT31 => match current {
+                    Some(x) => Some(x + 1),
+                    None => Some(1),
+                }
+                _ => None,
+            }
+        });
+
+        // Apply the color draw buffers
+        if let Some(count) = color_attachments_bound {
+            let draw = (0..count)
                     .into_iter()
                     .map(|offset| gl::COLOR_ATTACHMENT0 + offset)
                     .collect_vec();
+
+            unsafe {
                 gl::NamedFramebufferDrawBuffers(
                     self.name,
                     draw.len() as i32,
                     draw.as_ptr() as *const u32,
                 );
-            }
-        }
-
-        // Update the depth attachment
-        if untyped_depth != self.untyped_depth_attachment {
-            self.untyped_depth_attachment = untyped_depth;
-            let depth = untyped_depth.unwrap();
-            match depth {
-                UntypedAttachment::TextureLevel {
-                    texture_name,
-                    level,
-                    untyped: _,
-                } => unsafe {
-                    gl::NamedFramebufferTexture(
-                        self.name,
-                        gl::DEPTH_ATTACHMENT,
-                        texture_name,
-                        level as i32,
-                    );
-                },
-            }
-        }
-
-        // Update the stencil attachment
-        if untyped_stencil != self.untyped_stencil_attachment {
-            self.untyped_stencil_attachment = untyped_stencil;
-            let stencil = untyped_stencil.unwrap();
-            match stencil {
-                UntypedAttachment::TextureLevel {
-                    texture_name,
-                    level,
-                    untyped: _,
-                } => unsafe {
-                    gl::NamedFramebufferTexture(
-                        self.name,
-                        gl::STENCIL_ATTACHMENT,
-                        texture_name,
-                        level as i32,
-                    );
-                },
             }
         }
 

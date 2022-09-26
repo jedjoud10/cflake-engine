@@ -8,8 +8,8 @@ use super::{RasterSettings, Rasterizer};
 // A viewport wrapper around raw OpenGL viewport
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Viewport {
-    pub origin: vek::Vec2<u16>,
-    pub extent: vek::Extent2<u16>,
+    pub(crate) origin: vek::Vec2<u16>,
+    pub(crate) extent: vek::Extent2<u16>,
 }
 
 // A display can be anything that has a specific size and that can be drawn into

@@ -1,8 +1,10 @@
 
 
+use std::marker::PhantomData;
+
 use crate::{
     context::ToGlName,
-    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel},
+    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel, Region, SingleLayerTexture, MultiLayerTexture},
 };
 
 use super::{PainterColorLayout, PainterDepthTexel, PainterStencilTexel};
@@ -17,56 +19,71 @@ pub enum AttachmentLocation {
 
 // This is a wrapper around framebuffer attachments
 // These values will be stored within the canvas
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum UntypedAttachment {
     TextureLevel {
         texture_name: u32,
         level: u8,
         untyped: UntypedTexel,
     },
+
+    TextureLevelLayer {
+        texture_name: u32,
+        level: u8,
+        layer: u16,
+        untyped: UntypedTexel,
+    }
 }
 
-impl PartialEq for UntypedAttachment {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (
-                Self::TextureLevel {
-                    texture_name: l_texture_name,
-                    level: l_level,
-                    untyped: l_untyped,
-                },
-                Self::TextureLevel {
-                    texture_name: r_texture_name,
-                    level: r_level,
-                    untyped: r_untyped,
-                },
-            ) => l_texture_name == r_texture_name && l_level == r_level && l_untyped == r_untyped,
+// A target is a simple abstraction around FBO attachments
+// We can get targets from MipLayers and whole Textures if we wish to
+pub struct Target<'a, A> {
+    pub(crate) untyped: UntypedAttachment,
+    object: &'a mut A,
+}
+
+
+// Implemented for object that have a single layer and that be converted to simple targets
+pub trait SingleLayerIntoTarget: Sized {
+    fn target(&mut self) -> Target<Self>;
+}
+
+// Convert single layered mip levels into a target
+impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget for MipLevelMut<'a, T> {
+    fn target(&mut self) -> Target<Self> {
+        Target {
+            untyped: UntypedAttachment::TextureLevel { texture_name: self.texture().name(), level: self.level(), untyped: <T::T as Texel>::untyped() },
+            object: self,
         }
     }
 }
-impl Eq for UntypedAttachment {}
 
-// An attachment is something that we will bind to the painter to be able to render to it
-// This attachment trait is just a wrapper around framebuffer attachments
+// Implemented for objects that have multiple layers and that must use a specific when when fetching targets
+// Only used for cubemaps, bundled texture 2d, and texture 3ds
+pub trait MultilayerIntoTarget: Sized {
+    fn target(&mut self, layer: u16) -> Option<Target<Self>>;
+}
+
+// Convert multi layered mip levels into a target
+impl<'a, T: MultiLayerTexture> MultilayerIntoTarget for MipLevelMut<'a, T> {
+    fn target(&mut self, layer: u16) -> Option<Target<Self>> {
+        T::is_layer_valid(self.texture(), layer).then(|| Target {
+            untyped: UntypedAttachment::TextureLevelLayer { texture_name: self.texture().name(), level: self.level(), layer, untyped: <T::T as Texel>::untyped() },
+            object: self,
+        })
+    }
+}
+
+// Attachments are something that we can bind to textures
 pub trait Attachment<T> {
     fn untyped(&self) -> Option<UntypedAttachment>;
 }
 
 // Attachments that use the default texel are disabled
+
 impl Attachment<()> for () {
     fn untyped(&self) -> Option<UntypedAttachment> {
         None
-    }
-}
-
-// Texture2D mip maps are attachable
-impl<'a, T: Texel> Attachment<T> for MipLevelMut<'a, Texture2D<T>> {
-    fn untyped(&self) -> Option<UntypedAttachment> {
-        Some(UntypedAttachment::TextureLevel {
-            texture_name: self.texture().name(),
-            level: self.level(),
-            untyped: T::untyped(),
-        })
     }
 }
 

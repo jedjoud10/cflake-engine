@@ -1,7 +1,7 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting,
+    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting, MultiLayerTexture,
 };
 use crate::{context::{Context, ToGlName, ToGlTarget}, shader::{VertexStage, FragmentStage, Processor, ShaderCompiler}, mesh::{Mesh, MeshImportSettings}, buffer::BufferMode, painter::Painter, display::Viewport};
 use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
@@ -254,6 +254,12 @@ impl<T: Texel> Texture for CubeMap2D<T> {
             extent.h,
             1,
         );
+    }
+}
+
+impl<T: Texel> MultiLayerTexture for CubeMap2D<T> {
+    fn is_layer_valid(&self, layer: u16) -> bool {
+        layer < 6 
     }
 }
 

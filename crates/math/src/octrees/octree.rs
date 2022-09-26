@@ -20,7 +20,7 @@ pub enum OctreeHeuristic {
     },
 
     // The heuristic function uses a sphere as a bound area for intersections
-    ShereHeuristic {
+    SphereHeuristic {
         radius: f32,
     },
 
@@ -63,7 +63,7 @@ impl Octree {
                 falloff: _,
                 exp_falloff: _,
             } => Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| false),
-            OctreeHeuristic::ShereHeuristic { radius: _ } => {
+            OctreeHeuristic::SphereHeuristic { radius: _ } => {
                 Box::new(|_node: &Node, _loc: &vek::Vec3<f32>| false)
             }
             OctreeHeuristic::AABBHeuristic { extent } => {

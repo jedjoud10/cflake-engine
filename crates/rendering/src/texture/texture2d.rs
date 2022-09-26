@@ -1,7 +1,7 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, DepthTexel,
+    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, DepthTexel, SingleLayerTexture,
 };
 use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
 use std::{ffi::c_void, marker::PhantomData, ptr::null};
@@ -235,6 +235,8 @@ impl<T: Texel> Texture for Texture2D<T> {
         );
     }
 }
+
+impl<T: Texel> SingleLayerTexture for Texture2D<T> {}
 
 impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
     type Args = (&'a mut Context, TextureImportSettings);
