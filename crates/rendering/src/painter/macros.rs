@@ -1,5 +1,5 @@
-use super::{ColorTupleTargets, MaybeColorLayout, AsTarget, UntypedTarget};
-use crate::prelude::{ColorTexel};
+use super::{AsTarget, ColorTupleTargets, MaybeColorLayout, UntypedTarget};
+use crate::prelude::ColorTexel;
 use seq_macro::seq;
 use std::concat_idents;
 

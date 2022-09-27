@@ -1,4 +1,4 @@
-use super::{Introspection, BlockIndex};
+use super::{BlockIndex, Introspection};
 use crate::context::{ToGlName, ToGlTarget};
 use ahash::AHashMap;
 use std::marker::PhantomData;

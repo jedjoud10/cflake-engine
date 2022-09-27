@@ -1,10 +1,11 @@
-
-
 use std::marker::PhantomData;
 
 use crate::{
     context::ToGlName,
-    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel, Region, SingleLayerTexture, MultiLayerTexture, Texture, Element, Depth, DepthTexel, Stencil, StencilTexel},
+    prelude::{
+        Depth, DepthTexel, Element, MipLevelMut, MultiLayerTexture, Region, SingleLayerTexture,
+        Stencil, StencilTexel, Texel, Texture, Texture2D, UntypedTexel,
+    },
 };
 
 // This is the target for a specific framebuffer attachment
@@ -59,7 +60,7 @@ pub struct Target<T: MaybeTexel, A> {
     _phantom: PhantomData<(T, A)>,
 }
 
-// Gonna need an untyped target for color layouts 
+// Gonna need an untyped target for color layouts
 pub struct UntypedTarget {
     pub(super) untyped: UntypedAttachment,
 }
@@ -101,14 +102,21 @@ pub trait SingleLayerIntoTarget<T: Texel>: Sized {
 impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget<T::T> for MipLevelMut<'a, T> {
     fn target(self) -> Target<T::T, Self> {
         Target {
-            untyped: UntypedAttachment::TextureLevel { texture_name: self.texture().name(), level: self.level(), untyped: <T::T as Texel>::untyped() },
+            untyped: UntypedAttachment::TextureLevel {
+                texture_name: self.texture().name(),
+                level: self.level(),
+                untyped: <T::T as Texel>::untyped(),
+            },
             _phantom: PhantomData,
         }
     }
 }
 
 // This looks cursed but it basically allows us to not have to write ".target" every time we wish to use a single layered texture
-impl<'a, T: Texture> AsTarget<T::T> for MipLevelMut<'a, T> where Self: SingleLayerIntoTarget<T::T> {
+impl<'a, T: Texture> AsTarget<T::T> for MipLevelMut<'a, T>
+where
+    Self: SingleLayerIntoTarget<T::T>,
+{
     type A = MipLevelMut<'a, T>;
     fn as_target(self) -> Option<Target<T::T, Self::A>> {
         Some(self.target())
@@ -130,7 +138,12 @@ pub trait MultilayerIntoTarget<T: Texel>: Sized {
 impl<'a, T: MultiLayerTexture> MultilayerIntoTarget<T::T> for MipLevelMut<'a, T> {
     fn target(self, layer: u16) -> Option<Target<T::T, Self>> {
         T::is_layer_valid(self.texture(), layer).then(|| Target {
-            untyped: UntypedAttachment::TextureLevelLayer { texture_name: self.texture().name(), level: self.level(), layer, untyped: <T::T as Texel>::untyped() },
+            untyped: UntypedAttachment::TextureLevelLayer {
+                texture_name: self.texture().name(),
+                level: self.level(),
+                layer,
+                untyped: <T::T as Texel>::untyped(),
+            },
             _phantom: PhantomData,
         })
     }

@@ -1,5 +1,5 @@
-use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
 use crate::context::ToGlName;
+use std::{ffi::CString, mem::MaybeUninit, ptr::null_mut};
 
 // The type of block that we have stored
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

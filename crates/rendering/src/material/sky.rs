@@ -4,7 +4,7 @@ use world::{Handle, Read, Storage};
 use crate::{
     display::PrimitiveMode,
     material::{AlbedoMap, Material},
-    prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage, CubeMap2D, RGB},
+    prelude::{CubeMap2D, FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage, RGB},
     scene::Renderer,
 };
 

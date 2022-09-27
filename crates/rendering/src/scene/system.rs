@@ -1,20 +1,16 @@
 use super::{
-    Camera, ClusteredShading, Compositor, DirectionalLight, PostProcessing, RenderedFrameStats,
-    Renderer, ShadowMapping, PointLight, PackedPointLight,
+    Camera, ClusteredShading, Compositor, DirectionalLight, PackedPointLight, PointLight,
+    PostProcessing, RenderedFrameStats, Renderer, ShadowMapping,
 };
 use crate::{
-    buffer::{BufferMode},
+    buffer::BufferMode,
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, HDRI},
     mesh::{Mesh, Surface},
-    prelude::{
-        FragmentStage, Processor, ShaderCompiler,
-        Texture, VertexStage,
-    },
+    prelude::{FragmentStage, Processor, ShaderCompiler, Texture, VertexStage},
     shader::Shader,
 };
-
 
 use assets::Assets;
 use ecs::Scene;
@@ -155,10 +151,12 @@ fn light_clustering(world: &mut World) {
         let color = light.color.as_::<f32>() / 255.0;
         let mut position_attenuation = vek::Vec4::from_slice(&*location);
         position_attenuation.w = light.attenuation;
-        PackedPointLight { color: vek::Rgba::from_slice(&color) * light.strength, position_attenuation, }
+        PackedPointLight {
+            color: vek::Rgba::from_slice(&color) * light.strength,
+            position_attenuation,
+        }
     }));
 }
-
 
 // Rendering event that will try to render the 3D scene each frame
 fn render_surfaces(world: &mut World) {
@@ -171,7 +169,7 @@ fn render_surfaces(world: &mut World) {
     }
     drop(old_stats);
     drop(shading);
-    
+
     // Extract the pipelines and render them
     let pipelines = world
         .get::<Context>()
@@ -365,10 +363,10 @@ fn shadow_map(world: &mut World) {
     if let Some(entry) = main_light_entry {
         if let Ok(rotation) = entry.get::<Rotation>() {
             let mut shadow = world.get_mut::<ShadowMapping>().unwrap();
-            shadow.view_matrix = vek::Mat4::look_at_rh(vek::Vec3::zero(), -rotation.forward(), -rotation.up());
+            shadow.view_matrix =
+                vek::Mat4::look_at_rh(vek::Vec3::zero(), -rotation.forward(), -rotation.up());
         }
     }
-    
 }
 
 // Main rendering/graphics system that will register the appropriate events
@@ -406,7 +404,7 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
     // Insert the light cluster calculate event
     reg.insert_with(
         light_clustering,
-        Stage::new("light clustering").after("post user")
+        Stage::new("light clustering").after("post user"),
     )
     .unwrap();
 
@@ -426,10 +424,10 @@ pub fn system(events: &mut Events, settings: GraphicsSetupSettings) {
 
     // Insert shadow mapping update view matrix event
     reg.insert_with(
-        shadow_map, 
+        shadow_map,
         Stage::new("update shadow mapping view matrix")
             .after("post user")
-            .before("scene rendering")
+            .before("scene rendering"),
     )
     .unwrap();
 

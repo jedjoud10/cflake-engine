@@ -2,8 +2,11 @@ use super::{
     get_bit, set_bit, Extent, Filter, MipLevelMut, MipLevelRef, MipMapDescriptor, MipMapSetting,
     Region, Sampling, Texel, TextureMode, Wrap,
 };
-use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
-use std::{cell::Cell, num::NonZeroU8, ptr::null, rc::Rc, mem::transmute};
+use crate::{
+    context::{Context, ToGlName, ToGlTarget},
+    others::Comparison,
+};
+use std::{cell::Cell, mem::transmute, num::NonZeroU8, ptr::null, rc::Rc};
 // A global texture trait that will be implemented for all our texture variants
 // This texture trait does not allow us to fetch multiple layers in the case of multi-layered textures
 // However, the Region's Origin for this texture must be a 3D vector if it is a multi-layered texture
@@ -107,8 +110,8 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             // Apply the mipmapping settings (and anisostropic filtering)
             if levels.get() > 1 {
                 gl::GenerateTextureMipmap(tex);
-                
-                // Set the anisotropic samples 
+
+                // Set the anisotropic samples
                 if let Some(samples) = sampling.mipmap_aniso_samples {
                     gl::TextureParameterf(
                         tex,
@@ -126,8 +129,16 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
             // Apply the comparison texture (only if we are using depth texels)
             let depth = <Self::T as Texel>::FORMAT == gl::DEPTH_COMPONENT;
             if let (Some(comparison), true) = (sampling.depth_comparison, depth) {
-                gl::TextureParameteri(tex, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_REF_TO_TEXTURE as i32);
-                gl::TextureParameteri(tex, gl::TEXTURE_COMPARE_FUNC, transmute::<Comparison, u32>(comparison) as i32);
+                gl::TextureParameteri(
+                    tex,
+                    gl::TEXTURE_COMPARE_MODE,
+                    gl::COMPARE_REF_TO_TEXTURE as i32,
+                );
+                gl::TextureParameteri(
+                    tex,
+                    gl::TEXTURE_COMPARE_FUNC,
+                    transmute::<Comparison, u32>(comparison) as i32,
+                );
             }
 
             // Create a mip map accessor
@@ -146,11 +157,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     fn region(&self) -> Self::Region {
         Self::Region::with_extent(self.dimensions())
     }
-    
+
     // Checks if we can modify a region of the texture
     fn is_region_valid(&self, region: Self::Region) -> bool {
-        let extent = <Self::Region as Region>::extent_from_origin(region.origin()) + region.extent();
-        extent.is_self_smaller(self.dimensions()) 
+        let extent =
+            <Self::Region as Region>::extent_from_origin(region.origin()) + region.extent();
+        extent.is_self_smaller(self.dimensions())
     }
 
     // Get the texture's dimensions
@@ -312,7 +324,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     unsafe fn read(name: u32, level: u8, ptr: *mut <Self::T as Texel>::Storage, texels: u32);
 
     // Copy a sub-region of another texture into this texture
-    unsafe fn copy_subregion_from(write_name: u32, read_name: u32, write_level: u8, read_level: u8, read_region: Self::Region, write_offset: <Self::Region as Region>::O);
+    unsafe fn copy_subregion_from(
+        write_name: u32,
+        read_name: u32,
+        write_level: u8,
+        read_level: u8,
+        read_region: Self::Region,
+        write_offset: <Self::Region as Region>::O,
+    );
 }
 
 // Implemented for textures that have only one single layer

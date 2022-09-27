@@ -1,5 +1,3 @@
-
-
 use arrayvec::ArrayVec;
 use ecs::Component;
 use math::{Location, Rotation};
@@ -143,6 +141,7 @@ impl Camera {
 }
 
 // A single frustum plane
+#[derive(Clone, Copy, PartialEq)]
 pub struct FrustumPlane {
     pub normal: vek::Vec3<f32>,
     pub distance: f32,

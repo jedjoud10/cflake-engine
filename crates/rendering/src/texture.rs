@@ -1,3 +1,4 @@
+mod cubemap;
 mod extent;
 mod mipmap;
 mod region;
@@ -6,7 +7,7 @@ mod texel;
 mod texture;
 mod texture2d;
 mod texture3d;
-mod cubemap;
+pub use cubemap::*;
 pub use extent::*;
 pub use mipmap::*;
 pub use region::*;
@@ -15,4 +16,3 @@ pub use texel::*;
 pub use texture::*;
 pub use texture2d::*;
 pub use texture3d::*;
-pub use cubemap::*;

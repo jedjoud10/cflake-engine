@@ -1,4 +1,4 @@
-use super::{BufferView, BufferViewMut, Persistent, UntypedBufferFormat, PersistentAccessor};
+use super::{BufferView, BufferViewMut, Persistent, PersistentAccessor, UntypedBufferFormat};
 use crate::context::{Context, Shared, ToGlName, ToGlTarget};
 use std::alloc::Layout;
 use std::any::TypeId;
@@ -309,8 +309,8 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     // Extent the current buffer using data from an iterator
     pub fn extend_from_iterator<I: Iterator<Item = T>>(&mut self, iterator: I) {
         let collected = iterator.collect::<Vec<_>>();
-        self.extend_from_slice(&collected);  
-    } 
+        self.extend_from_slice(&collected);
+    }
 
     // Extend the current buffer using data from a new slice
     pub fn extend_from_slice(&mut self, slice: &[T]) {
@@ -496,9 +496,17 @@ impl<T: Shared, const TARGET: u32> Buffer<T, TARGET> {
     }
 
     // Copy the data from another buffer's range into this buffer's range
-    pub fn copy_range_from<const OTHER: u32>(&mut self, range: impl RangeBounds<usize>, other: &Buffer<T, OTHER>, offset: usize) {
+    pub fn copy_range_from<const OTHER: u32>(
+        &mut self,
+        range: impl RangeBounds<usize>,
+        other: &Buffer<T, OTHER>,
+        offset: usize,
+    ) {
         let (start, end) = other.convert_range_bounds(range).unwrap();
-        assert!((end - start) + offset < self.length, "Cannot copy range from buffer, range is too big or offset is too large");
+        assert!(
+            (end - start) + offset < self.length,
+            "Cannot copy range from buffer, range is too big or offset is too large"
+        );
 
         unsafe {
             let size = ((end - start) * size_of::<T>()) as isize;

@@ -2,7 +2,6 @@ use super::Mesh;
 use crate::material::{Material, MaterialId};
 use ecs::Component;
 
-
 use world::Handle;
 
 // A surface is a combination of a sub mesh and a specific material handle
@@ -23,11 +22,14 @@ pub struct Surface<M: for<'w> Material<'w>> {
 }
 
 impl<M: for<'w> Material<'w>> Surface<M> {
-    pub fn new(
-        mesh: Handle<Mesh>,
-        material: Handle<M>,
-        id:MaterialId<M>,
-    ) -> Self {
-        Self { mesh, material, visible: true, shadow_caster: true, shadow_receiver: true, matid: id }
+    pub fn new(mesh: Handle<Mesh>, material: Handle<M>, id: MaterialId<M>) -> Self {
+        Self {
+            mesh,
+            material,
+            visible: true,
+            shadow_caster: true,
+            shadow_receiver: true,
+            matid: id,
+        }
     }
 }

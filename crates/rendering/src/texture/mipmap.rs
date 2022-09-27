@@ -1,10 +1,6 @@
 use super::{Extent, Region, Texel, Texture};
 use crate::prelude::TextureMode;
-use std::{
-    cell::{Cell},
-    num::NonZeroU8,
-    rc::Rc,
-};
+use std::{cell::Cell, num::NonZeroU8, rc::Rc};
 
 // A mip map descriptor contains the two bitfields that contain the read/write flags of each mipmap level
 pub struct MipMapDescriptor {
@@ -135,7 +131,6 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             level,
             read,
             write,
-
         }
     }
 
@@ -301,19 +296,43 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
     }
 
     // Copy a sub-region from another texture level into this texture without checking for safety
-    pub unsafe fn copy_subregion_from_unchecked(&mut self, other: &MipLevelRef<T>, read_region: T::Region, write_offset: <T::Region as Region>::O) {
-        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, read_region, write_offset);
+    pub unsafe fn copy_subregion_from_unchecked(
+        &mut self,
+        other: &MipLevelRef<T>,
+        read_region: T::Region,
+        write_offset: <T::Region as Region>::O,
+    ) {
+        T::copy_subregion_from(
+            self.texture.name(),
+            other.texture.name(),
+            self.level,
+            other.level,
+            read_region,
+            write_offset,
+        );
     }
 
     // Copy a whole another texture level into this one without checking for safety
     pub unsafe fn copy_from_unchecked(&mut self, other: &MipLevelRef<T>) {
         let offset = <T::Region as Region>::unit().origin();
         let read_region = <T::Region as Region>::with_extent(self.dimensions());
-        T::copy_subregion_from(self.texture.name(), other.texture.name(), self.level, other.level, read_region, offset);
+        T::copy_subregion_from(
+            self.texture.name(),
+            other.texture.name(),
+            self.level,
+            other.level,
+            read_region,
+            offset,
+        );
     }
 
     // Copy a sub-region from another texture level into this texture
-    pub fn copy_subregion_from(&mut self, other: &MipLevelRef<T>, read_region: T::Region, write_offset: <T::Region as Region>::O) {
+    pub fn copy_subregion_from(
+        &mut self,
+        other: &MipLevelRef<T>,
+        read_region: T::Region,
+        write_offset: <T::Region as Region>::O,
+    ) {
         assert_ne!(
             self.texture.mode(),
             TextureMode::Static,
@@ -344,9 +363,16 @@ impl<'a, T: Texture> MipLevelMut<'a, T> {
             "Cannot write data to static textures"
         );
 
-        assert!(self.dimensions() == other.dimensions(), "Cannot copy from differently sized mip level");
+        assert!(
+            self.dimensions() == other.dimensions(),
+            "Cannot copy from differently sized mip level"
+        );
 
-        self.copy_subregion_from(other, <T::Region as Region>::with_extent(self.dimensions()), <T::Region as Region>::unit().origin())
+        self.copy_subregion_from(
+            other,
+            <T::Region as Region>::with_extent(self.dimensions()),
+            <T::Region as Region>::unit().origin(),
+        )
     }
 }
 

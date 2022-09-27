@@ -87,7 +87,11 @@ impl InputButtonId for Key {
 
 impl InputButtonId for &'static str {
     fn get(self, input: &Input) -> KeyState {
-        input.key_bindings.get(self).map(|key| Key::get(*key, input)).unwrap_or(KeyState::None)
+        input
+            .key_bindings
+            .get(self)
+            .map(|key| Key::get(*key, input))
+            .unwrap_or(KeyState::None)
     }
 }
 
@@ -104,7 +108,11 @@ impl InputAxisId for Axis {
 
 impl InputAxisId for &'static str {
     fn get(self, input: &Input) -> f32 {
-        input.axis_bindings.get(self).map(|axis| Axis::get(*axis, input)).unwrap_or_default()
+        input
+            .axis_bindings
+            .get(self)
+            .map(|axis| Axis::get(*axis, input))
+            .unwrap_or_default()
     }
 }
 

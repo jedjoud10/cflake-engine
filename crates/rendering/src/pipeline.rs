@@ -1,4 +1,4 @@
-mod surface;
 mod shadows;
-pub use surface::*;
+mod surface;
 pub use shadows::*;
+pub use surface::*;

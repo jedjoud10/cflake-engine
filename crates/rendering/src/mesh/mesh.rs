@@ -31,7 +31,7 @@ pub struct Mesh {
     pub(super) tangents: AttributeBuffer<Tangent>,
     pub(super) colors: AttributeBuffer<Color>,
     pub(super) uvs: AttributeBuffer<TexCoord>,
-    
+
     // The number of vertices stored in this mesh
     pub(super) len: Cell<Option<usize>>,
 

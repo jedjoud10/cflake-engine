@@ -1,4 +1,4 @@
-use cflake_engine::prelude::{*};
+use cflake_engine::prelude::*;
 
 const ASSETS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/assets/");
 const SENSIVITY: f32 = 0.0007;
@@ -49,7 +49,6 @@ fn init(world: &mut World) {
     input.bind_key("right", Key::D);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
-    
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
@@ -98,15 +97,15 @@ fn init(world: &mut World) {
             .unwrap(),
     );
 
-        // Create the default sphere primitive mesh
-        let sphere = meshes.insert(
-            assets
-                .load_with::<Mesh>(
-                    "engine/meshes/sphere.obj",
-                    (&mut ctx, MeshImportSettings::default()),
-                )
-                .unwrap(),
-        );
+    // Create the default sphere primitive mesh
+    let sphere = meshes.insert(
+        assets
+            .load_with::<Mesh>(
+                "engine/meshes/sphere.obj",
+                (&mut ctx, MeshImportSettings::default()),
+            )
+            .unwrap(),
+    );
 
     // Create a new material instance
     let material = standard_materials.insert(Standard {
@@ -122,20 +121,36 @@ fn init(world: &mut World) {
     });
 
     // Create a new material surface for rendering
-    let pipeid = ctx.material_id::<Standard>().unwrap();    
+    let pipeid = ctx.material_id::<Standard>().unwrap();
     let surface = Surface::new(sphere.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default()));
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-    ecs.insert((surface, Renderer::default(), Location::at_y(-0.5), Scale::scale_xyz(40.0, 1.0, 40.0)));
+    ecs.insert((
+        surface,
+        Renderer::default(),
+        Location::at_y(-0.5),
+        Scale::scale_xyz(40.0, 1.0, 40.0),
+    ));
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-    ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
+    ecs.insert((
+        surface,
+        Renderer::default(),
+        Location::at_y(2.5),
+        Scale::scale_xyz(5.0, 5.0, 0.5),
+        Rotation::rotation_z(70.0f32.to_radians()),
+    ));
 
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
     // Load up the HDRi cubemap
-    let hdri = assets.load_with::<CubeMap2D<RGB<f32>>>("user/ignored/cubemap.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
+    let hdri = assets
+        .load_with::<CubeMap2D<RGB<f32>>>(
+            "user/ignored/cubemap.hdr",
+            (&mut ctx, TextureImportSettings::default()),
+        )
+        .unwrap();
     let hdri = hdris.insert(hdri);
 
     // Create the default sky material
@@ -178,8 +193,14 @@ fn update(world: &mut World) {
     let ctx = ui.as_mut().as_mut();
     egui::Window::new("Stats").show(ctx, |ui| {
         ui.heading("Timing");
-        ui.label(format!("Delta Time MS: {}", (time.delta_f32() * 1000.0).round()));
-        ui.label(format!("Startup Timer: {}", time.secs_since_startup_f32().round()));
+        ui.label(format!(
+            "Delta Time MS: {}",
+            (time.delta_f32() * 1000.0).round()
+        ));
+        ui.label(format!(
+            "Startup Timer: {}",
+            time.secs_since_startup_f32().round()
+        ));
 
         ui.heading("Rendering Engine: Surfaces");
         ui.label(format!("Unique Materials: {}", stats.unique_materials));
@@ -189,10 +210,22 @@ fn update(world: &mut World) {
         ui.label(format!("Vertices: {}", stats.verts));
 
         ui.heading("Rendering Engine: Shadows");
-        ui.label(format!("Unique Shadow Caster Materials: {}", stats.unique_materials_shadow_casters));
-        ui.label(format!("Shadow Caster Surfaces: {}", stats.shadow_casters_surfaces));
-        ui.label(format!("Shadow Caster Triangles: {}", stats.shadow_casters_tris));
-        ui.label(format!("Shadow Caster Vertices: {}", stats.shadow_casters_verts));
+        ui.label(format!(
+            "Unique Shadow Caster Materials: {}",
+            stats.unique_materials_shadow_casters
+        ));
+        ui.label(format!(
+            "Shadow Caster Surfaces: {}",
+            stats.shadow_casters_surfaces
+        ));
+        ui.label(format!(
+            "Shadow Caster Triangles: {}",
+            stats.shadow_casters_tris
+        ));
+        ui.label(format!(
+            "Shadow Caster Vertices: {}",
+            stats.shadow_casters_verts
+        ));
     });
 
     let shading = world.get::<ClusteredShading>().unwrap();

@@ -47,10 +47,7 @@ impl MeshUtils {
             MeshUtils::apply_settings_tangents(tangents, matrix, settings.invert_tangents);
         }
         if let Some(tex_coords) = tex_coords {
-            MeshUtils::apply_settings_tex_coords(
-                tex_coords,
-                settings.invert_tex_coords,
-            );
+            MeshUtils::apply_settings_tex_coords(tex_coords, settings.invert_tex_coords);
         }
         if settings.invert_triangle_ordering {
             MeshUtils::invert_triangle_ordering(triangles);
@@ -78,10 +75,7 @@ impl MeshUtils {
     }
 
     // Update a texture coordinate by it's settings
-    pub fn update_tex_coord(
-        mut tex_coord: VeTexCoord,
-        flip: vek::Vec2<bool>
-    ) -> VeTexCoord {
+    pub fn update_tex_coord(mut tex_coord: VeTexCoord, flip: vek::Vec2<bool>) -> VeTexCoord {
         if flip.x {
             tex_coord.x = 255 - tex_coord.x;
         }
@@ -115,10 +109,7 @@ impl MeshUtils {
     }
 
     // Update a set of texture coordinate attributes using a flip horizontal/vertical rule
-    pub fn apply_settings_tex_coords(
-        tex_coords: &mut [VeTexCoord],
-        flip: vek::Vec2<bool>,
-    ) {
+    pub fn apply_settings_tex_coords(tex_coords: &mut [VeTexCoord], flip: vek::Vec2<bool>) {
         for tex_coord in tex_coords {
             *tex_coord = Self::update_tex_coord(*tex_coord, flip);
         }

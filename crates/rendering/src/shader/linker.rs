@@ -3,8 +3,8 @@ use std::ptr::null_mut;
 use ahash::AHashMap;
 
 use super::{
-    introspect, ComputeShader, ComputeStage, FragmentStage, Processor, Program, Shader, Stage,
-    VertexStage, Block, BlockIndex,
+    introspect, Block, BlockIndex, ComputeShader, ComputeStage, FragmentStage, Processor, Program,
+    Shader, Stage, VertexStage,
 };
 use crate::context::{Context, ToGlName};
 

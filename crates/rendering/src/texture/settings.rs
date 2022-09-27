@@ -1,4 +1,4 @@
-use std::num::{NonZeroU8, NonZeroU16};
+use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::others::Comparison;
 
@@ -67,12 +67,17 @@ pub enum TextureScale {
     Default,
 
     // This will scale the texture size with the "scaling" parameter
-    Scale { scaling: f64, filter: TextureResizeFilter },
+    Scale {
+        scaling: f64,
+        filter: TextureResizeFilter,
+    },
 
     // This will completely resize the texture to a new size
-    Resize { size: vek::Extent2<NonZeroU16>, filter: TextureResizeFilter },
+    Resize {
+        size: vek::Extent2<NonZeroU16>,
+        filter: TextureResizeFilter,
+    },
 }
-
 
 // Texel filters that are applied to the texture's mininifcation and magnification parameters
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -116,7 +121,7 @@ impl Default for Sampling {
             depth_comparison: None,
             mipmap_lod_bias: 0.0,
             mipmap_lod_range: (-1000.0, 1000.0),
-            mipmap_aniso_samples: Some(NonZeroU8::new(4).unwrap())
+            mipmap_aniso_samples: Some(NonZeroU8::new(4).unwrap()),
         }
     }
 }

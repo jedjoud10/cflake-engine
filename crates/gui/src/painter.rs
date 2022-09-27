@@ -13,7 +13,6 @@ use rendering::texture::{Filter, Ranged, Sampling, Texture, Texture2D, TextureMo
 
 use std::mem::size_of;
 
-
 // Texel type that will be used to describe the inner raw texel that the texture will use
 type Texel = RGBA<Ranged<u8>>;
 

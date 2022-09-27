@@ -1,15 +1,16 @@
 use assets::Assets;
 
-use ecs::{Scene};
+use ecs::Scene;
 use world::{Handle, Read, Storage};
 
 use crate::{
     context::Context,
+    display::Display,
     mesh::{EnabledAttributes, Surface},
     prelude::{RGBA, SRGBA},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
-    texture::{Ranged, Texture, Texture2D, RGB}, display::Display,
+    texture::{Ranged, Texture, Texture2D, RGB},
 };
 
 use super::{DefaultMaterialResources, Material, Sky, HDRI};
@@ -77,7 +78,14 @@ impl<'w> Material<'w> for Standard {
         let sky_materials = world.get::<Storage<Sky>>().unwrap();
         let material = sky_materials.get(&component.material);
 
-        (albedo_map, normal_map, mask_map, hdris, shadow_mapping, material.cubemap.clone())
+        (
+            albedo_map,
+            normal_map,
+            mask_map,
+            hdris,
+            shadow_mapping,
+            material.cubemap.clone(),
+        )
     }
 
     fn set_static_properties<'u>(
@@ -97,8 +105,14 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("sun_strength", main.directional_light.strength);
         let shadow = &(*resources.4);
         uniforms.set_sampler("shadow_map", &shadow.depth_tex);
-        uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);
-        uniforms.set_vec2("resolution", vek::Vec2::<u32>::from(main.window.viewport().extent.as_::<u32>()));
+        uniforms.set_mat4x4(
+            "shadow_lightspace_matrix",
+            shadow.proj_matrix * shadow.view_matrix,
+        );
+        uniforms.set_vec2(
+            "resolution",
+            vek::Vec2::<u32>::from(main.window.viewport().extent.as_::<u32>()),
+        );
         uniforms.set_scalar("cluster_size", main.cluster_size);
         uniforms.set_scalar("point_lights_num", main.point_lights.len() as u32);
         uniforms.set_shader_storage_buffer("point_lights", &main.point_lights);

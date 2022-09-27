@@ -23,7 +23,7 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/passthrough.vrtx.glsl");
                 persistent!(loader, "engine/shaders/compositor.frag.glsl");
                 persistent!(loader, "engine/shaders/projection.vrtx.glsl");
-                persistent!(loader, "engine/shaders/shadow.frag.glsl");
+                persistent!(loader, "engine/shaders/depth.frag.glsl");
                 persistent!(loader, "engine/shaders/shadow.func.glsl");
                 persistent!(loader, "engine/shaders/clustered.func.glsl");
                 persistent!(loader, "engine/shaders/clustered.cmpt.glsl");

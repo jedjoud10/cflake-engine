@@ -6,16 +6,17 @@ use math::{Location, Rotation};
 use world::World;
 
 use crate::{
-    buffer::{ShaderBuffer},
+    buffer::ShaderBuffer,
     context::{Context, Window},
     display::{BlendMode, FaceCullMode, PrimitiveMode},
     mesh::EnabledAttributes,
     others::Comparison,
-    scene::{Camera, DirectionalLight, PointLight, Renderer, PackedPointLight},
+    scene::{Camera, DirectionalLight, PackedPointLight, PointLight, Renderer},
     shader::{Shader, Uniforms},
 };
 
 // These are the default resources that we pass to any/each material
+#[derive(Clone, Copy)]
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
     pub(crate) point_lights: &'a ShaderBuffer<PackedPointLight>,
@@ -61,11 +62,6 @@ pub trait Material<'w>: 'static + Sized {
     // Get the sRGB framebuffer setting
     fn srgb() -> bool {
         false
-    }
-
-    // Get the transparency setting
-    fn blend_mode() -> Option<BlendMode> {
-        None
     }
 
     // Get the rasterizer primitive mode

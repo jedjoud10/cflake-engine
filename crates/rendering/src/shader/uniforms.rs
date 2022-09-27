@@ -1,10 +1,9 @@
-
-
-use super::{Program, UniformsError, BlockIndex};
+use super::{BlockIndex, Program, UniformsError};
 use crate::{
     buffer::{Buffer, ShaderBuffer, UniformBuffer},
     context::{Shared, ToGlName},
-    texture::Texture, prelude::{MipLevelMut, Texel},
+    prelude::{MipLevelMut, Texel},
+    texture::Texture,
 };
 
 // IMplement the scalar trait for single, scalar uniform types
@@ -331,7 +330,9 @@ impl<'uniforms> Uniforms<'uniforms> {
             dbg_bound_uniforms: AHashSet::with_capacity(program.uniform_locations.len()),
 
             #[cfg(debug_assertions)]
-            dbg_bound_buffer_bindings: AHashSet::with_capacity(program.buffer_block_locations.len()),
+            dbg_bound_buffer_bindings: AHashSet::with_capacity(
+                program.buffer_block_locations.len(),
+            ),
             program,
         }
     }
@@ -359,8 +360,16 @@ impl<'uniforms> Uniforms<'uniforms> {
             return Err(UniformsError::IncompleteBufferBinding(name.clone()));
         }
 
-        let deleted_texture = self.texture_units.iter().find(|(_, unit)| unsafe { gl::IsTexture(unit.texture) == 0 }).map(|(name, _)| name);;
-        let deleted_buffer = self.buffer_bindings.iter().find(|(_, binding)| unsafe { gl::IsBuffer(binding.buffer) == 0 }).map(|(name, _)| name);
+        let deleted_texture = self
+            .texture_units
+            .iter()
+            .find(|(_, unit)| unsafe { gl::IsTexture(unit.texture) == 0 })
+            .map(|(name, _)| name);
+        let deleted_buffer = self
+            .buffer_bindings
+            .iter()
+            .find(|(_, binding)| unsafe { gl::IsBuffer(binding.buffer) == 0 })
+            .map(|(name, _)| name);
 
         if let Some(name) = deleted_texture {
             return Err(UniformsError::DeletedTextureUnit(name.clone()));
@@ -398,8 +407,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         }
     }
     // Set a texture and reutrn it's new texture unit location
-    fn set_raw_texture(&mut self, name: &str, texture_name: u32) -> u32 
-    {
+    fn set_raw_texture(&mut self, name: &str, texture_name: u32) -> u32 {
         let count = self.texture_units.len() as u32;
         let offset = self
             .texture_units
@@ -416,13 +424,16 @@ impl<'uniforms> Uniforms<'uniforms> {
     }
 
     // Set a buffer and return it's new binding point location
-    fn set_raw_buffer<T: Shared, const TARGET: u32>(&mut self, name: &str, buffer: &Buffer<T, TARGET>) -> u32 {
+    fn set_raw_buffer<T: Shared, const TARGET: u32>(
+        &mut self,
+        name: &str,
+        buffer: &Buffer<T, TARGET>,
+    ) -> u32 {
         #[cfg(debug_assertions)]
         self.dbg_bound_buffer_bindings.insert(name.to_string());
 
         let count = self.buffer_bindings.len() as u32;
-        self
-            .buffer_bindings
+        self.buffer_bindings
             .entry(name.to_string())
             .or_insert(BufferBinding {
                 buffer: u32::MAX,
@@ -488,42 +499,46 @@ impl<'uniforms> Uniforms<'uniforms> {
             // TODO: What the fuk do we do when we have a depth texture here?
             // TODO: Handle layered textures bozo
             let format_ = <T::T as Texel>::INTERNAL_FORMAT;
-            gl::BindImageTexture(offset, sampler.texture().name(), sampler.level() as i32, gl::FALSE, 0, gl::READ_WRITE, format_);            
+            gl::BindImageTexture(
+                offset,
+                sampler.texture().name(),
+                sampler.level() as i32,
+                gl::FALSE,
+                0,
+                gl::READ_WRITE,
+                format_,
+            );
         }
     }
 
     // Set a uniform buffer (read only)
-    pub fn set_uniform_buffer<T: Shared>(
-        &mut self,
-        name: &str,
-        buffer: &UniformBuffer<T>,
-    ) {
+    pub fn set_uniform_buffer<T: Shared>(&mut self, name: &str, buffer: &UniformBuffer<T>) {
         let binding = self.set_raw_buffer(name, buffer);
 
         unsafe {
             self.buffer_bindings.get_mut(name).unwrap().buffer = buffer.name();
-            if let BlockIndex::UniformBlock(index) = self.program.buffer_block_locations.get(name).unwrap() {
+            if let BlockIndex::UniformBlock(index) =
+                self.program.buffer_block_locations.get(name).unwrap()
+            {
                 gl::UniformBlockBinding(self.program.name, *index, binding);
                 gl::BindBuffer(gl::UNIFORM_BUFFER, buffer.name());
-                gl::BindBufferBase(gl::UNIFORM_BUFFER, binding, buffer.name()); 
+                gl::BindBufferBase(gl::UNIFORM_BUFFER, binding, buffer.name());
             }
         }
     }
 
     // Set a shader storage buffer (only for reading)
-    pub fn set_shader_storage_buffer<T: Shared>(
-        &mut self,
-        name: &str, 
-        buffer: &ShaderBuffer<T>,
-    ) {
+    pub fn set_shader_storage_buffer<T: Shared>(&mut self, name: &str, buffer: &ShaderBuffer<T>) {
         let binding = self.set_raw_buffer(name, buffer);
-            
+
         unsafe {
             self.buffer_bindings.get_mut(name).unwrap().buffer = buffer.name();
-            if let BlockIndex::ShaderStorageBlock(index) = self.program.buffer_block_locations.get(name).unwrap() {
+            if let BlockIndex::ShaderStorageBlock(index) =
+                self.program.buffer_block_locations.get(name).unwrap()
+            {
                 gl::ShaderStorageBlockBinding(self.program.name, *index, binding);
                 gl::BindBuffer(gl::SHADER_STORAGE_BUFFER, buffer.name());
-                gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, buffer.name()); 
+                gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, binding, buffer.name());
             }
         }
     }

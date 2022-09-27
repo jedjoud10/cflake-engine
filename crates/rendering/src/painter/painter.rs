@@ -1,13 +1,13 @@
 use itertools::Itertools;
 
 use super::{
-    MaybeColorLayout, MaybeDepthTexel,
-    MaybeStencilTexel, UntypedAttachment, Target, AsTarget, ColorTupleTargets,
+    AsTarget, ColorTupleTargets, MaybeColorLayout, MaybeDepthTexel, MaybeStencilTexel, Target,
+    UntypedAttachment,
 };
 use crate::{
     context::Context,
     display::{Display, Viewport},
-    prelude::{Texel},
+    prelude::Texel,
 };
 use std::marker::PhantomData;
 
@@ -49,14 +49,17 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
     ) -> Option<ScopedPainter<C, D, S>> {
         // Convert the color attachments to their untyped attachments form
         let untyped_color = color.untyped_targets().map(|targets| {
-            targets.into_iter().map(|target| target.untyped).collect_vec()
+            targets
+                .into_iter()
+                .map(|target| target.untyped)
+                .collect_vec()
         });
 
         // Don't do anything to the depth and stencil
         let untyped_depth = depth.as_target().map(|target| target.untyped);
         let untyped_stencil = stencil.as_target().map(|target| target.untyped);
 
-        // Simple local struct to help us bind the attachments to the painter 
+        // Simple local struct to help us bind the attachments to the painter
         struct Attachment {
             untyped: UntypedAttachment,
             code: u32,
@@ -115,35 +118,41 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                         level as i32,
                     );
                 },
-                UntypedAttachment::TextureLevelLayer { texture_name, level, layer, untyped } => unsafe {
+                UntypedAttachment::TextureLevelLayer {
+                    texture_name,
+                    level,
+                    layer,
+                    untyped,
+                } => unsafe {
                     gl::NamedFramebufferTextureLayer(
                         self.name,
                         attachment.code,
                         texture_name,
                         level as i32,
-                        layer as i32
+                        layer as i32,
                     );
-                }
+                },
             }
         }
 
         // Check if we have any color attachment, and if we do, check how many of them we have bound to the FB
-        let color_attachments_bound: Option<u32> = attachments.iter().fold(None, |current, item| {
-            match item.code {
-                gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT31 => match current {
-                    Some(x) => Some(x + 1),
-                    None => Some(1),
-                }
-                _ => None,
-            }
-        });
+        let color_attachments_bound: Option<u32> =
+            attachments
+                .iter()
+                .fold(None, |current, item| match item.code {
+                    gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT31 => match current {
+                        Some(x) => Some(x + 1),
+                        None => Some(1),
+                    },
+                    _ => None,
+                });
 
         // Apply the color draw buffers
         if let Some(count) = color_attachments_bound {
             let draw = (0..count)
-                    .into_iter()
-                    .map(|offset| gl::COLOR_ATTACHMENT0 + offset)
-                    .collect_vec();
+                .into_iter()
+                .map(|offset| gl::COLOR_ATTACHMENT0 + offset)
+                .collect_vec();
 
             unsafe {
                 gl::NamedFramebufferDrawBuffers(

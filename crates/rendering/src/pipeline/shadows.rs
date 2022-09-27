@@ -1,10 +1,17 @@
 use crate::{
-    material::{Material}, scene::{ShadowMapping, ClusteredShading, DirectionalLight, Renderer, RenderedFrameStats}, mesh::{Mesh, Surface}, shader::Shader, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}, prelude::Texture, others::Comparison, context::Context,
+    context::Context,
+    display::{Display, FaceCullMode, PrimitiveMode, RasterSettings, Viewport},
+    material::Material,
+    mesh::{Mesh, Surface},
+    others::Comparison,
+    prelude::Texture,
+    scene::{ClusteredShading, DirectionalLight, RenderedFrameStats, Renderer, ShadowMapping},
+    shader::Shader,
 };
 
 use ecs::Scene;
 use math::Rotation;
-use world::{World, Storage};
+use world::{Storage, World};
 
 // Render to the main global shadow map if the material is a shadow caster
 pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
@@ -29,7 +36,7 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
         origin: vek::Vec2::zero(),
         extent: depth.dimensions(),
     };
-    
+
     // Rasterizer shadow settings
     let settings = RasterSettings {
         depth_test: Some(Comparison::Less),
@@ -47,27 +54,31 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
 
         // Check if the mesh meets the material requirements
         let mesh = meshes.get(&surface.mesh);
-        let buffers = mesh.vertices().layout().contains(M::requirements())
-            && mesh.vertices().len().is_some();
+        let buffers =
+            mesh.vertices().layout().contains(M::requirements()) && mesh.vertices().len().is_some();
 
         enabled && buffers
     });
 
     // Create a scoped painter and it's rasterizer
-    let mut scoped = painter.scope(viewport, (), depth.mip_mut(0).unwrap(), ()).unwrap();
-    let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shadow_mapper.shader, settings);
+    let mut scoped = painter
+        .scope(viewport, (), depth.mip_mut(0).unwrap(), ())
+        .unwrap();
+    let (mut rasterizer, mut uniforms) =
+        scoped.rasterizer(ctx, &mut shadow_mapper.shader, settings);
 
     // Render each mesh as if it was a shadow caster
     for (renderer, surface) in query {
         let mesh = meshes.get(&surface.mesh);
 
         // Set the model, view, and projection matrices all at the same time
-        uniforms.set_mat4x4("matrix", shadow_mapper.proj_matrix * shadow_mapper.view_matrix * renderer.matrix);
-        
+        uniforms.set_mat4x4(
+            "matrix",
+            shadow_mapper.proj_matrix * shadow_mapper.view_matrix * renderer.matrix,
+        );
+
         // Draw the shadow mesh
-        rasterizer.draw(mesh, unsafe {
-            uniforms.assume_valid()
-        });
+        rasterizer.draw(mesh, unsafe { uniforms.assume_valid() });
 
         // Update the statistics
         stats.shadow_casters_surfaces += 1;

@@ -1,11 +1,18 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting, MultiLayerTexture,
+    Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting, MultiLayerTexture, Region,
+    Sampling, Texel, Texture, Texture2D, TextureImportSettings, TextureMode, Wrap, RGB,
 };
-use crate::{context::{Context, ToGlName, ToGlTarget}, shader::{VertexStage, FragmentStage, Processor, ShaderCompiler}, mesh::{Mesh, MeshImportSettings}, buffer::BufferMode, painter::{Painter, MultilayerIntoTarget}, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}};
-use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
-
+use crate::{
+    buffer::BufferMode,
+    context::{Context, ToGlName, ToGlTarget},
+    display::{Display, FaceCullMode, PrimitiveMode, RasterSettings, Viewport},
+    mesh::{Mesh, MeshImportSettings},
+    painter::{MultilayerIntoTarget, Painter},
+    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage},
+};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
 // A cubemap texture that contains 6 different faces that each contain a square texture2D
 // Cubemap textures are mostly used for environment mapping and reflections
@@ -61,7 +68,8 @@ impl<T: Texel> Texture for CubeMap2D<T> {
     }
 
     fn is_region_valid(&self, region: Self::Region) -> bool {
-        let extent = <Self::Region as Region>::extent_from_origin(region.origin()) + region.extent();
+        let extent =
+            <Self::Region as Region>::extent_from_origin(region.origin()) + region.extent();
         let dimensions = extent.is_self_smaller(self.dimensions());
         dimensions && region.origin().z < 6
     }
@@ -89,18 +97,16 @@ impl<T: Texel> Texture for CubeMap2D<T> {
     ) {
         let extent = extent.as_::<i32>();
         gl::BindTexture(gl::TEXTURE_CUBE_MAP, name);
-        gl::TextureStorage2D(
-            name,
-            levels as i32,
-            T::INTERNAL_FORMAT,
-            extent.w,
-            extent.h,
-        );
+        gl::TextureStorage2D(name, levels as i32, T::INTERNAL_FORMAT, extent.w, extent.h);
 
         if ptr != null() {
             for face in 0..6u32 {
                 let offset = face as usize * extent.product() as usize;
-                let offsetted_ptr = if !ptr.is_null() { ptr.offset(offset as isize) } else { null() };
+                let offsetted_ptr = if !ptr.is_null() {
+                    ptr.offset(offset as isize)
+                } else {
+                    null()
+                };
 
                 gl::TexSubImage2D(
                     gl::TEXTURE_CUBE_MAP_POSITIVE_X + face,
@@ -113,7 +119,7 @@ impl<T: Texel> Texture for CubeMap2D<T> {
                     T::TYPE,
                     offsetted_ptr as *const c_void,
                 );
-            }            
+            }
         }
     }
 
@@ -122,13 +128,17 @@ impl<T: Texel> Texture for CubeMap2D<T> {
         extent: <Self::Region as Region>::E,
         unique_level: u8,
         ptr: *const <Self::T as Texel>::Storage,
-    ) {        
+    ) {
         let extent = extent.as_::<i32>();
         gl::BindTexture(gl::TEXTURE_CUBE_MAP, name);
 
         for face in 0..6u32 {
             let offset = face as usize * extent.product() as usize;
-            let offsetted_ptr = if !ptr.is_null() { ptr.offset(offset as isize) } else { null() };
+            let offsetted_ptr = if !ptr.is_null() {
+                ptr.offset(offset as isize)
+            } else {
+                null()
+            };
 
             gl::TexImage2D(
                 gl::TEXTURE_CUBE_MAP_POSITIVE_X + face,
@@ -141,7 +151,7 @@ impl<T: Texel> Texture for CubeMap2D<T> {
                 T::TYPE,
                 offsetted_ptr as *const c_void,
             );
-        }        
+        }
     }
 
     unsafe fn update_subregion(
@@ -187,7 +197,7 @@ impl<T: Texel> Texture for CubeMap2D<T> {
             T::FORMAT,
             T::TYPE,
             ptr as *const c_void,
-        );       
+        );
     }
 
     unsafe fn splat(name: u32, level: u8, ptr: *const <Self::T as Texel>::Storage) {
@@ -232,7 +242,14 @@ impl<T: Texel> Texture for CubeMap2D<T> {
         )
     }
 
-    unsafe fn copy_subregion_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O) {
+    unsafe fn copy_subregion_from(
+        name: u32,
+        other_name: u32,
+        level: u8,
+        other_level: u8,
+        region: Self::Region,
+        offset: <Self::Region as Region>::O,
+    ) {
         let origin = region.origin().as_::<i32>();
         let extent = region.extent().as_::<i32>();
         let offset = offset.as_::<i32>();
@@ -259,10 +276,9 @@ impl<T: Texel> Texture for CubeMap2D<T> {
 
 impl<T: Texel> MultiLayerTexture for CubeMap2D<T> {
     fn is_layer_valid(&self, layer: u16) -> bool {
-        layer < 6 
+        layer < 6
     }
 }
-
 
 impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
     type Args = (&'a mut Context, TextureImportSettings);
@@ -278,31 +294,43 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         let dimensions = vek::Extent2::new(hdr.width as u16, hdr.height as u16);
         // TODO: Optimize this vertical flip
         let rows = hdr.data.chunks(dimensions.w as usize);
-        let flipped = rows.rev().flat_map(|row| row.iter().cloned()).collect::<Vec<hdrldr::RGB>>();
-        
-        let texels = flipped.into_iter().map(|texel| vek::Vec3::new(texel.r, texel.g, texel.b)).collect::<Vec<_>>();
+        let flipped = rows
+            .rev()
+            .flat_map(|row| row.iter().cloned())
+            .collect::<Vec<hdrldr::RGB>>();
+
+        let texels = flipped
+            .into_iter()
+            .map(|texel| vek::Vec3::new(texel.r, texel.g, texel.b))
+            .collect::<Vec<_>>();
         let sampling = Sampling {
             filter: Filter::Linear,
             wrap: Wrap::Repeat,
             ..Default::default()
         };
-        
+
         // Create the equilateral texture that will then be mapped to a cubemap
-        let texture = Texture2D::<RGB<f32>>::new(ctx, TextureMode::Static, dimensions, sampling, MipMapSetting::Disabled, Some(&texels)).unwrap();
+        let texture = Texture2D::<RGB<f32>>::new(
+            ctx,
+            TextureMode::Static,
+            dimensions,
+            sampling,
+            MipMapSetting::Disabled,
+            Some(&texels),
+        )
+        .unwrap();
 
         // Convert the eqilateral texture to a cubemap texture
         let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
         use vek::Mat4;
         use vek::Vec3;
-    
-        // View matrices for the 6 different faces 
+
+        // View matrices for the 6 different faces
         let view_matrices: [Mat4<f32>; 6] = [
             Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
-    
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()), // Top
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
-    
             Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
         ];
@@ -316,30 +344,52 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
             settings.sampling,
             settings.mipmaps,
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Create the rasterization shader for the cubemap converter
-        let vertex = data.loader().load::<VertexStage>("engine/shaders/projection.vrtx.glsl").unwrap();
-        let fragment = data.loader().load::<FragmentStage>("engine/shaders/panorama.frag.glsl").unwrap();
-        let mut shader = ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
+        let vertex = data
+            .loader()
+            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
+            .unwrap();
+        let fragment = data
+            .loader()
+            .load::<FragmentStage>("engine/shaders/panorama.frag.glsl")
+            .unwrap();
+        let mut shader =
+            ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
 
         // Load in a unit cube that is inside out
-        let cube = data.loader().load_with::<Mesh>("engine/meshes/cube.obj", (ctx, MeshImportSettings {
-            invert_triangle_ordering: true,
-            ..Default::default()
-        })).unwrap();
+        let cube = data
+            .loader()
+            .load_with::<Mesh>(
+                "engine/meshes/cube.obj",
+                (
+                    ctx,
+                    MeshImportSettings {
+                        invert_triangle_ordering: true,
+                        ..Default::default()
+                    },
+                ),
+            )
+            .unwrap();
 
         // Create a rasterizer to convert the panoramic texture
         let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
-        let viewport = Viewport { origin: vek::Vec2::zero(), extent: dimensions };
+        let viewport = Viewport {
+            origin: vek::Vec2::zero(),
+            extent: dimensions,
+        };
 
         // Create the rasterization settings
         let settings = RasterSettings {
             depth_test: None,
             scissor_test: None,
-            primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Back(true)) },
+            primitive: PrimitiveMode::Triangles {
+                cull: Some(FaceCullMode::Back(true)),
+            },
             srgb: false,
-            blend: None
+            blend: None,
         };
 
         // Iterate through all of the faces of the cubemap

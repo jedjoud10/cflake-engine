@@ -1,10 +1,6 @@
-
-
-use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
 };
 
 use super::Buffer;
@@ -66,9 +62,7 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferView<'a, T, TARGET> {
             BufferView::PersistentlyMapped { buf, .. } => unsafe {
                 gl::UnmapNamedBuffer(buf.name());
             },
-            BufferView::PersistentAccessor { used, .. } => {
-                used.store(false, Ordering::Relaxed)
-            },
+            BufferView::PersistentAccessor { used, .. } => used.store(false, Ordering::Relaxed),
             _ => {}
         }
     }
@@ -145,10 +139,8 @@ impl<'a, T: Shared, const TARGET: u32> Drop for BufferViewMut<'a, T, TARGET> {
             },
             BufferViewMut::Copied { buf, vec, .. } => {
                 buf.write(vec);
-            },
-            BufferViewMut::PersistentAccessor { used, .. } => {
-                used.store(false, Ordering::Relaxed)
-            },
+            }
+            BufferViewMut::PersistentAccessor { used, .. } => used.store(false, Ordering::Relaxed),
         }
     }
 }
@@ -175,7 +167,7 @@ impl<T: Shared, const TARGET: u32> Persistent<T, TARGET> {
     // This will return None if the buffer is in use currently in another thread
     pub fn unmap(mut self) -> Option<Buffer<T, TARGET>> {
         if self.used.load(Ordering::Relaxed) {
-           return None 
+            return None;
         }
 
         let buf = self.buf.take().unwrap();
@@ -226,8 +218,11 @@ impl<T: Shared, const TARGET: u32> Drop for Persistent<T, TARGET> {
     fn drop(&mut self) {
         if let Some(buf) = &self.buf {
             let used = self.used.load(Ordering::Relaxed);
-            assert!(!used, "Cannot unmap the buffer, it is still in use in another thread");
-            
+            assert!(
+                !used,
+                "Cannot unmap the buffer, it is still in use in another thread"
+            );
+
             unsafe {
                 gl::UnmapNamedBuffer(buf.name());
             }

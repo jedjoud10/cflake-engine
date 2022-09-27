@@ -1,6 +1,5 @@
 use crate::context::Context;
 
-
 // This is an abstraction over an OpenGL fence that we can use to detect whenever the GPU has completed executing some commands
 // TODO: Actually figure out how to use these bozos (asnyc buffer transfer and/or compute shaders)
 pub struct Fence {

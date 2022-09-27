@@ -28,7 +28,7 @@ pub trait Region: Copy {
 
     // Create a region with a default origin using an extent
     fn with_extent(extent: Self::E) -> Self;
-    
+
     // Create a region with it's raw components
     fn from_raw_parts(origin: Self::O, extent: Self::E) -> Self;
 
@@ -75,8 +75,7 @@ impl Region for (vek::Vec2<u16>, vek::Extent2<u16>) {
 
     fn extent_from_origin(origin: Self::O) -> Self::E {
         origin.into()
-    }  
-     
+    }
 }
 
 // Texture3D

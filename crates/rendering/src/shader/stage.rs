@@ -122,7 +122,7 @@ pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -
             _phantom: PhantomData,
         };
     }
-    
+
     // Specify the stage source and compile it
     let cstring = CString::new(source.clone()).unwrap();
     let shader_source: *const i8 = cstring.as_ptr();
@@ -160,7 +160,7 @@ pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -
     println!("Compiled shader source {name} successfully");
     ctx.stages.0.insert(name);
     ctx.stages.1.insert(hash, shader);
-    
+
     Compiled {
         name: shader,
         _phantom: Default::default(),

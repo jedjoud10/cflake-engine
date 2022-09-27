@@ -1,9 +1,13 @@
 use assets::Asset;
 
 use super::{
-    ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, DepthTexel, SingleLayerTexture,
+    DepthTexel, ImageTexel, MipMapDescriptor, Region, SingleLayerTexture, Texel, Texture,
+    TextureImportSettings, TextureMode,
 };
-use crate::{context::{Context, ToGlName, ToGlTarget}, others::Comparison};
+use crate::{
+    context::{Context, ToGlName, ToGlTarget},
+    others::Comparison,
+};
 use std::{ffi::c_void, marker::PhantomData, ptr::null};
 
 // A 2D texture that contains multiple pixels that have their own channels
@@ -58,7 +62,6 @@ impl<T: Texel> Texture for Texture2D<T> {
         &self.mipmap
     }
 
-
     unsafe fn from_raw_parts(
         name: u32,
         dimensions: <Self::Region as super::Region>::E,
@@ -81,13 +84,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         ptr: *const <Self::T as Texel>::Storage,
     ) {
         let extent = extent.as_::<i32>();
-        gl::TextureStorage2D(
-            name,
-            levels as i32,
-            T::INTERNAL_FORMAT,
-            extent.w,
-            extent.h,
-        );
+        gl::TextureStorage2D(name, levels as i32, T::INTERNAL_FORMAT, extent.w, extent.h);
 
         if ptr != null() {
             gl::TextureSubImage2D(
@@ -109,7 +106,7 @@ impl<T: Texel> Texture for Texture2D<T> {
         extent: <Self::Region as Region>::E,
         unique_level: u8,
         ptr: *const <Self::T as Texel>::Storage,
-    ) {        
+    ) {
         let extent = extent.as_::<i32>();
         gl::BindTexture(gl::TEXTURE_2D, name);
         gl::TexImage2D(
@@ -211,7 +208,14 @@ impl<T: Texel> Texture for Texture2D<T> {
         )
     }
 
-    unsafe fn copy_subregion_from(name: u32, other_name: u32, level: u8, other_level: u8, region: Self::Region, offset: <Self::Region as Region>::O) {
+    unsafe fn copy_subregion_from(
+        name: u32,
+        other_name: u32,
+        level: u8,
+        other_level: u8,
+        region: Self::Region,
+        offset: <Self::Region as Region>::O,
+    ) {
         let origin = region.origin().as_::<i32>();
         let extent = region.extent().as_::<i32>();
         let offset = offset.as_::<i32>();
@@ -255,10 +259,10 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
             super::TextureScale::Scale { scaling, filter } => image.resize((dimensions.w as f64 * scaling) as u32, (dimensions.h as f64 * scaling) as u32, filter),
             super::TextureScale::Resize { size, filter } => image.resize(size.w.get() as u32, size.h.get() as u32, filter),
         };
-        
+
         let image = if !settings.flip.y {
             image.flipv()
-        } else {            
+        } else {
             image
         };
 

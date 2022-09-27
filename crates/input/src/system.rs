@@ -1,4 +1,4 @@
-use crate::{KeyState, Axis, Input};
+use crate::{Axis, Input, KeyState};
 use glutin::event::{DeviceEvent, ElementState};
 use world::{Events, Init, Stage, Update, World};
 

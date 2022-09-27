@@ -1,6 +1,6 @@
-use super::{BufferMode};
+use super::BufferMode;
 
-use std::{any::TypeId};
+use std::any::TypeId;
 
 // This is an untyped reference to the format of a specific buffer
 #[derive(Clone, Copy, PartialEq, Eq)]

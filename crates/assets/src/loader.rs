@@ -3,9 +3,12 @@ use ahash::AHashMap;
 use parking_lot::RwLock;
 
 use std::{
+    cell::RefCell,
     ffi::OsStr,
     path::{Path, PathBuf},
-    str::FromStr, rc::Rc, cell::RefCell, sync::Arc,
+    rc::Rc,
+    str::FromStr,
+    sync::Arc,
 };
 
 // This is the main asset manager resource that will load & cache newly loaded assets
@@ -61,11 +64,7 @@ impl Assets {
     }
 
     // Load an asset using some explicit loading arguments
-    pub fn load_with<'args, A: Asset<'args>>(
-        &self,
-        path: &str,
-        args: A::Args,
-    ) -> Option<A> {
+    pub fn load_with<'args, A: Asset<'args>>(&self, path: &str, args: A::Args) -> Option<A> {
         // Check if the extension is valid
         let _path = PathBuf::from_str(path).unwrap();
         let (_, extension) = _path.file_name().and_then(OsStr::to_str)?.split_once('.')?;

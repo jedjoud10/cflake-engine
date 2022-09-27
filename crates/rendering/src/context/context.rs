@@ -2,16 +2,14 @@ use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use glutin::{ContextWrapper, PossiblyCurrent, RawContext};
 
+use std::{any::TypeId, collections::HashMap, ptr::null, rc::Rc};
 use world::{Storage, World};
-use std::{
-    any::TypeId,
-    ptr::null,
-    rc::Rc, collections::HashMap,
-};
 
 use super::get_static_str;
 use crate::{
-    display::{PrimitiveMode, RasterSettings, Viewport}, material::{Material, MaterialId}, shader::Shader,
+    display::{PrimitiveMode, RasterSettings, Viewport},
+    material::{Material, MaterialId},
+    shader::Shader,
 };
 
 // An abstract wrapper around the whole OpenGL context
@@ -26,7 +24,7 @@ pub struct Context {
 
     // Reusable shader sources
     pub(crate) stages: (AHashSet<String>, AHashMap<u32, u32>),
-    
+
     // A list of material surface renderers that we will use
     pipelines: AHashMap<TypeId, Rc<dyn Fn(&mut World)>>,
 }
@@ -87,7 +85,9 @@ impl Context {
     // Get a PipeId from a pre-initialized pipeline
     pub fn material_id<M: for<'w> Material<'w>>(&self) -> Option<MaterialId<M>> {
         let key = TypeId::of::<M>();
-        self.pipelines.get(&key).map(|_| MaterialId(Default::default()))
+        self.pipelines
+            .get(&key)
+            .map(|_| MaterialId(Default::default()))
     }
 
     // Extract all the internally stored material pipelines

@@ -2,16 +2,24 @@ use assets::Assets;
 use ecs::Entity;
 use math::Location;
 use vek::FrustumPlanes;
-use world::{Storage};
+use world::Storage;
 
 use crate::{
-    buffer::{ShaderBuffer, BufferMode, UniformBuffer},
+    buffer::{BufferMode, ShaderBuffer, UniformBuffer},
+    context::{Context, Window},
+    display::Display,
+    material::{Sky, Standard},
     mesh::Mesh,
+    others::Comparison,
     painter::Painter,
-    prelude::{Depth, Ranged, Shader, Texture2D, RGB, Filter, Wrap, MipMapSetting, Texture, TextureMode, Sampling}, context::{Window, Context}, material::{Sky, Standard}, display::Display, shader::{VertexStage, FragmentStage, ShaderCompiler, Processor, ComputeShader}, others::Comparison,
+    prelude::{
+        Depth, Filter, MipMapSetting, Ranged, Sampling, Shader, Texture, Texture2D, TextureMode,
+        Wrap, RGB,
+    },
+    shader::{ComputeShader, FragmentStage, Processor, ShaderCompiler, VertexStage},
 };
 
-use super::{PointLight, PackedPointLight};
+use super::{PackedPointLight, PointLight};
 
 // Clustered shading is a method to render multiple lights
 // efficienty without losing image quality
@@ -26,14 +34,21 @@ pub struct ClusteredShading {
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
-    //pub(crate) light_ids: ShaderBuffer<u32>,
+    pub(crate) prepass_shader: Shader,
+    pub(crate) point_light_ids: ShaderBuffer<u32>,
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
     //pub(crate) compute: ComputeShader,
     pub(crate) cluster_size: u32,
 }
 
 impl ClusteredShading {
-    pub(crate) fn new(ctx: &mut Context, cluster_size: u32, window: &Window, shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+    pub(crate) fn new(
+        ctx: &mut Context,
+        cluster_size: u32,
+        window: &Window,
+        shaders: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> Self {
         // Settings for framebuffer textures
         let sampling = Sampling {
             filter: Filter::Nearest,
@@ -41,36 +56,45 @@ impl ClusteredShading {
             ..Default::default()
         };
         let mipmaps = MipMapSetting::Disabled;
-        
+
         // Create the color render texture
         let color = <Texture2D<RGB<f32>> as Texture>::new(
             ctx,
             TextureMode::Resizable,
             window.size(),
-            sampling, 
+            sampling,
             mipmaps,
             None,
         )
         .unwrap();
-    
+
         // Create the depth render texture
         let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
             ctx,
             TextureMode::Resizable,
             window.size(),
-            sampling, 
+            sampling,
             mipmaps,
             None,
         )
         .unwrap();
-    
+
         // Create the default pipelines
         ctx.register_material::<Standard>(shaders, assets);
         ctx.register_material::<Sky>(shaders, assets);
 
+        // Load in the Z-prepass shader
+        let vertex = assets
+            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
+            .unwrap();
+        let fragment = assets
+            .load::<FragmentStage>("engine/shaders/depth.frag.glsl")
+            .unwrap();
+        let prepass_shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
+
         // TODO: Create the cluster compute shader that will sort the lights
-    
-        // Create the clustered shading rendererer        
+
+        // Create the clustered shading rendererer
         ClusteredShading {
             main_camera: None,
             skysphere_entity: None,
@@ -79,6 +103,8 @@ impl ClusteredShading {
             depth_tex: depth,
             main_directional_light: None,
             cluster_size,
+            prepass_shader,
+            point_light_ids: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
         }
@@ -111,14 +137,21 @@ pub struct ShadowMapping {
 }
 
 impl ShadowMapping {
-    pub(crate) fn new(size: f32, depth: f32, resolution: u16, ctx: &mut Context, _shaders: &mut Storage<Shader>, assets: &mut Assets) -> Self {
+    pub(crate) fn new(
+        size: f32,
+        depth: f32,
+        resolution: u16,
+        ctx: &mut Context,
+        _shaders: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> Self {
         let sampling = Sampling {
             filter: Filter::Linear,
             wrap: Wrap::ClampToBorder(vek::Rgba::broadcast(1.0f32)),
             depth_comparison: Some(Comparison::GreaterThanOrEquals),
             ..Default::default()
         };
-        
+
         // Create the depth shadow map texture
         let depth_tex = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
             ctx,
@@ -127,11 +160,16 @@ impl ShadowMapping {
             sampling,
             MipMapSetting::Disabled,
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Load the shader used for shadow map object rasterization
-        let vertex = assets.load::<VertexStage>("engine/shaders/projection.vrtx.glsl").unwrap();
-        let fragment = assets.load::<FragmentStage>("engine/shaders/shadow.frag.glsl").unwrap();
+        let vertex = assets
+            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
+            .unwrap();
+        let fragment = assets
+            .load::<FragmentStage>("engine/shaders/depth.frag.glsl")
+            .unwrap();
         let shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
 
         // The shadow frustum is the cuboid that will contain the shadow map
