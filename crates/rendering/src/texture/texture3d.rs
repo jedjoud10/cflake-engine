@@ -1,5 +1,5 @@
 use super::{
-    MipMapDescriptor, Region, Texel, Texture, TextureMode,
+    MipMapDescriptor, Region, Texel, Texture, TextureMode, MultiLayerTexture,
 };
 use crate::context::{ToGlName, ToGlTarget};
 use std::{ffi::c_void, marker::PhantomData, ptr::null};
@@ -235,5 +235,11 @@ impl<T: Texel> Texture for Texture3D<T> {
             extent.h,
             extent.d,
         );
+    }
+}
+
+impl<T: Texel> MultiLayerTexture for Texture3D<T> {
+    fn is_layer_valid(&self, layer: u16) -> bool {
+        layer < self.dimensions().d 
     }
 }

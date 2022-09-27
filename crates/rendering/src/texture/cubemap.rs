@@ -3,7 +3,7 @@ use assets::Asset;
 use super::{
     ImageTexel, MipMapDescriptor, Region, Texel, Texture, TextureImportSettings, TextureMode, Extent, RGB, Texture2D, Sampling, Wrap, Filter, MipMapSetting, MultiLayerTexture,
 };
-use crate::{context::{Context, ToGlName, ToGlTarget}, shader::{VertexStage, FragmentStage, Processor, ShaderCompiler}, mesh::{Mesh, MeshImportSettings}, buffer::BufferMode, painter::Painter, display::Viewport};
+use crate::{context::{Context, ToGlName, ToGlTarget}, shader::{VertexStage, FragmentStage, Processor, ShaderCompiler}, mesh::{Mesh, MeshImportSettings}, buffer::BufferMode, painter::{Painter, MultilayerIntoTarget}, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}};
 use std::{ffi::c_void, marker::PhantomData, ptr::null, mem::size_of};
 
 
@@ -100,7 +100,7 @@ impl<T: Texel> Texture for CubeMap2D<T> {
         if ptr != null() {
             for face in 0..6u32 {
                 let offset = face as usize * extent.product() as usize;
-                let offsetted_ptr = ptr.offset(offset as isize);
+                let offsetted_ptr = if !ptr.is_null() { ptr.offset(offset as isize) } else { null() };
 
                 gl::TexSubImage2D(
                     gl::TEXTURE_CUBE_MAP_POSITIVE_X + face,
@@ -128,7 +128,7 @@ impl<T: Texel> Texture for CubeMap2D<T> {
 
         for face in 0..6u32 {
             let offset = face as usize * extent.product() as usize;
-            let offsetted_ptr = ptr.offset(offset as isize);
+            let offsetted_ptr = if !ptr.is_null() { ptr.offset(offset as isize) } else { null() };
 
             gl::TexImage2D(
                 gl::TEXTURE_CUBE_MAP_POSITIVE_X + face,
@@ -287,7 +287,7 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
             ..Default::default()
         };
         
-        // Create the equilateral texture that will then be mapped to a cubemap 
+        // Create the equilateral texture that will then be mapped to a cubemap
         let texture = Texture2D::<RGB<f32>>::new(ctx, TextureMode::Static, dimensions, sampling, MipMapSetting::Disabled, Some(&texels)).unwrap();
 
         // Convert the eqilateral texture to a cubemap texture
@@ -309,20 +309,19 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
 
         // Create the cubemap, but don't initialize it with any data
         let dimensions = vek::Extent2::broadcast(dimensions.w / 4);
-        let texels = vec![vek::Vec3::<f32>::zero(); dimensions.product() as usize];
         let cubemap = Self::new(
             ctx,
             settings.mode,
             dimensions,
             settings.sampling,
             settings.mipmaps,
-            Some(&texels),
+            None,
         ).unwrap();
 
         // Create the rasterization shader for the cubemap converter
-        let vertex = data.loader().load::<VertexStage>("engine/shaders/panorama.vrtx.glsl").unwrap();
-        let fragment = data.loader().load::<FragmentStage>("engine/shader/panorama.frag.glsl").unwrap();
-        let shader = ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
+        let vertex = data.loader().load::<VertexStage>("engine/shaders/projection.vrtx.glsl").unwrap();
+        let fragment = data.loader().load::<FragmentStage>("engine/shaders/panorama.frag.glsl").unwrap();
+        let mut shader = ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
 
         // Load in a unit cube that is inside out
         let cube = data.loader().load_with::<Mesh>("engine/meshes/cube.obj", (ctx, MeshImportSettings {
@@ -331,14 +330,28 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         })).unwrap();
 
         // Create a rasterizer to convert the panoramic texture
-        let painter = Painter::<RGB<f32>, (), ()>::new(ctx);
+        let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
         let viewport = Viewport { origin: vek::Vec2::zero(), extent: dimensions };
 
+        // Create the rasterization settings
+        let settings = RasterSettings {
+            depth_test: None,
+            scissor_test: None,
+            primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Back(true)) },
+            srgb: false,
+            blend: None
+        };
+
         // Iterate through all of the faces of the cubemap
-        let target = cubemap.mip_mut(0).unwrap();
-        //let rasterizer = painter.scope(viewport, cubemap.layer(), (), ());
+        for face in 0..6 {
+            let target = cubemap.mip_mut(0).unwrap().target(face as u16).unwrap();
+            let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
+            let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, settings);
+            uniforms.set_sampler("panorama", &texture);
+            uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
+            rasterizer.draw(&cube, uniforms.validate().unwrap());
+        }
 
-
-        todo!()
+        cubemap
     }
 }

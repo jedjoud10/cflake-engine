@@ -1,3 +1,4 @@
 /target
+/examples/assets/user/ignored
 .VSCodeCounter
 certificate-fixer.ps1

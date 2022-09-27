@@ -1,5 +1,5 @@
 use crate::{
-    material::{Material}, scene::{ShadowMapping, ClusteredShading, DirectionalLight, Renderer, RenderedFrameStats}, mesh::{Mesh, Surface}, shader::Shader, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}, prelude::Texture, others::Comparison, context::Context, painter::SingleLayerIntoTarget,
+    material::{Material}, scene::{ShadowMapping, ClusteredShading, DirectionalLight, Renderer, RenderedFrameStats}, mesh::{Mesh, Surface}, shader::Shader, display::{Viewport, Display, RasterSettings, PrimitiveMode, FaceCullMode}, prelude::Texture, others::Comparison, context::Context,
 };
 
 use ecs::Scene;
@@ -54,7 +54,7 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     });
 
     // Create a scoped painter and it's rasterizer
-    let mut scoped = painter.scope(viewport, (), depth.mip_mut(0).unwrap().target(), ()).unwrap();
+    let mut scoped = painter.scope(viewport, (), depth.mip_mut(0).unwrap(), ()).unwrap();
     let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shadow_mapper.shader, settings);
 
     // Render each mesh as if it was a shadow caster

@@ -359,7 +359,7 @@ impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {
         // TODO: Does this worko?
         if self.texture.levels() > 1 {
             unsafe {
-                gl::GenerateTextureMipmap(self.texture.name());
+                //gl::GenerateTextureMipmap(self.texture.name());
             }
         }
     }

@@ -106,13 +106,6 @@ impl<T: Stage> ToGlName for Compiled<T> {
     }
 }
 
-impl<T: Stage> Drop for Compiled<T> {
-    fn drop(&mut self) {
-        // Automatically delete the stage shader after we use it
-        unsafe { gl::DeleteShader(self.name) }
-    }
-}
-
 // Compile a single shader stage, and handle errors
 pub(super) unsafe fn compile<U: Stage>(ctx: &mut Context, stage: Processed<U>) -> Compiled<U> {
     // Create the stage source
