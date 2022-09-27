@@ -309,7 +309,7 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
 
         // Create the cubemap, but don't initialize it with any data
         let dimensions = vek::Extent2::broadcast(dimensions.w / 4);
-        let cubemap = Self::new(
+        let mut cubemap = Self::new(
             ctx,
             settings.mode,
             dimensions,
@@ -344,7 +344,8 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
 
         // Iterate through all of the faces of the cubemap
         for face in 0..6 {
-            let target = cubemap.mip_mut(0).unwrap().target(face as u16).unwrap();
+            let miplevel = cubemap.mip_mut(0).unwrap();
+            let target = miplevel.target(face as u16).unwrap();
             let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
             let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, settings);
             uniforms.set_sampler("panorama", &texture);
@@ -352,6 +353,8 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
             rasterizer.draw(&cube, uniforms.validate().unwrap());
         }
 
+        // Update the mipmaps and return the texture
+        cubemap.generate_mipmaps();
         cubemap
     }
 }

@@ -354,13 +354,5 @@ impl<'a, T: Texture> Drop for MipLevelMut<'a, T> {
     fn drop(&mut self) {
         set_bit(&self.read, self.level, false);
         set_bit(&self.write, self.level, false);
-        
-        // Regenerate the mipmaps for the texture
-        // TODO: Does this worko?
-        if self.texture.levels() > 1 {
-            unsafe {
-                //gl::GenerateTextureMipmap(self.texture.name());
-            }
-        }
     }
 }

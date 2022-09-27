@@ -229,6 +229,15 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
         self.mipmap_descriptor().levels.get()
     }
 
+    // Automatically regenerate the texture's miplevels using an OpenGL function
+    fn generate_mipmaps(&mut self) {
+        if self.levels() > 0 {
+            unsafe {
+                gl::GenerateTextureMipmap(self.name());
+            }
+        }
+    }
+
     // Resize the current texture (this will also set it's inner data to null)
     // This will panic if we try to resize a static texture
     fn resize(&mut self, extent: <Self::Region as Region>::E) {

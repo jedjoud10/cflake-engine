@@ -40,8 +40,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/diffuse.png");
     asset!(&mut assets, "assets/user/normal.png");
     asset!(&mut assets, "assets/user/mask.png");
-    asset!(&mut assets, "assets/user/ignored/lilienstein_4k.hdr");
-    asset!(&mut assets, "assets/user/ignored/garden_nook_1k.hdr");
+    asset!(&mut assets, "assets/user/ignored/cubemap.hdr");
 
     // We will also register some new keybinds for the camera controller
     input.bind_key("forward", Key::W);
@@ -114,7 +113,7 @@ fn init(world: &mut World) {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.1,
+        bumpiness: 0.2,
         roughness: 0.2,
         ambient_occlusion: 1.0,
         metallic: 1.0,
@@ -135,11 +134,8 @@ fn init(world: &mut World) {
 
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
-
-    let hdri = assets.load_with::<CubeMap2D<RGB<f32>>>("user/ignored/garden_nook_1k.hdr", (&mut ctx, TextureImportSettings {
-        mipmaps: MipMapSetting::Disabled,
-        ..Default::default()
-    })).unwrap();
+    // Load up the HDRi cubemap
+    let hdri = assets.load_with::<CubeMap2D<RGB<f32>>>("user/ignored/cubemap.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
     let hdri = hdris.insert(hdri);
 
     // Create the default sky material

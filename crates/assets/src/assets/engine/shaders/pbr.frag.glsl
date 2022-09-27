@@ -130,7 +130,7 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 
 	// Main directional light
-	vec3 ambient = 0.03 * texture(environment, normal).rgb * diffuse * mask.r;
+	vec3 ambient = 0.13 * diffuse * mask.r;
 	vec3 sum = ambient;
 	LightData sun = LightData(sun_dir, sun_color, sun_strength, true);
 	CameraData _camera = CameraData(view, normalize(view + sun_dir), camera);	
