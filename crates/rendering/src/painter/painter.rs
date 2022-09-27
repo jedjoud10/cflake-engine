@@ -1,8 +1,8 @@
 use itertools::Itertools;
 
 use super::{
-    ColorAttachmentLayout, DepthAttachment, PainterColorLayout, PainterDepthTexel,
-    PainterStencilTexel, StencilAttachment, UntypedAttachment, Target,
+    MaybeColorLayout, MaybeDepthTexel,
+    MaybeStencilTexel, UntypedAttachment, Target, AsTarget, ColorTupleTargets,
 };
 use crate::{
     context::Context,
@@ -13,17 +13,15 @@ use std::marker::PhantomData;
 
 // A painter is a safe wrapper around an OpenGL framebuffer
 // Painters only store the texel types that we shall use, but they do not store the attachments by themselves
-pub struct Painter<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> {
+pub struct Painter<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> {
     pub(super) name: u32,
     untyped_color_attachments: Option<Vec<UntypedAttachment>>,
     untyped_depth_attachment: Option<UntypedAttachment>,
     untyped_stencil_attachment: Option<UntypedAttachment>,
-    _phantom: PhantomData<*const C>,
-    _phantom2: PhantomData<*const D>,
-    _phantom3: PhantomData<*const S>,
+    _phantom: PhantomData<*const (C, D, S)>,
 }
 
-impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painter<C, D, S> {
+impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D, S> {
     // Create a new painter using the graphics context
     pub fn new(_ctx: &mut Context) -> Self {
         let name = unsafe {
@@ -38,23 +36,25 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
             untyped_depth_attachment: None,
             untyped_stencil_attachment: None,
             _phantom: PhantomData,
-            _phantom2: PhantomData,
-            _phantom3: PhantomData,
         }
     }
 
     // Use the painter to give us a scoped painter that has proper targets
-    pub fn scope<CT: ColorAttachmentLayout<C>>(
+    pub fn scope<CTS: ColorTupleTargets<C>, DT: AsTarget<D>, ST: AsTarget<S>>(
         &mut self,
         viewport: Viewport,
-        colors: CT,
-        depth: <Target<D>,
-        stencil: Target<S>,
+        color: CTS,
+        depth: DT,
+        stencil: ST,
     ) -> Option<ScopedPainter<C, D, S>> {
-        // Convert the attachments to their untyped values
-        let untyped_color = colors.untyped();
-        let untyped_depth = depth.untyped;
-        let untyped_stencil = stencil.untyped;
+        // Convert the color attachments to their untyped attachments form
+        let untyped_color = color.untyped_targets().map(|targets| {
+            targets.into_iter().map(|target| target.untyped).collect_vec()
+        });
+
+        // Don't do anything to the depth and stencil
+        let untyped_depth = depth.as_target().map(|target| target.untyped);
+        let untyped_stencil = stencil.as_target().map(|target| target.untyped);
 
         // Simple local struct to help us bind the attachments to the painter 
         struct Attachment {
@@ -123,7 +123,7 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
                         level as i32,
                         layer as i32
                     );
-                },
+                }
             }
         }
 
@@ -162,12 +162,12 @@ impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Painte
 }
 
 // A scoped painter is what we must use to be able to use the Display's trait functionality
-pub struct ScopedPainter<'a, C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> {
+pub struct ScopedPainter<'a, C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> {
     painter: &'a mut Painter<C, D, S>,
     viewport: Viewport,
 }
 
-impl<C: PainterColorLayout, D: PainterDepthTexel, S: PainterStencilTexel> Display
+impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Display
     for ScopedPainter<'_, C, D, S>
 {
     fn viewport(&self) -> crate::display::Viewport {

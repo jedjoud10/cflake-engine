@@ -4,10 +4,8 @@ use std::marker::PhantomData;
 
 use crate::{
     context::ToGlName,
-    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel, Region, SingleLayerTexture, MultiLayerTexture},
+    prelude::{MipLevelMut, Texel, Texture2D, UntypedTexel, Region, SingleLayerTexture, MultiLayerTexture, Texture, Element, Depth, DepthTexel, Stencil, StencilTexel},
 };
-
-use super::{PainterColorLayout, PainterDepthTexel, PainterStencilTexel};
 
 // This is the target for a specific framebuffer attachment
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
@@ -32,78 +30,113 @@ pub enum UntypedAttachment {
         level: u8,
         layer: u16,
         untyped: UntypedTexel,
-    }
+    },
 }
+
+// A possible texel type, or simply the unit tuple
+pub trait MaybeTexel {}
+impl<T: Texel> MaybeTexel for T {}
+impl MaybeTexel for () {}
+
+// This trait is implemented for color texels exclusively and the unit tuple
+pub trait MaybeColorLayout {}
+impl MaybeColorLayout for () {}
+
+// This trait is implemented for depth texels exclusively and the unit tuple
+pub trait MaybeDepthTexel: MaybeTexel {}
+impl MaybeDepthTexel for () {}
+impl<E: Element> MaybeDepthTexel for Depth<E> where Self: DepthTexel {}
+
+// This trait is implemented for stencil texels exclusively and the unit tuple
+pub trait MaybeStencilTexel: MaybeTexel {}
+impl MaybeStencilTexel for () {}
+impl<E: Element> MaybeStencilTexel for Stencil<E> where Self: StencilTexel {}
 
 // A target is a simple abstraction around FBO attachments
 // We can get targets from MipLayers and whole Textures if we wish to
-pub struct Target<'a, A> {
-    pub(crate) untyped: UntypedAttachment,
-    object: &'a mut A,
+pub struct Target<T: MaybeTexel, A> {
+    pub(super) untyped: UntypedAttachment,
+    _phantom: PhantomData<(T, A)>,
 }
 
+// Gonna need an untyped target for color layouts 
+pub struct UntypedTarget {
+    pub(super) untyped: UntypedAttachment,
+}
+
+pub trait AsTarget<T: MaybeTexel> {
+    type A;
+    fn as_target(self) -> Option<Target<T, Self::A>>;
+    fn as_untyped_target(self) -> Option<UntypedTarget>;
+}
+
+impl<T: Texel, A> AsTarget<T> for Target<T, A> {
+    type A = A;
+    fn as_target(self) -> Option<Target<T, Self::A>> {
+        Some(self)
+    }
+    fn as_untyped_target(self) -> Option<UntypedTarget> {
+        Some(UntypedTarget {
+            untyped: self.untyped,
+        })
+    }
+}
+
+impl AsTarget<()> for () {
+    type A = ();
+    fn as_target(self) -> Option<Target<(), Self::A>> {
+        None
+    }
+    fn as_untyped_target(self) -> Option<UntypedTarget> {
+        None
+    }
+}
 
 // Implemented for object that have a single layer and that be converted to simple targets
-pub trait SingleLayerIntoTarget: Sized {
-    fn target(&mut self) -> Target<Self>;
+pub trait SingleLayerIntoTarget<T: Texel>: Sized {
+    fn target(self) -> Target<T, Self>;
 }
 
 // Convert single layered mip levels into a target
-impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget for MipLevelMut<'a, T> {
-    fn target(&mut self) -> Target<Self> {
+impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget<T::T> for MipLevelMut<'a, T> {
+    fn target(self) -> Target<T::T, Self> {
         Target {
             untyped: UntypedAttachment::TextureLevel { texture_name: self.texture().name(), level: self.level(), untyped: <T::T as Texel>::untyped() },
-            object: self,
+            _phantom: PhantomData,
         }
+    }
+}
+
+// This looks cursed but it basically allows us to not have to write ".target" every time we wish to use a single layered texture
+impl<'a, T: Texture> AsTarget<T::T> for MipLevelMut<'a, T> where Self: SingleLayerIntoTarget<T::T> {
+    type A = MipLevelMut<'a, T>;
+    fn as_target(self) -> Option<Target<T::T, Self::A>> {
+        Some(self.target())
+    }
+    fn as_untyped_target(self) -> Option<UntypedTarget> {
+        Some(UntypedTarget {
+            untyped: self.target().untyped,
+        })
     }
 }
 
 // Implemented for objects that have multiple layers and that must use a specific when when fetching targets
 // Only used for cubemaps, bundled texture 2d, and texture 3ds
-pub trait MultilayerIntoTarget: Sized {
-    fn target(&mut self, layer: u16) -> Option<Target<Self>>;
+pub trait MultilayerIntoTarget<T: Texel>: Sized {
+    fn target(self, layer: u16) -> Option<Target<T, Self>>;
 }
 
 // Convert multi layered mip levels into a target
-impl<'a, T: MultiLayerTexture> MultilayerIntoTarget for MipLevelMut<'a, T> {
-    fn target(&mut self, layer: u16) -> Option<Target<Self>> {
+impl<'a, T: MultiLayerTexture> MultilayerIntoTarget<T::T> for MipLevelMut<'a, T> {
+    fn target(self, layer: u16) -> Option<Target<T::T, Self>> {
         T::is_layer_valid(self.texture(), layer).then(|| Target {
             untyped: UntypedAttachment::TextureLevelLayer { texture_name: self.texture().name(), level: self.level(), layer, untyped: <T::T as Texel>::untyped() },
-            object: self,
+            _phantom: PhantomData,
         })
     }
 }
 
-// Attachments are something that we can bind to textures
-pub trait Attachment<T> {
-    fn untyped(&self) -> Option<UntypedAttachment>;
-}
-
-// Attachments that use the default texel are disabled
-
-impl Attachment<()> for () {
-    fn untyped(&self) -> Option<UntypedAttachment> {
-        None
-    }
-}
-
 // This is implemented for all tuples that contain types of attachments of the specifici painter color layout
-pub trait ColorAttachmentLayout<C: PainterColorLayout> {
-    fn untyped(&self) -> Option<Vec<UntypedAttachment>>;
+pub trait ColorTupleTargets<C: MaybeColorLayout> {
+    fn untyped_targets(self) -> Option<Vec<UntypedTarget>>;
 }
-impl ColorAttachmentLayout<()> for () {
-    fn untyped(&self) -> Option<Vec<UntypedAttachment>> {
-        None
-    }
-}
-
-// TODO: Simplify this a tiny bit I guess?
-// This is implemented for all attachments that use this painter depth texel
-pub trait DepthAttachment<D: PainterDepthTexel>: Attachment<D> {}
-impl<D: PainterDepthTexel + Texel, A: Attachment<D>> DepthAttachment<D> for A {}
-impl DepthAttachment<()> for () {}
-
-// This is implemented for all attachments that use this painter stencil texel
-pub trait StencilAttachment<S: PainterStencilTexel>: Attachment<S> {}
-impl<S: PainterStencilTexel + Texel, A: Attachment<S>> StencilAttachment<S> for A {}
-impl StencilAttachment<()> for () {}

@@ -6,7 +6,7 @@ use crate::{
     prelude::{Display, Shader, Texture},
     scene::{
         Camera, ClusteredShading, DirectionalLight, FrustumPlane, RenderedFrameStats, Renderer,
-    },
+    }, painter::SingleLayerIntoTarget,
 };
 
 use ecs::Scene;

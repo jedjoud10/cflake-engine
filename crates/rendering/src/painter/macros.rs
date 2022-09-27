@@ -1,16 +1,16 @@
-use super::{Attachment, ColorAttachmentLayout, PainterColorLayout};
+use super::{ColorTupleTargets, MaybeColorLayout, AsTarget, UntypedTarget};
 use crate::prelude::{ColorTexel};
 use seq_macro::seq;
 use std::concat_idents;
 
 macro_rules! tuple_impls_color_layout {
     ( $( $name:ident )+, $max:tt, $( $name2:ident )+) => {
-        impl<$($name: ColorTexel),+> PainterColorLayout for ($($name,)+) {}
-        impl<$($name: ColorTexel),+, $($name2: Attachment<concat_idents!($name2)>),+> ColorAttachmentLayout<($($name),+)> for ($($name2),+) {
-            fn untyped(&self) -> Option<Vec<super::UntypedAttachment>> {
+        impl<$($name: ColorTexel),+> MaybeColorLayout for ($($name,)+) {}
+        impl<$($name: ColorTexel),+, $($name2: AsTarget<concat_idents!(T, $name2)>),+> ColorTupleTargets<($($name),+)> for ($($name2),+) {
+            fn untyped_targets(self) -> Option<Vec<UntypedTarget>> {
                 let mut vec = Vec::with_capacity($max);
                 seq!(N in 0..$max {
-                    vec.push(Attachment::untyped(&self.N).unwrap());
+                    vec.push(AsTarget::as_untyped_target(self.N).unwrap());
                 });
                 Some(vec)
             }
@@ -19,14 +19,21 @@ macro_rules! tuple_impls_color_layout {
 }
 
 // TODO: Fix this lil hack bozo
-tuple_impls_color_layout! { AT0 AT1, 2, A0 A1  }
-tuple_impls_color_layout! { AT0 AT1 AT2, 3, A0 A1 A2 }
-tuple_impls_color_layout! { AT0 AT1 AT2 AT3, 4, A0 A1 A2 A3 }
-tuple_impls_color_layout! { AT0 AT1 AT2 AT3 AT4, 5, A0 A1 A2 A3 A4 }
+tuple_impls_color_layout! { TA0 TA1, 2, A0 A1  }
+tuple_impls_color_layout! { TA0 TA1 TA2, 3, A0 A1 A2 }
+tuple_impls_color_layout! { TA0 TA1 TA2 TA3, 4, A0 A1 A2 A3 }
+tuple_impls_color_layout! { TA0 TA1 TA2 TA3 TA4, 5, A0 A1 A2 A3 A4 }
 
-impl<T: ColorTexel> PainterColorLayout for T {}
-impl<T: ColorTexel, A: Attachment<T>> ColorAttachmentLayout<T> for A {
-    fn untyped(&self) -> Option<Vec<super::UntypedAttachment>> {
-        Some(vec![Attachment::untyped(self).unwrap()])
+impl<T: ColorTexel> MaybeColorLayout for T {}
+
+impl<CT: ColorTexel, T: AsTarget<CT>> ColorTupleTargets<CT> for T {
+    fn untyped_targets(self) -> Option<Vec<UntypedTarget>> {
+        Some(vec![self.as_untyped_target().unwrap()])
+    }
+}
+
+impl<'a> ColorTupleTargets<()> for () {
+    fn untyped_targets(self) -> Option<Vec<UntypedTarget>> {
+        None
     }
 }
