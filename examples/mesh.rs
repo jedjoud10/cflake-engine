@@ -24,6 +24,7 @@ fn init(world: &mut World) {
     let mut albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
     let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
     let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
+    let mut hdris = world.get_mut::<Storage<HDRI>>().unwrap();
     let _shaders = world.get_mut::<Storage<Shader>>().unwrap();
     let mut meshes = world.get_mut::<Storage<Mesh>>().unwrap();
 
@@ -40,6 +41,7 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/normal.png");
     asset!(&mut assets, "assets/user/mask.png");
     asset!(&mut assets, "assets/user/ignored/lilienstein_4k.hdr");
+    asset!(&mut assets, "assets/user/ignored/garden_nook_1k.hdr");
 
     // We will also register some new keybinds for the camera controller
     input.bind_key("forward", Key::W);
@@ -53,7 +55,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 243, 196),
-        strength: 0.0,
+        strength: 10.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -78,8 +80,6 @@ fn init(world: &mut World) {
         .unwrap();
     let normal_map = normal_maps.insert(normal_map);
 
-    let hdr = assets.load_with::<CubeMap2D<RGB<f32>>>("user/ignored/lilienstein_4k.hdr", (&mut ctx, TextureImportSettings::default())).unwrap();
-    
     // Load the mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
@@ -99,12 +99,22 @@ fn init(world: &mut World) {
             .unwrap(),
     );
 
+        // Create the default sphere primitive mesh
+        let sphere = meshes.insert(
+            assets
+                .load_with::<Mesh>(
+                    "engine/meshes/sphere.obj",
+                    (&mut ctx, MeshImportSettings::default()),
+                )
+                .unwrap(),
+        );
+
     // Create a new material instance
     let material = standard_materials.insert(Standard {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.8,
+        bumpiness: 0.1,
         roughness: 0.2,
         ambient_occlusion: 1.0,
         metallic: 1.0,
@@ -114,7 +124,7 @@ fn init(world: &mut World) {
 
     // Create a new material surface for rendering
     let pipeid = ctx.material_id::<Standard>().unwrap();    
-    let surface = Surface::new(cube.clone(), material.clone(), pipeid);
+    let surface = Surface::new(sphere.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default()));
 
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
@@ -123,33 +133,18 @@ fn init(world: &mut World) {
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((surface, Renderer::default(), Location::at_y(2.5), Scale::scale_xyz(5.0, 5.0, 0.5), Rotation::rotation_z(70.0f32.to_radians())));
 
-    ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
+    //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
-    //ecs.insert((Location::at_y(5.0), PointLight::default()));
 
-    // Load in the texture
-    let texture = albedo_maps.insert(
-        assets
-            .load_with::<AlbedoMap>(
-                "engine/textures/sky_gradient.png",
-                (
-                    &mut ctx,
-                    TextureImportSettings {
-                        sampling: Sampling {
-                            filter: Filter::Linear,
-                            wrap: Wrap::ClampToEdge,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                ),
-            )
-            .unwrap(),
-    );
+    let hdri = assets.load_with::<CubeMap2D<RGB<f32>>>("user/ignored/garden_nook_1k.hdr", (&mut ctx, TextureImportSettings {
+        mipmaps: MipMapSetting::Disabled,
+        ..Default::default()
+    })).unwrap();
+    let hdri = hdris.insert(hdri);
 
     // Create the default sky material
     let material = Sky {
-        gradient: texture,
+        cubemap: hdri,
         sun_intensity: 15.0,
         sun_size: 1.05,
     };

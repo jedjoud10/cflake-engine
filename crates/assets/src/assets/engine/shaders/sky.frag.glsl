@@ -2,7 +2,7 @@
 out vec3 frag;
 
 // Main sky texture
-uniform sampler2D gradient;
+uniform samplerCube cubemap;
 uniform float offset;
 uniform float time_since_startup;
 
@@ -18,6 +18,7 @@ in vec3 m_position;
 
 
 void main() {
+    /*
     // Get the main sky color
     float offset = (sun_dir.y + 1.0) / 2.0;
     vec3 color = texture(gradient, vec2(0.99, m_tex_coord.y)).rgb; 
@@ -26,5 +27,8 @@ void main() {
     float size = dot(sun_dir, normalize(m_position)) + ((sun_size - 1) / 90.0);
     float circle = max(pow(size, 15 * sun_intensity), 0); 
     color = mix(color, vec3(1.0), circle);
+    frag = color;
+    */
+    vec3 color = texture(cubemap, normalize(m_position - camera)).xyz;
     frag = color;
 }

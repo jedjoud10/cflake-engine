@@ -24,6 +24,9 @@ uniform vec3 sun_dir;
 uniform vec3 sun_color;
 uniform float sun_strength;
 
+// Environment mapping
+uniform samplerCube environment;
+
 // Directional shadow mapping
 uniform sampler2DShadow shadow_map;
 uniform mat4 shadow_lightspace_matrix;
@@ -127,7 +130,8 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 
 	// Main directional light
-	vec3 sum = 0.03 * diffuse * mask.r;
+	vec3 ambient = 0.03 * texture(environment, normal).rgb * diffuse * mask.r;
+	vec3 sum = ambient;
 	LightData sun = LightData(sun_dir, sun_color, sun_strength, true);
 	CameraData _camera = CameraData(view, normalize(view + sun_dir), camera);	
 	sum += brdf(surface, _camera, sun);

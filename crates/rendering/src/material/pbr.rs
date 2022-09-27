@@ -12,7 +12,7 @@ use crate::{
     texture::{Ranged, Texture, Texture2D, RGB}, display::Display,
 };
 
-use super::{DefaultMaterialResources, Material, Sky};
+use super::{DefaultMaterialResources, Material, Sky, HDRI};
 
 // PBR texels
 pub type AlbedoTexel = SRGBA<Ranged<u8>>;
@@ -43,8 +43,9 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<AlbedoMap>>,
         Read<'w, Storage<NormalMap>>,
         Read<'w, Storage<MaskMap>>,
+        Read<'w, Storage<HDRI>>,
         Read<'w, ShadowMapping>,
-        Handle<AlbedoMap>,
+        Handle<HDRI>,
     );
 
     fn requirements() -> EnabledAttributes {
@@ -60,6 +61,7 @@ impl<'w> Material<'w> for Standard {
 
     fn fetch_resources(world: &'w world::World) -> Self::Resources {
         let albedo_map = world.get::<Storage<AlbedoMap>>().unwrap();
+        let hdris = world.get::<Storage<HDRI>>().unwrap();
         let normal_map = world.get::<Storage<NormalMap>>().unwrap();
         let mask_map = world.get::<Storage<MaskMap>>().unwrap();
         let shadow_mapping = world.get::<ShadowMapping>().unwrap();
@@ -75,7 +77,7 @@ impl<'w> Material<'w> for Standard {
         let sky_materials = world.get::<Storage<Sky>>().unwrap();
         let material = sky_materials.get(&component.material);
 
-        (albedo_map, normal_map, mask_map, shadow_mapping, material.gradient.clone())
+        (albedo_map, normal_map, mask_map, hdris, shadow_mapping, material.cubemap.clone())
     }
 
     fn set_static_properties<'u>(
@@ -93,7 +95,7 @@ impl<'w> Material<'w> for Standard {
             main.directional_light.color.as_::<f32>() / 255.0,
         );
         uniforms.set_scalar("sun_strength", main.directional_light.strength);
-        let shadow = &(*resources.3);
+        let shadow = &(*resources.4);
         uniforms.set_sampler("shadow_map", &shadow.depth_tex);
         uniforms.set_mat4x4("shadow_lightspace_matrix", shadow.proj_matrix * shadow.view_matrix);
         uniforms.set_vec2("resolution", vek::Vec2::<u32>::from(main.window.viewport().extent.as_::<u32>()));
@@ -117,7 +119,7 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, _, _) = resources;
+        let (albedo_maps, normal_maps, mask_maps, hdris, _, hdri) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);
@@ -129,10 +131,12 @@ impl<'w> Material<'w> for Standard {
         let albedo_map = albedo_maps.get(&instance.albedo_map);
         let normal_map = normal_maps.get(&instance.normal_map);
         let mask_map = mask_maps.get(&instance.mask_map);
+        let hdri_map = hdris.get(&hdri);
 
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
+        uniforms.set_sampler("environment", hdri_map);
     }
 
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {

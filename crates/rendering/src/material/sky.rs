@@ -4,28 +4,27 @@ use world::{Handle, Read, Storage};
 use crate::{
     display::PrimitiveMode,
     material::{AlbedoMap, Material},
-    prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage},
+    prelude::{FragmentStage, Processor, ShaderCompiler, Uniforms, VertexStage, CubeMap2D, RGB},
     scene::Renderer,
 };
 
 use super::DefaultMaterialResources;
 
-// This is the material that our skysphere/skybox will use for rendering
-// TODO: Implemented HDRi sky material and sheit
-pub struct Sky {
-    // Main sky color
-    pub gradient: Handle<AlbedoMap>,
+// HDRi cube map
+pub type HDRI = CubeMap2D<RGB<f32>>;
 
-    // Sun settings
+// This is the material that our skysphere/skybox will use for rendering
+pub struct Sky {
+    pub cubemap: Handle<HDRI>,
     pub sun_intensity: f32,
     pub sun_size: f32,
 }
 
 impl<'w> Material<'w> for Sky {
-    type Resources = (Read<'w, Storage<AlbedoMap>>, Read<'w, Time>);
+    type Resources = (Read<'w, Storage<HDRI>>, Read<'w, Time>);
 
     fn fetch_resources(world: &'w world::World) -> Self::Resources {
-        let maps = world.get::<Storage<AlbedoMap>>().unwrap();
+        let maps = world.get::<Storage<HDRI>>().unwrap();
         let time = world.get::<Time>().unwrap();
         (maps, time)
     }
@@ -73,8 +72,8 @@ impl<'w> Material<'w> for Sky {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let texture = resources.0.get(&instance.gradient);
-        uniforms.set_sampler("gradient", texture);
+        let texture = resources.0.get(&instance.cubemap);
+        uniforms.set_sampler("cubemap", texture);
         uniforms.set_scalar(
             "sun_intensity",
             main.directional_light.strength * instance.sun_intensity,

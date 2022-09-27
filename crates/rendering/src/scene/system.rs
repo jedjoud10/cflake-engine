@@ -6,7 +6,7 @@ use crate::{
     buffer::{BufferMode},
     context::{Context, GraphicsSetupSettings, Window},
     display::{Display, PrimitiveMode, RasterSettings},
-    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
+    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, HDRI},
     mesh::{Mesh, Surface},
     prelude::{
         FragmentStage, Processor, ShaderCompiler,
@@ -34,6 +34,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(Storage::<Shader>::default());
     world.insert(Storage::<Standard>::default());
     world.insert(Storage::<Sky>::default());
+    world.insert(Storage::<HDRI>::default());
 
     // Get mutable references to the data that we must use
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
