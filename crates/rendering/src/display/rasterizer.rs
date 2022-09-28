@@ -127,6 +127,12 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
             set_state_blending(settings.blend);
         }
 
+        // Handle readonly attachments
+        if context.bounded_fbo_writing_mask != display.writable_attachments_mask() {
+            context.bounded_fbo_writing_mask = display.writable_attachments_mask();
+            set_state_attachment_masks(context.max_fbo_draw_buffers, display.writable_attachments_mask());
+        }
+
         Self {
             display,
             context,
@@ -269,6 +275,21 @@ unsafe fn set_state_primitive_mode(primitive: PrimitiveMode) {
                 gl::Disable(gl::LINE_SMOOTH);
             }
             gl::LineWidth(width);
+        }
+    }
+}
+
+// Set the attachment writing masks in case we must not write to an attachment
+unsafe fn set_state_attachment_masks(max: u32, bitmask: u32) {
+    for i in 0..32 {
+        let on = ((bitmask >> i) & 1) as u8;
+
+        if (0..=max).contains(&i) {
+            gl::ColorMaski(i, on, on, on, on)
+        } else if i == 30 {
+            gl::DepthMask(on)
+        } else if i == 31 {
+            gl::StencilMask(on as u32)
         }
     }
 }

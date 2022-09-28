@@ -15,9 +15,9 @@ use std::marker::PhantomData;
 // Painters only store the texel types that we shall use, but they do not store the attachments by themselves
 pub struct Painter<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> {
     pub(super) name: u32,
-    untyped_color_attachments: Option<Vec<UntypedAttachment>>,
-    untyped_depth_attachment: Option<UntypedAttachment>,
-    untyped_stencil_attachment: Option<UntypedAttachment>,
+    pub(crate) untyped_color_attachments: Option<Vec<UntypedAttachment>>,
+    pub(crate) untyped_depth_attachment: Option<UntypedAttachment>,
+    pub(crate) untyped_stencil_attachment: Option<UntypedAttachment>,
     _phantom: PhantomData<*const (C, D, S)>,
 }
 
@@ -59,14 +59,15 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         let untyped_depth = depth.as_target().map(|target| target.untyped);
         let untyped_stencil = stencil.as_target().map(|target| target.untyped);
 
-        // Simple local struct to help us bind the attachments to the painter
+        // Simple struct to help us bind the attachments to the painter
         struct Attachment {
-            untyped: UntypedAttachment,
-            code: u32,
+            pub(crate) untyped: UntypedAttachment,
+            pub(crate) code: u32,
         }
 
         // We will bind all the attachments later
         let mut attachments = Vec::<Attachment>::new();
+        let mut writing_mask = 0u32;
 
         // Convert the untyped color attachments to the local struct
         if untyped_color != self.untyped_color_attachments {
@@ -77,6 +78,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     untyped: untyped.clone(),
                     code: gl::COLOR_ATTACHMENT0 + offset,
                 };
+                
                 offset += 1;
                 return attachment;
             }));
@@ -105,11 +107,13 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 
         // Bind the texture layers/levels to the proper attachments
         for attachment in attachments.iter() {
+            // Attach the target's attachment to the framebuffer
             match attachment.untyped {
                 UntypedAttachment::TextureLevel {
                     texture_name,
                     level,
                     untyped: _,
+                    writable: _
                 } => unsafe {
                     gl::NamedFramebufferTexture(
                         self.name,
@@ -122,7 +126,8 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     texture_name,
                     level,
                     layer,
-                    untyped,
+                    untyped: _,
+                    writable: _,
                 } => unsafe {
                     gl::NamedFramebufferTextureLayer(
                         self.name,
@@ -133,6 +138,19 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     );
                 },
             }
+
+            // Update the painter writing mask for later use
+            if match attachment.untyped {
+                UntypedAttachment::TextureLevel { writable, .. } |  UntypedAttachment::TextureLevelLayer { writable, .. } => writable,
+            } {
+                let location = match attachment.code {
+                    gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT29 => attachment.code - gl::COLOR_ATTACHMENT0,
+                    gl::DEPTH_ATTACHMENT => 30,
+                    gl::STENCIL_ATTACHMENT => 31,
+                    _ => panic!(),
+                };
+                writing_mask |= 1 << location;  
+            }
         }
 
         // Check if we have any color attachment, and if we do, check how many of them we have bound to the FB
@@ -140,7 +158,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
             attachments
                 .iter()
                 .fold(None, |current, item| match item.code {
-                    gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT31 => match current {
+                    gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT29 => match current {
                         Some(x) => Some(x + 1),
                         None => Some(1),
                     },
@@ -160,11 +178,12 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     draw.len() as i32,
                     draw.as_ptr() as *const u32,
                 );
-            }
+            }            
         }
 
         Some(ScopedPainter {
             painter: self,
+            writing_mask,
             viewport,
         })
     }
@@ -173,6 +192,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 // A scoped painter is what we must use to be able to use the Display's trait functionality
 pub struct ScopedPainter<'a, C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> {
     painter: &'a mut Painter<C, D, S>,
+    writing_mask: u32,
     viewport: Viewport,
 }
 
@@ -185,5 +205,9 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Display
 
     fn name(&self) -> u32 {
         self.painter.name
+    }
+
+    fn writable_attachments_mask(&self) -> u32 {
+        self.writing_mask
     }
 }

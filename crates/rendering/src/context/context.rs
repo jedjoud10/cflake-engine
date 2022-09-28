@@ -20,6 +20,8 @@ pub struct Context {
     // The currently bounded rasterizer settings
     pub(crate) raster: RasterSettings,
     pub(crate) bounded_fbo: u32,
+    pub(crate) bounded_fbo_writing_mask: u32,
+    pub(crate) max_fbo_draw_buffers: u32,
     pub(crate) viewport: Viewport,
 
     // Reusable shader sources
@@ -55,6 +57,8 @@ impl Context {
                 origin: vek::Vec2::zero(),
                 extent: vek::Extent2::zero(),
             },
+            bounded_fbo_writing_mask: 1 | (1 << 30),
+            max_fbo_draw_buffers: unsafe { super::get_value(gl::MAX_DRAW_BUFFERS) as u32 },
             stages: Default::default(),
             pipelines: Default::default(),
         }

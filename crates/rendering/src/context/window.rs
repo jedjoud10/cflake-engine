@@ -97,6 +97,10 @@ impl Display for Window {
         0
     }
 
+    fn writable_attachments_mask(&self) -> u32 {
+        1 | (1 << 30)
+    }
+
     fn viewport(&self) -> Viewport {
         let size = self.glutin.inner_size().cast::<u16>();
         Viewport {

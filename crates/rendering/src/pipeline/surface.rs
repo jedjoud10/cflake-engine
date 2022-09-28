@@ -83,12 +83,12 @@ fn render_prepass_query_surfaces<'a, M: for<'w> Material<'w>>(
     main: DefaultMaterialResources,
     mut rasterizer: Rasterizer<ScopedPainter<RGB<f32>, Depth<Ranged<u32>>, ()>>,
 ) {
-    for (_, surface) in query {
+    for (renderer, surface) in query {
         // Draw the surface object using the current rasterizer pass
         let mesh = meshes.get(&surface.mesh);
 
         // Validate the uniforms
-        uniforms.set_mat4x4("matrix", *main.camera.projection_matrix() * *main.camera.view_matrix());
+        uniforms.set_mat4x4("matrix", *main.camera.projection_matrix() * *main.camera.view_matrix() * renderer.matrix);
         let validated = unsafe { uniforms.assume_valid() };
 
         // Render the object
@@ -200,7 +200,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         window: &window,
     };
 
-    // Create the painter that will draw our bozos
+    // Create the painter that will draw the depth prepass
     let color = shading.color_tex.mip_mut(0).unwrap();
     let depth = shading.depth_tex.mip_mut(0).unwrap();
     let mut scoped = shading
@@ -218,6 +218,12 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
 
     // Create a new rasterizer so we can draw the objects onto the painter
     let shader = shaders.get_mut(&shader);
+    let color = shading.color_tex.mip_mut(0).unwrap();
+    let depth = shading.depth_tex.mip_mut(0).unwrap();
+    let mut scoped = shading
+        .painter
+        .scope(window.viewport(), color, depth, ())
+        .unwrap();
     let (rasterizer, mut uniforms) = scoped.rasterizer(&mut ctx, shader, settings);
 
     // Set global properties
