@@ -36,6 +36,22 @@ pub(crate) enum UntypedAttachment {
     },
 }
 
+impl UntypedAttachment {
+    // Check if the attachment is writable or not
+    pub fn writable(&self) -> bool {
+        match self {
+            UntypedAttachment::TextureLevel { writable, .. } | UntypedAttachment::TextureLevelLayer { writable, .. } => *writable,
+        }
+    }
+    
+    // Get the untyped attachment texel
+    pub fn texel(&self) -> UntypedTexel {
+        match self {
+            UntypedAttachment::TextureLevel { untyped, .. } | UntypedAttachment::TextureLevelLayer { untyped, .. } => *untyped,
+        }
+    }
+}
+
 // A possible texel type, or simply the unit tuple
 pub trait MaybeTexel {}
 impl<T: Texel> MaybeTexel for T {}

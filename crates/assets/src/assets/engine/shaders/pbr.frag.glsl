@@ -77,7 +77,7 @@ struct SurfaceData {
 };
 
 // Bidirectional reflectance distribution function, aka PBRRRR
-vec3 brdf(SurfaceData surface, CameraData camera, LightData light) {
+vec3 brdf(SurfaceData surface, CameraData camera, LightData light, samplerCube enviro) {
 	if (all(equal(light.color * light.strength, vec3(0.0)))) {
 		return vec3(0.0);
 	}
@@ -130,11 +130,11 @@ void main() {
 	vec3 view = normalize(camera - m_position);
 
 	// Main directional light
-	vec3 ambient = 0.13 * diffuse * mask.r;
+	vec3 ambient = 0.1 * diffuse * mask.r;
 	vec3 sum = ambient;
 	LightData sun = LightData(sun_dir, sun_color, sun_strength, true);
 	CameraData _camera = CameraData(view, normalize(view + sun_dir), camera);	
-	sum += brdf(surface, _camera, sun);
+	sum += brdf(surface, _camera, sun, environment);
 
 	// Iterate through all the point light
 	for(int i = 0; i < point_lights_num; i++) {
@@ -146,7 +146,7 @@ void main() {
 
 		LightData point_light = LightData(dir, radiance, 1.0, false);
 		CameraData camera = CameraData(view, normalize(view + dir), camera);
-		sum += brdf(surface, camera, point_light);
+		sum += brdf(surface, camera, point_light, environment);
 	}
 
 	// Color of the final result

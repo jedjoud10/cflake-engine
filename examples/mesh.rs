@@ -113,9 +113,9 @@ fn init(world: &mut World) {
         normal_map: normal_map,
         mask_map: mask_map,
         bumpiness: 0.2,
-        roughness: 0.2,
+        roughness: 0.0,
         ambient_occlusion: 1.0,
-        metallic: 1.0,
+        metallic: 100.0,
         scale: vek::Vec2::broadcast(3.0),
         tint: vek::Rgb::white(),
     });

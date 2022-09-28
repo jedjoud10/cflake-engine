@@ -42,7 +42,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, 64, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 4096, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 512, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -188,6 +188,7 @@ fn render_surfaces(world: &mut World) {
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
     let mut _shadow_mapper = world.get_mut::<ShadowMapping>().unwrap();
+    let time = world.get::<Time>().unwrap();
     let shadow_mapper = &mut *_shadow_mapper;
     let pp = world.get::<PostProcessing>().unwrap();
     let ecs = world.get::<Scene>().unwrap();
@@ -224,6 +225,7 @@ fn render_surfaces(world: &mut World) {
     uniforms.set_scalar("tonemapping_strength", pp.tonemapping_strength);
     uniforms.set_scalar("exposure", pp.exposure);
     uniforms.set_scalar("gamma", pp.gamma);
+    uniforms.set_scalar("time", time.secs_since_startup_f32());
     uniforms.set_scalar("vignette_strength", pp.vignette_strength);
     uniforms.set_scalar("vignette_size", pp.vignette_size);
 

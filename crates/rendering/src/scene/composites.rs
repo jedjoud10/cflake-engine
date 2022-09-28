@@ -34,7 +34,6 @@ pub struct ClusteredShading {
     pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
     pub(crate) main_directional_light: Option<Entity>,
     pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
-    pub(crate) prepass_shader: Shader,
     pub(crate) point_light_ids: ShaderBuffer<u32>,
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
     //pub(crate) compute: ComputeShader,
@@ -83,15 +82,6 @@ impl ClusteredShading {
         ctx.register_material::<Standard>(shaders, assets);
         ctx.register_material::<Sky>(shaders, assets);
 
-        // Load in the Z-prepass shader
-        let vertex = assets
-            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
-            .unwrap();
-        let fragment = assets
-            .load::<FragmentStage>("engine/shaders/depth.frag.glsl")
-            .unwrap();
-        let prepass_shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
-
         // TODO: Create the cluster compute shader that will sort the lights
 
         // Create the clustered shading rendererer
@@ -103,7 +93,6 @@ impl ClusteredShading {
             depth_tex: depth,
             main_directional_light: None,
             cluster_size,
-            prepass_shader,
             point_light_ids: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),

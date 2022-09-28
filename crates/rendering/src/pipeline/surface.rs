@@ -14,6 +14,7 @@ use crate::{
 use ecs::Scene;
 use math::{Location, Rotation, SharpVertices, AABB};
 
+use prelude::Comparison;
 use world::{Handle, Read, Storage, World, Write};
 
 // Check if an AABB intersects all the given frustum planes
@@ -199,22 +200,6 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         directional_light_rotation,
         window: &window,
     };
-
-    // Create the painter that will draw the depth prepass
-    let color = shading.color_tex.mip_mut(0).unwrap();
-    let depth = shading.depth_tex.mip_mut(0).unwrap();
-    let mut scoped = shading
-        .painter
-        .scope(window.viewport(), color, depth, ())
-        .unwrap();
-
-    // Create a new rasterizer that will serve as our Z-preprass rasterizer
-    let (prepass, uniforms) =
-        scoped.rasterizer(&mut ctx, &mut shading.prepass_shader, settings);
-
-    // Render out the scene, but only depth only
-    let query = get_surfaces_query::<M>(&ecs, &meshes, planes);
-    render_prepass_query_surfaces(query, uniforms, &meshes, main, prepass);
 
     // Create a new rasterizer so we can draw the objects onto the painter
     let shader = shaders.get_mut(&shader);

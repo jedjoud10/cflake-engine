@@ -18,6 +18,7 @@ pub struct Painter<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel
     pub(crate) untyped_color_attachments: Option<Vec<UntypedAttachment>>,
     pub(crate) untyped_depth_attachment: Option<UntypedAttachment>,
     pub(crate) untyped_stencil_attachment: Option<UntypedAttachment>,
+    writing_bitmask: u32,
     _phantom: PhantomData<*const (C, D, S)>,
 }
 
@@ -35,6 +36,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
             untyped_color_attachments: None,
             untyped_depth_attachment: None,
             untyped_stencil_attachment: None,
+            writing_bitmask: 0,
             _phantom: PhantomData,
         }
     }
@@ -67,10 +69,10 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 
         // We will bind all the attachments later
         let mut attachments = Vec::<Attachment>::new();
-        let mut writing_mask = 0u32;
 
         // Convert the untyped color attachments to the local struct
         if untyped_color != self.untyped_color_attachments {
+            self.writing_bitmask &= 0xC0000000;
             let untyped_color = untyped_color.unwrap();
             let mut offset = 0;
             attachments.extend(untyped_color.iter().map(|untyped| {
@@ -78,7 +80,8 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     untyped: untyped.clone(),
                     code: gl::COLOR_ATTACHMENT0 + offset,
                 };
-                
+
+                self.writing_bitmask |= (untyped.writable() as u32) << offset;
                 offset += 1;
                 return attachment;
             }));
@@ -87,22 +90,26 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 
         // Convert the untyped depth attachment to the local struct
         if untyped_depth != self.untyped_depth_attachment {
+            self.writing_bitmask &= !(1 << 30);
             let untyped_depth = untyped_depth.unwrap();
             self.untyped_depth_attachment = Some(untyped_depth);
             attachments.push(Attachment {
                 untyped: untyped_depth,
                 code: gl::DEPTH_ATTACHMENT,
             });
+            self.writing_bitmask |= (untyped_depth.writable() as u32) << 30;
         }
 
         // Convert the untyped stencil attachment to the local struct
         if untyped_stencil != self.untyped_stencil_attachment {
+            self.writing_bitmask &= !(1 << 31);
             let untyped_stencil = untyped_stencil.unwrap();
             self.untyped_stencil_attachment = Some(untyped_stencil);
             attachments.push(Attachment {
                 untyped: untyped_stencil,
                 code: gl::STENCIL_ATTACHMENT,
             });
+            self.writing_bitmask |= (untyped_stencil.writable() as u32) << 31;
         }
 
         // Bind the texture layers/levels to the proper attachments
@@ -138,19 +145,6 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     );
                 },
             }
-
-            // Update the painter writing mask for later use
-            if match attachment.untyped {
-                UntypedAttachment::TextureLevel { writable, .. } |  UntypedAttachment::TextureLevelLayer { writable, .. } => writable,
-            } {
-                let location = match attachment.code {
-                    gl::COLOR_ATTACHMENT0..=gl::COLOR_ATTACHMENT29 => attachment.code - gl::COLOR_ATTACHMENT0,
-                    gl::DEPTH_ATTACHMENT => 30,
-                    gl::STENCIL_ATTACHMENT => 31,
-                    _ => panic!(),
-                };
-                writing_mask |= 1 << location;  
-            }
         }
 
         // Check if we have any color attachment, and if we do, check how many of them we have bound to the FB
@@ -182,8 +176,8 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         }
 
         Some(ScopedPainter {
+            writing_mask: self.writing_bitmask,
             painter: self,
-            writing_mask,
             viewport,
         })
     }

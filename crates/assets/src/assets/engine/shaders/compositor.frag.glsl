@@ -11,6 +11,8 @@ uniform sampler2D color;
 uniform sampler2D depth;
 uniform sampler2D shadow_map;
 
+uniform float time;
+
 // Post-processing compositor settings
 uniform float tonemapping_strength;
 uniform float exposure;

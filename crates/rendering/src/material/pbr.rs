@@ -7,7 +7,7 @@ use crate::{
     context::Context,
     display::Display,
     mesh::{EnabledAttributes, Surface},
-    prelude::{RGBA, SRGBA},
+    prelude::{RGBA, SRGBA, CubeMap2D, R},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
@@ -164,4 +164,14 @@ impl<'w> Material<'w> for Standard {
 
         ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)
     }
+}
+
+// Convert 3 separate ambient occlusion, roughness, and metallic textures into one ARM mask texture
+pub fn combine_into_mask(ambient_occlusion: Texture2D<R<Ranged<u8>>>, roughness: Texture2D<R<Ranged<u8>>>, metallic: Texture2D<R<Ranged<u8>>>) -> MaskMap {
+    todo!()
+}
+
+// Convert a single panoramic texture into a HDRi cubemap
+pub fn hdri_from_panoramic() -> CubeMap2D<RGB<f32>> {
+    todo!()
 }

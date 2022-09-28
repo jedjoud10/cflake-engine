@@ -128,9 +128,10 @@ impl<'d, 'context, D: Display> Rasterizer<'d, 'context, D> {
         }
 
         // Handle readonly attachments
-        if context.bounded_fbo_writing_mask != display.writable_attachments_mask() {
-            context.bounded_fbo_writing_mask = display.writable_attachments_mask();
-            set_state_attachment_masks(context.max_fbo_draw_buffers, display.writable_attachments_mask());
+        let wam = display.writable_attachments_mask();
+        if context.bounded_fbo_writing_mask != wam {
+            context.bounded_fbo_writing_mask = wam;
+            set_state_attachment_masks(context.max_fbo_draw_buffers, wam);
         }
 
         Self {
@@ -284,7 +285,7 @@ unsafe fn set_state_attachment_masks(max: u32, bitmask: u32) {
     for i in 0..32 {
         let on = ((bitmask >> i) & 1) as u8;
 
-        if (0..=max).contains(&i) {
+        if (0..max).contains(&i) {
             gl::ColorMaski(i, on, on, on, on)
         } else if i == 30 {
             gl::DepthMask(on)
