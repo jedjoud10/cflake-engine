@@ -2,13 +2,13 @@ use assets::Assets;
 use ecs::Entity;
 use math::Location;
 use vek::FrustumPlanes;
-use world::Storage;
+use world::{Handle, Storage};
 
 use crate::{
     buffer::{BufferMode, ShaderBuffer, UniformBuffer},
     context::{Context, Window},
     display::Display,
-    material::{Sky, Standard},
+    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
     mesh::Mesh,
     others::Comparison,
     painter::Painter,
@@ -38,6 +38,10 @@ pub struct ClusteredShading {
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
     //pub(crate) compute: ComputeShader,
     pub(crate) cluster_size: u32,
+    pub(crate) white: AlbedoMap,
+    pub(crate) black: AlbedoMap,
+    pub(crate) normal: NormalMap,
+    pub(crate) mask: MaskMap,
 }
 
 impl ClusteredShading {
@@ -82,6 +86,50 @@ impl ClusteredShading {
         ctx.register_material::<Standard>(shaders, assets);
         ctx.register_material::<Sky>(shaders, assets);
 
+        // Create the default white texture
+        let white = AlbedoMap::new(
+            ctx,
+            TextureMode::Static,
+            vek::Extent2::one(),
+            Sampling::default(),
+            MipMapSetting::Disabled,
+            Some(&[vek::Vec4::<u8>::one() * 255]),
+        )
+        .unwrap();
+
+        // Create the default black texture
+        let black = AlbedoMap::new(
+            ctx,
+            TextureMode::Static,
+            vek::Extent2::one(),
+            Sampling::default(),
+            MipMapSetting::Disabled,
+            Some(&[vek::Vec4::<u8>::zero()]),
+        )
+        .unwrap();
+
+        // Create the default normal texture
+        let normal = NormalMap::new(
+            ctx,
+            TextureMode::Static,
+            vek::Extent2::one(),
+            Sampling::default(),
+            MipMapSetting::Disabled,
+            Some(&[vek::Vec3::new(128, 128, 255)]),
+        )
+        .unwrap();
+
+        // Create the default mask texture
+        let mask = MaskMap::new(
+            ctx,
+            TextureMode::Static,
+            vek::Extent2::one(),
+            Sampling::default(),
+            MipMapSetting::Disabled,
+            Some(&[vek::Vec4::new(255, 255, 255, 0)]),
+        )
+        .unwrap();
+
         // TODO: Create the cluster compute shader that will sort the lights
 
         // Create the clustered shading rendererer
@@ -96,6 +144,10 @@ impl ClusteredShading {
             point_light_ids: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+            white,
+            black,
+            normal,
+            mask,
         }
     }
 
@@ -193,7 +245,7 @@ pub enum ToneMappingMode {
     ACES,
 
     // This will use the reinhard tonemapping curve
-    Reinhard
+    Reinhard,
 }
 
 // This is a collection of post-processing effects that will

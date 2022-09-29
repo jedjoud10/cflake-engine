@@ -12,7 +12,7 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // Get depths and test
-    float shadow_bias = 0.003;
+    float shadow_bias = 0.002;
     float current = lightspace_uvs.z;
 
     // Number of omni-directional samples to take

@@ -89,7 +89,10 @@ fn render_prepass_query_surfaces<'a, M: for<'w> Material<'w>>(
         let mesh = meshes.get(&surface.mesh);
 
         // Validate the uniforms
-        uniforms.set_mat4x4("matrix", *main.camera.projection_matrix() * *main.camera.view_matrix() * renderer.matrix);
+        uniforms.set_mat4x4(
+            "matrix",
+            *main.camera.projection_matrix() * *main.camera.view_matrix() * renderer.matrix,
+        );
         let validated = unsafe { uniforms.assume_valid() };
 
         // Render the object
@@ -199,6 +202,10 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         directional_light,
         directional_light_rotation,
         window: &window,
+        white: &shading.white,
+        black: &shading.black,
+        normal: &shading.normal,
+        mask: &shading.mask,
     };
 
     // Create a new rasterizer so we can draw the objects onto the painter

@@ -109,13 +109,13 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = standard_materials.insert(Standard {
-        albedo_map: albedo_map,
-        normal_map: normal_map,
-        mask_map: mask_map,
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
         bumpiness: 0.4,
         roughness: 0.9,
         ambient_occlusion: 1.0,
-        metallic: 1.0,
+        metallic: 0.2,
         scale: vek::Vec2::broadcast(3.0),
         tint: vek::Rgb::white(),
     });
@@ -123,8 +123,9 @@ fn init(world: &mut World) {
     // Create a new material surface for rendering
     let pipeid = ctx.material_id::<Standard>().unwrap();
     let surface = Surface::new(sphere.clone(), material.clone(), pipeid);
-    ecs.insert((surface, Renderer::default()));
+    ecs.insert((surface, Renderer::default(), Location::at_y(1.0)));
 
+    // Create a simple plane
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
     ecs.insert((
         surface,
@@ -133,14 +134,21 @@ fn init(world: &mut World) {
         Scale::scale_xyz(40.0, 1.0, 40.0),
     ));
 
+    // Create a simple cube
     let surface = Surface::new(cube.clone(), material.clone(), pipeid);
-    ecs.insert((
-        surface,
-        Renderer::default(),
-        Location::at_y(2.5),
-        Scale::scale_xyz(5.0, 5.0, 0.5),
-        Rotation::rotation_z(70.0f32.to_radians()),
-    ));
+    ecs.insert((surface, Renderer::default()));
+
+    // Create 25 cubes in total (5x5)
+    for x in 0..5 {
+        for y in 0..5 {
+            let surface = Surface::new(cube.clone(), material.clone(), pipeid);
+            ecs.insert((
+                surface,
+                Renderer::default(),
+                Location::at_xyz(y as f32 * 2.0, 5.0, x as f32 * 2.0),
+            ));
+        }
+    }
 
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
@@ -157,10 +165,13 @@ fn init(world: &mut World) {
     let irradiance = assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
-            (&mut ctx, CubeMapImportSettings {
-                convolution: CubeMapConvolutionMode::DiffuseIrradiance,
-                ..Default::default()
-            }),
+            (
+                &mut ctx,
+                CubeMapImportSettings {
+                    convolution: CubeMapConvolutionMode::DiffuseIrradiance,
+                    ..Default::default()
+                },
+            ),
         )
         .unwrap();
     let irradiance = hdris.insert(irradiance);
@@ -248,7 +259,10 @@ fn update(world: &mut World) {
         ui.heading("Rendering Engine: Post-processing");
         ui.horizontal(|ui| {
             ui.label("Tonemapping Strength: ");
-            ui.add(egui::Slider::new(&mut pp.tonemapping_strength, 0.0f32..=1.0f32));
+            ui.add(egui::Slider::new(
+                &mut pp.tonemapping_strength,
+                0.0f32..=1.0f32,
+            ));
         });
         ui.horizontal(|ui| {
             ui.label("Gamma: ");

@@ -35,11 +35,6 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/meshes/cube.obj");
                 persistent!(loader, "engine/meshes/sphere.obj");
 
-                // Load the default textures
-                persistent!(loader, "engine/textures/bumps.png");
-                persistent!(loader, "engine/textures/missing.png");
-                persistent!(loader, "engine/textures/sky_gradient.png");
-
                 // Insert the loader
                 world.insert(loader);
             },

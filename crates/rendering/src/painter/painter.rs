@@ -120,7 +120,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     texture_name,
                     level,
                     untyped: _,
-                    writable: _
+                    writable: _,
                 } => unsafe {
                     gl::NamedFramebufferTexture(
                         self.name,
@@ -172,7 +172,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     draw.len() as i32,
                     draw.as_ptr() as *const u32,
                 );
-            }            
+            }
         }
 
         Some(ScopedPainter {

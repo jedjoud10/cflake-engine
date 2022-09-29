@@ -1,8 +1,9 @@
 use assets::{Asset, Assets};
 
 use super::{
-    Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting, MultiLayerTexture, Region,
-    Sampling, Texel, Texture, Texture2D, TextureImportSettings, TextureMode, Wrap, RGB, CubeMapImportSettings,
+    CubeMapImportSettings, Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting,
+    MultiLayerTexture, Region, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
+    TextureMode, Wrap, RGB,
 };
 use crate::{
     buffer::BufferMode,
@@ -10,7 +11,8 @@ use crate::{
     display::{Display, FaceCullMode, PrimitiveMode, RasterSettings, Viewport},
     mesh::{Mesh, MeshImportSettings},
     painter::{MultilayerIntoTarget, Painter},
-    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage}, prelude::CubeMapConvolutionMode,
+    prelude::CubeMapConvolutionMode,
+    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage},
 };
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
@@ -325,10 +327,14 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
     }
 }
 
-
 // Convert a single panoramic texture into a HDRi cubemap
 // This will also take account the convolution mode of the imported cubemap
-pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, assets: &Assets, import_settings: CubeMapImportSettings) -> CubeMap2D<RGB<f32>> {
+pub fn hdri_from_panoramic(
+    ctx: &mut Context,
+    texture: Texture2D<RGB<f32>>,
+    assets: &Assets,
+    import_settings: CubeMapImportSettings,
+) -> CubeMap2D<RGB<f32>> {
     // Convert the eqilateral texture to a cubemap texture
     let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
     use vek::Mat4;
@@ -363,8 +369,7 @@ pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, asse
     let fragment = assets
         .load::<FragmentStage>("engine/shaders/hdri/panorama.frag.glsl")
         .unwrap();
-    let mut shader =
-        ShaderCompiler::link((vertex.clone(), fragment), Processor::new(assets), ctx);
+    let mut shader = ShaderCompiler::link((vertex.clone(), fragment), Processor::new(assets), ctx);
 
     // Load in a unit cube that is inside out
     let cube = assets
@@ -413,14 +418,13 @@ pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, asse
     let convolution_frag_name = match import_settings.convolution {
         CubeMapConvolutionMode::DiffuseIrradiance => Some("engine/shaders/hdri/diffuse.frag.glsl"),
         CubeMapConvolutionMode::SpecularIBL => Some("engine/shaders/hdri/specular.frag.glsl"),
-        _ => None
+        _ => None,
     };
 
     // Create another shader that will be used for convolution
     let mut cubemap = if let Some(name) = convolution_frag_name {
         let fragment = assets.load::<FragmentStage>(name).unwrap();
-        let mut shader =
-            ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
+        let mut shader = ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
 
         // Pick the resolution based on the convolution mode
         let resolution = match import_settings.convolution {
@@ -431,12 +435,12 @@ pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, asse
 
         // Create another cubemap that will represent the convoluted cubemap
         let convoluted = CubeMap2D::new(
-                ctx,
-                import_settings.mode,
-                resolution,
-                import_settings.sampling,
-                import_settings.mipmaps,
-                None,
+            ctx,
+            import_settings.mode,
+            resolution,
+            import_settings.sampling,
+            import_settings.mipmaps,
+            None,
         )
         .unwrap();
 
@@ -444,13 +448,14 @@ pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, asse
             origin: vek::Vec2::zero(),
             extent: resolution,
         };
-        
+
         // Iterate through all of the faces of the cubemap
         for face in 0..6 {
             let miplevel = convoluted.mip_mut(0).unwrap();
             let target = miplevel.target(face as u16).unwrap();
             let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
-            let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
+            let (mut rasterizer, mut uniforms) =
+                scoped.rasterizer(ctx, &mut shader, raster_settings);
             uniforms.set_sampler("cubemap", &cubemap);
             uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
             dbg!("going to draw");

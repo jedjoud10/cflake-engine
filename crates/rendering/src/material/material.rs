@@ -15,12 +15,18 @@ use crate::{
     shader::{Shader, Uniforms},
 };
 
+use super::{AlbedoMap, MaskMap, NormalMap};
+
 // These are the default resources that we pass to any/each material
 #[derive(Clone, Copy)]
 pub struct DefaultMaterialResources<'a> {
     pub(crate) camera: &'a Camera,
     pub(crate) point_lights: &'a ShaderBuffer<PackedPointLight>,
     pub(crate) clusters: &'a ShaderBuffer<(u32, u32)>,
+    pub(crate) white: &'a AlbedoMap,
+    pub(crate) black: &'a AlbedoMap,
+    pub(crate) normal: &'a NormalMap,
+    pub(crate) mask: &'a MaskMap,
     pub(crate) cluster_size: &'a u32,
     pub(crate) camera_location: &'a Location,
     pub(crate) camera_rotation: &'a Rotation,

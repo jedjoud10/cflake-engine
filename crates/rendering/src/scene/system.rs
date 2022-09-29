@@ -83,7 +83,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the post-processing settings
     let postprocessing = PostProcessing::default();
-    
+
     // Create the frame-to-frame basis stats
     let stats = RenderedFrameStats::default();
 

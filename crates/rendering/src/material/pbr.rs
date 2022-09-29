@@ -8,7 +8,7 @@ use crate::{
     context::Context,
     display::Display,
     mesh::{EnabledAttributes, Surface},
-    prelude::{RGBA, SRGBA, CubeMap2D, R, TextureImportSettings},
+    prelude::{CubeMap2D, TextureImportSettings, R, RGBA, SRGBA},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
@@ -18,8 +18,8 @@ use super::{DefaultMaterialResources, Material, Sky, HDRI};
 
 // PBR texels
 pub type AlbedoTexel = SRGBA<Ranged<u8>>;
-pub type NormalTexel = RGB<Ranged<u16>>;
-pub type MaskTexel = RGBA<Ranged<u16>>;
+pub type NormalTexel = RGB<Ranged<u8>>;
+pub type MaskTexel = RGBA<Ranged<u8>>;
 
 // PBR maps
 pub type AlbedoMap = Texture2D<AlbedoTexel>;
@@ -29,9 +29,9 @@ pub type MaskMap = Texture2D<MaskTexel>; // (r = AO, g = roughness, b = metallic
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
 pub struct Standard {
-    pub albedo_map: Handle<AlbedoMap>,
-    pub normal_map: Handle<NormalMap>,
-    pub mask_map: Handle<MaskMap>,
+    pub albedo_map: Option<Handle<AlbedoMap>>,
+    pub normal_map: Option<Handle<NormalMap>>,
+    pub mask_map: Option<Handle<MaskMap>>,
     pub bumpiness: f32,
     pub roughness: f32,
     pub ambient_occlusion: f32,
@@ -130,7 +130,7 @@ impl<'w> Material<'w> for Standard {
 
     fn set_instance_properties(
         uniforms: &mut Uniforms,
-        _main: &DefaultMaterialResources,
+        main: &DefaultMaterialResources,
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
@@ -143,9 +143,18 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("ambient_occlusion", instance.ambient_occlusion);
         uniforms.set_vec2("scale", instance.scale);
 
-        let albedo_map = albedo_maps.get(&instance.albedo_map);
-        let normal_map = normal_maps.get(&instance.normal_map);
-        let mask_map = mask_maps.get(&instance.mask_map);
+        let albedo_map = instance
+            .albedo_map
+            .as_ref()
+            .map_or(main.white, |h| albedo_maps.get(h));
+        let normal_map = instance
+            .normal_map
+            .as_ref()
+            .map_or(main.normal, |h| normal_maps.get(h));
+        let mask_map = instance
+            .mask_map
+            .as_ref()
+            .map_or(main.mask, |h| mask_maps.get(h));
         let irradiance_map = hdris.get(&irradiance);
 
         uniforms.set_sampler("albedo", albedo_map);
@@ -168,19 +177,42 @@ impl<'w> Material<'w> for Standard {
 }
 
 // Convert 3 separate ambient occlusion, roughness, and metallic textures into one ARM mask texture
-pub fn combine_into_mask(ctx: &mut Context, ambient_occlusion: Texture2D<R<Ranged<u16>>>, roughness: Texture2D<R<Ranged<u16>>>, metallic: Texture2D<R<Ranged<u16>>>, settings: TextureImportSettings) -> Option<MaskMap> {
+pub fn combine_into_mask(
+    ctx: &mut Context,
+    ambient_occlusion: Texture2D<R<Ranged<u8>>>,
+    roughness: Texture2D<R<Ranged<u8>>>,
+    metallic: Texture2D<R<Ranged<u8>>>,
+    settings: TextureImportSettings,
+) -> Option<MaskMap> {
     // Check if all the textures have the same size
     let resolution = ambient_occlusion.dimensions();
     if resolution != roughness.dimensions() || resolution != metallic.dimensions() {
         return None;
     }
-    
+
     // Get the first mip level of each texture
     let ao = ambient_occlusion.mip(0).unwrap().download();
     let roughness = roughness.mip(0).unwrap().download();
     let metallic = metallic.mip(0).unwrap().download();
 
     // Combine all the texels into one vector
-    let texels = (0..(resolution.as_::<u32>().product())).into_iter().map(|i| vek::Vec4::new(ao[i as usize], roughness[i as usize], metallic[i as usize], 0)).collect::<Vec<_>>();
-    MaskMap::new(ctx, settings.mode, resolution, settings.sampling, settings.mipmaps, Some(&texels))
+    let texels = (0..(resolution.as_::<u32>().product()))
+        .into_iter()
+        .map(|i| {
+            vek::Vec4::new(
+                ao[i as usize],
+                roughness[i as usize],
+                metallic[i as usize],
+                0,
+            )
+        })
+        .collect::<Vec<_>>();
+    MaskMap::new(
+        ctx,
+        settings.mode,
+        resolution,
+        settings.sampling,
+        settings.mipmaps,
+        Some(&texels),
+    )
 }

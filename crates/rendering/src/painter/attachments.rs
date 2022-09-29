@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 use crate::{
     context::ToGlName,
     prelude::{
-        Depth, DepthTexel, Element, MipLevelMut, MultiLayerTexture, Region, SingleLayerTexture,
-        Stencil, StencilTexel, Texel, Texture, Texture2D, UntypedTexel, MipLevelRef,
+        Depth, DepthTexel, Element, MipLevelMut, MipLevelRef, MultiLayerTexture, Region,
+        SingleLayerTexture, Stencil, StencilTexel, Texel, Texture, Texture2D, UntypedTexel,
     },
 };
 
@@ -40,14 +40,16 @@ impl UntypedAttachment {
     // Check if the attachment is writable or not
     pub fn writable(&self) -> bool {
         match self {
-            UntypedAttachment::TextureLevel { writable, .. } | UntypedAttachment::TextureLevelLayer { writable, .. } => *writable,
+            UntypedAttachment::TextureLevel { writable, .. }
+            | UntypedAttachment::TextureLevelLayer { writable, .. } => *writable,
         }
     }
-    
+
     // Get the untyped attachment texel
     pub fn texel(&self) -> UntypedTexel {
         match self {
-            UntypedAttachment::TextureLevel { untyped, .. } | UntypedAttachment::TextureLevelLayer { untyped, .. } => *untyped,
+            UntypedAttachment::TextureLevel { untyped, .. }
+            | UntypedAttachment::TextureLevelLayer { untyped, .. } => *untyped,
         }
     }
 }

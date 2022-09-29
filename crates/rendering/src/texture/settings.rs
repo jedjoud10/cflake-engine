@@ -141,7 +141,7 @@ pub enum CubeMapConvolutionMode {
     #[default]
     Disabled,
 
-    // Convolute the cubemap into an environment map that we can use for diffuse lighting 
+    // Convolute the cubemap into an environment map that we can use for diffuse lighting
     DiffuseIrradiance,
 
     // Convolute the cubemap for usage within a specular IBL

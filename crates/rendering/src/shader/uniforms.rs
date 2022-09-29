@@ -484,7 +484,10 @@ impl<'uniforms> Uniforms<'uniforms> {
 
     // Set a sampler uniform (that accepts any type of texture)
     pub fn set_sampler<T: Texture>(&mut self, name: &str, sampler: &T) {
-        assert!(!sampler.is_user_writing(), "Cannot read from a texture that is currently being written to");
+        assert!(
+            !sampler.is_user_writing(),
+            "Cannot read from a texture that is currently being written to"
+        );
 
         let offset = self.set_raw_texture(name, sampler.name());
 

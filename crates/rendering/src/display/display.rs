@@ -29,7 +29,7 @@ pub trait Display: Sized {
     // Get a mask of the writable framebuffer attachments
     // 0-29 -> color
     // 30 -> depth
-    // 31 -> stencil 
+    // 31 -> stencil
     fn writable_attachments_mask(&self) -> u32;
 
     // Create a new rasterizer from this display
