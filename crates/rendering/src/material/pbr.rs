@@ -85,7 +85,7 @@ impl<'w> Material<'w> for Standard {
             mask_map,
             hdris,
             shadow_mapping,
-            material.cubemap.clone(),
+            material.irradiance.clone(),
         )
     }
 
@@ -96,8 +96,8 @@ impl<'w> Material<'w> for Standard {
     ) {
         uniforms.set_mat4x4("view_matrix", main.camera.view_matrix());
         uniforms.set_mat4x4("proj_matrix", main.camera.projection_matrix());
-        uniforms.set_vec3::<vek::Vec3<f32>>("camera", main.camera_location.into());
-        uniforms.set_vec3("forward", main.camera_rotation.forward());
+        uniforms.set_vec3::<vek::Vec3<f32>>("camera_position", main.camera_location.into());
+        uniforms.set_vec3("camera_forward", main.camera_rotation.forward());
         uniforms.set_vec3("sun_dir", main.directional_light_rotation.forward());
         uniforms.set_vec3(
             "sun_color",
@@ -134,7 +134,7 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, hdris, _, hdri) = resources;
+        let (albedo_maps, normal_maps, mask_maps, hdris, _, irradiance) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);
@@ -146,21 +146,21 @@ impl<'w> Material<'w> for Standard {
         let albedo_map = albedo_maps.get(&instance.albedo_map);
         let normal_map = normal_maps.get(&instance.normal_map);
         let mask_map = mask_maps.get(&instance.mask_map);
-        let hdri_map = hdris.get(&hdri);
+        let irradiance_map = hdris.get(&irradiance);
 
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
-        uniforms.set_sampler("environment", hdri_map);
+        uniforms.set_sampler("irradiance", irradiance_map);
     }
 
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {
         let vs = assets
-            .load::<VertexStage>("engine/shaders/pbr.vrtx.glsl")
+            .load::<VertexStage>("engine/shaders/scene/pbr/pbr.vrtx.glsl")
             .unwrap();
 
         let fs = assets
-            .load::<FragmentStage>("engine/shaders/pbr.frag.glsl")
+            .load::<FragmentStage>("engine/shaders/scene/pbr/pbr.frag.glsl")
             .unwrap();
 
         ShaderCompiler::link((vs, fs), Processor::new(assets), ctx)

@@ -29,14 +29,20 @@ float gsf(float roughness, vec3 n, vec3 v, vec3 l) {
 }
 
 // Fresnel function
-vec3 fresnel(vec3 f0, vec3 v, vec3 h, vec3 n) {
-	float cosTheta = 1.0 - max(dot(v, h), 0);
+vec3 fresnel(vec3 f0, vec3 v, vec3 x) {
+	float cosTheta = clamp(1.0 - max(dot(v, x), 0), 0, 1);
 	return f0 + (1.0 - f0) * pow(cosTheta, 5.0);
+}
+
+// Fresnel function with roughness
+vec3 fresnelRoughness(vec3 f0, vec3 v, vec3 x, float roughness) {
+	float cosTheta = clamp(1.0 - max(dot(v, x), 0), 0, 1);
+	return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(cosTheta, 5.0);
 }
 
 // Cook-torrence model for specular
 vec3 specular(vec3 f0, float roughness, vec3 v, vec3 l, vec3 n, vec3 h) {
-	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h, n);
+	vec3 num = ndf(roughness, n, h) * gsf(roughness, n, v, l) * fresnel(f0, v, h);
 	float denom = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.01;
 	return num / denom;
 }

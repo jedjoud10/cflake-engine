@@ -44,7 +44,6 @@ void main() {
 	vec3 sampled = texture(color, uv).xyz;
 	sampled *= exposure;
 	sampled = mix(sampled, aces(sampled), tonemapping_strength);
-	//sampled = sampled / (sampled + vec3(1.0));
 	sampled = pow(sampled, vec3(1.0 / gamma));
 
 	// Create a simple vignette

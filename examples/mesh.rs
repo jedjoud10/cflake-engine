@@ -144,7 +144,7 @@ fn init(world: &mut World) {
 
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
-    // Load up the HDRi cubemap
+    // Load up the HDRi cubemap (not convoluted)
     let hdri = assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
@@ -153,9 +153,22 @@ fn init(world: &mut World) {
         .unwrap();
     let hdri = hdris.insert(hdri);
 
+    // Load up the HDRi cubemap (for diffuse irradiance)
+    let irradiance = assets
+        .load_with::<CubeMap2D<RGB<f32>>>(
+            "user/ignored/cubemap.hdr",
+            (&mut ctx, CubeMapImportSettings {
+                convolution: CubeMapConvolutionMode::DiffuseIrradiance,
+                ..Default::default()
+            }),
+        )
+        .unwrap();
+    let irradiance = hdris.insert(irradiance);
+
     // Create the default sky material
     let material = Sky {
         cubemap: hdri,
+        irradiance,
         sun_intensity: 15.0,
         sun_size: 1.05,
     };
@@ -188,10 +201,12 @@ fn init(world: &mut World) {
 // We will use this update event to move the camera around
 fn update(world: &mut World) {
     let stats = world.get::<RenderedFrameStats>().unwrap();
+    let mut pp = world.get_mut::<PostProcessing>().unwrap();
     let time = world.get::<Time>().unwrap();
     let mut ui = world.get_mut::<UserInterface>().unwrap();
     let ctx = ui.as_mut().as_mut();
     egui::Window::new("Stats").show(ctx, |ui| {
+        // Debug the timing resource stats
         ui.heading("Timing");
         ui.label(format!(
             "Delta Time MS: {}",
@@ -202,6 +217,7 @@ fn update(world: &mut World) {
             time.secs_since_startup_f32().round()
         ));
 
+        // Debug the rendering engine's stats for rendering surfaces
         ui.heading("Rendering Engine: Surfaces");
         ui.label(format!("Unique Materials: {}", stats.unique_materials));
         ui.label(format!("Material Instances: {}", stats.material_instances));
@@ -209,6 +225,7 @@ fn update(world: &mut World) {
         ui.label(format!("Triangles: {}", stats.tris));
         ui.label(format!("Vertices: {}", stats.verts));
 
+        // Debug the rendering engine's stats for rendering shadows
         ui.heading("Rendering Engine: Shadows");
         ui.label(format!(
             "Unique Shadow Caster Materials: {}",
@@ -226,6 +243,21 @@ fn update(world: &mut World) {
             "Shadow Caster Vertices: {}",
             stats.shadow_casters_verts
         ));
+
+        // Control the main post-processing rendering settings
+        ui.heading("Rendering Engine: Post-processing");
+        ui.horizontal(|ui| {
+            ui.label("Tonemapping Strength: ");
+            ui.add(egui::Slider::new(&mut pp.tonemapping_strength, 0.0f32..=1.0f32));
+        });
+        ui.horizontal(|ui| {
+            ui.label("Gamma: ");
+            ui.add(egui::Slider::new(&mut pp.gamma, 0.0f32..=3.0f32));
+        });
+        ui.horizontal(|ui| {
+            ui.label("Exposure: ");
+            ui.add(egui::Slider::new(&mut pp.exposure, 0.0f32..=10.0f32));
+        });
     });
 
     let shading = world.get::<ClusteredShading>().unwrap();

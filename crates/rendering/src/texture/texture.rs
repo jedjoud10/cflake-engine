@@ -192,6 +192,11 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     // Get the inner mipmap accessor for this texture
     fn mipmap_descriptor(&self) -> &MipMapDescriptor;
 
+    // Check if the user is currently writing to the texture in any way
+    fn is_user_writing(&self) -> bool {
+        self.mipmap_descriptor().write.get() != 0
+    }
+
     // Get a single mip level from the texture, immutably
     // This will fail if the mip level is currently being used mutably
     fn mip(&self, level: u8) -> Option<MipLevelRef<Self>> {

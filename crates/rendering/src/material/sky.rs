@@ -16,6 +16,7 @@ pub type HDRI = CubeMap2D<RGB<f32>>;
 // This is the material that our skysphere/skybox will use for rendering
 pub struct Sky {
     pub cubemap: Handle<HDRI>,
+    pub irradiance: Handle<HDRI>,
     pub sun_intensity: f32,
     pub sun_size: f32,
 }
@@ -86,7 +87,7 @@ impl<'w> Material<'w> for Sky {
         assets: &mut assets::Assets,
     ) -> crate::prelude::Shader {
         let vs = assets
-            .load::<VertexStage>("engine/shaders/pbr.vrtx.glsl")
+            .load::<VertexStage>("engine/shaders/scene/pbr/pbr.vrtx.glsl")
             .unwrap();
 
         let fs = assets

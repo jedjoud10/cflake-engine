@@ -138,11 +138,11 @@ pub struct TextureImportSettings {
 #[derive(Default, Clone, Copy)]
 pub enum CubeMapConvolutionMode {
     // Do not convolute the cubemap, and load it as it is
+    #[default]
     Disabled,
 
     // Convolute the cubemap into an environment map that we can use for diffuse lighting 
-    #[default]
-    DiffuseIBL,
+    DiffuseIrradiance,
 
     // Convolute the cubemap for usage within a specular IBL
     // This requires the cubemap settings to have mipmap enabled

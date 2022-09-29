@@ -184,14 +184,40 @@ impl ShadowMapping {
     }
 }
 
+// How we will finally tonemap the rendered scene
+#[derive(Default, Clone, Copy)]
+#[repr(u8)]
+pub enum ToneMappingMode {
+    // This will use the aces filmic curve
+    #[default]
+    ACES,
+
+    // This will use the reinhard tonemapping curve
+    Reinhard
+}
+
 // This is a collection of post-processing effects that will
 // be rendered onto the screen after we render the basic scene
 pub struct PostProcessing {
     pub tonemapping_strength: f32,
+    pub tonemapper: ToneMappingMode,
     pub exposure: f32,
     pub gamma: f32,
     pub vignette_strength: f32,
     pub vignette_size: f32,
+}
+
+impl Default for PostProcessing {
+    fn default() -> Self {
+        Self {
+            tonemapper: ToneMappingMode::ACES,
+            tonemapping_strength: 1.0,
+            exposure: 1.2,
+            gamma: 2.2,
+            vignette_strength: 10.5,
+            vignette_size: 0.2,
+        }
+    }
 }
 
 // The compositor is what we shall use to combine the clustered shading canvas and other composites

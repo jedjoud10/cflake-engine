@@ -22,15 +22,20 @@ pub trait Stage: Sized + ToGlTarget {
 }
 
 // A vertex stage that will be loaded from .vrtx files
+#[derive(Clone)]
 pub struct VertexStage {
     source: String,
     name: String,
 }
+
+#[derive(Clone)]
 // A fragment stage that will be loaded from .frag files
 pub struct FragmentStage {
     source: String,
     name: String,
 }
+
+#[derive(Clone)]
 // A compute stage (only for compute shaders) that will be loaded from .cmpt files
 pub struct ComputeStage {
     source: String,

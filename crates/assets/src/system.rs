@@ -14,9 +14,9 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 let loader = Assets::new(user.clone());
 
                 // Load the default shaders
-                persistent!(loader, "engine/shaders/models.func.glsl");
-                persistent!(loader, "engine/shaders/pbr.vrtx.glsl");
-                persistent!(loader, "engine/shaders/pbr.frag.glsl");
+                persistent!(loader, "engine/shaders/scene/pbr/models.func.glsl");
+                persistent!(loader, "engine/shaders/scene/pbr/pbr.vrtx.glsl");
+                persistent!(loader, "engine/shaders/scene/pbr/pbr.frag.glsl");
                 persistent!(loader, "engine/shaders/gui.vrtx.glsl");
                 persistent!(loader, "engine/shaders/gui.frag.glsl");
                 persistent!(loader, "engine/shaders/sky.frag.glsl");
@@ -24,9 +24,9 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/compositor.frag.glsl");
                 persistent!(loader, "engine/shaders/projection.vrtx.glsl");
                 persistent!(loader, "engine/shaders/depth.frag.glsl");
-                persistent!(loader, "engine/shaders/shadow.func.glsl");
-                persistent!(loader, "engine/shaders/clustered.func.glsl");
-                persistent!(loader, "engine/shaders/clustered.cmpt.glsl");
+                persistent!(loader, "engine/shaders/scene/shadow.func.glsl");
+                persistent!(loader, "engine/shaders/scene/clustered/clustered.func.glsl");
+                persistent!(loader, "engine/shaders/scene/clustered/clustered.cmpt.glsl");
                 persistent!(loader, "engine/shaders/hdri/panorama.frag.glsl");
                 persistent!(loader, "engine/shaders/hdri/diffuse.frag.glsl");
                 persistent!(loader, "engine/shaders/hdri/specular.frag.glsl");
