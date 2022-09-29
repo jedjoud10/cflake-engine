@@ -112,10 +112,10 @@ fn init(world: &mut World) {
         albedo_map: albedo_map,
         normal_map: normal_map,
         mask_map: mask_map,
-        bumpiness: 0.2,
-        roughness: 0.0,
+        bumpiness: 0.4,
+        roughness: 0.9,
         ambient_occlusion: 1.0,
-        metallic: 100.0,
+        metallic: 1.0,
         scale: vek::Vec2::broadcast(3.0),
         tint: vek::Rgb::white(),
     });
@@ -148,7 +148,7 @@ fn init(world: &mut World) {
     let hdri = assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
-            (&mut ctx, TextureImportSettings::default()),
+            (&mut ctx, CubeMapImportSettings::default()),
         )
         .unwrap();
     let hdri = hdris.insert(hdri);

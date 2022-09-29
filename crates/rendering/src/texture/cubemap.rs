@@ -1,8 +1,8 @@
-use assets::Asset;
+use assets::{Asset, Assets};
 
 use super::{
     Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting, MultiLayerTexture, Region,
-    Sampling, Texel, Texture, Texture2D, TextureImportSettings, TextureMode, Wrap, RGB,
+    Sampling, Texel, Texture, Texture2D, TextureImportSettings, TextureMode, Wrap, RGB, CubeMapImportSettings,
 };
 use crate::{
     buffer::BufferMode,
@@ -10,7 +10,7 @@ use crate::{
     display::{Display, FaceCullMode, PrimitiveMode, RasterSettings, Viewport},
     mesh::{Mesh, MeshImportSettings},
     painter::{MultilayerIntoTarget, Painter},
-    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage},
+    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage}, prelude::CubeMapConvolutionMode,
 };
 use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
 
@@ -281,7 +281,7 @@ impl<T: Texel> MultiLayerTexture for CubeMap2D<T> {
 }
 
 impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
-    type Args = (&'a mut Context, TextureImportSettings);
+    type Args = (&'a mut Context, CubeMapImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["hdr"]
@@ -320,91 +320,100 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         )
         .unwrap();
 
-        // Convert the eqilateral texture to a cubemap texture
-        let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
-        use vek::Mat4;
-        use vek::Vec3;
+        // Load the HDRi cubemap from the texture
+        hdri_from_panoramic(ctx, texture, data.loader(), settings)
+    }
+}
 
-        // View matrices for the 6 different faces
-        let view_matrices: [Mat4<f32>; 6] = [
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
-            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
-            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
-            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
-        ];
 
-        // Create the cubemap, but don't initialize it with any data
-        let dimensions = vek::Extent2::broadcast(dimensions.w / 4);
-        let mut cubemap = Self::new(
-            ctx,
-            settings.mode,
-            dimensions,
-            settings.sampling,
-            settings.mipmaps,
-            None,
+// Convert a single panoramic texture into a HDRi cubemap
+// This will also take account the convolution mode of the imported cubemap
+pub fn hdri_from_panoramic(ctx: &mut Context, texture: Texture2D<RGB<f32>>, assets: &Assets, settings: CubeMapImportSettings) -> CubeMap2D<RGB<f32>> {
+    // Convert the eqilateral texture to a cubemap texture
+    let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
+    use vek::Mat4;
+    use vek::Vec3;
+
+    // View matrices for the 6 different faces
+    let view_matrices: [Mat4<f32>; 6] = [
+        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
+        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
+        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
+        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
+        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
+        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
+    ];
+
+    // Create the cubemap, but don't initialize it with any data
+    let dimensions = vek::Extent2::broadcast(texture.dimensions().w / 4);
+    let mut cubemap = CubeMap2D::new(
+        ctx,
+        settings.mode,
+        dimensions,
+        settings.sampling,
+        settings.mipmaps,
+        None,
+    )
+    .unwrap();
+
+    // Create the rasterization shader for the cubemap converter
+    let vertex = assets
+        .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
+        .unwrap();
+    let fragment = assets
+        .load::<FragmentStage>(match settings.convolution {
+            CubeMapConvolutionMode::Disabled => "engine/shaders/panorama.frag.glsl",
+            CubeMapConvolutionMode::DiffuseIBL => "engine/shaders/diffuse_ibl_panorama.frag.glsl",
+            CubeMapConvolutionMode::SpecularIBL => "engine/shaders/specular_ibl_panorama.frag.glsl",
+        })
+        .unwrap();
+    let mut shader =
+        ShaderCompiler::link((vertex, fragment), Processor::new(assets), ctx);
+
+    // Load in a unit cube that is inside out
+    let cube = assets
+        .load_with::<Mesh>(
+            "engine/meshes/cube.obj",
+            (
+                ctx,
+                MeshImportSettings {
+                    invert_triangle_ordering: true,
+                    ..Default::default()
+                },
+            ),
         )
         .unwrap();
 
-        // Create the rasterization shader for the cubemap converter
-        let vertex = data
-            .loader()
-            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
-            .unwrap();
-        let fragment = data
-            .loader()
-            .load::<FragmentStage>("engine/shaders/panorama.frag.glsl")
-            .unwrap();
-        let mut shader =
-            ShaderCompiler::link((vertex, fragment), Processor::new(data.loader()), ctx);
+    // Create a rasterizer to convert the panoramic texture
+    let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
+    let viewport = Viewport {
+        origin: vek::Vec2::zero(),
+        extent: dimensions,
+    };
 
-        // Load in a unit cube that is inside out
-        let cube = data
-            .loader()
-            .load_with::<Mesh>(
-                "engine/meshes/cube.obj",
-                (
-                    ctx,
-                    MeshImportSettings {
-                        invert_triangle_ordering: true,
-                        ..Default::default()
-                    },
-                ),
-            )
-            .unwrap();
+    // Create the rasterization settings
+    let settings = RasterSettings {
+        depth_test: None,
+        scissor_test: None,
+        primitive: PrimitiveMode::Triangles {
+            cull: Some(FaceCullMode::Back(true)),
+        },
+        srgb: false,
+        blend: None,
+    };
 
-        // Create a rasterizer to convert the panoramic texture
-        let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
-        let viewport = Viewport {
-            origin: vek::Vec2::zero(),
-            extent: dimensions,
-        };
-
-        // Create the rasterization settings
-        let settings = RasterSettings {
-            depth_test: None,
-            scissor_test: None,
-            primitive: PrimitiveMode::Triangles {
-                cull: Some(FaceCullMode::Back(true)),
-            },
-            srgb: false,
-            blend: None,
-        };
-
-        // Iterate through all of the faces of the cubemap
-        for face in 0..6 {
-            let miplevel = cubemap.mip_mut(0).unwrap();
-            let target = miplevel.target(face as u16).unwrap();
-            let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
-            let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, settings);
-            uniforms.set_sampler("panorama", &texture);
-            uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
-            rasterizer.draw(&cube, uniforms.validate().unwrap());
-        }
-
-        // Update the mipmaps and return the texture
-        cubemap.generate_mipmaps();
-        cubemap
+    // Iterate through all of the faces of the cubemap
+    for face in 0..6 {
+        let miplevel = cubemap.mip_mut(0).unwrap();
+        let target = miplevel.target(face as u16).unwrap();
+        let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
+        let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, settings);
+        uniforms.set_sampler("panorama", &texture);
+        uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
+        rasterizer.draw(&cube, uniforms.validate().unwrap());
     }
+
+    // Update the mipmaps and return the texture
+    cubemap.generate_mipmaps();
+    cubemap
 }

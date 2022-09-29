@@ -133,3 +133,27 @@ pub struct TextureImportSettings {
     pub mode: TextureMode,
     pub mipmaps: MipMapSetting,
 }
+
+// What to do when we load in a new cubemap texture
+#[derive(Default, Clone, Copy)]
+pub enum CubeMapConvolutionMode {
+    // Do not convolute the cubemap, and load it as it is
+    Disabled,
+
+    // Convolute the cubemap into an environment map that we can use for diffuse lighting 
+    #[default]
+    DiffuseIBL,
+
+    // Convolute the cubemap for usage within a specular IBL
+    // This requires the cubemap settings to have mipmap enabled
+    SpecularIBL,
+}
+
+// Unique texture settings for when we load in a CubeMap2D texture
+#[derive(Default, Clone, Copy)]
+pub struct CubeMapImportSettings {
+    pub sampling: Sampling,
+    pub mode: TextureMode,
+    pub mipmaps: MipMapSetting,
+    pub convolution: CubeMapConvolutionMode,
+}

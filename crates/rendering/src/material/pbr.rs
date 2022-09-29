@@ -1,13 +1,14 @@
 use assets::Assets;
 
 use ecs::Scene;
+use itertools::Itertools;
 use world::{Handle, Read, Storage};
 
 use crate::{
     context::Context,
     display::Display,
     mesh::{EnabledAttributes, Surface},
-    prelude::{RGBA, SRGBA, CubeMap2D, R},
+    prelude::{RGBA, SRGBA, CubeMap2D, R, TextureImportSettings},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
@@ -167,11 +168,19 @@ impl<'w> Material<'w> for Standard {
 }
 
 // Convert 3 separate ambient occlusion, roughness, and metallic textures into one ARM mask texture
-pub fn combine_into_mask(ambient_occlusion: Texture2D<R<Ranged<u8>>>, roughness: Texture2D<R<Ranged<u8>>>, metallic: Texture2D<R<Ranged<u8>>>) -> MaskMap {
-    todo!()
-}
+pub fn combine_into_mask(ctx: &mut Context, ambient_occlusion: Texture2D<R<Ranged<u16>>>, roughness: Texture2D<R<Ranged<u16>>>, metallic: Texture2D<R<Ranged<u16>>>, settings: TextureImportSettings) -> Option<MaskMap> {
+    // Check if all the textures have the same size
+    let resolution = ambient_occlusion.dimensions();
+    if resolution != roughness.dimensions() || resolution != metallic.dimensions() {
+        return None;
+    }
+    
+    // Get the first mip level of each texture
+    let ao = ambient_occlusion.mip(0).unwrap().download();
+    let roughness = roughness.mip(0).unwrap().download();
+    let metallic = metallic.mip(0).unwrap().download();
 
-// Convert a single panoramic texture into a HDRi cubemap
-pub fn hdri_from_panoramic() -> CubeMap2D<RGB<f32>> {
-    todo!()
+    // Combine all the texels into one vector
+    let texels = (0..(resolution.as_::<u32>().product())).into_iter().map(|i| vek::Vec4::new(ao[i as usize], roughness[i as usize], metallic[i as usize], 0)).collect::<Vec<_>>();
+    MaskMap::new(ctx, settings.mode, resolution, settings.sampling, settings.mipmaps, Some(&texels))
 }
