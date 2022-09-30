@@ -9,7 +9,6 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
-        .set_window_fullscreen(true)
         .set_framerate_limit(Some(FrameRateLimit::Limited(120)))
         .insert_init(init)
         .insert_update(update)
@@ -160,16 +159,15 @@ fn init(world: &mut World) {
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
 
     // Load up the HDRi cubemap (not convoluted)
-    let hdri = assets
+    let hdri = hdris.insert(assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
             (&mut ctx, CubeMapImportSettings::default()),
         )
-        .unwrap();
-    let hdri = hdris.insert(hdri);
+        .unwrap());
 
     // Load up the HDRi cubemap (for diffuse irradiance)
-    let irradiance = assets
+    let irradiance = hdris.insert(assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
             (
@@ -180,13 +178,27 @@ fn init(world: &mut World) {
                 },
             ),
         )
-        .unwrap();
-    let irradiance = hdris.insert(irradiance);
+        .unwrap());
+
+    // Load up the HDRi cubemap (for specular IBL)
+    let specular = hdris.insert(assets
+        .load_with::<CubeMap2D<RGB<f32>>>(
+            "user/ignored/cubemap.hdr",
+            (
+                &mut ctx,
+                CubeMapImportSettings {
+                    convolution: CubeMapConvolutionMode::SpecularIBL,
+                    ..Default::default()
+                },
+            ),
+        )
+        .unwrap());
 
     // Create the default sky material
     let material = Sky {
         cubemap: hdri,
         irradiance,
+        specular,
         sun_intensity: 15.0,
         sun_size: 1.05,
     };

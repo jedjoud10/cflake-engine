@@ -17,6 +17,7 @@ pub type HDRI = CubeMap2D<RGB<f32>>;
 pub struct Sky {
     pub cubemap: Handle<HDRI>,
     pub irradiance: Handle<HDRI>,
+    pub specular: Handle<HDRI>,
     pub sun_intensity: f32,
     pub sun_size: f32,
 }
@@ -73,7 +74,7 @@ impl<'w> Material<'w> for Sky {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let texture = resources.0.get(&instance.cubemap);
+        let texture = resources.0.get(&instance.specular);
         uniforms.set_sampler("cubemap", texture);
         uniforms.set_scalar(
             "sun_intensity",

@@ -89,7 +89,6 @@ impl Assets {
             .strip_prefix("./assets/")
             .unwrap()
             .to_path_buf();
-        dbg!(&path);
         self.cached.write().entry(path).or_insert(Arc::from(bytes));
     }
 }

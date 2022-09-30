@@ -93,15 +93,10 @@ impl<'a> Processor<'a> {
                     // Make sure the path is something we can load (.func file)
                     let pathbuf = PathBuf::try_from(path).unwrap();
                     let name = pathbuf.file_name().unwrap().to_str().unwrap();
-                    if !name.ends_with(".func.glsl") {
-                        panic!();
-                    }
 
                     // Load the path from the asset manager
-                    dbg!(&pathbuf);
                     let path = pathbuf.as_os_str().to_str().unwrap();
-                    let raw =
-                        unsafe { self.loader.load_with_unchecked::<String>(path, ()).unwrap() };
+                    let raw = unsafe { self.loader.load_with_unchecked::<String>(path, ()).expect(&format!("File '{name}' could not be loaded in")) };
                     output = raw;
                 } else {
                     // Don't overwrite really, and skip to the next line

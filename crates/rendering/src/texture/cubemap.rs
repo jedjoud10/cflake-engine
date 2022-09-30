@@ -311,13 +311,20 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
             ..Default::default()
         };
 
+        // If we are creating a specular IBL texture, we will need the original panoramic texture 
+        // to have a mipmap for proper lighting
+        let mipmaps = match settings.convolution {
+            CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Automatic,
+            _ => MipMapSetting::Disabled,
+        };
+
         // Create the equilateral texture that will then be mapped to a cubemap
         let texture = Texture2D::<RGB<f32>>::new(
             ctx,
             TextureMode::Static,
             dimensions,
             sampling,
-            MipMapSetting::Disabled,
+            mipmaps,
             Some(&texels),
         )
         .unwrap();
@@ -355,16 +362,37 @@ pub fn hdri_from_panoramic(
     let dimensions = match import_settings.convolution {
         CubeMapConvolutionMode::Disabled => dims,
         CubeMapConvolutionMode::DiffuseIrradiance => vek::Extent2::broadcast(16),
-        CubeMapConvolutionMode::SpecularIBL => dims,
+        CubeMapConvolutionMode::SpecularIBL => vek::Extent2::broadcast(128),
+    };
+
+    // We might need to overwrite the texture mode if we are using a special convolution mode
+    let mode = match import_settings.convolution {
+        CubeMapConvolutionMode::SpecularIBL => TextureMode::Dynamic,
+        _ => import_settings.mode,
+    };
+
+    // We might need to overwrite the mipmap settings if we are using a special convolution mode
+    let mipmaps = match import_settings.convolution {
+        CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Automatic,
+        _ => import_settings.mipmaps
+    };
+
+    // We might need to overwrite the sampling settings if we are using a special convolution mode
+    let sampling = match import_settings.convolution {
+        CubeMapConvolutionMode::SpecularIBL => Sampling {
+            filter: Filter::Linear,
+            ..Default::default()
+        },
+        _ => import_settings.sampling
     };
     
     // Create the cubemap, but don't initialize it with any data
     let mut cubemap = CubeMap2D::new(
         ctx,
-        import_settings.mode,
+        mode,
         dimensions,
-        import_settings.sampling,
-        import_settings.mipmaps,
+        sampling,
+        mipmaps,
         None,
     )
     .unwrap();
@@ -414,18 +442,43 @@ pub fn hdri_from_panoramic(
         blend: None,
     };
 
-    // Iterate through all of the faces of the cubemap
-    for face in 0..6 {
-        let miplevel = cubemap.mip_mut(0).unwrap();
-        let target = miplevel.target(face as u16).unwrap();
-        let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
-        let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
-        uniforms.set_sampler("panorama", &texture);
-        uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
-        rasterizer.draw(&cube, uniforms.validate().unwrap());
+    // Iterate through all of the faces of the cubemap (for diffuse IBL)
+    match import_settings.convolution {
+        CubeMapConvolutionMode::Disabled => (),
+        CubeMapConvolutionMode::DiffuseIrradiance => {
+            for face in 0..6 {
+                let miplevel = cubemap.mip_mut(0).unwrap();
+                let target = miplevel.target(face as u16).unwrap();
+                let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
+                let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
+                uniforms.set_sampler("panorama", &texture);
+                uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
+                rasterizer.draw(&cube, uniforms.validate().unwrap());
+            }
+        },
+        CubeMapConvolutionMode::SpecularIBL => {
+            for mip in 0..cubemap.levels() {
+                for face in 0..6 {
+                    let miplevel = cubemap.mip_mut(mip).unwrap();
+                    let viewport = Viewport {
+                        origin: vek::Vec2::zero(),
+                        extent: miplevel.dimensions(),
+                    };
+                    let target = miplevel.target(face as u16).unwrap();
+                    let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
+                    let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
+                    uniforms.set_sampler("panorama", &texture);
+                    uniforms.set_scalar("roughness", mip as f32 / (cubemap.levels() as f32  - 1.0));
+                    uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
+                    rasterizer.draw(&cube, uniforms.validate().unwrap());
+                }
+            }
+        },
     }
+    
 
-    // Update the mipmaps and return the texture
+
+    // Update the mipmaps (if possible)
     cubemap.generate_mipmaps();
     cubemap
 }

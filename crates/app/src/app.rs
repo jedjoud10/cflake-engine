@@ -166,6 +166,7 @@ impl App {
         el.run(move |event, _, cf| match event {
             // Call the update events
             glutin::event::Event::MainEventsCleared => {
+                sleeper.loop_start();
                 events.execute::<Update>(&mut world);
 
                 if let State::Stopped = *world.get::<State>().unwrap() {
