@@ -14,7 +14,7 @@ use crate::{
 use ecs::Scene;
 use math::{Location, Rotation, SharpVertices, AABB};
 
-use prelude::Comparison;
+use prelude::{CommonTextures, Comparison};
 use world::{Handle, Read, Storage, World, Write};
 
 // Check if an AABB intersects all the given frustum planes
@@ -162,6 +162,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
     let materials = world.get::<Storage<M>>().unwrap();
     let meshes = world.get::<Storage<Mesh>>().unwrap();
     let window = world.get::<Window>().unwrap();
+    let textures = world.get::<CommonTextures>().unwrap();
     let mut _shading = world.get_mut::<ClusteredShading>().unwrap();
     let shading = &mut *_shading;
     let mut shaders = world.get_mut::<Storage<Shader>>().unwrap();
@@ -202,10 +203,10 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         directional_light,
         directional_light_rotation,
         window: &window,
-        white: &shading.white,
-        black: &shading.black,
-        normal: &shading.normal,
-        mask: &shading.mask,
+        white: &textures.white,
+        black: &textures.black,
+        normal: &textures.normal,
+        mask: &textures.mask,
     };
 
     // Create a new rasterizer so we can draw the objects onto the painter

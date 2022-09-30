@@ -9,6 +9,8 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
+        .set_window_fullscreen(true)
+        .set_framerate_limit(Some(FrameRateLimit::Limited(120)))
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -53,7 +55,7 @@ fn init(world: &mut World) {
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
         color: vek::Rgb::new(255, 243, 196),
-        strength: 10.0,
+        strength: 4.0,
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -101,7 +103,7 @@ fn init(world: &mut World) {
     let sphere = meshes.insert(
         assets
             .load_with::<Mesh>(
-                "engine/meshes/sphere.obj",
+                "user/ignored/untitled.obj",
                 (&mut ctx, MeshImportSettings::default()),
             )
             .unwrap(),
@@ -109,15 +111,11 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = standard_materials.insert(Standard {
-        albedo_map: None,
-        normal_map: None,
-        mask_map: None,
         bumpiness: 0.4,
         roughness: 0.9,
-        ambient_occlusion: 1.0,
         metallic: 0.2,
         scale: vek::Vec2::broadcast(3.0),
-        tint: vek::Rgb::white(),
+        ..Default::default()
     });
 
     // Create a new material surface for rendering
@@ -131,7 +129,7 @@ fn init(world: &mut World) {
         surface,
         Renderer::default(),
         Location::at_y(-0.5),
-        Scale::scale_xyz(40.0, 1.0, 40.0),
+        Scale::scale_xyz(400.0, 1.0, 400.0),
     ));
 
     // Create a simple cube
@@ -141,11 +139,20 @@ fn init(world: &mut World) {
     // Create 25 cubes in total (5x5)
     for x in 0..5 {
         for y in 0..5 {
+            let material = standard_materials.insert(Standard {
+                albedo_map: Some(albedo_map.clone()),
+                normal_map: Some(normal_map.clone()),
+                bumpiness: 0.4,
+                roughness: (y as f32 + 1.0) / 5.0,
+                metallic: (x as f32 + 1.0) / 5.0,
+                ..Default::default()
+            });
+
             let surface = Surface::new(cube.clone(), material.clone(), pipeid);
             ecs.insert((
                 surface,
                 Renderer::default(),
-                Location::at_xyz(y as f32 * 2.0, 5.0, x as f32 * 2.0),
+                Location::at_xyz(y as f32 * 2.0, 0.0, x as f32 * 2.0),
             ));
         }
     }
@@ -270,7 +277,7 @@ fn update(world: &mut World) {
         });
         ui.horizontal(|ui| {
             ui.label("Exposure: ");
-            ui.add(egui::Slider::new(&mut pp.exposure, 0.0f32..=10.0f32));
+            ui.add(egui::Slider::new(&mut pp.exposure, 0.0f32..=2.0f32));
         });
     });
 

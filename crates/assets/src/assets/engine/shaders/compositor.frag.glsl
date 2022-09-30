@@ -50,7 +50,7 @@ void main() {
 	float vignette = length(abs(uv - 0.5));
 	vignette += vignette_size;
 	vignette = clamp(vignette, 0, 1);
-	vignette = pow(vignette, vignette_strength);
+	vignette = pow(vignette, 2.0) * clamp(vignette_strength, 0.0, 2.0);
 	sampled = mix(sampled, vec3(0), vignette);
 
 	// Sample the depth texture

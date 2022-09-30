@@ -1,6 +1,6 @@
 use super::{
-    Camera, ClusteredShading, Compositor, DirectionalLight, PackedPointLight, PointLight,
-    PostProcessing, RenderedFrameStats, Renderer, ShadowMapping,
+    Camera, ClusteredShading, CommonTextures, Compositor, DirectionalLight, PackedPointLight,
+    PointLight, PostProcessing, RenderedFrameStats, Renderer, ShadowMapping,
 };
 use crate::{
     buffer::BufferMode,
@@ -42,7 +42,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, 64, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(20.0, 40.0, 512, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(20.0, 160.0, 4096, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -87,6 +87,9 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     // Create the frame-to-frame basis stats
     let stats = RenderedFrameStats::default();
 
+    // Create the common textures
+    let textures = CommonTextures::new(ctx);
+
     // Drop the old write/read handles
     drop(shaders);
     drop(assets);
@@ -99,6 +102,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(stats);
     world.insert(compositor);
     world.insert(shadow_mapping);
+    world.insert(textures);
 }
 
 // Update the global mesh matrices of objects that have been modified

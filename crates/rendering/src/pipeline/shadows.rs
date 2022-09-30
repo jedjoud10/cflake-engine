@@ -41,14 +41,13 @@ pub(crate) fn render_shadows<M: for<'w> Material<'w>>(world: &mut World) {
     let settings = RasterSettings {
         depth_test: Some(Comparison::Less),
         scissor_test: None,
-        primitive: PrimitiveMode::Triangles { cull: None },
+        primitive: PrimitiveMode::Triangles { cull: Some(FaceCullMode::Front(true)) },
         srgb: false,
         blend: None,
     };
 
-    // Find all the surfaces that use this material type
-    let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap();
-    let query = query.filter(|(renderer, surface)| {
+    // Filter the proper render entities
+    let query = ecs.view::<(&Renderer, &Surface<M>)>().unwrap().filter(|(renderer, surface)| {
         // Check if the renderer is even enabled and if it should cast shadows
         let enabled = renderer.visible && surface.visible && surface.shadow_caster;
 

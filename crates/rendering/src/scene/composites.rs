@@ -21,71 +21,17 @@ use crate::{
 
 use super::{PackedPointLight, PointLight};
 
-// Clustered shading is a method to render multiple lights
-// efficienty without losing image quality
-// The principle of "Clustered Shading" is to subdivide the camera's view frustum
-// into multiple sub-regions called "clusters", and have the lights within them rendered
-// TODO: Actually implement this lul
-pub struct ClusteredShading {
-    pub(crate) main_camera: Option<Entity>,
-    pub(crate) skysphere_entity: Option<Entity>,
-    pub(crate) painter: Painter<RGB<f32>, Depth<Ranged<u32>>, ()>,
-    pub(crate) color_tex: Texture2D<RGB<f32>>,
-    pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
-    pub(crate) main_directional_light: Option<Entity>,
-    pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
-    pub(crate) point_light_ids: ShaderBuffer<u32>,
-    pub(crate) clusters: ShaderBuffer<(u32, u32)>,
-    //pub(crate) compute: ComputeShader,
-    pub(crate) cluster_size: u32,
-    pub(crate) white: AlbedoMap,
-    pub(crate) black: AlbedoMap,
-    pub(crate) normal: NormalMap,
-    pub(crate) mask: MaskMap,
+// This resource will contain the common shared textures that we use througouht the renderer
+// This contains the default white, black, normal, and mask map textures
+pub struct CommonTextures {
+    pub white: AlbedoMap,
+    pub black: AlbedoMap,
+    pub normal: NormalMap,
+    pub mask: MaskMap,
 }
 
-impl ClusteredShading {
-    pub(crate) fn new(
-        ctx: &mut Context,
-        cluster_size: u32,
-        window: &Window,
-        shaders: &mut Storage<Shader>,
-        assets: &mut Assets,
-    ) -> Self {
-        // Settings for framebuffer textures
-        let sampling = Sampling {
-            filter: Filter::Nearest,
-            wrap: Wrap::ClampToEdge,
-            ..Default::default()
-        };
-        let mipmaps = MipMapSetting::Disabled;
-
-        // Create the color render texture
-        let color = <Texture2D<RGB<f32>> as Texture>::new(
-            ctx,
-            TextureMode::Resizable,
-            window.size(),
-            sampling,
-            mipmaps,
-            None,
-        )
-        .unwrap();
-
-        // Create the depth render texture
-        let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
-            ctx,
-            TextureMode::Resizable,
-            window.size(),
-            sampling,
-            mipmaps,
-            None,
-        )
-        .unwrap();
-
-        // Create the default pipelines
-        ctx.register_material::<Standard>(shaders, assets);
-        ctx.register_material::<Sky>(shaders, assets);
-
+impl CommonTextures {
+    pub(crate) fn new(ctx: &mut Context) -> Self {
         // Create the default white texture
         let white = AlbedoMap::new(
             ctx,
@@ -130,6 +76,76 @@ impl ClusteredShading {
         )
         .unwrap();
 
+        Self {
+            white,
+            black,
+            normal,
+            mask,
+        }
+    }
+}
+
+// Clustered shading is a method to render multiple lights
+// efficienty without losing image quality
+// The principle of "Clustered Shading" is to subdivide the camera's view frustum
+// into multiple sub-regions called "clusters", and have the lights within them rendered
+// TODO: Actually implement this lul
+pub struct ClusteredShading {
+    pub(crate) main_camera: Option<Entity>,
+    pub(crate) skysphere_entity: Option<Entity>,
+    pub(crate) painter: Painter<RGB<f32>, Depth<Ranged<u32>>, ()>,
+    pub(crate) color_tex: Texture2D<RGB<f32>>,
+    pub(crate) depth_tex: Texture2D<Depth<Ranged<u32>>>,
+    pub(crate) main_directional_light: Option<Entity>,
+    pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
+    pub(crate) point_light_ids: ShaderBuffer<u32>,
+    pub(crate) clusters: ShaderBuffer<(u32, u32)>,
+    //pub(crate) compute: ComputeShader,
+    pub(crate) cluster_size: u32,
+}
+
+impl ClusteredShading {
+    pub(crate) fn new(
+        ctx: &mut Context,
+        cluster_size: u32,
+        window: &Window,
+        shaders: &mut Storage<Shader>,
+        assets: &mut Assets,
+    ) -> Self {
+        // Settings for framebuffer textures
+        let sampling = Sampling {
+            filter: Filter::Nearest,
+            wrap: Wrap::ClampToEdge,
+            ..Default::default()
+        };
+        let mipmaps = MipMapSetting::Disabled;
+
+        // Create the color render texture
+        let color = <Texture2D<RGB<f32>> as Texture>::new(
+            ctx,
+            TextureMode::Resizable,
+            window.size(),
+            sampling,
+            mipmaps,
+            None,
+        )
+        .unwrap();
+
+        // Create the depth render texture
+        let depth = <Texture2D<Depth<Ranged<u32>>> as Texture>::new(
+            ctx,
+            TextureMode::Resizable,
+            window.size(),
+            sampling,
+            mipmaps,
+            None,
+        )
+        .unwrap();
+
+        // Create the default pipelines
+        ctx.register_material::<Standard>(shaders, assets);
+        ctx.register_material::<Sky>(shaders, assets);
+
         // TODO: Create the cluster compute shader that will sort the lights
 
         // Create the clustered shading rendererer
@@ -144,10 +160,6 @@ impl ClusteredShading {
             point_light_ids: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
-            white,
-            black,
-            normal,
-            mask,
         }
     }
 
@@ -266,7 +278,7 @@ impl Default for PostProcessing {
             tonemapping_strength: 1.0,
             exposure: 1.2,
             gamma: 2.2,
-            vignette_strength: 10.5,
+            vignette_strength: 0.0,
             vignette_size: 0.2,
         }
     }

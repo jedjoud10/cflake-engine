@@ -12,11 +12,11 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // Get depths and test
-    float shadow_bias = 0.002;
+    float shadow_bias = 0.0001;
     float current = lightspace_uvs.z;
 
     // Number of omni-directional samples to take
-    const int SAMPLES = 3;
+    const int SAMPLES = 1;
     const int HALVED_SAMPLES = SAMPLES / 2;
 
     // Sample the depth texture multiple times to smooth it out

@@ -40,6 +40,22 @@ pub struct Standard {
     pub scale: vek::Vec2<f32>,
 }
 
+impl Default for Standard {
+    fn default() -> Self {
+        Self {
+            albedo_map: None,
+            normal_map: None,
+            mask_map: None,
+            bumpiness: 1.0,
+            roughness: 0.8,
+            ambient_occlusion: 0.5,
+            metallic: 0.2,
+            tint: vek::Rgb::white(),
+            scale: vek::Vec2::broadcast(1.0)
+        }
+    }
+}
+
 impl<'w> Material<'w> for Standard {
     type Resources = (
         Read<'w, Storage<AlbedoMap>>,
