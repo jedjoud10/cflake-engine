@@ -15,7 +15,7 @@ use crate::{
     shader::{Shader, Uniforms},
 };
 
-use super::{AlbedoMap, MaskMap, NormalMap};
+use super::{AlbedoMap, MaskMap, NormalMap, IntegrationMap};
 
 // These are the default resources that we pass to any/each material
 #[derive(Clone, Copy)]
@@ -26,6 +26,7 @@ pub struct DefaultMaterialResources<'a> {
     pub(crate) white: &'a AlbedoMap,
     pub(crate) black: &'a AlbedoMap,
     pub(crate) normal: &'a NormalMap,
+    pub(crate) integration: &'a IntegrationMap,
     pub(crate) mask: &'a MaskMap,
     pub(crate) cluster_size: &'a u32,
     pub(crate) camera_location: &'a Location,

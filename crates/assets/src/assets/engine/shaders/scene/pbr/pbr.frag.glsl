@@ -25,11 +25,16 @@ uniform vec3 sun_color;
 uniform float sun_strength;
 
 // Environment mapping
-uniform samplerCube irradiance;
+uniform samplerCube irradiance_environment_map;
+uniform samplerCube specular_environment_map;
+
+// BRDF Integration map (generated from https://github.com/HectorMF/BRDFGenerator)
+uniform sampler2D brdf_integration_map;
 
 // Directional shadow mapping
 uniform sampler2DShadow shadow_map;
 uniform mat4 shadow_lightspace_matrix;
+
 
 // Clustered shading data
 uniform uint cluster_size;
@@ -138,12 +143,18 @@ void main() {
 	// Ambient diffuse lighting
 	vec3 ks = fresnelRoughness(f0, surface.normal, camera.view, roughness);
 	vec3 kd = (1 - ks) * (1 - metallic);
-	vec3 sampled_irradiance = texture(irradiance, surface.normal).rgb;
-	vec3 ambient = (kd * sampled_irradiance * surface.diffuse) * visibility; 
+	vec3 irradiance = texture(irradiance_environment_map, surface.normal).rgb;
+
+	// Ambient specular lighting
+	const float MAX_REFLECTION_LOD = 5.0;
+	vec3 specular = textureLod(specular_environment_map, reflect(-camera.view, surface.normal), roughness * MAX_REFLECTION_LOD).rgb; 
+	vec2 integrated = texture(brdf_integration_map, vec2(max(dot(surface.normal, camera.view), 0.0), roughness)).rg;
+	specular *= fresnelRoughness(f0, camera.view, surface.normal, roughness) * integrated.x + integrated.y;
+
+	// Ambient color
+	vec3 sum = (kd * irradiance * surface.diffuse + specular) * visibility;
 
 	// Main directional light
-	vec3 sum = ambient;
-
 	sum += brdf(surface, camera, sun);
 
 	// Iterate through all the point light

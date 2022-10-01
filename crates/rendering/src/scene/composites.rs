@@ -8,13 +8,13 @@ use crate::{
     buffer::{BufferMode, ShaderBuffer, UniformBuffer},
     context::{Context, Window},
     display::Display,
-    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard},
+    material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, IntegrationMap},
     mesh::Mesh,
     others::Comparison,
     painter::Painter,
     prelude::{
         Depth, Filter, MipMapSetting, Ranged, Sampling, Shader, Texture, Texture2D, TextureMode,
-        Wrap, RGB,
+        Wrap, RGB, RG, TextureImportSettings,
     },
     shader::{ComputeShader, FragmentStage, Processor, ShaderCompiler, VertexStage},
 };
@@ -100,6 +100,7 @@ pub struct ClusteredShading {
     pub(crate) point_lights: ShaderBuffer<PackedPointLight>,
     pub(crate) point_light_ids: ShaderBuffer<u32>,
     pub(crate) clusters: ShaderBuffer<(u32, u32)>,
+    pub(crate) brdf_integration_map: IntegrationMap,
     //pub(crate) compute: ComputeShader,
     pub(crate) cluster_size: u32,
 }
@@ -142,6 +143,13 @@ impl ClusteredShading {
         )
         .unwrap();
 
+        // Load the BRDF integration map
+        let brdf_integration_map = assets.load_with::<IntegrationMap>("engine/textures/integration.png", (ctx, TextureImportSettings {
+            sampling: Sampling { filter: Filter::Linear, wrap: Wrap::ClampToEdge, ..Default::default() },
+            mode: TextureMode::Static,
+            mipmaps: MipMapSetting::Disabled,
+        })).unwrap();
+
         // Create the default pipelines
         ctx.register_material::<Standard>(shaders, assets);
         ctx.register_material::<Sky>(shaders, assets);
@@ -160,6 +168,7 @@ impl ClusteredShading {
             point_light_ids: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             point_lights: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
             clusters: ShaderBuffer::from_slice(ctx, &[], BufferMode::Resizable).unwrap(),
+            brdf_integration_map,
         }
     }
 

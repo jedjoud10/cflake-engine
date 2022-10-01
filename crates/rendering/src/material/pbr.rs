@@ -8,7 +8,7 @@ use crate::{
     context::Context,
     display::Display,
     mesh::{EnabledAttributes, Surface},
-    prelude::{CubeMap2D, TextureImportSettings, R, RGBA, SRGBA},
+    prelude::{CubeMap2D, TextureImportSettings, R, RGBA, SRGBA, RG},
     scene::{ClusteredShading, Renderer, ShadowMapping},
     shader::{FragmentStage, Processor, Shader, ShaderCompiler, Uniforms, VertexStage},
     texture::{Ranged, Texture, Texture2D, RGB},
@@ -20,11 +20,13 @@ use super::{DefaultMaterialResources, Material, Sky, HDRI};
 pub type AlbedoTexel = SRGBA<Ranged<u8>>;
 pub type NormalTexel = RGB<Ranged<u8>>;
 pub type MaskTexel = RGBA<Ranged<u8>>;
+pub type IntegrationTexel = RG<Ranged<u8>>;
 
 // PBR maps
 pub type AlbedoMap = Texture2D<AlbedoTexel>;
 pub type NormalMap = Texture2D<NormalTexel>;
 pub type MaskMap = Texture2D<MaskTexel>; // (r = AO, g = roughness, b = metallic)
+pub type IntegrationMap = Texture2D<IntegrationTexel>;
 
 // A standard Physically Based Rendering material that we will use by default
 // PBR Materials try to replicate the behavior of real light for better graphical fidelty and quality
@@ -64,6 +66,7 @@ impl<'w> Material<'w> for Standard {
         Read<'w, Storage<HDRI>>,
         Read<'w, ShadowMapping>,
         Handle<HDRI>,
+        Handle<HDRI>,
     );
 
     fn requirements() -> EnabledAttributes {
@@ -102,6 +105,7 @@ impl<'w> Material<'w> for Standard {
             hdris,
             shadow_mapping,
             material.irradiance.clone(),
+            material.specular.clone(),
         )
     }
 
@@ -133,6 +137,21 @@ impl<'w> Material<'w> for Standard {
         uniforms.set_scalar("cluster_size", main.cluster_size);
         uniforms.set_scalar("point_lights_num", main.point_lights.len() as u32);
         uniforms.set_shader_storage_buffer("point_lights", &main.point_lights);
+
+        let (_,
+            _,
+            _,
+            hdris,
+            _,
+            irradiance,
+            specular
+        ) = resources;
+
+        let irradiance_env_map = hdris.get(&irradiance);
+        let specular_env_map = hdris.get(&specular);
+        uniforms.set_sampler("irradiance_environment_map", irradiance_env_map);
+        uniforms.set_sampler("specular_environment_map", specular_env_map);
+        uniforms.set_sampler("brdf_integration_map", main.integration);
     }
 
     fn set_surface_properties(
@@ -150,7 +169,14 @@ impl<'w> Material<'w> for Standard {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let (albedo_maps, normal_maps, mask_maps, hdris, _, irradiance) = resources;
+        let (albedo_maps,
+            normal_maps,
+            mask_maps,
+            hdris,
+            _,
+            irradiance,
+            specular
+        ) = resources;
 
         uniforms.set_vec3("tint", instance.tint);
         uniforms.set_scalar("bumpiness", instance.bumpiness);
@@ -171,12 +197,10 @@ impl<'w> Material<'w> for Standard {
             .mask_map
             .as_ref()
             .map_or(main.mask, |h| mask_maps.get(h));
-        let irradiance_map = hdris.get(&irradiance);
 
         uniforms.set_sampler("albedo", albedo_map);
         uniforms.set_sampler("normal", normal_map);
         uniforms.set_sampler("mask", mask_map);
-        uniforms.set_sampler("irradiance", irradiance_map);
     }
 
     fn shader(ctx: &mut Context, assets: &mut Assets) -> Shader {

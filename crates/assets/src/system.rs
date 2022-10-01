@@ -31,10 +31,14 @@ pub fn system(events: &mut Events, user: Option<PathBuf>) {
                 persistent!(loader, "engine/shaders/hdri/diffuse.frag.glsl");
                 persistent!(loader, "engine/shaders/hdri/specular.frag.glsl");
                 persistent!(loader, "engine/shaders/math/sequences.func.glsl");
+                persistent!(loader, "engine/shaders/math/conversions.func.glsl");
 
                 // Load the default meshes
                 persistent!(loader, "engine/meshes/cube.obj");
                 persistent!(loader, "engine/meshes/sphere.obj");
+
+                // Load the default texutres
+                persistent!(loader, "engine/textures/integration.png");
 
                 // Insert the loader
                 world.insert(loader);

@@ -9,7 +9,6 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
-        .set_framerate_limit(Some(FrameRateLimit::Limited(120)))
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -64,7 +63,7 @@ fn init(world: &mut World) {
     // Load the albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/diffuse.png",
+            "user/ignored/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -73,7 +72,7 @@ fn init(world: &mut World) {
     // Load the normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/normal.png",
+            "user/ignored/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -82,7 +81,7 @@ fn init(world: &mut World) {
     // Load the mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "user/mask.png",
+            "user/ignored/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -110,9 +109,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = standard_materials.insert(Standard {
-        bumpiness: 0.4,
-        roughness: 0.9,
-        metallic: 0.2,
+        bumpiness: 0.1,
+        roughness: 0.0,
+        metallic: 0.0,
         scale: vek::Vec2::broadcast(3.0),
         ..Default::default()
     });
@@ -141,7 +140,7 @@ fn init(world: &mut World) {
             let material = standard_materials.insert(Standard {
                 albedo_map: Some(albedo_map.clone()),
                 normal_map: Some(normal_map.clone()),
-                bumpiness: 0.4,
+                bumpiness: 0.2,
                 roughness: (y as f32 + 1.0) / 5.0,
                 metallic: (x as f32 + 1.0) / 5.0,
                 ..Default::default()
@@ -162,7 +161,10 @@ fn init(world: &mut World) {
     let hdri = hdris.insert(assets
         .load_with::<CubeMap2D<RGB<f32>>>(
             "user/ignored/cubemap.hdr",
-            (&mut ctx, CubeMapImportSettings::default()),
+            (&mut ctx, CubeMapImportSettings {
+                mipmaps: MipMapSetting::Disabled,
+                ..Default::default()
+            }),
         )
         .unwrap());
 

@@ -29,6 +29,6 @@ void main() {
     color = mix(color, vec3(1.0), circle);
     frag = color;
     */
-    vec3 color = textureLod(cubemap, normalize(m_position - camera), 4.0).xyz;
+    vec3 color = texture(cubemap, normalize(m_position - camera)).xyz;
     frag = color;
 }

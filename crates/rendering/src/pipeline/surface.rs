@@ -207,6 +207,7 @@ pub(crate) fn render_surfaces<M: for<'w> Material<'w>>(world: &mut World, shader
         black: &textures.black,
         normal: &textures.normal,
         mask: &textures.mask,
+        integration: &&shading.brdf_integration_map,
     };
 
     // Create a new rasterizer so we can draw the objects onto the painter

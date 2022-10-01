@@ -314,7 +314,7 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
         // If we are creating a specular IBL texture, we will need the original panoramic texture 
         // to have a mipmap for proper lighting
         let mipmaps = match settings.convolution {
-            CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Automatic,
+            CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Disabled,
             _ => MipMapSetting::Disabled,
         };
 
@@ -358,9 +358,9 @@ pub fn hdri_from_panoramic(
     ];
 
     // Pick the right resolution for the cubemap
-    let dims = vek::Extent2::broadcast(texture.dimensions().w / 4);
+    let original_dimensions = vek::Extent2::broadcast(texture.dimensions().w / 4);
     let dimensions = match import_settings.convolution {
-        CubeMapConvolutionMode::Disabled => dims,
+        CubeMapConvolutionMode::Disabled => original_dimensions,
         CubeMapConvolutionMode::DiffuseIrradiance => vek::Extent2::broadcast(16),
         CubeMapConvolutionMode::SpecularIBL => vek::Extent2::broadcast(128),
     };
@@ -444,8 +444,7 @@ pub fn hdri_from_panoramic(
 
     // Iterate through all of the faces of the cubemap (for diffuse IBL)
     match import_settings.convolution {
-        CubeMapConvolutionMode::Disabled => (),
-        CubeMapConvolutionMode::DiffuseIrradiance => {
+        CubeMapConvolutionMode::DiffuseIrradiance | CubeMapConvolutionMode::Disabled => {
             for face in 0..6 {
                 let miplevel = cubemap.mip_mut(0).unwrap();
                 let target = miplevel.target(face as u16).unwrap();
@@ -468,17 +467,23 @@ pub fn hdri_from_panoramic(
                     let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
                     let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
                     uniforms.set_sampler("panorama", &texture);
-                    uniforms.set_scalar("roughness", mip as f32 / (cubemap.levels() as f32  - 1.0));
+                    uniforms.set_scalar("source_face_resolution", original_dimensions.w as u32);
+                    let roughness = mip as f32 / (cubemap.levels() as f32  - 1.0);
+                    uniforms.set_scalar("roughness", roughness);
                     uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
                     rasterizer.draw(&cube, uniforms.validate().unwrap());
                 }
             }
         },
     }
+
+    match import_settings.convolution {
+        CubeMapConvolutionMode::DiffuseIrradiance | CubeMapConvolutionMode::Disabled => match import_settings.mipmaps {
+            MipMapSetting::Automatic | MipMapSetting::Manual { .. } => cubemap.generate_mipmaps(),
+            _ => {},
+        },
+        _ => {}
+    }
     
-
-
-    // Update the mipmaps (if possible)
-    cubemap.generate_mipmaps();
     cubemap
 }

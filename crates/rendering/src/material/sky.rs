@@ -74,7 +74,7 @@ impl<'w> Material<'w> for Sky {
         resources: &mut Self::Resources,
         instance: &Self,
     ) {
-        let texture = resources.0.get(&instance.specular);
+        let texture = resources.0.get(&instance.cubemap);
         uniforms.set_sampler("cubemap", texture);
         uniforms.set_scalar(
             "sun_intensity",

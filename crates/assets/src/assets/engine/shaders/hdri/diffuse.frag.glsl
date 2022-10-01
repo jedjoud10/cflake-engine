@@ -1,16 +1,8 @@
 #version 460 core
+#include "engine/shaders/math/conversions.func.glsl"
 layout(location = 0) out vec3 color;
 uniform sampler2D panorama;
 in vec3 l_position;
-
-const vec2 invAtan = vec2(0.1591, 0.3183);
-vec2 sample_spherical_map(vec3 v)
-{
-    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += 0.5;
-    return uv;
-}
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
 vec3 aces(vec3 x) {
