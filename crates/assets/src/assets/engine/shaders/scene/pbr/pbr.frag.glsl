@@ -27,6 +27,7 @@ uniform float sun_strength;
 // Environment mapping
 uniform samplerCube irradiance_environment_map;
 uniform samplerCube specular_environment_map;
+uniform uint specular_environment_map_levels;
 
 // BRDF Integration map (generated from https://github.com/HectorMF/BRDFGenerator)
 uniform sampler2D brdf_integration_map;
@@ -129,8 +130,8 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
 	// Compute PBR values
-	float roughness = clamp(mask.g, 0.06, 1.0);
-	float metallic = clamp(mask.b, 0.0, 1.0);
+	float roughness = clamp(mask.g, 0.02, 1.0);
+	float metallic = clamp(mask.b, 0.01, 1.0);
 	float visibility = clamp(mask.r, 0.0, 1.0);
 	vec3 f0 = mix(vec3(0.04), diffuse, metallic);
 
@@ -146,8 +147,7 @@ void main() {
 	vec3 irradiance = texture(irradiance_environment_map, surface.normal).rgb;
 
 	// Ambient specular lighting
-	const float MAX_REFLECTION_LOD = 5.0;
-	vec3 specular = textureLod(specular_environment_map, reflect(-camera.view, surface.normal), roughness * MAX_REFLECTION_LOD).rgb; 
+	vec3 specular = textureLod(specular_environment_map, reflect(-camera.view, surface.normal), roughness * float(specular_environment_map_levels)).rgb; 
 	vec2 integrated = texture(brdf_integration_map, vec2(max(dot(surface.normal, camera.view), 0.0), roughness)).rg;
 	specular *= fresnelRoughness(f0, camera.view, surface.normal, roughness) * integrated.x + integrated.y;
 

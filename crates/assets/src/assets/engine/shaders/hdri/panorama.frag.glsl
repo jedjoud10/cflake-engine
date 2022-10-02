@@ -6,5 +6,5 @@ in vec3 l_position;
 
 void main() {
     vec2 uv = sample_spherical_map(normalize(l_position));
-    color = texture(panorama, uv).rgb;
+    color = min(texture(panorama, uv).rgb, vec3(10.0));
 }

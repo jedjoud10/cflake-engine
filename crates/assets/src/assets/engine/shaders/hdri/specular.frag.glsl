@@ -3,7 +3,7 @@
 #include "engine/shaders/math/conversions.func.glsl"
 #include "engine/shaders/scene/pbr/models.func.glsl"
 layout(location = 0) out vec3 color;
-uniform sampler2D panorama;
+uniform samplerCube cubemap;
 uniform float roughness;
 uniform uint source_face_resolution;
 in vec3 l_position;
@@ -24,7 +24,7 @@ void main() {
     vec3 dir = normalize(l_position);
     vec3 convoluted = vec3(0.0);     
     float weight = 0.0;   
-    const uint SAMPLE_COUNT = 2048;
+    const uint SAMPLE_COUNT = 1024;
 
     // GGX Importance sampling moment
     // To be honest, I have no fucking idea what this does bro I am stoopid
@@ -61,12 +61,11 @@ void main() {
             float pdf = (ndf * ndoth / (4.0 * hdotv)) + 0.0001; 
 
             float resolution = source_face_resolution; // resolution of source cubemap (per face)
-            float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
-            float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
+            float sa_texel  = 4.0 * PI / (6.0 * resolution * resolution);
+            float sa_sample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
-            float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
-            vec2 uv = sample_spherical_map(light);
-            convoluted += aces(textureLod(panorama, uv, mipLevel).rgb) * result;
+            float level = roughness == 0.0 ? 0.0 : 0.5 * log2(sa_sample / sa_texel); 
+            convoluted += textureLod(cubemap, light, level).rgb * result;
             weight += result;
         }
     }

@@ -1,7 +1,7 @@
 use assets::{Asset, Assets};
 
 use super::{
-    CubeMapImportSettings, Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting,
+    Extent, Filter, ImageTexel, MipMapDescriptor, MipMapSetting,
     MultiLayerTexture, Region, Sampling, Texel, Texture, Texture2D, TextureImportSettings,
     TextureMode, Wrap, RGB,
 };
@@ -12,9 +12,9 @@ use crate::{
     mesh::{Mesh, MeshImportSettings},
     painter::{MultilayerIntoTarget, Painter},
     prelude::CubeMapConvolutionMode,
-    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage},
+    shader::{FragmentStage, Processor, ShaderCompiler, VertexStage, Shader},
 };
-use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null};
+use std::{ffi::c_void, marker::PhantomData, mem::size_of, ptr::null, num::NonZeroU8, time::Instant};
 
 // A cubemap texture that contains 6 different faces that each contain a square texture2D
 // Cubemap textures are mostly used for environment mapping and reflections
@@ -282,14 +282,199 @@ impl<T: Texel> MultiLayerTexture for CubeMap2D<T> {
     }
 }
 
+// This is a global resource that will help the user to convolute / transform equirectangular cubemaps to a proper CubeMap with convolution (possibly)
+pub struct CubeMapConvolutor2D {
+    cube: Mesh,
+    shaders: [Shader; 3],
+    painter: Painter<RGB<f32>, (), ()>,
+    raster_settings: RasterSettings,
+    view_matrices: [vek::Mat4<f32>; 6],
+    proj_matrix: vek::Mat4<f32>
+}
+
+impl CubeMapConvolutor2D {
+    // Create the cubemap convolutor 2D
+    pub(crate) fn new(ctx: &mut Context, assets: &mut Assets) -> Self {
+        // Convert the eqilateral texture to a cubemap texture
+        let proj_matrix = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
+        use vek::Mat4;
+        use vek::Vec3;
+
+        // View matrices for the 6 different faces
+        let view_matrices: [Mat4<f32>; 6] = [
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
+            Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
+        ];
+
+        // Load the shared vertex stage
+        let vertex = assets
+            .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
+            .unwrap();
+        
+        // Create the 3 shaders (panorama, diffuse, specular)
+        const PATHS: [&str; 3] = ["engine/shaders/hdri/panorama.frag.glsl", "engine/shaders/hdri/diffuse.frag.glsl", "engine/shaders/hdri/specular.frag.glsl"];
+        let mut shaders = Vec::<Shader>::new();
+        for i in 0..3 {
+            let fragment = assets
+                .load::<FragmentStage>(PATHS[i])
+                .unwrap();            
+
+            // Compile the shader and add it to the shaders vector
+            shaders.push(ShaderCompiler::link((vertex.clone(), fragment), Processor::new(assets), ctx));
+        }
+
+        // I want debugless unwrap PWEASE RUST uwu >.<
+        let shaders: [Shader; 3] = unsafe { shaders.try_into().unwrap_unchecked() };
+        
+
+        // Load in a unit cube that is inside out
+        let cube = assets
+            .load_with::<Mesh>(
+                "engine/meshes/cube.obj",
+                (
+                    ctx,
+                    MeshImportSettings {
+                        invert_triangle_ordering: true,
+                        ..Default::default()
+                    },
+                ),
+            )
+            .unwrap();
+        
+        // Create a rasterizer to convert the equilateral texture
+        let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
+
+        // Create the rasterization settings
+        let raster_settings = RasterSettings {
+            depth_test: None,
+            scissor_test: None,
+            primitive: PrimitiveMode::Triangles {
+                cull: Some(FaceCullMode::Back(true)),
+            },
+            srgb: false,
+            blend: None,
+        };
+
+        Self {
+            cube,
+            shaders,
+            painter,
+            raster_settings,
+            view_matrices,
+            proj_matrix,
+        }
+    }
+
+    // Convert an equirectangular texture2D to a simple cubemap
+    pub fn from_equirectangular(&mut self, ctx: &mut Context, equirectangular: &Texture2D<RGB<f32>>, settings: TextureImportSettings) -> Option<CubeMap2D<RGB<f32>>> {
+        // Make sure this texture has a 1:2 aspect ratio
+        if (equirectangular.dimensions().w as f32) / (equirectangular.dimensions().h as f32) != 2.0 {
+            return None;
+        }
+
+        // Create the resulting cubemap
+        let dimensions = vek::Extent2::broadcast(equirectangular.dimensions().w / 4);
+        let mut cubemap = CubeMap2D::<RGB<f32>>::new(ctx, settings.mode, dimensions, settings.sampling, settings.mipmaps, None)?;
+        
+        // Create the viewport for the painter
+        let viewport = Viewport {
+            origin: vek::Vec2::zero(),
+            extent: dimensions,
+        };
+
+        // Render each face seperately
+        for face in 0..6 {
+            let miplevel = cubemap.mip_mut(0).unwrap();
+            let target = miplevel.target(face as u16).unwrap();
+            let mut scoped = self.painter.scope(viewport, target, (), ()).unwrap();
+            let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut self.shaders[0], self.raster_settings);
+            uniforms.set_sampler("panorama", equirectangular);
+            uniforms.set_mat4x4("matrix", self.proj_matrix * self.view_matrices[face]);
+            rasterizer.draw(&self.cube, uniforms.validate().unwrap());
+        }
+
+        // Update mipmaps moment
+        cubemap.generate_mipmaps();
+
+        Some(cubemap)
+    }
+    
+    // Convert an equirectangular texture2D into a convoluted cubemap
+    pub fn convoluted_from_requirectangular(&mut self, ctx: &mut Context, equirectangular: &Texture2D<RGB<f32>>, settings: TextureImportSettings, mode: CubeMapConvolutionMode) -> Option<CubeMap2D<RGB<f32>>> {
+        let cubemap = self.from_equirectangular(ctx, equirectangular, settings)?;
+        self.convoluted(ctx, &cubemap, settings, mode)
+    }
+    
+    // Create a convoluted CubeMap2D from a default CubeMap2D
+    // This assumes that the inputted cubemap is the perfect projected cubemap, and not modified in any way or sorts
+    pub fn convoluted(&mut self, ctx: &mut Context, original: &CubeMap2D<RGB<f32>>, mut settings: TextureImportSettings, convolution: CubeMapConvolutionMode) -> Option<CubeMap2D<RGB<f32>>> {
+        // Resolution of the cubemap depends on the convolution mode
+        let dimensions = match convolution {
+            CubeMapConvolutionMode::SpecularIBL => original.dimensions() / 2,
+            CubeMapConvolutionMode::DiffuseIrradiance => vek::Extent2::broadcast(16),
+        };
+
+        // When using specular convolution, the original cube map MUST have mipmaps enabled
+        if CubeMapConvolutionMode::SpecularIBL == convolution && original.levels() == 1 {
+            return None;
+        } 
+
+        // When using specular convolutions, the output cubemap MUST have mipmaps enabled
+        if CubeMapConvolutionMode::SpecularIBL == convolution {
+            settings.mipmaps = MipMapSetting::Automatic;
+        }
+        
+        // Create the outputting cubemap
+        let cubemap = CubeMap2D::<RGB<f32>>::new(ctx, settings.mode, dimensions, settings.sampling, settings.mipmaps, None)?;
+
+        // Get the shader index dependant on the mode
+        let index = (convolution == CubeMapConvolutionMode::SpecularIBL) as u32 + 1;
+
+        // Render each face seperately
+        for mip in 0..cubemap.levels() {
+            for face in 0..6 {
+                let miplevel = cubemap.mip_mut(mip).unwrap();
+
+                // Create the viewport for the painter for each mip level
+                let viewport = Viewport {
+                    origin: vek::Vec2::zero(),
+                    extent: miplevel.dimensions(),
+                };
+
+                // Create a mip target and create a scoped rasterizer that will write to it
+                let target = miplevel.target(face as u16).unwrap();
+                let mut scoped = self.painter.scope(viewport, target, (), ()).unwrap();
+                let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut self.shaders[index as usize], self.raster_settings);
+                
+                // Set the main uniforms for convolution
+                uniforms.set_sampler("cubemap", original);
+                uniforms.set_scalar("source_face_resolution", original.dimensions().w as u32);
+                let roughness = mip as f32 / (cubemap.levels() as f32  - 1.0);
+                uniforms.set_scalar("roughness", roughness);
+                uniforms.set_mat4x4("matrix", self.proj_matrix * self.view_matrices[face]);
+
+                // Write to the bound target
+                rasterizer.draw(&self.cube, uniforms.validate().unwrap());
+            }
+        }
+
+        ctx.flush();
+        Some(cubemap)
+    }
+}
+
+/*
 impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
-    type Args = (&'a mut Context, CubeMapImportSettings);
+    type Args = (&'a mut Context, TextureImportSettings);
 
     fn extensions() -> &'static [&'static str] {
         &["hdr"]
     }
 
-    // TODO: Convert this to a resource so we can convert multiple HDRis more efficiently?
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
         let (ctx, settings) = args;
         let hdr = hdrldr::load(data.bytes()).unwrap();
@@ -311,26 +496,19 @@ impl<'a> Asset<'a> for CubeMap2D<RGB<f32>> {
             ..Default::default()
         };
 
-        // If we are creating a specular IBL texture, we will need the original panoramic texture 
-        // to have a mipmap for proper lighting
-        let mipmaps = match settings.convolution {
-            CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Disabled,
-            _ => MipMapSetting::Disabled,
-        };
-
         // Create the equilateral texture that will then be mapped to a cubemap
         let texture = Texture2D::<RGB<f32>>::new(
             ctx,
             TextureMode::Static,
             dimensions,
             sampling,
-            mipmaps,
+            MipMapSetting::Disabled,
             Some(&texels),
         )
         .unwrap();
 
-        // Load the HDRi cubemap from the texture
-        hdri_from_panoramic(ctx, texture, data.loader(), settings)
+
+
     }
 }
 
@@ -342,27 +520,17 @@ pub fn hdri_from_panoramic(
     assets: &Assets,
     import_settings: CubeMapImportSettings,
 ) -> CubeMap2D<RGB<f32>> {
-    // Convert the eqilateral texture to a cubemap texture
-    let proj = vek::Mat4::perspective_fov_rh_no(90.0f32.to_radians(), 1.0, 1.0, 0.02, 20.0);
-    use vek::Mat4;
-    use vek::Vec3;
 
-    // View matrices for the 6 different faces
-    let view_matrices: [Mat4<f32>; 6] = [
-        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
-        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
-        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
-        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
-        Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
-        Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
-    ];
+
+
+
 
     // Pick the right resolution for the cubemap
     let original_dimensions = vek::Extent2::broadcast(texture.dimensions().w / 4);
     let dimensions = match import_settings.convolution {
         CubeMapConvolutionMode::Disabled => original_dimensions,
         CubeMapConvolutionMode::DiffuseIrradiance => vek::Extent2::broadcast(16),
-        CubeMapConvolutionMode::SpecularIBL => vek::Extent2::broadcast(128),
+        CubeMapConvolutionMode::SpecularIBL => vek::Extent2::broadcast(512),
     };
 
     // We might need to overwrite the texture mode if we are using a special convolution mode
@@ -373,7 +541,7 @@ pub fn hdri_from_panoramic(
 
     // We might need to overwrite the mipmap settings if we are using a special convolution mode
     let mipmaps = match import_settings.convolution {
-        CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Automatic,
+        CubeMapConvolutionMode::SpecularIBL => MipMapSetting::Manual { levels: NonZeroU8::new(4).unwrap() },
         _ => import_settings.mipmaps
     };
 
@@ -397,51 +565,7 @@ pub fn hdri_from_panoramic(
     )
     .unwrap();
 
-    // Create the rasterization shader for the cubemap converter
-    let vertex = assets
-        .load::<VertexStage>("engine/shaders/projection.vrtx.glsl")
-        .unwrap();
-    let fragment = assets
-        .load::<FragmentStage>(match import_settings.convolution {
-            CubeMapConvolutionMode::DiffuseIrradiance => "engine/shaders/hdri/diffuse.frag.glsl",
-            CubeMapConvolutionMode::SpecularIBL => "engine/shaders/hdri/specular.frag.glsl",
-            CubeMapConvolutionMode::Disabled => "engine/shaders/hdri/panorama.frag.glsl",
-        })
-        .unwrap();
-    let mut shader = ShaderCompiler::link((vertex.clone(), fragment), Processor::new(assets), ctx);
-
-    // Load in a unit cube that is inside out
-    let cube = assets
-        .load_with::<Mesh>(
-            "engine/meshes/cube.obj",
-            (
-                ctx,
-                MeshImportSettings {
-                    invert_triangle_ordering: true,
-                    ..Default::default()
-                },
-            ),
-        )
-        .unwrap();
-
-    // Create a rasterizer to convert the panoramic texture
-    let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
-    let viewport = Viewport {
-        origin: vek::Vec2::zero(),
-        extent: dimensions,
-    };
-
-    // Create the rasterization settings
-    let raster_settings = RasterSettings {
-        depth_test: None,
-        scissor_test: None,
-        primitive: PrimitiveMode::Triangles {
-            cull: Some(FaceCullMode::Back(true)),
-        },
-        srgb: false,
-        blend: None,
-    };
-
+    
     // Iterate through all of the faces of the cubemap (for diffuse IBL)
     match import_settings.convolution {
         CubeMapConvolutionMode::DiffuseIrradiance | CubeMapConvolutionMode::Disabled => {
@@ -456,24 +580,7 @@ pub fn hdri_from_panoramic(
             }
         },
         CubeMapConvolutionMode::SpecularIBL => {
-            for mip in 0..cubemap.levels() {
-                for face in 0..6 {
-                    let miplevel = cubemap.mip_mut(mip).unwrap();
-                    let viewport = Viewport {
-                        origin: vek::Vec2::zero(),
-                        extent: miplevel.dimensions(),
-                    };
-                    let target = miplevel.target(face as u16).unwrap();
-                    let mut scoped = painter.scope(viewport, target, (), ()).unwrap();
-                    let (mut rasterizer, mut uniforms) = scoped.rasterizer(ctx, &mut shader, raster_settings);
-                    uniforms.set_sampler("panorama", &texture);
-                    uniforms.set_scalar("source_face_resolution", original_dimensions.w as u32);
-                    let roughness = mip as f32 / (cubemap.levels() as f32  - 1.0);
-                    uniforms.set_scalar("roughness", roughness);
-                    uniforms.set_mat4x4("matrix", proj * view_matrices[face]);
-                    rasterizer.draw(&cube, uniforms.validate().unwrap());
-                }
-            }
+            
         },
     }
 
@@ -487,3 +594,4 @@ pub fn hdri_from_panoramic(
     
     cubemap
 }
+*/

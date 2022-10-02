@@ -8,7 +8,7 @@ use crate::{
     display::{Display, PrimitiveMode, RasterSettings},
     material::{AlbedoMap, MaskMap, NormalMap, Sky, Standard, HDRI},
     mesh::{Mesh, Surface},
-    prelude::{FragmentStage, Processor, ShaderCompiler, Texture, VertexStage},
+    prelude::{FragmentStage, Processor, ShaderCompiler, Texture, VertexStage, CubeMapConvolutor2D},
     shader::Shader,
 };
 
@@ -42,7 +42,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
 
     // Create the clustered shading and the shadow mapper
     let clustered_shading = ClusteredShading::new(ctx, 64, &window, &mut shaders, &mut assets);
-    let shadow_mapping = ShadowMapping::new(20.0, 160.0, 256, ctx, &mut shaders, &mut assets);
+    let shadow_mapping = ShadowMapping::new(20.0, 160.0, 4096, ctx, &mut shaders, &mut assets);
 
     // Create the positions vec for the fullscreen quad
     let positions = vec![
@@ -81,14 +81,11 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
         compositor: shader,
     };
 
-    // Create the post-processing settings
+    // Create all the other resources that will be needed later
     let postprocessing = PostProcessing::default();
-
-    // Create the frame-to-frame basis stats
     let stats = RenderedFrameStats::default();
-
-    // Create the common textures
     let textures = CommonTextures::new(ctx);
+    let convolutor = CubeMapConvolutor2D::new(ctx, &mut assets);
 
     // Drop the old write/read handles
     drop(shaders);
@@ -103,6 +100,7 @@ fn init(world: &mut World, settings: GraphicsSetupSettings, el: &EventLoop<()>) 
     world.insert(compositor);
     world.insert(shadow_mapping);
     world.insert(textures);
+    world.insert(convolutor);
 }
 
 // Update the global mesh matrices of objects that have been modified

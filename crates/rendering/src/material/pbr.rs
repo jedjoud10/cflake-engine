@@ -150,6 +150,7 @@ impl<'w> Material<'w> for Standard {
         let irradiance_env_map = hdris.get(&irradiance);
         let specular_env_map = hdris.get(&specular);
         uniforms.set_sampler("irradiance_environment_map", irradiance_env_map);
+        uniforms.set_scalar("specular_environment_map_levels", specular_env_map.levels() as u32);
         uniforms.set_sampler("specular_environment_map", specular_env_map);
         uniforms.set_sampler("brdf_integration_map", main.integration);
     }
@@ -172,10 +173,7 @@ impl<'w> Material<'w> for Standard {
         let (albedo_maps,
             normal_maps,
             mask_maps,
-            hdris,
-            _,
-            irradiance,
-            specular
+            ..,
         ) = resources;
 
         uniforms.set_vec3("tint", instance.tint);

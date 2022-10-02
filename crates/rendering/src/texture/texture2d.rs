@@ -1,8 +1,9 @@
 use assets::Asset;
+use image::ImageFormat;
 
 use super::{
     DepthTexel, ImageTexel, MipMapDescriptor, Region, SingleLayerTexture, Texel, Texture,
-    TextureImportSettings, TextureMode,
+    TextureImportSettings, TextureMode, IntermediateImage,
 };
 use crate::{
     context::{Context, ToGlName, ToGlTarget},
@@ -246,35 +247,14 @@ impl<'a, T: ImageTexel> Asset<'a> for Texture2D<T> {
     type Args = (&'a mut Context, TextureImportSettings);
 
     fn extensions() -> &'static [&'static str] {
-        &["png", "jpg"]
+        &["png", "jpg", "hdr"]
     }
 
     fn deserialize(data: assets::Data, args: Self::Args) -> Self {
-        let (ctx, settings) = args;
-        let image = image::load_from_memory(data.bytes()).unwrap();
-        let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
-        /*
-        let image = match settings.scale {
-            super::TextureScale::Default => image,
-            super::TextureScale::Scale { scaling, filter } => image.resize((dimensions.w as f64 * scaling) as u32, (dimensions.h as f64 * scaling) as u32, filter),
-            super::TextureScale::Resize { size, filter } => image.resize(size.w.get() as u32, size.h.get() as u32, filter),
-        };
-
-        let image = if !settings.flip.y {
-            image.flipv()
-        } else {
-            image
-        };
-
-        let image = if settings.flip.x {
-            image.fliph()
-        } else {
-            image
-        };
-        */
-
-        let dimensions = vek::Extent2::new(image.width() as u16, image.height() as u16);
-        let texels = T::to_image_texels(image);
+        let (ctx, settings) = args;    
+        let intermediate = IntermediateImage::new(data.bytes());
+        let dimensions = intermediate.dimensions();
+        let texels = T::read(intermediate);
         Self::new(
             ctx,
             settings.mode,

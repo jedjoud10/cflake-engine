@@ -496,6 +496,7 @@ impl<'uniforms> Uniforms<'uniforms> {
         }
     }
 
+    /*
     // Set an image uniform (a texture that we can modify)
     pub fn set_image<T: Texture>(&mut self, name: &str, sampler: &mut MipLevelMut<T>) {
         let offset = self.set_raw_texture(name, sampler.texture().name());
@@ -515,6 +516,7 @@ impl<'uniforms> Uniforms<'uniforms> {
             );
         }
     }
+    */
 
     // Set a uniform buffer (read only)
     pub fn set_uniform_buffer<T: Shared>(&mut self, name: &str, buffer: &UniformBuffer<T>) {

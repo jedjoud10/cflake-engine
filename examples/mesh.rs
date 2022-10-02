@@ -9,6 +9,7 @@ fn main() {
     App::default()
         .set_window_title("cflake engine mesh example")
         .set_user_assets_folder_path(ASSETS_PATH)
+        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -63,7 +64,7 @@ fn init(world: &mut World) {
     // Load the albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/ignored/diffuse.png",
+            "user/ignored/diffuse2.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -72,7 +73,7 @@ fn init(world: &mut World) {
     // Load the normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/ignored/normal.png",
+            "user/ignored/normal2.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -81,7 +82,7 @@ fn init(world: &mut World) {
     // Load the mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "user/ignored/mask.png",
+            "user/ignored/mask2.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -110,9 +111,8 @@ fn init(world: &mut World) {
     // Create a new material instance
     let material = standard_materials.insert(Standard {
         bumpiness: 0.1,
-        roughness: 0.0,
+        roughness: 0.8,
         metallic: 0.0,
-        scale: vek::Vec2::broadcast(3.0),
         ..Default::default()
     });
 
@@ -135,14 +135,11 @@ fn init(world: &mut World) {
     ecs.insert((surface, Renderer::default()));
 
     // Create 25 cubes in total (5x5)
-    for x in 0..5 {
-        for y in 0..5 {
+    for x in 0..10 {
+        for y in 0..10 {
             let material = standard_materials.insert(Standard {
-                albedo_map: Some(albedo_map.clone()),
-                normal_map: Some(normal_map.clone()),
-                bumpiness: 0.2,
-                roughness: (y as f32 + 1.0) / 5.0,
-                metallic: (x as f32 + 1.0) / 5.0,
+                roughness: (y as f32) / 9.0,
+                metallic: (x as f32) / 9.0,
                 ..Default::default()
             });
 
@@ -150,51 +147,28 @@ fn init(world: &mut World) {
             ecs.insert((
                 surface,
                 Renderer::default(),
-                Location::at_xyz(y as f32 * 2.0, 0.0, x as f32 * 2.0),
+                Location::at_xyz(y as f32 * 1.2, 0.0, x as f32 * 1.2),
             ));
         }
     }
 
     //ecs.insert((Location::at_xyz(5.0, 5.0, 0.0), PointLight::default()));
+    let mut convolutor = world.get_mut::<CubeMapConvolutor2D>().unwrap();
+
+    // Load the equirectangular map
+    let equirectangular = assets.load_with::<Texture2D<RGB<f32>>>(
+        "user/ignored/cubemap.hdr",
+        (&mut ctx, TextureImportSettings::default()),
+    ).unwrap();
 
     // Load up the HDRi cubemap (not convoluted)
-    let hdri = hdris.insert(assets
-        .load_with::<CubeMap2D<RGB<f32>>>(
-            "user/ignored/cubemap.hdr",
-            (&mut ctx, CubeMapImportSettings {
-                mipmaps: MipMapSetting::Disabled,
-                ..Default::default()
-            }),
-        )
-        .unwrap());
+    let hdri = hdris.insert(convolutor.from_equirectangular(&mut ctx, &equirectangular, TextureImportSettings::default()).unwrap());
 
     // Load up the HDRi cubemap (for diffuse irradiance)
-    let irradiance = hdris.insert(assets
-        .load_with::<CubeMap2D<RGB<f32>>>(
-            "user/ignored/cubemap.hdr",
-            (
-                &mut ctx,
-                CubeMapImportSettings {
-                    convolution: CubeMapConvolutionMode::DiffuseIrradiance,
-                    ..Default::default()
-                },
-            ),
-        )
-        .unwrap());
+    let irradiance = hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::DiffuseIrradiance).unwrap());
 
     // Load up the HDRi cubemap (for specular IBL)
-    let specular = hdris.insert(assets
-        .load_with::<CubeMap2D<RGB<f32>>>(
-            "user/ignored/cubemap.hdr",
-            (
-                &mut ctx,
-                CubeMapImportSettings {
-                    convolution: CubeMapConvolutionMode::SpecularIBL,
-                    ..Default::default()
-                },
-            ),
-        )
-        .unwrap());
+    let specular =  hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::SpecularIBL).unwrap());
 
     // Create the default sky material
     let material = Sky {
@@ -313,6 +287,12 @@ fn update(world: &mut World) {
     // Get the other resources
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let time = world.get::<Time>().unwrap();
+
+    /*
+    if let Some((rotation, _)) = ecs.query::<(&mut Rotation, &DirectionalLight)>().unwrap().next() {
+        rotation.rotate_x(0.1 * time.delta_f32());
+    }
+    */
 
     if let Some(mut entry) = shading.main_camera().and_then(|c| ecs.entry_mut(c)) {
         // Get the location and rotation since we will update them

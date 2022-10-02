@@ -1,7 +1,7 @@
 #version 460 core
 #include "engine/shaders/math/conversions.func.glsl"
 layout(location = 0) out vec3 color;
-uniform sampler2D panorama;
+uniform samplerCube cubemap;
 in vec3 l_position;
 
 // Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
@@ -36,8 +36,7 @@ void main() {
             // tangent space to world (ok I see you my boi)
             vec3 sampled_dir = sampled_tangent.x * right + sampled_tangent.y * up + sampled_tangent.z * dir; 
 
-            vec2 uvs = sample_spherical_map(sampled_dir);
-            irradiance += aces(texture(panorama, uvs).rgb) * cos(theta) * sin(theta);
+            irradiance += texture(cubemap, sampled_dir).rgb * cos(theta) * sin(theta);
             samples += 1.0;
         }
     }

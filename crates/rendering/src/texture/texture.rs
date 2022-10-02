@@ -63,7 +63,12 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
                     Self::alloc_immutable_storage(tex, dimensions, levels.get(), ptr as _)
                 }
                 TextureMode::Resizable => {
-                    Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _)
+                    Self::alloc_resizable_storage(tex, dimensions, 0, ptr as _);
+
+                    // Resizable texture are kinda goofy when dealing with manual mipmaps
+                    if levels.get() > 1 {
+                        gl::TextureParameteri(tex, gl::TEXTURE_MAX_LEVEL, levels.get() as i32);
+                    }
                 }
             }
 
@@ -247,11 +252,14 @@ pub trait Texture: ToGlName + ToGlTarget + Sized {
     }
 
     // Automatically regenerate the texture's miplevels using an OpenGL function
-    fn generate_mipmaps(&mut self) {
+    fn generate_mipmaps(&mut self) -> bool {
         if self.levels() > 0 {
             unsafe {
                 gl::GenerateTextureMipmap(self.name());
             }
+            true
+        } else {
+            false
         }
     }
 
