@@ -17,7 +17,6 @@ pub trait Caller<'p>: Descriptor {
     type Params: 'p;
 
     // Execute all the events that are contained from within the registry
-    //fn call(registry: Registry<'d, Self>, params: Self::Params);
     fn call(events: &mut Events, params: Self::Params);
 }
 
@@ -34,6 +33,7 @@ pub struct Events {
     pub(crate) device: Registry<DeviceEvent>,
     pub(crate) init: Registry<Init>,
     pub(crate) update: Registry<Update>,
+    pub(crate) should_time: bool,
 }
 
 impl Events {
@@ -47,5 +47,10 @@ impl Events {
     // I cannot have this function inside the Registry since we have lifetime issue
     pub fn execute<'p, M: Descriptor + Caller<'p>>(&mut self, params: M::Params) {
         M::call(self, params)
+    }
+
+    // Return if event timings are enabled or not
+    pub fn are_timings_enabled(&self) -> bool {
+        self.should_time
     }
 }

@@ -17,6 +17,7 @@ pub fn setup() -> (World, Events) {
                 device: Default::default(),
                 init: Default::default(),
                 update: Default::default(),
+                should_time: cfg!(debug_assertions)
             },
         )
     } else {

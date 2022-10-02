@@ -1,6 +1,6 @@
 use crate::{Descriptor, Event, RegistrySortingError, Rule, Stage, StageError, StageKey};
 use ahash::{AHashMap, AHashSet};
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 // Number of maximum iterations allowed before we detect a cyclic reference from within the rules
 pub const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
@@ -17,7 +17,7 @@ pub struct Registry<M: Descriptor + 'static> {
     // Name of the stage -> rules
     pub(super) map: AHashMap<StageKey, Vec<Rule>>,
 
-    // Name of the stage -> underlying event
+    // Name of the stage -> underlying event + duration
     pub(super) events: Vec<(StageKey, Box<M::DynFunc>)>,
 
     // Incremented procedural name

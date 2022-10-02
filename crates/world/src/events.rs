@@ -3,7 +3,7 @@ mod events;
 mod registry;
 mod stage;
 mod system;
-mod variants;
+pub use timings::*;
 pub use errors::*;
 pub use events::*;
 pub use registry::*;
