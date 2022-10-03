@@ -11,7 +11,7 @@ pub trait Extent: Copy {
     // Get the max element from these dimensions
     fn max(&self) -> u16;
 
-    // Caclulate the number of mipmap layers that a texture can have (assuming that the offset is 0)
+    // Caclulate the number of mipmap levels that a texture can have
     fn levels(&self) -> NonZeroU8 {
         let mut cur = self.max() as f32;
         let mut num = 0u32;
@@ -19,7 +19,7 @@ pub trait Extent: Copy {
             cur /= 2.0;
             num += 1;
         }
-        NonZeroU8::new(u8::try_from(num + 1).unwrap()).unwrap()
+        NonZeroU8::new(u8::try_from(num).unwrap()).unwrap_or(NonZeroU8::new(1).unwrap())
     }
 
     // Check if this extent is smaller than another extent (in all axii)

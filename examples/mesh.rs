@@ -169,7 +169,6 @@ fn init(world: &mut World) {
 
     // Load up the HDRi cubemap (for specular IBL)
     let specular =  hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::SpecularIBL).unwrap());
-    dbg!("Finished convoluting the cubemap");
     // Create the default sky material
     let material = Sky {
         cubemap: hdri,

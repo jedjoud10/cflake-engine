@@ -18,7 +18,7 @@ pub struct Painter<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel
     pub(crate) untyped_color_attachments: Option<Vec<UntypedAttachment>>,
     pub(crate) untyped_depth_attachment: Option<UntypedAttachment>,
     pub(crate) untyped_stencil_attachment: Option<UntypedAttachment>,
-    writing_bitmask: u32,
+    bitmask: u32,
     _phantom: PhantomData<*const (C, D, S)>,
 }
 
@@ -36,8 +36,34 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
             untyped_color_attachments: None,
             untyped_depth_attachment: None,
             untyped_stencil_attachment: None,
-            writing_bitmask: 0,
+            bitmask: 0,
             _phantom: PhantomData,
+        }
+    }
+
+    // Convert a bit index to a OpenGL attachment code
+    // 0-29 -> color
+    // 30 -> depth
+    // 31 -> stencil
+    pub fn convert_signed_bit_to_code(location: u32) -> u32 {
+        if (0..=29).contains(&location) {
+            gl::COLOR_ATTACHMENT0 + location
+        } else if location == 30 {
+            gl::DEPTH_ATTACHMENT
+        } else if location == 31 {
+            gl::STENCIL_ATTACHMENT
+        } else {
+            panic!()
+        }
+    }
+
+    // Given the three untyped attachment vectors/options from the painter, we must select a single one based on the given bitmask location
+    fn select_untyped_attachment(&self, location: u32) -> Option<UntypedAttachment> {
+        match location {
+            0..=29 => self.untyped_color_attachments.as_ref().map(|vec| vec[location as usize]),
+            30 => self.untyped_depth_attachment,
+            31 => self.untyped_stencil_attachment,
+            _ => panic!(),
         }
     }
 
@@ -50,7 +76,6 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         stencil: ST,
     ) -> Option<ScopedPainter<C, D, S>> {
         // Convert the color attachments to their untyped attachments form
-        let old_writing_bitmask = self.writing_bitmask;
         let untyped_color = color.untyped_targets().map(|targets| {
             targets
                 .into_iter()
@@ -61,6 +86,12 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         // Don't do anything to the depth and stencil
         let untyped_depth = depth.as_target().map(|target| target.untyped);
         let untyped_stencil = stencil.as_target().map(|target| target.untyped);
+
+        // Check if we modified the painter in any way
+        let changed = 
+            untyped_color != self.untyped_color_attachments ||
+            untyped_depth != self.untyped_depth_attachment ||
+            untyped_stencil != self.untyped_stencil_attachment;
 
         // Simple struct to help us bind the attachments to the painter
         struct Attachment {
@@ -73,7 +104,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 
         // Convert the untyped color attachments to the local struct
         if untyped_color != self.untyped_color_attachments {
-            self.writing_bitmask &= 0xC0000000;
+            self.bitmask &= 0xC0000000;
             let untyped_color = untyped_color.unwrap();
             let mut offset = 0;
             attachments.extend(untyped_color.iter().map(|untyped| {
@@ -82,7 +113,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     code: gl::COLOR_ATTACHMENT0 + offset,
                 };
 
-                self.writing_bitmask |= (untyped.writable() as u32) << offset;
+                self.bitmask |= 1 << offset;
                 offset += 1;
                 return attachment;
             }));
@@ -91,37 +122,35 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
 
         // Convert the untyped depth attachment to the local struct
         if untyped_depth != self.untyped_depth_attachment {
-            self.writing_bitmask &= !(1 << 30);
+            self.bitmask &= !(1 << 30);
             let untyped_depth = untyped_depth.unwrap();
             self.untyped_depth_attachment = Some(untyped_depth);
             attachments.push(Attachment {
                 untyped: untyped_depth,
                 code: gl::DEPTH_ATTACHMENT,
             });
-            self.writing_bitmask |= (untyped_depth.writable() as u32) << 30;
+            self.bitmask |= 1 << 30;
         }
 
         // Convert the untyped stencil attachment to the local struct
         if untyped_stencil != self.untyped_stencil_attachment {
-            self.writing_bitmask &= !(1 << 31);
+            self.bitmask &= !(1 << 31);
             let untyped_stencil = untyped_stencil.unwrap();
             self.untyped_stencil_attachment = Some(untyped_stencil);
             attachments.push(Attachment {
                 untyped: untyped_stencil,
                 code: gl::STENCIL_ATTACHMENT,
             });
-            self.writing_bitmask |= (untyped_stencil.writable() as u32) << 31;
-        }
+            self.bitmask |= 1 << 31;
+        }        
 
         // Bind the texture layers/levels to the proper attachments
         for attachment in attachments.iter() {
-            // Attach the target's attachment to the framebuffer
             match attachment.untyped {
                 UntypedAttachment::TextureLevel {
-                    texture_name,
+                    texture: texture_name,
                     level,
                     untyped: _,
-                    writable: _,
                 } => unsafe {
                     gl::NamedFramebufferTexture(
                         self.name,
@@ -131,11 +160,10 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     );
                 },
                 UntypedAttachment::TextureLevelLayer {
-                    texture_name,
+                    texture: texture_name,
                     level,
                     layer,
                     untyped: _,
-                    writable: _,
                 } => unsafe {
                     gl::NamedFramebufferTextureLayer(
                         self.name,
@@ -177,21 +205,18 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         }
 
         // If the writing bitmask is different, we must check for framebuffer validity
-        unsafe {
-            let status = gl::CheckNamedFramebufferStatus(self.name, gl::FRAMEBUFFER);
-            if status != gl::FRAMEBUFFER_COMPLETE {
-                println!("{:b}", self.writing_bitmask);
-                println!("{:b}", old_writing_bitmask);
-                panic!("Framebuffer status error: {:?}", status);
-            }
-        }
-        if self.writing_bitmask != old_writing_bitmask {
+        if changed {
             unsafe {
+                let status = gl::CheckNamedFramebufferStatus(self.name, gl::FRAMEBUFFER);
+                if status != gl::FRAMEBUFFER_COMPLETE {
+                    println!("{:b}", self.bitmask);
+                    //panic!("Framebuffer status error: {:?}", status);
+                }
             }
         }
 
         Some(ScopedPainter {
-            writing_mask: self.writing_bitmask,
+            writing_mask: self.bitmask,
             painter: self,
             viewport,
         })
@@ -214,9 +239,5 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Display
 
     fn name(&self) -> u32 {
         self.painter.name
-    }
-
-    fn writable_attachments_mask(&self) -> u32 {
-        self.writing_mask
     }
 }

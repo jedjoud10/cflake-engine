@@ -346,7 +346,7 @@ impl CubeMapConvolutor2D {
             .unwrap();
         
         // Create a rasterizer to convert the equilateral texture
-        let mut painter = Painter::<RGB<f32>, (), ()>::new(ctx);
+        let painter = Painter::<RGB<f32>, (), ()>::new(ctx);
 
         // Create the rasterization settings
         let raster_settings = RasterSettings {

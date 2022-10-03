@@ -21,30 +21,20 @@ pub enum AttachmentLocation {
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub(crate) enum UntypedAttachment {
     TextureLevel {
-        texture_name: u32,
+        texture: u32,
         level: u8,
         untyped: UntypedTexel,
-        writable: bool,
     },
 
     TextureLevelLayer {
-        texture_name: u32,
+        texture: u32,
         level: u8,
         layer: u16,
         untyped: UntypedTexel,
-        writable: bool,
     },
 }
 
 impl UntypedAttachment {
-    // Check if the attachment is writable or not
-    pub fn writable(&self) -> bool {
-        match self {
-            UntypedAttachment::TextureLevel { writable, .. }
-            | UntypedAttachment::TextureLevelLayer { writable, .. } => *writable,
-        }
-    }
-
     // Get the untyped attachment texel
     pub fn texel(&self) -> UntypedTexel {
         match self {
@@ -126,25 +116,9 @@ impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget<T::T> for MipLevelMut<'a, 
 
         Target {
             untyped: UntypedAttachment::TextureLevel {
-                texture_name: self.texture().name(),
+                texture: self.texture().name(),
                 level: self.level(),
                 untyped: <T::T as Texel>::untyped(),
-                writable: true,
-            },
-            _phantom: PhantomData,
-        }
-    }
-}
-
-// Convert single layered mip level into a readable target
-impl<'a, T: SingleLayerTexture> SingleLayerIntoTarget<T::T> for MipLevelRef<'a, T> {
-    fn target(self) -> Target<T::T, Self> {
-        Target {
-            untyped: UntypedAttachment::TextureLevel {
-                texture_name: self.texture().name(),
-                level: self.level(),
-                untyped: <T::T as Texel>::untyped(),
-                writable: false,
             },
             _phantom: PhantomData,
         }
@@ -167,22 +141,6 @@ where
     }
 }
 
-// Non writable AsTarget
-impl<'a, T: Texture> AsTarget<T::T> for MipLevelRef<'a, T>
-where
-    Self: SingleLayerIntoTarget<T::T>,
-{
-    type A = MipLevelRef<'a, T>;
-    fn as_target(self) -> Option<Target<T::T, Self::A>> {
-        Some(self.target())
-    }
-    fn as_untyped_target(self) -> Option<UntypedTarget> {
-        Some(UntypedTarget {
-            untyped: self.target().untyped,
-        })
-    }
-}
-
 // Implemented for objects that have multiple layers and that must use a specific when when fetching targets
 // Only used for cubemaps, bundled texture 2d, and texture 3ds
 pub trait MultilayerIntoTarget<T: Texel>: Sized {
@@ -194,27 +152,10 @@ impl<'a, T: MultiLayerTexture> MultilayerIntoTarget<T::T> for MipLevelMut<'a, T>
     fn target(self, layer: u16) -> Option<Target<T::T, Self>> {
         T::is_layer_valid(self.texture(), layer).then(|| Target {
             untyped: UntypedAttachment::TextureLevelLayer {
-                texture_name: self.texture().name(),
+                texture: self.texture().name(),
                 level: self.level(),
                 layer,
                 untyped: <T::T as Texel>::untyped(),
-                writable: true,
-            },
-            _phantom: PhantomData,
-        })
-    }
-}
-
-// Convert multi layered mip levels into a readable target
-impl<'a, T: MultiLayerTexture> MultilayerIntoTarget<T::T> for MipLevelRef<'a, T> {
-    fn target(self, layer: u16) -> Option<Target<T::T, Self>> {
-        T::is_layer_valid(self.texture(), layer).then(|| Target {
-            untyped: UntypedAttachment::TextureLevelLayer {
-                texture_name: self.texture().name(),
-                level: self.level(),
-                layer,
-                untyped: <T::T as Texel>::untyped(),
-                writable: false,
             },
             _phantom: PhantomData,
         })

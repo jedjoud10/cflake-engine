@@ -25,13 +25,7 @@ pub trait Display: Sized {
 
     // Get the framebuffer name of this display
     fn name(&self) -> u32;
-
-    // Get a mask of the writable framebuffer attachments
-    // 0-29 -> color
-    // 30 -> depth
-    // 31 -> stencil
-    fn writable_attachments_mask(&self) -> u32;
-
+    
     // Create a new rasterizer from this display
     fn rasterizer<'shader: 'uniforms, 'display, 'context, 'uniforms>(
         &'display mut self,
