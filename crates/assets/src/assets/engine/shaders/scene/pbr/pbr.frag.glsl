@@ -36,7 +36,6 @@ uniform sampler2D brdf_integration_map;
 uniform sampler2DShadow shadow_map;
 uniform mat4 shadow_lightspace_matrix;
 
-
 // Clustered shading data
 uniform uint cluster_size;
 uniform uvec2 resolution;
@@ -145,6 +144,17 @@ void main() {
 	vec3 ks = fresnelRoughness(f0, surface.normal, camera.view, roughness);
 	vec3 kd = (1 - ks) * (1 - metallic);
 	vec3 irradiance = texture(irradiance_environment_map, surface.normal).rgb;
+
+	/*
+	frag = vec3(is_in_shadow(
+		surface.position,
+		sun.backward,
+		shadow_lightspace_matrix,
+		shadow_map
+	));
+
+	return;
+	*/
 
 	// Ambient specular lighting
 	vec3 specular = textureLod(specular_environment_map, reflect(-camera.view, surface.normal), roughness * float(specular_environment_map_levels)).rgb; 

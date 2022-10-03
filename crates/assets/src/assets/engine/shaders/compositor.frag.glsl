@@ -42,7 +42,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / vec2(resolution);
 	
 	// Sample the color texture and apply gamma correction
-	vec3 sampled = convoluted(color, uv, sharpen_kernel, 0.001).rgb;
+	vec3 sampled = texture(color, uv).rgb;
 	sampled *= exposure;
 	sampled = mix(sampled, aces(sampled), tonemapping_strength);
 	sampled = pow(sampled, vec3(1.0 / gamma));

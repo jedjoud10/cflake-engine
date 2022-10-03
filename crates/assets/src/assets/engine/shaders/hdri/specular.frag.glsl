@@ -24,7 +24,7 @@ void main() {
     vec3 dir = normalize(l_position);
     vec3 convoluted = vec3(0.0);     
     float weight = 0.0;   
-    const uint SAMPLE_COUNT = 1024;
+    const uint SAMPLE_COUNT = 512;
 
     // GGX Importance sampling moment
     // To be honest, I have no fucking idea what this does bro I am stoopid

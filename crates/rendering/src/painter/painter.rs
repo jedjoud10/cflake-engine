@@ -50,6 +50,7 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
         stencil: ST,
     ) -> Option<ScopedPainter<C, D, S>> {
         // Convert the color attachments to their untyped attachments form
+        let old_writing_bitmask = self.writing_bitmask;
         let untyped_color = color.untyped_targets().map(|targets| {
             targets
                 .into_iter()
@@ -172,6 +173,20 @@ impl<C: MaybeColorLayout, D: MaybeDepthTexel, S: MaybeStencilTexel> Painter<C, D
                     draw.len() as i32,
                     draw.as_ptr() as *const u32,
                 );
+            }
+        }
+
+        // If the writing bitmask is different, we must check for framebuffer validity
+        unsafe {
+            let status = gl::CheckNamedFramebufferStatus(self.name, gl::FRAMEBUFFER);
+            if status != gl::FRAMEBUFFER_COMPLETE {
+                println!("{:b}", self.writing_bitmask);
+                println!("{:b}", old_writing_bitmask);
+                panic!("Framebuffer status error: {:?}", status);
+            }
+        }
+        if self.writing_bitmask != old_writing_bitmask {
+            unsafe {
             }
         }
 

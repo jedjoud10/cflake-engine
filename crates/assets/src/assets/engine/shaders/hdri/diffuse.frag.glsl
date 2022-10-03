@@ -23,7 +23,7 @@ void main() {
     up = normalize(cross(dir, right));
 
     // Used for convolution
-    float sample_delta = 0.025;
+    float sample_delta = 0.125;
     float samples = 0.0;
     const float PI = 3.14159265359;
 

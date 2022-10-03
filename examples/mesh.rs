@@ -53,8 +53,8 @@ fn init(world: &mut World) {
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
-        color: vek::Rgb::new(255, 243, 196),
         strength: 4.0,
+        ..Default::default()
     };
 
     let b1 = Rotation::rotation_x(45f32.to_radians());
@@ -169,7 +169,7 @@ fn init(world: &mut World) {
 
     // Load up the HDRi cubemap (for specular IBL)
     let specular =  hdris.insert(convolutor.convoluted_from_requirectangular(&mut ctx, &equirectangular, TextureImportSettings::default(), CubeMapConvolutionMode::SpecularIBL).unwrap());
-
+    dbg!("Finished convoluting the cubemap");
     // Create the default sky material
     let material = Sky {
         cubemap: hdri,
