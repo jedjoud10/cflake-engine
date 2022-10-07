@@ -4,12 +4,12 @@ use crate::Assets;
 
 // File data is what will be given to assets whenever we try to deserialize them
 // We will assume that all assets are files
+// TODO: add the loader back again
 pub struct Data<'a> {
     pub(super) name: &'a str,
     pub(super) extension: &'a str,
     pub(super) bytes: Arc<[u8]>,
     pub(super) path: &'a Path,
-    pub(super) loader: &'a Assets,
 }
 
 impl<'a> Data<'a> {
@@ -32,16 +32,11 @@ impl<'a> Data<'a> {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
-
-    // Get an immutable reference to the loader
-    pub fn loader(&self) -> &Assets {
-        self.loader
-    }
 }
 
 // An asset that will be loaded from a single unique file
 // Each asset has some extra data that can be used to construct the object
-pub trait Asset<'args>: Sized {
+pub trait Asset<'args>: Sized + 'static {
     // Extra data that can be used to construct the object
     type Args: 'args;
 
@@ -60,6 +55,7 @@ impl Asset<'static> for String {
     }
 
     fn deserialize(data: Data, _args: Self::Args) -> Self {
+        std::thread::sleep(std::time::Duration::from_millis(1));
         String::from_utf8(data.bytes().to_vec()).unwrap()
     }
 }
