@@ -35,17 +35,20 @@ fn init(world: &mut World) {
     let mut assets = world.get_mut::<Assets>().unwrap();
 
     // Create a perspective camera and insert it into the world as an entity (and update the scene settings)
-    let camera = Camera::new(90.0, 0.3, 1000.0, 16.0 / 9.0);
+    let camera = Camera::new(110.0, 0.3, 1000.0, 16.0 / 9.0);
     let _camera = ecs.insert((camera, Location::at_z(5.0), Rotation::default()));
 
-    asset!(&mut assets, "assets/user/diffuse.png");
-    asset!(&mut assets, "assets/user/normal.png");
-    asset!(&mut assets, "assets/user/mask.png");
+    asset!(&mut assets, "assets/user/ignored/diffuse.png");
+    asset!(&mut assets, "assets/user/ignored/normal.png");
+    asset!(&mut assets, "assets/user/ignored/mask.png");
     asset!(&mut assets, "assets/user/ignored/cubemap.hdr");
+    asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
     // We will also register some new keybinds for the camera controller
     input.bind_key("forward", Key::W);
     input.bind_key("backward", Key::S);
+    input.bind_key("up", Key::Space);
+    input.bind_key("down", Key::LShift);
     input.bind_key("left", Key::A);
     input.bind_key("right", Key::D);
     input.bind_axis("x rotation", Axis::MousePositionX);
@@ -64,7 +67,7 @@ fn init(world: &mut World) {
     // Load the albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
-            "user/ignored/diffuse2.png",
+            "user/ignored/diffuse.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -73,7 +76,7 @@ fn init(world: &mut World) {
     // Load the normal map texture
     let normal_map = assets
         .load_with::<NormalMap>(
-            "user/ignored/normal2.png",
+            "user/ignored/normal.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -82,7 +85,7 @@ fn init(world: &mut World) {
     // Load the mask map texture
     let mask_map = assets
         .load_with::<MaskMap>(
-            "user/ignored/mask2.png",
+            "user/ignored/mask.png",
             (&mut ctx, TextureImportSettings::default()),
         )
         .unwrap();
@@ -138,6 +141,9 @@ fn init(world: &mut World) {
     for x in 0..10 {
         for y in 0..10 {
             let material = standard_materials.insert(Standard {
+                albedo_map: Some(albedo_map.clone()),
+                normal_map: Some(normal_map.clone()),
+                bumpiness: 0.5,
                 roughness: (y as f32) / 9.0,
                 metallic: (x as f32) / 9.0,
                 ..Default::default()
@@ -300,6 +306,7 @@ fn update(world: &mut World) {
         // Forward and right vectors relative to the camera
         let forward = rotation.forward();
         let right = rotation.right();
+        let up = rotation.up();
         let mut velocity = vek::Vec3::<f32>::default();
 
         // Update the velocity in the forward and backward directions
@@ -314,6 +321,13 @@ fn update(world: &mut World) {
             velocity += -right;
         } else if input.key("right").held() {
             velocity += right;
+        }
+
+        // Update the velocity in the left and right directions
+        if input.key("up").held() {
+            velocity += up;
+        } else if input.key("down").held() {
+            velocity += -up;
         }
 
         // Update the location with the new velocity

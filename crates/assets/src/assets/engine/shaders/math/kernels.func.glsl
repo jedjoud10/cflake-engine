@@ -25,8 +25,9 @@ const vec2 offsets[9] = vec2[9](
 
 // Sample a texture, but apply some sort of kernel when fetching texels
 // This assumes that the kernel is of 9x9 size
-vec4 convoluted(sampler2D tex, vec2 uv, float[9] kernel, float offset) {
+vec4 convoluted(sampler2D tex, vec2 uv, float[9] kernel, vec2 offset) {
     vec4 color = vec4(0.0); 
+    offset *= 1.0 / textureSize(tex, 0).xy;
     for(int i = 0; i < 9; i++) {
         vec4 sampled = texture(tex, uv + offsets[i] * offset);
         color += sampled * kernel[i];

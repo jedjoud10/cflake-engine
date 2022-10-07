@@ -30,11 +30,11 @@ float shadow_pcf(sampler2DShadow tex, vec3 uv, float offset) {
         return main;
     }
 
-    const int SAMPLES = 1;
+    const int SAMPLES = 2;
     const int HALVED_SAMPLES = SAMPLES / 2;
 
     float sum = 0.0;
-    vec2 offset_size = 1.0 / textureSize(tex, 0) * (1.0 / float(SAMPLES+1)) * 30.0;
+    vec2 offset_size = 1.0 / textureSize(tex, 0) * (1.0 / float(SAMPLES+1));
     for(int x = -HALVED_SAMPLES; x <= HALVED_SAMPLES; x++) {
         for (int y = -HALVED_SAMPLES; y <= HALVED_SAMPLES; y++) {
             vec2 local_offset = vec2(x, y) * offset_size * offset;
@@ -62,5 +62,5 @@ float is_in_shadow(vec3 position, vec3 light_dir, mat4 lightspace_matrix, sample
     vec3 lightspace_uvs = projected * 0.5 + 0.5;
 
     // PCF shadow sampling (hardware)
-    return shadow_pcf(tex, lightspace_uvs, 0.5);
+    return shadow_pcf(tex, lightspace_uvs, 4.5);
 }

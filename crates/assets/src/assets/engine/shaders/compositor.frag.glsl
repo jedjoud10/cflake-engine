@@ -55,6 +55,5 @@ void main() {
 	sampled = mix(sampled, vec3(0), vignette);
 
 	// Sample the depth texture
-	float depth = linearize_depth(texture(depth, uv).r, z_near, z_far);
 	frag = vec4(sampled, 1.0);
 }

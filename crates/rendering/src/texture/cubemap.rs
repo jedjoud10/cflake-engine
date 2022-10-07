@@ -414,7 +414,7 @@ impl CubeMapConvolutor2D {
     pub fn convoluted(&mut self, ctx: &mut Context, original: &CubeMap2D<RGB<f32>>, mut settings: TextureImportSettings, convolution: CubeMapConvolutionMode) -> Option<CubeMap2D<RGB<f32>>> {
         // Resolution of the cubemap depends on the convolution mode
         let dimensions = match convolution {
-            CubeMapConvolutionMode::SpecularIBL => original.dimensions() / 8,
+            CubeMapConvolutionMode::SpecularIBL => original.dimensions(),
             CubeMapConvolutionMode::DiffuseIrradiance => vek::Extent2::broadcast(16),
         };
 

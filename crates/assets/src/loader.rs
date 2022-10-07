@@ -1,6 +1,7 @@
 use crate::Asset;
 use ahash::AHashMap;
 use parking_lot::RwLock;
+use threadpool::ThreadPool;
 
 use std::{
     cell::RefCell,
@@ -8,17 +9,15 @@ use std::{
     path::{Path, PathBuf},
     rc::Rc,
     str::FromStr,
-    sync::Arc,
+    sync::Arc, thread::Thread,
 };
 
 // This is the main asset manager resource that will load & cache newly loaded assets
 // This asset manager will also contain the persistent assets that are included by default into the engine executable
-// TODO: Test multithreadeding
 pub struct Assets {
     cached: RwLock<AHashMap<PathBuf, Arc<[u8]>>>,
-
-    // Global path to the user defined assets folder
     user: Option<PathBuf>,
+    threadpool: ThreadPool,
 }
 
 impl Assets {
@@ -26,6 +25,7 @@ impl Assets {
     pub fn new(user: Option<PathBuf>) -> Self {
         Self {
             cached: Default::default(),
+            threadpool: ThreadPool::new(4),
             user,
         }
     }
@@ -81,6 +81,42 @@ impl Assets {
     {
         self.load_with(path, Default::default())
     }
+
+    // Load an asset using some explicit loading arguments without checking it's extensions in another thread
+    pub unsafe fn threaded_load_with_unchecked_<'args, A: Asset<'args>>(
+        &self,
+        path: &str,
+        args: A::Args,
+    ) -> Option<A>
+    where
+        A::Args: Send + Sync
+    {
+        None
+    }
+
+    // Load an asset using some explicit loading arguments in another thread
+    pub fn threaded_load_with<'args, A: Asset<'args>>(&self, path: &str, args: A::Args) -> Option<A>
+    where
+        A::Args: Send + Sync
+    {
+        None
+    }
+
+    // Load an asset using some default loading arguments in another thread
+    pub fn threaded_load<'args, A: Asset<'args>>(&self, path: &str) -> Option<A>
+    where
+        A::Args: Default + Send + Sync,
+    {
+        self.threaded_load_with(path, Default::default())
+    }
+
+    // This will check if the asset loader finished loading a specific asset using it's handle
+    pub fn has_finished_loading() {}
+
+    // This will wait until the asset referenced by this handle has finished loading
+    pub fn wait(&self) {
+
+    } 
 
     // Import a persistent asset using it's global asset path and it's raw bytes
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {
