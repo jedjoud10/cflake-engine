@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod test {
+mod tests {
     use std::time::Instant;
 
     use crate::{Assets, persistent};

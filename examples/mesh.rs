@@ -45,14 +45,17 @@ fn init(world: &mut World) {
     asset!(&mut assets, "assets/user/ignored/untitled.obj");
 
     // We will also register some new keybinds for the camera controller
+    /*
     input.bind_key("forward", Key::W);
     input.bind_key("backward", Key::S);
     input.bind_key("up", Key::Space);
-    input.bind_key("down", Key::LShift);
+    input.bind_key("down", Key::LControl);
     input.bind_key("left", Key::A);
     input.bind_key("right", Key::D);
     input.bind_axis("x rotation", Axis::MousePositionX);
     input.bind_axis("y rotation", Axis::MousePositionY);
+    */
+    input.read_bindings_from_file(std::path::Path::new("C:/Users/jribi/Desktop/inputs.json"));
 
     // Create a directional light insert it as a light entity (and update the scene settings)
     let light = DirectionalLight {
@@ -64,6 +67,7 @@ fn init(world: &mut World) {
     let b2 = Rotation::rotation_z(45f32.to_radians());
     ecs.insert((light, b2 * b1));
 
+    /*
     // Load the albedo map texture
     let albedo_map = assets
         .load_with::<AlbedoMap>(
@@ -90,6 +94,7 @@ fn init(world: &mut World) {
         )
         .unwrap();
     let mask_map = mask_maps.insert(mask_map);
+    */
 
     // Create the default cube primitive mesh
     let cube = meshes.insert(
@@ -141,8 +146,6 @@ fn init(world: &mut World) {
     for x in 0..10 {
         for y in 0..10 {
             let material = standard_materials.insert(Standard {
-                albedo_map: Some(albedo_map.clone()),
-                normal_map: Some(normal_map.clone()),
                 bumpiness: 0.5,
                 roughness: (y as f32) / 9.0,
                 metallic: (x as f32) / 9.0,

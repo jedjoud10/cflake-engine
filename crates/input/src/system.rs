@@ -7,9 +7,8 @@ pub fn system(events: &mut Events) {
     // Init event (called once at the start of program)
     fn init(world: &mut World) {
         world.insert(Input {
-            key_bindings: Default::default(),
+            bindings: Default::default(),
             keys: Default::default(),
-            axis_bindings: Default::default(),
             axii: Default::default(),
         });
     }

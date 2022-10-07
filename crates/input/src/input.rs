@@ -1,3 +1,5 @@
+use std::{path::Path, fs::File, io::{BufReader, Read, Write}, borrow::Cow, collections::BTreeMap};
+use serde::{*, ser::{SerializeMap, SerializeStruct}};
 use ahash::AHashMap;
 use glutin::event::ElementState;
 
@@ -49,7 +51,7 @@ impl KeyState {
 }
 
 // An axis can be mapped to a specific binding to be able to fetch it using a user defined name
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Axis {
     MousePositionX,
     MousePositionY,
@@ -61,17 +63,25 @@ pub enum Axis {
 
 // This keyboard struct will be responsible for all key events and state handling for the keyboard
 pub struct Input {
-    // "forward_key_bind" -> Key::W
-    pub(crate) key_bindings: AHashMap<&'static str, Key>,
+    // Key and axis bindings
+   pub(crate) bindings: InputUserBindings,
 
     // Key::W -> State::Pressed
     pub(crate) keys: AHashMap<Key, KeyState>,
 
-    // "camera rotation" -> Axis:MousePositionX,
-    pub(crate) axis_bindings: AHashMap<&'static str, Axis>,
-
     // Axis::MousePositionX -> 561.56
     pub(crate) axii: AHashMap<Axis, f32>,
+}
+
+// User input bindings are basically 
+#[derive(Default, Clone, Serialize, Deserialize)]
+// TODO: Sort by string name
+pub struct InputUserBindings {
+    // "forward_key_bind" -> Key::W
+    pub(crate) key_bindings: AHashMap<Cow<'static, str>, Key>,
+    
+    // "camera rotation" -> Axis:MousePositionX,
+    pub(crate) axis_bindings: AHashMap<Cow<'static, str>, Axis>,
 }
 
 // Trait implemented for structs that allow us to fetch the key state from the main input handler
@@ -88,6 +98,7 @@ impl InputButtonId for Key {
 impl InputButtonId for &'static str {
     fn get(self, input: &Input) -> KeyState {
         input
+            .bindings
             .key_bindings
             .get(self)
             .map(|key| Key::get(*key, input))
@@ -109,6 +120,7 @@ impl InputAxisId for Axis {
 impl InputAxisId for &'static str {
     fn get(self, input: &Input) -> f32 {
         input
+            .bindings
             .axis_bindings
             .get(self)
             .map(|axis| Axis::get(*axis, input))
@@ -117,14 +129,56 @@ impl InputAxisId for &'static str {
 }
 
 impl Input {
+    // Load the bindings from the user binding struct
+    // If there are conflicting bindings, they will get overwritten
+    pub fn read_bindings_from_user_bindings(&mut self, user: InputUserBindings) {
+        self.bindings.axis_bindings.extend(user.axis_bindings);
+        self.bindings.key_bindings.extend(user.key_bindings);
+    }
+
+    // Load the bindings from a file
+    // If there are conflicting bindings, they will get overwritten
+    pub fn read_bindings_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<()> {
+        let mut options = File::options();
+        options.read(true);
+        let mut string = String::new();
+        let mut reader = BufReader::new(options.open(path).ok()?);
+        reader.read_to_string(&mut string).unwrap();
+        let cow = Cow::from(string);
+
+        let bindings = serde_json::from_str(&cow).ok()?;
+        self.read_bindings_from_user_bindings(bindings);
+        Some(())
+    }
+
+    // Convert the bindings to a user binding struct
+    pub fn as_user_binding(&self) -> InputUserBindings {
+        self.bindings.clone()
+    }
+
+    // Write the bindings to a file
+    // If the file does not exist, create it
+    pub fn write_bindings_to_file<P: AsRef<Path>>(&self, path: P) -> Option<()> {
+        let mut options = File::options();
+        options.read(true);
+        options.write(true);
+        options.truncate(true);
+        options.create_new(true);
+        let mut file = options.open(path).ok()?;
+        let data = self.as_user_binding();
+        let json = serde_json::to_string_pretty(&data).ok()?;
+        file.write_all(json.as_bytes()).ok()?;
+        Some(())
+    }
+
     // Create a new button binding using a name and a unique key
     pub fn bind_key(&mut self, name: &'static str, key: Key) {
-        self.key_bindings.insert(name, key);
+        self.bindings.key_bindings.insert(Cow::Borrowed(name), key);
     }
 
     // Create a new axis binding using a name and a unique axis
     pub fn bind_axis(&mut self, name: &'static str, axis: Axis) {
-        self.axis_bindings.insert(name, axis);
+        self.bindings.axis_bindings.insert(Cow::Borrowed(name), axis);
     }
 
     // Get the state of a button mapping or a key mapping

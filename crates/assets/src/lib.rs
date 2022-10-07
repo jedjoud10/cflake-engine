@@ -3,7 +3,7 @@ mod loader;
 mod macros;
 mod raw;
 mod system;
-mod test;
+mod tests;
 pub use asset::*;
 pub use loader::*;
 pub use macros::*;
