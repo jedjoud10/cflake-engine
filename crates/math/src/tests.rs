@@ -1,2 +1,7 @@
 #[cfg(test)]
-mod tests {}
+mod tests {
+    #[test]
+    fn test() {
+
+    }
+}

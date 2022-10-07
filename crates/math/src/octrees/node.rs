@@ -2,14 +2,36 @@ use arrayvec::ArrayVec;
 use slotmap::Key;
 use std::hash::Hash;
 
-slotmap::new_key_type! {
-    pub struct NodeKey;
+pub struct NodeGroup {
+
 }
+
+pub struct Node {
+    
+}
+
+// Node parent index u32
+// Node children [u32; 8]
+pub struct NodeValues {
+    // Stored per node
+    children: Vec<[u32; 8]>,
+    
+    // Stored per node group
+    shared_location: Vec<vek::Vec3<i64>>,
+    shared_parent: Vec<u32>, 
+    shared_depth: Vec<u32>,    
+}
+
+
+// 128
+// Node position i64
+// Node size u64
 
 // A single node within any type of octree
 // A node must have a parent (except if it is the root node)
 // A node *might* have 8 children
 // TODO: Optimize the node's layout since it seems inefficient
+/* */
 #[derive(Clone, Copy, Debug)]
 pub struct Node {
     // Positioning and size
