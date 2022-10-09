@@ -2,6 +2,7 @@ use arrayvec::ArrayVec;
 use slotmap::Key;
 use std::hash::Hash;
 
+// A node group is a set of data corresponding to a single node
 pub struct NodeGroup {
 
 }

@@ -40,11 +40,11 @@ impl Archetype {
         &mut self,
         entities: &mut EntitySet,
         components: Vec<B>,
-    ) -> Vec<Entity> {
+    ) -> &[Entity] {
         assert!(B::is_valid());
         assert_eq!(B::combined(), self.mask);
         self.reserve(entities.len());
-        let mut output = Vec::new();
+        let old_len = self.entities.len();
 
         // Add the entities internally and externally
         for _ in 0..components.len() {
@@ -57,7 +57,6 @@ impl Archetype {
                 .borrow_mut()
                 .push(StateRow::new(self.mask, Mask::zero(), self.mask));
             self.entities.push(entity);
-            output.push(entity)
         }
 
         // Add the storage bundles to their respective tables
@@ -65,9 +64,10 @@ impl Archetype {
         for set in components {
             B::push(&mut storages, set);
         }
+        drop(storages);
 
         // Return the newly added entity IDs
-        output
+        &self.entities[old_len..]
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation

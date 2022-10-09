@@ -123,6 +123,7 @@ impl<'a, L: MutQueryLayout<'a>> MutQueryItemResult<'a, L> {
 
 // Chunk used for mutable query
 struct MutQueryChunk<'c, 'a, L: MutQueryLayout<'a>> {
+    layout: L::Slice,
     ptrs: L::PtrTuple,
     access: LayoutAccess,
     states: Rc<RefCell<Vec<StateRow>>>,

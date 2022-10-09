@@ -34,15 +34,14 @@ impl Default for Scene {
 impl Scene {
     // Spawn an entity with specific components
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
-        assert!(B::is_valid());
-        self.insert_from_iter(std::iter::once(components))[0]
+        self.extend_from_iter(std::iter::once(components))[0]
     }
 
-    // Spawn a batch of entities with specific components
-    pub fn insert_from_iter<B: Bundle>(
+    // Spawn a batch of entities with specific components from an iterator
+    pub fn extend_from_iter<B: Bundle>(
         &mut self,
         iter: impl IntoIterator<Item = B>,
-    ) -> Vec<Entity> {
+    ) -> &[Entity] {
         assert!(B::is_valid());
 
         // Try to get the archetype, and create a default one if it does not exist
@@ -142,13 +141,6 @@ impl Scene {
         crate::query_mut_marked(&mut self.archetypes).map(|iter| iter.map(|(t, _)| t))
     }
 
-    // Create a new mutable marked query iterator
-    pub fn query_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_mut_marked(&mut self.archetypes)
-    }
-
     // Create a new mutable query iterator with a filter
     pub fn query_with_filter<'c: 'a, 'a, L: MutQueryLayout<'a>>(
         &'c mut self,
@@ -156,14 +148,6 @@ impl Scene {
     ) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_mut_filter_marked(&mut self.archetypes, filter)
             .map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new mutable query iterator with a filter and entity ids
-    pub fn query_with_filter_with_id<'c: 'a, 'a, L: MutQueryLayout<'a>>(
-        &'c mut self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_mut_filter_marked(&mut self.archetypes, filter)
     }
 
     // Create a new mutable raw query iterator
@@ -180,27 +164,12 @@ impl Scene {
         crate::query_ref_marked(&self.archetypes).map(|iter| iter.map(|(t, _)| t))
     }
 
-    // Create a new immutable marked query iterator
-    pub fn view_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_ref_marked(&self.archetypes)
-    }
-
     // Create a new immutable query iterator with a filter
     pub fn view_with_filter<'c: 'a, 'a, L: RefQueryLayout<'a>>(
         &'c self,
         filter: impl Evaluate,
     ) -> Option<impl Iterator<Item = L> + 'a> {
         crate::query_ref_filter_marked(&self.archetypes, filter).map(|iter| iter.map(|(t, _)| t))
-    }
-
-    // Create a new immutable query iterator with a filter and an entity id
-    pub fn view_with_filter_with_id<'c: 'a, 'a, L: RefQueryLayout<'a>>(
-        &'c self,
-        filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = (L, Entity)> + 'a> {
-        crate::query_ref_filter_marked(&self.archetypes, filter)
     }
 
     // Create a new immutable raw query iterator
