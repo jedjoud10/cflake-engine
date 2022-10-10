@@ -134,26 +134,30 @@ impl Scene {
         &mut self.entities
     }
 
-    // Create a new mutable query iterator
-    pub fn query<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+    // Create a new mutable query iterator.
+    /*
+    pub fn query<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'s, 'l>>(
         &'c mut self,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
-        crate::query_mut_marked(&mut self.archetypes).map(|iter| iter.map(|(t, _)| t))
+    ) -> Option<impl Iterator<Item = L> + 'l> {
+        //crate::query_mut(&mut self.archetypes).map(|iter| iter.map(|(t, _)| t))
     }
+    */
 
+    /*
     // Create a new mutable query iterator with a filter
-    pub fn query_with_filter<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+    pub fn query_with_filter<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'ar, 's, 'l>>(
         &'c mut self,
         filter: impl Evaluate,
-    ) -> Option<impl Iterator<Item = L> + 'a> {
+    ) -> Option<impl Iterator<Item = L> + 'l> {
         crate::query_mut_filter_marked(&mut self.archetypes, filter)
             .map(|iter| iter.map(|(t, _)| t))
     }
-
+    */
+    /*
     // Create a new mutable raw query iterator
-    pub fn query_raw<'c: 'a, 'a, L: MutQueryLayout<'a>>(
+    pub fn query_raw<'c: 'ar, 'ar: 's, 's: 'l, 'l, L: MutQueryLayout<'ar, 's, 'l>>(
         &'c mut self,
-    ) -> Option<impl Iterator<Item = MutQueryItemResult<'a, L>> + 'a> {
+    ) -> Option<impl Iterator<Item = MutQueryItemResult<'l, L>> + 'l> {
         crate::query_mut_raw(&mut self.archetypes)
     }
 
@@ -178,6 +182,7 @@ impl Scene {
     ) -> Option<impl Iterator<Item = RefQueryItemResult<'a, L>> + 'a> {
         crate::query_ref_raw(&mut self.archetypes)
     }
+    */
 }
 
 // The ECS system will manually insert the ECS resource and will clean it at the start of each frame (except the first frame)

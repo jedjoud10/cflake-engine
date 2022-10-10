@@ -1,3 +1,5 @@
+use std::slice;
+
 use crate::{
     mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap,
     MutQueryItem, MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
@@ -45,9 +47,10 @@ impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
 }
 
 // Impl of mut query item for &T
-impl<'a, T: Component> MutQueryItem<'a> for &'a T {
-    type Component = T;
+impl<'s: 'l, 'l, T: Component> MutQueryItem<'s, 'l> for &'l T {
+    type Item = T;
     type Ptr = *const T;
+    type Slice = &'s [T];
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         let cm = mask::<T>();
@@ -55,37 +58,47 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a T {
             .then_some(LayoutAccess::new(cm, Mask::zero()))
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+    fn prepare<'ar: 's>(archetype: &'ar mut Archetype) -> Option<Self::Ptr> {
         archetype.table_mut::<T>().map(|vec| vec.as_ptr())
     }
 
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        &*ptr.add(i)
+    unsafe fn into_slice(ptr: Self::Ptr, length: usize) -> Self::Slice {
+        slice::from_raw_parts(ptr, length)
+    }
+
+    fn read_from_slice(slice: &mut Self::Slice, index: usize) -> Self {
+        &slice[index]
     }
 }
 
 // Impl of mut query item for Option<&T>
-impl<'a, T: Component> MutQueryItem<'a> for Option<&'a T> {
-    type Component = T;
+impl<'s: 'l, 'l, T: Component> MutQueryItem<'s, 'l> for Option<&'l T> {
+    type Item = T;
     type Ptr = Option<*const T>;
+    type Slice = Option<&'s [T]>;
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         Some(LayoutAccess::new(mask::<T>() & m, Mask::zero()))
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+    fn prepare<'ar: 's>(archetype: &'ar mut Archetype) -> Option<Self::Ptr> {
         Some(archetype.table::<T>().map(|vec| vec.as_ptr()))
     }
 
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        ptr.map(|ptr| &*ptr.add(i))
+    unsafe fn into_slice(ptr: Self::Ptr, length: usize) -> Self::Slice {
+        ptr.map(|ptr| slice::from_raw_parts(ptr, length))
+    }
+
+    fn read_from_slice(slice: &mut Self::Slice, index: usize) -> Self {
+        slice.map(|slice| &slice[index])
     }
 }
 
 // Impl of mut query item for &mut T
-impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
-    type Component = T;
+impl<'s: 'l, 'l, T: Component> MutQueryItem<'s, 'l> for &'l mut T {
+    type Item = T;
     type Ptr = *mut T;
+    type Slice = &'s mut [T];
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         let cm = mask::<T>();
@@ -93,30 +106,39 @@ impl<'a, T: Component> MutQueryItem<'a> for &'a mut T {
             .then_some(LayoutAccess::new(Mask::zero(), cm))
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+    fn prepare<'ar: 's>(archetype: &'ar mut Archetype) -> Option<Self::Ptr> {
         archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr())
     }
 
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        &mut *ptr.add(i)
+    unsafe fn into_slice(ptr: Self::Ptr, length: usize) -> Self::Slice {
+        slice::from_raw_parts_mut(ptr, length)
+    }
+
+    fn read_from_slice(slice: &mut Self::Slice, index: usize) -> Self {
+        &mut slice[index]
     }
 }
 
 // Impl of mut query item for Option<&mut T>
-impl<'a, T: Component> MutQueryItem<'a> for Option<&'a mut T> {
-    type Component = T;
+impl<'s: 'l, 'l, T: Component> MutQueryItem<'s, 'l> for Option<&'l mut T> {
+    type Item = T;
     type Ptr = Option<*mut T>;
+    type Slice = Option<&'s mut [T]>;
 
     fn access(m: Mask) -> Option<LayoutAccess> {
         Some(LayoutAccess::new(Mask::zero(), m & mask::<T>()))
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<Self::Ptr> {
+    fn prepare<'ar: 's>(archetype: &'ar mut Archetype) -> Option<Self::Ptr> {
         Some(archetype.table_mut::<T>().map(|vec| vec.as_mut_ptr()))
     }
 
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        ptr.map(|ptr| &mut *ptr.add(i))
+    unsafe fn into_slice(ptr: Self::Ptr, length: usize) -> Self::Slice {
+        ptr.map(|ptr| slice::from_raw_parts_mut(ptr, length))
+    }
+
+    fn read_from_slice(slice: &mut Self::Slice, index: usize) -> Self {
+        slice.map(|slice| &mut slice[index])
     }
 }
 
@@ -180,23 +202,24 @@ impl<'a, T: RefQueryItem<'a>> RefQueryLayout<'a> for T {
 }
 
 // Impl of mut query layout for single component
-impl<'a, T: MutQueryItem<'a>> MutQueryLayout<'a> for T {
-    type PtrTuple = T::Ptr;
+impl<'s: 'l, 'l, T: MutQueryItem<'s, 'l>> MutQueryLayout<'s, 'l> for T {
+    type SliceTuple = T::Slice;
 
     fn is_valid() -> bool {
         true
     }
 
-    fn prepare(archetype: &mut Archetype) -> Option<Self::PtrTuple> {
-        <T as MutQueryItem<'a>>::prepare(archetype)
+    fn prepare<'ar: 's>(archetype: &'ar mut Archetype) -> Option<Self::SliceTuple> {
+        let ptr = <T as MutQueryItem<'ar, 's, 'l>>::prepare(archetype)?;
+        Some(unsafe { <T as MutQueryItem<'ar, 's, 'l>>::into_slice(ptr, archetype.len()) })
     }
 
-    unsafe fn read(ptr: Self::PtrTuple, i: usize) -> Self {
-        <T as MutQueryItem<'a>>::read(ptr, i)
+    fn read(tuple: &mut Self::SliceTuple, index: usize) -> Self {
+        T::read_from_slice(tuple, index)
     }
 
     fn access(m: Mask) -> Option<LayoutAccess> {
-        <T as MutQueryItem<'a>>::access(m)
+        <T as MutQueryItem<'s, 'l>>::access(m)
     }
 }
 
@@ -334,6 +357,7 @@ macro_rules! tuple_impls {
     };
 }
 
+/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -343,3 +367,4 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+*/

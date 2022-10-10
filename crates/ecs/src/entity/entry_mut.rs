@@ -123,10 +123,10 @@ impl<'a> EntryMut<'a> {
     }
 
     // Read certain components from the entry as if they were used in an mutable query
-    pub fn as_query<'b, L: MutQueryLayout<'b>>(&mut self) -> Option<L> {
+    pub fn as_query<'s: 'l, 'l, L: MutQueryLayout<'s, 'l>>(&mut self) -> Option<L> {
         let index = self.linkings().index;
-        let ptrs = L::prepare(self.archetype_mut())?;
-        let layout = unsafe { L::read(ptrs, index) };
+        let mut slices = L::prepare(self.archetype_mut())?;
+        let layout = L::read(&mut slices, index);
         Some(layout)
     }
 }

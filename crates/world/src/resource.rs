@@ -2,6 +2,8 @@ mod entry;
 mod guards;
 mod resource;
 mod storage;
+mod thread;
+pub use thread::*;
 pub use entry::*;
 pub use guards::*;
 pub use resource::*;

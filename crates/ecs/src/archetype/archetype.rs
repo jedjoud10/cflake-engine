@@ -107,7 +107,7 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to the table for a specific component
-    pub(crate) fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
+    pub fn table_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
