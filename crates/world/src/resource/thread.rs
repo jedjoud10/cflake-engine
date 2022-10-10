@@ -1,4 +1,4 @@
-use std::{thread::{ThreadId, JoinHandle}, slice::SliceIndex, ffi::c_void, sync::{Barrier, atomic::{AtomicU32, Ordering, AtomicBool}, Arc}, os::windows::thread};
+use std::{thread::{ThreadId, JoinHandle}, slice::SliceIndex, ffi::c_void, sync::{Barrier, atomic::{AtomicU32, Ordering, AtomicBool}, Arc, mpsc::{Sender, Receiver}}, os::windows::thread, mem::size_of, any::Any, marker::PhantomData};
 use parking_lot::{RwLock, Condvar, Mutex};
 
 // Untyped raw pointer
@@ -7,44 +7,59 @@ type UntypedMutPtr = usize;
 
 // Represents a single task that will be executed by multiple threads
 pub enum ThreadedTask {
-    Execute(Box<dyn FnOnce() + Send + Sync>),
+    // This is a single task that will be executed on a single thread
+    Execute(Box<dyn FnOnce() + Send>),
+
     ForEachBatch {
         base: UntypedPtr,
-        total_length: usize,
-        batch_size: usize,
-        function: Box<dyn FnOnce(UntypedPtr) + Send + Sync>
+        batch_length: usize,
+        batch_offset: usize,
+        size_of: usize,
+        function: Arc<dyn Fn(UntypedPtr) + Send + Sync>
     },
     ForEachMutBatch {
         base: UntypedMutPtr,
-        total_length: usize,
-        batch_size: usize,
-        function: Box<dyn FnOnce(UntypedMutPtr) + Send + Sync>
+        batch_length: usize,
+        batch_offset: usize,
+        size_of: usize,
+        function: Arc<dyn Fn(UntypedMutPtr) + Send + Sync>
     },
 }
 
-// Shared task pool
-type TaskPool = RwLock<Vec<(ThreadedTask, i32)>>;
+/*
+// Results given from the execute tasks
+type Result = Box<dyn Any + Send>;
+
+// Task handle allows us to fetch the results of specific tasks
+pub struct AsyncTaskHandle<T: Send + 'static> {
+    id: u64,
+    _phantom: PhantomData<T>,
+}
+*/
 
 // A single threadpool that contains multiple worker threads that are ready to be executed in parallel
 pub struct ThreadPool {
-    tasks: Arc<TaskPool>,
-    shutdown: Arc<AtomicBool>,
+    sender: Option<Sender<ThreadedTask>>,
+    receiver: Arc<Mutex<Receiver<ThreadedTask>>>,
+    waiting: Arc<AtomicU32>,
     active: Arc<AtomicU32>,
-    condvar: Arc<(Mutex<bool>, Condvar)>,
     joins: Vec<JoinHandle<()>>,
 }
 
 impl ThreadPool {
     // Create a new thread pool with the default number of threads
     pub fn new() -> Self {
+        // Le sender and le receiver
+        let (sender, receiver) = std::sync::mpsc::channel::<ThreadedTask>();
+
         // Create a simple threadpool
-        let num = num_cpus::get();
+        let num = num_cpus::get() * 4;
         let mut threadpool = Self {
-            tasks: Default::default(),
-            shutdown: Arc::new(AtomicBool::new(false)),
-            active: Arc::new(AtomicU32::new(num as u32)),
-            condvar: Arc::new((Mutex::new(false), Condvar::new())),
+            active: Arc::new(AtomicU32::new(0)),
             joins: Default::default(),
+            waiting: Arc::new(AtomicU32::new(0)),
+            sender: Some(sender),
+            receiver: Arc::new(Mutex::new(receiver)),
         };
         
         // Spawn the worker threads
@@ -54,25 +69,41 @@ impl ThreadPool {
         threadpool        
     }
 
+    /*
     // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each<T: Sync>(&mut self, list: &[T], function: impl FnOnce(&T) + Send) {}
+    pub fn for_each<T: Sync + Send + 'static>(&mut self, list: &[T], function: impl Fn(&T) + Send + Sync + 'static) {
+        let batch_size = list.len() / self.num_threads();
+        let remaining = list.len() % self.num_threads();
+        let task: Arc<dyn Fn(UntypedPtr) + Send + Sync> = Arc::new(move |ptr: UntypedPtr| unsafe { 
+            let ptr = ptr as *const T;
+            function(&*ptr);
+        });
 
-    // Given a mutable slice of elements, run a function over all of them elemeents in parallel
-    pub fn for_each_mut<T: Sync>(&mut self, list: &mut [T], function: impl FnOnce(&mut T) + Send) {}
+        for index in 0..self.num_threads() {
+            let offset = batch_size * index;
+            let length = batch_size + ((index == self.num_threads() - 1) as usize * remaining);
 
-    // Add a new task to execute in the threadpool. The task will have default priority
-    // The returned handle allows us to check when the task has finished executing
-    pub fn execute(&mut self, function: impl FnOnce() + Send + Sync + 'static) {
-        self.execute_with_priority(function, 0);
+            let task = ThreadedTask::ForEachBatch { base: list.as_ptr() as usize, batch_length: length, batch_offset: offset, function: task.clone(), size_of: size_of::<T>() };
+            self.append(task);
+        }
+        
+        self.join();
     }
 
-    // Add a new task to execute in the threadpool with a specific priority
-    // The returned handle allows us to check when the task has finished executing
-    pub fn execute_with_priority(&mut self, function: impl FnOnce() + Send + Sync + 'static, priority: i32) {
+    // Given a mutable slice of elements, run a function over all of them elemeents in parallel
+    pub fn for_each_mut<T: Sync + Send + 'static>(&mut self, list: &mut [T], function: impl Fn(&mut T) + Send + Sync + 'static) {}
+    */
+
+    // Execute a raw task. Only should be used internally
+    pub fn append(&mut self, task: ThreadedTask) {
+        self.waiting.fetch_add(1, Ordering::Relaxed);
+        self.sender.as_ref().unwrap().send(task).unwrap();
+    }
+
+    // Add a new task to execute in the threadpool. This task will run in the background
+    pub fn execute(&mut self, function: impl FnOnce() + Send + 'static) {
         let task = ThreadedTask::Execute(Box::new(function));
-        self.tasks.write().push((task, priority));
-        self.condvar.1.notify_one();
-        *self.condvar.0.lock() = true;
+        self.append(task);
     }
 
     // Get the number of threads that are stored in the thread pool
@@ -80,28 +111,27 @@ impl ThreadPool {
         self.joins.len()
     }
 
-    // Jobs waiting to get ran by other threads
+    // Get the number of jobs that are waiting to get executed
     pub fn num_idling_jobs(&self) -> usize {
-        self.tasks.read().len()
+        self.waiting.load(Ordering::Relaxed) as usize
     }
-    
-    // Get the number of threads that are currently working
+
+    // Get the number of threads that are currently executing
     pub fn num_active_threads(&self) -> usize {
         self.active.load(Ordering::Relaxed) as usize
     }
 
-    // Sort the threadpool's tasks based on their priority
-    pub fn sort(&mut self) {
-        
+    // Wait till all the threads finished executing
+    pub fn join(&self) {
+        while self.num_active_threads() > 0 || self.num_idling_jobs() > 0 {}
     }
 }
 
 impl Drop for ThreadPool {
     fn drop(&mut self) {
-        while self.num_active_threads() != 0 || self.num_idling_jobs() != 0 {}
-        self.shutdown.store(true, Ordering::Relaxed);
-        *self.condvar.0.lock() = true;
-        self.condvar.1.notify_all();
+        self.sender.take().unwrap();
+        self.join();
+
         for x in self.joins.drain(..) {
             x.join().unwrap();
         }
@@ -110,43 +140,38 @@ impl Drop for ThreadPool {
 
 // Initialize a worker thread from a threadpool and start it's task pulling loop
 fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
-    let tasks = threadpool.tasks.clone();
-    let shutdown = threadpool.shutdown.clone();
+    let receiver = threadpool.receiver.clone();
     let active = threadpool.active.clone();
-    let condvar = threadpool.condvar.clone();
+    let waiting = threadpool.waiting.clone();
     let name = format!("WorkerThread-{index}");
 
     std::thread::Builder::new()
         .name(name)
         .spawn(move || {
             loop {
-                // No task, block on the condvar to no waste CPU cycles
-                if tasks.read().is_empty() {
-                    let (mutex, condvar) = &*condvar;
-                    active.fetch_sub(1, Ordering::Relaxed);
-                    let mut lock = mutex.lock();
-                    condvar.wait(&mut lock);
-                    *lock = false;
-
-                    // Break from the loop if necessary
-                    if shutdown.load(Ordering::Relaxed) {
-                        break;
-                    }
-
-                    // Wait till the task comes
-                    while tasks.read().is_empty() {}
-
-                    active.fetch_add(1, Ordering::Relaxed);
-                }
-
+                // No task, block so we shall wait
+                let task = if let Ok(task) = receiver.lock().recv() {
+                    task
+                } else {
+                    break;
+                };
+                
                 // The thread woke up, so we must fetch the highest priority task now
-                if let Some((task, _)) = tasks.write().pop() {
-                    match task +{
-                        ThreadedTask::Execute(f) => f(),
-                        ThreadedTask::ForEachBatch { base, total_length, batch_size, function } => todo!(),
-                        ThreadedTask::ForEachMutBatch { base, total_length, batch_size, function } => todo!(),
-                    }
-                }
+                active.fetch_add(1, Ordering::Relaxed);
+                match task {
+                    ThreadedTask::Execute(f) => f(),
+                    ThreadedTask::ForEachBatch { base, batch_length, batch_offset, size_of, function } => {
+                        let start = base + batch_offset * size_of;
+                        let end = start + batch_length * size_of;
+                        
+                        for i in (start..end).step_by(size_of) {
+                            function(i);
+                        }
+                    },
+                    ThreadedTask::ForEachMutBatch { base, batch_length, batch_offset, size_of, function } => todo!(),
+                }                
+                waiting.fetch_sub(1, Ordering::Relaxed);
+                active.fetch_sub(1, Ordering::Relaxed);
             }
     }).unwrap()
 }

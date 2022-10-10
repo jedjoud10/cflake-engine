@@ -37,9 +37,6 @@ pub struct Assets {
 
     // Path that references the main user assets
     user: Option<PathBuf>,
-
-    // Lil threadpool for async loading
-    threadpool: ThreadPool,
 }
 
 impl Assets {
@@ -53,7 +50,6 @@ impl Assets {
             loaded: Default::default(),
             receiver,
             sender,
-            threadpool: ThreadPool::with_name("asset-loading".to_string(), 2),
             user,
         }
     }
@@ -114,6 +110,7 @@ impl Assets {
         &self,
         path: &str,
         args: A::Args,
+        threadpool: &mut world::ThreadPool
     ) -> AsyncHandle<'static, A>
     where
         A::Args: Send + Sync
@@ -133,7 +130,7 @@ impl Assets {
 
         // Create a multithreaded loading task bozoo
         let path = PathBuf::from_str(path).unwrap();
-        self.threadpool.execute(move || {
+        threadpool.execute(move || {
             // All this does is that it ensures that the bytes are valid before we actually deserialize the asset
             let (name, extension) = path.file_name().and_then(OsStr::to_str).unwrap().split_once('.').unwrap();
             let bytes = if bytes.read().contains_key(&path) {
@@ -169,22 +166,22 @@ impl Assets {
     }
 
     // Load an asset using some explicit loading arguments in another thread
-    pub fn threaded_load_with<A: Asset<'static> + Send + Sync>(&self, path: &str, args: A::Args) -> AsyncHandle<'static, A>
+    pub fn threaded_load_with<A: Asset<'static> + Send + Sync>(&self, path: &str, args: A::Args, threadpool: &mut world::ThreadPool) -> AsyncHandle<'static, A>
     where
         A::Args: Send + Sync
     {
         let pathbuf = PathBuf::from_str(path).unwrap();
         let (_, extension) = pathbuf.file_name().and_then(OsStr::to_str).unwrap().split_once('.').unwrap();
         ((A::extensions().contains(&extension)) || A::extensions().is_empty()).then_some(()).unwrap();
-        unsafe { self.threaded_load_with_unchecked(path, args) }
+        unsafe { self.threaded_load_with_unchecked(path, args, threadpool) }
     }
 
     // Load an asset using some default loading arguments in another thread
-    pub fn threaded_load<A: Asset<'static> + Send + Sync>(&self, path: &str) -> AsyncHandle<'static, A>
+    pub fn threaded_load<A: Asset<'static> + Send + Sync>(&self, path: &str, threadpool: &mut world::ThreadPool) -> AsyncHandle<'static, A>
     where
         A::Args: Default + Send + Sync,
     {
-        self.threaded_load_with(path, Default::default())
+        self.threaded_load_with(path, Default::default(), threadpool)
     }
 
     // This will check if the asset loader finished loading a specific asset using it's handle
