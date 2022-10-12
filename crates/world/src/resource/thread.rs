@@ -110,6 +110,12 @@ impl ThreadPool {
         let batch_size = batch_size.max(1);
         let num_threads_to_use = (list.len() as f32 / batch_size as f32).ceil() as usize;
         let remaining = list.len() % batch_size;
+        
+        // Run the code in a single thread if needed
+        if num_threads_to_use == 1 {
+            list.iter().for_each(function);
+            return;
+        }
 
         // Create the task as a clonable Arc since we will share it a lot
         let task: Arc<dyn Fn(UntypedPtr) + Send + Sync> = Arc::new(move |ptr: UntypedPtr| unsafe { 
@@ -121,7 +127,7 @@ impl ThreadPool {
         for index in 0..num_threads_to_use {
             let is_last = index == num_threads_to_use - 1;
             let offset = batch_size * index;
-            let length = if is_last {
+            let length = if is_last && remaining != 0{
                 remaining
             } else { batch_size };
 
@@ -140,6 +146,12 @@ impl ThreadPool {
         let num_threads_to_use = (list.len() as f32 / batch_size as f32).ceil() as usize;
         let remaining = list.len() % batch_size;
 
+        // Run the code in a single thread if needed
+        if num_threads_to_use == 1 {
+            list.iter_mut().for_each(function);
+            return;
+        }
+
         // Create the task as a clonable Arc since we will share it a lot
         let task: Arc<dyn Fn(UntypedMutPtr) + Send + Sync> = Arc::new(move |ptr: UntypedMutPtr| unsafe { 
             let ptr = ptr as *mut T;
@@ -150,7 +162,7 @@ impl ThreadPool {
         for index in 0..num_threads_to_use {
             let is_last = index == num_threads_to_use - 1;
             let offset = batch_size * index;
-            let length = if is_last {
+            let length = if is_last && remaining != 0 {
                 remaining
             } else { batch_size };
 
@@ -191,7 +203,9 @@ impl ThreadPool {
 
     // Wait till all the threads finished executing
     pub fn join(&self) {
-        while self.num_active_threads() > 0 || self.num_idling_jobs() > 0 {}
+        while self.num_active_threads() > 0 || self.num_idling_jobs() > 0 {
+            std::hint::spin_loop();
+        }
     }
 }
 
