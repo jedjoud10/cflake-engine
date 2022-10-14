@@ -4,7 +4,9 @@ mod tests {
 
     use crate::{ThreadPool};
 
-    fn task(integer: &mut u128) {
+    fn task(integer: &u128) {
+        dbg!(integer);
+        //
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
 
@@ -14,9 +16,9 @@ mod tests {
         dbg!(threadpool.num_threads());
         //dbg!(threadpool.num_active_threads());
     
-        let mut vec = (0..=8).into_iter().collect::<Vec<u128>>();
+        let mut vec = (0..=64).into_iter().collect::<Vec<u128>>();
         let i = Instant::now();
-        threadpool.for_each_mut(vec.as_mut_slice(), task, 1);
+        threadpool.for_each(vec.as_slice(), task, 32);
         dbg!(i.elapsed().as_micros());
         dbg!(vec);
         /*
