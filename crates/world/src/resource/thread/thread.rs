@@ -1,8 +1,22 @@
-use std::{thread::{ThreadId, JoinHandle}, slice::SliceIndex, ffi::c_void, sync::{Barrier, atomic::{AtomicU32, Ordering, AtomicBool}, Arc, mpsc::{Sender, Receiver}}, os::windows::thread, mem::size_of, any::Any, marker::PhantomData, num};
-use parking_lot::{RwLock, Condvar, Mutex};
-use crate::RefSliceTuple;
+use crate::{RefSliceTuple, MutSliceTuple};
+use parking_lot::{Condvar, Mutex, RwLock};
+use std::{
+    any::Any,
+    ffi::c_void,
+    marker::PhantomData,
+    mem::size_of,
+    num,
+    os::windows::thread,
+    slice::SliceIndex,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering},
+        mpsc::{Receiver, Sender},
+        Arc, Barrier,
+    },
+    thread::{JoinHandle, ThreadId},
+};
 
-use super::{UntypedPtr, UntypedMutPtr};
+use super::{UntypedMutPtr, UntypedPtr};
 
 // Shared arc that represents a pointer tuple
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
@@ -27,7 +41,6 @@ enum ThreadedTask {
         entry: ThreadFuncEntry,
         function: BoxedFunction,
     },
-
     /*
     // This is a singular batch of a bigger immutable tuple of slices
     ForEachBatchTuple {
@@ -46,7 +59,6 @@ enum ThreadedTask {
     }
     */
 }
-
 
 // Task handle allows us to fetch the results of specific tasks
 pub struct AsyncTaskHandle<T: Send + 'static> {
@@ -70,6 +82,15 @@ pub struct ThreadPool {
     joins: Vec<JoinHandle<()>>,
 }
 
+// Intermediate thread schedular config
+#[derive(Debug)] 
+struct ForEachInternalConfig {
+    length: usize,
+    batch_size: usize,
+    remaining: usize,
+    num_threads_to_use: usize,
+}
+
 impl ThreadPool {
     // Create a new thread pool with the default number of threads
     pub fn new() -> Self {
@@ -84,30 +105,57 @@ impl ThreadPool {
             task_sender: Some(task_sender),
             task_receiver: Arc::new(Mutex::new(task_receiver)),
         };
-        
+
         // Spawn the worker threads
-        let joins = (0..num).into_iter().map(|i| spawn(&threadpool, i)).collect::<Vec<_>>();
+        let joins = (0..num)
+            .into_iter()
+            .map(|i| spawn(&threadpool, i))
+            .collect::<Vec<_>>();
         threadpool.joins = joins;
-        
-        threadpool        
+
+        threadpool
     }
 
-    // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each<'s: 'i, 'i, I: RefSliceTuple<'s, 'i>>(&mut self, list: I, function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static, batch_size: usize) {
-        // If the slices have different lengths, we abort
-        let len = list.slice_tuple_len();
-        assert!(len.is_some(), "Cannot have slice with different lengths");
-        let len = len.unwrap();
+    // Create the for each internal config that we can use inside the for_each_internal function
+    fn create_for_each_config(&self, length: usize, batch_size: usize) -> ForEachInternalConfig {
+        let batch_size = batch_size.max(1);
+        let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
+        let remaining = length % batch_size;
+        ForEachInternalConfig {
+            length,
+            batch_size,
+            remaining,
+            num_threads_to_use,
+        }
+    }
 
-        // Make sure the inputs are valid and calculate the number of threads we will need
-        let batch_length = batch_size.max(1);
-        let num_threads_to_use = (len as f32 / batch_length as f32).ceil() as usize;
-        let remaining = len % batch_length;
-        
+    // Internal for each function since we use it two times
+    // I apologize in advance to whoever is reading this
+    #[inline(always)]
+    fn for_each_internal<'s: 'a, 'a, I: 's, P: 'a + Send + Sync>(
+        &mut self,
+        config: ForEachInternalConfig,
+        mut list: I,
+        get_unchecked: impl Fn(&mut I, usize) -> P + Send + Sync + 'static,
+        function: impl Fn(P) + Send + Sync + 'static,
+        from_boxed_ptrs: impl Fn(Arc<dyn Any + Send + Sync + 'static>, usize, usize) -> Option<I>
+            + Send
+            + Sync
+            + 'static,
+        to_boxed_ptrs: impl FnOnce(I) -> Arc<dyn Any + Send + Sync + 'static> + Send + Sync,
+    ) {
+        // Decompose the scheduler config
+        let ForEachInternalConfig {
+            length,
+            batch_size,
+            remaining,
+            num_threads_to_use,
+        } = config;
+
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
-            for x in 0..len {
-                function(unsafe { list.get_unchecked(x) });
+            for x in 0..length {
+                function(get_unchecked(&mut list, x));
             }
             return;
         }
@@ -115,29 +163,93 @@ impl ThreadPool {
         // Box the function into an arc
         let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
             let offset = entry.batch_offset;
-            let ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
+            let mut ptrs = from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
 
             for i in 0..entry.batch_length {
-                let tuple = I::get_unchecked(&ptrs, i);
+                let tuple = get_unchecked(&mut ptrs, i);
                 function(tuple);
             }
         });
-        
+
         // Run the function in mutliple threads
-        let base = unsafe { I::to_boxed_ptrs(list) };
+        let base = to_boxed_ptrs(list);
         for batch_index in 0..num_threads_to_use {
             self.append(ThreadedTask::ForEachBatch {
-                entry: ThreadFuncEntry { 
+                entry: ThreadFuncEntry {
                     base: base.clone(),
-                    batch_length: if batch_index == (num_threads_to_use-1) && remaining != 0 {
+                    batch_length: if batch_index == (num_threads_to_use - 1) && remaining != 0 {
                         remaining
-                    } else { batch_size },
-                    batch_offset: batch_index * batch_length,
+                    } else {
+                        batch_size
+                    },
+                    batch_offset: batch_index * batch_size,
                 },
                 function: function.clone(),
             });
         }
-        
+    }
+
+    // Given an immutable slice of elements, run a function over all of them elements in parallel
+    pub fn for_each<'s: 'i, 'i, I: RefSliceTuple<'s, 'i>>(
+        &mut self,
+        list: I,
+        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        batch_size: usize,
+    ) where
+        I::ItemRefTuple: Sync + Send,
+    {
+        // If the slices have different lengths, we must abort
+        let length = list.slice_tuple_len();
+        assert!(length.is_some(), "Cannot have slice with different lengths");
+        let length = length.unwrap();
+
+        // Create the scheduler config
+        let config = self.create_for_each_config(length, batch_size);
+        dbg!(&config);
+
+        // Iterate through the tuple slice
+        self.for_each_internal(
+            config,
+            list,
+            |list, index| unsafe { list.get_unchecked(index) },
+            function,
+            |ptrs, length, offset| unsafe { I::from_boxed_ptrs(ptrs, length, offset) },
+            |list| unsafe { list.to_boxed_ptrs() },
+        );
+
+        // We must manually join the sheize
+        self.join();
+    }
+
+    // Given an immutable slice of elements, run a function over all of them elements in parallel
+    pub fn for_each_mut<'s: 'i, 'i, I: MutSliceTuple<'s, 'i>>(
+        &mut self,
+        list: I,
+        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        batch_size: usize,
+    ) where
+        I::ItemRefTuple: Sync + Send,
+    {
+        // If the slices have different lengths, we must abort
+        let length = list.slice_tuple_len();
+        assert!(length.is_some(), "Cannot have slice with different lengths");
+        let length = length.unwrap();
+
+        // Create the scheduler config
+        let config = self.create_for_each_config(length, batch_size);
+        dbg!(&config);
+
+        // Iterate through the tuple slice
+        self.for_each_internal(
+            config,
+            list,
+            |list, index| unsafe { list.get_unchecked(index) },
+            function,
+            |ptrs, length, offset| unsafe { I::from_boxed_ptrs(ptrs, length, offset) },
+            |list| unsafe { list.to_boxed_ptrs() },
+        );
+
+        // We must manually join the sheize
         self.join();
     }
 
@@ -156,7 +268,7 @@ impl ThreadPool {
         }
 
         // Create the task as a clonable Arc since we will share it a lot
-        let task: Arc<dyn Fn(UntypedMutPtr) + Send + Sync> = Arc::new(move |ptr: UntypedMutPtr| unsafe { 
+        let task: Arc<dyn Fn(UntypedMutPtr) + Send + Sync> = Arc::new(move |ptr: UntypedMutPtr| unsafe {
             let ptr: *mut T = ptr.into();
             function(&mut *ptr);
         });
@@ -173,7 +285,7 @@ impl ThreadPool {
             let task = ThreadedTask::ForEachMutBatch { base: list.as_mut_ptr().into(), batch_length: length, batch_offset: offset, function: task.clone(), size_of: size_of::<T>() };
             self.append(task);
         }
-        
+
         self.join();
     }
     */
@@ -241,34 +353,34 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
                 } else {
                     break;
                 };
-                
+
                 // The thread woke up, so we must fetch the highest priority task now
                 active.fetch_add(1, Ordering::Relaxed);
                 match task {
                     // Execute a single task in another thread
                     ThreadedTask::Execute(f) => f(),
-                    
+
                     // Execute the same function over and over again on the same slice, but at different indices (no overrun)
                     ThreadedTask::ForEachBatch { entry, function } => unsafe {
                         function(entry);
                     },
-
                     /*
                     ThreadedTask::ForEachMutBatch { base, batch_length, batch_offset, size_of, function } => unsafe {
                         let base = Into::<*mut ()>::into(base) as usize;
                         let start = base + batch_offset * size_of;
                         let end = base + batch_length * size_of;
-                        
+
                         for i in (start..end).step_by(size_of) {
                             function(UntypedMutPtr::from(i as *mut ()));
                         }
                     },
                     */
-                } 
+                }
 
                 // Update the active thread atomic and waiting task atomic
                 waiting.fetch_sub(1, Ordering::Relaxed);
                 active.fetch_sub(1, Ordering::Relaxed);
             }
-    }).unwrap()
+        })
+        .unwrap()
 }

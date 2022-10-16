@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use std::{time::Instant, hint::spin_loop};
+    use std::{hint::spin_loop, time::Instant};
 
-    use crate::{ThreadPool};
+    use crate::ThreadPool;
 
     fn task(integer: &u128) {
         dbg!(integer);
@@ -15,10 +15,10 @@ mod tests {
         let mut threadpool = ThreadPool::new();
         dbg!(threadpool.num_threads());
         //dbg!(threadpool.num_active_threads());
-    
+
         let mut vec = (0..=64).into_iter().collect::<Vec<u128>>();
         let i = Instant::now();
-        threadpool.for_each(vec.as_slice(), task, 32);
+        threadpool.for_each(vec.as_slice(), task, 128);
         dbg!(i.elapsed().as_micros());
         dbg!(vec);
         /*

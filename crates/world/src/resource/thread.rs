@@ -1,6 +1,10 @@
-mod thread;
 mod layout;
+mod macros;
 mod ptr;
-pub use thread::*;
+mod slice;
+mod thread;
 pub use layout::*;
+pub use macros::*;
 pub use ptr::*;
+pub use slice::*;
+pub use thread::*;

@@ -3293,9 +3293,13 @@ name = "world"
 version = "0.1.0"
 dependencies = [
  "ahash",
+ "arrayvec",
+ "casey",
  "glutin",
  "num_cpus",
  "parking_lot 0.12.1",
+ "paste",
+ "seq-macro",
  "slotmap",
 ]
 
