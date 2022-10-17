@@ -6,7 +6,7 @@ use std::{
 };
 
 // Implmented for immutable slice references
-pub trait RefSlice<'s: 'i, 'i> {
+pub trait RefSlice<'i> {
     type ItemRef: 'i;
     type OwnedItem: 'static;
     type Ptr: Any + Send + Sync + Copy + 'static;
@@ -15,11 +15,11 @@ pub trait RefSlice<'s: 'i, 'i> {
     fn as_ptr(&self) -> Self::Ptr;
     unsafe fn from_raw_parts(ptr: Self::Ptr, len: usize) -> Self;
     unsafe fn offset_ptr(ptr: Self::Ptr, offset: usize) -> Self::Ptr;
-    unsafe fn get_unchecked(&self, index: usize) -> Self::ItemRef;
+    unsafe fn get_unchecked<'a: 'i>(&'a self, index: usize) -> Self::ItemRef;
 }
 
 // Implemented for mutable slice references
-pub trait MutSlice<'s: 'i, 'i> {
+pub trait MutSlice<'i> {
     type ItemRef: 'i;
     type OwnedItem: 'static;
     type Ptr: Any + Send + Sync + Copy + 'static;
@@ -28,11 +28,11 @@ pub trait MutSlice<'s: 'i, 'i> {
     fn as_ptr(&mut self) -> Self::Ptr;
     unsafe fn from_raw_parts(ptr: Self::Ptr, len: usize) -> Self;
     unsafe fn offset_ptr(ptr: Self::Ptr, offset: usize) -> Self::Ptr;
-    unsafe fn get_unchecked<'s2: 'a, 'a>(&'s2 mut self, index: usize) -> Self::ItemRef where 'a: 'i;
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::ItemRef;
 }
 
 // RefSlice impl for immutable slices
-impl<'s: 'i, 'i, T: 'static> RefSlice<'s, 'i> for &'s [T] {
+impl<'i, T: 'static> RefSlice<'i> for &[T] {
     type ItemRef = &'i T;
     type OwnedItem = T;
     type Ptr = SendPtr<T>;
@@ -54,13 +54,13 @@ impl<'s: 'i, 'i, T: 'static> RefSlice<'s, 'i> for &'s [T] {
         SendPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked(&self, index: usize) -> Self::ItemRef {
+    unsafe fn get_unchecked<'a: 'i>(&'a self, index: usize) -> Self::ItemRef {
         <[T]>::get_unchecked(self, index)
     }
 }
 
 // RefSlice impl for Option immutable slices
-impl<'s: 'i, 'i, T: 'static> RefSlice<'s, 'i> for Option<&'s [T]> {
+impl<'i, T: 'static> RefSlice<'i> for Option<&[T]> {
     type ItemRef = Option<&'i T>;
     type OwnedItem = Option<T>;
     type Ptr = Option<SendPtr<T>>;
@@ -84,14 +84,14 @@ impl<'s: 'i, 'i, T: 'static> RefSlice<'s, 'i> for Option<&'s [T]> {
         })
     }
 
-    unsafe fn get_unchecked(&self, index: usize) -> Self::ItemRef {
+    unsafe fn get_unchecked<'a: 'i>(&'a self, index: usize) -> Self::ItemRef {
         self.as_ref()
             .map(|slice| <[T]>::get_unchecked(slice, index))
     }
 }
 
 // MutSlice impl for immutable slices
-impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for &'s [T] {
+impl<'i, T: 'static> MutSlice<'i> for &[T] {
     type ItemRef = &'i T;
     type OwnedItem = T;
     type Ptr = SendPtr<T>;
@@ -113,13 +113,13 @@ impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for &'s [T] {
         SendPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'s2: 'a, 'a>(&'s2 mut self, index: usize) -> Self::ItemRef {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::ItemRef {
         <[T]>::get_unchecked(self, index)
     }
 }
 
 // MutSlice impl for mutable slices
-impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for &'s mut [T] {
+impl<'i, T: 'static> MutSlice<'i> for &mut [T] {
     type ItemRef = &'i mut T;
     type OwnedItem = T;
     type Ptr = SendMutPtr<T>;
@@ -141,13 +141,13 @@ impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for &'s mut [T] {
         SendMutPtr::from(ptr.add(offset))
     }
 
-    unsafe fn get_unchecked<'s2: 'a, 'a>(&'s2 mut self, index: usize) -> Self::ItemRef where 'a: 'i {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::ItemRef {
         <[T]>::get_unchecked_mut(self, index)
     }
 }
 
 // RefSlice impl for Option mutable slices
-impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for Option<&'s mut [T]> {
+impl<'i, T: 'static> MutSlice<'i> for Option<&mut [T]> {
     type ItemRef = Option<&'i mut T>;
     type OwnedItem = Option<T>;
     type Ptr = Option<SendMutPtr<T>>;
@@ -171,7 +171,7 @@ impl<'s: 'i, 'i, T: 'static> MutSlice<'s, 'i> for Option<&'s mut [T]> {
         })
     }
 
-    unsafe fn get_unchecked<'s2: 'a, 'a>(&'s2 mut self, index: usize) -> Self::ItemRef where 'a: 'i {
+    unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::ItemRef {
         self.as_mut()
             .map(|slice| <[T]>::get_unchecked_mut(slice, index))
     }

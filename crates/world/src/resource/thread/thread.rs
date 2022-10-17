@@ -130,10 +130,10 @@ impl ThreadPool {
     }
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each<'s: 'i, 'i, I: RefSliceTuple<'s, 'i>>(
+    pub fn for_each<I: for<'i> RefSliceTuple<'i>>(
         &mut self,
         list: I,
-        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        function: impl Fn(<I as RefSliceTuple<'_>>::ItemRefTuple) + Send + Sync + 'static,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -192,18 +192,11 @@ impl ThreadPool {
         self.join();
     }
 
-    pub fn for_each_mut2<'s: 'i, 'i, I: MutSliceTuple<'s, 'i>>(
-        &mut self,
-        mut list: I,
-        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
-        batch_size: usize,
-    ) {}
-
     // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each_mut<'s: 'i, 'i, I: MutSliceTuple<'s, 'i>>(
+    pub fn for_each_mut<I: for<'i> MutSliceTuple<'i>>(
         &mut self,
         mut list: I,
-        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        function: impl Fn(<I as MutSliceTuple<'_>>::ItemRefTuple) + Send + Sync + 'static,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -226,7 +219,7 @@ impl ThreadPool {
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
             for x in 0..length {
-                //function(unsafe { I::get_unchecked(&mut list, x) });
+                function(unsafe { I::get_unchecked(&mut list, x) });
             }
             return;
         }
@@ -237,8 +230,7 @@ impl ThreadPool {
             let mut ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
 
             for i in 0..entry.batch_length {
-                let test = <I as MutSliceTuple<'_, '_>>::get_unchecked(&mut ptrs, i);
-                //function();
+                function(I::get_unchecked(&mut ptrs, i));
             }
         });
 
