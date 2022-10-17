@@ -8,6 +8,7 @@ macro_rules! impl_tuple {
     ($( $name:ident )+, $max:tt) => {
         impl<'s: 'i, 'i, $($name: RefSlice<'s, 'i> + 's),+> RefSliceTuple<'s, 'i> for ($($name,)+) {
             type PtrTuple = ($($name::Ptr),+);
+            type OwnedTuple = ($($name::OwnedItem),+);
             type ItemRefTuple = ($($name::ItemRef),+);
 
             fn as_ptrs(&self) -> Self::PtrTuple {
@@ -55,6 +56,7 @@ macro_rules! impl_tuple {
 
         impl<'s: 'i, 'i, $($name: MutSlice<'s, 'i> + 's),+> MutSliceTuple<'s, 'i> for ($($name,)+) {
             type PtrTuple = ($($name::Ptr),+);
+            type OwnedTuple = ($($name::OwnedItem),+);
             type ItemRefTuple = ($($name::ItemRef),+);
 
             fn as_ptrs(&mut self) -> Self::PtrTuple {
@@ -89,7 +91,7 @@ macro_rules! impl_tuple {
                 ),+,)
             }
 
-            unsafe fn get_unchecked<'s2: 'i>(&'s2 mut self, index: usize) -> Self::ItemRefTuple {
+            unsafe fn get_unchecked<'s2: 'a, 'a>(&'s2 mut self, index: usize) -> Self::ItemRefTuple where 'a: 'i {
                 seq!(N in 0..$max {
                     let c~N: C~N::ItemRef = C~N::get_unchecked(&mut self.N, index);
                 });

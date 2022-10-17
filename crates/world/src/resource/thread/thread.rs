@@ -1,4 +1,4 @@
-use crate::{RefSliceTuple, MutSliceTuple};
+use crate::{RefSliceTuple, MutSliceTuple, MutSlice};
 use parking_lot::{Condvar, Mutex, RwLock};
 use std::{
     any::Any,
@@ -129,21 +129,22 @@ impl ThreadPool {
         }
     }
 
-    // Internal for each function since we use it two times
-    // I apologize in advance to whoever is reading this
-    #[inline(always)]
-    fn for_each_internal<'s: 'a, 'a, I: 's, P: 'a + Send + Sync>(
+    // Given an immutable slice of elements, run a function over all of them elements in parallel
+    pub fn for_each<'s: 'i, 'i, I: RefSliceTuple<'s, 'i>>(
         &mut self,
-        config: ForEachInternalConfig,
-        mut list: I,
-        get_unchecked: impl Fn(&mut I, usize) -> P + Send + Sync + 'static,
-        function: impl Fn(P) + Send + Sync + 'static,
-        from_boxed_ptrs: impl Fn(Arc<dyn Any + Send + Sync + 'static>, usize, usize) -> Option<I>
-            + Send
-            + Sync
-            + 'static,
-        to_boxed_ptrs: impl FnOnce(I) -> Arc<dyn Any + Send + Sync + 'static> + Send + Sync,
+        list: I,
+        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        batch_size: usize,
     ) {
+        // If the slices have different lengths, we must abort
+        let length = list.slice_tuple_len();
+        assert!(length.is_some(), "Cannot have slice with different lengths");
+        let length = length.unwrap();
+
+        // Create the scheduler config
+        let config = self.create_for_each_config(length, batch_size);
+        dbg!(&config);
+
         // Decompose the scheduler config
         let ForEachInternalConfig {
             length,
@@ -151,11 +152,11 @@ impl ThreadPool {
             remaining,
             num_threads_to_use,
         } = config;
-
+        
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
             for x in 0..length {
-                function(get_unchecked(&mut list, x));
+                function(unsafe { I::get_unchecked(&list, x) });
             }
             return;
         }
@@ -163,16 +164,15 @@ impl ThreadPool {
         // Box the function into an arc
         let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
             let offset = entry.batch_offset;
-            let mut ptrs = from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
+            let mut ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
 
             for i in 0..entry.batch_length {
-                let tuple = get_unchecked(&mut ptrs, i);
-                function(tuple);
+                function(I::get_unchecked(&mut ptrs, i));
             }
         });
 
         // Run the function in mutliple threads
-        let base = to_boxed_ptrs(list);
+        let base = unsafe { I::to_boxed_ptrs(list) };
         for batch_index in 0..num_threads_to_use {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
@@ -187,49 +187,25 @@ impl ThreadPool {
                 function: function.clone(),
             });
         }
-    }
-
-    // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each<'s: 'i, 'i, I: RefSliceTuple<'s, 'i>>(
-        &mut self,
-        list: I,
-        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
-        batch_size: usize,
-    ) where
-        I::ItemRefTuple: Sync + Send,
-    {
-        // If the slices have different lengths, we must abort
-        let length = list.slice_tuple_len();
-        assert!(length.is_some(), "Cannot have slice with different lengths");
-        let length = length.unwrap();
-
-        // Create the scheduler config
-        let config = self.create_for_each_config(length, batch_size);
-        dbg!(&config);
-
-        // Iterate through the tuple slice
-        self.for_each_internal(
-            config,
-            list,
-            |list, index| unsafe { list.get_unchecked(index) },
-            function,
-            |ptrs, length, offset| unsafe { I::from_boxed_ptrs(ptrs, length, offset) },
-            |list| unsafe { list.to_boxed_ptrs() },
-        );
 
         // We must manually join the sheize
         self.join();
     }
+
+    pub fn for_each_mut2<'s: 'i, 'i, I: MutSliceTuple<'s, 'i>>(
+        &mut self,
+        mut list: I,
+        function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
+        batch_size: usize,
+    ) {}
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
     pub fn for_each_mut<'s: 'i, 'i, I: MutSliceTuple<'s, 'i>>(
         &mut self,
-        list: I,
+        mut list: I,
         function: impl Fn(I::ItemRefTuple) + Send + Sync + 'static,
         batch_size: usize,
-    ) where
-        I::ItemRefTuple: Sync + Send,
-    {
+    ) {
         // If the slices have different lengths, we must abort
         let length = list.slice_tuple_len();
         assert!(length.is_some(), "Cannot have slice with different lengths");
@@ -239,56 +215,53 @@ impl ThreadPool {
         let config = self.create_for_each_config(length, batch_size);
         dbg!(&config);
 
-        // Iterate through the tuple slice
-        self.for_each_internal(
-            config,
-            list,
-            |list, index| unsafe { list.get_unchecked(index) },
-            function,
-            |ptrs, length, offset| unsafe { I::from_boxed_ptrs(ptrs, length, offset) },
-            |list| unsafe { list.to_boxed_ptrs() },
-        );
+        // Decompose the scheduler config
+        let ForEachInternalConfig {
+            length,
+            batch_size,
+            remaining,
+            num_threads_to_use,
+        } = config;
+
+        // Run the code in a single thread if needed
+        if num_threads_to_use == 1 {
+            for x in 0..length {
+                //function(unsafe { I::get_unchecked(&mut list, x) });
+            }
+            return;
+        }
+
+        // Box the function into an arc
+        let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
+            let offset = entry.batch_offset;
+            let mut ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
+
+            for i in 0..entry.batch_length {
+                let test = <I as MutSliceTuple<'_, '_>>::get_unchecked(&mut ptrs, i);
+                //function();
+            }
+        });
+
+        // Run the function in mutliple threads
+        let base = unsafe { I::to_boxed_ptrs(list) };
+        for batch_index in 0..num_threads_to_use {
+            self.append(ThreadedTask::ForEachBatch {
+                entry: ThreadFuncEntry {
+                    base: base.clone(),
+                    batch_length: if batch_index == (num_threads_to_use - 1) && remaining != 0 {
+                        remaining
+                    } else {
+                        batch_size
+                    },
+                    batch_offset: batch_index * batch_size,
+                },
+                function: function.clone(),
+            });
+        }
 
         // We must manually join the sheize
         self.join();
     }
-
-    /*
-    // Given a mutable slice of elements, run a function over all of them elemeents in parallel
-    pub fn for_each_mut<T: Sync + Send + 'static>(&mut self, list: &mut [T], function: impl Fn(&mut T) + Send + Sync + 'static, batch_size: usize) {
-        // Make sure the inputs are valid and calculate the number of threads we will need
-        let batch_size = batch_size.max(1);
-        let num_threads_to_use = (list.len() as f32 / batch_size as f32).ceil() as usize;
-        let remaining = list.len() % batch_size;
-
-        // Run the code in a single thread if needed
-        if num_threads_to_use == 1 {
-            list.iter_mut().for_each(function);
-            return;
-        }
-
-        // Create the task as a clonable Arc since we will share it a lot
-        let task: Arc<dyn Fn(UntypedMutPtr) + Send + Sync> = Arc::new(move |ptr: UntypedMutPtr| unsafe {
-            let ptr: *mut T = ptr.into();
-            function(&mut *ptr);
-        });
-
-        // Iterate over the thread index, and append a task at a time
-        for index in 0..num_threads_to_use {
-            let is_last = index == num_threads_to_use - 1;
-            let offset = batch_size * index;
-            let length = if is_last && remaining != 0 {
-                remaining
-            } else { batch_size };
-
-            // Send the task to the global queue
-            let task = ThreadedTask::ForEachMutBatch { base: list.as_mut_ptr().into(), batch_length: length, batch_offset: offset, function: task.clone(), size_of: size_of::<T>() };
-            self.append(task);
-        }
-
-        self.join();
-    }
-    */
 
     // Execute a raw task. Only should be used internally
     fn append(&mut self, task: ThreadedTask) {
