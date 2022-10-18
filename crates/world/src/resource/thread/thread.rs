@@ -56,6 +56,9 @@ pub struct ThreadPool {
     task_sender: Option<Sender<ThreadedTask>>,
     task_receiver: Arc<Mutex<Receiver<ThreadedTask>>>,
 
+    // Custom heuristic to change how we split out work
+    heuristic: fn(length: usize, batch_size: usize) -> usize,
+
     // Number of tasks that are waiting to get executed
     waiting: Arc<AtomicU32>,
 
@@ -66,17 +69,13 @@ pub struct ThreadPool {
     joins: Vec<JoinHandle<()>>,
 }
 
-// Intermediate thread schedular config
-#[derive(Debug)] 
-struct ForEachInternalConfig {
-    length: usize,
-    batch_size: usize,
-    remaining: usize,
-    num_threads_to_use: usize,
+// Default thread distribution heuristic
+fn heuristic(length: usize, batch_size: usize) -> usize {    
+    (length as f32 / batch_size as f32).ceil() as usize
 }
 
 impl ThreadPool {
-    // Create a new thread pool with the default number of threads
+    // Create a new thread pool with the default number of threads and default heuristic
     pub fn new() -> Self {
         let (task_sender, task_receiver) = std::sync::mpsc::channel::<ThreadedTask>();
 
@@ -87,6 +86,7 @@ impl ThreadPool {
             joins: Default::default(),
             waiting: Arc::new(AtomicU32::new(0)),
             task_sender: Some(task_sender),
+            heuristic: heuristic,
             task_receiver: Arc::new(Mutex::new(task_receiver)),
         };
 
@@ -100,17 +100,9 @@ impl ThreadPool {
         threadpool
     }
 
-    // Create the for each internal config that we can use inside the for_each_internal function
-    fn create_for_each_config(&self, length: usize, batch_size: usize) -> ForEachInternalConfig {
-        let batch_size = batch_size.max(1);
-        let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
-        let remaining = length % batch_size;
-        ForEachInternalConfig {
-            length,
-            batch_size,
-            remaining,
-            num_threads_to_use,
-        }
+    // Change the thread distribution heuristic
+    pub fn set_thread_distribution_heuristic(&mut self, heuristic: fn(usize, usize) -> usize) {
+        self.heuristic = heuristic;
     }
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
@@ -126,15 +118,9 @@ impl ThreadPool {
         let length = length.unwrap();
 
         // Create the scheduler config
-        let config = self.create_for_each_config(length, batch_size);
-
-        // Decompose the scheduler config
-        let ForEachInternalConfig {
-            length,
-            batch_size,
-            remaining,
-            num_threads_to_use,
-        } = config;
+        let batch_size = batch_size.max(1);
+        let num_threads_to_use = (self.heuristic)(length, batch_size);
+        let remaining = length % batch_size;
         
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
