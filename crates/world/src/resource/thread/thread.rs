@@ -1,4 +1,3 @@
-use crate::{RefSliceTuple, MutSliceTuple, MutSlice};
 use parking_lot::{Condvar, Mutex, RwLock};
 use std::{
     any::Any,
@@ -15,6 +14,8 @@ use std::{
     },
     thread::{JoinHandle, ThreadId},
 };
+
+use crate::SliceTuple;
 
 use super::{UntypedMutPtr, UntypedPtr};
 
@@ -131,10 +132,10 @@ impl ThreadPool {
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
     // TODO: Remove code duplication
-    pub fn for_each<I: for<'i> RefSliceTuple<'i>>(
+    pub fn for_each<I: for<'i> SliceTuple<'i>>(
         &mut self,
-        list: I,
-        function: impl Fn(<I as RefSliceTuple<'_>>::ItemRefTuple) + Send + Sync + 'static,
+        mut list: I,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'static,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -156,7 +157,7 @@ impl ThreadPool {
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
             for x in 0..length {
-                function(unsafe { I::get_unchecked(&list, x) });
+                function(unsafe { I::get_unchecked(&mut list, x) });
             }
             return;
         }
@@ -193,6 +194,7 @@ impl ThreadPool {
         self.join();
     }
 
+    /*
     // Given an immutable slice of elements, run a function over all of them elements in parallel
     pub fn for_each_mut<I: for<'i> MutSliceTuple<'i>>(
         &mut self,
@@ -255,6 +257,7 @@ impl ThreadPool {
         // We must manually join the sheize
         self.join();
     }
+    */
 
     // Execute a raw task. Only should be used internally
     fn append(&mut self, task: ThreadedTask) {

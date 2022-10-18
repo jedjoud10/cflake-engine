@@ -6,58 +6,10 @@ use std::slice::from_raw_parts;
 
 macro_rules! impl_tuple {
     ($( $name:ident )+, $max:tt) => {
-        impl<'i, $($name: RefSlice<'i>),+> RefSliceTuple<'i> for ($($name,)+) {
+        impl<'i, $($name: Slice<'i>),+> SliceTuple<'i> for ($($name,)+) {
             type PtrTuple = ($($name::Ptr),+);
             type OwnedTuple = ($($name::OwnedItem),+);
-            type ItemRefTuple = ($($name::ItemRef),+);
-
-            fn as_ptrs(&self) -> Self::PtrTuple {
-                seq!(N in 0..$max {
-                    let c~N: C~N::Ptr = (self.N).as_ptr();
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
-            }
-
-            fn slice_tuple_len(&self) -> Option<usize> {
-                let mut vec: ArrayVec<usize, $max> = ArrayVec::new();
-                seq!(N in 0..$max {
-                    if let Some(len) = self.N.len() {
-                        vec.push(len);
-                    }
-                });
-
-                (vec.is_empty()).then(|| vec).map(|vec| vec.windows(2).all(|a| a[0] == a[1]).then(|| vec[0])).flatten()
-            }
-
-            unsafe fn from_ptrs(ptrs: &Self::PtrTuple, length: usize, offset: usize) -> Self {
-                seq!(N in 0..$max {
-                    let ptr~N: C~N::Ptr = C~N::offset_ptr(ptrs.N, offset);
-                    let c~N: C~N = C~N::from_raw_parts(ptr~N, length);
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
-            }
-
-            unsafe fn get_unchecked<'a: 'i>(&'a self, index: usize) -> Self::ItemRefTuple {
-                seq!(N in 0..$max {
-                    let c~N: C~N::ItemRef = C~N::get_unchecked(&self.N, index);
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
-            }
-        }
-
-        impl<'i, $($name: MutSlice<'i>),+> MutSliceTuple<'i> for ($($name,)+) {
-            type PtrTuple = ($($name::Ptr),+);
-            type OwnedTuple = ($($name::OwnedItem),+);
-            type ItemMutTuple = ($($name::ItemMut),+);
+            type ItemTuple = ($($name::Item),+);
 
             fn as_ptrs(&mut self) -> Self::PtrTuple {
                 seq!(N in 0..$max {
@@ -91,9 +43,9 @@ macro_rules! impl_tuple {
                 ),+,)
             }
 
-            unsafe fn get_unchecked_mut<'a: 'i>(&'a mut self, index: usize) -> Self::ItemMutTuple {
+            unsafe fn get_unchecked<'a: 'i>(&'a mut self, index: usize) -> Self::ItemTuple {
                 seq!(N in 0..$max {
-                    let c~N: C~N::ItemMut = C~N::get_unchecked_mut(&mut self.N, index);
+                    let c~N: C~N::Item = C~N::get_unchecked(&mut self.N, index);
                 });
 
                 ($(
