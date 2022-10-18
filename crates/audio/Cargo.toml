@@ -13,4 +13,5 @@ ecs = { path = "../ecs" }
 cpal = "0.14.0"
 hrtf = "0.8.0"
 wav = "1.0.0"
+minimp3 = "0.5.1"
 vek = "0.15.6"

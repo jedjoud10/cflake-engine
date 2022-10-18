@@ -15,7 +15,7 @@ use std::{
     thread::{JoinHandle, ThreadId},
 };
 
-use crate::SliceTuple;
+use crate::{SliceTuple, ThreadPoolScope};
 
 use super::{UntypedMutPtr, UntypedPtr};
 
@@ -23,17 +23,17 @@ use super::{UntypedMutPtr, UntypedPtr};
 type BoxedPtrTuple = Arc<dyn Any + Send + Sync + 'static>;
 
 // Certified moment
-struct ThreadFuncEntry {
+pub(super) struct ThreadFuncEntry {
     base: BoxedPtrTuple,
     batch_length: usize,
     batch_offset: usize,
 }
 
 // Shared arc that represents a shared function
-type BoxedFunction = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'static>;
+pub(super) type BoxedFunction = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'static>;
 
 // Represents a single task that will be executed by multiple threads
-enum ThreadedTask {
+pub(super) enum ThreadedTask {
     // This is a single task that will be executed on a single thread
     Execute(Box<dyn FnOnce() + Send>),
 
@@ -42,23 +42,6 @@ enum ThreadedTask {
         entry: ThreadFuncEntry,
         function: BoxedFunction,
     },
-    /*
-    // This is a singular batch of a bigger immutable tuple of slices
-    ForEachBatchTuple {
-        base: Arc<dyn TuplePtr>,
-        batch_length: usize,
-        batch_offset: usize,
-        function: Arc<dyn Fn(&dyn TuplePtr) + Send + Sync>
-    }
-
-    // This is a singular batch of a bigger mutable tuple of slices
-    ForEachBatchTupleMut {
-        base: Arc<dyn TupleMutPtr>,
-        batch_length: usize,
-        batch_offset: usize,
-        function: Arc<dyn Fn(&dyn TupleMutPtr) + Send + Sync>
-    }
-    */
 }
 
 // Task handle allows us to fetch the results of specific tasks
@@ -131,11 +114,10 @@ impl ThreadPool {
     }
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
-    // TODO: Remove code duplication
-    pub fn for_each<I: for<'i> SliceTuple<'i>>(
-        &mut self,
+    pub fn for_each<'a, I: for<'i> SliceTuple<'i>>(
+        &'a mut self,
         mut list: I,
-        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'static,
+        function: impl Fn(<I as SliceTuple<'_>>::ItemTuple) + Send + Sync + 'a,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -163,7 +145,8 @@ impl ThreadPool {
         }
 
         // Box the function into an arc
-        let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
+        type ArcFn<'b> = Arc<dyn Fn(ThreadFuncEntry) + Send + Sync + 'b>; 
+        let function: ArcFn<'a> = Arc::new(move |entry: ThreadFuncEntry| unsafe {
             let offset = entry.batch_offset;        
             let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
             let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
@@ -173,69 +156,10 @@ impl ThreadPool {
             }
         });
 
-        // Run the function in mutliple threads
-        let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
-        for batch_index in 0..num_threads_to_use {
-            self.append(ThreadedTask::ForEachBatch {
-                entry: ThreadFuncEntry {
-                    base: base.clone(),
-                    batch_length: if batch_index == (num_threads_to_use - 1) && remaining != 0 {
-                        remaining
-                    } else {
-                        batch_size
-                    },
-                    batch_offset: batch_index * batch_size,
-                },
-                function: function.clone(),
-            });
-        }
-
-        // We must manually join the sheize
-        self.join();
-    }
-
-    /*
-    // Given an immutable slice of elements, run a function over all of them elements in parallel
-    pub fn for_each_mut<I: for<'i> MutSliceTuple<'i>>(
-        &mut self,
-        mut list: I,
-        function: impl Fn(<I as MutSliceTuple<'_>>::ItemMutTuple) + Send + Sync + 'static,
-        batch_size: usize,
-    ) {
-        // If the slices have different lengths, we must abort
-        let length = list.slice_tuple_len();
-        assert!(length.is_some(), "Cannot have slice with different lengths");
-        let length = length.unwrap();
-
-        // Create the scheduler config
-        let config = self.create_for_each_config(length, batch_size);
-
-        // Decompose the scheduler config
-        let ForEachInternalConfig {
-            length,
-            batch_size,
-            remaining,
-            num_threads_to_use,
-        } = config;
-
-        // Run the code in a single thread if needed
-        if num_threads_to_use == 1 {
-            for x in 0..length {
-                function(unsafe { I::get_unchecked_mut(&mut list, x) });
-            }
-            return;
-        }
-
-        // Box the function into an arc
-        let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
-            let offset = entry.batch_offset;
-            let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
-            let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
-
-            for i in 0..entry.batch_length {
-                function(I::get_unchecked_mut(&mut ptrs, i));
-            }
-        });
+        // Convert the lifetimed arc into a static arc
+        let function: ArcFn<'static> = unsafe { 
+            std::mem::transmute::<ArcFn<'a>, ArcFn<'static>>(function)
+        };
 
         // Run the function in mutliple threads
         let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
@@ -257,10 +181,9 @@ impl ThreadPool {
         // We must manually join the sheize
         self.join();
     }
-    */
 
     // Execute a raw task. Only should be used internally
-    fn append(&mut self, task: ThreadedTask) {
+    pub(super) fn append(&mut self, task: ThreadedTask) {
         self.waiting.fetch_add(1, Ordering::Relaxed);
         self.task_sender.as_ref().unwrap().send(task).unwrap();
     }
@@ -269,6 +192,16 @@ impl ThreadPool {
     pub fn execute<F: FnOnce() + Send + 'static>(&mut self, function: F) {
         let task = ThreadedTask::Execute(Box::new(function));
         self.append(task);
+    }
+
+    // Create a scope that we can use to send multiple commands to the threads
+    pub fn scope<'a>(&'a mut self, function: impl FnOnce(&mut ThreadPoolScope<'a>)) {
+        let mut scope = ThreadPoolScope {
+            pool: self,
+        };
+
+        function(&mut scope);
+        drop(scope);
     }
 
     // Get the number of threads that are stored in the thread pool

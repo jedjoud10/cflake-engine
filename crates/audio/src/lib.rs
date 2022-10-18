@@ -1,1 +1,4 @@
-// TODO: Use another sound library because rodio kinda sux
+mod clip;
+mod sample;
+pub use sample::*;
+pub use clip::*;

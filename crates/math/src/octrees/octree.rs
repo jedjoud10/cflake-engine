@@ -1,4 +1,4 @@
-use super::{node::Node, NodeKey};
+use super::{node::Node};
 use crate::AABB;
 use slotmap::{Key, SlotMap};
 
@@ -50,6 +50,7 @@ pub struct Octree {
 }
 
 impl Octree {
+    /*
     // Create a new octree with a specific depth and pass function
     pub fn new(depth: u8, size: u64, heuristic: OctreeHeuristic) -> Self {
         let mut nodes = SlotMap::<NodeKey, Node>::default();
@@ -89,6 +90,7 @@ impl Octree {
             heuristic,
         }
     }
+    */
 
     /*
     // Get the nodes immutably

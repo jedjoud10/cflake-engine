@@ -2,6 +2,7 @@ use arrayvec::ArrayVec;
 use slotmap::Key;
 use std::hash::Hash;
 
+/*
 // A node group is a set of data corresponding to a single node
 pub struct NodeGroup {
 
@@ -22,7 +23,7 @@ pub struct NodeValues {
     shared_parent: Vec<u32>, 
     shared_depth: Vec<u32>,    
 }
-
+*/
 
 // 128
 // Node position i64
@@ -41,11 +42,14 @@ pub struct Node {
 
     // Hierarchy fields
     depth: u8,
+    /*
     parent: NodeKey,
     key: NodeKey,
     children: Option<[NodeKey; 8]>,
+    */
 }
 
+/*
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         self.center() == other.center()
@@ -63,8 +67,10 @@ impl Hash for Node {
 }
 
 impl Eq for Node {}
+*/
 
 impl Node {
+    /*
     // Create a root node using the max size and depth
     pub fn root(key: NodeKey, depth: u8, size: u64) -> Self {
         // Get the maximum size of the root node
@@ -147,4 +153,5 @@ impl Node {
 
         children.into_inner().unwrap()
     }
+    */
 }

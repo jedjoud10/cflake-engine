@@ -21,7 +21,7 @@ impl<'a> Data<'a> {
     // Get the extension of the loaded file
     pub fn extension(&self) -> &str {
         self.extension
-    }
+    } 
 
     // Get the full path of the loaded file
     pub fn path(&self) -> &Path {

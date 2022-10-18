@@ -3,6 +3,8 @@ mod macros;
 mod ptr;
 mod slice;
 mod thread;
+mod scope;
+pub use scope::*;
 pub use layout::*;
 pub use macros::*;
 pub use ptr::*;

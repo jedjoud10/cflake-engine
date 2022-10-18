@@ -45,6 +45,7 @@ impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
         ptr.map(|ptr| &*ptr.add(i))
     }
 }
+/*
 
 // Impl of mut query item for &T
 impl<'s: 'l, 'l, T: Component> MutQueryItem<'s, 'l> for &'l T {
@@ -367,4 +368,5 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6, 7 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7, 8 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8, 9 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9, 10 }
+*/
 */
