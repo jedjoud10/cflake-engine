@@ -1,7 +1,6 @@
 use crate::{Archetype, Component, LayoutAccess, Mask};
 
-// Mutable query layouts that might contain mutable references
-// This must take a mutable reference to the current archetype
+// Mutable query layout that we must use to fetch mutable slices from the archetypes
 pub trait MutQueryLayout<'s, 'l>: 'l + Sized {
     type SliceTuple: 's;
     fn is_valid() -> bool;
@@ -10,8 +9,7 @@ pub trait MutQueryLayout<'s, 'l>: 'l + Sized {
     fn read(tuple: &mut Self::SliceTuple, index: usize) -> Self;
 }
 
-// Immutable query layouts that will never contain any mutable referneces
-// This simply takes an immutable reference to the archetype
+// Immutable query layout that we use to fetch immutable slices from the archetypes
 pub trait RefQueryLayout<'a>: 'a + Sized {
     type PtrTuple: Copy + 'static;
     fn access(archetype_mask: Mask) -> Option<LayoutAccess>;

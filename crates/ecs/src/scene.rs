@@ -3,9 +3,8 @@ use time::Time;
 use world::{Events, Init, Stage, Update, World};
 
 use crate::{
-    archetype::remove_bundle_unchecked, entity::Entity, Archetype, Bundle, EntityLinkings,
-    EntryMut, EntryRef, Evaluate, Mask, MaskHashMap, MutQueryItemResult, MutQueryLayout,
-    RefQueryItemResult, RefQueryLayout,
+    archetype::remove_bundle_unchecked, entity::Entity, Archetype, EntityLinkings,
+    EntryMut, EntryRef, Mask, MaskHashMap, Bundle
 };
 
 pub type EntitySet = SlotMap<Entity, EntityLinkings>;

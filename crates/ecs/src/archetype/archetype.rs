@@ -112,6 +112,14 @@ impl Archetype {
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
 
+    // Try to get immutable slices from the archetype
+    // This will return none if some of the slices are non existant or if they are mutable
+    pub fn table_layout(&self) {}
+
+    // Try to get the corresponding slices from the archetype
+    // This will return none if some of the slices are non existant
+    pub fn table_layout_mut(&mut self) {}
+    
     // Remove an entity that is stored within this archetype using it's index
     // This will return the entity's old linkings if successful
     pub(crate) fn remove(
