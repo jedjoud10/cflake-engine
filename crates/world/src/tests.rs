@@ -5,9 +5,6 @@ mod tests {
     use crate::ThreadPool;
 
     fn task(integer: &mut u128) {
-        dbg!(integer);
-        //
-        std::thread::sleep(std::time::Duration::from_millis(1));
     }
 
     #[test]

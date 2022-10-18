@@ -130,6 +130,7 @@ impl ThreadPool {
     }
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
+    // TODO: Remove code duplication
     pub fn for_each<I: for<'i> RefSliceTuple<'i>>(
         &mut self,
         list: I,
@@ -143,7 +144,6 @@ impl ThreadPool {
 
         // Create the scheduler config
         let config = self.create_for_each_config(length, batch_size);
-        dbg!(&config);
 
         // Decompose the scheduler config
         let ForEachInternalConfig {
@@ -163,8 +163,9 @@ impl ThreadPool {
 
         // Box the function into an arc
         let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
-            let offset = entry.batch_offset;
-            let mut ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
+            let offset = entry.batch_offset;        
+            let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
+            let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
 
             for i in 0..entry.batch_length {
                 function(I::get_unchecked(&mut ptrs, i));
@@ -172,7 +173,7 @@ impl ThreadPool {
         });
 
         // Run the function in mutliple threads
-        let base = unsafe { I::to_boxed_ptrs(list) };
+        let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
         for batch_index in 0..num_threads_to_use {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
@@ -196,7 +197,7 @@ impl ThreadPool {
     pub fn for_each_mut<I: for<'i> MutSliceTuple<'i>>(
         &mut self,
         mut list: I,
-        function: impl Fn(<I as MutSliceTuple<'_>>::ItemRefTuple) + Send + Sync + 'static,
+        function: impl Fn(<I as MutSliceTuple<'_>>::ItemMutTuple) + Send + Sync + 'static,
         batch_size: usize,
     ) {
         // If the slices have different lengths, we must abort
@@ -206,7 +207,6 @@ impl ThreadPool {
 
         // Create the scheduler config
         let config = self.create_for_each_config(length, batch_size);
-        dbg!(&config);
 
         // Decompose the scheduler config
         let ForEachInternalConfig {
@@ -219,7 +219,7 @@ impl ThreadPool {
         // Run the code in a single thread if needed
         if num_threads_to_use == 1 {
             for x in 0..length {
-                function(unsafe { I::get_unchecked(&mut list, x) });
+                function(unsafe { I::get_unchecked_mut(&mut list, x) });
             }
             return;
         }
@@ -227,15 +227,16 @@ impl ThreadPool {
         // Box the function into an arc
         let function: BoxedFunction = Arc::new(move |entry: ThreadFuncEntry| unsafe {
             let offset = entry.batch_offset;
-            let mut ptrs = I::from_boxed_ptrs(entry.base, entry.batch_length, offset).unwrap();
+            let ptrs = entry.base.downcast::<I::PtrTuple>().ok();
+            let mut ptrs= ptrs.map(|ptrs| I::from_ptrs(&*ptrs, entry.batch_length, offset)).unwrap();
 
             for i in 0..entry.batch_length {
-                function(I::get_unchecked(&mut ptrs, i));
+                function(I::get_unchecked_mut(&mut ptrs, i));
             }
         });
 
         // Run the function in mutliple threads
-        let base = unsafe { I::to_boxed_ptrs(list) };
+        let base: Arc<dyn Any + Send + Sync> = Arc::new(list.as_ptrs());
         for batch_index in 0..num_threads_to_use {
             self.append(ThreadedTask::ForEachBatch {
                 entry: ThreadFuncEntry {
