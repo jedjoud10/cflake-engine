@@ -1,7 +1,7 @@
 use super::Entity;
 use crate::{
     registry::{mask, name},
-    Archetype, Component, EntityLinkings, EntryError, RefQueryLayout, Scene, StateRow,
+    Archetype, Component, EntityLinkings, EntryError, Scene, StateRow,
 };
 
 // Immutable entity entries allow the user to be able to read and get some data about a specific entity
@@ -60,6 +60,7 @@ impl<'a> EntryRef<'a> {
         self.archetype().mask().contains(mask::<T>())
     }
 
+    /*
     // Read certain components from the entry as if they were used in an immutable query
     pub fn as_view<'b, L: RefQueryLayout<'b>>(&self) -> Option<L> {
         let index = self.linkings().index;
@@ -67,4 +68,5 @@ impl<'a> EntryRef<'a> {
         let layout = unsafe { L::read(ptrs, index) };
         Some(layout)
     }
+    */
 }

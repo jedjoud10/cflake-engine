@@ -3,7 +3,7 @@ use crate::{
     add_bundle_unchecked,
     registry::{mask, name},
     remove_bundle_unchecked, Archetype, ArchetypeSet, Bundle, Component, EntityLinkings, EntitySet,
-    EntryError, MutQueryLayout, RefQueryLayout, Scene, StateRow,
+    EntryError, Scene, StateRow,
 };
 
 // Mutable entity entries allow the user to be able to modify components that are linked to the entity
@@ -114,6 +114,7 @@ impl<'a> EntryMut<'a> {
         self.archetype().mask().contains(mask::<T>())
     }
 
+    /*
     // Read certain components from the entry as if they were used in an immutable query
     pub fn as_view<'b, L: RefQueryLayout<'b>>(&self) -> Option<L> {
         let index = self.linkings().index;
@@ -129,4 +130,5 @@ impl<'a> EntryMut<'a> {
         let layout = L::read(&mut slices, index);
         Some(layout)
     }
+    */
 }

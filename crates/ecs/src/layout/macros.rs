@@ -2,49 +2,11 @@ use std::slice;
 
 use crate::{
     mask, Archetype, Bundle, Component, ComponentTable, LayoutAccess, Mask, MaskHashMap,
-    MutQueryItem, MutQueryLayout, OwnedBundle, RefQueryItem, RefQueryLayout,
 };
 
 use casey::lower;
 use seq_macro::seq;
 
-// Impl of ref query item for &T
-impl<'a, T: Component> RefQueryItem<'a> for &'a T {
-    type Component = T;
-    type Ptr = *const T;
-
-    fn access(m: Mask) -> Option<LayoutAccess> {
-        let cm = mask::<T>();
-        m.contains(cm)
-            .then_some(LayoutAccess::new(cm, Mask::zero()))
-    }
-
-    fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
-        archetype.table::<T>().map(|vec| vec.as_ptr())
-    }
-
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        &*ptr.add(i)
-    }
-}
-
-// Impl of ref query item for Option<&T>
-impl<'a, T: Component> RefQueryItem<'a> for Option<&'a T> {
-    type Component = T;
-    type Ptr = Option<*const T>;
-
-    fn access(m: Mask) -> Option<LayoutAccess> {
-        Some(LayoutAccess::new(mask::<T>() & m, Mask::zero()))
-    }
-
-    fn prepare(archetype: &Archetype) -> Option<Self::Ptr> {
-        Some(archetype.table::<T>().map(|vec| vec.as_ptr()))
-    }
-
-    unsafe fn read(ptr: Self::Ptr, i: usize) -> Self {
-        ptr.map(|ptr| &*ptr.add(i))
-    }
-}
 /*
 
 // Impl of mut query item for &T
