@@ -20,7 +20,7 @@ mod tests {
         dbg!(vec);
         */
         let mut vec = (0..=64).into_iter().collect::<Vec<u128>>();
-        let shared = 0;
+        let shared = 4;
         
         threadpool.scope(|scope| {
             scope.execute(|| { dbg!(shared); });

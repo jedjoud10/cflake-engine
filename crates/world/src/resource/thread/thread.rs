@@ -56,9 +56,6 @@ pub struct ThreadPool {
     task_sender: Option<Sender<ThreadedTask>>,
     task_receiver: Arc<Mutex<Receiver<ThreadedTask>>>,
 
-    // Custom heuristic to change how we split out work
-    heuristic: fn(length: usize, batch_size: usize) -> usize,
-
     // Number of tasks that are waiting to get executed
     waiting: Arc<AtomicU32>,
 
@@ -69,13 +66,8 @@ pub struct ThreadPool {
     joins: Vec<JoinHandle<()>>,
 }
 
-// Default thread distribution heuristic
-fn heuristic(length: usize, batch_size: usize) -> usize {    
-    (length as f32 / batch_size as f32).ceil() as usize
-}
-
 impl ThreadPool {
-    // Create a new thread pool with the default number of threads and default heuristic
+    // Create a new thread pool with the default number of threads
     pub fn new() -> Self {
         let (task_sender, task_receiver) = std::sync::mpsc::channel::<ThreadedTask>();
 
@@ -86,7 +78,6 @@ impl ThreadPool {
             joins: Default::default(),
             waiting: Arc::new(AtomicU32::new(0)),
             task_sender: Some(task_sender),
-            heuristic: heuristic,
             task_receiver: Arc::new(Mutex::new(task_receiver)),
         };
 
@@ -98,11 +89,6 @@ impl ThreadPool {
         threadpool.joins = joins;
 
         threadpool
-    }
-
-    // Change the thread distribution heuristic
-    pub fn set_thread_distribution_heuristic(&mut self, heuristic: fn(usize, usize) -> usize) {
-        self.heuristic = heuristic;
     }
 
     // Given an immutable slice of elements, run a function over all of them elements in parallel
@@ -118,8 +104,8 @@ impl ThreadPool {
         let length = length.unwrap();
 
         // Create the scheduler config
-        let batch_size = batch_size.max(1);
-        let num_threads_to_use = (self.heuristic)(length, batch_size);
+        let batch_size = batch_size.max(1);        
+        let num_threads_to_use = (length as f32 / batch_size as f32).ceil() as usize;
         let remaining = length % batch_size;
         
         // Run the code in a single thread if needed
@@ -249,20 +235,7 @@ fn spawn(threadpool: &ThreadPool, index: usize) -> JoinHandle<()> {
                     ThreadedTask::Execute(f) => f(),
 
                     // Execute the same function over and over again on the same slice, but at different indices (no overrun)
-                    ThreadedTask::ForEachBatch { entry, function } => unsafe {
-                        function(entry);
-                    },
-                    /*
-                    ThreadedTask::ForEachMutBatch { base, batch_length, batch_offset, size_of, function } => unsafe {
-                        let base = Into::<*mut ()>::into(base) as usize;
-                        let start = base + batch_offset * size_of;
-                        let end = base + batch_length * size_of;
-
-                        for i in (start..end).step_by(size_of) {
-                            function(UntypedMutPtr::from(i as *mut ()));
-                        }
-                    },
-                    */
+                    ThreadedTask::ForEachBatch { entry, function } => function(entry),
                 }
 
                 // Update the active thread atomic and waiting task atomic

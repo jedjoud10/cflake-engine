@@ -2,10 +2,12 @@ use std::{any::Any, sync::Arc, io::{BufReader, Cursor}};
 use assets::Asset;
 use crate::AudioSamples;
 
-// This is a sound clip that we can import from an mp3/wav file
-pub struct SoundClip(Arc<dyn AudioSamples>);
+// This is an audio clip that we can import from an mp3/wav file
+// Audio clips must be clonable since we use them a jack shit ton
+#[derive(Clone)]
+pub struct AudioClip(Arc<dyn AudioSamples>);
 
-impl Asset<'static> for SoundClip {
+impl Asset<'static> for AudioClip {
     type Args = ();
 
     fn extensions() -> &'static [&'static str] {
