@@ -13,10 +13,6 @@ mod tests {
         #[derive(Component, Debug, Clone, Copy)]
         struct Ammo(u32);
 
-        let vec = vec![Ammo(0); 4096];
-        let slice = vec.as_slice();
-        let slice = unsafe { <&Ammo>::get_unchecked(slice, 0) };
-
         //manager.insert((Name("Red"), Health(100)));
 
         /*

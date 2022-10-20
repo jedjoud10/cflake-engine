@@ -3,6 +3,8 @@ mod macros;
 mod bundle;
 mod access;
 mod items;
+mod errors;
+pub use errors::*;
 pub use items::*;
 pub use bundle::*;
 pub use access::*;
