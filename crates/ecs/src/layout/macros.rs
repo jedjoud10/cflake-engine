@@ -1,7 +1,7 @@
-use crate::{QueryLayout, QueryItem, QueryValidityError};
-
+use crate::{QueryLayout, QueryItem, QueryValidityError, LayoutAccess, Archetype, OwnedBundle};
 use casey::lower;
 use seq_macro::seq;
+
 macro_rules! tuple_impls {
     ( $( $name:ident )+, $max:tt ) => {           
         impl<'s: 'i, 'i, $($name: QueryItem<'s, 'i>, )+> QueryLayout<'s, 'i> for ($($name,)+) {
@@ -13,33 +13,59 @@ macro_rules! tuple_impls {
             }
         
             fn name(index: usize) -> &'static str {
-                
-                
-                if index == 0 {
-                    I::name()
-                } else {
-                    panic!()
-                }
+                let names = [$($name::name()),+];
+                names[index]
             }
         
-            fn fold(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
-                [I::access()].into_iter().fold(LayoutAccess::none(), lambda)
+            fn fold(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
+                let layouts = [$($name::access()),+];
+                let first = layouts[0];
+                layouts[1..].into_iter().fold(first, |a, b| lambda(a, *b))
             }
-        
-            fn ptrs_from_archetype(archetype: &Archetype) -> Self::PtrTuple {
-                I::ptr_from_archetype(archetype)
+
+            fn mutable() -> Option<usize> {
+                let mutable = [$($name::MUTABLE),+];
+                mutable.into_iter().position(|v| v)
             }
-        
-            fn ptrs_from_mut_archetype(archetype: &mut Archetype) -> Self::PtrTuple {
-                I::ptr_from_mut_archetype(archetype)
+
+            unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple {
+                seq!(N in 0..$max {
+                    let c~N = C~N::ptr_from_archetype_unchecked(archetype);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
             }
+            
+            unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {
+                seq!(N in 0..$max {
+                    let c~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
+            }            
         
             unsafe fn from_raw_parts(tuple: Self::PtrTuple, length: usize) -> Self::SliceTuple {
-                <I as QueryItem<'s, 'i>>::from_raw_parts(tuple, length)
+                seq!(N in 0..$max {
+                    let c~N = C~N::from_raw_parts(tuple.N, length);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
             }
         
             unsafe fn get_unchecked(slice: Self::SliceTuple, index: usize) -> Self {
-                <I as QueryItem<'s, 'i>>::get_unchecked(slice, index)
+                seq!(N in 0..$max {
+                    let c~N = C~N::get_unchecked(slice.N, index);
+                });
+
+                ($(
+                    lower!($name)
+                ),+,)
             }
         }
     };
