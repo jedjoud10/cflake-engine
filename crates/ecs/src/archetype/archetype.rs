@@ -1,6 +1,6 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow,
+    mask, ArchetypeSet, Bundle, Component, ComponentTable, EntitySet, Mask, MaskHashMap, StateRow, QueryLayout, QueryError, BundleError,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -40,9 +40,12 @@ impl Archetype {
         &mut self,
         entities: &mut EntitySet,
         components: Vec<B>,
-    ) -> &[Entity] {
-        assert!(B::is_valid());
-        assert_eq!(B::combined(), self.mask);
+    ) -> Result<&[Entity], BundleError> {
+        if !B::is_valid() {
+            return Err(BundleError::DuplicateComponent(B::))
+        }
+
+        debug_assert_eq!(B::combined(), self.mask);
         self.reserve(entities.len());
         let old_len = self.entities.len();
 
@@ -67,7 +70,7 @@ impl Archetype {
         drop(storages);
 
         // Return the newly added entity IDs
-        &self.entities[old_len..]
+        Some(&self.entities[old_len..])
     }
 
     // Reserve enough memory space to be able to fit all the new entities in one allocation
@@ -111,14 +114,18 @@ impl Archetype {
         let boxed = self.tables.get_mut(&mask::<T>())?;
         Some(boxed.as_any_mut().downcast_mut().unwrap())
     }
-
+    
     // Try to get immutable slices from the archetype
-    // This will return none if some of the slices are non existant or if they are mutable
-    pub fn table_layout(&self) {}
+    // This will return Err if some of the slices are non existant or if they are mutable
+    pub fn table_layout<'s, 'i, L: QueryLayout<'s, 'i>>(&self) -> Result<L::SliceTuple, QueryError> {
+        L::slices_from_archetype(self)
+    }
 
     // Try to get the corresponding slices from the archetype
     // This will return none if some of the slices are non existant
-    pub fn table_layout_mut(&mut self) {}
+    pub fn table_layout_mut<'s, 'i, L: QueryLayout<'s, 'i>>(&mut self) -> Result<L::SliceTuple, QueryError> {
+        L::slices_from_mut_archetype(self)
+    }
     
     // Remove an entity that is stored within this archetype using it's index
     // This will return the entity's old linkings if successful

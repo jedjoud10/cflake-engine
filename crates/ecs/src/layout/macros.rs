@@ -1,56 +1,98 @@
-use crate::{QueryLayout, QueryItem, QueryValidityError, LayoutAccess, Archetype, OwnedBundle};
+use crate::{QueryLayout, QueryItem, QueryError, LayoutAccess, Archetype, OwnedBundle, Component, Mask, mask, ComponentTable, MaskHashMap, };
 use casey::lower;
 use seq_macro::seq;
 
 macro_rules! tuple_impls {
-    ( $( $name:ident )+, $max:tt ) => {           
+    ( $( $name:ident )+, $max:tt ) => {       
+        impl<'a, $($name: Component),+> OwnedBundle<'a> for ($($name,)+) {
+            type Storages = ($(&'a mut Vec<$name>),+);
+
+            fn combined() -> Mask {
+                ($(mask::<$name>())|+)
+            }
+
+            fn is_valid() -> bool {
+                ($(mask::<$name>())&+) == Mask::zero()
+            }
+
+            fn prepare(archetype: &'a mut Archetype) -> Option<Self::Storages> {
+                assert!(Self::is_valid());
+                seq!(N in 0..$max {
+                    let table = archetype.table_mut::<C~N>()?;
+                    let ptr = table as *mut Vec<C~N>;
+                    let c~N = unsafe { &mut *ptr };
+                });
+
+                Some(($(
+                    lower!($name)
+                ),+,))
+            }
+
+            fn push(storages: &mut Self::Storages, bundle: Self) {
+                seq!(N in 0..$max {
+                    let vec = &mut storages.N;
+                    vec.push(bundle.N);
+                });
+            }
+
+            fn default_tables() -> MaskHashMap<Box<dyn ComponentTable>> {
+                let mut map = MaskHashMap::<Box<dyn ComponentTable>>::default();
+                ($(
+                    map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
+                ),+);
+                map
+            }
+
+            fn try_swap_remove(tables: &mut MaskHashMap<Box<dyn ComponentTable>>, index: usize) -> Option<Self> {
+                seq!(N in 0..$max {
+                    let boxed = tables.get_mut(&mask::<C~N>())?;
+                    let vec = boxed.as_any_mut().downcast_mut::<Vec<C~N>>().unwrap();
+                    let c~N: C~N = vec.swap_remove(index);
+                });
+
+                Some(($(
+                    lower!($name)
+                ),+,))
+            }
+        }
+        
         impl<'s: 'i, 'i, $($name: QueryItem<'s, 'i>, )+> QueryLayout<'s, 'i> for ($($name,)+) {
-            type PtrTuple = ($($name::Ptr,)+);
             type SliceTuple = ($($name::Slice,)+);
         
             fn items() -> usize {
                 $max
             }
         
-            fn name(index: usize) -> &'static str {
+            fn name(index: usize) -> Option<&'static str> {
                 let names = [$($name::name()),+];
-                names[index]
-            }
-        
-            fn fold(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
-                let layouts = [$($name::access()),+];
-                let first = layouts[0];
-                layouts[1..].into_iter().fold(first, |a, b| lambda(a, *b))
-            }
-
-            fn mutable() -> Option<usize> {
-                let mutable = [$($name::MUTABLE),+];
-                mutable.into_iter().position(|v| v)
-            }
-
-            unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple {
-                seq!(N in 0..$max {
-                    let c~N = C~N::ptr_from_archetype_unchecked(archetype);
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
+                names.get(index).cloned()
             }
             
-            unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {
+            fn access(index: usize) -> Option<LayoutAccess> {
+                let accesses = [$($name::access()),+];
+                accesses.get(index).cloned()
+            }
+        
+            fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
+                let layouts = [$($name::access()),+];
+                layouts[1..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
+            }
+
+            unsafe fn slices_from_archetype_unchecked(archetype: &Archetype) -> Self::SliceTuple {
                 seq!(N in 0..$max {
-                    let c~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
+                    let ptr~N = C~N::ptr_from_archetype_unchecked(archetype);
+                    let c~N = C~N::from_raw_parts(ptr~N, archetype.len());
                 });
 
                 ($(
                     lower!($name)
                 ),+,)
-            }            
+            }
         
-            unsafe fn from_raw_parts(tuple: Self::PtrTuple, length: usize) -> Self::SliceTuple {
+            unsafe fn slices_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::SliceTuple {
                 seq!(N in 0..$max {
-                    let c~N = C~N::from_raw_parts(tuple.N, length);
+                    let ptr~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
+                    let c~N = C~N::from_raw_parts(ptr~N, archetype.len());
                 });
 
                 ($(

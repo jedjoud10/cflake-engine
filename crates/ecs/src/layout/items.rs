@@ -5,7 +5,6 @@ pub trait QueryItem<'s, 'i>: Sized {
     type Slice: 's;
     type Ptr: 'static + Copy;
     type Owned: 'static;
-    const MUTABLE: bool;
 
     // Get the name of this query item (debugging only)
     fn name() -> &'static str {
@@ -29,7 +28,6 @@ impl<'s: 'i, 'i, T: Component> QueryItem<'s, 'i> for &'i T {
     type Slice = &'s [T];
     type Ptr = *const T;
     type Owned = T;
-    const MUTABLE: bool = false;
 
     fn access() -> LayoutAccess {
         LayoutAccess::new(mask::<T>(), Mask::zero())
@@ -58,7 +56,6 @@ impl<'s: 'i, 'i, T: Component> QueryItem<'s, 'i> for &'i mut T {
     type Slice = &'s mut [T];
     type Ptr = *mut T;
     type Owned = T;
-    const MUTABLE: bool = true;
 
     fn access() -> LayoutAccess {
         LayoutAccess::new(Mask::zero(), mask::<T>())
@@ -86,7 +83,6 @@ impl<'s: 'i, 'i, T: Component> QueryItem<'s, 'i> for Option<&'i T> {
     type Slice = Option<&'s [T]>;
     type Ptr = Option<*const T>;
     type Owned = T;
-    const MUTABLE: bool = false;
 
     fn access() -> LayoutAccess {
         LayoutAccess::new(mask::<T>(), Mask::zero())
@@ -114,7 +110,6 @@ impl<'s: 'i, 'i> QueryItem<'s, 'i> for &'i Entity {
     type Slice = &'s [Entity];
     type Ptr = *const Entity;
     type Owned = Entity;
-    const MUTABLE: bool = false;
 
     fn access() -> LayoutAccess {
         LayoutAccess::new(Mask::one(), Mask::zero())

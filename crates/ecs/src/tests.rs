@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let _manager = Scene::default();
+        let mut manager = Scene::default();
 
         #[derive(Component, Debug)]
         struct Name(&'static str);
@@ -13,7 +13,9 @@ mod tests {
         #[derive(Component, Debug, Clone, Copy)]
         struct Ammo(u32);
 
-        //manager.insert((Name("Red"), Health(100)));
+
+
+        manager.insert((Name("Red"), Health(100))).unwrap();
 
         /*
 
